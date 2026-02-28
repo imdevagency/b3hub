@@ -2,11 +2,12 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { t } from '@/lib/translations';
 
 const FEATURES = [
-  { emoji: '🏗️', title: 'Materials', desc: 'Browse & order construction materials' },
-  { emoji: '📦', title: 'Containers', desc: 'Track containers and deliveries' },
-  { emoji: '♻️', title: 'Recycling', desc: 'Manage waste sustainably' },
+  { emoji: '🏗️', title: t.welcome.features.materials.title, desc: t.welcome.features.materials.desc },
+  { emoji: '📦', title: t.welcome.features.containers.title, desc: t.welcome.features.containers.desc },
+  { emoji: '♻️', title: t.welcome.features.recycling.title, desc: t.welcome.features.recycling.desc },
 ];
 
 export default function WelcomeScreen() {
@@ -21,10 +22,8 @@ export default function WelcomeScreen() {
           <View style={styles.logoBox}>
             <Text style={styles.logoText}>B3</Text>
           </View>
-          <Text style={styles.title}>Welcome to B3Hub</Text>
-          <Text style={styles.subtitle}>
-            Your all-in-one platform for construction materials, orders, and logistics.
-          </Text>
+          <Text style={styles.title}>{t.welcome.title}</Text>
+          <Text style={styles.subtitle}>{t.welcome.subtitle}</Text>
         </View>
 
         {/* Feature cards */}
@@ -49,7 +48,7 @@ export default function WelcomeScreen() {
             activeOpacity={0.85}
             onPress={() => router.push('/(auth)/register')}
           >
-            <Text style={styles.primaryBtnText}>Get Started</Text>
+            <Text style={styles.primaryBtnText}>{t.welcome.getStarted}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -57,7 +56,7 @@ export default function WelcomeScreen() {
             activeOpacity={0.85}
             onPress={() => router.push('/(auth)/login')}
           >
-            <Text style={styles.secondaryBtnText}>Sign in</Text>
+            <Text style={styles.secondaryBtnText}>{t.welcome.signIn}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

@@ -18,10 +18,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { t } from '@/lib/translations';
 
 const schema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().email(t.login.validation.invalidEmail),
+  password: z.string().min(1, t.login.validation.passwordRequired),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -47,7 +48,7 @@ export default function LoginScreen() {
       await setAuth(res.user, res.token);
       router.replace('/(tabs)/home');
     } catch (err) {
-      setApiError(err instanceof Error ? err.message : 'Login failed');
+      setApiError(err instanceof Error ? err.message : t.login.failed);
     }
   };
 
@@ -73,11 +74,11 @@ export default function LoginScreen() {
             <View style={s.logoBox}>
               <Text style={s.logoText}>B3</Text>
             </View>
-            <Text style={s.title}>Welcome back</Text>
+            <Text style={s.title}>{t.login.title}</Text>
             <Text style={s.subtitle}>
-              Don't have an account?{' '}
+              {t.login.noAccount}{' '}
               <Text style={s.link} onPress={() => router.replace('/(auth)/register')}>
-                Sign up
+                {t.login.signUp}
               </Text>
             </Text>
           </View>
@@ -90,14 +91,14 @@ export default function LoginScreen() {
 
           {/* Email */}
           <View style={s.fieldWrap}>
-            <Text style={s.label}>Email</Text>
+            <Text style={s.label}>{t.login.email}</Text>
             <Controller
               control={control}
               name="email"
               render={({ field: { onChange, value, onBlur } }) => (
                 <TextInput
                   style={[s.input, errors.email && s.inputError]}
-                  placeholder="john@example.com"
+                  placeholder={t.login.emailPlaceholder}
                   placeholderTextColor="#9ca3af"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -114,8 +115,8 @@ export default function LoginScreen() {
           {/* Password */}
           <View style={s.fieldWrap}>
             <View style={s.labelRow}>
-              <Text style={s.label}>Password</Text>
-              <Text style={s.link}>Forgot password?</Text>
+              <Text style={s.label}>{t.login.password}</Text>
+              <Text style={s.link}>{t.login.forgotPassword}</Text>
             </View>
             <Controller
               control={control}
@@ -123,7 +124,7 @@ export default function LoginScreen() {
               render={({ field: { onChange, value, onBlur } }) => (
                 <TextInput
                   style={[s.input, errors.password && s.inputError]}
-                  placeholder="Your password"
+                  placeholder={t.login.passwordPlaceholder}
                   placeholderTextColor="#9ca3af"
                   secureTextEntry
                   value={value}
@@ -143,7 +144,7 @@ export default function LoginScreen() {
             {isSubmitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={s.primaryBtnText}>Sign in</Text>
+              <Text style={s.primaryBtnText}>{t.login.signIn}</Text>
             )}
           </TouchableOpacity>
         </ScrollView>

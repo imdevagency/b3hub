@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
+import { t } from '@/lib/translations';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
@@ -15,10 +16,10 @@ export default function ProfileScreen() {
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`;
 
   const INFO_ROWS = [
-    { label: 'Email', value: user?.email },
-    { label: 'Phone', value: user?.phone || '—' },
-    { label: 'Account type', value: user?.userType },
-    { label: 'Status', value: user?.status },
+    { label: t.profile.email, value: user?.email },
+    { label: t.profile.phone, value: user?.phone || '—' },
+    { label: t.profile.accountType, value: user?.userType },
+    { label: t.profile.status, value: user?.status },
   ];
 
   return (
@@ -41,7 +42,7 @@ export default function ProfileScreen() {
         <View style={s.body}>
           {/* Info card */}
           <View style={s.card}>
-            <Text style={s.cardTitle}>Account</Text>
+            <Text style={s.cardTitle}>{t.profile.account}</Text>
             {INFO_ROWS.map((item, idx) => (
               <View
                 key={item.label}
@@ -55,7 +56,7 @@ export default function ProfileScreen() {
 
           {/* Sign out */}
           <TouchableOpacity style={s.signOutBtn} onPress={handleLogout} activeOpacity={0.8}>
-            <Text style={s.signOutText}>Sign out</Text>
+            <Text style={s.signOutText}>{t.profile.signOut}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

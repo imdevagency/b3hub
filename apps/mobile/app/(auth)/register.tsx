@@ -18,28 +18,29 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { t } from '@/lib/translations';
 
 type UserType = 'BUYER' | 'SUPPLIER' | 'CARRIER' | 'RECYCLER';
 
 const USER_TYPES: { value: UserType; label: string }[] = [
-  { value: 'BUYER', label: 'Buyer' },
-  { value: 'SUPPLIER', label: 'Supplier' },
-  { value: 'CARRIER', label: 'Carrier' },
-  { value: 'RECYCLER', label: 'Recycler' },
+  { value: 'BUYER', label: t.register.userTypes.BUYER },
+  { value: 'SUPPLIER', label: t.register.userTypes.SUPPLIER },
+  { value: 'CARRIER', label: t.register.userTypes.CARRIER },
+  { value: 'RECYCLER', label: t.register.userTypes.RECYCLER },
 ];
 
 const schema = z
   .object({
-    firstName: z.string().min(2, 'First name is too short'),
-    lastName: z.string().min(2, 'Last name is too short'),
-    email: z.string().email('Invalid email address'),
+    firstName: z.string().min(2, t.register.validation.firstNameShort),
+    lastName: z.string().min(2, t.register.validation.lastNameShort),
+    email: z.string().email(t.register.validation.invalidEmail),
     phone: z.string().optional(),
     userType: z.enum(['BUYER', 'SUPPLIER', 'CARRIER', 'DRIVER', 'RECYCLER', 'ADMIN'] as const),
-    password: z.string().min(8, 'Min. 8 characters'),
+    password: z.string().min(8, t.register.validation.passwordMin),
     confirmPassword: z.string(),
   })
   .refine((d) => d.password === d.confirmPassword, {
-    message: 'Passwords do not match',
+    message: t.register.validation.passwordsMismatch,
     path: ['confirmPassword'],
   });
 
@@ -75,7 +76,7 @@ export default function RegisterScreen() {
       await setAuth(res.user, res.token);
       router.replace('/(tabs)/home');
     } catch (err) {
-      setApiError(err instanceof Error ? err.message : 'Registration failed');
+      setApiError(err instanceof Error ? err.message : t.register.failed);
     }
   };
 
@@ -92,14 +93,14 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
         >
           <TouchableOpacity style={s.backBtn} onPress={() => router.back()}>
-            <Text style={s.backText}>← Back</Text>
+            <Text style={s.backText}>{t.register.back}</Text>
           </TouchableOpacity>
 
-          <Text style={s.title}>Create account</Text>
+          <Text style={s.title}>{t.register.title}</Text>
           <Text style={s.subtitle}>
-            Already have one?{' '}
+            {t.register.alreadyHaveOne}{' '}
             <Text style={s.link} onPress={() => router.replace('/(auth)/login')}>
-              Sign in
+              {t.register.signIn}
             </Text>
           </Text>
 
@@ -112,14 +113,14 @@ export default function RegisterScreen() {
           {/* Name row */}
           <View style={s.row}>
             <View style={[s.fieldWrap, { flex: 1 }]}>
-              <Text style={s.label}>First name</Text>
+              <Text style={s.label}>{t.register.firstName}</Text>
               <Controller
                 control={control}
                 name="firstName"
                 render={({ field: { onChange, value, onBlur } }) => (
                   <TextInput
                     style={[s.input, errors.firstName ? s.inputError : null]}
-                    placeholder="John"
+                    placeholder={t.register.firstNamePlaceholder}
                     placeholderTextColor="#9ca3af"
                     value={value}
                     onChangeText={onChange}
@@ -130,14 +131,14 @@ export default function RegisterScreen() {
               {errors.firstName && <Text style={s.fieldError}>{errors.firstName.message}</Text>}
             </View>
             <View style={[s.fieldWrap, { flex: 1 }]}>
-              <Text style={s.label}>Last name</Text>
+              <Text style={s.label}>{t.register.lastName}</Text>
               <Controller
                 control={control}
                 name="lastName"
                 render={({ field: { onChange, value, onBlur } }) => (
                   <TextInput
                     style={[s.input, errors.lastName ? s.inputError : null]}
-                    placeholder="Doe"
+                    placeholder={t.register.lastNamePlaceholder}
                     placeholderTextColor="#9ca3af"
                     value={value}
                     onChangeText={onChange}
@@ -151,14 +152,14 @@ export default function RegisterScreen() {
 
           {/* Email */}
           <View style={s.fieldWrap}>
-            <Text style={s.label}>Email</Text>
+            <Text style={s.label}>{t.register.email}</Text>
             <Controller
               control={control}
               name="email"
               render={({ field: { onChange, value, onBlur } }) => (
                 <TextInput
                   style={[s.input, errors.email ? s.inputError : null]}
-                  placeholder="john@example.com"
+                  placeholder={t.register.emailPlaceholder}
                   placeholderTextColor="#9ca3af"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -173,14 +174,14 @@ export default function RegisterScreen() {
 
           {/* Phone */}
           <View style={s.fieldWrap}>
-            <Text style={s.label}>Phone (optional)</Text>
+            <Text style={s.label}>{t.register.phone}</Text>
             <Controller
               control={control}
               name="phone"
               render={({ field: { onChange, value, onBlur } }) => (
                 <TextInput
                   style={s.input}
-                  placeholder="+1 (555) 000-0000"
+                  placeholder={t.register.phonePlaceholder}
                   placeholderTextColor="#9ca3af"
                   keyboardType="phone-pad"
                   value={value}
@@ -193,7 +194,7 @@ export default function RegisterScreen() {
 
           {/* Account type */}
           <View style={s.fieldWrap}>
-            <Text style={s.label}>Account type</Text>
+            <Text style={s.label}>{t.register.accountType}</Text>
             <Controller
               control={control}
               name="userType"
@@ -217,14 +218,14 @@ export default function RegisterScreen() {
 
           {/* Password */}
           <View style={s.fieldWrap}>
-            <Text style={s.label}>Password</Text>
+            <Text style={s.label}>{t.register.password}</Text>
             <Controller
               control={control}
               name="password"
               render={({ field: { onChange, value, onBlur } }) => (
                 <TextInput
                   style={[s.input, errors.password ? s.inputError : null]}
-                  placeholder="Min. 8 characters"
+                  placeholder={t.register.passwordPlaceholder}
                   placeholderTextColor="#9ca3af"
                   secureTextEntry
                   value={value}
@@ -238,14 +239,14 @@ export default function RegisterScreen() {
 
           {/* Confirm password */}
           <View style={[s.fieldWrap, { marginBottom: 24 }]}>
-            <Text style={s.label}>Confirm password</Text>
+            <Text style={s.label}>{t.register.confirmPassword}</Text>
             <Controller
               control={control}
               name="confirmPassword"
               render={({ field: { onChange, value, onBlur } }) => (
                 <TextInput
                   style={[s.input, errors.confirmPassword ? s.inputError : null]}
-                  placeholder="Repeat your password"
+                  placeholder={t.register.confirmPasswordPlaceholder}
                   placeholderTextColor="#9ca3af"
                   secureTextEntry
                   value={value}
@@ -267,7 +268,7 @@ export default function RegisterScreen() {
             {isSubmitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={s.primaryBtnText}>Create account</Text>
+              <Text style={s.primaryBtnText}>{t.register.createAccount}</Text>
             )}
           </TouchableOpacity>
         </ScrollView>

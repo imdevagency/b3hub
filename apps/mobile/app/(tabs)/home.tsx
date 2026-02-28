@@ -1,12 +1,13 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
+import { t } from '@/lib/translations';
 
 const QUICK_ACTIONS = [
-  { emoji: '🏗️', label: 'Materials' },
-  { emoji: '📦', label: 'Orders' },
-  { emoji: '🚛', label: 'Shipments' },
-  { emoji: '♻️', label: 'Recycling' },
+  { emoji: '🏗️', label: t.home.actions.materials },
+  { emoji: '📦', label: t.home.actions.orders },
+  { emoji: '🚛', label: t.home.actions.shipments },
+  { emoji: '♻️', label: t.home.actions.recycling },
 ];
 
 export default function HomeScreen() {
@@ -17,7 +18,7 @@ export default function HomeScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={s.header}>
-          <Text style={s.headerGreeting}>Good day,</Text>
+          <Text style={s.headerGreeting}>{t.home.greeting}</Text>
           <Text style={s.headerName}>
             {user?.firstName} {user?.lastName} 👋
           </Text>
@@ -29,12 +30,12 @@ export default function HomeScreen() {
         <View style={s.body}>
           {/* Stats card */}
           <View style={s.card}>
-            <Text style={s.sectionLabel}>Overview</Text>
+            <Text style={s.sectionLabel}>{t.home.overview}</Text>
             <View style={s.statsRow}>
               {[
-                { label: 'Materials', value: '—' },
-                { label: 'Orders', value: '—' },
-                { label: 'Pending', value: '—' },
+                { label: t.home.stats.materials, value: '—' },
+                { label: t.home.stats.orders, value: '—' },
+                { label: t.home.stats.pending, value: '—' },
               ].map((stat) => (
                 <View key={stat.label} style={s.statItem}>
                   <Text style={s.statValue}>{stat.value}</Text>
@@ -45,7 +46,7 @@ export default function HomeScreen() {
           </View>
 
           {/* Quick actions */}
-          <Text style={s.quickTitle}>Quick actions</Text>
+          <Text style={s.quickTitle}>{t.home.quickActions}</Text>
           <View style={s.actionGrid}>
             {QUICK_ACTIONS.map((action) => (
               <TouchableOpacity key={action.label} style={s.actionBtn} activeOpacity={0.7}>

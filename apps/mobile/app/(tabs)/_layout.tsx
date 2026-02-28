@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { View, ActivityIndicator } from 'react-native';
+import { t } from '@/lib/translations';
 
 export default function TabsLayout() {
   const { user, isLoading } = useAuth();
@@ -39,7 +40,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Home',
+          title: t.tabs.home,
           tabBarIcon: ({ color }) => (
             <View style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
               {/* Simple house icon via emoji */}
@@ -50,7 +51,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: t.tabs.profile,
         }}
       />
     </Tabs>
