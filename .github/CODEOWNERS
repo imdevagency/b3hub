@@ -1,0 +1,29 @@
+# CODEOWNERS
+
+# Automatically requests reviews from the right team when a PR touches these paths.
+
+# Format: <path> @<github-username-or-team>
+
+# Root config — everyone reviews
+
+-                       @dagsragelis-source
+
+# Backend (NestJS)
+
+apps/backend/ @dagsragelis-source
+
+# Web (Next.js)
+
+apps/web/ @dagsragelis-source
+
+# Mobile (Expo)
+
+apps/mobile/ @dagsragelis-source
+
+# Shared packages
+
+packages/ @dagsragelis-source
+
+# GitHub config — owner always reviews
+
+.github/ @dagsragelis-source

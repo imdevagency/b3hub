@@ -1,0 +1,61 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/backend/**'
+      - 'packages/**'
+      - 'package.json'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'apps/backend/**'
+      - 'packages/**'
+      - 'package.json'
+
+jobs:
+  ci:
+    name: Lint, Test & Build
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate --workspace=apps/backend
+
+      - name: Lint
+        run: npm run lint --workspace=apps/backend
+
+      - name: Run tests
+        run: npm run test --workspace=apps/backend
+
+      - name: Build
+        run: npm run build:backend
+
+  # Uncomment and configure when ready to deploy
+  # deploy:
+  #   name: Deploy to Production
+  #   needs: ci
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
+  #   steps:
+  #     - name: Deploy
+  #       run: echo "Add your deployment steps here"

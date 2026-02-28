@@ -1,0 +1,43 @@
+name: ✨ Feature Request
+description: Suggest a new feature or improvement
+labels: ['enhancement']
+body:
+  - type: dropdown
+    id: app
+    attributes:
+      label: Target App
+      options:
+        - Backend (NestJS)
+        - Web (Next.js)
+        - Mobile (Expo)
+        - Multiple / Shared
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Motivation
+      placeholder: What problem does this solve? Why is it needed?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      placeholder: Describe the feature you'd like.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      placeholder: Any alternative approaches you considered?
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      placeholder: Mockups, references, related issues, etc.

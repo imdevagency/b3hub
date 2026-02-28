@@ -1,0 +1,723 @@
+// B3Hub Construction Marketplace Platform - Prisma Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ================================
+// ENUMS
+// ================================
+
+enum UserType {
+  BUYER     // Construction companies
+  SUPPLIER  // Material suppliers
+  RECYCLER  // Waste management companies
+  CARRIER   // Transport companies
+  DRIVER    // Individual drivers
+  ADMIN     // Platform administrators
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum CompanyType {
+  CONSTRUCTION // Construction company
+  SUPPLIER     // Material supplier
+  RECYCLER     // Waste management
+  CARRIER      // Transport company
+  HYBRID       // Multiple services
+}
+
+enum MaterialCategory {
+  SAND
+  GRAVEL
+  STONE
+  CONCRETE
+  SOIL
+  RECYCLED_CONCRETE
+  RECYCLED_SOIL
+  ASPHALT
+  CLAY
+  OTHER
+}
+
+enum MaterialUnit {
+  TONNE
+  M3
+  PIECE
+  LOAD
+}
+
+enum ContainerType {
+  SKIP      // Open top container
+  ROLL_OFF  // Roll-off dumpster
+  COMPACTOR // Compactor container
+  ENCLOSED  // Enclosed container
+}
+
+enum ContainerSize {
+  SMALL_3M3
+  MEDIUM_5M3
+  LARGE_7M3
+  XLARGE_10M3
+  XXLARGE_15M3
+  XXXLARGE_20M3
+}
+
+enum ContainerStatus {
+  AVAILABLE
+  RENTED
+  IN_TRANSIT
+  MAINTENANCE
+  RETIRED
+}
+
+enum OrderType {
+  MATERIAL  // Material purchase
+  CONTAINER // Container rental
+  DISPOSAL  // Waste disposal
+  TRANSPORT // Transport only
+  COMBINED  // Multiple services
+}
+
+enum OrderStatus {
+  DRAFT
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  PARTIALLY_PAID
+  REFUNDED
+  FAILED
+}
+
+enum WastePurpose {
+  CONSTRUCTION_WASTE
+  DEMOLITION_WASTE
+  EXCAVATION_SOIL
+  MIXED_WASTE
+  RECYCLABLE_MATERIALS
+  HAZARDOUS_WASTE
+  GREEN_WASTE
+  OTHER
+}
+
+enum WasteType {
+  CONCRETE
+  BRICK
+  WOOD
+  METAL
+  PLASTIC
+  SOIL
+  MIXED
+  HAZARDOUS
+}
+
+enum ContainerOrderStatus {
+  SCHEDULED
+  DELIVERED
+  IN_USE
+  PICKED_UP
+  COMPLETED
+  CANCELLED
+}
+
+enum TransportJobType {
+  MATERIAL_DELIVERY
+  CONTAINER_DELIVERY
+  CONTAINER_PICKUP
+  WASTE_COLLECTION
+  EQUIPMENT_TRANSPORT
+}
+
+enum TransportJobStatus {
+  AVAILABLE        // Available for assignment
+  ASSIGNED         // Assigned to carrier
+  ACCEPTED         // Accepted by driver
+  EN_ROUTE_PICKUP  // On the way to pickup
+  AT_PICKUP        // At pickup location
+  LOADED           // Cargo loaded
+  EN_ROUTE_DELIVERY // On the way to delivery
+  AT_DELIVERY      // At delivery location
+  DELIVERED        // Completed
+  CANCELLED        // Cancelled
+}
+
+enum VehicleType {
+  DUMP_TRUCK
+  FLATBED_TRUCK
+  SEMI_TRAILER
+  HOOK_LIFT
+  SKIP_LOADER
+  TANKER
+  VAN
+}
+
+enum VehicleStatus {
+  ACTIVE
+  IN_USE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum NotificationType {
+  ORDER_CREATED
+  ORDER_CONFIRMED
+  ORDER_DELIVERED
+  TRANSPORT_ASSIGNED
+  TRANSPORT_STARTED
+  TRANSPORT_COMPLETED
+  PAYMENT_RECEIVED
+  SYSTEM_ALERT
+}
+
+// ================================
+// MODELS
+// ================================
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  phone         String?
+  password      String // Hashed
+  firstName     String
+  lastName      String
+  avatar        String?
+  userType      UserType
+  status        UserStatus @default(PENDING)
+  emailVerified Boolean    @default(false)
+  phoneVerified Boolean    @default(false)
+
+  // Relations
+  company   Company? @relation(fields: [companyId], references: [id])
+  companyId String?
+
+  // User-specific profiles
+  driverProfile DriverProfile?
+  buyerProfile  BuyerProfile?
+
+  // Activity
+  ordersCreated Order[]
+  transportJobs TransportJob[]
+  notifications Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Company {
+  id              String      @id @default(cuid())
+  name            String
+  legalName       String
+  registrationNum String?     @unique
+  taxId           String?
+  companyType     CompanyType
+
+  // Contact
+  email   String
+  phone   String
+  website String?
+
+  // Address
+  street     String
+  city       String
+  state      String
+  postalCode String
+  country    String @default("DE")
+
+  // Business info
+  description String?
+  logo        String?
+  verified    Boolean @default(false)
+  rating      Float?
+
+  // Relations
+  users            User[]
+  materials        Material[]
+  containers       Container[]
+  vehicles         Vehicle[]
+  orders           Order[]
+  recyclingCenters RecyclingCenter[]
+  carrierJobs      TransportJob[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("companies")
+}
+
+model Material {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  category    MaterialCategory
+  subCategory String?
+
+  // Pricing
+  basePrice Float
+  unit      MaterialUnit
+  currency  String       @default("EUR")
+
+  // Stock & Availability
+  inStock  Boolean @default(true)
+  minOrder Float?
+  maxOrder Float?
+
+  // Quality
+  isRecycled   Boolean  @default(false)
+  quality      String? // Quality grade
+  certificates String[] // Certification IDs
+
+  // Media
+  images         String[]
+  specifications Json?
+
+  // Relations
+  supplier   Company     @relation(fields: [supplierId], references: [id])
+  supplierId String
+  orderItems OrderItem[]
+
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("materials")
+}
+
+model Container {
+  id            String          @id @default(cuid())
+  containerType ContainerType
+  size          ContainerSize
+  volume        Float // in m3
+  maxWeight     Float // in tonnes
+
+  // Pricing
+  rentalPrice Float // per day
+  deliveryFee Float
+  pickupFee   Float
+  currency    String @default("EUR")
+
+  // Availability
+  status   ContainerStatus
+  location String? // Current location
+
+  // Relations
+  owner           Company          @relation(fields: [ownerId], references: [id])
+  ownerId         String
+  containerOrders ContainerOrder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("containers")
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  orderNumber String      @unique
+  orderType   OrderType
+
+  // Customer info
+  buyer       Company @relation(fields: [buyerId], references: [id])
+  buyerId     String
+  createdBy   User    @relation(fields: [createdById], references: [id])
+  createdById String
+
+  // Delivery details
+  deliveryAddress String
+  deliveryCity    String
+  deliveryState   String
+  deliveryPostal  String
+  deliveryDate    DateTime?
+  deliveryWindow  String? // e.g., "8:00-12:00"
+
+  // Pricing
+  subtotal    Float
+  tax         Float
+  deliveryFee Float
+  total       Float
+  currency    String @default("EUR")
+
+  // Status
+  status        OrderStatus
+  paymentStatus PaymentStatus
+
+  // Special instructions
+  notes         String?
+  internalNotes String?
+
+  // Relations
+  items           OrderItem[]
+  containerOrders ContainerOrder[]
+  transportJobs   TransportJob[]
+  invoices        Invoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id String @id @default(cuid())
+
+  order      Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId    String
+  material   Material @relation(fields: [materialId], references: [id])
+  materialId String
+
+  quantity  Float
+  unit      MaterialUnit
+  unitPrice Float
+  total     Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("order_items")
+}
+
+model ContainerOrder {
+  id String @id @default(cuid())
+
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId     String
+  container   Container @relation(fields: [containerId], references: [id])
+  containerId String
+
+  // Rental period
+  startDate     DateTime
+  endDate       DateTime?
+  actualEndDate DateTime?
+
+  // Purpose
+  purpose         WastePurpose
+  wasteType       WasteType?
+  estimatedWeight Float?
+  actualWeight    Float?
+
+  // Pricing
+  rentalDays  Int
+  dailyRate   Float
+  deliveryFee Float
+  pickupFee   Float
+  disposalFee Float?
+  total       Float
+
+  // Status
+  status ContainerOrderStatus
+
+  // Delivery & Pickup
+  deliveryJob   TransportJob? @relation("ContainerDelivery", fields: [deliveryJobId], references: [id])
+  deliveryJobId String?
+  pickupJob     TransportJob? @relation("ContainerPickup", fields: [pickupJobId], references: [id])
+  pickupJobId   String?
+  wasteRecords  WasteRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("container_orders")
+}
+
+model TransportJob {
+  id        String            @id @default(cuid())
+  jobNumber String            @unique
+  jobType   TransportJobType
+
+  // Job details
+  order   Order?  @relation(fields: [orderId], references: [id])
+  orderId String?
+
+  // Pickup
+  pickupAddress String
+  pickupCity    String
+  pickupState   String
+  pickupPostal  String
+  pickupDate    DateTime
+  pickupWindow  String?
+
+  // Delivery
+  deliveryAddress String
+  deliveryCity    String
+  deliveryState   String
+  deliveryPostal  String
+  deliveryDate    DateTime
+  deliveryWindow  String?
+
+  // Cargo
+  cargoType           String
+  cargoWeight         Float?
+  cargoVolume         Float?
+  specialRequirements String?
+
+  // Pricing
+  rate     Float
+  currency String @default("EUR")
+
+  // Assignment
+  carrier   Company? @relation(fields: [carrierId], references: [id])
+  carrierId String?
+  driver    User?    @relation(fields: [driverId], references: [id])
+  driverId  String?
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
+  vehicleId String?
+
+  // Status
+  status TransportJobStatus
+
+  // Tracking
+  currentLocation  Json?
+  estimatedArrival DateTime?
+
+  // Proof of delivery
+  deliveryProof DeliveryProof?
+
+  // Relations
+  containerDeliveries ContainerOrder[] @relation("ContainerDelivery")
+  containerPickups    ContainerOrder[] @relation("ContainerPickup")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("transport_jobs")
+}
+
+model DeliveryProof {
+  id             String @id @default(cuid())
+  transportJob   TransportJob @relation(fields: [transportJobId], references: [id])
+  transportJobId String       @unique
+
+  // Signatures
+  recipientName      String
+  recipientSignature String // Base64 or URL
+  driverSignature    String // Base64 or URL
+
+  // Photos
+  photos String[] // URLs
+
+  // Timestamps
+  deliveredAt DateTime
+
+  // Notes
+  notes String?
+
+  createdAt DateTime @default(now())
+
+  @@map("delivery_proofs")
+}
+
+model Vehicle {
+  id           String @id @default(cuid())
+  make         String
+  model        String
+  year         Int
+  licensePlate String @unique
+  vin          String?
+
+  // Type & Capacity
+  vehicleType    VehicleType
+  capacity       Float // in tonnes
+  volumeCapacity Float? // in m3
+
+  // Owner
+  company   Company @relation(fields: [companyId], references: [id])
+  companyId String
+
+  // Status
+  status          VehicleStatus
+  currentLocation Json?
+
+  // Insurance & Compliance
+  insuranceExpiry  DateTime?
+  inspectionExpiry DateTime?
+
+  // Relations
+  transportJobs TransportJob[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("vehicles")
+}
+
+model RecyclingCenter {
+  id   String @id @default(cuid())
+  name String
+
+  // Location
+  address     String
+  city        String
+  state       String
+  postalCode  String
+  coordinates Json? // {lat, lng}
+
+  // Owner
+  company   Company @relation(fields: [companyId], references: [id])
+  companyId String
+
+  // Capabilities
+  acceptedWasteTypes WasteType[]
+  capacity           Float // tonnes per day
+  certifications     String[]
+
+  // Operating hours
+  operatingHours Json // {monday: {open, close}, ...}
+
+  // Status
+  active Boolean @default(true)
+
+  // Relations
+  wasteRecords WasteRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("recycling_centers")
+}
+
+model WasteRecord {
+  id String @id @default(cuid())
+
+  // Source
+  containerOrder   ContainerOrder? @relation(fields: [containerOrderId], references: [id])
+  containerOrderId String?
+
+  // Recycling center
+  recyclingCenter   RecyclingCenter @relation(fields: [recyclingCenterId], references: [id])
+  recyclingCenterId String
+
+  // Waste details
+  wasteType WasteType
+  weight    Float
+  volume    Float?
+
+  // Processing
+  processedDate    DateTime?
+  recyclableWeight Float?
+  recyclingRate    Float? // percentage
+
+  // Output
+  producedMaterialId String? // If converted to recycled material
+
+  // Compliance
+  certificateUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("waste_records")
+}
+
+model DriverProfile {
+  id String @id @default(cuid())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @unique
+
+  // License info
+  licenseNumber String   @unique
+  licenseType   String[] // ["B", "C", "CE"]
+  licenseExpiry DateTime
+
+  // Certifications
+  certifications String[]
+
+  // Performance
+  rating        Float?
+  completedJobs Int    @default(0)
+
+  // Status
+  available       Boolean @default(true)
+  currentLocation Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("driver_profiles")
+}
+
+model BuyerProfile {
+  id String @id @default(cuid())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @unique
+
+  // Preferences
+  preferredSuppliers String[]
+  preferredCarriers  String[]
+
+  // Credit
+  creditLimit  Float?
+  creditUsed   Float  @default(0)
+  paymentTerms String? // e.g., "NET30"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("buyer_profiles")
+}
+
+model Notification {
+  id String @id @default(cuid())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  type    NotificationType
+  title   String
+  message String
+  data    Json? // Additional data
+
+  read   Boolean   @default(false)
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model Invoice {
+  id            String @id @default(cuid())
+  invoiceNumber String @unique
+
+  order   Order  @relation(fields: [orderId], references: [id])
+  orderId String
+
+  // Amounts
+  subtotal Float
+  tax      Float
+  total    Float
+  currency String @default("EUR")
+
+  // Payment
+  dueDate       DateTime
+  paidDate      DateTime?
+  paymentStatus PaymentStatus
+
+  // Documents
+  pdfUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("invoices")
+}
+
