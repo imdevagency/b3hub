@@ -38,6 +38,55 @@ export interface LoginInput {
   password: string;
 }
 
+// ─── Skip Hire ─────────────────────────────────────────────────────────────
+
+export type SkipWasteCategory =
+  | 'MIXED'
+  | 'GREEN_GARDEN'
+  | 'CONCRETE_RUBBLE'
+  | 'WOOD'
+  | 'METAL_SCRAP'
+  | 'ELECTRONICS_WEEE';
+
+export type SkipSize = 'MINI' | 'MIDI' | 'BUILDERS' | 'LARGE';
+
+export type SkipHireStatus =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'DELIVERED'
+  | 'COLLECTED'
+  | 'COMPLETED'
+  | 'CANCELLED';
+
+export interface SkipHireOrder {
+  id: string;
+  orderNumber: string;
+  location: string;
+  wasteCategory: SkipWasteCategory;
+  skipSize: SkipSize;
+  deliveryDate: string;
+  price: number;
+  currency: string;
+  status: SkipHireStatus;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSkipHireInput {
+  location: string;
+  wasteCategory: SkipWasteCategory;
+  skipSize: SkipSize;
+  deliveryDate: string;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  notes?: string;
+}
+
 async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${endpoint}`, {
     headers: {
@@ -72,4 +121,18 @@ export const api = {
     apiFetch<User>("/auth/me", {
       headers: { Authorization: `Bearer ${token}` },
     }),
+
+  skipHire: {
+    create: (data: CreateSkipHireInput, token?: string) =>
+      apiFetch<SkipHireOrder>("/skip-hire", {
+        method: "POST",
+        ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+        body: JSON.stringify(data),
+      }),
+
+    myOrders: (token: string) =>
+      apiFetch<SkipHireOrder[]>("/skip-hire/my", {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+  },
 };

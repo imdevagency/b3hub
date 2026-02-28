@@ -95,6 +95,19 @@ export function Navbar() {
                     </NavigationMenuLink>
                   </Link>
                 </NavigationMenuItem>
+
+                <NavigationMenuItem>
+                  <Link href="/order" legacyBehavior passHref>
+                    <NavigationMenuLink
+                      className={cn(
+                        navigationMenuTriggerStyle(),
+                        'text-sm font-semibold text-red-600 hover:text-red-700',
+                      )}
+                    >
+                      Order a Skip
+                    </NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
           </div>
@@ -136,6 +149,13 @@ export function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Pricing
+              </Link>
+              <Link
+                href="/order"
+                className="px-3 py-2 text-sm font-semibold text-red-600 rounded-md hover:bg-red-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Order a Skip →
               </Link>
             </nav>
             <div className="mt-4 flex flex-col gap-2 px-3">

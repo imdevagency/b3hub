@@ -7,6 +7,7 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { AuthModule } from './auth/auth.module';
 import { MaterialsModule } from './materials/materials.module';
 import { OrdersModule } from './orders/orders.module';
+import { SkipHireModule } from './skip-hire/skip-hire.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { OrdersModule } from './orders/orders.module';
     AuthModule,
     MaterialsModule,
     OrdersModule,
+    SkipHireModule,
   ],
   controllers: [AppController],
   providers: [AppService],

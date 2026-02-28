@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { t } from '@/lib/translations';
 
@@ -12,6 +13,7 @@ const QUICK_ACTIONS = [
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const router = useRouter();
 
   return (
     <SafeAreaView style={s.safe}>
@@ -48,6 +50,14 @@ export default function HomeScreen() {
           {/* Quick actions */}
           <Text style={s.quickTitle}>{t.home.quickActions}</Text>
           <View style={s.actionGrid}>
+            <TouchableOpacity
+              style={[s.actionBtn, s.actionBtnPrimary]}
+              activeOpacity={0.7}
+              onPress={() => router.push('/order')}
+            >
+              <Text style={s.actionEmoji}>🗑️</Text>
+              <Text style={[s.actionLabel, s.actionLabelPrimary]}>{t.skipHire.orderNew}</Text>
+            </TouchableOpacity>
             {QUICK_ACTIONS.map((action) => (
               <TouchableOpacity key={action.label} style={s.actionBtn} activeOpacity={0.7}>
                 <Text style={s.actionEmoji}>{action.emoji}</Text>
@@ -126,6 +136,11 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f3f4f6',
   },
+  actionBtnPrimary: {
+    backgroundColor: '#dc2626',
+    borderColor: '#dc2626',
+  },
   actionEmoji: { fontSize: 28 },
   actionLabel: { fontSize: 13, fontWeight: '500', color: '#374151' },
+  actionLabelPrimary: { color: '#fff', fontWeight: '600' },
 });

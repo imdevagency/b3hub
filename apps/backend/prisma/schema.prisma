@@ -128,6 +128,32 @@ enum WasteType {
   HAZARDOUS
 }
 
+// ── Skip Hire (public 4-step wizard) ──────────────────────────
+enum SkipWasteCategory {
+  MIXED
+  GREEN_GARDEN
+  CONCRETE_RUBBLE
+  WOOD
+  METAL_SCRAP
+  ELECTRONICS_WEEE
+}
+
+enum SkipSize {
+  MINI      // 2 m³
+  MIDI      // 4 m³
+  BUILDERS  // 6 m³
+  LARGE     // 8 m³
+}
+
+enum SkipHireStatus {
+  PENDING
+  CONFIRMED
+  DELIVERED
+  COLLECTED
+  COMPLETED
+  CANCELLED
+}
+
 enum ContainerOrderStatus {
   SCHEDULED
   DELIVERED
@@ -719,5 +745,46 @@ model Invoice {
   updatedAt DateTime @updatedAt
 
   @@map("invoices")
+}
+
+// ── Public skip-hire orders (4-step wizard, no auth required) ──
+model SkipHireOrder {
+  id          String @id @default(cuid())
+  orderNumber String @unique
+
+  // Step 1 — Location
+  location String // Postal code or city entered by user
+
+  // Step 2 — Waste type
+  wasteCategory SkipWasteCategory
+
+  // Step 3 — Skip size
+  skipSize SkipSize
+
+  // Step 4 — Delivery date
+  deliveryDate DateTime
+
+  // Pricing (stored at time of order)
+  price    Float
+  currency String @default("EUR")
+
+  // Status lifecycle
+  status SkipHireStatus @default(PENDING)
+
+  // Optional contact info (guest or registered user)
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+
+  // If placed by a registered user
+  userId String?
+
+  // Internal notes
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("skip_hire_orders")
 }
 

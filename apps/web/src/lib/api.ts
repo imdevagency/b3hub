@@ -79,3 +79,96 @@ export async function getMe(token: string): Promise<User> {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ── Skip Hire ──────────────────────────────────────────────────
+
+export type SkipWasteCategory =
+  | "MIXED"
+  | "GREEN_GARDEN"
+  | "CONCRETE_RUBBLE"
+  | "WOOD"
+  | "METAL_SCRAP"
+  | "ELECTRONICS_WEEE";
+
+export type SkipSize = "MINI" | "MIDI" | "BUILDERS" | "LARGE";
+
+export type SkipHireStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "DELIVERED"
+  | "COLLECTED"
+  | "COMPLETED"
+  | "CANCELLED";
+
+export interface SkipHireOrder {
+  id: string;
+  orderNumber: string;
+  location: string;
+  wasteCategory: SkipWasteCategory;
+  skipSize: SkipSize;
+  deliveryDate: string;
+  price: number;
+  currency: string;
+  status: SkipHireStatus;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  notes?: string;
+  userId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSkipHireInput {
+  location: string;
+  wasteCategory: SkipWasteCategory;
+  skipSize: SkipSize;
+  deliveryDate: string; // ISO date string
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  notes?: string;
+}
+
+// Frontend → backend waste category mapping
+const WASTE_CATEGORY_MAP: Record<string, SkipWasteCategory> = {
+  mixed:       "MIXED",
+  green:       "GREEN_GARDEN",
+  rubble:      "CONCRETE_RUBBLE",
+  wood:        "WOOD",
+  metal:       "METAL_SCRAP",
+  electronics: "ELECTRONICS_WEEE",
+};
+
+// Frontend → backend skip size mapping
+const SKIP_SIZE_MAP: Record<string, SkipSize> = {
+  mini:     "MINI",
+  midi:     "MIDI",
+  builders: "BUILDERS",
+  large:    "LARGE",
+};
+
+export function mapWasteCategory(frontendId: string): SkipWasteCategory {
+  return WASTE_CATEGORY_MAP[frontendId] ?? "MIXED";
+}
+
+export function mapSkipSize(frontendId: string): SkipSize {
+  return SKIP_SIZE_MAP[frontendId] ?? "MIDI";
+}
+
+export async function createSkipHireOrder(
+  data: CreateSkipHireInput,
+  token?: string
+): Promise<SkipHireOrder> {
+  return apiFetch<SkipHireOrder>("/skip-hire", {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+}
+
+export async function getMySkipHireOrders(token: string): Promise<SkipHireOrder[]> {
+  return apiFetch<SkipHireOrder[]>("/skip-hire/my", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

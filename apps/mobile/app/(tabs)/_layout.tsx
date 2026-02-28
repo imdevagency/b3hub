@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Text } from 'react-native';
 import { t } from '@/lib/translations';
 
 export default function TabsLayout() {
@@ -44,6 +44,17 @@ export default function TabsLayout() {
           tabBarIcon: ({ color }) => (
             <View style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
               {/* Simple house icon via emoji */}
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="orders"
+        options={{
+          title: t.tabs.orders,
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontSize: 18 }}>{focused ? '🗑️' : '🗑'}</Text>
             </View>
           ),
         }}
