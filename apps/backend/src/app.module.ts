@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { MaterialsModule } from './materials/materials.module';
 import { OrdersModule } from './orders/orders.module';
 import { SkipHireModule } from './skip-hire/skip-hire.module';
+import { DocumentsModule } from './documents/documents.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { SkipHireModule } from './skip-hire/skip-hire.module';
     MaterialsModule,
     OrdersModule,
     SkipHireModule,
+    DocumentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

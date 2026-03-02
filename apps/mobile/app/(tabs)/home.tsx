@@ -4,16 +4,48 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { t } from '@/lib/translations';
 
-const QUICK_ACTIONS = [
-  { emoji: '🏗️', label: t.home.actions.materials },
-  { emoji: '📦', label: t.home.actions.orders },
-  { emoji: '🚛', label: t.home.actions.shipments },
-  { emoji: '♻️', label: t.home.actions.recycling },
-];
+type QuickAction = { emoji: string; label: string; route?: string };
+
+const ROLE_ACTIONS: Record<string, QuickAction[]> = {
+  BUYER: [
+    { emoji: '🏗️', label: 'Pirkt materiālus' },
+    { emoji: '🗑️', label: 'Nomāt konteineru', route: '/order' },
+    { emoji: '🚛', label: 'Izsekot piegādi' },
+    { emoji: '🧾', label: 'Rēķini' },
+  ],
+  SUPPLIER: [
+    { emoji: '📦', label: 'Mani produkti' },
+    { emoji: '📋', label: 'Saņemtie pasūtījumi' },
+    { emoji: '➕', label: 'Pievienot preci' },
+    { emoji: '📊', label: 'Statistika' },
+  ],
+  CARRIER: [
+    { emoji: '📍', label: 'Aktīvie darbi' },
+    { emoji: '🗺️', label: 'Maršruts' },
+    { emoji: '✅', label: 'Pabeigt piegādi' },
+    { emoji: '💰', label: 'Ieņēmumi' },
+  ],
+  PRIVATE: [
+    { emoji: '🗑️', label: 'Pasūtīt konteineru', route: '/order' },
+    { emoji: '📋', label: 'Mani pasūtījumi' },
+    { emoji: '🚛', label: 'Izsekot piegādi' },
+    { emoji: '🆘', label: 'Atbalsts' },
+  ],
+};
+
+const USER_TYPE_LABEL: Record<string, string> = {
+  BUYER: 'Darbuzņēmējs',
+  SUPPLIER: 'Pārdevējs',
+  CARRIER: 'Pārvadātājs',
+  PRIVATE: 'Privātpersona',
+};
 
 export default function HomeScreen() {
   const { user } = useAuth();
   const router = useRouter();
+
+  const role = user?.userType ?? 'PRIVATE';
+  const actions = ROLE_ACTIONS[role] ?? ROLE_ACTIONS.PRIVATE;
 
   return (
     <SafeAreaView style={s.safe}>
@@ -25,7 +57,7 @@ export default function HomeScreen() {
             {user?.firstName} {user?.lastName} 👋
           </Text>
           <View style={s.typeBadge}>
-            <Text style={s.typeBadgeText}>{user?.userType}</Text>
+            <Text style={s.typeBadgeText}>{USER_TYPE_LABEL[role] ?? role}</Text>
           </View>
         </View>
 
@@ -50,20 +82,23 @@ export default function HomeScreen() {
           {/* Quick actions */}
           <Text style={s.quickTitle}>{t.home.quickActions}</Text>
           <View style={s.actionGrid}>
-            <TouchableOpacity
-              style={[s.actionBtn, s.actionBtnPrimary]}
-              activeOpacity={0.7}
-              onPress={() => router.push('/order')}
-            >
-              <Text style={s.actionEmoji}>🗑️</Text>
-              <Text style={[s.actionLabel, s.actionLabelPrimary]}>{t.skipHire.orderNew}</Text>
-            </TouchableOpacity>
-            {QUICK_ACTIONS.map((action) => (
-              <TouchableOpacity key={action.label} style={s.actionBtn} activeOpacity={0.7}>
-                <Text style={s.actionEmoji}>{action.emoji}</Text>
-                <Text style={s.actionLabel}>{action.label}</Text>
-              </TouchableOpacity>
-            ))}
+            {actions.map((action, idx) => {
+              // BUYER gets two primary cards (materials + skip hire)
+              const isPrimary = role === 'BUYER' ? idx < 2 : idx === 0;
+              return (
+                <TouchableOpacity
+                  key={action.label}
+                  style={[s.actionBtn, isPrimary ? s.actionBtnPrimary : null]}
+                  activeOpacity={0.7}
+                  onPress={() => action.route && router.push(action.route as any)}
+                >
+                  <Text style={s.actionEmoji}>{action.emoji}</Text>
+                  <Text style={[s.actionLabel, isPrimary ? s.actionLabelPrimary : null]}>
+                    {action.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       </ScrollView>

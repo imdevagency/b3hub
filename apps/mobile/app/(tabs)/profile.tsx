@@ -35,7 +35,7 @@ export default function ProfileScreen() {
           </Text>
           <Text style={s.email}>{user?.email}</Text>
           <View style={s.roleBadge}>
-            <Text style={s.roleBadgeText}>{user?.userType}</Text>
+            <Text style={s.roleBadgeText}>{roleLabel}</Text>
           </View>
         </View>
 

@@ -21,11 +21,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { registerUser, UserType } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 
-const USER_TYPES: { value: UserType; label: string; description: string }[] = [
-  { value: 'BUYER', label: 'Buyer', description: 'Purchase construction materials' },
-  { value: 'SUPPLIER', label: 'Supplier', description: 'Supply construction materials' },
-  { value: 'CARRIER', label: 'Carrier', description: 'Transport materials & containers' },
-  { value: 'RECYCLER', label: 'Recycler', description: 'Manage waste and recycling' },
+const USER_TYPE_META: { value: UserType; emoji: string; label: string; description: string }[] = [
+  { value: 'BUYER', emoji: '🏗️', label: 'Contractor', description: 'Order materials & skip hire' },
+  { value: 'SUPPLIER', emoji: '📦', label: 'Seller', description: 'Supply & list your materials' },
+  {
+    value: 'CARRIER',
+    emoji: '🚛',
+    label: 'Carrier',
+    description: 'Transport materials & containers',
+  },
+  {
+    value: 'PRIVATE',
+    emoji: '👤',
+    label: 'Private Person',
+    description: 'Personal skip hire & waste',
+  },
 ];
 
 const schema = z
@@ -34,7 +44,7 @@ const schema = z
     lastName: z.string().min(2, 'Last name must be at least 2 characters'),
     email: z.string().email('Please enter a valid email'),
     phone: z.string().optional(),
-    userType: z.enum(['BUYER', 'SUPPLIER', 'CARRIER', 'DRIVER', 'RECYCLER', 'ADMIN'] as const),
+    userType: z.enum(['BUYER', 'SUPPLIER', 'CARRIER', 'PRIVATE'] as const),
     password: z.string().min(8, 'Password must be at least 8 characters'),
     confirmPassword: z.string(),
   })
@@ -57,7 +67,7 @@ export default function RegisterPage() {
       lastName: '',
       email: '',
       phone: '',
-      userType: 'BUYER',
+      userType: 'CARRIER',
       password: '',
       confirmPassword: '',
     },
@@ -173,7 +183,7 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Account type</FormLabel>
                     <div className="grid grid-cols-2 gap-2">
-                      {USER_TYPES.map((type) => (
+                      {USER_TYPE_META.map((type) => (
                         <button
                           key={type.value}
                           type="button"
@@ -184,6 +194,7 @@ export default function RegisterPage() {
                               : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                           }`}
                         >
+                          <span className="text-lg mb-1">{type.emoji}</span>
                           <span className="text-sm font-medium text-gray-900">{type.label}</span>
                           <span className="text-xs text-gray-500 mt-0.5">{type.description}</span>
                         </button>

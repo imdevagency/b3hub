@@ -59,10 +59,10 @@ export const lv = {
     createAccount: 'Izveidot kontu',
     failed: 'Reģistrācija neizdevās',
     userTypes: {
-      BUYER: 'Pircējs',
-      SUPPLIER: 'Piegādātājs',
+      BUYER: 'Darbuzņēmējs',
+      SUPPLIER: 'Pārdevējs',
       CARRIER: 'Pārvadātājs',
-      RECYCLER: 'Pārstrādātājs',
+      PRIVATE: 'Privātpersona',
     } as Record<string, string>,
     validation: {
       firstNameShort: 'Vārds ir pārāk īss',

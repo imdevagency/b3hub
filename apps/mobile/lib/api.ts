@@ -1,6 +1,6 @@
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api/v1";
 
-export type UserType = "BUYER" | "SUPPLIER" | "CARRIER" | "DRIVER" | "RECYCLER" | "ADMIN";
+export type UserType = "BUYER" | "SUPPLIER" | "CARRIER" | "PRIVATE" | "ADMIN";
 
 export interface User {
   id: string;

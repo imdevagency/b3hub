@@ -20,13 +20,13 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { t } from '@/lib/translations';
 
-type UserType = 'BUYER' | 'SUPPLIER' | 'CARRIER' | 'RECYCLER';
+type UserType = 'BUYER' | 'SUPPLIER' | 'CARRIER' | 'PRIVATE';
 
-const USER_TYPES: { value: UserType; label: string }[] = [
-  { value: 'BUYER', label: t.register.userTypes.BUYER },
-  { value: 'SUPPLIER', label: t.register.userTypes.SUPPLIER },
-  { value: 'CARRIER', label: t.register.userTypes.CARRIER },
-  { value: 'RECYCLER', label: t.register.userTypes.RECYCLER },
+const USER_TYPES: { value: UserType; label: string; emoji: string }[] = [
+  { value: 'BUYER', label: t.register.userTypes.BUYER, emoji: '🏗️' },
+  { value: 'SUPPLIER', label: t.register.userTypes.SUPPLIER, emoji: '📦' },
+  { value: 'CARRIER', label: t.register.userTypes.CARRIER, emoji: '🚛' },
+  { value: 'PRIVATE', label: t.register.userTypes.PRIVATE, emoji: '👤' },
 ];
 
 const schema = z
@@ -35,7 +35,7 @@ const schema = z
     lastName: z.string().min(2, t.register.validation.lastNameShort),
     email: z.string().email(t.register.validation.invalidEmail),
     phone: z.string().optional(),
-    userType: z.enum(['BUYER', 'SUPPLIER', 'CARRIER', 'DRIVER', 'RECYCLER', 'ADMIN'] as const),
+    userType: z.enum(['BUYER', 'SUPPLIER', 'CARRIER', 'PRIVATE'] as const),
     password: z.string().min(8, t.register.validation.passwordMin),
     confirmPassword: z.string(),
   })
@@ -62,7 +62,7 @@ export default function RegisterScreen() {
       lastName: '',
       email: '',
       phone: '',
-      userType: 'BUYER',
+      userType: 'CARRIER',
       password: '',
       confirmPassword: '',
     },
@@ -206,6 +206,7 @@ export default function RegisterScreen() {
                       style={[s.typeBtn, value === t.value ? s.typeBtnActive : null]}
                       onPress={() => onChange(t.value)}
                     >
+                      <Text style={s.typeEmoji}>{t.emoji}</Text>
                       <Text style={[s.typeLabel, value === t.value ? s.typeLabelActive : null]}>
                         {t.label}
                       </Text>
@@ -322,15 +323,19 @@ const s = StyleSheet.create({
   fieldError: { color: '#ef4444', fontSize: 12, marginTop: 4 },
   typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   typeBtn: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     backgroundColor: '#fff',
+    alignItems: 'center',
+    minWidth: '45%',
+    flex: 1,
   },
   typeBtnActive: { borderColor: '#dc2626', backgroundColor: '#fef2f2' },
-  typeLabel: { fontSize: 14, fontWeight: '500', color: '#374151' },
+  typeEmoji: { fontSize: 22, marginBottom: 4 },
+  typeLabel: { fontSize: 13, fontWeight: '600', color: '#374151', textAlign: 'center' },
   typeLabelActive: { color: '#b91c1c' },
   primaryBtn: {
     backgroundColor: '#dc2626',
