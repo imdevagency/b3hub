@@ -8,14 +8,20 @@ import {
   Delete,
   Query,
   UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
 import { MaterialsService } from './materials.service';
 import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
-import { Roles } from '../common/decorators/roles.decorator';
-import { UserType } from '@prisma/client';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+
+/** Checks that the authenticated user has canSell=true (or is ADMIN) */
+function assertCanSell(user: any) {
+  if (!user.canSell && user.userType !== 'ADMIN') {
+    throw new ForbiddenException('Only approved sellers can manage materials');
+  }
+}
 
 @Controller('materials')
 @UseGuards(JwtAuthGuard)
@@ -23,9 +29,8 @@ export class MaterialsController {
   constructor(private readonly materialsService: MaterialsService) {}
 
   @Post()
-  @UseGuards(RolesGuard)
-  @Roles(UserType.SUPPLIER, UserType.ADMIN)
-  create(@Body() createMaterialDto: CreateMaterialDto) {
+  create(@Body() createMaterialDto: CreateMaterialDto, @CurrentUser() user: any) {
+    assertCanSell(user);
     return this.materialsService.create(createMaterialDto);
   }
 
@@ -58,16 +63,22 @@ export class MaterialsController {
   }
 
   @Patch(':id')
-  @UseGuards(RolesGuard)
-  @Roles(UserType.SUPPLIER, UserType.ADMIN)
-  update(@Param('id') id: string, @Body() updateMaterialDto: UpdateMaterialDto) {
-    return this.materialsService.update(id, updateMaterialDto);
+  update(@Param('id') id: string, @Body() updateMaterialDto: UpdateMaterialDto, @CurrentUser() user: any) {
+    assertCanSell(user);
+    return this.materialsService.update(id, updateMaterialDto, {
+      userId: user.userId,
+      userType: user.userType,
+      companyId: user.companyId,
+    });
   }
 
   @Delete(':id')
-  @UseGuards(RolesGuard)
-  @Roles(UserType.SUPPLIER, UserType.ADMIN)
-  remove(@Param('id') id: string) {
-    return this.materialsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
+    assertCanSell(user);
+    return this.materialsService.remove(id, {
+      userId: user.userId,
+      userType: user.userType,
+      companyId: user.companyId,
+    });
   }
 }

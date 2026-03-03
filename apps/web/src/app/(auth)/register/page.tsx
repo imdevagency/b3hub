@@ -24,9 +24,9 @@ import { useAuth } from '@/lib/auth-context';
 const USER_TYPE_META: { value: UserType; emoji: string; label: string; description: string }[] = [
   {
     value: 'BUYER',
-    emoji: '🏗️',
-    label: 'Darbuzņēmējs',
-    description: 'Pasūtīt materiālus un konteinerus',
+    emoji: '🛒',
+    label: 'Pasūtītājs',
+    description: 'Pasūtīt materiālus, konteinerus un piegādes',
   },
   {
     value: 'SUPPLIER',
@@ -40,12 +40,11 @@ const USER_TYPE_META: { value: UserType; emoji: string; label: string; descripti
     label: 'Pārvadātājs',
     description: 'Transportēt materiālus un konteinerus',
   },
-  {
-    value: 'PRIVATE',
-    emoji: '👤',
-    label: 'Privātpersona',
-    description: 'Personīgs konteinera nomas serviss',
-  },
+];
+
+const ACCOUNT_KIND_META = [
+  { value: true, emoji: '🏢', label: 'Uzņēmums', description: 'PVN rēķini, uzņēmuma konts' },
+  { value: false, emoji: '👤', label: 'Privātpersona', description: 'Personiska izmantošana' },
 ];
 
 const schema = z
@@ -54,7 +53,8 @@ const schema = z
     lastName: z.string().min(2, 'Uzvārdam jābūt vismaz 2 rakstzīmēm'),
     email: z.string().email('Lūdzu ievadiet derīgu e-pastu'),
     phone: z.string().optional(),
-    userType: z.enum(['BUYER', 'SUPPLIER', 'CARRIER', 'PRIVATE'] as const),
+    userType: z.enum(['BUYER', 'SUPPLIER', 'CARRIER'] as const),
+    isCompany: z.boolean().optional(),
     password: z.string().min(8, 'Parolei jābūt vismaz 8 rakstzīmēm'),
     confirmPassword: z.string(),
   })
@@ -77,7 +77,8 @@ export default function RegisterPage() {
       lastName: '',
       email: '',
       phone: '',
-      userType: 'CARRIER',
+      userType: 'BUYER',
+      isCompany: true,
       password: '',
       confirmPassword: '',
     },
@@ -192,7 +193,7 @@ export default function RegisterPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Konta veids</FormLabel>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       {USER_TYPE_META.map((type) => (
                         <button
                           key={type.value}
@@ -214,6 +215,38 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
+
+              {/* isCompany toggle — only shown when BUYER is selected */}
+              {form.watch('userType') === 'BUYER' && (
+                <FormField
+                  control={form.control}
+                  name="isCompany"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Konta tips</FormLabel>
+                      <div className="grid grid-cols-2 gap-2">
+                        {ACCOUNT_KIND_META.map((kind) => (
+                          <button
+                            key={String(kind.value)}
+                            type="button"
+                            onClick={() => field.onChange(kind.value)}
+                            className={`flex flex-col items-start rounded-lg border p-3 text-left transition-all ${
+                              field.value === kind.value
+                                ? 'border-red-600 bg-red-50 ring-1 ring-red-600'
+                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            <span className="text-lg mb-1">{kind.emoji}</span>
+                            <span className="text-sm font-medium text-gray-900">{kind.label}</span>
+                            <span className="text-xs text-gray-500 mt-0.5">{kind.description}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {/* Password */}
               <FormField

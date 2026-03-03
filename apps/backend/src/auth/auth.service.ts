@@ -17,7 +17,7 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const { email, password, firstName, lastName, userType, companyId } =
+    const { email, password, firstName, lastName, userType, isCompany, companyId } =
       registerDto;
 
     // Check if user already exists
@@ -40,6 +40,7 @@ export class AuthService {
         firstName,
         lastName,
         userType,
+        isCompany: isCompany ?? false,
         companyId,
       },
       select: {
@@ -48,6 +49,9 @@ export class AuthService {
         firstName: true,
         lastName: true,
         userType: true,
+        isCompany: true,
+        canSell: true,
+        canTransport: true,
         status: true,
         company: {
           select: {
@@ -59,7 +63,7 @@ export class AuthService {
     });
 
     // Generate token
-    const token = this.generateToken(user.id, user.email, user.userType);
+    const token = this.generateToken(user.id, user.email ?? '', user.userType, user.isCompany, user.canSell, user.canTransport, user.company?.id);
 
     return {
       user,
@@ -100,7 +104,7 @@ export class AuthService {
     }
 
     // Generate token
-    const token = this.generateToken(user.id, user.email, user.userType);
+    const token = this.generateToken(user.id, user.email ?? '', user.userType, user.isCompany, user.canSell, user.canTransport, user.company?.id);
 
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
@@ -135,6 +139,9 @@ export class AuthService {
         phone: true,
         avatar: true,
         userType: true,
+        isCompany: true,
+        canSell: true,
+        canTransport: true,
         status: true,
         emailVerified: true,
         phoneVerified: true,
@@ -162,8 +169,12 @@ export class AuthService {
     userId: string,
     email: string,
     userType: string,
+    isCompany: boolean,
+    canSell: boolean,
+    canTransport: boolean,
+    companyId?: string,
   ): string {
-    const payload = { sub: userId, email, userType };
+    const payload = { sub: userId, email, userType, isCompany, canSell, canTransport, companyId };
     return this.jwtService.sign(payload);
   }
 }

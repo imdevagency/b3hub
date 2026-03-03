@@ -26,7 +26,7 @@ interface OrderState {
   date: string;
 }
 
-export function OrderWizard() {
+export function OrderWizard({ token }: { token?: string } = {}) {
   const [currentStep, setCurrentStep] = useState(1);
   const [confirmedOrder, setConfirmedOrder] = useState<SkipHireOrder | null>(null);
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
@@ -62,12 +62,15 @@ export function OrderWizard() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const result = await createSkipHireOrder({
-        location: order.location,
-        wasteCategory: mapWasteCategory(order.wasteType),
-        skipSize: mapSkipSize(order.size),
-        deliveryDate: order.date,
-      });
+      const result = await createSkipHireOrder(
+        {
+          location: order.location,
+          wasteCategory: mapWasteCategory(order.wasteType),
+          skipSize: mapSkipSize(order.size),
+          deliveryDate: order.date,
+        },
+        token,
+      );
       setAnimating(true);
       setTimeout(() => {
         setConfirmedOrder(result);
@@ -209,6 +212,7 @@ export function OrderWizard() {
                 price={confirmedOrder.price}
                 currency={confirmedOrder.currency}
                 onReset={handleReset}
+                authenticated={!!token}
               />
             ) : currentStep === 1 ? (
               <Step1Location

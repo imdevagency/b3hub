@@ -9,6 +9,8 @@ import { MaterialsModule } from './materials/materials.module';
 import { OrdersModule } from './orders/orders.module';
 import { SkipHireModule } from './skip-hire/skip-hire.module';
 import { DocumentsModule } from './documents/documents.module';
+import { ProviderApplicationsModule } from './provider-applications/provider-applications.module';
+import { VehiclesModule } from './vehicles/vehicles.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { DocumentsModule } from './documents/documents.module';
     OrdersModule,
     SkipHireModule,
     DocumentsModule,
+    ProviderApplicationsModule,
+    VehiclesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

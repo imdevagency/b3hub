@@ -20,13 +20,27 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { t } from '@/lib/translations';
 
-type UserType = 'BUYER' | 'SUPPLIER' | 'CARRIER' | 'PRIVATE';
+type UserType = 'BUYER' | 'SUPPLIER' | 'CARRIER';
 
 const USER_TYPES: { value: UserType; label: string; emoji: string }[] = [
-  { value: 'BUYER', label: t.register.userTypes.BUYER, emoji: '🏗️' },
+  { value: 'BUYER', label: t.register.userTypes.BUYER, emoji: '🛎️' },
   { value: 'SUPPLIER', label: t.register.userTypes.SUPPLIER, emoji: '📦' },
   { value: 'CARRIER', label: t.register.userTypes.CARRIER, emoji: '🚛' },
-  { value: 'PRIVATE', label: t.register.userTypes.PRIVATE, emoji: '👤' },
+];
+
+const ACCOUNT_KINDS = [
+  {
+    value: true,
+    label: t.register.accountKindCompany,
+    desc: t.register.accountKindCompanyDesc,
+    emoji: '🏢',
+  },
+  {
+    value: false,
+    label: t.register.accountKindPrivate,
+    desc: t.register.accountKindPrivateDesc,
+    emoji: '👤',
+  },
 ];
 
 const schema = z
@@ -35,7 +49,8 @@ const schema = z
     lastName: z.string().min(2, t.register.validation.lastNameShort),
     email: z.string().email(t.register.validation.invalidEmail),
     phone: z.string().optional(),
-    userType: z.enum(['BUYER', 'SUPPLIER', 'CARRIER', 'PRIVATE'] as const),
+    userType: z.enum(['BUYER', 'SUPPLIER', 'CARRIER'] as const),
+    isCompany: z.boolean().optional(),
     password: z.string().min(8, t.register.validation.passwordMin),
     confirmPassword: z.string(),
   })
@@ -54,6 +69,7 @@ export default function RegisterScreen() {
   const {
     control,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -62,7 +78,8 @@ export default function RegisterScreen() {
       lastName: '',
       email: '',
       phone: '',
-      userType: 'CARRIER',
+      userType: 'BUYER',
+      isCompany: true,
       password: '',
       confirmPassword: '',
     },
@@ -217,6 +234,34 @@ export default function RegisterScreen() {
             />
           </View>
 
+          {/* isCompany toggle — shown only for BUYER */}
+          {watch('userType') === 'BUYER' && (
+            <View style={s.fieldWrap}>
+              <Text style={s.label}>{t.register.accountKind}</Text>
+              <Controller
+                control={control}
+                name="isCompany"
+                render={({ field: { onChange, value } }) => (
+                  <View style={s.typeGrid}>
+                    {ACCOUNT_KINDS.map((k) => (
+                      <TouchableOpacity
+                        key={String(k.value)}
+                        style={[s.typeBtn, value === k.value ? s.typeBtnActive : null]}
+                        onPress={() => onChange(k.value)}
+                      >
+                        <Text style={s.typeEmoji}>{k.emoji}</Text>
+                        <Text style={[s.typeLabel, value === k.value ? s.typeLabelActive : null]}>
+                          {k.label}
+                        </Text>
+                        <Text style={s.typeDesc}>{k.desc}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              />
+            </View>
+          )}
+
           {/* Password */}
           <View style={s.fieldWrap}>
             <Text style={s.label}>{t.register.password}</Text>
@@ -337,6 +382,7 @@ const s = StyleSheet.create({
   typeEmoji: { fontSize: 22, marginBottom: 4 },
   typeLabel: { fontSize: 13, fontWeight: '600', color: '#374151', textAlign: 'center' },
   typeLabelActive: { color: '#b91c1c' },
+  typeDesc: { fontSize: 11, color: '#6b7280', textAlign: 'center', marginTop: 2 },
   primaryBtn: {
     backgroundColor: '#dc2626',
     borderRadius: 14,

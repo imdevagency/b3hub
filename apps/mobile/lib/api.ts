@@ -1,6 +1,6 @@
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api/v1";
 
-export type UserType = "BUYER" | "SUPPLIER" | "CARRIER" | "PRIVATE" | "ADMIN";
+export type UserType = "BUYER" | "SUPPLIER" | "CARRIER" | "ADMIN";
 
 export interface User {
   id: string;
@@ -8,6 +8,9 @@ export interface User {
   firstName: string;
   lastName: string;
   userType: UserType;
+  isCompany: boolean;
+  canSell: boolean;
+  canTransport: boolean;
   status: string;
   phone?: string;
   avatar?: string;
@@ -30,6 +33,7 @@ export interface RegisterInput {
   firstName: string;
   lastName: string;
   userType: UserType;
+  isCompany?: boolean;
   phone?: string;
 }
 
@@ -121,6 +125,13 @@ export const api = {
     apiFetch<User>("/auth/me", {
       headers: { Authorization: `Bearer ${token}` },
     }),
+
+  orders: {
+    stats: (token: string) =>
+      apiFetch<Record<string, any>>("/orders/stats", {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+  },
 
   skipHire: {
     create: (data: CreateSkipHireInput, token?: string) =>

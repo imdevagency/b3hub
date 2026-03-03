@@ -1,8 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, TransportJobStatus } from '@prisma/client';
+import { RequestingUser } from '../common/types/requesting-user.interface';
 
 @Injectable()
 export class OrdersService {
@@ -83,13 +89,10 @@ export class OrdersService {
     });
   }
 
-  async findAll(filters?: {
-    buyerId?: string;
-    status?: OrderStatus;
-    userId?: string;
-  }) {
+  async findAll(currentUser: RequestingUser, status?: OrderStatus) {
+    const where = this.buildOrderWhere(currentUser, status);
     return this.prisma.order.findMany({
-      where: filters,
+      where,
       include: {
         items: {
           include: {
@@ -113,7 +116,61 @@ export class OrdersService {
     });
   }
 
-  async findOne(id: string) {
+  private buildOrderWhere(currentUser: RequestingUser, status?: OrderStatus) {
+    const statusFilter = status ? { status } : {};
+
+    // Admins see everything
+    if (currentUser.userType === 'ADMIN') return statusFilter;
+
+    // Build union of all perspectives this user has
+    const orConditions: any[] = [];
+
+    // Always: orders this user created (buyer perspective)
+    orConditions.push({ createdById: currentUser.userId });
+
+    // Seller: orders that contain their company's materials
+    if (currentUser.canSell && currentUser.companyId) {
+      orConditions.push({
+        items: { some: { material: { supplierId: currentUser.companyId } } },
+      });
+    }
+
+    // Driver: orders with transport jobs assigned to them
+    if (currentUser.canTransport) {
+      orConditions.push({
+        transportJobs: { some: { driverId: currentUser.userId } },
+      });
+    }
+
+    return { ...statusFilter, OR: orConditions };
+  }
+
+  private async assertOrderAccess(order: any, currentUser: RequestingUser) {
+    if (currentUser.userType === 'ADMIN') return;
+
+    // Buyer: created this order
+    if (order.createdById === currentUser.userId) return;
+
+    // Seller: has their materials in this order
+    if (currentUser.canSell && currentUser.companyId) {
+      const count = await this.prisma.orderItem.count({
+        where: { orderId: order.id, material: { supplierId: currentUser.companyId } },
+      });
+      if (count > 0) return;
+    }
+
+    // Driver: has a transport job on this order
+    if (currentUser.canTransport) {
+      const count = await this.prisma.transportJob.count({
+        where: { orderId: order.id, driverId: currentUser.userId },
+      });
+      if (count > 0) return;
+    }
+
+    throw new ForbiddenException('You do not have access to this order');
+  }
+
+  async findOne(id: string, currentUser?: RequestingUser) {
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: {
@@ -152,11 +209,15 @@ export class OrdersService {
       throw new NotFoundException(`Order with ID ${id} not found`);
     }
 
+    if (currentUser && currentUser.userType !== 'ADMIN') {
+      await this.assertOrderAccess(order, currentUser);
+    }
+
     return order;
   }
 
-  async update(id: string, updateOrderDto: UpdateOrderDto) {
-    await this.findOne(id); // Check if exists
+  async update(id: string, updateOrderDto: UpdateOrderDto, currentUser: RequestingUser) {
+    await this.findOne(id, currentUser); // Check existence and ownership
 
     const updateData: any = {};
     
@@ -192,8 +253,8 @@ export class OrdersService {
     });
   }
 
-  async cancel(id: string) {
-    const order = await this.findOne(id);
+  async cancel(id: string, currentUser: RequestingUser) {
+    const order = await this.findOne(id, currentUser);
 
     if (order.status === OrderStatus.DELIVERED || order.status === OrderStatus.COMPLETED) {
       throw new BadRequestException('Cannot cancel a delivered or completed order');
@@ -203,6 +264,99 @@ export class OrdersService {
       where: { id },
       data: { status: OrderStatus.CANCELLED },
     });
+  }
+
+  async getDashboardStats(currentUser: RequestingUser) {
+    const { userId, canSell, canTransport, companyId } = currentUser;
+
+    // ── Always compute buyer section ──────────────────────────────────────────
+    const [activeOrders, awaitingDelivery, skipHireOrders, documents] = await Promise.all([
+      this.prisma.order.count({
+        where: {
+          createdById: userId,
+          status: { in: [OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.IN_PROGRESS] },
+        },
+      }),
+      this.prisma.order.count({
+        where: { createdById: userId, status: OrderStatus.DELIVERED },
+      }),
+      this.prisma.skipHireOrder.count({ where: { userId } }),
+      this.prisma.document.count({ where: { ownerId: userId } }),
+    ]);
+
+    const buyer = { activeOrders, awaitingDelivery, myOrders: skipHireOrders, documents };
+
+    // ── Seller section (only if canSell) ──────────────────────────────────────
+    let seller: Record<string, any> | null = null;
+    if (canSell && companyId) {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const [activeListings, pendingOrders, revenueResult] = await Promise.all([
+        this.prisma.material.count({ where: { supplierId: companyId, active: true } }),
+        this.prisma.order.count({
+          where: {
+            status: OrderStatus.PENDING,
+            items: { some: { material: { supplierId: companyId } } },
+          },
+        }),
+        this.prisma.orderItem.aggregate({
+          where: {
+            material: { supplierId: companyId },
+            order: {
+              status: { in: [OrderStatus.CONFIRMED, OrderStatus.IN_PROGRESS, OrderStatus.DELIVERED, OrderStatus.COMPLETED] },
+              createdAt: { gte: startOfMonth },
+            },
+          },
+          _sum: { total: true },
+        }),
+      ]);
+      seller = {
+        activeListings,
+        pendingOrders,
+        monthlyRevenue: revenueResult._sum.total ?? 0,
+        documents,
+      };
+    } else if (canSell) {
+      // canSell but no company linked yet
+      seller = { activeListings: 0, pendingOrders: 0, monthlyRevenue: 0, documents };
+    }
+
+    // ── Transport section (only if canTransport) ──────────────────────────────
+    let transport: Record<string, any> | null = null;
+    if (canTransport) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const [activeJobs, completedToday] = await Promise.all([
+        this.prisma.transportJob.count({
+          where: {
+            driverId: userId,
+            status: {
+              in: [
+                TransportJobStatus.ASSIGNED,
+                TransportJobStatus.ACCEPTED,
+                TransportJobStatus.EN_ROUTE_PICKUP,
+                TransportJobStatus.AT_PICKUP,
+                TransportJobStatus.LOADED,
+                TransportJobStatus.EN_ROUTE_DELIVERY,
+                TransportJobStatus.AT_DELIVERY,
+              ],
+            },
+          },
+        }),
+        this.prisma.transportJob.count({
+          where: {
+            driverId: userId,
+            status: TransportJobStatus.DELIVERED,
+            updatedAt: { gte: today, lt: tomorrow },
+          },
+        }),
+      ]);
+      transport = { activeJobs, completedToday, awaitingPayment: 0, documents };
+    }
+
+    return { buyer, seller, transport };
   }
 
   private async generateOrderNumber(): Promise<string> {

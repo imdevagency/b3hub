@@ -13,13 +13,14 @@ datasource db {
 // ================================
 
 enum UserType {
-  BUYER     // Contractors / construction companies
-  SUPPLIER  // Sellers / material suppliers
-  CARRIER   // Carriers / transport companies
-  PRIVATE   // Private persons
-  RECYCLER  // Waste management companies (internal/legacy)
-  DRIVER    // Individual drivers (internal/legacy)
-  ADMIN     // Platform administrators
+  BUYER   // Demand side — anyone who orders materials or waste collection
+  ADMIN   // Platform administrators
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum UserStatus {
@@ -219,14 +220,17 @@ enum NotificationType {
 
 model User {
   id            String     @id @default(cuid())
-  email         String     @unique
-  phone         String?
-  password      String // Hashed
+  email         String?    @unique  // optional: phone-only registration
+  phone         String?    @unique  // optional: email-only registration
+  password      String     // Hashed
   firstName     String
   lastName      String
   avatar        String?
-  userType      UserType
-  status        UserStatus @default(PENDING)
+  userType      UserType   @default(BUYER)
+  isCompany     Boolean    @default(false) // true = company account (VAT invoices etc.)
+  canSell       Boolean    @default(false) // approved to list & sell materials
+  canTransport  Boolean    @default(false) // approved to offer transport services
+  status        UserStatus @default(ACTIVE) // buyers are auto-activated
   emailVerified Boolean    @default(false)
   phoneVerified Boolean    @default(false)
 
@@ -242,6 +246,7 @@ model User {
   ordersCreated Order[]
   transportJobs TransportJob[]
   notifications Notification[]
+  vehicles      Vehicle[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -558,18 +563,25 @@ model Vehicle {
   year         Int
   licensePlate String @unique
   vin          String?
+  imageUrl     String?
 
   // Type & Capacity
   vehicleType    VehicleType
-  capacity       Float // in tonnes
-  volumeCapacity Float? // in m3
+  capacity       Float           // load weight in tonnes
+  maxGrossWeight Float?          // total permitted weight in tonnes
+  volumeCapacity Float?          // in m3
+  driveType      String?         // '4WD', 'AWD', '2WD', etc.
 
-  // Owner
-  company   Company @relation(fields: [companyId], references: [id])
-  companyId String
+  // Individual owner (solo CARRIER without a company)
+  owner   User?    @relation(fields: [ownerId], references: [id])
+  ownerId String?
+
+  // Company owner
+  company   Company? @relation(fields: [companyId], references: [id])
+  companyId String?
 
   // Status
-  status          VehicleStatus
+  status          VehicleStatus @default(ACTIVE)
   currentLocation Json?
 
   // Insurance & Compliance
@@ -841,3 +853,39 @@ model SkipHireOrder {
   @@map("skip_hire_orders")
 }
 
+// ── Provider Applications (supply/transport onboarding) ─────────────────────
+model ProviderApplication {
+  id          String @id @default(cuid())
+
+  // Applicant identity
+  email       String
+  firstName   String
+  lastName    String
+  phone       String
+
+  // Company details
+  companyName String
+  regNumber   String?
+  taxId       String?
+  website     String?
+
+  // What they want to do
+  appliesForSell      Boolean @default(false) // wants canSell
+  appliesForTransport Boolean @default(false) // wants canTransport
+
+  // Supporting info
+  description String? // Free-text: describe your business
+
+  // Linked to an existing user (optional — may apply before registering)
+  userId String?
+
+  // Review
+  status     ApplicationStatus @default(PENDING)
+  reviewedBy String?           // Admin userId who reviewed
+  reviewNote String?           // Admin note
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("provider_applications")
+}

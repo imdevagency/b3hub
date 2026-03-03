@@ -1,13 +1,14 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
 import { Navbar } from '@/components/layout/Navbar';
 import { OrderWizard } from '@/components/order/OrderWizard';
 import { Footer } from '@/components/landing/Footer';
 import { Recycle, ShieldCheck, Truck } from 'lucide-react';
 
-export const metadata = {
-  title: 'Pasūtīt Konteineru | B3Hub',
-  description:
-    'Rezervējiet atkritumu konteineru tiešsaistē 4 vienkiršos soļos. Izvēlieties atrasanos vietu, atkritumu veidu, izmēru un piegādes datumu.',
-};
+// metadata export removed — not allowed in client components
 
 const TRUST_BADGES = [
   {
@@ -28,6 +29,18 @@ const TRUST_BADGES = [
 ];
 
 export default function OrderPage() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.replace('/dashboard/order');
+    }
+  }, [user, isLoading, router]);
+
+  // Avoid flash of public page while auth loads or redirect is in flight
+  if (isLoading || user) return null;
+
   return (
     <>
       <Navbar />

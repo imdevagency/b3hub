@@ -7,9 +7,9 @@ import {
   BarChart3,
   Banknote,
   Building2,
+  Car,
   CheckCircle,
   FolderOpen,
-  Headset,
   LayoutDashboard,
   LogOut,
   MapPin,
@@ -42,7 +42,7 @@ const ROLE_NAV: Record<string, NavItem[]> = {
   BUYER: [
     { label: 'Informācijas Panelis', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Pārlūkot Materiālus', href: '/materials', icon: Package },
-    { label: 'Pasūtīt Konteineru', href: '/order', icon: Trash2 },
+    { label: 'Pasūtīt Konteineru', href: '/dashboard/order', icon: Trash2 },
     { label: 'Mani Pasūtījumi', href: '/orders', icon: ShoppingCart },
     { label: 'Izsekot Piegādei', href: '/tracking', icon: Truck },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
@@ -57,27 +57,19 @@ const ROLE_NAV: Record<string, NavItem[]> = {
   ],
   CARRIER: [
     { label: 'Informācijas Panelis', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Mans Autoparks', href: '/dashboard/garage', icon: Car },
     { label: 'Aktīvie Darbi', href: '/jobs', icon: MapPin },
     { label: 'Maršruts', href: '/route', icon: Truck },
     { label: 'Pabeigt Piegādi', href: '/jobs/complete', icon: CheckCircle },
     { label: 'Ieņēmumi', href: '/earnings', icon: Banknote },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
-  PRIVATE: [
-    { label: 'Informācijas Panelis', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Pasūtīt Konteineru', href: '/order', icon: Trash2 },
-    { label: 'Mani Pasūtījumi', href: '/orders', icon: ShoppingCart },
-    { label: 'Izsekot Piegādei', href: '/tracking', icon: Truck },
-    { label: 'Atbalsts', href: '/support', icon: Headset },
-    { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
-  ],
 };
 
 const USER_TYPE_LABEL: Record<string, string> = {
-  BUYER: 'Darbuzņēmējs',
+  BUYER: 'Pasūtītājs',
   SUPPLIER: 'Piegādātājs',
   CARRIER: 'Pārvadātājs',
-  PRIVATE: 'Privātpersona',
   ADMIN: 'Administrators',
 };
 
@@ -86,7 +78,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const navItems = (user?.userType ? ROLE_NAV[user.userType] : null) ?? ROLE_NAV.PRIVATE;
+  const baseNav = (user?.userType ? ROLE_NAV[user.userType] : null) ?? ROLE_NAV.BUYER;
+
+  // Users with canTransport (e.g. BUYER who also runs their own fleet) get the garage link
+  const garageItem: NavItem = { label: 'Mans Autoparks', href: '/dashboard/garage', icon: Car };
+  const navItems =
+    user?.canTransport && !baseNav.find((i) => i.href === '/dashboard/garage')
+      ? [
+          ...baseNav.slice(0, -1), // everything except Mani Dokumenti
+          garageItem,
+          baseNav[baseNav.length - 1], // Mani Dokumenti last
+        ]
+      : baseNav;
 
   const initials = user
     ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase()

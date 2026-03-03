@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
@@ -78,8 +78,18 @@ export class MaterialsService {
     return material;
   }
 
-  async update(id: string, updateMaterialDto: UpdateMaterialDto) {
-    await this.findOne(id); // Check if exists
+  async update(
+    id: string,
+    updateMaterialDto: UpdateMaterialDto,
+    currentUser?: { userId: string; userType: string; companyId?: string },
+  ) {
+    const material = await this.findOne(id);
+
+    if (currentUser && currentUser.userType !== 'ADMIN' && currentUser.companyId) {
+      if (material.supplierId !== currentUser.companyId) {
+        throw new ForbiddenException('You do not own this material');
+      }
+    }
 
     return this.prisma.material.update({
       where: { id },
@@ -96,8 +106,17 @@ export class MaterialsService {
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id); // Check if exists
+  async remove(
+    id: string,
+    currentUser?: { userId: string; userType: string; companyId?: string },
+  ) {
+    const material = await this.findOne(id);
+
+    if (currentUser && currentUser.userType !== 'ADMIN' && currentUser.companyId) {
+      if (material.supplierId !== currentUser.companyId) {
+        throw new ForbiddenException('You do not own this material');
+      }
+    }
 
     return this.prisma.material.update({
       where: { id },

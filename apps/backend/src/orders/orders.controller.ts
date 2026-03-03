@@ -26,22 +26,55 @@ export class OrdersController {
     return this.ordersService.create(createOrderDto, user.userId);
   }
 
+  @Get('stats')
+  getStats(@CurrentUser() user: any) {
+    return this.ordersService.getDashboardStats({
+      userId: user.userId,
+      userType: user.userType,
+      isCompany: user.isCompany ?? false,
+      canSell: user.canSell ?? false,
+      canTransport: user.canTransport ?? false,
+      companyId: user.companyId,
+    });
+  }
+
   @Get()
-  findAll(
-    @Query('buyerId') buyerId?: string,
-    @Query('status') status?: OrderStatus,
-  ) {
-    return this.ordersService.findAll({ buyerId, status });
+  findAll(@CurrentUser() user: any, @Query('status') status?: OrderStatus) {
+    return this.ordersService.findAll(
+      {
+        userId: user.userId,
+        userType: user.userType,
+        isCompany: user.isCompany ?? false,
+        canSell: user.canSell ?? false,
+        canTransport: user.canTransport ?? false,
+        companyId: user.companyId,
+      },
+      status,
+    );
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.ordersService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.ordersService.findOne(id, {
+      userId: user.userId,
+      userType: user.userType,
+      isCompany: user.isCompany ?? false,
+      canSell: user.canSell ?? false,
+      canTransport: user.canTransport ?? false,
+      companyId: user.companyId,
+    });
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
-    return this.ordersService.update(id, updateOrderDto);
+  update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto, @CurrentUser() user: any) {
+    return this.ordersService.update(id, updateOrderDto, {
+      userId: user.userId,
+      userType: user.userType,
+      isCompany: user.isCompany ?? false,
+      canSell: user.canSell ?? false,
+      canTransport: user.canTransport ?? false,
+      companyId: user.companyId,
+    });
   }
 
   @Post(':id/confirm')
@@ -50,7 +83,14 @@ export class OrdersController {
   }
 
   @Post(':id/cancel')
-  cancel(@Param('id') id: string) {
-    return this.ordersService.cancel(id);
+  cancel(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.ordersService.cancel(id, {
+      userId: user.userId,
+      userType: user.userType,
+      isCompany: user.isCompany ?? false,
+      canSell: user.canSell ?? false,
+      canTransport: user.canTransport ?? false,
+      companyId: user.companyId,
+    });
   }
 }

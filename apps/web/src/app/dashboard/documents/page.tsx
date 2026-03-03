@@ -138,10 +138,9 @@ const TABS: { id: FilterTab; label: string; icon: React.ElementType }[] = [
 ];
 
 const USER_TYPE_LABEL: Record<string, string> = {
-  BUYER: 'Darbuzņēmējs',
+  BUYER: 'Pasūtītājs',
   SUPPLIER: 'Pārdevējs',
   CARRIER: 'Pārvadātājs',
-  PRIVATE: 'Privātpersona',
   ADMIN: 'Administrators',
 };
 
@@ -271,7 +270,7 @@ export default function DocumentsPage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-10">
+      <main className="w-full px-6 py-10">
         {/* ── Breadcrumb + heading ── */}
         <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
           <Link href="/dashboard" className="hover:text-red-600 flex items-center gap-1">

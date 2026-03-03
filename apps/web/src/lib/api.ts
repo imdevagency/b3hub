@@ -68,7 +68,7 @@ export async function getDocumentSummary(token: string): Promise<DocumentSummary
 
 // ── Users ─────────────────────────────────────────────────────
 
-export type UserType = "BUYER" | "SUPPLIER" | "CARRIER" | "PRIVATE" | "ADMIN";
+export type UserType = "BUYER" | "SUPPLIER" | "CARRIER" | "ADMIN";
 
 export interface User {
   id: string;
@@ -76,6 +76,9 @@ export interface User {
   firstName: string;
   lastName: string;
   userType: UserType;
+  isCompany: boolean;
+  canSell: boolean;
+  canTransport: boolean;
   status: string;
   phone?: string;
   avatar?: string;
@@ -99,6 +102,7 @@ export interface RegisterInput {
   firstName: string;
   lastName: string;
   userType: UserType;
+  isCompany?: boolean;
   phone?: string;
   companyId?: string;
 }
@@ -144,6 +148,29 @@ export async function loginUser(data: LoginInput): Promise<AuthResponse> {
 
 export async function getMe(token: string): Promise<User> {
   return apiFetch<User>("/auth/me", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export interface DashboardStats {
+  // BUYER (company + personal)
+  activeOrders?: number;
+  awaitingDelivery?: number;
+  myOrders?: number;      // skip hire orders count
+  documents?: number;
+  // SUPPLIER
+  activeListings?: number;
+  pendingOrders?: number;
+  monthlyRevenue?: number;
+  // CARRIER
+  activeJobs?: number;
+  completedToday?: number;
+  awaitingPayment?: number;
+  vehicleCount?: number;
+}
+
+export async function getDashboardStats(token: string): Promise<DashboardStats> {
+  return apiFetch<DashboardStats>("/orders/stats", {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
@@ -237,6 +264,90 @@ export async function createSkipHireOrder(
 
 export async function getMySkipHireOrders(token: string): Promise<SkipHireOrder[]> {
   return apiFetch<SkipHireOrder[]>("/skip-hire/my", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Vehicles (Virtual Garage) ──────────────────────────────────
+
+export type VehicleType =
+  | "DUMP_TRUCK"
+  | "FLATBED_TRUCK"
+  | "SEMI_TRAILER"
+  | "HOOK_LIFT"
+  | "SKIP_LOADER"
+  | "TANKER"
+  | "VAN";
+
+export type VehicleStatus = "ACTIVE" | "IN_USE" | "MAINTENANCE" | "INACTIVE";
+
+export interface Vehicle {
+  id: string;
+  vehicleType: VehicleType;
+  make: string;
+  model: string;
+  year: number;
+  licensePlate: string;
+  vin?: string;
+  imageUrl?: string;
+  capacity: number;       // load weight in tonnes
+  maxGrossWeight?: number; // total permitted weight in tonnes
+  volumeCapacity?: number; // m³
+  driveType?: string;
+  status: VehicleStatus;
+  ownerId?: string;
+  companyId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateVehicleInput {
+  vehicleType: VehicleType;
+  make: string;
+  model: string;
+  year: number;
+  licensePlate: string;
+  vin?: string;
+  imageUrl?: string;
+  capacity: number;
+  maxGrossWeight?: number;
+  volumeCapacity?: number;
+  driveType?: string;
+  status?: VehicleStatus;
+}
+
+export async function getMyVehicles(token: string): Promise<Vehicle[]> {
+  return apiFetch<Vehicle[]>("/vehicles", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function createVehicle(
+  data: CreateVehicleInput,
+  token: string
+): Promise<Vehicle> {
+  return apiFetch<Vehicle>("/vehicles", {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function updateVehicle(
+  id: string,
+  data: Partial<CreateVehicleInput>,
+  token: string
+): Promise<Vehicle> {
+  return apiFetch<Vehicle>(`/vehicles/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function deleteVehicle(id: string, token: string): Promise<void> {
+  await apiFetch<void>(`/vehicles/${id}`, {
+    method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
 }

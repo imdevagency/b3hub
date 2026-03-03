@@ -1,7 +1,9 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 
 type QuickAction = { emoji: string; label: string; route?: string };
@@ -25,27 +27,40 @@ const ROLE_ACTIONS: Record<string, QuickAction[]> = {
     { emoji: '✅', label: 'Pabeigt piegādi' },
     { emoji: '💰', label: 'Ieņēmumi' },
   ],
-  PRIVATE: [
-    { emoji: '🗑️', label: 'Pasūtīt konteineru', route: '/order' },
-    { emoji: '📋', label: 'Mani pasūtījumi' },
-    { emoji: '🚛', label: 'Izsekot piegādi' },
-    { emoji: '🆘', label: 'Atbalsts' },
-  ],
 };
 
 const USER_TYPE_LABEL: Record<string, string> = {
-  BUYER: 'Darbuzņēmējs',
+  BUYER: 'Pasūtītājs',
   SUPPLIER: 'Pārdevējs',
   CARRIER: 'Pārvadātājs',
-  PRIVATE: 'Privātpersona',
 };
 
 export default function HomeScreen() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const router = useRouter();
+  const [stats, setStats] = useState<{
+    activeOrders: number;
+    myOrders: number;
+    documents: number;
+  } | null>(null);
 
-  const role = user?.userType ?? 'PRIVATE';
-  const actions = ROLE_ACTIONS[role] ?? ROLE_ACTIONS.PRIVATE;
+  useEffect(() => {
+    if (!token) return;
+    api.orders
+      .stats(token)
+      .then((data: any) => {
+        const b = data?.buyer ?? {};
+        setStats({
+          activeOrders: b.activeOrders ?? 0,
+          myOrders: b.myOrders ?? 0,
+          documents: b.documents ?? 0,
+        });
+      })
+      .catch(() => {});
+  }, [token]);
+
+  const role = user?.userType ?? 'BUYER';
+  const actions = ROLE_ACTIONS[role] ?? ROLE_ACTIONS.BUYER;
 
   return (
     <SafeAreaView style={s.safe}>
@@ -67,9 +82,9 @@ export default function HomeScreen() {
             <Text style={s.sectionLabel}>{t.home.overview}</Text>
             <View style={s.statsRow}>
               {[
-                { label: t.home.stats.materials, value: '—' },
-                { label: t.home.stats.orders, value: '—' },
-                { label: t.home.stats.pending, value: '—' },
+                { label: t.home.stats.orders, value: stats ? String(stats.activeOrders) : '—' },
+                { label: 'Konteineri', value: stats ? String(stats.myOrders) : '—' },
+                { label: t.home.stats.pending, value: stats ? String(stats.documents) : '—' },
               ].map((stat) => (
                 <View key={stat.label} style={s.statItem}>
                   <Text style={s.statValue}>{stat.value}</Text>

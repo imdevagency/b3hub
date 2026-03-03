@@ -1,14 +1,15 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { getDashboardStats, type DashboardStats } from '@/lib/api';
 import {
   BarChart3,
   Banknote,
+  Car,
   CheckCircle,
   FolderOpen,
-  Headset,
   Inbox,
   MapPin,
   Package,
@@ -35,37 +36,114 @@ type Action = {
 
 // ── Data ───────────────────────────────────────────────────────
 
-const ROLE_STATS: Record<string, Stat[]> = {
-  BUYER: [
-    { label: 'Aktīvie Pasūtījumi', value: '—', icon: ShoppingCart, hint: 'Pasūtījumi procesā' },
-    { label: 'Gaida Piegāde', value: '—', icon: Truck, hint: 'Gaida piegādi' },
-    { label: 'Mani Dokumenti', value: '—', icon: FolderOpen, hint: 'Rēķini un lapas' },
-    { label: 'Pasūtītie Materiāli', value: '—', icon: Package, hint: 'Kopā pozīcijas' },
-  ],
-  SUPPLIER: [
-    { label: 'Aktīvie Sludinājumi', value: '—', icon: Package, hint: 'Publicēti produkti' },
-    { label: 'Gaida Pasūtījumi', value: '—', icon: ShoppingCart, hint: 'Gaida izpildi' },
-    { label: 'Mēneša Ieņēmumi', value: '—', icon: TrendingUp, hint: 'Šajā mēnesī' },
-    { label: 'Mani Dokumenti', value: '—', icon: FolderOpen, hint: 'Rēķini un līgumi' },
-  ],
-  CARRIER: [
-    { label: 'Aktīvie Darbi', value: '—', icon: MapPin, hint: 'Piešķirtais transports' },
-    { label: 'Pabeigti Šodien', value: '—', icon: CheckCircle, hint: 'Piegādāts šodien' },
-    { label: 'Gaida Samaksa', value: '—', icon: Banknote, hint: 'Gaida maksājumu' },
-    { label: 'Mani Dokumenti', value: '—', icon: FolderOpen, hint: 'CMR un apstiprinājumi' },
-  ],
-  PRIVATE: [
-    {
-      label: 'Mani Pasūtījumi',
-      value: '—',
-      icon: ShoppingCart,
-      hint: 'Konteinera nomas pasūtījumi',
-    },
-    { label: 'Gaida Piegāde', value: '—', icon: Truck, hint: 'Gaida piegādi' },
-    { label: 'Mani Dokumenti', value: '—', icon: FolderOpen, hint: 'Rēķini un dokumenti' },
-    { label: 'Atbalsta Pieprasījumi', value: '—', icon: Headset, hint: 'Atvērtie pieprasījumi' },
-  ],
-};
+function getRoleStats(
+  userType: string,
+  canTransport: boolean,
+  data: DashboardStats | null,
+): Stat[] {
+  const n = (v: number | undefined) => (v !== undefined ? String(v) : '—');
+  const money = (v: number | undefined) =>
+    v !== undefined ? `€${Math.round(v).toLocaleString('lv-LV')}` : '—';
+
+  const map: Record<string, Stat[]> = {
+    BUYER: [
+      {
+        label: 'Aktīvie Pasūtījumi',
+        value: n(data?.activeOrders),
+        icon: ShoppingCart,
+        hint: 'Pasūtījumi procesā',
+      },
+      {
+        label: 'Konteineru Pasūtījumi',
+        value: n(data?.myOrders),
+        icon: Trash2,
+        hint: 'Skip hire pasūtījumi',
+      },
+      {
+        label: 'Gaida Piegāde',
+        value: n(data?.awaitingDelivery),
+        icon: Truck,
+        hint: 'Gaida piegādi',
+      },
+      {
+        label: 'Mani Dokumenti',
+        value: n(data?.documents),
+        icon: FolderOpen,
+        hint: 'Rēķini un lapas',
+      },
+    ],
+    SUPPLIER: [
+      {
+        label: 'Aktīvie Sludinājumi',
+        value: n(data?.activeListings),
+        icon: Package,
+        hint: 'Publicēti produkti',
+      },
+      {
+        label: 'Gaida Pasūtījumi',
+        value: n(data?.pendingOrders),
+        icon: ShoppingCart,
+        hint: 'Gaida izpildi',
+      },
+      {
+        label: 'Mēneša Ieņēmumi',
+        value: money(data?.monthlyRevenue),
+        icon: TrendingUp,
+        hint: 'Šajā mēnesī',
+      },
+      {
+        label: 'Mani Dokumenti',
+        value: n(data?.documents),
+        icon: FolderOpen,
+        hint: 'Rēķini un līgumi',
+      },
+    ],
+    CARRIER: [
+      {
+        label: 'Aktīvie Darbi',
+        value: n(data?.activeJobs),
+        icon: MapPin,
+        hint: 'Piešķirtais transports',
+      },
+      {
+        label: 'Pabeigti Šodien',
+        value: n(data?.completedToday),
+        icon: CheckCircle,
+        hint: 'Piegādāts šodien',
+      },
+      {
+        label: 'Gaida Samaksa',
+        value: n(data?.awaitingPayment),
+        icon: Banknote,
+        hint: 'Gaida maksājumu',
+      },
+      {
+        label: 'Mans Autoparks',
+        value: n(data?.vehicleCount),
+        icon: Car,
+        hint: 'Reģistrētie transportlīdzekļi',
+      },
+    ],
+  };
+
+  const stats = map[userType] ?? map.BUYER;
+
+  // Inject vehicle stat for non-CARRIER users who have transport capability
+  if (canTransport && userType !== 'CARRIER') {
+    return [
+      ...stats.slice(0, -1), // all except the last (Mani Dokumenti)
+      {
+        label: 'Mans Autoparks',
+        value: n(data?.vehicleCount),
+        icon: Car,
+        hint: 'Reģistrētie transportlīdzekļi',
+      },
+      stats[stats.length - 1], // Mani Dokumenti last
+    ];
+  }
+
+  return stats;
+}
 
 const ROLE_ACTIONS: Record<string, Action[]> = {
   BUYER: [
@@ -138,6 +216,13 @@ const ROLE_ACTIONS: Record<string, Action[]> = {
   ],
   CARRIER: [
     {
+      label: 'Mans Autoparks',
+      description: 'Pievienot un pārvaldīt savus transportlīdzekļus',
+      icon: Car,
+      href: '/dashboard/garage',
+      primary: true,
+    },
+    {
       label: 'Aktīvie Darbi',
       description: 'Skatīt piešķirtos transporta darbus',
       icon: MapPin,
@@ -169,66 +254,40 @@ const ROLE_ACTIONS: Record<string, Action[]> = {
       href: '/dashboard/documents',
     },
   ],
-  PRIVATE: [
-    {
-      label: 'Pasūtīt Konteineru',
-      description: 'Rezervēt atkritumu konteineru mājām',
-      icon: Trash2,
-      href: '/order',
-      primary: true,
-    },
-    {
-      label: 'Mani Pasūtījumi',
-      description: 'Izsekot konteinera nomas pasūtījumiem',
-      icon: ShoppingCart,
-      href: '/orders',
-    },
-    {
-      label: 'Izsekot Piegādei',
-      description: 'Skatīt, kad konteineru piegādās',
-      icon: Truck,
-      href: '/tracking',
-    },
-    {
-      label: 'Atbalsts',
-      description: 'Saņemt palīdzību ar pasūtījumu',
-      icon: Headset,
-      href: '/support',
-    },
-    {
-      label: 'Mani Dokumenti',
-      description: 'Rēķini un pasūtījuma dokumenti',
-      icon: FolderOpen,
-      href: '/dashboard/documents',
-    },
-  ],
 };
 
 const ROLE_LABEL: Record<string, string> = {
-  BUYER: 'Darbuzņēmējs',
+  BUYER: 'Pasūtītājs',
   SUPPLIER: 'Piegādātājs',
   CARRIER: 'Pārvadātājs',
-  PRIVATE: 'Privātpersona',
   ADMIN: 'Administrators',
 };
 
 const ROLE_TAGLINE: Record<string, string> = {
-  BUYER: 'Pasūtīt materiālus un pārvaldīt celtniecības piegādes.',
+  BUYER: 'Pasūtīt materiālus, konteinerus un pārvaldīt piegādes.',
   SUPPLIER: 'Pārvaldīt savus sludinājumus un izpildīt ienākošos pasūtījumus.',
   CARRIER: 'Skatīt savus transporta darbus un izsekot ieņēkumiem.',
-  PRIVATE: 'Pasūtīt konteineru un pārvaldīt mājas atkritumu izvešanu.',
   ADMIN: 'Pārvaldīt platformu un uzraudzīt visas darbības.',
 };
 
 // ── Component ──────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const { user, isLoading } = useAuth();
+  const { user, token, isLoading } = useAuth();
   const router = useRouter();
+  const [statsData, setStatsData] = useState<DashboardStats | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
   }, [user, isLoading, router]);
+
+  useEffect(() => {
+    if (user && token) {
+      getDashboardStats(token)
+        .then(setStatsData)
+        .catch(() => {});
+    }
+  }, [user, token]);
 
   if (isLoading || !user) {
     return (
@@ -238,12 +297,26 @@ export default function DashboardPage() {
     );
   }
 
-  const stats = ROLE_STATS[user.userType] ?? ROLE_STATS.PRIVATE;
-  const actions = ROLE_ACTIONS[user.userType] ?? ROLE_ACTIONS.PRIVATE;
+  const stats = getRoleStats(user.userType, user.canTransport ?? false, statsData);
+  const baseActions = ROLE_ACTIONS[user.userType] ?? ROLE_ACTIONS.BUYER;
+  const actions =
+    (user.canTransport ?? false) && user.userType !== 'CARRIER'
+      ? [
+          ...baseActions.slice(0, 1), // keep first action
+          {
+            label: 'Mans Autoparks',
+            description: 'Pievienot un pārvaldīt savus transportlīdzekļus',
+            icon: Car,
+            href: '/dashboard/garage',
+            primary: true,
+          } as Action,
+          ...baseActions.slice(1), // rest of actions
+        ]
+      : baseActions;
   const label = ROLE_LABEL[user.userType] ?? user.userType;
 
   return (
-    <div className="space-y-8 max-w-5xl">
+    <div className="space-y-8">
       {/* ── Welcome ── */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -254,9 +327,16 @@ export default function DashboardPage() {
             {ROLE_TAGLINE[user.userType] ?? 'Pārvaldiet savu kontu.'}
           </p>
         </div>
-        <span className="inline-flex items-center rounded-full border border-red-200 bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
-          {label}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center rounded-full border border-red-200 bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+            {label}
+          </span>
+          {user.userType === 'BUYER' && (
+            <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+              {user.isCompany ? '🏢 Uzņēmums' : '👤 Privātpersona'}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* ── Stats row ── */}

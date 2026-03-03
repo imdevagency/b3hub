@@ -40,6 +40,8 @@ interface OrderConfirmationProps {
   price: number;
   currency: string;
   onReset: () => void;
+  /** When true, shows "My Orders" link instead of "To Dashboard" */
+  authenticated?: boolean;
 }
 
 export function OrderConfirmation({
@@ -51,6 +53,7 @@ export function OrderConfirmation({
   price,
   currency,
   onReset,
+  authenticated,
 }: OrderConfirmationProps) {
   const sizeInfo = SIZE_LABELS[skipSize];
 
@@ -146,10 +149,10 @@ export function OrderConfirmation({
           Vēl viens pasūtījums
         </button>
         <Link
-          href="/dashboard"
+          href={authenticated ? '/dashboard/orders' : '/dashboard'}
           className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-red-600 py-3.5 text-base font-semibold text-white shadow-md transition-all hover:bg-red-700"
         >
-          Uz Informācijas Paneli
+          {authenticated ? 'Mani Pasūtījumi' : 'Uz Informācijas Paneli'}
           <ArrowRight className="h-5 w-5" />
         </Link>
       </div>

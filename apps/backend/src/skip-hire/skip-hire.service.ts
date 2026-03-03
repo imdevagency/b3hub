@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSkipHireDto } from './dto/create-skip-hire.dto';
@@ -44,18 +45,24 @@ export class SkipHireService {
     });
   }
 
-  // ── List all (admin / internal) ────────────────────────────────
-  async findAll(filters?: { status?: SkipHireStatus; userId?: string }) {
+  // ── List all (admin) or own orders (user) ─────────────────────
+  async findAll(userId: string, isAdmin: boolean, status?: SkipHireStatus) {
+    const where: any = {};
+    if (!isAdmin) where.userId = userId;
+    if (status) where.status = status;
     return this.prisma.skipHireOrder.findMany({
-      where: filters,
+      where,
       orderBy: { createdAt: 'desc' },
     });
   }
 
   // ── Single order ───────────────────────────────────────────────
-  async findOne(id: string) {
+  async findOne(id: string, userId?: string, isAdmin = false) {
     const order = await this.prisma.skipHireOrder.findUnique({ where: { id } });
     if (!order) throw new NotFoundException(`Skip hire order ${id} not found`);
+    if (!isAdmin && order.userId !== userId) {
+      throw new ForbiddenException('You do not have access to this order');
+    }
     return order;
   }
 
@@ -77,9 +84,9 @@ export class SkipHireService {
     });
   }
 
-  // ── Update status (admin / internal) ──────────────────────────
+  // ── Update status (admin only) ──────────────────────────────
   async updateStatus(id: string, dto: UpdateSkipHireStatusDto) {
-    await this.findOne(id); // ensures it exists
+    await this.findOne(id, undefined, true); // admin-only, skip ownership check
     return this.prisma.skipHireOrder.update({
       where: { id },
       data: { status: dto.status },
@@ -87,8 +94,8 @@ export class SkipHireService {
   }
 
   // ── Cancel ────────────────────────────────────────────────────
-  async cancel(id: string) {
-    const order = await this.findOne(id);
+  async cancel(id: string, userId: string, isAdmin = false) {
+    const order = await this.findOne(id, userId, isAdmin);
     if (
       order.status === SkipHireStatus.COMPLETED ||
       order.status === SkipHireStatus.COLLECTED

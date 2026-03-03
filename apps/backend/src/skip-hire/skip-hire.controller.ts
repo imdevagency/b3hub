@@ -15,6 +15,7 @@ import { SkipHireService } from './skip-hire.service';
 import { CreateSkipHireDto } from './dto/create-skip-hire.dto';
 import { UpdateSkipHireStatusDto } from './dto/update-skip-hire-status.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../common/guards/admin.guard';
 import { SkipHireStatus } from '@prisma/client';
 
 @Controller('skip-hire')
@@ -36,12 +37,13 @@ export class SkipHireController {
 
   /**
    * GET /api/v1/skip-hire
-   * Protected — returns all orders (admin use) or filters by status.
+   * Protected — admins see all orders; regular users see only their own.
    */
   @Get()
   @UseGuards(JwtAuthGuard)
-  findAll(@Query('status') status?: SkipHireStatus) {
-    return this.skipHireService.findAll({ status });
+  findAll(@Request() req: any, @Query('status') status?: SkipHireStatus) {
+    const isAdmin = req.user?.userType === 'ADMIN';
+    return this.skipHireService.findAll(req.user.userId, isAdmin, status);
   }
 
   /**
@@ -65,18 +67,21 @@ export class SkipHireController {
 
   /**
    * GET /api/v1/skip-hire/:id
+   * Protected — must be owner or admin.
    */
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.skipHireService.findOne(id);
+  @UseGuards(JwtAuthGuard)
+  findOne(@Param('id') id: string, @Request() req: any) {
+    const isAdmin = req.user?.userType === 'ADMIN';
+    return this.skipHireService.findOne(id, req.user.userId, isAdmin);
   }
 
   /**
    * PATCH /api/v1/skip-hire/:id/status
-   * Update the lifecycle status (protected).
+   * Update the lifecycle status (admin only).
    */
   @Patch(':id/status')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateSkipHireStatusDto,
@@ -86,10 +91,12 @@ export class SkipHireController {
 
   /**
    * POST /api/v1/skip-hire/:id/cancel
+   * Owner or admin can cancel.
    */
   @Post(':id/cancel')
   @UseGuards(JwtAuthGuard)
-  cancel(@Param('id') id: string) {
-    return this.skipHireService.cancel(id);
+  cancel(@Param('id') id: string, @Request() req: any) {
+    const isAdmin = req.user?.userType === 'ADMIN';
+    return this.skipHireService.cancel(id, req.user.userId, isAdmin);
   }
 }

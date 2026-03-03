@@ -78,11 +78,11 @@ export default function OrderConfirmation() {
           style={s.primaryBtn}
           onPress={() => {
             reset();
-            router.replace('/(tabs)/home');
+            router.replace('/(tabs)/orders');
           }}
           activeOpacity={0.8}
         >
-          <Text style={s.primaryBtnText}>{t.skipHire.confirmation.backHome}</Text>
+          <Text style={s.primaryBtnText}>{t.skipHire.confirmation.viewMyOrders}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
