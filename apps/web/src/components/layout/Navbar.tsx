@@ -17,24 +17,25 @@ import { cn } from '@/lib/utils';
 
 const features = [
   {
-    title: 'Materials Catalog',
+    title: 'Materiālu Katalogs',
     href: '#features',
-    description: 'Browse and manage construction materials from verified suppliers.',
+    description: 'Pārlūkojiet un pārvaldiet celtniecības materiālus no pārbaudītiem piegādātājiem.',
   },
   {
-    title: 'Order Management',
+    title: 'Pasūtījumu Pārvaldība',
     href: '#features',
-    description: 'Create, track, and manage all your material orders in one place.',
+    description:
+      'Izveidojiet, izsekojiet un pārvaldiet visus savus materiālu pasūtījumus vienā vietā.',
   },
   {
-    title: 'Container Tracking',
+    title: 'Konteineru Izsekošana',
     href: '#features',
-    description: 'Real-time tracking of containers and deliveries.',
+    description: 'Reāllaika konteineru un piegāžu izsekošana.',
   },
   {
-    title: 'Recycling & Waste',
+    title: 'Pārstrāde un Atkritumi',
     href: '#features',
-    description: 'Sustainable solutions for construction waste management.',
+    description: 'Ilgtspējīgi riesinājumi celtniecības atkritumu apsaimniekošanai.',
   },
 ];
 
@@ -57,7 +58,7 @@ export function Navbar() {
               <NavigationMenuList>
                 <NavigationMenuItem>
                   <NavigationMenuTrigger className="text-sm font-medium text-gray-700 hover:text-red-600">
-                    Product
+                    Produkts
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
                     <ul className="grid w-100 gap-3 p-4 md:w-125 md:grid-cols-2">
@@ -78,7 +79,7 @@ export function Navbar() {
                         'text-sm font-medium text-gray-700 hover:text-red-600',
                       )}
                     >
-                      Features
+                      Funkcijas
                     </NavigationMenuLink>
                   </Link>
                 </NavigationMenuItem>
@@ -91,7 +92,7 @@ export function Navbar() {
                         'text-sm font-medium text-gray-700 hover:text-red-600',
                       )}
                     >
-                      Pricing
+                      Cenas
                     </NavigationMenuLink>
                   </Link>
                 </NavigationMenuItem>
@@ -104,7 +105,7 @@ export function Navbar() {
                         'text-sm font-semibold text-red-600 hover:text-red-700',
                       )}
                     >
-                      Order a Skip
+                      Pasūtīt Konteineru
                     </NavigationMenuLink>
                   </Link>
                 </NavigationMenuItem>
@@ -115,10 +116,10 @@ export function Navbar() {
           {/* Desktop CTA */}
           <div className="hidden md:flex md:items-center md:gap-3">
             <Button asChild variant="ghost" className="text-gray-700 hover:text-red-600">
-              <Link href="/login">Sign in</Link>
+              <Link href="/login">Ieiet</Link>
             </Button>
             <Button asChild className="bg-red-600 text-white hover:bg-red-500">
-              <Link href="/register">Get Started</Link>
+              <Link href="/register">Sākt</Link>
             </Button>
           </div>
 
@@ -141,32 +142,32 @@ export function Navbar() {
                 className="px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-red-600"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Features
+                Funkcijas
               </Link>
               <Link
                 href="#stats"
                 className="px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-red-600"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Pricing
+                Cenas
               </Link>
               <Link
                 href="/order"
                 className="px-3 py-2 text-sm font-semibold text-red-600 rounded-md hover:bg-red-50"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Order a Skip →
+                Pasūtīt Konteineru →
               </Link>
             </nav>
             <div className="mt-4 flex flex-col gap-2 px-3">
               <Button asChild variant="outline" className="w-full justify-center">
-                <Link href="/login">Sign in</Link>
+                <Link href="/login">Ieiet</Link>
               </Button>
               <Button
                 asChild
                 className="w-full justify-center bg-red-600 text-white hover:bg-red-500"
               >
-                <Link href="/register">Get Started</Link>
+                <Link href="/register">Sākt</Link>
               </Button>
             </div>
           </div>

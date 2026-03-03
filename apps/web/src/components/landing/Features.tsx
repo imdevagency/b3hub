@@ -1,41 +1,38 @@
-import { 
-  ShoppingCart, 
-  Users, 
-  Package, 
-  BarChart3, 
-  Shield, 
-  Zap 
-} from "lucide-react";
+import { ShoppingCart, Users, Package, BarChart3, Shield, Zap } from 'lucide-react';
 
 const features = [
   {
-    name: "Material Management",
-    description: "Efficiently manage your material inventory with real-time tracking, categorization, and availability status.",
+    name: 'Materiālu Pārvaldība',
+    description:
+      'Efektīvi pārvaldiet materiālu krājumus ar reāllaika izsekošanu, kategorizēšanu un pieejamības statusu.',
     icon: Package,
   },
   {
-    name: "Order Processing",
-    description: "Streamline order workflows from creation to delivery. Track status, manage fulfillment, and keep customers informed.",
+    name: 'Pasūtījumu Apstrāde',
+    description:
+      'Optimizējiet pasūtījumu darba plūsmas no izveides līdz piegādei. Izsekojiet statusam, pārvaldiet izpildi un informējiet klientus.',
     icon: ShoppingCart,
   },
   {
-    name: "Multi-User Support",
-    description: "Role-based access for suppliers, customers, and managers. Each user type gets tailored features and permissions.",
+    name: 'Vairāku Lietotāju Atbalsts',
+    description:
+      'Lomu atbilstošā piekļuve piegādātājiem, klientiem un vadītājiem. Katrs lietotāja veids saņem pielāgotas funkcijas un atļaujas.',
     icon: Users,
   },
   {
-    name: "Real-time Analytics",
-    description: "Gain insights into your operations with comprehensive dashboards and reporting tools.",
+    name: 'Reāllaika Analītika',
+    description: 'Gūstiet ieskatu savās darbībās ar visaptverošiem pārskatiem un ziņošanas rīkiem.',
     icon: BarChart3,
   },
   {
-    name: "Secure & Reliable",
-    description: "Enterprise-grade security with Supabase authentication and encrypted data storage.",
+    name: 'Drošs un Uzticams',
+    description: 'Uzņēmuma līmeņa drošība ar Supabase autentifikāciju un šifrētu datu glabāšanu.',
     icon: Shield,
   },
   {
-    name: "Lightning Fast",
-    description: "Built with modern technologies for optimal performance across web and mobile platforms.",
+    name: 'Zibens Ātrs',
+    description:
+      'Izveidots ar modernajām tehnoloģijām optimālai veiktspējai tīmekļa un mobilajās platformās.',
     icon: Zap,
   },
 ];
@@ -45,14 +42,13 @@ export function Features() {
     <section id="features" className="bg-white py-24 sm:py-32">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-base font-semibold leading-7 text-red-600">
-            Everything you need
-          </h2>
+          <h2 className="text-base font-semibold leading-7 text-red-600">Viss, kas nepieciešams</h2>
           <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            Powerful Features for Modern Businesses
+            Jaudīgas Funkcijas Moderniem Uzņēmumiem
           </p>
           <p className="mt-6 text-lg leading-8 text-gray-600">
-            B3Hub provides all the tools you need to manage materials and orders efficiently.
+            B3Hub nodrošina visus rīkus, kas nepieciešami efektīvai materiālu un pasūtījumu
+            pārvaldībai.
           </p>
         </div>
         <div className="mx-auto mt-16 max-w-7xl sm:mt-20 lg:mt-24">
@@ -65,9 +61,7 @@ export function Features() {
                   </div>
                   {feature.name}
                 </dt>
-                <dd className="mt-2 text-base leading-7 text-gray-600">
-                  {feature.description}
-                </dd>
+                <dd className="mt-2 text-base leading-7 text-gray-600">{feature.description}</dd>
               </div>
             ))}
           </dl>

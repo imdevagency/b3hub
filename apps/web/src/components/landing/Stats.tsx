@@ -1,8 +1,8 @@
 const stats = [
-  { id: 1, name: "Orders Processed", value: "10K+" },
-  { id: 2, name: "Active Users", value: "500+" },
-  { id: 3, name: "Material Categories", value: "100+" },
-  { id: 4, name: "Uptime", value: "99.9%" },
+  { id: 1, name: 'Apstrādātie Pasūtījumi', value: '10K+' },
+  { id: 2, name: 'Aktīvie Lietotāji', value: '500+' },
+  { id: 3, name: 'Materiālu Kategorijas', value: '100+' },
+  { id: 4, name: 'Darblaiks', value: '99.9%' },
 ];
 
 export function Stats() {
@@ -12,18 +12,16 @@ export function Stats() {
         <div className="mx-auto max-w-2xl lg:max-w-none">
           <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-              Trusted by businesses worldwide
+              Uzticami Uzņēmumiem Visā Latvijā
             </h2>
             <p className="mt-4 text-lg leading-8 text-gray-600">
-              Join thousands of companies already using B3Hub to streamline their operations
+              Pievienojieties uzņēmumiem, kas jau izmanto B3Hub, lai optimizētu savu darbību
             </p>
           </div>
           <dl className="mt-16 grid grid-cols-1 gap-0.5 overflow-hidden rounded-2xl text-center sm:grid-cols-2 lg:grid-cols-4">
             {stats.map((stat) => (
               <div key={stat.id} className="flex flex-col bg-white p-8">
-                <dt className="text-sm font-semibold leading-6 text-gray-600">
-                  {stat.name}
-                </dt>
+                <dt className="text-sm font-semibold leading-6 text-gray-600">{stat.name}</dt>
                 <dd className="order-first text-3xl font-semibold tracking-tight text-red-600">
                   {stat.value}
                 </dd>

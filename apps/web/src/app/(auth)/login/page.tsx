@@ -22,8 +22,8 @@ import { loginUser } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 
 const schema = z.object({
-  email: z.string().email('Please enter a valid email'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().email('Lūdzu ievadiet derīgu e-pastu'),
+  password: z.string().min(1, 'Parole ir nepieciešana'),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -45,7 +45,7 @@ export default function LoginPage() {
       setAuth(res.user, res.token);
       router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : 'Pieteikšanās neizdevās');
     }
   };
 
@@ -59,11 +59,11 @@ export default function LoginPage() {
 
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
+          <CardTitle className="text-2xl font-bold">Laipni atgriezties</CardTitle>
           <CardDescription>
-            Don&apos;t have an account?{' '}
+            Nav konta?{' '}
             <Link href="/register" className="text-red-600 hover:underline font-medium">
-              Sign up for free
+              Reģistrēties bez maksas
             </Link>
           </CardDescription>
         </CardHeader>
@@ -82,9 +82,9 @@ export default function LoginPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>E-pasts</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="john@example.com" {...field} />
+                      <Input type="email" placeholder="janis@piemers.lv" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -97,16 +97,16 @@ export default function LoginPage() {
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-between">
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>Parole</FormLabel>
                       <Link
                         href="/forgot-password"
                         className="text-xs text-red-600 hover:underline"
                       >
-                        Forgot password?
+                        Aizmirsāt paroli?
                       </Link>
                     </div>
                     <FormControl>
-                      <Input type="password" placeholder="Your password" {...field} />
+                      <Input type="password" placeholder="Jūsu parole" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -120,10 +120,10 @@ export default function LoginPage() {
               >
                 {form.formState.isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in…
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Ienāk…
                   </>
                 ) : (
-                  'Sign in'
+                  'Ieiet'
                 )}
               </Button>
             </form>

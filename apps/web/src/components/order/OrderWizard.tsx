@@ -11,10 +11,10 @@ import { Step4Date } from './steps/Step4Date';
 import { OrderConfirmation } from './OrderConfirmation';
 
 const STEPS = [
-  { id: 1, label: 'Location', shortLabel: 'Location', icon: MapPin },
-  { id: 2, label: 'Waste Type', shortLabel: 'Waste', icon: Trash2 },
-  { id: 3, label: 'Skip Size', shortLabel: 'Size', icon: Package },
-  { id: 4, label: 'Date', shortLabel: 'Date', icon: CalendarDays },
+  { id: 1, label: 'Atrasanos Vieta', shortLabel: 'Vieta', icon: MapPin },
+  { id: 2, label: 'Atkritumu Veids', shortLabel: 'Atkritumi', icon: Trash2 },
+  { id: 3, label: 'Konteinera Izmērs', shortLabel: 'Izmērs', icon: Package },
+  { id: 4, label: 'Datums', shortLabel: 'Datums', icon: CalendarDays },
 ] as const;
 
 const TOTAL_STEPS = STEPS.length;
@@ -75,7 +75,7 @@ export function OrderWizard() {
       }, 220);
     } catch (err) {
       setSubmitError(
-        err instanceof Error ? err.message : 'Something went wrong. Please try again.',
+        err instanceof Error ? err.message : 'Kaut kas nogāja greizi. Lūdzu, mēģiniet vēlreiz.',
       );
     } finally {
       setSubmitting(false);
@@ -182,9 +182,9 @@ export function OrderWizard() {
             {/* Step counter */}
             <div className="mt-2 flex items-center justify-between text-xs text-gray-400">
               <span>
-                Step {currentStep} of {TOTAL_STEPS}
+                Solis {currentStep} no {TOTAL_STEPS}
               </span>
-              <span>{Math.round((currentStep / TOTAL_STEPS) * 100)}% complete</span>
+              <span>{Math.round((currentStep / TOTAL_STEPS) * 100)}% pabeigts</span>
             </div>
           </div>
         )}
@@ -194,7 +194,7 @@ export function OrderWizard() {
           {/* API error banner */}
           {submitError && (
             <div className="mb-6 flex items-center gap-3 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-              <span className="font-semibold">Error:</span> {submitError}
+              <span className="font-semibold">Kļūda:</span> {submitError}
             </div>
           )}
 

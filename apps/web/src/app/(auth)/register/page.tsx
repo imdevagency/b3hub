@@ -22,34 +22,44 @@ import { registerUser, UserType } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 
 const USER_TYPE_META: { value: UserType; emoji: string; label: string; description: string }[] = [
-  { value: 'BUYER', emoji: '🏗️', label: 'Contractor', description: 'Order materials & skip hire' },
-  { value: 'SUPPLIER', emoji: '📦', label: 'Seller', description: 'Supply & list your materials' },
+  {
+    value: 'BUYER',
+    emoji: '🏗️',
+    label: 'Darbuzņēmējs',
+    description: 'Pasūtīt materiālus un konteinerus',
+  },
+  {
+    value: 'SUPPLIER',
+    emoji: '📦',
+    label: 'Pārdevējs',
+    description: 'Piegādāt un uzskaitīt savus materiālus',
+  },
   {
     value: 'CARRIER',
     emoji: '🚛',
-    label: 'Carrier',
-    description: 'Transport materials & containers',
+    label: 'Pārvadātājs',
+    description: 'Transportēt materiālus un konteinerus',
   },
   {
     value: 'PRIVATE',
     emoji: '👤',
-    label: 'Private Person',
-    description: 'Personal skip hire & waste',
+    label: 'Privātpersona',
+    description: 'Personīgs konteinera nomas serviss',
   },
 ];
 
 const schema = z
   .object({
-    firstName: z.string().min(2, 'First name must be at least 2 characters'),
-    lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-    email: z.string().email('Please enter a valid email'),
+    firstName: z.string().min(2, 'Vārdam jābūt vismaz 2 rakstzīmēm'),
+    lastName: z.string().min(2, 'Uzvārdam jābūt vismaz 2 rakstzīmēm'),
+    email: z.string().email('Lūdzu ievadiet derīgu e-pastu'),
     phone: z.string().optional(),
     userType: z.enum(['BUYER', 'SUPPLIER', 'CARRIER', 'PRIVATE'] as const),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
+    password: z.string().min(8, 'Parolei jābūt vismaz 8 rakstzīmēm'),
     confirmPassword: z.string(),
   })
   .refine((d) => d.password === d.confirmPassword, {
-    message: 'Passwords do not match',
+    message: 'Paroles nesakrīt',
     path: ['confirmPassword'],
   });
 
@@ -81,7 +91,7 @@ export default function RegisterPage() {
       setAuth(res.user, res.token);
       router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      setError(err instanceof Error ? err.message : 'Reģistrācija neizdevās');
     }
   };
 
@@ -95,11 +105,11 @@ export default function RegisterPage() {
 
       <Card className="w-full max-w-lg shadow-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Create your account</CardTitle>
+          <CardTitle className="text-2xl font-bold">Izveidot kontu</CardTitle>
           <CardDescription>
-            Already have an account?{' '}
+            Jau ir konts?{' '}
             <Link href="/login" className="text-red-600 hover:underline font-medium">
-              Sign in
+              Ieiet
             </Link>
           </CardDescription>
         </CardHeader>
@@ -120,9 +130,9 @@ export default function RegisterPage() {
                   name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>First name</FormLabel>
+                      <FormLabel>Vārds</FormLabel>
                       <FormControl>
-                        <Input placeholder="John" {...field} />
+                        <Input placeholder="Jānis" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -133,9 +143,9 @@ export default function RegisterPage() {
                   name="lastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Last name</FormLabel>
+                      <FormLabel>Uzvārds</FormLabel>
                       <FormControl>
-                        <Input placeholder="Doe" {...field} />
+                        <Input placeholder="Bērziņš" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -149,9 +159,9 @@ export default function RegisterPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>E-pasts</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="john@example.com" {...field} />
+                      <Input type="email" placeholder="janis@piemers.lv" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -165,10 +175,10 @@ export default function RegisterPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Phone <span className="text-gray-400 text-xs">(optional)</span>
+                      Tālrunis <span className="text-gray-400 text-xs">(nav obligāti)</span>
                     </FormLabel>
                     <FormControl>
-                      <Input type="tel" placeholder="+1 (555) 000-0000" {...field} />
+                      <Input type="tel" placeholder="+371 20 000 000" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -181,7 +191,7 @@ export default function RegisterPage() {
                 name="userType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Account type</FormLabel>
+                    <FormLabel>Konta veids</FormLabel>
                     <div className="grid grid-cols-2 gap-2">
                       {USER_TYPE_META.map((type) => (
                         <button
@@ -211,9 +221,9 @@ export default function RegisterPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>Parole</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Min. 8 characters" {...field} />
+                      <Input type="password" placeholder="Min. 8 rakstzīmes" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -226,9 +236,9 @@ export default function RegisterPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirm password</FormLabel>
+                    <FormLabel>Apstiprānāt paroli</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Repeat your password" {...field} />
+                      <Input type="password" placeholder="Atkārtojiet paroli" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -242,21 +252,21 @@ export default function RegisterPage() {
               >
                 {form.formState.isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account…
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Izveido kontu…
                   </>
                 ) : (
-                  'Create account'
+                  'Izveidot kontu'
                 )}
               </Button>
 
               <p className="text-center text-xs text-gray-500">
-                By creating an account you agree to our{' '}
+                Izveidojot kontu, jūs piekritat mūsu{' '}
                 <Link href="/terms" className="underline hover:text-gray-700">
-                  Terms of Service
+                  Lietošanas Noteikumiem
                 </Link>{' '}
-                and{' '}
+                un{' '}
                 <Link href="/privacy" className="underline hover:text-gray-700">
-                  Privacy Policy
+                  Privātuma Politikai
                 </Link>
                 .
               </p>

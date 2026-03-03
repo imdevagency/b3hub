@@ -1,19 +1,19 @@
-import Link from "next/link";
+import Link from 'next/link';
 
 const navigation = {
   product: [
-    { name: "Features", href: "#features" },
-    { name: "Pricing", href: "#" },
-    { name: "Mobile App", href: "#" },
+    { name: 'Funkcijas', href: '#features' },
+    { name: 'Cenas', href: '#' },
+    { name: 'Mobilā Lietotne', href: '#' },
   ],
   company: [
-    { name: "About", href: "#" },
-    { name: "Blog", href: "#" },
-    { name: "Contact", href: "#" },
+    { name: 'Par Mums', href: '#' },
+    { name: 'Blogs', href: '#' },
+    { name: 'Kontakti', href: '#' },
   ],
   legal: [
-    { name: "Privacy", href: "#" },
-    { name: "Terms", href: "#" },
+    { name: 'Privātuma Politika', href: '#' },
+    { name: 'Lietošanas Noteikumi', href: '#' },
   ],
 };
 
@@ -26,18 +26,14 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-6 pb-8 pt-16 sm:pt-24 lg:px-8 lg:pt-32">
         <div className="xl:grid xl:grid-cols-3 xl:gap-8">
           <div className="space-y-8">
-            <div className="text-2xl font-bold text-red-600">
-              B3Hub
-            </div>
+            <div className="text-2xl font-bold text-red-600">B3Hub</div>
             <p className="text-sm leading-6 text-gray-600">
-              Streamline your material orders and supply chain management.
+              Sakārtojiet materiālu pasūtījumus un piegādes ķēdes pārvaldību.
             </p>
           </div>
           <div className="mt-16 grid grid-cols-3 gap-8 xl:col-span-2 xl:mt-0">
             <div>
-              <h3 className="text-sm font-semibold leading-6 text-gray-900">
-                Product
-              </h3>
+              <h3 className="text-sm font-semibold leading-6 text-gray-900">Produkts</h3>
               <ul role="list" className="mt-6 space-y-4">
                 {navigation.product.map((item) => (
                   <li key={item.name}>
@@ -52,9 +48,7 @@ export function Footer() {
               </ul>
             </div>
             <div>
-              <h3 className="text-sm font-semibold leading-6 text-gray-900">
-                Company
-              </h3>
+              <h3 className="text-sm font-semibold leading-6 text-gray-900">Uzņēmums</h3>
               <ul role="list" className="mt-6 space-y-4">
                 {navigation.company.map((item) => (
                   <li key={item.name}>
@@ -69,9 +63,7 @@ export function Footer() {
               </ul>
             </div>
             <div>
-              <h3 className="text-sm font-semibold leading-6 text-gray-900">
-                Legal
-              </h3>
+              <h3 className="text-sm font-semibold leading-6 text-gray-900">Juridisks</h3>
               <ul role="list" className="mt-6 space-y-4">
                 {navigation.legal.map((item) => (
                   <li key={item.name}>
@@ -89,7 +81,7 @@ export function Footer() {
         </div>
         <div className="mt-16 border-t border-gray-900/10 pt-8 sm:mt-20 lg:mt-24">
           <p className="text-xs leading-5 text-gray-500">
-            &copy; {new Date().getFullYear()} B3Hub. All rights reserved.
+            &copy; {new Date().getFullYear()} B3Hub. Visas tiesības aizsargātas.
           </p>
         </div>
       </div>

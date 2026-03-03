@@ -128,21 +128,21 @@ const DEMO_DOCS: Document[] = [
 type FilterTab = 'ALL' | DocumentType;
 
 const TABS: { id: FilterTab; label: string; icon: React.ElementType }[] = [
-  { id: 'ALL', label: 'All', icon: FolderOpen },
-  { id: 'INVOICE', label: 'Invoices', icon: FileText },
-  { id: 'WEIGHING_SLIP', label: 'Weighing Slips', icon: Weight },
-  { id: 'DELIVERY_PROOF', label: 'Delivery Proofs', icon: ClipboardCheck },
-  { id: 'WASTE_CERTIFICATE', label: 'Certificates', icon: Recycle },
-  { id: 'DELIVERY_NOTE', label: 'Delivery Notes', icon: Truck },
-  { id: 'CONTRACT', label: 'Contracts', icon: ScrollText },
+  { id: 'ALL', label: 'Visi', icon: FolderOpen },
+  { id: 'INVOICE', label: 'Rēķini', icon: FileText },
+  { id: 'WEIGHING_SLIP', label: 'Svēršanas Lapas', icon: Weight },
+  { id: 'DELIVERY_PROOF', label: 'Piegādes Apstiprinājumi', icon: ClipboardCheck },
+  { id: 'WASTE_CERTIFICATE', label: 'Sertifikāti', icon: Recycle },
+  { id: 'DELIVERY_NOTE', label: 'Piegādes Pavadzīmes', icon: Truck },
+  { id: 'CONTRACT', label: 'Līgumi', icon: ScrollText },
 ];
 
 const USER_TYPE_LABEL: Record<string, string> = {
-  BUYER: 'Contractor',
-  SUPPLIER: 'Seller',
-  CARRIER: 'Carrier',
-  PRIVATE: 'Private Person',
-  ADMIN: 'Admin',
+  BUYER: 'Darbuzņēmējs',
+  SUPPLIER: 'Pārdevējs',
+  CARRIER: 'Pārvadātājs',
+  PRIVATE: 'Privātpersona',
+  ADMIN: 'Administrators',
 };
 
 // ── Page ─────────────────────────────────────────────────────
@@ -266,7 +266,7 @@ export default function DocumentsPage() {
             className="text-gray-600 hover:text-red-600"
           >
             <LogOut className="h-4 w-4 mr-1" />
-            Sign out
+            Iziet
           </Button>
         </div>
       </header>
@@ -276,21 +276,21 @@ export default function DocumentsPage() {
         <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
           <Link href="/dashboard" className="hover:text-red-600 flex items-center gap-1">
             <ChevronLeft className="h-4 w-4" />
-            Dashboard
+            Informācijas Panelis
           </Link>
           <span>/</span>
-          <span className="text-gray-700 font-medium">Documents</span>
+          <span className="text-gray-700 font-medium">Dokumenti</span>
         </div>
 
         <div className="flex items-start justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
               <FolderOpen className="h-7 w-7 text-red-600" />
-              My Documents
+              Mani Dokumenti
             </h1>
             <p className="text-gray-500 mt-1 text-sm">
-              All your invoices, weighing slips, delivery proofs and certificates — paperless, in
-              one place.
+              Visi jūsu rēķini, svēršanas lapas, piegādes apstiprinājumi un sertifikāti — bez
+              papīra, vienā vietā.
             </p>
           </div>
           <Button
@@ -301,26 +301,26 @@ export default function DocumentsPage() {
             className="text-gray-600 hover:text-red-600"
           >
             <RefreshCw className={`h-4 w-4 mr-1.5 ${fetching ? 'animate-spin' : ''}`} />
-            Refresh
+            Atjaunot
           </Button>
         </div>
 
         {/* ── Stats row ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Total documents', value: summary?.total ?? 0, color: 'text-gray-900' },
+            { label: 'Kopā dokumenti', value: summary?.total ?? 0, color: 'text-gray-900' },
             {
-              label: 'This month',
+              label: 'Šajā mēnesī',
               value: thisMonth,
               color: 'text-blue-600',
             },
             {
-              label: 'Invoices',
+              label: 'Rēķini',
               value: summary?.byType?.INVOICE ?? 0,
               color: 'text-blue-600',
             },
             {
-              label: 'Weighing slips',
+              label: 'Svēršanas lapas',
               value: summary?.byType?.WEIGHING_SLIP ?? 0,
               color: 'text-amber-600',
             },
@@ -335,8 +335,8 @@ export default function DocumentsPage() {
         {useDemoData && (
           <div className="mb-6 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
             <span>
-              ✦ Preview mode — showing example documents. Real documents will appear here once your
-              orders are processed.
+              ❆ Priekšskatījuma režīms — rāda piemēra dokumentus. Įsti dokumenti parādīsīsies šeit,
+              tīklīdz jūsu pasūtījumi tiks apstrādāti.
             </span>
           </div>
         )}
@@ -382,7 +382,7 @@ export default function DocumentsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search documents…"
+              placeholder="Meklēt dokumentus…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -398,15 +398,15 @@ export default function DocumentsPage() {
         ) : docs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-400">
             <FolderOpen className="h-14 w-14 text-gray-200" />
-            <p className="font-medium text-gray-500">No documents found</p>
+            <p className="font-medium text-gray-500">Nav atrasts neviens dokuments</p>
             <p className="text-sm text-center max-w-xs">
               {search
-                ? `No results for "${search}". Try a different search term.`
-                : 'Documents will appear here automatically once your orders are confirmed and deliveries completed.'}
+                ? `Nav rezultātu meklējumam "${search}". Mēģiniet citu meklēšanas frazi.`
+                : 'Dokumenti parādīsīsies šeit automātiski, tīklīdz jūsu pasūtījumi tiks apstiprintī un piegādes pabeigtas.'}
             </p>
             {search && (
               <Button variant="outline" size="sm" onClick={() => setSearch('')}>
-                Clear search
+                Notītīt meklēšanu
               </Button>
             )}
           </div>

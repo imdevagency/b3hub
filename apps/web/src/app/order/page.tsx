@@ -4,26 +4,26 @@ import { Footer } from '@/components/landing/Footer';
 import { Recycle, ShieldCheck, Truck } from 'lucide-react';
 
 export const metadata = {
-  title: 'Order a Skip | B3Hub',
+  title: 'Pasūtīt Konteineru | B3Hub',
   description:
-    'Book a waste skip online in 4 easy steps. Choose your location, waste type, size, and delivery date.',
+    'Rezervējiet atkritumu konteineru tiešsaistē 4 vienkiršos soļos. Izvēlieties atrasanos vietu, atkritumu veidu, izmēru un piegādes datumu.',
 };
 
 const TRUST_BADGES = [
   {
     icon: Truck,
-    label: 'Next-day delivery',
-    sub: 'Order before 2pm',
+    label: 'Piegāde nākamajā dienā',
+    sub: 'Pasūtīiet līdz plkst. 14:00',
   },
   {
     icon: ShieldCheck,
-    label: 'Fully licensed',
-    sub: 'Certified waste disposal',
+    label: 'Pilnibīgi licenzēts',
+    sub: 'Sertificēta atkritumu izvešana',
   },
   {
     icon: Recycle,
-    label: 'Eco-friendly',
-    sub: '85% recycling rate',
+    label: 'Videi draudzīgs',
+    sub: '85% pārstrādes rādītājs',
   },
 ];
 
@@ -35,14 +35,14 @@ export default function OrderPage() {
         {/* Page hero */}
         <section className="mx-auto max-w-4xl px-6 pb-4 pt-16 text-center">
           <span className="inline-block rounded-full bg-red-100 px-4 py-1.5 text-sm font-semibold text-red-600 mb-4">
-            📦 Online Skip Hire
+            📦 Konteinera Noma Tiešsaistē
           </span>
           <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
-            Order Your Skip in <span className="text-red-600">4 Simple Steps</span>
+            Pasūtīiet Savu Konteineru <span className="text-red-600">4 Vienkiršos Soļos</span>
           </h1>
           <p className="mt-4 text-lg text-gray-500 max-w-2xl mx-auto">
-            From selecting your waste type to choosing a delivery date — we make skip hire fast,
-            transparent, and hassle-free.
+            No atkritumu veida izvēles līdz piegādes datuma noteikšanai — mēs padarām konteinera
+            nomu ātru, pārskatāmu un bez saražģījumiem.
           </p>
 
           {/* Trust badges */}

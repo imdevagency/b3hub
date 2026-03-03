@@ -15,36 +15,36 @@ export type SkipSize = {
 const SKIP_SIZES: SkipSize[] = [
   {
     id: 'mini',
-    label: 'Mini Skip',
+    label: 'Mini Konteineri',
     volume: '2 m³',
     dimensions: '1.8m × 1.2m × 0.9m',
-    bestFor: 'Small clear-outs, 1–2 rooms',
-    price: 'From €89',
+    bestFor: 'Mazi iztīrīšanas darbi, 1–2 istabas',
+    price: 'No €89',
   },
   {
     id: 'midi',
-    label: 'Midi Skip',
+    label: 'Midi Konteineri',
     volume: '4 m³',
     dimensions: '2.4m × 1.5m × 1.1m',
-    bestFor: 'Kitchen / bathroom renovation',
-    price: 'From €129',
+    bestFor: 'Virtuves / vannas istabas renovācija',
+    price: 'No €129',
     popular: true,
   },
   {
     id: 'builders',
-    label: "Builder's Skip",
+    label: 'Celtnieka Konteineri',
     volume: '6 m³',
     dimensions: '3.6m × 1.7m × 1.2m',
-    bestFor: 'Full house clearance',
-    price: 'From €169',
+    bestFor: 'Pilna mājas iztīrīšana',
+    price: 'No €169',
   },
   {
     id: 'large',
-    label: 'Large Skip',
+    label: 'Lielais Konteineri',
     volume: '8 m³',
     dimensions: '3.9m × 1.8m × 1.4m',
-    bestFor: 'Large construction projects',
-    price: 'From €199',
+    bestFor: 'Lieli celtniecības projekti',
+    price: 'No €199',
   },
 ];
 
@@ -60,9 +60,9 @@ export function Step3Size({ value, onChange, onNext, onBack }: Step3Props) {
     <div className="flex flex-col space-y-8">
       {/* Heading */}
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-gray-900">Choose your skip size</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Izvēlieties konteinera izmēru</h2>
         <p className="text-gray-500">
-          Pick the size that fits your project. Prices include delivery &amp; collection.
+          Izvēlieties izmēru, kas atbilst jūsu projektam. Cenas iekļauj piegādi &amp; savakšanu.
         </p>
       </div>
 
@@ -84,7 +84,7 @@ export function Step3Size({ value, onChange, onNext, onBack }: Step3Props) {
               {/* Popular badge */}
               {size.popular && (
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-red-600 px-3 py-0.5 text-xs font-bold text-white shadow">
-                  MOST POPULAR
+                  POPULĀRĀKAIS
                 </span>
               )}
 
@@ -140,7 +140,7 @@ export function Step3Size({ value, onChange, onNext, onBack }: Step3Props) {
 
               <div className="border-t border-gray-100 pt-3 space-y-1">
                 <p className="text-sm text-gray-600">
-                  <span className="font-medium">Best for:</span> {size.bestFor}
+                  <span className="font-medium">Piemērots:</span> {size.bestFor}
                 </p>
                 <p
                   className={cn('text-base font-bold', selected ? 'text-red-600' : 'text-gray-900')}
@@ -159,14 +159,14 @@ export function Step3Size({ value, onChange, onNext, onBack }: Step3Props) {
           onClick={onBack}
           className="flex-1 rounded-xl border-2 border-gray-200 py-3.5 text-base font-semibold text-gray-700 transition-all hover:border-gray-300 hover:bg-gray-50"
         >
-          ← Back
+          ← Atpakaļ
         </button>
         <button
           onClick={onNext}
           disabled={!value}
           className="flex-1 rounded-xl bg-red-600 py-3.5 text-base font-semibold text-white shadow-md transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
         >
-          Continue →
+          Turpināt →
         </button>
       </div>
     </div>

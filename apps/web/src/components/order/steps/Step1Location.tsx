@@ -24,9 +24,9 @@ export function Step1Location({ value, onChange, onNext }: Step1Props) {
 
       {/* Heading */}
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-gray-900">Where should we deliver?</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Kur piegādāt?</h2>
         <p className="text-gray-500 max-w-sm mx-auto">
-          Enter your postal code or city to check availability in your area.
+          Ievadiet pasta indeksu vai pilsētu, lai pārbaudītu pieejamību jūsu reģionā.
         </p>
       </div>
 
@@ -36,7 +36,7 @@ export function Step1Location({ value, onChange, onNext }: Step1Props) {
           <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="e.g. LV-1050 or Riga"
+            placeholder="Piem. LV-1050 vai Rīga"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -50,7 +50,7 @@ export function Step1Location({ value, onChange, onNext }: Step1Props) {
           disabled={!isValid}
           className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-600 py-4 text-base font-semibold text-white shadow-md transition-all hover:bg-red-700 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
         >
-          Check Availability
+          Pārbaudīt Pieejamību
           <ArrowRight className="h-5 w-5" />
         </button>
       </div>
@@ -59,15 +59,15 @@ export function Step1Location({ value, onChange, onNext }: Step1Props) {
       <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-500 pt-2">
         <span className="flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full bg-green-500" />
-          Delivery within 1 working day
+          Piegāde 1 darba dienā
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full bg-green-500" />
-          14-day set time included
+          Iekļauts 14 dienu uzstādīšanas laiks
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full bg-green-500" />
-          Transport &amp; disposal included
+          Transports &amp; utilizācija iekļauta
         </span>
       </div>
     </div>

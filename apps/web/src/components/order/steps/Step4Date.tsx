@@ -24,10 +24,10 @@ function getMaxDateString() {
 }
 
 const QUICK_OPTIONS = [
-  { label: 'Tomorrow', days: 1 },
-  { label: 'In 2 days', days: 2 },
-  { label: 'In 3 days', days: 3 },
-  { label: 'Next week', days: 7 },
+  { label: 'Rīt', days: 1 },
+  { label: 'Pēc 2 dienām', days: 2 },
+  { label: 'Pēc 3 dienām', days: 3 },
+  { label: 'Pēc nedēļas', days: 7 },
 ];
 
 function addDays(days: number): string {
@@ -40,7 +40,7 @@ function formatDate(isoDate: string): string {
   if (!isoDate) return '';
   const [year, month, day] = isoDate.split('-').map(Number);
   const d = new Date(year, month - 1, day);
-  return d.toLocaleDateString('en-GB', {
+  return d.toLocaleDateString('lv-LV', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -56,16 +56,16 @@ export function Step4Date({ value, onChange, onNext, onBack, submitting = false 
     <div className="flex flex-col space-y-8">
       {/* Heading */}
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-gray-900">When do you need it?</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Kad vajag?</h2>
         <p className="text-gray-500">
-          Choose your preferred delivery date. We deliver within one working day.
+          Izvēlieties vēlamo piegādes datumu. Mēs piegādām vienas darba dienas laikā.
         </p>
       </div>
 
       <div className="space-y-6">
         {/* Quick select buttons */}
         <div>
-          <p className="text-sm font-medium text-gray-700 mb-3">Quick select</p>
+          <p className="text-sm font-medium text-gray-700 mb-3">tra izvēle</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {QUICK_OPTIONS.map((opt) => {
               const date = addDays(opt.days);
@@ -91,7 +91,7 @@ export function Step4Date({ value, onChange, onNext, onBack, submitting = false 
         {/* Divider */}
         <div className="flex items-center gap-3">
           <div className="flex-1 h-px bg-gray-200" />
-          <span className="text-sm text-gray-400 font-medium">or pick a date</span>
+          <span className="text-sm text-gray-400 font-medium">vai izvēlieties datumu</span>
           <div className="flex-1 h-px bg-gray-200" />
         </div>
 
@@ -129,7 +129,7 @@ export function Step4Date({ value, onChange, onNext, onBack, submitting = false 
               </svg>
             </span>
             <div>
-              <p className="text-sm font-semibold text-green-800">Delivery scheduled</p>
+              <p className="text-sm font-semibold text-green-800">Piegāde iepļānota</p>
               <p className="text-sm text-green-700">{formatDate(value)}</p>
             </div>
           </div>
@@ -139,8 +139,8 @@ export function Step4Date({ value, onChange, onNext, onBack, submitting = false 
         <div className="flex items-start gap-2 rounded-lg bg-blue-50 border border-blue-100 px-4 py-3">
           <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
           <p className="text-xs text-blue-700">
-            Delivery is confirmed on working days (Mon–Sat). Weekend deliveries may be subject to
-            availability. You&apos;ll receive a confirmation email after placing your order.
+            Piegāde apstiprināta darba dienās (Pirmdiena–Sestdiena). Brīvdienu piegādes var būt
+            atkarīgas no pieejamības. Pēc pasūtījuma veikšanas saņemsit apstiprinājuma e-pastu.
           </p>
         </div>
       </div>
@@ -152,7 +152,7 @@ export function Step4Date({ value, onChange, onNext, onBack, submitting = false 
           disabled={submitting}
           className="flex-1 rounded-xl border-2 border-gray-200 py-3.5 text-base font-semibold text-gray-700 transition-all hover:border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          ← Back
+          ← Atpakaļ
         </button>
         <button
           onClick={onNext}
@@ -172,10 +172,10 @@ export function Step4Date({ value, onChange, onNext, onBack, submitting = false 
                 />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>
-              Placing Order…
+              Veic Pasūtījumu…
             </>
           ) : (
-            'Place Order →'
+            'Veikt Pasūtījumu →'
           )}
         </button>
       </div>

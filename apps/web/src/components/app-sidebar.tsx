@@ -40,45 +40,45 @@ type NavItem = { label: string; href: string; icon: React.ElementType };
 
 const ROLE_NAV: Record<string, NavItem[]> = {
   BUYER: [
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Browse Materials', href: '/materials', icon: Package },
-    { label: 'Hire a Skip', href: '/order', icon: Trash2 },
-    { label: 'My Orders', href: '/orders', icon: ShoppingCart },
-    { label: 'Track Delivery', href: '/tracking', icon: Truck },
-    { label: 'My Documents', href: '/dashboard/documents', icon: FolderOpen },
+    { label: 'Informācijas Panelis', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Pārlūkot Materiālus', href: '/materials', icon: Package },
+    { label: 'Pasūtīt Konteineru', href: '/order', icon: Trash2 },
+    { label: 'Mani Pasūtījumi', href: '/orders', icon: ShoppingCart },
+    { label: 'Izsekot Piegādei', href: '/tracking', icon: Truck },
+    { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
   SUPPLIER: [
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'My Products', href: '/products', icon: Package },
-    { label: 'Add Product', href: '/products/new', icon: Plus },
-    { label: 'Incoming Orders', href: '/orders', icon: ShoppingCart },
-    { label: 'Analytics', href: '/analytics', icon: BarChart3 },
-    { label: 'My Documents', href: '/dashboard/documents', icon: FolderOpen },
+    { label: 'Informācijas Panelis', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Mani Produkti', href: '/products', icon: Package },
+    { label: 'Pievienot Produktu', href: '/products/new', icon: Plus },
+    { label: 'Ienākošie Pasūtījumi', href: '/orders', icon: ShoppingCart },
+    { label: 'Analītika', href: '/analytics', icon: BarChart3 },
+    { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
   CARRIER: [
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Active Jobs', href: '/jobs', icon: MapPin },
-    { label: 'Route', href: '/route', icon: Truck },
-    { label: 'Complete Delivery', href: '/jobs/complete', icon: CheckCircle },
-    { label: 'Earnings', href: '/earnings', icon: Banknote },
-    { label: 'My Documents', href: '/dashboard/documents', icon: FolderOpen },
+    { label: 'Informācijas Panelis', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Aktīvie Darbi', href: '/jobs', icon: MapPin },
+    { label: 'Maršruts', href: '/route', icon: Truck },
+    { label: 'Pabeigt Piegādi', href: '/jobs/complete', icon: CheckCircle },
+    { label: 'Ieņēmumi', href: '/earnings', icon: Banknote },
+    { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
   PRIVATE: [
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Hire a Skip', href: '/order', icon: Trash2 },
-    { label: 'My Orders', href: '/orders', icon: ShoppingCart },
-    { label: 'Track Delivery', href: '/tracking', icon: Truck },
-    { label: 'Support', href: '/support', icon: Headset },
-    { label: 'My Documents', href: '/dashboard/documents', icon: FolderOpen },
+    { label: 'Informācijas Panelis', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Pasūtīt Konteineru', href: '/order', icon: Trash2 },
+    { label: 'Mani Pasūtījumi', href: '/orders', icon: ShoppingCart },
+    { label: 'Izsekot Piegādei', href: '/tracking', icon: Truck },
+    { label: 'Atbalsts', href: '/support', icon: Headset },
+    { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
 };
 
 const USER_TYPE_LABEL: Record<string, string> = {
-  BUYER: 'Contractor',
-  SUPPLIER: 'Supplier',
-  CARRIER: 'Carrier',
-  PRIVATE: 'Private',
-  ADMIN: 'Admin',
+  BUYER: 'Darbuzņēmējs',
+  SUPPLIER: 'Piegādātājs',
+  CARRIER: 'Pārvadātājs',
+  PRIVATE: 'Privātpersona',
+  ADMIN: 'Administrators',
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -118,7 +118,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         {/* Role-based nav */}
         <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupLabel>Izvēlne</SidebarGroupLabel>
           <SidebarMenu>
             {navItems.map((item) => (
               <SidebarMenuItem key={item.label}>
@@ -137,10 +137,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarGroup className="mt-auto">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Settings" isActive={pathname === '/settings'}>
+              <SidebarMenuButton asChild tooltip="Iestatījumi" isActive={pathname === '/settings'}>
                 <Link href="/settings">
                   <Settings />
-                  <span>Settings</span>
+                  <span>Iestatījumi</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -173,7 +173,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
-              tooltip="Sign out"
+              tooltip="Iziet"
               onClick={() => {
                 logout();
                 router.push('/');
@@ -181,7 +181,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="text-muted-foreground hover:text-red-600 hover:bg-red-50"
             >
               <LogOut />
-              <span>Sign out</span>
+              <span>Iziet</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

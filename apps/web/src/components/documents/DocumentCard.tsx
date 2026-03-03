@@ -22,43 +22,43 @@ const TYPE_META: Record<
   { label: string; icon: React.ElementType; color: string; bg: string }
 > = {
   INVOICE: {
-    label: 'Invoice',
+    label: 'Rēķins',
     icon: FileText,
     color: 'text-blue-600',
     bg: 'bg-blue-50',
   },
   WEIGHING_SLIP: {
-    label: 'Weighing Slip',
+    label: 'Svēršanas Lapa',
     icon: Weight,
     color: 'text-amber-600',
     bg: 'bg-amber-50',
   },
   DELIVERY_PROOF: {
-    label: 'Delivery Proof',
+    label: 'Piegādes Apstiprinājums',
     icon: ClipboardCheck,
     color: 'text-green-600',
     bg: 'bg-green-50',
   },
   WASTE_CERTIFICATE: {
-    label: 'Waste Certificate',
+    label: 'Atkritumu Sertifikāts',
     icon: Recycle,
     color: 'text-emerald-600',
     bg: 'bg-emerald-50',
   },
   DELIVERY_NOTE: {
-    label: 'Delivery Note',
+    label: 'Piegādes Pavadzīme',
     icon: Truck,
     color: 'text-purple-600',
     bg: 'bg-purple-50',
   },
   CONTRACT: {
-    label: 'Contract',
+    label: 'Līgums',
     icon: ScrollText,
     color: 'text-gray-700',
     bg: 'bg-gray-100',
   },
   OTHER: {
-    label: 'Document',
+    label: 'Dokuments',
     icon: File,
     color: 'text-gray-500',
     bg: 'bg-gray-50',
@@ -66,10 +66,10 @@ const TYPE_META: Record<
 };
 
 const STATUS_BADGE: Record<DocumentStatus, { label: string; classes: string }> = {
-  DRAFT: { label: 'Draft', classes: 'bg-gray-100 text-gray-600' },
-  ISSUED: { label: 'Issued', classes: 'bg-blue-100 text-blue-700' },
-  SIGNED: { label: 'Signed', classes: 'bg-green-100 text-green-700' },
-  ARCHIVED: { label: 'Archived', classes: 'bg-yellow-100 text-yellow-700' },
+  DRAFT: { label: 'Melnraksts', classes: 'bg-gray-100 text-gray-600' },
+  ISSUED: { label: 'Izdots', classes: 'bg-blue-100 text-blue-700' },
+  SIGNED: { label: 'Parakstīts', classes: 'bg-green-100 text-green-700' },
+  ARCHIVED: { label: 'Arhivēts', classes: 'bg-yellow-100 text-yellow-700' },
 };
 
 function formatBytes(bytes?: number) {
@@ -114,7 +114,7 @@ export function DocumentCard({ document: doc, onView }: DocumentCardProps) {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-gray-400">
           <span className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
-            {new Date(doc.createdAt).toLocaleDateString('en-GB', {
+            {new Date(doc.createdAt).toLocaleDateString('lv-LV', {
               day: 'numeric',
               month: 'short',
               year: 'numeric',
@@ -124,7 +124,7 @@ export function DocumentCard({ document: doc, onView }: DocumentCardProps) {
           {formatBytes(doc.fileSize) && <span>{formatBytes(doc.fileSize)}</span>}
           {doc.isGenerated && (
             <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-gray-500 text-[10px]">
-              Auto-generated
+              Automātiski ģenerēts
             </span>
           )}
         </div>
@@ -141,7 +141,7 @@ export function DocumentCard({ document: doc, onView }: DocumentCardProps) {
           onClick={() => onView(doc)}
         >
           <Eye className="h-3 w-3 mr-1" />
-          View
+          Skatīt
         </Button>
         {doc.fileUrl && (
           <Button
@@ -152,7 +152,7 @@ export function DocumentCard({ document: doc, onView }: DocumentCardProps) {
           >
             <a href={doc.fileUrl} download>
               <Download className="h-3 w-3 mr-1" />
-              Save
+              Saglabāt
             </a>
           </Button>
         )}

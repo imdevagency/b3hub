@@ -61,7 +61,7 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
               </h2>
               <p className="text-sm text-gray-500 mt-0.5">
                 {document.issuedBy && <span>{document.issuedBy} · </span>}
-                {new Date(document.createdAt).toLocaleDateString('en-GB', {
+                {new Date(document.createdAt).toLocaleDateString('lv-LV', {
                   day: 'numeric',
                   month: 'short',
                   year: 'numeric',
@@ -82,7 +82,7 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
                 >
                   <a href={document.fileUrl} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4 mr-1.5" />
-                    Open
+                    Atvērt
                   </a>
                 </Button>
                 <Button
@@ -93,7 +93,7 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
                 >
                   <a href={document.fileUrl} download>
                     <Download className="h-4 w-4 mr-1.5" />
-                    Download
+                    Lejūpielādēt
                   </a>
                 </Button>
               </>
@@ -113,9 +113,9 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
           {!hasFile && (
             <div className="flex flex-col items-center justify-center h-full py-20 gap-3 text-gray-400">
               {resolveIcon(document.mimeType)}
-              <p className="text-sm font-medium">No file attached yet</p>
+              <p className="text-sm font-medium">Datne vēl nav pievienota</p>
               <p className="text-xs text-gray-400 max-w-xs text-center">
-                This document record exists but the PDF or file has not been uploaded yet.
+                Šis dokumenta ieraksts pastāv, bet PDF vai fails vēl nav augšupielādēts.
               </p>
             </div>
           )}
@@ -140,11 +140,11 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
           {hasFile && !isPdf && !isImage && (
             <div className="flex flex-col items-center justify-center h-full py-20 gap-4 text-gray-500">
               {resolveIcon(document.mimeType)}
-              <p className="text-sm font-medium">Preview not available</p>
+              <p className="text-sm font-medium">Priekšskatījums nav pieejams</p>
               <Button variant="outline" size="sm" asChild>
                 <a href={document.fileUrl} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4 mr-2" />
-                  Open file
+                  Atvērt datni
                 </a>
               </Button>
             </div>
@@ -155,7 +155,7 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
         {document.notes && (
           <div className="px-6 py-3 border-t bg-gray-50">
             <p className="text-xs text-gray-500">
-              <span className="font-medium text-gray-700">Notes: </span>
+              <span className="font-medium text-gray-700">Piezīmes: </span>
               {document.notes}
             </p>
           </div>

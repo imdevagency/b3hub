@@ -37,147 +37,167 @@ type Action = {
 
 const ROLE_STATS: Record<string, Stat[]> = {
   BUYER: [
-    { label: 'Active Orders', value: '—', icon: ShoppingCart, hint: 'Orders in progress' },
-    { label: 'Pending Deliveries', value: '—', icon: Truck, hint: 'Awaiting delivery' },
-    { label: 'My Documents', value: '—', icon: FolderOpen, hint: 'Invoices & slips' },
-    { label: 'Materials Ordered', value: '—', icon: Package, hint: 'Total line items' },
+    { label: 'Aktīvie Pasūtījumi', value: '—', icon: ShoppingCart, hint: 'Pasūtījumi procesā' },
+    { label: 'Gaida Piegāde', value: '—', icon: Truck, hint: 'Gaida piegādi' },
+    { label: 'Mani Dokumenti', value: '—', icon: FolderOpen, hint: 'Rēķini un lapas' },
+    { label: 'Pasūtītie Materiāli', value: '—', icon: Package, hint: 'Kopā pozīcijas' },
   ],
   SUPPLIER: [
-    { label: 'Active Listings', value: '—', icon: Package, hint: 'Published products' },
-    { label: 'Pending Orders', value: '—', icon: ShoppingCart, hint: 'Awaiting fulfilment' },
-    { label: 'Monthly Revenue', value: '—', icon: TrendingUp, hint: 'This month' },
-    { label: 'My Documents', value: '—', icon: FolderOpen, hint: 'Invoices & contracts' },
+    { label: 'Aktīvie Sludinājumi', value: '—', icon: Package, hint: 'Publicēti produkti' },
+    { label: 'Gaida Pasūtījumi', value: '—', icon: ShoppingCart, hint: 'Gaida izpildi' },
+    { label: 'Mēneša Ieņēmumi', value: '—', icon: TrendingUp, hint: 'Šajā mēnesī' },
+    { label: 'Mani Dokumenti', value: '—', icon: FolderOpen, hint: 'Rēķini un līgumi' },
   ],
   CARRIER: [
-    { label: 'Active Jobs', value: '—', icon: MapPin, hint: 'Assigned transport' },
-    { label: 'Completed Today', value: '—', icon: CheckCircle, hint: 'Delivered today' },
-    { label: 'Pending Earnings', value: '—', icon: Banknote, hint: 'Awaiting payment' },
-    { label: 'My Documents', value: '—', icon: FolderOpen, hint: 'CMR & proofs' },
+    { label: 'Aktīvie Darbi', value: '—', icon: MapPin, hint: 'Piešķirtais transports' },
+    { label: 'Pabeigti Šodien', value: '—', icon: CheckCircle, hint: 'Piegādāts šodien' },
+    { label: 'Gaida Samaksa', value: '—', icon: Banknote, hint: 'Gaida maksājumu' },
+    { label: 'Mani Dokumenti', value: '—', icon: FolderOpen, hint: 'CMR un apstiprinājumi' },
   ],
   PRIVATE: [
-    { label: 'My Orders', value: '—', icon: ShoppingCart, hint: 'Skip hire orders' },
-    { label: 'Pending Deliveries', value: '—', icon: Truck, hint: 'Awaiting delivery' },
-    { label: 'My Documents', value: '—', icon: FolderOpen, hint: 'Invoices & paperwork' },
-    { label: 'Support Tickets', value: '—', icon: Headset, hint: 'Open tickets' },
+    {
+      label: 'Mani Pasūtījumi',
+      value: '—',
+      icon: ShoppingCart,
+      hint: 'Konteinera nomas pasūtījumi',
+    },
+    { label: 'Gaida Piegāde', value: '—', icon: Truck, hint: 'Gaida piegādi' },
+    { label: 'Mani Dokumenti', value: '—', icon: FolderOpen, hint: 'Rēķini un dokumenti' },
+    { label: 'Atbalsta Pieprasījumi', value: '—', icon: Headset, hint: 'Atvērtie pieprasījumi' },
   ],
 };
 
 const ROLE_ACTIONS: Record<string, Action[]> = {
   BUYER: [
     {
-      label: 'Browse Materials',
-      description: 'Order sand, gravel, concrete & more',
+      label: 'Pārlūkot Materiālus',
+      description: 'Pasūtīt smiltis, granti, betonu un vairāk',
       icon: Package,
       href: '/materials',
       primary: true,
     },
     {
-      label: 'Hire a Skip',
-      description: 'Book a waste skip for your site',
+      label: 'Pasūtīt Konteineru',
+      description: 'Rezervēt atkritumu konteineru savai darba vietai',
       icon: Trash2,
       href: '/order',
       primary: true,
     },
     {
-      label: 'My Orders',
-      description: 'Track all active orders',
+      label: 'Mani Pasūtījumi',
+      description: 'Izsekot visiem aktīvajiem pasūtījumiem',
       icon: ShoppingCart,
       href: '/orders',
     },
     {
-      label: 'Track Delivery',
-      description: 'See live driver location',
+      label: 'Izsekot Piegādei',
+      description: 'Skatīt transportlīdzeļa atrasanos vietu reāllaikā',
       icon: Truck,
       href: '/tracking',
     },
     {
-      label: 'My Documents',
-      description: 'Invoices, weighing slips & more',
+      label: 'Mani Dokumenti',
+      description: 'Rēķini, svēršanas lapas un citi',
       icon: FolderOpen,
       href: '/dashboard/documents',
     },
   ],
   SUPPLIER: [
     {
-      label: 'My Products',
-      description: 'Manage your material listings',
+      label: 'Mani Produkti',
+      description: 'Pārvaldīt savus materiālu sludinājumus',
       icon: Package,
       href: '/products',
       primary: true,
     },
     {
-      label: 'Add Product',
-      description: 'List a new material for sale',
+      label: 'Pievienot Produktu',
+      description: 'Pievienot jaunu materiālu pārdošanai',
       icon: Plus,
       href: '/products/new',
       primary: true,
     },
     {
-      label: 'Incoming Orders',
-      description: 'View and fulfil new orders',
+      label: 'Ienākošie Pasūtījumi',
+      description: 'Skatīt un izpildīt jaunus pasūtījumus',
       icon: ShoppingCart,
       href: '/orders',
     },
     {
-      label: 'Analytics',
-      description: 'Sales and performance stats',
+      label: 'Analītika',
+      description: 'Pārdošanas un veiktspējas statistika',
       icon: BarChart3,
       href: '/analytics',
     },
     {
-      label: 'My Documents',
-      description: 'Invoices, contracts & certificates',
+      label: 'Mani Dokumenti',
+      description: 'Rēķini, līgumi un sertifikāti',
       icon: FolderOpen,
       href: '/dashboard/documents',
     },
   ],
   CARRIER: [
     {
-      label: 'Active Jobs',
-      description: 'View your assigned transport jobs',
+      label: 'Aktīvie Darbi',
+      description: 'Skatīt piešķirtos transporta darbus',
       icon: MapPin,
       href: '/jobs',
       primary: true,
     },
-    { label: 'Route', description: 'Open navigation for current job', icon: Truck, href: '/route' },
     {
-      label: 'Complete Delivery',
-      description: 'Confirm and upload proof',
+      label: 'Maršruts',
+      description: 'Atvērt navigāciju pašreizējam darbam',
+      icon: Truck,
+      href: '/route',
+    },
+    {
+      label: 'Pabeigt Piegādi',
+      description: 'Apstiprānāt un augšupielādēt apstiprinājumu',
       icon: CheckCircle,
       href: '/jobs/complete',
     },
-    { label: 'Earnings', description: 'Track your payments', icon: Banknote, href: '/earnings' },
     {
-      label: 'My Documents',
-      description: 'CMR notes & delivery proofs',
+      label: 'Ieņēmumi',
+      description: 'Izsekot saviem maksājumiem',
+      icon: Banknote,
+      href: '/earnings',
+    },
+    {
+      label: 'Mani Dokumenti',
+      description: 'CMR piezīmes un piegādes apstiprinājumi',
       icon: FolderOpen,
       href: '/dashboard/documents',
     },
   ],
   PRIVATE: [
     {
-      label: 'Hire a Skip',
-      description: 'Book a waste skip for home',
+      label: 'Pasūtīt Konteineru',
+      description: 'Rezervēt atkritumu konteineru mājām',
       icon: Trash2,
       href: '/order',
       primary: true,
     },
     {
-      label: 'My Orders',
-      description: 'Track your skip hire orders',
+      label: 'Mani Pasūtījumi',
+      description: 'Izsekot konteinera nomas pasūtījumiem',
       icon: ShoppingCart,
       href: '/orders',
     },
     {
-      label: 'Track Delivery',
-      description: 'See when your skip arrives',
+      label: 'Izsekot Piegādei',
+      description: 'Skatīt, kad konteineru piegādās',
       icon: Truck,
       href: '/tracking',
     },
-    { label: 'Support', description: 'Get help with your order', icon: Headset, href: '/support' },
     {
-      label: 'My Documents',
-      description: 'Invoices & order paperwork',
+      label: 'Atbalsts',
+      description: 'Saņemt palīdzību ar pasūtījumu',
+      icon: Headset,
+      href: '/support',
+    },
+    {
+      label: 'Mani Dokumenti',
+      description: 'Rēķini un pasūtījuma dokumenti',
       icon: FolderOpen,
       href: '/dashboard/documents',
     },
@@ -185,19 +205,19 @@ const ROLE_ACTIONS: Record<string, Action[]> = {
 };
 
 const ROLE_LABEL: Record<string, string> = {
-  BUYER: 'Contractor',
-  SUPPLIER: 'Supplier',
-  CARRIER: 'Carrier',
-  PRIVATE: 'Private Person',
-  ADMIN: 'Admin',
+  BUYER: 'Darbuzņēmējs',
+  SUPPLIER: 'Piegādātājs',
+  CARRIER: 'Pārvadātājs',
+  PRIVATE: 'Privātpersona',
+  ADMIN: 'Administrators',
 };
 
 const ROLE_TAGLINE: Record<string, string> = {
-  BUYER: 'Order materials and manage your construction deliveries.',
-  SUPPLIER: 'Manage your listings and fulfil incoming orders.',
-  CARRIER: 'View your transport jobs and track your earnings.',
-  PRIVATE: 'Order a skip and manage your home waste removal.',
-  ADMIN: 'Manage the platform and oversee all operations.',
+  BUYER: 'Pasūtīt materiālus un pārvaldīt celtniecības piegādes.',
+  SUPPLIER: 'Pārvaldīt savus sludinājumus un izpildīt ienākošos pasūtījumus.',
+  CARRIER: 'Skatīt savus transporta darbus un izsekot ieņēkumiem.',
+  PRIVATE: 'Pasūtīt konteineru un pārvaldīt mājas atkritumu izvešanu.',
+  ADMIN: 'Pārvaldīt platformu un uzraudzīt visas darbības.',
 };
 
 // ── Component ──────────────────────────────────────────────────
@@ -228,10 +248,10 @@ export default function DashboardPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Welcome back, {user.firstName}! 👋
+            Laipni atgriezties, {user.firstName}! 👋
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {ROLE_TAGLINE[user.userType] ?? 'Manage your account.'}
+            {ROLE_TAGLINE[user.userType] ?? 'Pārvaldiet savu kontu.'}
           </p>
         </div>
         <span className="inline-flex items-center rounded-full border border-red-200 bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
@@ -260,7 +280,7 @@ export default function DashboardPage() {
       {/* ── Quick actions ── */}
       <div>
         <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          Quick actions
+          Ātrās darbības
         </p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {actions.map((action) => (
@@ -302,14 +322,14 @@ export default function DashboardPage() {
       {/* ── Recent activity ── */}
       <div>
         <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          Recent activity
+          Pēdējā aktivitāte
         </p>
         <Card className="shadow-none border-border/50 bg-background">
           <CardContent className="flex flex-col items-center justify-center py-16 px-6 text-center">
             <Inbox className="mb-3 h-10 w-10 text-muted-foreground/25" />
-            <p className="text-sm font-medium text-muted-foreground">No recent activity</p>
+            <p className="text-sm font-medium text-muted-foreground">Nav pēdējās aktivitātes</p>
             <p className="mt-1 text-xs text-muted-foreground/60">
-              Your orders, deliveries and notifications will appear here.
+              Jūsu pasūtījumi, piegādes un paziņojumi parādīsīsies šeit.
             </p>
           </CardContent>
         </Card>
