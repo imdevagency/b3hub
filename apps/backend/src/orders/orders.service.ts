@@ -14,7 +14,15 @@ import { RequestingUser } from '../common/types/requesting-user.interface';
 export class OrdersService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createOrderDto: CreateOrderDto, userId: string) {
+  async create(createOrderDto: CreateOrderDto, currentUser: RequestingUser) {
+    // Transport-only users cannot place orders
+    const transportOnly =
+      currentUser.canTransport && !currentUser.canSell && currentUser.userType !== 'ADMIN';
+    if (transportOnly) {
+      throw new ForbiddenException('Transport-only accounts cannot create orders');
+    }
+
+    const userId = currentUser.userId;
     const { items, ...orderData } = createOrderDto;
 
     // Generate order number
@@ -125,8 +133,14 @@ export class OrdersService {
     // Build union of all perspectives this user has
     const orConditions: any[] = [];
 
-    // Always: orders this user created (buyer perspective)
-    orConditions.push({ createdById: currentUser.userId });
+    // Transport-only users have no buying capability — skip the "created by" bucket
+    // so they don't appear in order listings as buyers and can't create orders.
+    const transportOnly =
+      currentUser.canTransport && !currentUser.canSell && currentUser.userType !== 'ADMIN';
+
+    if (!transportOnly) {
+      orConditions.push({ createdById: currentUser.userId });
+    }
 
     // Seller: orders that contain their company's materials
     if (currentUser.canSell && currentUser.companyId) {
@@ -148,8 +162,11 @@ export class OrdersService {
   private async assertOrderAccess(order: any, currentUser: RequestingUser) {
     if (currentUser.userType === 'ADMIN') return;
 
-    // Buyer: created this order
-    if (order.createdById === currentUser.userId) return;
+    const transportOnly =
+      currentUser.canTransport && !currentUser.canSell && currentUser.userType !== 'ADMIN';
+
+    // Buyer: created this order (not applicable to transport-only accounts)
+    if (!transportOnly && order.createdById === currentUser.userId) return;
 
     // Seller: has their materials in this order
     if (currentUser.canSell && currentUser.companyId) {

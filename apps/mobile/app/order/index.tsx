@@ -1,7 +1,6 @@
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
@@ -12,17 +11,17 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useOrder } from '@/lib/order-context';
 import { t } from '@/lib/translations';
-import { X, MapPin } from 'lucide-react-native';
+import { X, MapPin, ChevronRight } from 'lucide-react-native';
+import { AddressPicker } from '@/components/ui/AddressPicker';
 
 export default function Step1Location() {
   const router = useRouter();
-  const { state, setLocation } = useOrder();
-  const [value, setValue] = useState(state.location);
-  const isValid = value.trim().length >= 3;
+  const { state, setLocationWithCoords } = useOrder();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const isValid = state.location.trim().length >= 3;
 
   const handleNext = () => {
     if (!isValid) return;
-    setLocation(value.trim());
     router.push('/order/waste-type');
   };
 
@@ -54,22 +53,23 @@ export default function Step1Location() {
           <Text style={s.stepTitle}>{t.skipHire.step1.title}</Text>
           <Text style={s.stepSubtitle}>{t.skipHire.step1.subtitle}</Text>
 
-          <View style={[s.inputRow, isValid && s.inputRowValid]}>
-            <MapPin size={18} color="#9ca3af" />
-            <TextInput
-              style={s.input}
-              placeholder={t.skipHire.step1.placeholder}
-              placeholderTextColor="#9ca3af"
-              value={value}
-              onChangeText={setValue}
-              returnKeyType="next"
-              onSubmitEditing={handleNext}
-              autoFocus
-            />
-          </View>
+          {/* Tap-to-open address picker */}
+          <TouchableOpacity
+            style={[s.locationRow, isValid && s.locationRowValid]}
+            onPress={() => setPickerOpen(true)}
+            activeOpacity={0.7}
+          >
+            <MapPin size={18} color={isValid ? '#dc2626' : '#9ca3af'} />
+            <Text style={[s.locationText, !isValid && s.locationPlaceholder]} numberOfLines={2}>
+              {isValid ? state.location : t.skipHire.step1.placeholder}
+            </Text>
+            <ChevronRight size={16} color="#9ca3af" />
+          </TouchableOpacity>
 
-          {value.length > 0 && !isValid && (
-            <Text style={s.errorText}>{t.skipHire.step1.error}</Text>
+          {isValid && state.locationLat != null && (
+            <Text style={s.coordsHint}>
+              {state.locationLat.toFixed(5)}, {state.locationLng?.toFixed(5)}
+            </Text>
           )}
         </View>
 
@@ -86,6 +86,21 @@ export default function Step1Location() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Full-screen address picker modal */}
+      <AddressPicker
+        visible={pickerOpen}
+        title={t.skipHire.step1.title}
+        initialAddress={state.location}
+        initialLat={state.locationLat ?? undefined}
+        initialLng={state.locationLng ?? undefined}
+        pinColor="#dc2626"
+        onConfirm={({ address, lat, lng }) => {
+          setLocationWithCoords(address, lat, lng);
+          setPickerOpen(false);
+        }}
+        onClose={() => setPickerOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -109,7 +124,6 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeText: { fontSize: 14, color: '#6b7280' },
   headerTitle: { fontSize: 16, fontWeight: '600', color: '#111827' },
   progressWrap: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
   progressTrack: {
@@ -130,7 +144,7 @@ const s = StyleSheet.create({
   },
   stepTitle: { fontSize: 26, fontWeight: '700', color: '#111827', marginBottom: 8 },
   stepSubtitle: { fontSize: 15, color: '#6b7280', marginBottom: 32 },
-  inputRow: {
+  locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 2,
@@ -141,10 +155,25 @@ const s = StyleSheet.create({
     backgroundColor: '#f9fafb',
     gap: 12,
   },
-  inputRowValid: { borderColor: '#dc2626', backgroundColor: '#fff' },
-  inputIcon: { fontSize: 20 },
-  input: { flex: 1, fontSize: 16, color: '#111827', padding: 0 },
-  errorText: { marginTop: 8, fontSize: 13, color: '#dc2626' },
+  locationRowValid: {
+    borderColor: '#dc2626',
+    backgroundColor: '#fff',
+  },
+  locationText: {
+    flex: 1,
+    fontSize: 15,
+    color: '#111827',
+    lineHeight: 20,
+  },
+  locationPlaceholder: {
+    color: '#9ca3af',
+  },
+  coordsHint: {
+    marginTop: 6,
+    fontSize: 11,
+    color: '#9ca3af',
+    paddingLeft: 4,
+  },
   footer: { padding: 24 },
   nextBtn: {
     backgroundColor: '#dc2626',

@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { TransportJobStatus } from '@prisma/client';
 import { UpdateStatusDto, ALLOWED_DRIVER_STATUSES } from './dto/update-status.dto';
+import { CreateTransportJobDto } from './dto/create-transport-job.dto';
 
 // Valid next-state transitions for a driver
 const NEXT_STATUS: Partial<Record<TransportJobStatus, TransportJobStatus>> = {
@@ -58,6 +59,63 @@ export class TransportJobsService {
       select: { id: true, orderNumber: true },
     },
   } as const;
+
+  // ── Create a new transport job ────────────────────────────────
+  async create(dto: CreateTransportJobDto) {
+    const jobNumber = await this.generateJobNumber();
+    return this.prisma.transportJob.create({
+      data: {
+        jobNumber,
+        jobType: dto.jobType,
+        pickupAddress: dto.pickupAddress,
+        pickupCity: dto.pickupCity,
+        pickupState: dto.pickupState ?? '',
+        pickupPostal: dto.pickupPostal ?? '',
+        pickupDate: new Date(dto.pickupDate),
+        pickupWindow: dto.pickupWindow,
+        pickupLat: dto.pickupLat,
+        pickupLng: dto.pickupLng,
+        deliveryAddress: dto.deliveryAddress,
+        deliveryCity: dto.deliveryCity,
+        deliveryState: dto.deliveryState ?? '',
+        deliveryPostal: dto.deliveryPostal ?? '',
+        deliveryDate: new Date(dto.deliveryDate),
+        deliveryWindow: dto.deliveryWindow,
+        deliveryLat: dto.deliveryLat,
+        deliveryLng: dto.deliveryLng,
+        cargoType: dto.cargoType,
+        cargoWeight: dto.cargoWeight,
+        cargoVolume: dto.cargoVolume,
+        specialRequirements: dto.specialRequirements,
+        requiredVehicleType: dto.requiredVehicleType,
+        requiredVehicleEnum: dto.requiredVehicleEnum,
+        distanceKm: dto.distanceKm,
+        rate: dto.rate,
+        pricePerTonne: dto.pricePerTonne,
+        currency: 'EUR',
+        status: TransportJobStatus.AVAILABLE,
+        ...(dto.orderId ? { order: { connect: { id: dto.orderId } } } : {}),
+      },
+      select: this.jobSelect,
+    });
+  }
+
+  private async generateJobNumber(): Promise<string> {
+    const count = await this.prisma.transportJob.count();
+    const date = new Date();
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const number = (count + 1).toString().padStart(5, '0');
+    return `TRJ${year}${month}${number}`;
+  }
+
+  // ── All jobs (dispatcher fleet view) ─────────────────────────
+  async findAll() {
+    return this.prisma.transportJob.findMany({
+      select: this.jobSelect,
+      orderBy: { pickupDate: 'asc' },
+    });
+  }
 
   // ── Available jobs (job board) ─────────────────────────────────
   async findAvailable() {
@@ -125,6 +183,81 @@ export class TransportJobsService {
       data: {
         status: TransportJobStatus.ACCEPTED,
         driverId,
+      },
+      select: this.jobSelect,
+    });
+  }
+
+  // ── Avoid Empty Runs — return trip suggestions ────────────────
+  // Returns AVAILABLE jobs whose pickup location is within `radiusKm`
+  // of the given coords (typically the driver's delivery destination).
+  async findReturnTrips(lat: number, lng: number, radiusKm: number) {
+    const available = await this.prisma.transportJob.findMany({
+      where: { status: TransportJobStatus.AVAILABLE },
+      select: this.jobSelect,
+      orderBy: { pickupDate: 'asc' },
+    });
+
+    return available
+      .filter((job) => {
+        if (job.pickupLat == null || job.pickupLng == null) return false;
+        return this.haversineKm(lat, lng, job.pickupLat, job.pickupLng) <= radiusKm;
+      })
+      .map((job) => ({
+        ...job,
+        returnDistanceKm: Math.round(
+          this.haversineKm(lat, lng, job.pickupLat!, job.pickupLng!),
+        ),
+      }))
+      .sort((a, b) => a.returnDistanceKm - b.returnDistanceKm);
+  }
+
+  private haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  // ── List drivers (canTransport users) ──────────────────────────
+  async findDrivers() {
+    return this.prisma.user.findMany({
+      where: { canTransport: true },
+      select: { id: true, firstName: true, lastName: true, phone: true },
+      orderBy: { firstName: 'asc' },
+    });
+  }
+
+  // ── Dispatcher: assign vehicle + driver to a job ──────────────
+  async assign(id: string, body: { driverId: string; vehicleId: string }) {
+    const job = await this.prisma.transportJob.findUnique({ where: { id } });
+    if (!job) throw new NotFoundException('Transport job not found');
+
+    if (job.status !== TransportJobStatus.AVAILABLE) {
+      throw new BadRequestException('Job is no longer available for assignment');
+    }
+
+    const driver = await this.prisma.user.findUnique({ where: { id: body.driverId } });
+    if (!driver || !driver.canTransport) {
+      throw new BadRequestException('User is not a valid driver');
+    }
+
+    const vehicle = await this.prisma.vehicle.findUnique({ where: { id: body.vehicleId } });
+    if (!vehicle) {
+      throw new NotFoundException('Vehicle not found');
+    }
+
+    return this.prisma.transportJob.update({
+      where: { id },
+      data: {
+        driverId: body.driverId,
+        vehicleId: body.vehicleId,
+        status: TransportJobStatus.ACCEPTED,
       },
       select: this.jobSelect,
     });

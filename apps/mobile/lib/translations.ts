@@ -214,6 +214,9 @@ export const lv = {
     available: 'Pieejams',
     availableJobs: 'Pieejamie darbi',
     perTonne: '/ t',
+    planTour: 'Maršruts',
+    planTourHint: 'Izvēlieties 2+ darbus, lai plānotu maršrutu',
+    planTourBtn: (n: number) => `Plānot maršrutu (${n} darbi)`,
   },
 
   jobSearch: {
@@ -245,6 +248,28 @@ export const lv = {
     orderType: 'Darba veids',
     allTypes: 'Visi',
     sortNewest: 'Jaunākais',
+  },
+
+  avoidEmptyRuns: {
+    toggle: 'Izvairīties no tukšbraucieniem',
+    toggleShort: 'Tukšbrauciens',
+    bannerTitle: 'Atpakaļceļa piedāvājumi',
+    bannerDesc: (city: string) =>
+      `Darbi, kuru iekraušanas vieta atrodas netālu no jūsu piegādes galamērķa: ${city}`,
+    bannerDescGeneric:
+      'Ieplānojiet gudrus maršrutus — atrodiet piemērotu atpakaļbraucienu no piegādes vietas.',
+    noActiveJob:
+      'Pieņemiet aktīvu darbu, lai redzētu atpakaļbraucienu ieteikumus no piegādes vietas.',
+    noReturnTrips: 'Šobrīd nav atpakaļbraucienu šajā rādiusā.',
+    radiusLabel: 'Rādiuss ap galamērķi',
+    found: (n: number) => `${n} atpakaļbraucieni atrasti`,
+    kmAway: (n: number) => `${n} km no galamērķa`,
+    returnBadge: 'ATPAKAĻBRAUCIENS',
+    learnMore: 'Kā tas darbojas?',
+    howItWorksTitle: 'Kā darbojas tukšbraucienu izvairīšanās?',
+    howItWorksBody:
+      'Pēc piegādes jūsu kravas automašīna parasti atgriežas tukša. Šī funkcija meklē pieejamos darbus, kuru iekraušanas vieta atrodas netālu no jūsu piegādes galamērķa — tādejādi jūs varat doties uz nākamo kravu tieši no izkraušanas vietas, nebraucot tukšam no sākuma punkta.',
+    gotIt: 'Sapratu!',
   },
 
   activeJob: {
@@ -298,9 +323,48 @@ export const lv = {
     soonTitle: 'Drīzumā pieejams',
     soonMessage: 'Šī iespēja tiks pievienota drīzumā. Sekojiet līdzi jaunumiem!',
   },
+
+  common: {
+    ok: 'Labi',
+    cancel: 'Atcelt',
+    close: 'Aizvērt',
+    confirm: 'Apstiprināt',
+    back: 'Atpakaļ',
+    loading: 'Ielādē...',
+  },
+
+  tourPlanner: {
+    title: 'Maršruta plānotājs',
+    optimizeBtn: 'Optimizēt maršrutu',
+    optimizing: 'Aprēķina optimālo maršrutu...',
+    optimizedTitle: 'Optimizēts maršruts',
+    totalDistance: (km: number) => `Kopā ~${km} km`,
+    originalOrder: 'Sākotnējā secība',
+    stop: (n: number) => `${n}. pietura`,
+    clearAll: 'Dzēst visu',
+    noJobs: 'Nav izvēlētu darbu',
+  },
+
+  navigation: {
+    tosTitle: 'Navigācijas noteikumi',
+    tosRequired: 'Navigācijai nepieciešams pieņemt noteikumus',
+    pickupLabel: 'Iekraušanas vieta',
+    deliveryLabel: 'Izkraušanas vieta',
+    initialising: 'Sagatavo navigāciju...',
+    headingToPickup: 'Brauc uz iekraušanu',
+    headingToDelivery: 'Brauc uz piegādi',
+    arrived: 'Ieradies!',
+    arrivedTitle: 'Ieradies!',
+    arrivedAtLabel: (label: string) => `Ieradies pie: ${label}`,
+    arrivedDesc: 'Esat nokļuvis galapunktā',
+    errorTitle: 'Navigācijas kļūda',
+    startNav: 'Sākt navigāciju',
+    stopNav: 'Apturēt navigāciju',
+  },
 };
 
 export type Translations = typeof lv;
 
 /** Currently active translations – swap this export to change language. */
 export const t = lv;
+

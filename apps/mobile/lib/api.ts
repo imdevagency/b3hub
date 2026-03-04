@@ -155,6 +155,56 @@ export interface ApiTransportJob {
   order: { id: string; orderNumber: string } | null;
 }
 
+// Extends ApiTransportJob with a precomputed distance from the anchor coords
+export interface ApiReturnTripJob extends ApiTransportJob {
+  returnDistanceKm: number;
+}
+
+// ─── Materials ─────────────────────────────────────────────────────────────
+
+export type MaterialCategory =
+  | 'SAND'
+  | 'GRAVEL'
+  | 'STONE'
+  | 'CONCRETE'
+  | 'SOIL'
+  | 'RECYCLED_CONCRETE'
+  | 'RECYCLED_SOIL'
+  | 'ASPHALT'
+  | 'CLAY'
+  | 'OTHER';
+
+export type MaterialUnit = 'TONNE' | 'M3' | 'PIECE' | 'LOAD';
+
+export interface ApiMaterial {
+  id: string;
+  name: string;
+  description?: string | null;
+  category: MaterialCategory;
+  unit: MaterialUnit;
+  basePrice: number;
+  minOrder?: number | null;
+  inStock: boolean;
+  isRecycled: boolean;
+  supplier: {
+    id: string;
+    name: string;
+    city?: string | null;
+  };
+}
+
+export interface CreateMaterialOrderInput {
+  buyerId: string;
+  materialId: string;
+  quantity: number;
+  unit: MaterialUnit;
+  unitPrice: number;
+  deliveryAddress: string;
+  deliveryCity: string;
+  deliveryPostal?: string;
+  deliveryDate: string;
+}
+
 async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${endpoint}`, {
     headers: {
@@ -169,7 +219,9 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
     throw new Error(error.message || `HTTP ${res.status}`);
   }
 
-  return res.json();
+  // Handle empty body (e.g. 204 No Content, or null returns from NestJS)
+  const text = await res.text();
+  return text.length > 0 ? (JSON.parse(text) as T) : (null as T);
 }
 
 export const api = {
@@ -186,8 +238,15 @@ export const api = {
     }),
 
   getMe: (token: string) =>
-    apiFetch<User>("/auth/me", {
+    apiFetch<User>('/auth/me', {
       headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  updateProfile: (data: { firstName?: string; lastName?: string; phone?: string }, token: string) =>
+    apiFetch<User>('/auth/me', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
     }),
 
   orders: {
@@ -242,6 +301,48 @@ export const api = {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
+      }),
+
+    /** Avoid Empty Runs — jobs near the given coords (delivery destination). */
+    returnTrips: (lat: number, lng: number, radiusKm: number, token: string) =>
+      apiFetch<ApiReturnTripJob[]>(
+        `/transport-jobs/return-trips?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      ),
+  },
+
+  materials: {
+    getAll: (token: string, params?: Record<string, string>) => {
+      const qs = params && Object.keys(params).length
+        ? '?' + new URLSearchParams(params).toString()
+        : '';
+      // Use search endpoint when a 'search' param is provided
+      const path = params?.search
+        ? `/materials/search?q=${encodeURIComponent(params.search)}${params.category ? `&category=${params.category}` : ''}`
+        : `/materials${qs}`;
+      return apiFetch<ApiMaterial[]>(path, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    },
+
+    createOrder: (input: CreateMaterialOrderInput, token: string) =>
+      apiFetch<ApiOrder>('/orders', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          orderType: 'MATERIAL',
+          buyerId: input.buyerId,
+          items: [{
+            materialId: input.materialId,
+            quantity: input.quantity,
+            unit: input.unit,
+            unitPrice: input.unitPrice,
+          }],
+          deliveryAddress: input.deliveryAddress,
+          deliveryCity: input.deliveryCity,
+          deliveryPostal: input.deliveryPostal,
+          deliveryDate: input.deliveryDate,
+        }),
       }),
   },
 };

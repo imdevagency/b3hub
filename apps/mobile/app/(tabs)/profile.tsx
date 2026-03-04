@@ -1,23 +1,83 @@
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Pencil, X, Check, LogOut } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
+import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const { user, token, setAuth, logout } = useAuth();
   const { mode } = useMode();
   const router = useRouter();
+  const [editOpen, setEditOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    firstName: user?.firstName ?? '',
+    lastName: user?.lastName ?? '',
+    phone: user?.phone ?? '',
+  });
 
   const roleLabel = t.mode[mode];
+  const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`;
 
-  const handleLogout = async () => {
-    await logout();
-    router.replace('/(auth)/welcome');
+  const handleLogout = () => {
+    Alert.alert('Iziet', 'Vai tiešām vēlaties izrakstīties?', [
+      { text: 'Atcelt', style: 'cancel' },
+      {
+        text: 'Iziet',
+        style: 'destructive',
+        onPress: async () => {
+          await logout();
+          router.replace('/(auth)/welcome');
+        },
+      },
+    ]);
   };
 
-  const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`;
+  const openEdit = () => {
+    setForm({
+      firstName: user?.firstName ?? '',
+      lastName: user?.lastName ?? '',
+      phone: user?.phone ?? '',
+    });
+    setEditOpen(true);
+  };
+
+  const saveEdit = async () => {
+    if (!token || !user) return;
+    setSaving(true);
+    try {
+      const updated = await api.updateProfile(
+        {
+          firstName: form.firstName.trim() || undefined,
+          lastName: form.lastName.trim() || undefined,
+          phone: form.phone.trim() || undefined,
+        },
+        token,
+      );
+      await setAuth(updated, token);
+      setEditOpen(false);
+    } catch {
+      Alert.alert('Kļūda', 'Neizdevās saglabāt izmaiņas. Lūdzu, mēģiniet vēlreiz.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const INFO_ROWS = [
     { label: t.profile.email, value: user?.email },
@@ -25,6 +85,8 @@ export default function ProfileScreen() {
     { label: t.profile.accountType, value: user?.userType },
     { label: t.profile.status, value: user?.status },
   ];
+
+  const set = (key: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [key]: v }));
 
   return (
     <SafeAreaView style={s.safe}>
@@ -41,6 +103,10 @@ export default function ProfileScreen() {
           <View style={s.roleBadge}>
             <Text style={s.roleBadgeText}>{roleLabel}</Text>
           </View>
+          <TouchableOpacity style={s.editBtn} onPress={openEdit} activeOpacity={0.8}>
+            <Pencil size={13} color="#dc2626" />
+            <Text style={s.editBtnText}>Rediģēt profilu</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={s.body}>
@@ -60,10 +126,87 @@ export default function ProfileScreen() {
 
           {/* Sign out */}
           <TouchableOpacity style={s.signOutBtn} onPress={handleLogout} activeOpacity={0.8}>
+            <LogOut size={16} color="#dc2626" />
             <Text style={s.signOutText}>{t.profile.signOut}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Edit modal */}
+      <Modal
+        visible={editOpen}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setEditOpen(false)}
+      >
+        <KeyboardAvoidingView
+          style={{ flex: 1, backgroundColor: '#f2f2f7' }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={s.modalHandle}>
+            <View style={s.handleBar} />
+          </View>
+          <View style={s.modalToolbar}>
+            <TouchableOpacity onPress={() => setEditOpen(false)} hitSlop={10}>
+              <X size={20} color="#111827" />
+            </TouchableOpacity>
+            <Text style={s.modalTitle}>Rediģēt profilu</Text>
+            <TouchableOpacity onPress={saveEdit} hitSlop={10} disabled={saving}>
+              {saving ? (
+                <ActivityIndicator size="small" color="#dc2626" />
+              ) : (
+                <Check size={20} color="#dc2626" />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }}>
+            <View style={s.fieldGroup}>
+              <Text style={s.fieldLabel}>Vārds</Text>
+              <TextInput
+                style={s.fieldInput}
+                value={form.firstName}
+                onChangeText={set('firstName')}
+                placeholder="Vārds"
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
+            <View style={s.fieldGroup}>
+              <Text style={s.fieldLabel}>Uzvārds</Text>
+              <TextInput
+                style={s.fieldInput}
+                value={form.lastName}
+                onChangeText={set('lastName')}
+                placeholder="Uzvārds"
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
+            <View style={s.fieldGroup}>
+              <Text style={s.fieldLabel}>Tālrunis</Text>
+              <TextInput
+                style={s.fieldInput}
+                value={form.phone}
+                onChangeText={set('phone')}
+                placeholder="+371 20000000"
+                placeholderTextColor="#9ca3af"
+                keyboardType="phone-pad"
+              />
+            </View>
+            <TouchableOpacity
+              style={[s.saveBtn, saving && { opacity: 0.5 }]}
+              onPress={saveEdit}
+              disabled={saving}
+              activeOpacity={0.88}
+            >
+              {saving ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={s.saveBtnText}>Saglabāt</Text>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -98,6 +241,19 @@ const s = StyleSheet.create({
     borderRadius: 20,
   },
   roleBadgeText: { color: '#b91c1c', fontSize: 12, fontWeight: '500' },
+  editBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    backgroundColor: '#fef2f2',
+  },
+  editBtnText: { color: '#dc2626', fontSize: 13, fontWeight: '600' },
   body: { padding: 20 },
   card: {
     backgroundColor: '#fff',
@@ -123,19 +279,58 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
   },
-  rowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#f9fafb',
-  },
+  rowBorder: { borderBottomWidth: 1, borderBottomColor: '#f9fafb' },
   rowLabel: { fontSize: 14, color: '#6b7280' },
   rowValue: { fontSize: 14, fontWeight: '500', color: '#111827' },
   signOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     backgroundColor: '#fef2f2',
     borderWidth: 1,
     borderColor: '#fecaca',
     borderRadius: 16,
     paddingVertical: 16,
-    alignItems: 'center',
   },
   signOutText: { color: '#dc2626', fontWeight: '600', fontSize: 15 },
+  // Modal
+  modalHandle: { alignItems: 'center', paddingTop: 10, paddingBottom: 4 },
+  handleBar: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#d1d5db' },
+  modalToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  modalTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  fieldGroup: { gap: 6 },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  fieldInput: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#111827',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  saveBtn: {
+    backgroundColor: '#dc2626',
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

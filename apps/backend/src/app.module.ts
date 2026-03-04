@@ -12,6 +12,8 @@ import { DocumentsModule } from './documents/documents.module';
 import { ProviderApplicationsModule } from './provider-applications/provider-applications.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
 import { TransportJobsModule } from './transport-jobs/transport-jobs.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { InvoicesModule } from './invoices/invoices.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { TransportJobsModule } from './transport-jobs/transport-jobs.module';
     ProviderApplicationsModule,
     VehiclesModule,
     TransportJobsModule,
+    NotificationsModule,
+    InvoicesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

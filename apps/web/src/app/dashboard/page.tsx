@@ -11,6 +11,7 @@ import {
   CheckCircle,
   FolderOpen,
   Inbox,
+  LayoutGrid,
   MapPin,
   Package,
   Plus,
@@ -267,6 +268,7 @@ const ROLE_TAGLINE: Record<string, string> = {
   BUYER: 'Pasūtīt materiālus, konteinerus un pārvaldīt piegādes.',
   SUPPLIER: 'Pārvaldīt savus sludinājumus un izpildīt ienākošos pasūtījumus.',
   CARRIER: 'Skatīt savus transporta darbus un izsekot ieņēkumiem.',
+  CARRIER_DISPATCHER: 'Pārvaldiet floti, piešķiriet šoferus un uzraugiet visus aktīvos darbus.',
   ADMIN: 'Pārvaldīt platformu un uzraudzīt visas darbības.',
 };
 
@@ -299,10 +301,21 @@ export default function DashboardPage() {
 
   const stats = getRoleStats(user.userType, user.canTransport ?? false, statsData);
   const baseActions = ROLE_ACTIONS[user.userType] ?? ROLE_ACTIONS.BUYER;
-  const actions =
-    (user.canTransport ?? false) && user.userType !== 'CARRIER'
+  const isDispatcher = user.isCompany && (user.canTransport || user.userType === 'CARRIER');
+  const actions = isDispatcher
+    ? [
+        {
+          label: 'Dispečera Panelis',
+          description: 'Flotes statuss, aktīvie darbi, šoferu pārskatīšana',
+          icon: LayoutGrid,
+          href: '/dashboard/fleet',
+          primary: true,
+        } as Action,
+        ...baseActions.filter((a) => a.href !== '/dashboard/fleet'),
+      ]
+    : (user.canTransport ?? false) && user.userType !== 'CARRIER'
       ? [
-          ...baseActions.slice(0, 1), // keep first action
+          ...baseActions.slice(0, 1),
           {
             label: 'Mans Autoparks',
             description: 'Pievienot un pārvaldīt savus transportlīdzekļus',
@@ -310,10 +323,10 @@ export default function DashboardPage() {
             href: '/dashboard/garage',
             primary: true,
           } as Action,
-          ...baseActions.slice(1), // rest of actions
+          ...baseActions.slice(1),
         ]
       : baseActions;
-  const label = ROLE_LABEL[user.userType] ?? user.userType;
+  const label = isDispatcher ? 'Dispečers' : (ROLE_LABEL[user.userType] ?? user.userType);
 
   return (
     <div className="space-y-8">
@@ -324,7 +337,8 @@ export default function DashboardPage() {
             Laipni atgriezties, {user.firstName}! 👋
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {ROLE_TAGLINE[user.userType] ?? 'Pārvaldiet savu kontu.'}
+            {ROLE_TAGLINE[isDispatcher ? 'CARRIER_DISPATCHER' : user.userType] ??
+              'Pārvaldiet savu kontu.'}
           </p>
         </div>
         <div className="flex items-center gap-2">

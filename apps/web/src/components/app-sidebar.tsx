@@ -4,21 +4,21 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  BarChart3,
   Banknote,
   Building2,
   Car,
-  CheckCircle,
+  ClipboardList,
   FolderOpen,
   LayoutDashboard,
+  LayoutGrid,
   LogOut,
   MapPin,
   Package,
-  Plus,
   Settings,
   ShoppingCart,
   Trash2,
   Truck,
+  ShieldCheck,
 } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth-context';
@@ -42,27 +42,24 @@ type Mode = 'BUYER' | 'SUPPLIER' | 'CARRIER';
 const ROLE_NAV: Record<Mode, NavItem[]> = {
   BUYER: [
     { label: 'Informācijas Panelis', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Pārlūkot Materiālus', href: '/materials', icon: Package },
+    { label: 'Materiālu Katalogs', href: '/dashboard/catalog', icon: Package },
+    { label: 'Mani Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
     { label: 'Pasūtīt Konteineru', href: '/dashboard/order', icon: Trash2 },
-    { label: 'Mani Pasūtījumi', href: '/orders', icon: ShoppingCart },
-    { label: 'Izsekot Piegādei', href: '/tracking', icon: Truck },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
   SUPPLIER: [
     { label: 'Informācijas Panelis', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Mani Produkti', href: '/products', icon: Package },
-    { label: 'Pievienot Produktu', href: '/products/new', icon: Plus },
-    { label: 'Ienākošie Pasūtījumi', href: '/orders', icon: ShoppingCart },
-    { label: 'Analītika', href: '/analytics', icon: BarChart3 },
+    { label: 'Mani Materiāli', href: '/dashboard/catalog', icon: Package },
+    { label: 'Ienākošie Pasūtījumi', href: '/dashboard/orders', icon: ShoppingCart },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
   CARRIER: [
     { label: 'Informācijas Panelis', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Mans Autoparks', href: '/dashboard/garage', icon: Car },
-    { label: 'Auftragsbörse', href: '/dashboard/jobs', icon: MapPin },
-    { label: 'Maršruts', href: '/route', icon: Truck },
-    { label: 'Pabeigt Piegādi', href: '/jobs/complete', icon: CheckCircle },
-    { label: 'Ieņēmumi', href: '/earnings', icon: Banknote },
+    { label: 'Job Board', href: '/dashboard/jobs', icon: MapPin },
+    { label: 'Mani Darbi', href: '/dashboard/orders', icon: ClipboardList },
+    { label: 'Aktīvais Darbs', href: '/dashboard/active', icon: Truck },
+    { label: 'Ieņēmumi', href: '/dashboard/earnings', icon: Banknote },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
 };
@@ -90,9 +87,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const availableModes = React.useMemo<Mode[]>(() => {
     if (!user) return ['BUYER'];
     const modes: Mode[] = [];
-    if (user.userType === 'BUYER' || user.userType === 'ADMIN') modes.push('BUYER');
-    if (user.userType === 'SUPPLIER' || user.canSell) modes.push('SUPPLIER');
-    if (user.userType === 'CARRIER' || user.canTransport) modes.push('CARRIER');
+    const isAdmin = user.userType === 'ADMIN';
+    // userType defaults to BUYER in the DB for all users, so we must check
+    // transport/sell flags explicitly to avoid showing BUYER to transport-only users
+    const isTransport = user.canTransport || user.userType === 'CARRIER';
+
+    // BUYER: non-transport users + admins (who see everything)
+    if (isAdmin || (!isTransport && user.userType === 'BUYER')) modes.push('BUYER');
+    if (isAdmin || user.userType === 'SUPPLIER' || user.canSell) modes.push('SUPPLIER');
+    if (isAdmin || isTransport) modes.push('CARRIER');
     // Ensure at least one mode
     if (modes.length === 0) modes.push('BUYER');
     return modes;
@@ -107,16 +110,32 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     try {
       const stored = localStorage.getItem(LS_MODE_KEY) as Mode | null;
       if (stored && availableModes.includes(stored)) setActiveMode(stored);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, [availableModes]);
 
   const handleModeSwitch = (mode: Mode) => {
     setActiveMode(mode);
-    try { localStorage.setItem(LS_MODE_KEY, mode); } catch { /* ignore */ }
+    try {
+      localStorage.setItem(LS_MODE_KEY, mode);
+    } catch {
+      /* ignore */
+    }
     router.push('/dashboard');
   };
 
-  const navItems = ROLE_NAV[activeMode];
+  const navItems = React.useMemo(() => {
+    const base = ROLE_NAV[activeMode];
+    if (activeMode === 'CARRIER' && user?.isCompany) {
+      return [
+        base[0], // Informācijas Panelis
+        { label: 'Dispečera Panelis', href: '/dashboard/fleet', icon: LayoutGrid } as NavItem,
+        ...base.slice(1),
+      ];
+    }
+    return base;
+  }, [activeMode, user]);
   const isMultiRole = availableModes.length > 1;
 
   const initials = user
@@ -185,12 +204,37 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </SidebarGroup>
 
+        {/* Admin section — only shown to ADMIN users */}
+        {user?.userType === 'ADMIN' && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administrācija</SidebarGroupLabel>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Piegādātāju pieteikumi"
+                  isActive={pathname === '/dashboard/admin/applications'}
+                >
+                  <Link href="/dashboard/admin/applications">
+                    <ShieldCheck />
+                    <span>Pieteikumi</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
+
         {/* Settings pinned to bottom */}
         <SidebarGroup className="mt-auto">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Iestatījumi" isActive={pathname === '/settings'}>
-                <Link href="/settings">
+              <SidebarMenuButton
+                asChild
+                tooltip="Iestatījumi"
+                isActive={pathname === '/dashboard/settings'}
+              >
+                <Link href="/dashboard/settings">
                   <Settings />
                   <span>Iestatījumi</span>
                 </Link>

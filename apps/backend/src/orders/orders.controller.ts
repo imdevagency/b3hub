@@ -23,7 +23,14 @@ export class OrdersController {
 
   @Post()
   create(@Body() createOrderDto: CreateOrderDto, @CurrentUser() user: any) {
-    return this.ordersService.create(createOrderDto, user.userId);
+    return this.ordersService.create(createOrderDto, {
+      userId: user.userId,
+      userType: user.userType,
+      isCompany: user.isCompany ?? false,
+      canSell: user.canSell ?? false,
+      canTransport: user.canTransport ?? false,
+      companyId: user.companyId,
+    });
   }
 
   @Get('stats')

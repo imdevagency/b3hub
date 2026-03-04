@@ -1,0 +1,49 @@
+import {
+  Controller,
+  Get,
+  Patch,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { NotificationsService } from './notifications.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+
+@Controller('notifications')
+@UseGuards(JwtAuthGuard)
+export class NotificationsController {
+  constructor(private readonly notificationsService: NotificationsService) {}
+
+  /** GET /notifications?page=1&limit=20 */
+  @Get()
+  getMyNotifications(
+    @CurrentUser() user: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.notificationsService.getForUser(
+      user.userId,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+    );
+  }
+
+  /** GET /notifications/unread-count */
+  @Get('unread-count')
+  getUnreadCount(@CurrentUser() user: any) {
+    return this.notificationsService.getUnreadCount(user.userId);
+  }
+
+  /** PATCH /notifications/read-all */
+  @Patch('read-all')
+  markAllRead(@CurrentUser() user: any) {
+    return this.notificationsService.markAllRead(user.userId);
+  }
+
+  /** PATCH /notifications/:id/read */
+  @Patch(':id/read')
+  markRead(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.notificationsService.markRead(id, user.userId);
+  }
+}

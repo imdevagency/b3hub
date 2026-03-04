@@ -1,0 +1,102 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { PaymentStatus } from '@prisma/client';
+
+@Injectable()
+export class InvoicesService {
+  constructor(private prisma: PrismaService) {}
+
+  /**
+   * Get invoices visible to the requesting user.
+   * A user can see invoices for orders where they are the buyer.
+   */
+  async getMyInvoices(userId: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const where = {
+      order: {
+        buyerId: userId,
+      },
+    };
+    const [invoices, total] = await Promise.all([
+      this.prisma.invoice.findMany({
+        where,
+        include: {
+          order: {
+            select: {
+              id: true,
+              orderNumber: true,
+              orderType: true,
+              status: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.invoice.count({ where }),
+    ]);
+    return { data: invoices, meta: { page, limit, total } };
+  }
+
+  async getById(invoiceId: string, userId: string) {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: {
+        id: invoiceId,
+        order: { buyerId: userId },
+      },
+      include: {
+        order: {
+          select: {
+            id: true,
+            orderNumber: true,
+            orderType: true,
+            status: true,
+            deliveryAddress: true,
+            deliveryCity: true,
+          },
+        },
+      },
+    });
+    if (!invoice) throw new NotFoundException('Invoice not found');
+    return invoice;
+  }
+
+  async getByOrder(orderId: string, userId: string) {
+    const invoices = await this.prisma.invoice.findMany({
+      where: {
+        orderId,
+        order: { buyerId: userId },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return invoices;
+  }
+
+  async markAsPaid(invoiceId: string, userId: string) {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { id: invoiceId, order: { buyerId: userId } },
+    });
+    if (!invoice) throw new NotFoundException('Invoice not found');
+    return this.prisma.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        paymentStatus: PaymentStatus.PAID,
+        paidDate: new Date(),
+      },
+    });
+  }
+
+  /** Admin/internal: get all unpaid invoices */
+  async getUnpaid() {
+    return this.prisma.invoice.findMany({
+      where: { paymentStatus: PaymentStatus.PENDING },
+      include: {
+        order: {
+          select: { orderNumber: true, buyerId: true },
+        },
+      },
+      orderBy: { dueDate: 'asc' },
+    });
+  }
+}

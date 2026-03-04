@@ -14,12 +14,28 @@ import {
   BookmarkCheck,
   RefreshCw,
   SlidersHorizontal,
+  Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth-context';
-import { getAvailableTransportJobs, acceptTransportJob, type ApiTransportJob } from '@/lib/api';
+import {
+  getAvailableTransportJobs,
+  acceptTransportJob,
+  getMyVehicles,
+  getTransportDrivers,
+  assignTransportJob,
+  createTransportJob,
+  type ApiTransportJob,
+  type Vehicle,
+  type ApiDriver,
+  type CreateTransportJobInput,
+  type TransportJobType,
+  type VehicleTypeEnum,
+} from '@/lib/api';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { CalendarDays, Users, ChevronRight, CircleCheck } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -217,6 +233,27 @@ export default function JobsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  // Dispatch panel
+  const [dispatchJob, setDispatchJob] = useState<TransportJob | null>(null);
+  const [dispatchVehicleId, setDispatchVehicleId] = useState('');
+  const [dispatchDriverId, setDispatchDriverId] = useState('');
+  const [assigning, setAssigning] = useState(false);
+  const [assignSuccess, setAssignSuccess] = useState(false);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [drivers, setDrivers] = useState<ApiDriver[]>([]);
+
+  // Create-job Sheet
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createSuccess, setCreateSuccess] = useState(false);
+  const [createForm, setCreateForm] = useState<Partial<CreateTransportJobInput>>({
+    jobType: 'MATERIAL_DELIVERY',
+    pickupState: 'Latvija',
+    deliveryState: 'Latvija',
+  });
+  const setField = (k: keyof CreateTransportJobInput, v: string | number) =>
+    setCreateForm((p) => ({ ...p, [k]: v }));
+
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
   }, [user, isLoading, router]);
@@ -239,6 +276,17 @@ export default function JobsPage() {
       /* ignore */
     }
   }, [savedSearches]);
+
+  // Load vehicles + drivers for dispatch panel
+  useEffect(() => {
+    if (!token) return;
+    getMyVehicles(token)
+      .then(setVehicles)
+      .catch(() => {});
+    getTransportDrivers(token)
+      .then(setDrivers)
+      .catch(() => {});
+  }, [token]);
 
   // Fetch live jobs from backend
   const fetchJobs = useCallback(async () => {
@@ -305,11 +353,78 @@ export default function JobsPage() {
     }
   };
 
+  const openDispatch = (job: TransportJob) => {
+    setDispatchJob(job);
+    setDispatchVehicleId(vehicles[0]?.id ?? '');
+    setDispatchDriverId(drivers[0]?.id ?? '');
+    setAssignSuccess(false);
+  };
+
+  const handleAssign = async () => {
+    if (!token || !dispatchJob || !dispatchVehicleId || !dispatchDriverId) return;
+    setAssigning(true);
+    try {
+      await assignTransportJob(
+        dispatchJob.id,
+        { driverId: dispatchDriverId, vehicleId: dispatchVehicleId },
+        token,
+      );
+      setAllJobs((prev) => prev.filter((j) => j.id !== dispatchJob.id));
+      setAssignSuccess(true);
+      setTimeout(() => {
+        setDispatchJob(null);
+        setAssignSuccess(false);
+      }, 1400);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Neizdevās piešķirt darbu');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchJobs();
     setRefreshing(false);
   }, [fetchJobs]);
+
+  const handleCreateJob = async () => {
+    if (!token) return;
+    const f = createForm;
+    if (
+      !f.jobType ||
+      !f.pickupAddress ||
+      !f.pickupCity ||
+      !f.pickupDate ||
+      !f.deliveryAddress ||
+      !f.deliveryCity ||
+      !f.deliveryDate ||
+      !f.cargoType ||
+      !f.rate
+    ) {
+      alert('Lūdzu aizpildiet visus obligātos laukus');
+      return;
+    }
+    setCreating(true);
+    try {
+      const newJob = await createTransportJob(f as CreateTransportJobInput, token);
+      setAllJobs((prev) => [mapApiJob(newJob), ...prev]);
+      setCreateSuccess(true);
+      setTimeout(() => {
+        setCreateOpen(false);
+        setCreateSuccess(false);
+        setCreateForm({
+          jobType: 'MATERIAL_DELIVERY',
+          pickupState: 'Latvija',
+          deliveryState: 'Latvija',
+        });
+      }, 1400);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Neizdevās izveidot darbu');
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const togglePanel = () => {
     if (!panelOpen && activeFilter) setDraft({ ...activeFilter });
@@ -337,12 +452,16 @@ export default function JobsPage() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Auftragsbörse</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Job Board</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Pieejamie transporta darbi · {filteredJobs.length} rezultāti
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Izveidot Darbu
+          </Button>
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
             <RefreshCw className={`h-4 w-4 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
             Atjaunot
@@ -613,7 +732,7 @@ export default function JobsPage() {
                     <p className="text-xs text-muted-foreground">{job.fromAddress}</p>
                   </div>
                 </div>
-                <div className="w-px h-4 bg-gray-200 ml-[5px]" />
+                <div className="w-px h-4 bg-gray-200 ml-1.5" />
                 <div className="flex items-center gap-3">
                   <div className="w-2.5 h-2.5 rounded-full bg-red-600 border-2 border-red-200 shrink-0" />
                   <div>
@@ -645,18 +764,432 @@ export default function JobsPage() {
                 </div>
               </div>
 
-              {/* Accept button */}
-              <Button
-                className="w-full bg-red-600 hover:bg-red-700 text-white"
-                onClick={() => handleAccept(job.id)}
-              >
-                <Truck className="h-4 w-4 mr-2" />
-                Pieņemt darbu
-              </Button>
+              {/* Action buttons */}
+              <div className="flex gap-2">
+                {user?.canTransport && user?.isCompany && (
+                  <Button
+                    className="flex-1 bg-gray-900 hover:bg-gray-800 text-white"
+                    onClick={() => openDispatch(job)}
+                  >
+                    <CalendarDays className="h-4 w-4 mr-2" />
+                    Plānot darbu
+                  </Button>
+                )}
+                {(!user?.isCompany || !user?.canTransport) && (
+                  <Button
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                    onClick={() => handleAccept(job.id)}
+                  >
+                    <Truck className="h-4 w-4 mr-2" />
+                    Pieņemt darbu
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* ── Dispatch Sheet ─────────────────────────────────────────────────── */}
+      <Sheet open={!!dispatchJob} onOpenChange={(o) => !o && setDispatchJob(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
+          {dispatchJob && (
+            <>
+              <SheetHeader className="px-6 py-5 border-b">
+                <SheetTitle className="text-base font-bold">
+                  Darbu #{dispatchJob.jobNumber} plānot
+                </SheetTitle>
+              </SheetHeader>
+
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+                {/* Cargo pill */}
+                <div className="flex items-center gap-3 bg-gray-50 border rounded-xl px-4 py-3">
+                  <span className="text-2xl">{dispatchJob.vehicleEmoji}</span>
+                  <div>
+                    <p className="font-bold text-sm text-gray-900">
+                      {dispatchJob.weightTonnes} t · {dispatchJob.payload}
+                    </p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                      <CalendarDays className="h-3 w-3" />
+                      {dispatchJob.date} · {dispatchJob.time}
+                    </p>
+                  </div>
+                  <span className="ml-auto text-xs font-semibold bg-gray-200 text-gray-700 rounded px-2 py-1">
+                    {dispatchJob.vehicleType}
+                  </span>
+                </div>
+
+                {/* Route */}
+                <div className="space-y-1 pl-1">
+                  <div className="flex items-start gap-3">
+                    <div className="w-2.5 h-2.5 rounded-full bg-gray-400 border-2 border-gray-200 mt-1 shrink-0" />
+                    <div>
+                      <p className="font-semibold text-sm text-gray-900">{dispatchJob.fromCity}</p>
+                      <p className="text-xs text-muted-foreground">{dispatchJob.fromAddress}</p>
+                    </div>
+                  </div>
+                  <div className="w-px h-4 bg-gray-200 ml-1.5" />
+                  <div className="flex items-start gap-3">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-600 border-2 border-red-200 mt-1 shrink-0" />
+                    <div>
+                      <p className="font-semibold text-sm text-gray-900">{dispatchJob.toCity}</p>
+                      <p className="text-xs text-muted-foreground">{dispatchJob.toAddress}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Distance + price */}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Ruler className="h-3.5 w-3.5" />
+                  <span>{dispatchJob.distanceKm} km</span>
+                  <span className="text-gray-300">·</span>
+                  <span className="font-bold text-red-600">
+                    {dispatchJob.priceTotal.toFixed(2)} {dispatchJob.currency}
+                  </span>
+                </div>
+
+                <div className="border-t pt-4 space-y-4">
+                  <p className="text-xs text-muted-foreground">
+                    Vispirms izvēlieties transportlīdzekli, pēc tam šoferi.
+                  </p>
+
+                  {/* Vehicle select */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                      <Truck className="h-3.5 w-3.5" />
+                      Transportlīdzeklis
+                    </Label>
+                    <select
+                      value={dispatchVehicleId}
+                      onChange={(e) => setDispatchVehicleId(e.target.value)}
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="">-- Izvēlieties --</option>
+                      {vehicles.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.licensePlate} ({v.vehicleType})
+                        </option>
+                      ))}
+                    </select>
+                    {vehicles.length === 0 && (
+                      <p className="text-xs text-amber-600">
+                        Nav reģistrētu transportlīdzekļu. Pievienojiet garāžā.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Driver select */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5" />
+                      Šoferis
+                    </Label>
+                    <select
+                      value={dispatchDriverId}
+                      onChange={(e) => setDispatchDriverId(e.target.value)}
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="">-- Izvēlieties --</option>
+                      {drivers.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.firstName} {d.lastName}
+                          {d.phone ? ` · ${d.phone}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    {drivers.length === 0 && (
+                      <p className="text-xs text-amber-600">Nav atrasts neviens šoferis.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer actions */}
+              <div className="px-6 py-4 border-t flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setDispatchJob(null)}
+                  disabled={assigning}
+                >
+                  Atcelt
+                </Button>
+                <Button
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  onClick={handleAssign}
+                  disabled={assigning || !dispatchVehicleId || !dispatchDriverId || assignSuccess}
+                >
+                  {assignSuccess ? (
+                    <>
+                      <CircleCheck className="h-4 w-4 mr-2" />
+                      Saglabāts!
+                    </>
+                  ) : assigning ? (
+                    'Saglabā...'
+                  ) : (
+                    '✓ Saglabāt'
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Create Job Sheet ────────────────────────────────────── */}
+      <Sheet open={createOpen} onOpenChange={setCreateOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b">
+            <SheetTitle className="text-lg font-semibold">Izveidot jaunu darbu</SheetTitle>
+          </SheetHeader>
+
+          {createSuccess ? (
+            <div className="flex flex-col items-center justify-center h-64 gap-4 text-green-600">
+              <CircleCheck className="h-12 w-12" />
+              <p className="text-base font-medium">Darbs izveidots!</p>
+            </div>
+          ) : (
+            <div className="px-6 py-4 space-y-5">
+              {/* Job type */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Darba veids *
+                </Label>
+                <select
+                  value={createForm.jobType ?? 'MATERIAL_DELIVERY'}
+                  onChange={(e) => setField('jobType', e.target.value)}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="MATERIAL_DELIVERY">Materiālu piegāde</option>
+                  <option value="CONTAINER_DELIVERY">Konteinera piegāde</option>
+                  <option value="CONTAINER_PICKUP">Konteinera savākšana</option>
+                  <option value="WASTE_COLLECTION">Atkritumu savākšana</option>
+                  <option value="EQUIPMENT_TRANSPORT">Tehnikas pārvadāšana</option>
+                </select>
+              </div>
+
+              {/* Pickup */}
+              <fieldset className="space-y-3 border rounded-lg p-4">
+                <legend className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                  Iekraušanas vieta
+                </legend>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Adrese *</Label>
+                  <Input
+                    placeholder="Ielas adrese"
+                    value={createForm.pickupAddress ?? ''}
+                    onChange={(e) => setField('pickupAddress', e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Pilsēta *</Label>
+                    <Input
+                      placeholder="Pilsēta"
+                      value={createForm.pickupCity ?? ''}
+                      onChange={(e) => setField('pickupCity', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Pasta indekss</Label>
+                    <Input
+                      placeholder="LV-XXXX"
+                      value={createForm.pickupPostal ?? ''}
+                      onChange={(e) => setField('pickupPostal', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Datums *</Label>
+                  <Input
+                    type="date"
+                    value={createForm.pickupDate ?? ''}
+                    onChange={(e) => setField('pickupDate', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Laika logs (neobligāts)</Label>
+                  <Input
+                    placeholder="piem. 08:00–12:00"
+                    value={createForm.pickupWindow ?? ''}
+                    onChange={(e) => setField('pickupWindow', e.target.value)}
+                  />
+                </div>
+              </fieldset>
+
+              {/* Delivery */}
+              <fieldset className="space-y-3 border rounded-lg p-4">
+                <legend className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                  Izkraušanas vieta
+                </legend>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Adrese *</Label>
+                  <Input
+                    placeholder="Ielas adrese"
+                    value={createForm.deliveryAddress ?? ''}
+                    onChange={(e) => setField('deliveryAddress', e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Pilsēta *</Label>
+                    <Input
+                      placeholder="Pilsēta"
+                      value={createForm.deliveryCity ?? ''}
+                      onChange={(e) => setField('deliveryCity', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Pasta indekss</Label>
+                    <Input
+                      placeholder="LV-XXXX"
+                      value={createForm.deliveryPostal ?? ''}
+                      onChange={(e) => setField('deliveryPostal', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Datums *</Label>
+                  <Input
+                    type="date"
+                    value={createForm.deliveryDate ?? ''}
+                    onChange={(e) => setField('deliveryDate', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Laika logs (neobligāts)</Label>
+                  <Input
+                    placeholder="piem. 13:00–17:00"
+                    value={createForm.deliveryWindow ?? ''}
+                    onChange={(e) => setField('deliveryWindow', e.target.value)}
+                  />
+                </div>
+              </fieldset>
+
+              {/* Cargo */}
+              <fieldset className="space-y-3 border rounded-lg p-4">
+                <legend className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                  Krava
+                </legend>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Kravas veids *</Label>
+                  <Input
+                    placeholder="piem. Smiltis, Grants, Metāllūžņi"
+                    value={createForm.cargoType ?? ''}
+                    onChange={(e) => setField('cargoType', e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Svars (t)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.1}
+                      placeholder="0.0"
+                      value={createForm.cargoWeight ?? ''}
+                      onChange={(e) => setField('cargoWeight', parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Tilpums (m³)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.1}
+                      placeholder="0.0"
+                      value={createForm.cargoVolume ?? ''}
+                      onChange={(e) => setField('cargoVolume', parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Īpašās prasības</Label>
+                  <Input
+                    placeholder="piem. Aukstā ķēde, bīstamas kravas"
+                    value={createForm.specialRequirements ?? ''}
+                    onChange={(e) => setField('specialRequirements', e.target.value)}
+                  />
+                </div>
+              </fieldset>
+
+              {/* Vehicle + Pricing */}
+              <fieldset className="space-y-3 border rounded-lg p-4">
+                <legend className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                  Transports un cena
+                </legend>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Nepieciešamais transportlīdzeklis</Label>
+                  <select
+                    value={createForm.requiredVehicleEnum ?? ''}
+                    onChange={(e) => setField('requiredVehicleEnum', e.target.value)}
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="">Jebkurš</option>
+                    <option value="DUMP_TRUCK">Pašizgāzējs</option>
+                    <option value="FLATBED_TRUCK">Platforma</option>
+                    <option value="SEMI_TRAILER">Piekabes kravas auto</option>
+                    <option value="HOOK_LIFT">Āķa pacēlājs</option>
+                    <option value="SKIP_LOADER">Konteineru auto</option>
+                    <option value="TANKER">Cisterna</option>
+                    <option value="VAN">Furgons</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Likme (€) *</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      placeholder="0.00"
+                      value={createForm.rate ?? ''}
+                      onChange={(e) => setField('rate', parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">€/t (neobligāts)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      placeholder="0.00"
+                      value={createForm.pricePerTonne ?? ''}
+                      onChange={(e) => setField('pricePerTonne', parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Attālums (km)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={1}
+                    placeholder="0"
+                    value={createForm.distanceKm ?? ''}
+                    onChange={(e) => setField('distanceKm', parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              </fieldset>
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-3 pt-1">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setCreateOpen(false)}
+                  disabled={creating}
+                >
+                  Atcelt
+                </Button>
+                <Button className="flex-1" onClick={handleCreateJob} disabled={creating}>
+                  {creating ? 'Saglabā...' : '+ Publicēt darbu'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

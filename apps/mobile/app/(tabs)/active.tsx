@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,16 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Linking,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as Location from 'expo-location';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { api, ApiTransportJob } from '@/lib/api';
+import { JobRouteMap } from '@/components/ui/JobRouteMap';
 import { Map, Phone, CheckCircle2, Navigation2 } from 'lucide-react-native';
 
 // ── Status progression ────────────────────────────────────────────────────────
@@ -43,6 +47,9 @@ export default function ActiveJobScreen() {
   const { token } = useAuth();
   const [job, setJob] = React.useState<ApiTransportJob | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [currentLat, setCurrentLat] = React.useState<number | null>(null);
+  const [currentLng, setCurrentLng] = React.useState<number | null>(null);
+  const locationSub = useRef<Location.LocationSubscription | null>(null);
 
   const fetchActiveJob = useCallback(async () => {
     if (!token) return;
@@ -59,6 +66,32 @@ export default function ActiveJobScreen() {
   useEffect(() => {
     fetchActiveJob();
   }, [fetchActiveJob]);
+
+  // ── Live GPS tracking ──────────────────────────────────────────
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted' || !active) return;
+
+      locationSub.current = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.Balanced,
+          distanceInterval: 30, // update every 30 m
+          timeInterval: 10_000, // or every 10 s
+        },
+        (loc) => {
+          setCurrentLat(loc.coords.latitude);
+          setCurrentLng(loc.coords.longitude);
+        },
+      );
+    })();
+
+    return () => {
+      active = false;
+      locationSub.current?.remove();
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -89,6 +122,47 @@ export default function ActiveJobScreen() {
   const currentIndex = STATUS_STEPS.indexOf(currentStatus);
   const nextStatus = NEXT_STATUS[currentStatus];
 
+  // ── Navigate — in-app Navigation SDK (requires dev build)
+  //   Falls back to deep-link for Expo Go / environments where the native
+  //   Navigation SDK module is unavailable.
+  const handleNavigate = () => {
+    const isHeadingToPickup = currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP';
+
+    // If we have coords, launch the in-app navigation screen
+    if (job.deliveryLat != null && job.deliveryLng != null) {
+      const params: Record<string, string> = {
+        deliveryLat: String(job.deliveryLat),
+        deliveryLng: String(job.deliveryLng),
+        label: `${job.deliveryAddress}, ${job.deliveryCity}`,
+      };
+      if (isHeadingToPickup && job.pickupLat != null && job.pickupLng != null) {
+        params.pickupLat = String(job.pickupLat);
+        params.pickupLng = String(job.pickupLng);
+      }
+      router.push({ pathname: '/navigation', params });
+      return;
+    }
+
+    // Fallback: deep-link to external maps app
+    const address = isHeadingToPickup
+      ? `${job.pickupAddress}, ${job.pickupCity}`
+      : `${job.deliveryAddress}, ${job.deliveryCity}`;
+    const encoded = encodeURIComponent(address);
+    const url =
+      Platform.OS === 'ios'
+        ? `maps://?daddr=${encoded}&dirflg=d`
+        : `google.navigation:q=${encoded}&mode=d`;
+
+    Linking.canOpenURL(url)
+      .then((supported) => {
+        if (supported) return Linking.openURL(url);
+        return Linking.openURL(
+          `https://www.google.com/maps/dir/?api=1&destination=${encoded}&travelmode=driving`,
+        );
+      })
+      .catch(() => Alert.alert('Kļūda', 'Neizdevās atvērt navigāciju'));
+  };
+
   const handleUpdateStatus = () => {
     if (!nextStatus || !token) return;
     Alert.alert(t.activeJob.updateStatus, `→ ${t.activeJob.status[nextStatus]}`, [
@@ -117,6 +191,35 @@ export default function ActiveJobScreen() {
             <Text style={styles.price}>€{job.rate.toFixed(2)}</Text>
           </View>
         </View>
+
+        {/* ── Interactive map ── */}
+        {job.pickupLat != null &&
+          job.pickupLng != null &&
+          job.deliveryLat != null &&
+          job.deliveryLng != null && (
+            <JobRouteMap
+              pickup={{
+                lat: job.pickupLat,
+                lng: job.pickupLng,
+                label: job.pickupCity,
+              }}
+              delivery={{
+                lat: job.deliveryLat,
+                lng: job.deliveryLng,
+                label: job.deliveryCity,
+              }}
+              current={
+                currentLat != null && currentLng != null
+                  ? { lat: currentLat, lng: currentLng }
+                  : null
+              }
+              // Show dashed leg only when heading to pickup
+              showToPickupLeg={currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP'}
+              height={240}
+              borderRadius={16}
+              style={styles.mapCard}
+            />
+          )}
 
         {/* Status card */}
         <View style={styles.statusCard}>
@@ -192,10 +295,7 @@ export default function ActiveJobScreen() {
 
         {/* Actions */}
         <View style={styles.actionsRow}>
-          <TouchableOpacity
-            style={styles.navigateBtn}
-            onPress={() => Alert.alert(t.activeJob.navigate, 'Atvērt navigāciju...')}
-          >
+          <TouchableOpacity style={styles.navigateBtn} onPress={handleNavigate}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Navigation2 size={18} color="#ffffff" />
               <Text style={styles.navigateBtnText}>{t.activeJob.navigate}</Text>
@@ -223,6 +323,13 @@ export default function ActiveJobScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
   scroll: { padding: 20, gap: 16 },
+  mapCard: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
 
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerTitle: { fontSize: 24, fontWeight: '700', color: '#111827' },

@@ -20,7 +20,9 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
-import { api, ApiTransportJob } from '@/lib/api';
+import { api, ApiTransportJob, ApiReturnTripJob } from '@/lib/api';
+import { JobRouteMap } from '@/components/ui/JobRouteMap';
+import type { ExtraPin } from '@/components/ui/JobRouteMap';
 import {
   Map,
   MapPin,
@@ -31,6 +33,10 @@ import {
   Search,
   Truck,
   X,
+  Route,
+  Info,
+  CheckCircle2,
+  ListChecks,
 } from 'lucide-react-native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -68,6 +74,13 @@ interface SavedSearch extends SearchFilter {
   id: string;
   name: string;
 }
+
+// Return trip extends normal job with distance from the anchor (delivery destination)
+interface ReturnTripJob extends TransportJob {
+  returnDistanceKm: number;
+}
+
+const RETURN_RADIUS_OPTIONS = [25, 50, 100, 150];
 
 // ── Latvian city coords (haversine radius filtering) ──────────────────────────
 const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
@@ -144,6 +157,10 @@ function mapJob(j: ApiTransportJob): TransportJob {
 const RADIUS_OPTIONS = [25, 50, 100, 150, 200];
 const ASYNC_KEY = 'b3hub_saved_job_searches';
 
+function mapReturnTripJob(j: ApiReturnTripJob): ReturnTripJob {
+  return { ...mapJob(j), returnDistanceKm: j.returnDistanceKm };
+}
+
 // ── Filter logic ──────────────────────────────────────────────────────────────
 function filterJobs(jobs: TransportJob[], filter: SearchFilter | null): TransportJob[] {
   if (!filter) return jobs;
@@ -209,6 +226,190 @@ function DriveWhereverBanner({ onSetRadius }: { onSetRadius: () => void }) {
         </TouchableOpacity>
       </View>
     </View>
+  );
+}
+
+// ── Avoid Empty Runs — radius chips ──────────────────────────────────────────
+function ReturnRadiusRow({
+  selected,
+  onChange,
+}: {
+  selected: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
+      <View style={styles.radiusChips}>
+        {RETURN_RADIUS_OPTIONS.map((r) => (
+          <TouchableOpacity
+            key={r}
+            style={[styles.chip, styles.chipReturn, selected === r && styles.chipReturnActive]}
+            onPress={() => onChange(r)}
+          >
+            <Text style={[styles.chipText, selected === r && styles.chipReturnTextActive]}>
+              {r} km
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
+
+// ── Avoid Empty Runs — info banner ────────────────────────────────────────────
+function AvoidEmptyRunsBanner({
+  activeJobDeliveryCity,
+  returnRadius,
+  onRadiusChange,
+  returnCount,
+  onHowItWorks,
+}: {
+  activeJobDeliveryCity: string | null;
+  returnRadius: number;
+  onRadiusChange: (v: number) => void;
+  returnCount: number;
+  onHowItWorks: () => void;
+}) {
+  return (
+    <View style={styles.returnBanner}>
+      <View style={styles.returnBannerHeader}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+          <Route size={18} color="#059669" />
+          <Text style={styles.returnBannerTitle}>{t.avoidEmptyRuns.bannerTitle}</Text>
+        </View>
+        <TouchableOpacity onPress={onHowItWorks} style={styles.returnBannerInfo}>
+          <Info size={16} color="#6b7280" />
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.returnBannerDesc}>
+        {activeJobDeliveryCity
+          ? t.avoidEmptyRuns.bannerDesc(activeJobDeliveryCity)
+          : t.avoidEmptyRuns.bannerDescGeneric}
+      </Text>
+
+      {activeJobDeliveryCity && (
+        <>
+          <Text style={styles.returnRadiusLabel}>{t.avoidEmptyRuns.radiusLabel}:</Text>
+          <ReturnRadiusRow selected={returnRadius} onChange={onRadiusChange} />
+          <Text style={styles.returnFoundLabel}>{t.avoidEmptyRuns.found(returnCount)}</Text>
+        </>
+      )}
+
+      {!activeJobDeliveryCity && (
+        <Text style={styles.returnNoActiveJob}>{t.avoidEmptyRuns.noActiveJob}</Text>
+      )}
+    </View>
+  );
+}
+
+// ── Avoid Empty Runs — return trip card ───────────────────────────────────────
+function ReturnTripCard({ job, onAccept }: { job: ReturnTripJob; onAccept: (id: string) => void }) {
+  return (
+    <View style={[styles.card, styles.returnCard]}>
+      {/* Return badge row */}
+      <View style={styles.returnCardBadgeRow}>
+        <View style={styles.returnBadge}>
+          <Route size={10} color="#059669" />
+          <Text style={styles.returnBadgeText}>{t.avoidEmptyRuns.returnBadge}</Text>
+        </View>
+        <Text style={styles.returnKmAway}>{t.avoidEmptyRuns.kmAway(job.returnDistanceKm)}</Text>
+      </View>
+
+      {/* Header row */}
+      <View style={styles.cardHeader}>
+        <View style={styles.cardHeaderLeft}>
+          <Text style={styles.jobNumber}>{job.jobNumber}</Text>
+          <View style={styles.vehicleRow}>
+            <Truck size={16} color="#6b7280" />
+            <Text style={styles.vehicleType}>{job.vehicleType}</Text>
+          </View>
+        </View>
+        <View style={styles.availableBadge}>
+          <Text style={styles.availableBadgeText}>{t.jobs.available}</Text>
+        </View>
+      </View>
+
+      {/* Payload pill */}
+      <View style={styles.payloadRow}>
+        <Text style={styles.payloadWeight}>{job.weightTonnes} t</Text>
+        <View style={styles.payloadDot} />
+        <Text style={styles.payloadMaterial}>{job.payload}</Text>
+      </View>
+
+      {/* Route */}
+      <View style={styles.routeSection}>
+        <View style={styles.routeRow}>
+          <View style={[styles.routeDotFrom, { borderColor: '#a7f3d0' }]} />
+          <View>
+            <Text style={styles.routeCity}>{job.fromCity}</Text>
+            <Text style={styles.routeAddress}>{job.fromAddress}</Text>
+          </View>
+        </View>
+        <View style={styles.routeLine} />
+        <View style={styles.routeRow}>
+          <View style={styles.routeDotTo} />
+          <View>
+            <Text style={styles.routeCity}>{job.toCity}</Text>
+            <Text style={styles.routeAddress}>{job.toAddress}</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Meta */}
+      <View style={styles.cardMeta}>
+        <View style={styles.metaItem}>
+          <Calendar size={14} color="#6b7280" />
+          <View>
+            <Text style={styles.metaValue}>{job.date}</Text>
+            <Text style={styles.metaSub}>{job.time} Uhr</Text>
+          </View>
+        </View>
+        <View style={styles.metaItem}>
+          <Ruler size={14} color="#6b7280" />
+          <Text style={styles.metaValue}>{job.distanceKm} km</Text>
+        </View>
+        <View style={styles.priceBlock}>
+          <Text style={styles.priceTotal}>
+            {job.priceTotal.toFixed(2)} {job.currency}
+          </Text>
+          <Text style={styles.pricePerTonne}>
+            {job.pricePerTonne.toFixed(2)} {job.currency}
+            {t.jobs.perTonne}
+          </Text>
+        </View>
+      </View>
+
+      {/* Accept */}
+      <TouchableOpacity style={styles.acceptBtnReturn} onPress={() => onAccept(job.id)}>
+        <Text style={styles.acceptBtnText}>{t.jobs.accept}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ── Avoid Empty Runs — how it works modal ────────────────────────────────────
+function HowItWorksModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalBox}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+            <Route size={22} color="#059669" />
+            <Text style={styles.modalTitle}>{t.avoidEmptyRuns.howItWorksTitle}</Text>
+          </View>
+          <Text style={[styles.returnBannerDesc, { color: '#374151', marginTop: 6 }]}>
+            {t.avoidEmptyRuns.howItWorksBody}
+          </Text>
+          <TouchableOpacity
+            style={[styles.applyBtn, { marginTop: 8, backgroundColor: '#059669' }]}
+            onPress={onClose}
+          >
+            <Text style={styles.applyBtnText}>{t.avoidEmptyRuns.gotIt}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -393,9 +594,35 @@ function SearchPanel({
 }
 
 // ── Job card ──────────────────────────────────────────────────────────────────
-function JobCard({ job, onAccept }: { job: TransportJob; onAccept: (id: string) => void }) {
+function JobCard({
+  job,
+  onAccept,
+  tourMode = false,
+  selected = false,
+  onToggleSelect,
+}: {
+  job: TransportJob;
+  onAccept: (id: string) => void;
+  tourMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
+}) {
   return (
-    <View style={styles.card}>
+    <TouchableOpacity
+      style={[styles.card, tourMode && selected && styles.cardSelected]}
+      activeOpacity={tourMode ? 0.7 : 1}
+      onPress={tourMode ? () => onToggleSelect?.(job.id) : undefined}
+    >
+      {/* Tour selection indicator */}
+      {tourMode && (
+        <View style={styles.tourCheckWrap}>
+          {selected ? (
+            <CheckCircle2 size={22} color="#16a34a" />
+          ) : (
+            <View style={styles.tourCheckEmpty} />
+          )}
+        </View>
+      )}
       {/* Header row */}
       <View style={styles.cardHeader}>
         <View style={styles.cardHeaderLeft}>
@@ -460,11 +687,13 @@ function JobCard({ job, onAccept }: { job: TransportJob; onAccept: (id: string) 
         </View>
       </View>
 
-      {/* Accept button */}
-      <TouchableOpacity style={styles.acceptBtn} onPress={() => onAccept(job.id)}>
-        <Text style={styles.acceptBtnText}>{t.jobs.accept}</Text>
-      </TouchableOpacity>
-    </View>
+      {/* Accept button — hidden in tour-select mode */}
+      {!tourMode && (
+        <TouchableOpacity style={styles.acceptBtn} onPress={() => onAccept(job.id)}>
+          <Text style={styles.acceptBtnText}>{t.jobs.accept}</Text>
+        </TouchableOpacity>
+      )}
+    </TouchableOpacity>
   );
 }
 
@@ -485,6 +714,19 @@ export default function JobsScreen() {
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
   const [saveModalVisible, setSaveModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // ── Avoid Empty Runs state ────────────────────────────────────
+  const [avoidEmptyRuns, setAvoidEmptyRuns] = useState(false);
+  const [returnRadius, setReturnRadius] = useState(50); // km
+  const [activeJobDeliveryCity, setActiveJobDeliveryCity] = useState<string | null>(null);
+  const [activeJobDeliveryLat, setActiveJobDeliveryLat] = useState<number | null>(null);
+  const [activeJobDeliveryLng, setActiveJobDeliveryLng] = useState<number | null>(null);
+  const [returnTrips, setReturnTrips] = useState<ReturnTripJob[]>([]);
+  const [howItWorksVisible, setHowItWorksVisible] = useState(false);
+
+  // ── Tour planner state ────────────────────────────────────────
+  const [tourMode, setTourMode] = useState(false);
+  const [tourSelected, setTourSelected] = useState<Set<string>>(new Set());
 
   const panelAnim = useRef(new Animated.Value(0)).current;
 
@@ -516,6 +758,40 @@ export default function JobsScreen() {
   useEffect(() => {
     AsyncStorage.setItem(ASYNC_KEY, JSON.stringify(savedSearches));
   }, [savedSearches]);
+
+  // ── Avoid Empty Runs: fetch active job when feature is toggled ON ─────
+  useEffect(() => {
+    if (!avoidEmptyRuns || !token) {
+      setActiveJobDeliveryCity(null);
+      setActiveJobDeliveryLat(null);
+      setActiveJobDeliveryLng(null);
+      setReturnTrips([]);
+      return;
+    }
+    api.transportJobs.myActive(token).then((job: ApiTransportJob | null) => {
+      if (job && job.deliveryLat != null && job.deliveryLng != null) {
+        setActiveJobDeliveryCity(job.deliveryCity);
+        setActiveJobDeliveryLat(job.deliveryLat);
+        setActiveJobDeliveryLng(job.deliveryLng);
+      } else {
+        setActiveJobDeliveryCity(null);
+        setActiveJobDeliveryLat(null);
+        setActiveJobDeliveryLng(null);
+        setReturnTrips([]);
+      }
+    });
+  }, [avoidEmptyRuns, token]);
+
+  // ── Avoid Empty Runs: fetch return trips when coords or radius changes ──
+  useEffect(() => {
+    if (!avoidEmptyRuns || !token || activeJobDeliveryLat == null || activeJobDeliveryLng == null) {
+      return;
+    }
+    api.transportJobs
+      .returnTrips(activeJobDeliveryLat, activeJobDeliveryLng, returnRadius, token)
+      .then((jobs: ApiReturnTripJob[]) => setReturnTrips(jobs.map(mapReturnTripJob)))
+      .catch(() => setReturnTrips([]));
+  }, [avoidEmptyRuns, activeJobDeliveryLat, activeJobDeliveryLng, returnRadius, token]);
 
   // Animate panel
   useEffect(() => {
@@ -612,16 +888,49 @@ export default function JobsScreen() {
       {/* Top bar */}
       <View style={styles.topBar}>
         <Text style={styles.screenTitle}>{t.jobs.title}</Text>
-        <TouchableOpacity
-          style={[styles.filterToggle, panelOpen && styles.filterToggleActive]}
-          onPress={togglePanel}
-        >
-          <Settings2 size={14} color={panelOpen ? '#ffffff' : '#9ca3af'} />
-          <Text style={[styles.filterToggleText, panelOpen && styles.filterToggleTextActive]}>
-            {t.jobSearch.filterTitle}
-          </Text>
-          {activeFilter && <View style={styles.filterDot} />}
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {/* Tour planner toggle */}
+          <TouchableOpacity
+            style={[styles.filterToggle, tourMode && styles.filterToggleTour]}
+            onPress={() => {
+              setTourMode((v) => !v);
+              setTourSelected(new Set());
+            }}
+          >
+            <ListChecks size={14} color={tourMode ? '#ffffff' : '#9ca3af'} />
+            <Text style={[styles.filterToggleText, tourMode && styles.filterToggleTextActive]}>
+              {t.jobs.planTour}
+            </Text>
+          </TouchableOpacity>
+          {/* Avoid Empty Runs toggle */}
+          <TouchableOpacity
+            style={[styles.filterToggle, avoidEmptyRuns && styles.filterToggleReturn]}
+            onPress={() => setAvoidEmptyRuns((v) => !v)}
+          >
+            <Route size={14} color={avoidEmptyRuns ? '#ffffff' : '#9ca3af'} />
+            <Text
+              style={[styles.filterToggleText, avoidEmptyRuns && styles.filterToggleTextActive]}
+            >
+              {t.avoidEmptyRuns.toggleShort}
+            </Text>
+            {avoidEmptyRuns && returnTrips.length > 0 && (
+              <View style={styles.returnCountBadge}>
+                <Text style={styles.returnCountBadgeText}>{returnTrips.length}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          {/* Filter button */}
+          <TouchableOpacity
+            style={[styles.filterToggle, panelOpen && styles.filterToggleActive]}
+            onPress={togglePanel}
+          >
+            <Settings2 size={14} color={panelOpen ? '#ffffff' : '#9ca3af'} />
+            <Text style={[styles.filterToggleText, panelOpen && styles.filterToggleTextActive]}>
+              {t.jobSearch.filterTitle}
+            </Text>
+            {activeFilter && <View style={styles.filterDot} />}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -658,9 +967,84 @@ export default function JobsScreen() {
           <ActiveFilterPill filter={activeFilter} onClear={handleReset} />
         )}
 
-        {/* "Drive wherever you want" banner — only when no filter set */}
-        {!activeFilter && !panelOpen && (
+        {/* "Drive wherever you want" banner — only when no filter set and not in empty-runs mode */}
+        {!activeFilter && !panelOpen && !avoidEmptyRuns && (
           <DriveWhereverBanner onSetRadius={() => setPanelOpen(true)} />
+        )}
+
+        {/* ── Avoid Empty Runs section ──────────────────────── */}
+        {avoidEmptyRuns && (
+          <>
+            <AvoidEmptyRunsBanner
+              activeJobDeliveryCity={activeJobDeliveryCity}
+              returnRadius={returnRadius}
+              onRadiusChange={setReturnRadius}
+              returnCount={returnTrips.length}
+              onHowItWorks={() => setHowItWorksVisible(true)}
+            />
+
+            {activeJobDeliveryCity && returnTrips.length === 0 && (
+              <View style={styles.returnEmpty}>
+                <Route size={32} color="#d1d5db" />
+                <Text style={styles.returnEmptyText}>{t.avoidEmptyRuns.noReturnTrips}</Text>
+              </View>
+            )}
+
+            {returnTrips.length > 0 && (
+              <>
+                {/* Spatial overview map — delivery anchor + all return pickups */}
+                {activeJobDeliveryLat != null && activeJobDeliveryLng != null && (
+                  <View style={{ marginHorizontal: 16, marginBottom: 8 }}>
+                    <JobRouteMap
+                      pickup={{
+                        lat: activeJobDeliveryLat,
+                        lng: activeJobDeliveryLng,
+                        label: activeJobDeliveryCity ?? 'Piegāde',
+                      }}
+                      delivery={
+                        returnTrips.length > 0
+                          ? {
+                              lat: returnTrips[0].fromLat,
+                              lng: returnTrips[0].fromLng,
+                              label: returnTrips[0].fromCity,
+                            }
+                          : {
+                              lat: activeJobDeliveryLat,
+                              lng: activeJobDeliveryLng,
+                            }
+                      }
+                      extras={returnTrips.slice(1).map(
+                        (job): ExtraPin => ({
+                          lat: job.fromLat,
+                          lng: job.fromLng,
+                          label: job.fromCity,
+                          type: 'return',
+                        }),
+                      )}
+                      height={200}
+                      borderRadius={16}
+                      showToPickupLeg={false}
+                    />
+                  </View>
+                )}
+
+                <View style={[styles.list, { marginTop: 8 }]}>
+                  {returnTrips.map((job) => (
+                    <ReturnTripCard key={job.id} job={job} onAccept={handleAccept} />
+                  ))}
+                </View>
+              </>
+            )}
+
+            {/* Divider */}
+            {filteredJobs.length > 0 && (
+              <View style={styles.returnDivider}>
+                <View style={styles.returnDividerLine} />
+                <Text style={styles.returnDividerLabel}>{t.jobs.availableJobs}</Text>
+                <View style={styles.returnDividerLine} />
+              </View>
+            )}
+          </>
         )}
 
         {/* Results header */}
@@ -684,11 +1068,52 @@ export default function JobsScreen() {
         ) : (
           <View style={styles.list}>
             {filteredJobs.map((job) => (
-              <JobCard key={job.id} job={job} onAccept={handleAccept} />
+              <JobCard
+                key={job.id}
+                job={job}
+                onAccept={handleAccept}
+                tourMode={tourMode}
+                selected={tourSelected.has(job.id)}
+                onToggleSelect={(id) =>
+                  setTourSelected((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(id)) next.delete(id);
+                    else next.add(id);
+                    return next;
+                  })
+                }
+              />
             ))}
           </View>
         )}
       </ScrollView>
+
+      {/* Tour planner floating CTA */}
+      {tourMode && tourSelected.size >= 2 && (
+        <View style={styles.tourFab}>
+          <TouchableOpacity
+            style={styles.tourFabBtn}
+            onPress={() => {
+              const ids = Array.from(tourSelected);
+              const jobs = filteredJobs.filter((j) => ids.includes(j.id));
+              router.push({
+                pathname: '/tour-planner',
+                params: { jobsJson: JSON.stringify(jobs) },
+              });
+            }}
+          >
+            <Route size={18} color="#ffffff" />
+            <Text style={styles.tourFabText}>{t.jobs.planTourBtn(tourSelected.size)}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Tour mode selection hint */}
+      {tourMode && tourSelected.size < 2 && (
+        <View style={styles.tourHint}>
+          <Text style={styles.tourHintText}>{t.jobs.planTourHint}</Text>
+        </View>
+      )}
 
       {/* Save-search modal */}
       <SaveSearchModal
@@ -697,6 +1122,9 @@ export default function JobsScreen() {
         onSave={handleConfirmSave}
         onClose={() => setSaveModalVisible(false)}
       />
+
+      {/* How It Works modal */}
+      <HowItWorksModal visible={howItWorksVisible} onClose={() => setHowItWorksVisible(false)} />
     </SafeAreaView>
   );
 }
@@ -998,6 +1426,171 @@ const styles = StyleSheet.create({
     backgroundColor: '#dc2626',
   },
   emptyResetBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+
+  // ── Avoid Empty Runs ───────────────────────────────────────────
+  filterToggleReturn: { backgroundColor: '#059669' },
+  filterToggleTour: { backgroundColor: '#7c3aed' },
+
+  // ── Tour planner ───────────────────────────────────────────────
+  cardSelected: {
+    borderWidth: 2,
+    borderColor: '#16a34a',
+    backgroundColor: '#f0fdf4',
+  },
+  tourCheckWrap: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 5,
+  },
+  tourCheckEmpty: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    backgroundColor: '#ffffff',
+  },
+  tourFab: {
+    position: 'absolute',
+    bottom: 24,
+    left: 24,
+    right: 24,
+    zIndex: 50,
+  },
+  tourFabBtn: {
+    backgroundColor: '#7c3aed',
+    borderRadius: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    shadowColor: '#7c3aed',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  tourFabText: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
+  tourHint: {
+    position: 'absolute',
+    bottom: 24,
+    left: 24,
+    right: 24,
+    zIndex: 50,
+    backgroundColor: 'rgba(124,58,237,0.9)',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  tourHintText: { color: '#ffffff', fontSize: 13, fontWeight: '500' },
+
+  returnCountBadge: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    minWidth: 16,
+    alignItems: 'center',
+  },
+  returnCountBadgeText: { fontSize: 10, fontWeight: '800', color: '#059669' },
+
+  returnBanner: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 16,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#059669',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  returnBannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  returnBannerTitle: { fontSize: 16, fontWeight: '800', color: '#111827', flex: 1 },
+  returnBannerInfo: { padding: 4 },
+  returnBannerDesc: { fontSize: 13, color: '#6b7280', lineHeight: 19 },
+  returnRadiusLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6b7280',
+    marginTop: 12,
+    marginBottom: 2,
+    letterSpacing: 0.4,
+  },
+  returnFoundLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#059669',
+    marginTop: 8,
+  },
+  returnNoActiveJob: {
+    fontSize: 13,
+    color: '#9ca3af',
+    marginTop: 8,
+    lineHeight: 19,
+    fontStyle: 'italic',
+  },
+
+  chipReturn: { borderColor: '#6ee7b7' },
+  chipReturnActive: { backgroundColor: '#059669', borderColor: '#059669' },
+  chipReturnTextActive: { color: '#ffffff' },
+
+  returnCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#059669',
+  },
+  returnCardBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: -4,
+  },
+  returnBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#d1fae5',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  returnBadgeText: { fontSize: 10, fontWeight: '800', color: '#059669', letterSpacing: 0.5 },
+  returnKmAway: { fontSize: 11, fontWeight: '600', color: '#6b7280' },
+  acceptBtnReturn: {
+    backgroundColor: '#059669',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+
+  returnEmpty: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    gap: 8,
+    marginHorizontal: 16,
+  },
+  returnEmptyText: { fontSize: 13, color: '#9ca3af', textAlign: 'center' },
+
+  returnDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 20,
+    marginBottom: 4,
+    gap: 10,
+  },
+  returnDividerLine: { flex: 1, height: 1, backgroundColor: '#e5e7eb' },
+  returnDividerLabel: { fontSize: 11, fontWeight: '700', color: '#9ca3af', letterSpacing: 0.5 },
 
   modalOverlay: {
     flex: 1,

@@ -3,6 +3,8 @@ import type { SkipHireOrder, SkipWasteCategory, SkipSize } from './api';
 
 export interface WizardState {
   location: string;
+  locationLat: number | null;
+  locationLng: number | null;
   wasteCategory: SkipWasteCategory | null;
   skipSize: SkipSize | null;
   deliveryDate: string;
@@ -12,6 +14,7 @@ export interface WizardState {
 interface OrderContextValue {
   state: WizardState;
   setLocation: (v: string) => void;
+  setLocationWithCoords: (address: string, lat: number, lng: number) => void;
   setWasteCategory: (v: SkipWasteCategory) => void;
   setSkipSize: (v: SkipSize) => void;
   setDeliveryDate: (v: string) => void;
@@ -21,6 +24,8 @@ interface OrderContextValue {
 
 const INITIAL: WizardState = {
   location: '',
+  locationLat: null,
+  locationLng: null,
   wasteCategory: null,
   skipSize: null,
   deliveryDate: '',
@@ -37,6 +42,8 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
       value={{
         state,
         setLocation: (location) => setState((s) => ({ ...s, location })),
+        setLocationWithCoords: (location, locationLat, locationLng) =>
+          setState((s) => ({ ...s, location, locationLat, locationLng })),
         setWasteCategory: (wasteCategory) => setState((s) => ({ ...s, wasteCategory })),
         setSkipSize: (skipSize) => setState((s) => ({ ...s, skipSize })),
         setDeliveryDate: (deliveryDate) => setState((s) => ({ ...s, deliveryDate })),
