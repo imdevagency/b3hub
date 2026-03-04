@@ -10,7 +10,7 @@ type QuickAction = { emoji: string; label: string; route?: string };
 
 const ROLE_ACTIONS: Record<string, QuickAction[]> = {
   BUYER: [
-    { emoji: '🏗️', label: 'Pirkt materiālus' },
+    { emoji: '🏗️', label: 'Pirkt materiālus', route: '/(tabs)/catalog' },
     { emoji: '🗑️', label: 'Nomāt konteineru', route: '/order' },
     { emoji: '🚛', label: 'Izsekot piegādi' },
     { emoji: '🧾', label: 'Rēķini' },
