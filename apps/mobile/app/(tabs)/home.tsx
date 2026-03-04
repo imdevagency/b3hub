@@ -2,37 +2,52 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
+import type React from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
+import {
+  ShoppingCart,
+  Trash2,
+  ClipboardList,
+  User,
+  Package,
+  Inbox,
+  PlusCircle,
+  BarChart2,
+  Map,
+  CheckCircle,
+  Wallet,
+} from 'lucide-react-native';
 
-type QuickAction = { emoji: string; label: string; route?: string };
+type LucideIcon = React.ComponentType<{ size?: number; color?: string }>;
+type QuickAction = { icon: LucideIcon; label: string; route?: string };
 
 const ROLE_ACTIONS: Record<string, QuickAction[]> = {
   BUYER: [
-    { emoji: '🏗️', label: 'Pirkt materiālus', route: '/(tabs)/catalog' },
-    { emoji: '🗑️', label: 'Nomāt konteineru', route: '/order' },
-    { emoji: '🚛', label: 'Izsekot piegādi' },
-    { emoji: '🧾', label: 'Rēķini' },
+    { icon: ShoppingCart,  label: 'Pirkt materiālus',           route: '/(tabs)/catalog' },
+    { icon: Trash2,        label: 'Nomāt konteineru',           route: '/order' },
+    { icon: ClipboardList, label: 'Pasūtījumi',                 route: '/(tabs)/orders' },
+    { icon: User,          label: 'Profils',                    route: '/(tabs)/profile' },
   ],
   SUPPLIER: [
-    { emoji: '📦', label: 'Mani produkti' },
-    { emoji: '📋', label: 'Saņemtie pasūtījumi' },
-    { emoji: '➕', label: 'Pievienot preci' },
-    { emoji: '📊', label: 'Statistika' },
+    { icon: Package,    label: 'Mani produkti' },
+    { icon: Inbox,      label: 'Saņemtie pasūtījumi' },
+    { icon: PlusCircle, label: 'Pievienot preci' },
+    { icon: BarChart2,  label: 'Statistika' },
   ],
   CARRIER: [
-    { emoji: '📍', label: 'Aktīvie darbi' },
-    { emoji: '🗺️', label: 'Maršruts' },
-    { emoji: '✅', label: 'Pabeigt piegādi' },
-    { emoji: '💰', label: 'Ieņēmumi' },
+    { icon: ClipboardList, label: 'Aktīvie darbi' },
+    { icon: Map,           label: 'Maršruts' },
+    { icon: CheckCircle,   label: 'Pabeigt piegādi' },
+    { icon: Wallet,        label: 'Ieņēmumi' },
   ],
 };
 
 const USER_TYPE_LABEL: Record<string, string> = {
-  BUYER: 'Pasūtītājs',
+  BUYER:    'Pasūtītājs',
   SUPPLIER: 'Pārdevējs',
-  CARRIER: 'Pārvadātājs',
+  CARRIER:  'Pārvadātājs',
 };
 
 export default function HomeScreen() {
@@ -52,14 +67,14 @@ export default function HomeScreen() {
         const b = data?.buyer ?? {};
         setStats({
           activeOrders: b.activeOrders ?? 0,
-          myOrders: b.myOrders ?? 0,
-          documents: b.documents ?? 0,
+          myOrders:     b.myOrders ?? 0,
+          documents:    b.documents ?? 0,
         });
       })
       .catch(() => {});
   }, [token]);
 
-  const role = user?.userType ?? 'BUYER';
+  const role    = user?.userType ?? 'BUYER';
   const actions = ROLE_ACTIONS[role] ?? ROLE_ACTIONS.BUYER;
 
   return (
@@ -69,7 +84,7 @@ export default function HomeScreen() {
         <View style={s.header}>
           <Text style={s.headerGreeting}>{t.home.greeting}</Text>
           <Text style={s.headerName}>
-            {user?.firstName} {user?.lastName} 👋
+            {user?.firstName} {user?.lastName}
           </Text>
           <View style={s.typeBadge}>
             <Text style={s.typeBadgeText}>{USER_TYPE_LABEL[role] ?? role}</Text>
@@ -83,8 +98,8 @@ export default function HomeScreen() {
             <View style={s.statsRow}>
               {[
                 { label: t.home.stats.orders, value: stats ? String(stats.activeOrders) : '—' },
-                { label: 'Konteineri', value: stats ? String(stats.myOrders) : '—' },
-                { label: t.home.stats.pending, value: stats ? String(stats.documents) : '—' },
+                { label: 'Konteineri',         value: stats ? String(stats.myOrders)     : '—' },
+                { label: t.home.stats.pending, value: stats ? String(stats.documents)    : '—' },
               ].map((stat) => (
                 <View key={stat.label} style={s.statItem}>
                   <Text style={s.statValue}>{stat.value}</Text>
@@ -98,8 +113,8 @@ export default function HomeScreen() {
           <Text style={s.quickTitle}>{t.home.quickActions}</Text>
           <View style={s.actionGrid}>
             {actions.map((action, idx) => {
-              // BUYER gets two primary cards (materials + skip hire)
               const isPrimary = role === 'BUYER' ? idx < 2 : idx === 0;
+              const IconComp  = action.icon;
               return (
                 <TouchableOpacity
                   key={action.label}
@@ -107,7 +122,9 @@ export default function HomeScreen() {
                   activeOpacity={0.7}
                   onPress={() => action.route && router.push(action.route as any)}
                 >
-                  <Text style={s.actionEmoji}>{action.emoji}</Text>
+                  <View style={[s.iconWrap, isPrimary ? s.iconWrapPrimary : null]}>
+                    <IconComp size={22} color={isPrimary ? '#dc2626' : '#6b7280'} />
+                  </View>
                   <Text style={[s.actionLabel, isPrimary ? s.actionLabelPrimary : null]}>
                     {action.label}
                   </Text>
@@ -160,8 +177,8 @@ const s = StyleSheet.create({
     letterSpacing: 0.8,
     marginBottom: 16,
   },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  statItem: { alignItems: 'center' },
+  statsRow:  { flexDirection: 'row', justifyContent: 'space-between' },
+  statItem:  { alignItems: 'center' },
   statValue: { fontSize: 24, fontWeight: '700', color: '#111827' },
   statLabel: { fontSize: 12, color: '#6b7280', marginTop: 2 },
   quickTitle: {
@@ -182,15 +199,25 @@ const s = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 20,
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     borderWidth: 1,
     borderColor: '#f3f4f6',
   },
   actionBtnPrimary: {
-    backgroundColor: '#dc2626',
-    borderColor: '#dc2626',
+    backgroundColor: '#fff7f7',
+    borderColor: '#fecaca',
   },
-  actionEmoji: { fontSize: 28 },
-  actionLabel: { fontSize: 13, fontWeight: '500', color: '#374151' },
-  actionLabelPrimary: { color: '#fff', fontWeight: '600' },
+  iconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconWrapPrimary: {
+    backgroundColor: '#fee2e2',
+  },
+  actionLabel:        { fontSize: 13, fontWeight: '500', color: '#374151', textAlign: 'center' },
+  actionLabelPrimary: { color: '#dc2626', fontWeight: '600' },
 });

@@ -104,6 +104,12 @@ function MaterialOrderCard({ order }: { order: ApiOrder }) {
         </View>
       </View>
       <View style={s.orderDivider} />
+      {order.status === 'SHIPPED' && (
+        <View style={s.trackRow}>
+          <Truck size={14} color="#0284c7" />
+          <Text style={s.trackText}>Piegāde ceļā</Text>
+        </View>
+      )}
       <View style={s.orderBottom}>
         {order.deliveryAddress ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
@@ -308,6 +314,17 @@ const s = StyleSheet.create({
   badge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
   badgeText: { fontSize: 12, fontWeight: '600' },
   orderDivider: { height: 1, backgroundColor: '#f3f4f6', marginVertical: 12 },
+  trackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#e0f2fe',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 10,
+  },
+  trackText: { fontSize: 12, fontWeight: '600', color: '#0284c7' },
   orderBottom: { gap: 4 },
   orderMeta: { fontSize: 13, color: '#374151' },
   matRow: {
