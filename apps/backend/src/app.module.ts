@@ -11,6 +11,7 @@ import { SkipHireModule } from './skip-hire/skip-hire.module';
 import { DocumentsModule } from './documents/documents.module';
 import { ProviderApplicationsModule } from './provider-applications/provider-applications.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
+import { TransportJobsModule } from './transport-jobs/transport-jobs.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { VehiclesModule } from './vehicles/vehicles.module';
     DocumentsModule,
     ProviderApplicationsModule,
     VehiclesModule,
+    TransportJobsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

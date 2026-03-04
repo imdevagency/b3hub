@@ -14,6 +14,7 @@ import { useOrder } from '@/lib/order-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
+import { MapPin, FolderOpen, Package, Calendar, Coins } from 'lucide-react-native';
 
 const SKIP_PRICES: Record<string, number> = {
   MINI: 89,
@@ -127,32 +128,44 @@ export default function Step4Date() {
         {/* Order summary */}
         <Text style={s.summaryTitle}>{t.skipHire.step4.summary}</Text>
         <View style={s.summaryCard}>
-          {[
-            {
-              label: '📍 ' + t.skipHire.confirmation.location,
-              value: state.location,
-            },
-            {
-              label: '🗂️ ' + t.skipHire.confirmation.wasteType,
-              value: state.wasteCategory ? t.skipHire.step2.types[state.wasteCategory]?.label : '—',
-            },
-            {
-              label: '📦 ' + t.skipHire.confirmation.size,
-              value: state.skipSize
-                ? `${t.skipHire.step3.sizes[state.skipSize]?.label} (${t.skipHire.step3.sizes[state.skipSize]?.volume})`
-                : '—',
-            },
-            {
-              label: '📅 ' + t.skipHire.confirmation.deliveryDate,
-              value: formatDisplay(selectedDate),
-            },
-            {
-              label: '💰 ' + t.skipHire.confirmation.price,
-              value: `€${price}`,
-            },
-          ].map((row, i) => (
+          {(
+            [
+              {
+                Icon: MapPin,
+                label: t.skipHire.confirmation.location,
+                value: state.location,
+              },
+              {
+                Icon: FolderOpen,
+                label: t.skipHire.confirmation.wasteType,
+                value: state.wasteCategory
+                  ? t.skipHire.step2.types[state.wasteCategory]?.label
+                  : '—',
+              },
+              {
+                Icon: Package,
+                label: t.skipHire.confirmation.size,
+                value: state.skipSize
+                  ? `${t.skipHire.step3.sizes[state.skipSize]?.label} (${t.skipHire.step3.sizes[state.skipSize]?.volume})`
+                  : '—',
+              },
+              {
+                Icon: Calendar,
+                label: t.skipHire.confirmation.deliveryDate,
+                value: formatDisplay(selectedDate),
+              },
+              {
+                Icon: Coins,
+                label: t.skipHire.confirmation.price,
+                value: `€${price}`,
+              },
+            ] as { Icon: typeof MapPin; label: string; value: string | undefined }[]
+          ).map((row, i) => (
             <View key={i} style={[s.summaryRow, i < 4 && s.summaryRowBorder]}>
-              <Text style={s.summaryLabel}>{row.label}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <row.Icon size={13} color="#6b7280" />
+                <Text style={s.summaryLabel}>{row.label}</Text>
+              </View>
               <Text style={s.summaryValue}>{row.value}</Text>
             </View>
           ))}

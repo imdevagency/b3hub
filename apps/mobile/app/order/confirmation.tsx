@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useOrder } from '@/lib/order-context';
 import { t } from '@/lib/translations';
+import { CheckCircle2 } from 'lucide-react-native';
 
 function formatDisplay(iso: string): string {
   const d = new Date(iso + 'T00:00:00');
@@ -45,7 +46,7 @@ export default function OrderConfirmation() {
       <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
         {/* Success icon */}
         <View style={s.iconWrap}>
-          <Text style={s.successIcon}>🎉</Text>
+          <CheckCircle2 size={72} color="#16a34a" />
         </View>
 
         <Text style={s.title}>{t.skipHire.confirmation.title}</Text>

@@ -3,11 +3,24 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { t } from '@/lib/translations';
+import { HardHat, Package, Recycle } from 'lucide-react-native';
 
 const FEATURES = [
-  { emoji: '🏗️', title: t.welcome.features.materials.title, desc: t.welcome.features.materials.desc },
-  { emoji: '📦', title: t.welcome.features.containers.title, desc: t.welcome.features.containers.desc },
-  { emoji: '♻️', title: t.welcome.features.recycling.title, desc: t.welcome.features.recycling.desc },
+  {
+    Icon: HardHat,
+    title: t.welcome.features.materials.title,
+    desc: t.welcome.features.materials.desc,
+  },
+  {
+    Icon: Package,
+    title: t.welcome.features.containers.title,
+    desc: t.welcome.features.containers.desc,
+  },
+  {
+    Icon: Recycle,
+    title: t.welcome.features.recycling.title,
+    desc: t.welcome.features.recycling.desc,
+  },
 ];
 
 export default function WelcomeScreen() {
@@ -31,7 +44,7 @@ export default function WelcomeScreen() {
           {FEATURES.map((f) => (
             <View key={f.title} style={styles.featureRow}>
               <View style={styles.featureIcon}>
-                <Text style={styles.featureEmoji}>{f.emoji}</Text>
+                <f.Icon size={22} color="#dc2626" />
               </View>
               <View style={styles.featureText}>
                 <Text style={styles.featureTitle}>{f.title}</Text>

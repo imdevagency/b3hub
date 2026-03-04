@@ -1,53 +1,125 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/lib/translations';
+import { Check, Clock } from 'lucide-react-native';
+import { useAuth } from '@/lib/auth-context';
+import { api, type ApiTransportJob } from '@/lib/api';
 
-// ── Mock data ─────────────────────────────────────────────────────────────────
-const STATS = {
-  todayEarnings: 169,
-  weekEarnings: 843,
-  monthEarnings: 3210,
-  completedJobs: 6,
-  pendingPayout: 338,
-};
+// ── Types & helpers ───────────────────────────────────────────────────────
+interface EarningsStats {
+  todayEarnings: number;
+  weekEarnings: number;
+  monthEarnings: number;
+  completedJobs: number;
+  pendingPayout: number;
+}
 
-const JOB_HISTORY = [
-  {
-    id: 'h-001',
-    jobNumber: 'JOB-001',
-    date: '28.04.2025',
-    route: 'Jūrmala → Rīga',
-    amount: 169,
-    paid: true,
-  },
-  {
-    id: 'h-002',
-    jobNumber: 'JOB-008',
-    date: '27.04.2025',
-    route: 'Ogre → Sigulda',
-    amount: 215,
-    paid: true,
-  },
-  {
-    id: 'h-003',
-    jobNumber: 'JOB-007',
-    date: '25.04.2025',
-    route: 'Rīga → Ventspils',
-    amount: 380,
-    paid: false,
-  },
-  {
-    id: 'h-004',
-    jobNumber: 'JOB-005',
-    date: '23.04.2025',
-    route: 'Jelgava → Rīga',
-    amount: 79,
-    paid: true,
-  },
+interface HistoryEntry {
+  id: string;
+  jobNumber: string;
+  date: string;
+  route: string;
+  amount: number;
+  paid: boolean;
+}
+
+const ACTIVE_STATUSES = [
+  'ACCEPTED',
+  'EN_ROUTE_PICKUP',
+  'AT_PICKUP',
+  'LOADED',
+  'EN_ROUTE_DELIVERY',
+  'AT_DELIVERY',
 ];
 
+function computeStats(jobs: ApiTransportJob[]): { stats: EarningsStats; history: HistoryEntry[] } {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const weekStart = new Date(todayStart);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  let todayEarnings = 0,
+    weekEarnings = 0,
+    monthEarnings = 0,
+    completedJobs = 0,
+    pendingPayout = 0;
+  const history: HistoryEntry[] = [];
+  for (const job of jobs) {
+    const d = new Date(job.deliveryDate ?? job.pickupDate);
+    if (job.status === 'DELIVERED') {
+      completedJobs++;
+      if (d >= todayStart) todayEarnings += job.rate;
+      if (d >= weekStart) weekEarnings += job.rate;
+      if (d >= monthStart) monthEarnings += job.rate;
+      history.push({
+        id: job.id,
+        jobNumber: job.jobNumber,
+        date: d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+        route: `${job.pickupCity} → ${job.deliveryCity}`,
+        amount: job.rate,
+        paid: true,
+      });
+    } else if (ACTIVE_STATUSES.includes(job.status)) {
+      pendingPayout += job.rate;
+      history.push({
+        id: job.id,
+        jobNumber: job.jobNumber,
+        date: new Date(job.pickupDate).toLocaleDateString('lv-LV', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }),
+        route: `${job.pickupCity} → ${job.deliveryCity}`,
+        amount: job.rate,
+        paid: false,
+      });
+    }
+  }
+  return {
+    stats: { todayEarnings, weekEarnings, monthEarnings, completedJobs, pendingPayout },
+    history,
+  };
+}
+
 export default function EarningsScreen() {
+  const { token } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<EarningsStats>({
+    todayEarnings: 0,
+    weekEarnings: 0,
+    monthEarnings: 0,
+    completedJobs: 0,
+    pendingPayout: 0,
+  });
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+
+  const fetchEarnings = useCallback(async () => {
+    if (!token) return;
+    try {
+      const jobs = await api.transportJobs.myJobs(token);
+      const { stats: s, history: h } = computeStats(jobs);
+      setStats(s);
+      setHistory(h);
+    } catch (e) {
+      console.error('Failed to load earnings', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchEarnings();
+  }, [fetchEarnings]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ActivityIndicator color="#dc2626" style={{ flex: 1, marginTop: 40 }} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -58,19 +130,19 @@ export default function EarningsScreen() {
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, styles.statCardPrimary]}>
             <Text style={styles.statLabelLight}>{t.earnings.today}</Text>
-            <Text style={styles.statValueLight}>€{STATS.todayEarnings}</Text>
+            <Text style={styles.statValueLight}>€{stats.todayEarnings}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>{t.earnings.thisWeek}</Text>
-            <Text style={styles.statValue}>€{STATS.weekEarnings}</Text>
+            <Text style={styles.statValue}>€{stats.weekEarnings}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>{t.earnings.thisMonth}</Text>
-            <Text style={styles.statValue}>€{STATS.monthEarnings}</Text>
+            <Text style={styles.statValue}>€{stats.monthEarnings}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>{t.earnings.completedJobs}</Text>
-            <Text style={styles.statValue}>{STATS.completedJobs}</Text>
+            <Text style={styles.statValue}>{stats.completedJobs}</Text>
           </View>
         </View>
 
@@ -78,15 +150,15 @@ export default function EarningsScreen() {
         <View style={styles.pendingCard}>
           <View>
             <Text style={styles.pendingLabel}>{t.earnings.pending}</Text>
-            <Text style={styles.pendingAmount}>€{STATS.pendingPayout}</Text>
+            <Text style={styles.pendingAmount}>€{stats.pendingPayout}</Text>
           </View>
-          <Text style={styles.pendingIcon}>⏳</Text>
+          <Clock size={32} color="#92400e" />
         </View>
 
         {/* History */}
         <Text style={styles.sectionTitle}>{t.earnings.history}</Text>
         <View style={styles.historyList}>
-          {JOB_HISTORY.map((job) => (
+          {history.map((job) => (
             <View key={job.id} style={styles.historyRow}>
               <View>
                 <Text style={styles.historyJob}>#{job.jobNumber}</Text>
@@ -101,14 +173,19 @@ export default function EarningsScreen() {
                     job.paid ? styles.payStatusPaid : styles.payStatusPending,
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.payStatusText,
-                      job.paid ? styles.payStatusTextPaid : styles.payStatusTextPending,
-                    ]}
-                  >
-                    {job.paid ? '✓ Izmaksāts' : '⏳ Gaida'}
-                  </Text>
+                  {job.paid ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Check size={11} color="#16a34a" />
+                      <Text style={[styles.payStatusText, styles.payStatusTextPaid]}>
+                        Izmaksāts
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Clock size={11} color="#d97706" />
+                      <Text style={[styles.payStatusText, styles.payStatusTextPending]}>Gaida</Text>
+                    </View>
+                  )}
                 </View>
               </View>
             </View>

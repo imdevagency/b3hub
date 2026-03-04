@@ -14,6 +14,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 import type { SkipHireOrder } from '@/lib/api';
+import { MapPin, CalendarDays, Trash2, Package, Truck, RefreshCw } from 'lucide-react-native';
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -46,10 +47,16 @@ function OrderCard({ order }: { order: SkipHireOrder }) {
       </View>
       <View style={s.orderDivider} />
       <View style={s.orderBottom}>
-        <Text style={s.orderMeta} numberOfLines={1}>
-          📍 {order.location}
-        </Text>
-        <Text style={s.orderMeta}>📅 {formatDate(order.deliveryDate)}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+          <MapPin size={13} color="#374151" />
+          <Text style={s.orderMeta} numberOfLines={1}>
+            {order.location}
+          </Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+          <CalendarDays size={13} color="#374151" />
+          <Text style={s.orderMeta}>{formatDate(order.deliveryDate)}</Text>
+        </View>
       </View>
       <View style={s.orderFooter}>
         <Text style={s.orderPrice}>€{order.price}</Text>
@@ -115,13 +122,16 @@ export default function OrdersScreen() {
 
         {/* Section */}
         <View style={s.section}>
-          <Text style={s.sectionLabel}>🗑️ Atkritumu konteineri</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+            <Trash2 size={14} color="#6b7280" />
+            <Text style={[s.sectionLabel, { marginBottom: 0 }]}>Atkritumu konteineri</Text>
+          </View>
 
           {loading ? (
             <ActivityIndicator color="#dc2626" size="large" style={{ marginTop: 48 }} />
           ) : orders.length === 0 ? (
             <View style={s.empty}>
-              <Text style={s.emptyEmoji}>📦</Text>
+              <Package size={48} color="#d1d5db" style={{ marginBottom: 8 }} />
               <Text style={s.emptyTitle}>{t.skipHire.noOrders}</Text>
               <Text style={s.emptyDesc}>{t.skipHire.noOrdersDesc}</Text>
               <TouchableOpacity
@@ -142,12 +152,14 @@ export default function OrdersScreen() {
         </View>
 
         {/* Coming soon sections */}
-        {[
-          { emoji: '🚛', label: 'Materiālu piegādes' },
-          { emoji: '🔄', label: 'Spedīcijas pasūtījumi' },
-        ].map((sec) => (
+        {(
+          [
+            { Icon: Truck, label: 'Materiālu piegādes' },
+            { Icon: RefreshCw, label: 'Spedīcijas pasūtījumi' },
+          ] as { Icon: typeof Truck; label: string }[]
+        ).map((sec) => (
           <View key={sec.label} style={s.comingSoonCard}>
-            <Text style={s.comingSoonEmoji}>{sec.emoji}</Text>
+            <sec.Icon size={28} color="#6b7280" />
             <View style={{ flex: 1 }}>
               <Text style={s.comingSoonLabel}>{sec.label}</Text>
               <Text style={s.comingSoonSub}>Drīzumā pieejams</Text>

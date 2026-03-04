@@ -37,8 +37,9 @@ import {
 } from '@/components/ui/sidebar';
 
 type NavItem = { label: string; href: string; icon: React.ElementType };
+type Mode = 'BUYER' | 'SUPPLIER' | 'CARRIER';
 
-const ROLE_NAV: Record<string, NavItem[]> = {
+const ROLE_NAV: Record<Mode, NavItem[]> = {
   BUYER: [
     { label: 'Informācijas Panelis', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Pārlūkot Materiālus', href: '/materials', icon: Package },
@@ -58,7 +59,7 @@ const ROLE_NAV: Record<string, NavItem[]> = {
   CARRIER: [
     { label: 'Informācijas Panelis', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Mans Autoparks', href: '/dashboard/garage', icon: Car },
-    { label: 'Aktīvie Darbi', href: '/jobs', icon: MapPin },
+    { label: 'Auftragsbörse', href: '/dashboard/jobs', icon: MapPin },
     { label: 'Maršruts', href: '/route', icon: Truck },
     { label: 'Pabeigt Piegādi', href: '/jobs/complete', icon: CheckCircle },
     { label: 'Ieņēmumi', href: '/earnings', icon: Banknote },
@@ -66,30 +67,57 @@ const ROLE_NAV: Record<string, NavItem[]> = {
   ],
 };
 
-const USER_TYPE_LABEL: Record<string, string> = {
+const MODE_LABEL: Record<Mode, string> = {
   BUYER: 'Pasūtītājs',
   SUPPLIER: 'Piegādātājs',
   CARRIER: 'Pārvadātājs',
-  ADMIN: 'Administrators',
 };
+
+const MODE_EMOJI: Record<Mode, string> = {
+  BUYER: '🛒',
+  SUPPLIER: '📦',
+  CARRIER: '🚛',
+};
+
+const LS_MODE_KEY = 'b3hub_active_mode';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
-  const baseNav = (user?.userType ? ROLE_NAV[user.userType] : null) ?? ROLE_NAV.BUYER;
+  // Determine which modes this user has access to
+  const availableModes = React.useMemo<Mode[]>(() => {
+    if (!user) return ['BUYER'];
+    const modes: Mode[] = [];
+    if (user.userType === 'BUYER' || user.userType === 'ADMIN') modes.push('BUYER');
+    if (user.userType === 'SUPPLIER' || user.canSell) modes.push('SUPPLIER');
+    if (user.userType === 'CARRIER' || user.canTransport) modes.push('CARRIER');
+    // Ensure at least one mode
+    if (modes.length === 0) modes.push('BUYER');
+    return modes;
+  }, [user]);
 
-  // Users with canTransport (e.g. BUYER who also runs their own fleet) get the garage link
-  const garageItem: NavItem = { label: 'Mans Autoparks', href: '/dashboard/garage', icon: Car };
-  const navItems =
-    user?.canTransport && !baseNav.find((i) => i.href === '/dashboard/garage')
-      ? [
-          ...baseNav.slice(0, -1), // everything except Mani Dokumenti
-          garageItem,
-          baseNav[baseNav.length - 1], // Mani Dokumenti last
-        ]
-      : baseNav;
+  // Active mode — persisted to localStorage
+  const defaultMode: Mode = availableModes[0];
+  const [activeMode, setActiveMode] = React.useState<Mode>(defaultMode);
+
+  // Hydrate from localStorage once mounted
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem(LS_MODE_KEY) as Mode | null;
+      if (stored && availableModes.includes(stored)) setActiveMode(stored);
+    } catch { /* ignore */ }
+  }, [availableModes]);
+
+  const handleModeSwitch = (mode: Mode) => {
+    setActiveMode(mode);
+    try { localStorage.setItem(LS_MODE_KEY, mode); } catch { /* ignore */ }
+    router.push('/dashboard');
+  };
+
+  const navItems = ROLE_NAV[activeMode];
+  const isMultiRole = availableModes.length > 1;
 
   const initials = user
     ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase()
@@ -109,13 +137,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">B3Hub</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {USER_TYPE_LABEL[user?.userType ?? ''] ?? 'Platform'}
+                    {MODE_EMOJI[activeMode]} {MODE_LABEL[activeMode]}
                   </span>
                 </div>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+
+        {/* Role switcher — only shown for multi-role users, hidden when sidebar collapsed */}
+        {isMultiRole && (
+          <div className="px-2 pb-1 flex gap-1 group-data-[collapsible=icon]:hidden">
+            {availableModes.map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => handleModeSwitch(mode)}
+                title={MODE_LABEL[mode]}
+                className={`flex-1 rounded-md px-1.5 py-1 text-xs font-semibold transition-colors ${
+                  activeMode === mode
+                    ? 'bg-red-600 text-white'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+                }`}
+              >
+                {MODE_EMOJI[mode]} {MODE_LABEL[mode]}
+              </button>
+            ))}
+          </div>
+        )}
       </SidebarHeader>
 
       <SidebarContent>

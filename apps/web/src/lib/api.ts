@@ -351,3 +351,91 @@ export async function deleteVehicle(id: string, token: string): Promise<void> {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ── Transport Jobs ─────────────────────────────────────────────
+
+export type TransportJobStatus =
+  | "AVAILABLE" | "ASSIGNED" | "ACCEPTED" | "EN_ROUTE_PICKUP"
+  | "AT_PICKUP" | "LOADED" | "EN_ROUTE_DELIVERY" | "AT_DELIVERY"
+  | "DELIVERED" | "CANCELLED";
+
+export interface ApiTransportJob {
+  id: string;
+  jobNumber: string;
+  jobType: string;
+  requiredVehicleType: string | null;
+  requiredVehicleEnum: string | null;
+  cargoType: string;
+  cargoWeight: number | null;
+  pickupAddress: string;
+  pickupCity: string;
+  pickupLat: number | null;
+  pickupLng: number | null;
+  pickupDate: string;
+  pickupWindow: string | null;
+  deliveryAddress: string;
+  deliveryCity: string;
+  deliveryLat: number | null;
+  deliveryLng: number | null;
+  deliveryDate: string;
+  deliveryWindow: string | null;
+  distanceKm: number | null;
+  rate: number;
+  pricePerTonne: number | null;
+  currency: string;
+  status: TransportJobStatus;
+  driverId: string | null;
+  driver: { id: string; firstName: string; lastName: string; phone: string | null } | null;
+  vehicle: { id: string; licensePlate: string; vehicleType: string } | null;
+  order: { id: string; orderNumber: string } | null;
+}
+
+export async function getAvailableTransportJobs(token: string): Promise<ApiTransportJob[]> {
+  return apiFetch<ApiTransportJob[]>("/transport-jobs", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function acceptTransportJob(id: string, token: string): Promise<ApiTransportJob> {
+  return apiFetch<ApiTransportJob>(`/transport-jobs/${id}/accept`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function getMyTransportJobs(token: string): Promise<ApiTransportJob[]> {
+  return apiFetch<ApiTransportJob[]>("/transport-jobs/my-jobs", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Orders ─────────────────────────────────────────────────────
+
+export interface ApiOrderItem {
+  material: { name: string; category: string };
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  total: number;
+}
+
+export interface ApiOrder {
+  id: string;
+  orderNumber: string;
+  status: string;
+  items: ApiOrderItem[];
+  deliveryAddress: string;
+  deliveryCity: string;
+  deliveryDate: string | null;
+  total: number;
+  currency: string;
+  buyer?: { id: string; firstName: string; lastName: string; phone?: string } | null;
+  createdAt: string;
+}
+
+export async function getMyOrders(token: string, status?: string): Promise<ApiOrder[]> {
+  const qs = status ? `?status=${status}` : "";
+  return apiFetch<ApiOrder[]>(`/orders${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

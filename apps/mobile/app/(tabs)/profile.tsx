@@ -2,11 +2,15 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
+import { useMode } from '@/lib/mode-context';
 import { t } from '@/lib/translations';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
+  const { mode } = useMode();
   const router = useRouter();
+
+  const roleLabel = t.mode[mode];
 
   const handleLogout = async () => {
     await logout();

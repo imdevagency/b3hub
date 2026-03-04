@@ -1,8 +1,19 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import React, { useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { t } from '@/lib/translations';
+import { useAuth } from '@/lib/auth-context';
+import { api, ApiTransportJob } from '@/lib/api';
+import { Map, Phone, CheckCircle2, Navigation2 } from 'lucide-react-native';
 
 // ── Status progression ────────────────────────────────────────────────────────
 const STATUS_STEPS = [
@@ -27,31 +38,43 @@ const NEXT_STATUS: Record<JobStatus, JobStatus | null> = {
   DELIVERED: null,
 };
 
-// ── Mock active job ───────────────────────────────────────────────────────────
-const MOCK_ACTIVE_JOB = {
-  jobNumber: 'JOB-001',
-  vehicleType: '26t Kravas auto',
-  payload: 'Grants 0/45mm',
-  weightTonnes: 26,
-  from: 'Rūpnīca, Jūrmala',
-  fromContact: '+371 20 111 222',
-  to: 'Būvobjekts, Rīga',
-  toContact: '+371 29 333 444',
-  price: 169,
-  currency: 'EUR',
-  currentStatus: 'ACCEPTED' as JobStatus,
-};
-
 export default function ActiveJobScreen() {
   const router = useRouter();
-  const [job, setJob] = React.useState(MOCK_ACTIVE_JOB);
-  const [hasActiveJob] = React.useState(true); // replace with real state
+  const { token } = useAuth();
+  const [job, setJob] = React.useState<ApiTransportJob | null>(null);
+  const [loading, setLoading] = React.useState(true);
 
-  if (!hasActiveJob) {
+  const fetchActiveJob = useCallback(async () => {
+    if (!token) return;
+    try {
+      const data = await api.transportJobs.myActive(token);
+      setJob(data);
+    } catch (e) {
+      console.error('Failed to fetch active job', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchActiveJob();
+  }, [fetchActiveJob]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color="#dc2626" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!job) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.empty}>
-          <Text style={styles.emptyEmoji}>🗺️</Text>
+          <Map size={48} color="#d1d5db" />
           <Text style={styles.emptyTitle}>{t.activeJob.noJob}</Text>
           <Text style={styles.emptyDesc}>{t.activeJob.noJobDesc}</Text>
           <TouchableOpacity style={styles.goBtn} onPress={() => router.push('/(tabs)/jobs')}>
@@ -62,16 +85,24 @@ export default function ActiveJobScreen() {
     );
   }
 
-  const currentIndex = STATUS_STEPS.indexOf(job.currentStatus);
-  const nextStatus = NEXT_STATUS[job.currentStatus];
+  const currentStatus = job.status as JobStatus;
+  const currentIndex = STATUS_STEPS.indexOf(currentStatus);
+  const nextStatus = NEXT_STATUS[currentStatus];
 
   const handleUpdateStatus = () => {
-    if (!nextStatus) return;
+    if (!nextStatus || !token) return;
     Alert.alert(t.activeJob.updateStatus, `→ ${t.activeJob.status[nextStatus]}`, [
       { text: 'Atcelt', style: 'cancel' },
       {
         text: 'Apstiprināt',
-        onPress: () => setJob((prev) => ({ ...prev, currentStatus: nextStatus })),
+        onPress: async () => {
+          try {
+            const updated = await api.transportJobs.updateStatus(job.id, nextStatus, token);
+            setJob(updated);
+          } catch (err: any) {
+            Alert.alert('Kļūda', err.message ?? 'Neizdevās atjaunināt statusu');
+          }
+        },
       },
     ]);
   };
@@ -83,7 +114,7 @@ export default function ActiveJobScreen() {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{t.activeJob.title}</Text>
           <View style={styles.priceTag}>
-            <Text style={styles.price}>€{job.price}</Text>
+            <Text style={styles.price}>€{job.rate.toFixed(2)}</Text>
           </View>
         </View>
 
@@ -91,7 +122,7 @@ export default function ActiveJobScreen() {
         <View style={styles.statusCard}>
           <View style={styles.statusBadge}>
             <Text style={styles.statusText}>
-              {t.activeJob.status[job.currentStatus] ?? job.currentStatus}
+              {t.activeJob.status[currentStatus] ?? currentStatus}
             </Text>
           </View>
 
@@ -113,7 +144,7 @@ export default function ActiveJobScreen() {
         {/* Job details */}
         <View style={styles.detailsCard}>
           <Text style={styles.detailsTitle}>
-            #{job.jobNumber} · {job.payload} {job.weightTonnes}t
+            #{job.jobNumber} · {job.cargoType} {job.cargoWeight ?? 0}t
           </Text>
 
           <View style={styles.routeSection}>
@@ -122,13 +153,17 @@ export default function ActiveJobScreen() {
               <View style={styles.routeDot} />
               <View style={styles.routeInfo}>
                 <Text style={styles.routeLabel}>{t.jobs.from}</Text>
-                <Text style={styles.routeValue}>{job.from}</Text>
+                <Text style={styles.routeValue}>
+                  {job.pickupAddress}, {job.pickupCity}
+                </Text>
               </View>
               <TouchableOpacity
                 style={styles.callBtn}
-                onPress={() => Alert.alert(t.activeJob.call, job.fromContact)}
+                onPress={() =>
+                  Alert.alert(t.activeJob.call, job.pickupWindow ?? t.activeJob.noContact)
+                }
               >
-                <Text style={styles.callBtnText}>📞</Text>
+                <Phone size={18} color="#374151" />
               </TouchableOpacity>
             </View>
 
@@ -139,13 +174,17 @@ export default function ActiveJobScreen() {
               <View style={[styles.routeDot, styles.routeDotEnd]} />
               <View style={styles.routeInfo}>
                 <Text style={styles.routeLabel}>{t.jobs.to}</Text>
-                <Text style={styles.routeValue}>{job.to}</Text>
+                <Text style={styles.routeValue}>
+                  {job.deliveryAddress}, {job.deliveryCity}
+                </Text>
               </View>
               <TouchableOpacity
                 style={styles.callBtn}
-                onPress={() => Alert.alert(t.activeJob.call, job.toContact)}
+                onPress={() =>
+                  Alert.alert(t.activeJob.call, job.deliveryWindow ?? t.activeJob.noContact)
+                }
               >
-                <Text style={styles.callBtnText}>📞</Text>
+                <Phone size={18} color="#374151" />
               </TouchableOpacity>
             </View>
           </View>
@@ -157,7 +196,10 @@ export default function ActiveJobScreen() {
             style={styles.navigateBtn}
             onPress={() => Alert.alert(t.activeJob.navigate, 'Atvērt navigāciju...')}
           >
-            <Text style={styles.navigateBtnText}>🗺️ {t.activeJob.navigate}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Navigation2 size={18} color="#ffffff" />
+              <Text style={styles.navigateBtnText}>{t.activeJob.navigate}</Text>
+            </View>
           </TouchableOpacity>
 
           {nextStatus && (
@@ -168,7 +210,8 @@ export default function ActiveJobScreen() {
 
           {!nextStatus && (
             <View style={styles.completedBanner}>
-              <Text style={styles.completedText}>✅ Piegādāts!</Text>
+              <CheckCircle2 size={20} color="#16a34a" />
+              <Text style={styles.completedText}>Piegādāts!</Text>
             </View>
           )}
         </View>
@@ -286,7 +329,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#dcfce7',
     borderRadius: 14,
     paddingVertical: 14,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     borderWidth: 1,
     borderColor: '#86efac',
   },

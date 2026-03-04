@@ -26,6 +26,22 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
       type: "sourceFile",
     };
   }
+
+  // When expo is hoisted to the monorepo root, expo/AppEntry.js resolves
+  // "../../App" relative to b3hub/node_modules/expo/ (i.e. b3hub/App),
+  // which doesn't exist. Redirect it to the mobile project's App.tsx instead.
+  if (
+    moduleName === "../../App" &&
+    context.originModulePath.includes(
+      path.join(monorepoRoot, "node_modules", "expo", "AppEntry")
+    )
+  ) {
+    return {
+      filePath: path.resolve(projectRoot, "App.tsx"),
+      type: "sourceFile",
+    };
+  }
+
   return context.resolveRequest(context, moduleName, platform);
 };
 

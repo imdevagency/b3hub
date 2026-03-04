@@ -1,7 +1,29 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Modal } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  Modal,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/lib/translations';
+import { useAuth } from '@/lib/auth-context';
+import { api, type ApiOrder } from '@/lib/api';
+import {
+  Clock,
+  CheckCircle2,
+  Package,
+  Truck,
+  X,
+  Square,
+  MapPin,
+  Check,
+  Inbox,
+} from 'lucide-react-native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type OrderStatus = 'PENDING' | 'CONFIRMED' | 'LOADING' | 'DISPATCHED';
@@ -18,48 +40,47 @@ interface IncomingOrder {
   status: OrderStatus;
 }
 
-// ── Mock data ─────────────────────────────────────────────────────────────────
-const MOCK_ORDERS: IncomingOrder[] = [
-  {
-    id: 'o-001',
-    orderNumber: 'ORD-2025-0041',
-    material: 'Grants 0/45mm',
-    weightTonnes: 26,
-    buyerName: 'SIA BuildCo',
-    deliveryAddress: 'Brīvības iela 23, Rīga',
-    requestedDate: '29.04.2025',
-    price: 312,
-    status: 'PENDING',
-  },
-  {
-    id: 'o-002',
-    orderNumber: 'ORD-2025-0040',
-    material: 'Smilts 0/4mm',
-    weightTonnes: 18,
-    buyerName: 'Jānis Bērziņš',
-    deliveryAddress: 'Meža iela 5, Sigulda',
-    requestedDate: '30.04.2025',
-    price: 175,
-    status: 'CONFIRMED',
-  },
-  {
-    id: 'o-003',
-    orderNumber: 'ORD-2025-0039',
-    material: 'Šķembas 25/40mm',
-    weightTonnes: 20,
-    buyerName: 'SIA RoadWorks',
-    deliveryAddress: 'Ventspils šoseja km 12',
-    requestedDate: '28.04.2025',
-    price: 280,
-    status: 'LOADING',
-  },
-];
+// ── API mapper ────────────────────────────────────────────────────────────────
+function mapApiOrder(o: ApiOrder): IncomingOrder {
+  const statusMap: Record<string, OrderStatus> = {
+    PENDING: 'PENDING',
+    CONFIRMED: 'CONFIRMED',
+    PROCESSING: 'CONFIRMED',
+    LOADING: 'LOADING',
+    DELIVERING: 'DISPATCHED',
+    DELIVERED: 'DISPATCHED',
+    COMPLETED: 'DISPATCHED',
+  };
+  const item = o.items?.[0];
+  const buyerName = o.buyer ? `${o.buyer.firstName} ${o.buyer.lastName}`.trim() : o.orderNumber;
+  return {
+    id: o.id,
+    orderNumber: o.orderNumber,
+    material: item?.material?.name ?? 'Unknown',
+    weightTonnes: item?.quantity ?? 0,
+    buyerName,
+    deliveryAddress: o.deliveryAddress ?? o.deliveryCity ?? '',
+    requestedDate: o.deliveryDate
+      ? new Date(o.deliveryDate).toLocaleDateString('lv-LV', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        })
+      : new Date(o.createdAt).toLocaleDateString('lv-LV', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }),
+    price: o.total,
+    status: statusMap[o.status] ?? 'PENDING',
+  };
+}
 
 const STATUS_COLORS: Record<OrderStatus, { bg: string; text: string; label: string }> = {
-  PENDING: { bg: '#fef3c7', text: '#d97706', label: '⏳ Jauns' },
-  CONFIRMED: { bg: '#dbeafe', text: '#2563eb', label: '✅ Apstiprināts' },
-  LOADING: { bg: '#fce7f3', text: '#db2777', label: '📦 Iekraušana' },
-  DISPATCHED: { bg: '#dcfce7', text: '#16a34a', label: '🚛 Nosūtīts' },
+  PENDING: { bg: '#fef3c7', text: '#d97706', label: 'Jauns' },
+  CONFIRMED: { bg: '#dbeafe', text: '#2563eb', label: 'Apstipārināts' },
+  LOADING: { bg: '#fce7f3', text: '#db2777', label: 'Iekraušana' },
+  DISPATCHED: { bg: '#dcfce7', text: '#16a34a', label: 'Nosūtīts' },
 };
 
 // ── Loading confirmation modal (BeladeFLIX-style) ────────────────────────────
@@ -79,7 +100,7 @@ function LoadingModal({
       <SafeAreaView style={modalStyles.container} edges={['top', 'bottom']}>
         <View style={modalStyles.header}>
           <TouchableOpacity onPress={onClose}>
-            <Text style={modalStyles.closeBtn}>✕</Text>
+            <X size={22} color="#6b7280" />
           </TouchableOpacity>
           <Text style={modalStyles.title}>{t.incoming.loading}</Text>
           <View style={{ width: 32 }} />
@@ -118,7 +139,7 @@ function LoadingModal({
               'Vadītājs ir klāt un gatavs',
             ].map((item, i) => (
               <View key={i} style={modalStyles.checkRow}>
-                <Text style={modalStyles.checkIcon}>☐</Text>
+                <Square size={16} color="#9ca3af" />
                 <Text style={modalStyles.checkText}>{item}</Text>
               </View>
             ))}
@@ -178,7 +199,10 @@ function OrderCard({
           <Text style={styles.detailValue}>{order.requestedDate}</Text>
         </View>
         <View style={[styles.detailItem, { flex: 2 }]}>
-          <Text style={styles.detailLabel}>📍 Adrese</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+            <MapPin size={11} color="#9ca3af" />
+            <Text style={styles.detailLabel}>Adrese</Text>
+          </View>
           <Text style={styles.detailValue}>{order.deliveryAddress}</Text>
         </View>
       </View>
@@ -196,14 +220,20 @@ function OrderCard({
             <Text style={styles.rejectBtnText}>{t.incoming.reject}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.confirmBtn} onPress={() => onConfirm(order.id)}>
-            <Text style={styles.confirmBtnText}>{t.incoming.confirm} ✓</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.confirmBtnText}>{t.incoming.confirm}</Text>
+              <Check size={14} color="#ffffff" />
+            </View>
           </TouchableOpacity>
         </View>
       )}
 
       {order.status === 'CONFIRMED' && (
         <TouchableOpacity style={styles.loadingBtn} onPress={() => onStartLoading(order.id)}>
-          <Text style={styles.loadingBtnText}>📦 {t.incoming.confirmLoad}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Package size={16} color="#ffffff" />
+            <Text style={styles.loadingBtnText}>{t.incoming.confirmLoad}</Text>
+          </View>
         </TouchableOpacity>
       )}
     </View>
@@ -212,8 +242,26 @@ function OrderCard({
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function IncomingScreen() {
-  const [orders, setOrders] = useState<IncomingOrder[]>(MOCK_ORDERS);
+  const { token } = useAuth();
+  const [orders, setOrders] = useState<IncomingOrder[]>([]);
+  const [fetching, setFetching] = useState(true);
   const [loadingOrder, setLoadingOrder] = useState<IncomingOrder | null>(null);
+
+  const fetchOrders = useCallback(async () => {
+    if (!token) return;
+    try {
+      const data = await api.orders.myOrders(token);
+      setOrders(data.map(mapApiOrder));
+    } catch (e) {
+      console.error('Failed to load orders', e);
+    } finally {
+      setFetching(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   const handleConfirm = (id: string) => {
     setOrders((prev) =>
@@ -251,6 +299,14 @@ export default function IncomingScreen() {
 
   const pendingCount = orders.filter((o) => o.status === 'PENDING').length;
 
+  if (fetching) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ActivityIndicator color="#dc2626" style={{ flex: 1, marginTop: 40 }} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
@@ -265,7 +321,7 @@ export default function IncomingScreen() {
 
       {orders.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyEmoji}>📭</Text>
+          <Inbox size={48} color="#d1d5db" />
           <Text style={styles.emptyTitle}>{t.incoming.empty}</Text>
           <Text style={styles.emptyDesc}>{t.incoming.emptyDesc}</Text>
         </View>

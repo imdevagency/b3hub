@@ -11,6 +11,17 @@ async function main() {
 
   // ── Demo accounts ──────────────────────────────────────────────────────────
   const accounts = [
+    // 🌟 Demo account — all roles enabled (buyer + sell + transport + admin)
+    {
+      email: 'demo@demo.com',
+      firstName: 'Demo',
+      lastName: 'User',
+      phone: '+371 20 000 001',
+      userType: UserType.BUYER,
+      isCompany: true,
+      canSell: true,
+      canTransport: true,
+    },
     // 🛒 Pure buyer — construction company, orders materials & skips
     {
       email: 'buyer@demo.com',

@@ -217,15 +217,15 @@ export default function RegisterScreen() {
               name="userType"
               render={({ field: { onChange, value } }) => (
                 <View style={s.typeGrid}>
-                  {USER_TYPES.map((t) => (
+                  {USER_TYPES.map((ut) => (
                     <TouchableOpacity
-                      key={t.value}
-                      style={[s.typeBtn, value === t.value ? s.typeBtnActive : null]}
-                      onPress={() => onChange(t.value)}
+                      key={ut.value}
+                      style={[s.typeBtn, value === ut.value ? s.typeBtnActive : null]}
+                      onPress={() => onChange(ut.value)}
                     >
-                      <Text style={s.typeEmoji}>{t.emoji}</Text>
-                      <Text style={[s.typeLabel, value === t.value ? s.typeLabelActive : null]}>
-                        {t.label}
+                      <ut.Icon size={24} color={value === ut.value ? '#dc2626' : '#6b7280'} />
+                      <Text style={[s.typeLabel, value === ut.value ? s.typeLabelActive : null]}>
+                        {ut.label}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -249,7 +249,7 @@ export default function RegisterScreen() {
                         style={[s.typeBtn, value === k.value ? s.typeBtnActive : null]}
                         onPress={() => onChange(k.value)}
                       >
-                        <Text style={s.typeEmoji}>{k.emoji}</Text>
+                        <k.Icon size={24} color={value === k.value ? '#dc2626' : '#6b7280'} />
                         <Text style={[s.typeLabel, value === k.value ? s.typeLabelActive : null]}>
                           {k.label}
                         </Text>

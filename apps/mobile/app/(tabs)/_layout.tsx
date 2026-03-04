@@ -3,8 +3,29 @@ import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useMode, AppMode } from '@/lib/mode-context';
-import { View, ActivityIndicator, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  ActivityIndicator,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { t } from '@/lib/translations';
+import {
+  Home,
+  Package,
+  Truck,
+  User,
+  ClipboardList,
+  Map,
+  Wallet,
+  Inbox,
+  LayoutGrid,
+  ShoppingCart,
+  Store,
+} from 'lucide-react-native';
 
 // ── Mode pill switcher ───────────────────────────────────────────────────────
 const MODE_LABELS: Record<AppMode, string> = {
@@ -13,28 +34,51 @@ const MODE_LABELS: Record<AppMode, string> = {
   driver: t.mode.driver,
 };
 
-const MODE_ICONS: Record<AppMode, string> = {
-  buyer: '🛒',
-  seller: '📦',
-  driver: '🚛',
+function ModeSwitcherIcon({ mode, active }: { mode: AppMode; active: boolean }) {
+  const color = active ? '#ffffff' : '#374151';
+  const size = 14;
+  if (mode === 'buyer') return <ShoppingCart size={size} color={color} />;
+  if (mode === 'seller') return <Store size={size} color={color} />;
+  return <Truck size={size} color={color} />;
+}
+
+const MODE_HOME: Record<AppMode, string> = {
+  driver: '/(tabs)/jobs',
+  seller: '/(tabs)/incoming',
+  buyer: '/(tabs)/home',
 };
 
 function ModeSwitcher() {
   const { mode, setMode, availableModes } = useMode();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+
+  function handleSwitch(m: AppMode) {
+    if (m === mode) return;
+    setMode(m);
+    router.replace(MODE_HOME[m] as any);
+  }
 
   return (
-    <View style={styles.switcher}>
-      {availableModes.map((m) => (
-        <TouchableOpacity
-          key={m}
-          onPress={() => setMode(m)}
-          style={[styles.pill, mode === m && styles.pillActive]}
-        >
-          <Text style={[styles.pillText, mode === m && styles.pillTextActive]}>
-            {MODE_ICONS[m]} {MODE_LABELS[m]}
-          </Text>
-        </TouchableOpacity>
-      ))}
+    <View style={[styles.switcherWrapper, { paddingTop: insets.top }]}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.switcher}
+      >
+        {availableModes.map((m) => (
+          <TouchableOpacity
+            key={m}
+            onPress={() => handleSwitch(m)}
+            style={[styles.pill, mode === m && styles.pillActive]}
+          >
+            <ModeSwitcherIcon mode={m} active={mode === m} />
+            <Text style={[styles.pillText, mode === m && styles.pillTextActive]}>
+              {MODE_LABELS[m]}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
     </View>
   );
 }
@@ -83,36 +127,28 @@ export default function TabsLayout() {
             name="jobs"
             options={{
               title: t.tabs.jobs,
-              tabBarIcon: ({ focused }) => (
-                <Text style={{ fontSize: 18 }}>{focused ? '📋' : '📄'}</Text>
-              ),
+              tabBarIcon: ({ color }) => <ClipboardList size={22} color={color} />,
             }}
           />
           <Tabs.Screen
             name="active"
             options={{
               title: t.tabs.active,
-              tabBarIcon: ({ focused }) => (
-                <Text style={{ fontSize: 18 }}>{focused ? '🗺️' : '🗺'}</Text>
-              ),
+              tabBarIcon: ({ color }) => <Map size={22} color={color} />,
             }}
           />
           <Tabs.Screen
             name="earnings"
             options={{
               title: t.tabs.earnings,
-              tabBarIcon: ({ focused }) => (
-                <Text style={{ fontSize: 18 }}>{focused ? '💰' : '💵'}</Text>
-              ),
+              tabBarIcon: ({ color }) => <Wallet size={22} color={color} />,
             }}
           />
           <Tabs.Screen
             name="profile"
             options={{
               title: t.tabs.profile,
-              tabBarIcon: ({ focused }) => (
-                <Text style={{ fontSize: 18 }}>{focused ? '👤' : '👥'}</Text>
-              ),
+              tabBarIcon: ({ color }) => <User size={22} color={color} />,
             }}
           />
           {/* Hide buyer/seller tabs in driver mode */}
@@ -142,27 +178,21 @@ export default function TabsLayout() {
             name="incoming"
             options={{
               title: t.tabs.incoming,
-              tabBarIcon: ({ focused }) => (
-                <Text style={{ fontSize: 18 }}>{focused ? '📥' : '📨'}</Text>
-              ),
+              tabBarIcon: ({ color }) => <Inbox size={22} color={color} />,
             }}
           />
           <Tabs.Screen
             name="catalog"
             options={{
               title: t.tabs.catalog,
-              tabBarIcon: ({ focused }) => (
-                <Text style={{ fontSize: 18 }}>{focused ? '📦' : '📫'}</Text>
-              ),
+              tabBarIcon: ({ color }) => <LayoutGrid size={22} color={color} />,
             }}
           />
           <Tabs.Screen
             name="profile"
             options={{
               title: t.tabs.profile,
-              tabBarIcon: ({ focused }) => (
-                <Text style={{ fontSize: 18 }}>{focused ? '👤' : '👥'}</Text>
-              ),
+              tabBarIcon: ({ color }) => <User size={22} color={color} />,
             }}
           />
           {/* Hide buyer/driver tabs in seller mode */}
@@ -192,27 +222,21 @@ export default function TabsLayout() {
           name="home"
           options={{
             title: t.tabs.home,
-            tabBarIcon: ({ focused }) => (
-              <Text style={{ fontSize: 18 }}>{focused ? '🏠' : '🏡'}</Text>
-            ),
+            tabBarIcon: ({ color }) => <Home size={22} color={color} />,
           }}
         />
         <Tabs.Screen
           name="orders"
           options={{
             title: t.tabs.orders,
-            tabBarIcon: ({ focused }) => (
-              <Text style={{ fontSize: 18 }}>{focused ? '🚛' : '🚚'}</Text>
-            ),
+            tabBarIcon: ({ color }) => <Package size={22} color={color} />,
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
             title: t.tabs.profile,
-            tabBarIcon: ({ focused }) => (
-              <Text style={{ fontSize: 18 }}>{focused ? '👤' : '👥'}</Text>
-            ),
+            tabBarIcon: ({ color }) => <User size={22} color={color} />,
           }}
         />
         {/* Hide driver/seller tabs in buyer mode */}
@@ -227,18 +251,21 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
+  switcherWrapper: {
+    backgroundColor: '#f3f4f6',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
   switcher: {
     flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
     paddingHorizontal: 16,
     paddingVertical: 8,
     gap: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
   },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 5,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,

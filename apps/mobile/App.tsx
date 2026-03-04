@@ -1,12 +1,5 @@
-import './global.css';
-import { StatusBar } from 'expo-status-bar';
-import { Text, View } from 'react-native';
-
-export default function App() {
-  return (
-    <View className="flex-1 bg-white items-center justify-center">
-      <Text className="text-lg font-semibold">Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
+// This file is used as the root component when expo is hoisted to the monorepo
+// root and expo/AppEntry.js can't resolve its default "../../App" import.
+// It re-exports expo-router's App so full file-based routing still works.
+import '@expo/metro-runtime';
+export { App as default } from 'expo-router/build/qualified-entry';

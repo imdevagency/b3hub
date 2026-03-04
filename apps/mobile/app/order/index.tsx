@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useOrder } from '@/lib/order-context';
 import { t } from '@/lib/translations';
+import { X, MapPin } from 'lucide-react-native';
 
 export default function Step1Location() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function Step1Location() {
         {/* Header */}
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} style={s.closeBtn}>
-            <Text style={s.closeText}>✕</Text>
+            <X size={20} color="#374151" />
           </TouchableOpacity>
           <Text style={s.headerTitle}>{t.skipHire.title}</Text>
           <View style={{ width: 36 }} />
@@ -54,7 +55,7 @@ export default function Step1Location() {
           <Text style={s.stepSubtitle}>{t.skipHire.step1.subtitle}</Text>
 
           <View style={[s.inputRow, isValid && s.inputRowValid]}>
-            <Text style={s.inputIcon}>📍</Text>
+            <MapPin size={18} color="#9ca3af" />
             <TextInput
               style={s.input}
               placeholder={t.skipHire.step1.placeholder}

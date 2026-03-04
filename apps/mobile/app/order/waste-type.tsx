@@ -5,6 +5,25 @@ import { useState } from 'react';
 import { useOrder } from '@/lib/order-context';
 import { t } from '@/lib/translations';
 import type { SkipWasteCategory } from '@/lib/api';
+import {
+  Trash2,
+  Leaf,
+  Hammer,
+  TreePine,
+  Wrench,
+  Cpu,
+  Check,
+  LucideIcon,
+} from 'lucide-react-native';
+
+const WASTE_ICONS: Record<SkipWasteCategory, LucideIcon> = {
+  MIXED: Trash2,
+  GREEN_GARDEN: Leaf,
+  CONCRETE_RUBBLE: Hammer,
+  WOOD: TreePine,
+  METAL_SCRAP: Wrench,
+  ELECTRONICS_WEEE: Cpu,
+};
 
 const WASTE_TYPES: Array<{ id: SkipWasteCategory }> = [
   { id: 'MIXED' },
@@ -63,10 +82,19 @@ export default function Step2WasteType() {
               >
                 {isSelected && (
                   <View style={s.checkBadge}>
-                    <Text style={s.checkText}>✓</Text>
+                    <Check size={12} color="#dc2626" />
                   </View>
                 )}
-                <Text style={s.cardEmoji}>{info.emoji}</Text>
+                {(() => {
+                  const WasteIcon = WASTE_ICONS[type.id];
+                  return (
+                    <WasteIcon
+                      size={30}
+                      color={isSelected ? '#dc2626' : '#6b7280'}
+                      style={{ marginBottom: 8 }}
+                    />
+                  );
+                })()}
                 <Text style={[s.cardLabel, isSelected && s.cardLabelSelected]}>{info.label}</Text>
                 <Text style={s.cardDesc}>{info.desc}</Text>
               </TouchableOpacity>

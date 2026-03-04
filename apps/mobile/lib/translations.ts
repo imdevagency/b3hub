@@ -198,9 +198,9 @@ export const lv = {
   },
 
   jobs: {
-    title: 'Pieejamie darbi',
+    title: 'Auftragsbörse',
     empty: 'Pašlaik nav pieejamu darbu',
-    emptyDesc: 'Pārbaudiet vēlāk jaunus kravas pārvadājumus',
+    emptyDesc: 'Mainiet meklēšanas filtrus vai pārbaudiet vēlāk',
     refresh: 'Atsvaidzināt',
     accept: 'Pieņemt darbu →',
     details: 'Skatīt detaļas',
@@ -211,6 +211,40 @@ export const lv = {
     distance: 'Attālums',
     accepted: 'Darbs pieņemts!',
     acceptedDesc: 'Darbs pievienots jūsu aktīvo darbu sarakstam.',
+    available: 'Pieejams',
+    availableJobs: 'Pieejamie darbi',
+    perTonne: '/ t',
+  },
+
+  jobSearch: {
+    driveTitle: 'Braukā kur vēlies!',
+    driveDesc:
+      'Tu izlemj, kādā rādiusā vēlies pieņemt darbus. Iestatiet meklēšanu ap savu uzņēmumu vai jebkuru citu vietu.',
+    setRadius: 'Iestatīt rādiusu',
+    filterTitle: 'Meklēšanas filtri',
+    fromLocation: 'Iekraušanas vieta',
+    fromPlaceholder: 'Pilsēta vai pasta indekss...',
+    toLocation: 'Izkraušanas vieta',
+    toPlaceholder: 'Pilsēta vai pasta indekss...',
+    radius: 'Rādiuss',
+    any: 'Jebkur',
+    applyFilter: 'Lietot filtru',
+    resetFilter: 'Atiestatīt',
+    saveSearch: '♡  Saglabāt meklēšanu',
+    savedSearches: 'Saglabātās meklēšanas',
+    savedSearchTitle: 'Saglabāt meklēšanu',
+    savedSearchNamePlaceholder: 'Piem. Rīga → Jūrmala 50km',
+    save: 'Saglabāt',
+    cancel: 'Atcelt',
+    searchSaved: 'Meklēšana saglabāta ✓',
+    deleteSearch: 'Dzēst',
+    noSaved: 'Nav saglabātu meklēšanu',
+    activeFilter: 'Aktīvs filtrs',
+    clearFilter: '✕ Notīrīt filtru',
+    results: (n: number) => `${n} pieejamie darbi`,
+    orderType: 'Darba veids',
+    allTypes: 'Visi',
+    sortNewest: 'Jaunākais',
   },
 
   activeJob: {
@@ -231,6 +265,7 @@ export const lv = {
     nextStep: 'Nākamais solis',
     call: 'Zvanīt',
     navigate: 'Navigēt',
+    noContact: 'Kontakts nav norādīts',
   },
 
   earnings: {

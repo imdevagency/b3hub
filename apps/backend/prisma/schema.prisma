@@ -500,9 +500,21 @@ model TransportJob {
   cargoVolume         Float?
   specialRequirements String?
 
+  // Required vehicle
+  requiredVehicleType String?   // human-readable e.g. "Sattelkipper"
+  requiredVehicleEnum VehicleType?
+
+  // Geo coords for radius filtering
+  pickupLat   Float?
+  pickupLng   Float?
+  deliveryLat Float?
+  deliveryLng Float?
+  distanceKm  Float?
+
   // Pricing
-  rate     Float
-  currency String @default("EUR")
+  rate          Float
+  pricePerTonne Float?
+  currency      String @default("EUR")
 
   // Assignment
   carrier   Company? @relation(fields: [carrierId], references: [id])
