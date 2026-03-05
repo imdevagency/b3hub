@@ -21,6 +21,7 @@ async function main() {
       isCompany: true,
       canSell: true,
       canTransport: true,
+      canSkipHire: true,
     },
     // 🛒 Pure buyer — construction company, orders materials & skips
     {
@@ -67,6 +68,7 @@ async function main() {
       isCompany: true,
       canSell: true,
       canTransport: true,
+      canSkipHire: true,
     },
     // 🔑 Admin — B3Hub platform staff
     {
@@ -87,6 +89,7 @@ async function main() {
       update: {
         canSell: account.canSell,
         canTransport: account.canTransport,
+        canSkipHire: (account as any).canSkipHire ?? false,
         isCompany: account.isCompany,
         status: UserStatus.ACTIVE,
         phone: account.phone,
@@ -171,6 +174,45 @@ async function main() {
   }
 
   console.log(`✅  Company: ${buyerCompany.name} (id: ${buyerCompany.id})`);
+
+  // ── Full-service demo company (demo@demo.com + baltbuve@demo.com) ──────────
+  const demoUser = await prisma.user.findUnique({ where: { email: 'demo@demo.com' } });
+  const baltbuveUser = await prisma.user.findUnique({ where: { email: 'baltbuve@demo.com' } });
+
+  const baltbuveCompany = await prisma.company.upsert({
+    where: { registrationNum: 'LV40009999999' },
+    update: {},
+    create: {
+      name: 'BaltBūve SIA',
+      legalName: 'BaltBūve SIA',
+      companyType: 'HYBRID',
+      email: 'info@baltbuve.lv',
+      phone: '+371 67 999 000',
+      registrationNum: 'LV40009999999',
+      taxId: 'LV40009999999',
+      street: 'Brīvības iela 1',
+      city: 'Rīga',
+      state: 'Rīga',
+      postalCode: 'LV-1001',
+      country: 'LV',
+      verified: true,
+    },
+  });
+
+  if (demoUser && !demoUser.companyId) {
+    await prisma.user.update({
+      where: { email: 'demo@demo.com' },
+      data: { companyId: baltbuveCompany.id },
+    });
+  }
+  if (baltbuveUser && !baltbuveUser.companyId) {
+    await prisma.user.update({
+      where: { email: 'baltbuve@demo.com' },
+      data: { companyId: baltbuveCompany.id },
+    });
+  }
+
+  console.log(`✅  Company: ${baltbuveCompany.name} (id: ${baltbuveCompany.id})`);
 
   // ── Demo materials ─────────────────────────────────────────────────────────
   const materials = [

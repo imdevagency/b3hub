@@ -1,73 +1,103 @@
 'use client';
 
 import { useState } from 'react';
-import { MapPin, Trash2, Package, CalendarDays, Check } from 'lucide-react';
+import { Package, MapPin, CalendarDays, ClipboardList, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createSkipHireOrder, mapWasteCategory, mapSkipSize, type SkipHireOrder } from '@/lib/api';
-import { Step1Location } from './steps/Step1Location';
-import { Step2WasteType } from './steps/Step2WasteType';
-import { Step3Size } from './steps/Step3Size';
-import { Step4Date } from './steps/Step4Date';
+import { Step1Container } from './steps/Step1Container';
+import { Step2Address } from './steps/Step2Address';
+import { Step3DateOffers, type Offer } from './steps/Step3DateOffers';
+import { Step4ContactForm } from './steps/Step4ContactForm';
 import { OrderConfirmation } from './OrderConfirmation';
 
+// ── Steps meta ────────────────────────────────────────────────────────────────
+
 const STEPS = [
-  { id: 1, label: 'Atrasanos Vieta', shortLabel: 'Vieta', icon: MapPin },
-  { id: 2, label: 'Atkritumu Veids', shortLabel: 'Atkritumi', icon: Trash2 },
-  { id: 3, label: 'Konteinera Izmērs', shortLabel: 'Izmērs', icon: Package },
-  { id: 4, label: 'Datums', shortLabel: 'Datums', icon: CalendarDays },
+  { id: 1, label: 'Konteiners', icon: Package },
+  { id: 2, label: 'Adrese', icon: MapPin },
+  { id: 3, label: 'Datums & Cenas', icon: CalendarDays },
+  { id: 4, label: 'Apstiprināt', icon: ClipboardList },
 ] as const;
 
-const TOTAL_STEPS = STEPS.length;
+// ── Wizard state ──────────────────────────────────────────────────────────────
 
-interface OrderState {
-  location: string;
-  wasteType: string;
+interface WizardState {
   size: string;
-  date: string;
+  wasteType: string;
+  address: string;
+  lat?: number;
+  lng?: number;
+  deliveryDate: string;
+  hirePeriodDays: number;
+  selectedOfferId: string;
+  selectedOffer: Offer | null;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  notes: string;
 }
 
-export function OrderWizard({ token }: { token?: string } = {}) {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [confirmedOrder, setConfirmedOrder] = useState<SkipHireOrder | null>(null);
-  const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
-  const [animating, setAnimating] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [order, setOrder] = useState<OrderState>({
-    location: '',
-    wasteType: '',
-    size: '',
-    date: '',
-  });
+const INITIAL: WizardState = {
+  size: '',
+  wasteType: '',
+  address: '',
+  deliveryDate: '',
+  hirePeriodDays: 14,
+  selectedOfferId: '',
+  selectedOffer: null,
+  contactName: '',
+  contactEmail: '',
+  contactPhone: '',
+  notes: '',
+};
 
-  const progressPercent = ((currentStep - 1) / TOTAL_STEPS) * 100;
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function OrderWizard({ token }: { token?: string } = {}) {
+  const [step, setStep] = useState(1);
+  const [state, setState] = useState<WizardState>(INITIAL);
+  const [animating, setAnimating] = useState(false);
+  const [direction, setDirection] = useState<'fwd' | 'bck'>('fwd');
+  const [confirmedOrder, setConfirmedOrder] = useState<SkipHireOrder | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   function navigate(to: number) {
     if (animating) return;
-    setDirection(to > currentStep ? 'forward' : 'backward');
+    setDirection(to > step ? 'fwd' : 'bck');
     setAnimating(true);
     setTimeout(() => {
-      setCurrentStep(to);
+      setStep(to);
       setAnimating(false);
-    }, 220);
+    }, 200);
   }
 
-  async function handleNext() {
-    if (currentStep < TOTAL_STEPS) {
-      navigate(currentStep + 1);
-      return;
-    }
+  function patch(updates: Partial<WizardState>) {
+    setState((s) => ({ ...s, ...updates }));
+  }
 
-    // Final step — POST to backend
+  function handleOfferSelect(id: string, offers: Offer[]) {
+    const found = offers.find((o) => o.id === id) ?? null;
+    patch({ selectedOfferId: id, selectedOffer: found });
+  }
+
+  // ── Submit ────────────────────────────────────────────────────────────────
+
+  async function handleSubmit() {
     setSubmitting(true);
-    setSubmitError(null);
+    setSubmitError('');
     try {
       const result = await createSkipHireOrder(
         {
-          location: order.location,
-          wasteCategory: mapWasteCategory(order.wasteType),
-          skipSize: mapSkipSize(order.size),
-          deliveryDate: order.date,
+          location: state.address,
+          wasteCategory: mapWasteCategory(state.wasteType),
+          skipSize: mapSkipSize(state.size),
+          deliveryDate: state.deliveryDate,
+          carrierId: state.selectedOffer?.id ?? undefined,
+          contactName: state.contactName,
+          contactEmail: state.contactEmail,
+          contactPhone: state.contactPhone,
+          notes: state.notes || undefined,
         },
         token,
       );
@@ -75,7 +105,7 @@ export function OrderWizard({ token }: { token?: string } = {}) {
       setTimeout(() => {
         setConfirmedOrder(result);
         setAnimating(false);
-      }, 220);
+      }, 200);
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : 'Kaut kas nogāja greizi. Lūdzu, mēģiniet vēlreiz.',
@@ -85,123 +115,85 @@ export function OrderWizard({ token }: { token?: string } = {}) {
     }
   }
 
-  function handleBack() {
-    if (currentStep > 1) navigate(currentStep - 1);
-  }
-
   function handleReset() {
     setConfirmedOrder(null);
-    setCurrentStep(1);
-    setSubmitError(null);
-    setOrder({ location: '', wasteType: '', size: '', date: '' });
+    setState(INITIAL);
+    setStep(1);
+    setSubmitError('');
   }
 
+  // ── Animation class ───────────────────────────────────────────────────────
+
   const slideClass = animating
-    ? direction === 'forward'
+    ? direction === 'fwd'
       ? 'opacity-0 translate-x-6'
       : 'opacity-0 -translate-x-6'
     : 'opacity-100 translate-x-0';
 
+  const progressPct = confirmedOrder ? 100 : ((step - 1) / STEPS.length) * 100;
+
   return (
-    <div className="w-full max-w-3xl mx-auto">
-      {/* Card shell */}
+    <div className="w-full">
       <div className="rounded-2xl bg-white shadow-xl border border-gray-100 overflow-hidden">
-        {/* ── Header ── */}
+        {/* ── Step header ───────────────────────────────────────────────────── */}
         {!confirmedOrder && (
-          <div className="px-8 pt-8 pb-6 border-b border-gray-100">
-            {/* Step labels row */}
-            <div className="relative flex items-center justify-between">
-              {/* Connector line (behind everything) */}
-              <div className="absolute left-0 right-0 top-5 h-0.5 bg-gray-200" aria-hidden />
-              {/* Active progress fill */}
+          <div className="px-6 sm:px-8 pt-7 pb-5 border-b border-gray-100">
+            <div className="relative flex items-start justify-between">
+              <div className="absolute left-0 right-0 top-5 h-0.5 bg-gray-200" />
               <div
                 className="absolute left-0 top-5 h-0.5 bg-red-500 transition-all duration-500 ease-out"
-                style={{ width: `${progressPercent}%` }}
-                aria-hidden
+                style={{ width: `${progressPct}%` }}
               />
-
-              {STEPS.map((step) => {
-                const Icon = step.icon;
-                const isCompleted = currentStep > step.id;
-                const isActive = currentStep === step.id;
-
+              {STEPS.map((s) => {
+                const Icon = s.icon;
+                const done = step > s.id;
+                const active = step === s.id;
                 return (
-                  <div key={step.id} className="relative flex flex-col items-center gap-2 z-10">
-                    {/* Circle */}
+                  <div key={s.id} className="relative flex flex-col items-center gap-2 z-10">
                     <button
-                      onClick={() => {
-                        // Allow clicking completed steps to go back
-                        if (isCompleted) navigate(step.id);
-                      }}
-                      disabled={!isCompleted}
+                      onClick={() => done && navigate(s.id)}
+                      disabled={!done}
                       className={cn(
                         'flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300',
-                        isCompleted
+                        done
                           ? 'border-red-500 bg-red-500 cursor-pointer hover:bg-red-600'
-                          : isActive
+                          : active
                             ? 'border-red-500 bg-white ring-4 ring-red-100'
                             : 'border-gray-300 bg-white cursor-default',
                       )}
                     >
-                      {isCompleted ? (
+                      {done ? (
                         <Check className="h-5 w-5 text-white" />
                       ) : (
                         <Icon
-                          className={cn('h-4 w-4', isActive ? 'text-red-600' : 'text-gray-400')}
+                          className={cn('h-4 w-4', active ? 'text-red-600' : 'text-gray-400')}
                         />
                       )}
                     </button>
-
-                    {/* Label */}
                     <span
                       className={cn(
-                        'hidden sm:block text-xs font-semibold transition-colors',
-                        isCompleted ? 'text-red-600' : isActive ? 'text-gray-900' : 'text-gray-400',
+                        'text-xs font-semibold whitespace-nowrap transition-colors hidden sm:block',
+                        done ? 'text-red-600' : active ? 'text-gray-900' : 'text-gray-400',
                       )}
                     >
-                      {step.label}
-                    </span>
-                    <span
-                      className={cn(
-                        'sm:hidden text-xs font-semibold transition-colors',
-                        isCompleted ? 'text-red-600' : isActive ? 'text-gray-900' : 'text-gray-400',
-                      )}
-                    >
-                      {step.shortLabel}
+                      {s.label}
                     </span>
                   </div>
                 );
               })}
             </div>
-
-            {/* Progress bar */}
-            <div className="mt-6 h-2 rounded-full bg-gray-100 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-linear-to-r from-red-500 to-red-600 transition-all duration-500 ease-out"
-                style={{ width: `${progressPercent + 100 / TOTAL_STEPS}%` }}
-              />
-            </div>
-
-            {/* Step counter */}
-            <div className="mt-2 flex items-center justify-between text-xs text-gray-400">
-              <span>
-                Solis {currentStep} no {TOTAL_STEPS}
-              </span>
-              <span>{Math.round((currentStep / TOTAL_STEPS) * 100)}% pabeigts</span>
-            </div>
           </div>
         )}
 
-        {/* ── Body ── */}
-        <div className="px-6 sm:px-10 py-8">
-          {/* API error banner */}
-          {submitError && (
-            <div className="mb-6 flex items-center gap-3 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        {/* ── Body ─────────────────────────────────────────────────────────── */}
+        <div className="px-6 sm:px-8 py-7">
+          {submitError && !confirmedOrder && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
               <span className="font-semibold">Kļūda:</span> {submitError}
             </div>
           )}
 
-          <div className={cn('transition-all duration-220 ease-in-out', slideClass)}>
+          <div className={cn('transition-all duration-200 ease-in-out', slideClass)}>
             {confirmedOrder ? (
               <OrderConfirmation
                 orderNumber={confirmedOrder.orderNumber}
@@ -214,33 +206,63 @@ export function OrderWizard({ token }: { token?: string } = {}) {
                 onReset={handleReset}
                 authenticated={!!token}
               />
-            ) : currentStep === 1 ? (
-              <Step1Location
-                value={order.location}
-                onChange={(v) => setOrder((o) => ({ ...o, location: v }))}
-                onNext={handleNext}
+            ) : step === 1 ? (
+              <Step1Container
+                size={state.size}
+                wasteType={state.wasteType}
+                onSizeChange={(v) => patch({ size: v })}
+                onWasteChange={(v) => patch({ wasteType: v })}
+                onNext={() => navigate(2)}
               />
-            ) : currentStep === 2 ? (
-              <Step2WasteType
-                value={order.wasteType}
-                onChange={(v) => setOrder((o) => ({ ...o, wasteType: v }))}
-                onNext={handleNext}
-                onBack={handleBack}
+            ) : step === 2 ? (
+              <Step2Address
+                value={state.address}
+                onAddressChange={(addr, lat, lng) => patch({ address: addr, lat, lng })}
+                onNext={() => navigate(3)}
+                onBack={() => navigate(1)}
               />
-            ) : currentStep === 3 ? (
-              <Step3Size
-                value={order.size}
-                onChange={(v) => setOrder((o) => ({ ...o, size: v }))}
-                onNext={handleNext}
-                onBack={handleBack}
+            ) : step === 3 ? (
+              <Step3DateOffers
+                size={state.size}
+                location={state.address}
+                deliveryDate={state.deliveryDate}
+                hirePeriodDays={state.hirePeriodDays}
+                selectedOffer={state.selectedOfferId}
+                onDeliveryDateChange={(d) =>
+                  patch({ deliveryDate: d, selectedOfferId: '', selectedOffer: null })
+                }
+                onHirePeriodChange={(d) => patch({ hirePeriodDays: d })}
+                onOfferSelect={(id, offers) => handleOfferSelect(id, offers)}
+                onNext={() => navigate(4)}
+                onBack={() => navigate(2)}
               />
             ) : (
-              <Step4Date
-                value={order.date}
-                onChange={(v) => setOrder((o) => ({ ...o, date: v }))}
-                onNext={handleNext}
-                onBack={handleBack}
+              <Step4ContactForm
+                name={state.contactName}
+                email={state.contactEmail}
+                phone={state.contactPhone}
+                notes={state.notes}
+                summary={{
+                  size: state.size,
+                  wasteType: state.wasteType,
+                  address: state.address,
+                  deliveryDate: state.deliveryDate,
+                  hirePeriodDays: state.hirePeriodDays,
+                  offerCarrier: state.selectedOffer?.carrier ?? '',
+                  offerPrice: state.selectedOffer?.price ?? 0,
+                }}
+                onChange={(k, v) =>
+                  patch({
+                    contactName: k === 'name' ? v : state.contactName,
+                    contactEmail: k === 'email' ? v : state.contactEmail,
+                    contactPhone: k === 'phone' ? v : state.contactPhone,
+                    notes: k === 'notes' ? v : state.notes,
+                  })
+                }
+                onSubmit={handleSubmit}
+                onBack={() => navigate(3)}
                 submitting={submitting}
+                error={submitError}
               />
             )}
           </div>

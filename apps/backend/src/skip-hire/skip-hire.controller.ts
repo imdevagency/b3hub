@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { SkipHireService } from './skip-hire.service';
 import { CreateSkipHireDto } from './dto/create-skip-hire.dto';
+import { GetQuotesQueryDto } from './dto/get-quotes-query.dto';
 import { UpdateSkipHireStatusDto } from './dto/update-skip-hire-status.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
@@ -21,6 +22,15 @@ import { SkipHireStatus } from '@prisma/client';
 @Controller('skip-hire')
 export class SkipHireController {
   constructor(private readonly skipHireService: SkipHireService) {}
+
+  /**
+   * GET /api/v1/skip-hire/quotes
+   * Public — returns carrier offers for the given size, location, date.
+   */
+  @Get('quotes')
+  getQuotes(@Query() query: GetQuotesQueryDto) {
+    return this.skipHireService.getQuotes(query.size, query.location, query.date);
+  }
 
   /**
    * POST /api/v1/skip-hire
@@ -63,6 +73,17 @@ export class SkipHireController {
   @Get('number/:orderNumber')
   findByNumber(@Param('orderNumber') orderNumber: string) {
     return this.skipHireService.findByOrderNumber(orderNumber);
+  }
+
+  /**
+   * GET /api/v1/skip-hire/carrier-map
+   * Returns all active (CONFIRMED + DELIVERED) skip orders for the requesting
+   * user's carrier company — used by the skip driver fleet map.
+   */
+  @Get('carrier-map')
+  @UseGuards(JwtAuthGuard)
+  getCarrierMap(@Request() req: any) {
+    return this.skipHireService.getCarrierMapSkips(req.user.userId);
   }
 
   /**

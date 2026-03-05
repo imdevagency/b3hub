@@ -2,6 +2,8 @@ import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, Request } 
 import { TransportJobsService } from './transport-jobs.service';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { CreateTransportJobDto } from './dto/create-transport-job.dto';
+import { UpdateLocationDto } from './dto/update-location.dto';
+import { SubmitDeliveryProofDto } from './dto/submit-delivery-proof.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
@@ -124,5 +126,40 @@ export class TransportJobsController {
     @Body() dto: UpdateStatusDto,
   ) {
     return this.service.updateStatus(id, user.id, dto);
+  }
+
+  /**
+   * PATCH /transport-jobs/:id/location
+   * Driver pushes their current GPS coordinates.
+   */
+  @Patch(':id/location')
+  updateLocation(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @Body() dto: UpdateLocationDto,
+  ) {
+    return this.service.updateLocation(id, user.id, dto);
+  }
+
+  /**
+   * GET /transport-jobs/:id/location
+   * Buyer polls this endpoint for live truck position.
+   */
+  @Get(':id/location')
+  getLocation(@Param('id') id: string) {
+    return this.service.getLocation(id);
+  }
+
+  /**
+   * POST /transport-jobs/:id/delivery-proof
+   * Driver submits proof of delivery — job transitions to DELIVERED.
+   */
+  @Post(':id/delivery-proof')
+  submitDeliveryProof(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @Body() dto: SubmitDeliveryProofDto,
+  ) {
+    return this.service.submitDeliveryProof(id, user.id, dto);
   }
 }

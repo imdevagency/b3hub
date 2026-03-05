@@ -25,29 +25,29 @@ type QuickAction = { icon: LucideIcon; label: string; route?: string };
 
 const ROLE_ACTIONS: Record<string, QuickAction[]> = {
   BUYER: [
-    { icon: ShoppingCart,  label: 'Pirkt materiālus',           route: '/(tabs)/catalog' },
-    { icon: Trash2,        label: 'Nomāt konteineru',           route: '/order' },
-    { icon: ClipboardList, label: 'Pasūtījumi',                 route: '/(tabs)/orders' },
-    { icon: User,          label: 'Profils',                    route: '/(tabs)/profile' },
+    { icon: ShoppingCart, label: 'Pirkt materiālus', route: '/(tabs)/catalog' },
+    { icon: Trash2, label: 'Nomāt konteineru', route: '/order' },
+    { icon: ClipboardList, label: 'Pasūtījumi', route: '/(tabs)/orders' },
+    { icon: User, label: 'Profils', route: '/(tabs)/profile' },
   ],
   SUPPLIER: [
-    { icon: Package,    label: 'Mani produkti' },
-    { icon: Inbox,      label: 'Saņemtie pasūtījumi' },
+    { icon: Package, label: 'Mani produkti' },
+    { icon: Inbox, label: 'Saņemtie pasūtījumi' },
     { icon: PlusCircle, label: 'Pievienot preci' },
-    { icon: BarChart2,  label: 'Statistika' },
+    { icon: BarChart2, label: 'Statistika' },
   ],
   CARRIER: [
     { icon: ClipboardList, label: 'Aktīvie darbi' },
-    { icon: Map,           label: 'Maršruts' },
-    { icon: CheckCircle,   label: 'Pabeigt piegādi' },
-    { icon: Wallet,        label: 'Ieņēmumi' },
+    { icon: Map, label: 'Maršruts' },
+    { icon: CheckCircle, label: 'Pabeigt piegādi' },
+    { icon: Wallet, label: 'Ieņēmumi' },
   ],
 };
 
 const USER_TYPE_LABEL: Record<string, string> = {
-  BUYER:    'Pasūtītājs',
+  BUYER: 'Pasūtītājs',
   SUPPLIER: 'Pārdevējs',
-  CARRIER:  'Pārvadātājs',
+  CARRIER: 'Pārvadātājs',
 };
 
 export default function HomeScreen() {
@@ -67,14 +67,14 @@ export default function HomeScreen() {
         const b = data?.buyer ?? {};
         setStats({
           activeOrders: b.activeOrders ?? 0,
-          myOrders:     b.myOrders ?? 0,
-          documents:    b.documents ?? 0,
+          myOrders: b.myOrders ?? 0,
+          documents: b.documents ?? 0,
         });
       })
       .catch(() => {});
   }, [token]);
 
-  const role    = user?.userType ?? 'BUYER';
+  const role = user?.userType ?? 'BUYER';
   const actions = ROLE_ACTIONS[role] ?? ROLE_ACTIONS.BUYER;
 
   return (
@@ -98,8 +98,8 @@ export default function HomeScreen() {
             <View style={s.statsRow}>
               {[
                 { label: t.home.stats.orders, value: stats ? String(stats.activeOrders) : '—' },
-                { label: 'Konteineri',         value: stats ? String(stats.myOrders)     : '—' },
-                { label: t.home.stats.pending, value: stats ? String(stats.documents)    : '—' },
+                { label: 'Konteineri', value: stats ? String(stats.myOrders) : '—' },
+                { label: t.home.stats.pending, value: stats ? String(stats.documents) : '—' },
               ].map((stat) => (
                 <View key={stat.label} style={s.statItem}>
                   <Text style={s.statValue}>{stat.value}</Text>
@@ -114,7 +114,7 @@ export default function HomeScreen() {
           <View style={s.actionGrid}>
             {actions.map((action, idx) => {
               const isPrimary = role === 'BUYER' ? idx < 2 : idx === 0;
-              const IconComp  = action.icon;
+              const IconComp = action.icon;
               return (
                 <TouchableOpacity
                   key={action.label}
@@ -177,8 +177,8 @@ const s = StyleSheet.create({
     letterSpacing: 0.8,
     marginBottom: 16,
   },
-  statsRow:  { flexDirection: 'row', justifyContent: 'space-between' },
-  statItem:  { alignItems: 'center' },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  statItem: { alignItems: 'center' },
   statValue: { fontSize: 24, fontWeight: '700', color: '#111827' },
   statLabel: { fontSize: 12, color: '#6b7280', marginTop: 2 },
   quickTitle: {
@@ -218,6 +218,6 @@ const s = StyleSheet.create({
   iconWrapPrimary: {
     backgroundColor: '#fee2e2',
   },
-  actionLabel:        { fontSize: 13, fontWeight: '500', color: '#374151', textAlign: 'center' },
+  actionLabel: { fontSize: 13, fontWeight: '500', color: '#374151', textAlign: 'center' },
   actionLabelPrimary: { color: '#dc2626', fontWeight: '600' },
 });

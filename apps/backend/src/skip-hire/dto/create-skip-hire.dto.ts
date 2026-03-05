@@ -4,6 +4,7 @@ import {
   IsDateString,
   IsOptional,
   IsEmail,
+  IsNumber,
   MinLength,
 } from 'class-validator';
 import { SkipWasteCategory, SkipSize } from '@prisma/client';
@@ -13,6 +14,16 @@ export class CreateSkipHireDto {
   @IsString()
   @MinLength(2)
   location: string;
+
+  /** Geocoded latitude (resolved on frontend via Google Places) */
+  @IsOptional()
+  @IsNumber()
+  lat?: number;
+
+  /** Geocoded longitude (resolved on frontend via Google Places) */
+  @IsOptional()
+  @IsNumber()
+  lng?: number;
 
   /** Waste category selected in step 2 */
   @IsEnum(SkipWasteCategory)
@@ -43,4 +54,8 @@ export class CreateSkipHireDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  carrierId?: string;
 }

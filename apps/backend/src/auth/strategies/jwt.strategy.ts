@@ -22,6 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       canSell: payload.canSell ?? false,
       canTransport: payload.canTransport ?? false,
       companyId: payload.companyId,
+      companyRole: payload.companyRole,
     };
   }
 }

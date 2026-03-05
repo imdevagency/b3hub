@@ -38,6 +38,13 @@ enum CompanyType {
   HYBRID       // Multiple services
 }
 
+enum CompanyRole {
+  OWNER    // Company admin — manages team, settings, billing
+  MANAGER  // Can manage jobs, orders, and assign drivers
+  DRIVER   // Can only see and execute transport jobs
+  MEMBER   // Default — read-only access
+}
+
 enum MaterialCategory {
   SAND
   GRAVEL
@@ -229,10 +236,12 @@ model User {
   userType      UserType   @default(BUYER)
   isCompany     Boolean    @default(false) // true = company account (VAT invoices etc.)
   canSell       Boolean    @default(false) // approved to list & sell materials
-  canTransport  Boolean    @default(false) // approved to offer transport services
-  status        UserStatus @default(ACTIVE) // buyers are auto-activated
-  emailVerified Boolean    @default(false)
-  phoneVerified Boolean    @default(false)
+  canTransport  Boolean      @default(false) // approved to offer transport services
+  canSkipHire   Boolean      @default(false) // approved to manage skip hire fleet
+  companyRole   CompanyRole? // role within their company; null for solo accounts
+  status        UserStatus   @default(ACTIVE) // buyers are auto-activated
+  emailVerified Boolean      @default(false)
+  phoneVerified Boolean      @default(false)
 
   // Relations
   company   Company? @relation(fields: [companyId], references: [id])
@@ -288,6 +297,12 @@ model Company {
   orders           Order[]
   recyclingCenters RecyclingCenter[]
   carrierJobs      TransportJob[]
+
+  // Carrier comparison engine
+  carrierPricing     CarrierPricing[]     @relation("CarrierPricing")
+  serviceZones       CarrierServiceZone[] @relation("CarrierServiceZones")
+  availabilityBlocks CarrierAvailability[] @relation("CarrierAvailability")
+  assignedSkipOrders SkipHireOrder[]      @relation("AssignedSkipCarrier")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -696,8 +711,15 @@ model DriverProfile {
   completedJobs Int    @default(0)
 
   // Status
-  available       Boolean @default(true)
-  currentLocation Json?
+  available        Boolean @default(true)   // legacy; now derived from isOnline + schedule
+  isOnline         Boolean @default(false)  // driver tapped "Go Online"
+  autoSchedule     Boolean @default(false)  // auto toggle based on weeklySchedule
+  maxJobsPerDay    Int?                     // cap on daily job accepts; null = unlimited
+  currentLocation  Json?
+
+  // Schedule relations
+  weeklySchedule  DriverSchedule[]
+  dateBlocks      DriverDateBlock[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -859,10 +881,64 @@ model SkipHireOrder {
   // Internal notes
   notes String?
 
+  // Carrier assigned during quote selection
+  carrier   Company? @relation("AssignedSkipCarrier", fields: [carrierId], references: [id])
+  carrierId String?
+
+  // Geocoded coordinates (resolved at booking time on the client)
+  lat Float?
+  lng Float?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("skip_hire_orders")
+}
+
+// ── Carrier comparison engine ─────────────────────────────────────────────────
+
+model CarrierPricing {
+  id        String  @id @default(cuid())
+  carrier   Company @relation("CarrierPricing", fields: [carrierId], references: [id], onDelete: Cascade)
+  carrierId String
+
+  skipSize  SkipSize
+  price     Float
+  currency  String   @default("EUR")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([carrierId, skipSize])
+  @@map("carrier_pricing")
+}
+
+model CarrierServiceZone {
+  id        String  @id @default(cuid())
+  carrier   Company @relation("CarrierServiceZones", fields: [carrierId], references: [id], onDelete: Cascade)
+  carrierId String
+
+  city      String   // e.g. "Rīga", "Jūrmala"
+  postcode  String?  // optional tighter targeting
+  surcharge Float    @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@map("carrier_service_zones")
+}
+
+model CarrierAvailability {
+  id          String   @id @default(cuid())
+  carrier     Company  @relation("CarrierAvailability", fields: [carrierId], references: [id], onDelete: Cascade)
+  carrierId   String
+
+  blockedDate DateTime @db.Date
+  reason      String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([carrierId, blockedDate])
+  @@map("carrier_availability")
 }
 
 // ── Provider Applications (supply/transport onboarding) ─────────────────────
@@ -900,4 +976,41 @@ model ProviderApplication {
   updatedAt DateTime @updatedAt
 
   @@map("provider_applications")
+}
+
+// ── Driver scheduling ─────────────────────────────────────────────────────────
+
+// Recurring weekly work hours (one row per day of week the driver works)
+model DriverSchedule {
+  id String @id @default(cuid())
+
+  driverProfile   DriverProfile @relation(fields: [driverProfileId], references: [id], onDelete: Cascade)
+  driverProfileId String
+
+  dayOfWeek Int     // 0 = Sunday … 6 = Saturday
+  enabled   Boolean @default(true)
+  startTime String  // "07:00" (local time, HH:mm)
+  endTime   String  // "18:00"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([driverProfileId, dayOfWeek])
+  @@map("driver_schedules")
+}
+
+// Specific dates the driver cannot work (vacation, sick day, personal)
+model DriverDateBlock {
+  id String @id @default(cuid())
+
+  driverProfile   DriverProfile @relation(fields: [driverProfileId], references: [id], onDelete: Cascade)
+  driverProfileId String
+
+  blockedDate DateTime
+  reason      String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([driverProfileId, blockedDate])
+  @@map("driver_date_blocks")
 }

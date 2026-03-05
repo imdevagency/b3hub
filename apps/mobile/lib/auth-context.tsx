@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, User } from './api';
 
 const TOKEN_KEY = 'b3hub_token';
+const USER_KEY = 'b3hub_user';
 
 interface AuthContextValue {
   user: User | null;
@@ -20,26 +21,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    AsyncStorage.getItem(TOKEN_KEY)
-      .then(async (storedToken) => {
-        if (storedToken) {
-          const u = await api.getMe(storedToken);
-          setUser(u);
+    // Load token + cached user from storage — no network call needed here.
+    // isLoading resolves immediately from disk, keeping the startup spinner fast.
+    Promise.all([AsyncStorage.getItem(TOKEN_KEY), AsyncStorage.getItem(USER_KEY)])
+      .then(([storedToken, storedUser]) => {
+        if (storedToken && storedUser) {
           setToken(storedToken);
+          setUser(JSON.parse(storedUser) as User);
+
+          // Revalidate silently in the background so stale data self-corrects
+          // without blocking the UI.
+          api
+            .getMe(storedToken)
+            .then((freshUser) => {
+              setUser(freshUser);
+              AsyncStorage.setItem(USER_KEY, JSON.stringify(freshUser));
+            })
+            .catch(() => {
+              // Token expired or network error — clear session
+              AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
+              setUser(null);
+              setToken(null);
+            });
         }
       })
-      .catch(() => AsyncStorage.removeItem(TOKEN_KEY))
+      .catch(() => AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]))
       .finally(() => setIsLoading(false));
   }, []);
 
   const setAuth = async (user: User, token: string) => {
-    await AsyncStorage.setItem(TOKEN_KEY, token);
+    await AsyncStorage.multiSet([
+      [TOKEN_KEY, token],
+      [USER_KEY, JSON.stringify(user)],
+    ]);
     setUser(user);
     setToken(token);
   };
 
   const logout = async () => {
-    await AsyncStorage.removeItem(TOKEN_KEY);
+    await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
     setUser(null);
     setToken(null);
   };

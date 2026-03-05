@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { getMyActiveTransportJob, updateTransportJobStatus, type ApiTransportJob } from '@/lib/api';
+import {
+  getMyActiveTransportJob,
+  updateTransportJobStatus,
+  submitDeliveryProof,
+  type ApiTransportJob,
+} from '@/lib/api';
 import {
   MapPin,
   Navigation,
@@ -14,6 +19,8 @@ import {
   ArrowRight,
   Map,
   ExternalLink,
+  ClipboardCheck,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -143,6 +150,13 @@ export default function ActiveJobPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [advancing, setAdvancing] = useState(false);
 
+  // Delivery proof modal state
+  const [showProofModal, setShowProofModal] = useState(false);
+  const [proofRecipient, setProofRecipient] = useState('');
+  const [proofNotes, setProofNotes] = useState('');
+  const [proofSubmitting, setProofSubmitting] = useState(false);
+  const [proofError, setProofError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
   }, [user, isLoading, router]);
@@ -171,10 +185,18 @@ export default function ActiveJobPage() {
 
   const handleAdvance = async () => {
     if (!token || !job) return;
-    const next = NEXT_STATUS[job.status as JobStatus];
-    if (!next) return;
-    if (!confirm(`Apstiprināt: ${STATUS_LABEL[job.status as JobStatus]} → ${STATUS_LABEL[next]}?`))
+    const current = job.status as JobStatus;
+    // For AT_DELIVERY → DELIVERED, open proof modal instead
+    if (current === 'AT_DELIVERY') {
+      setProofRecipient('');
+      setProofNotes('');
+      setProofError(null);
+      setShowProofModal(true);
       return;
+    }
+    const next = NEXT_STATUS[current];
+    if (!next) return;
+    if (!confirm(`Apstiprināt: ${STATUS_LABEL[current]} → ${STATUS_LABEL[next]}?`)) return;
     setAdvancing(true);
     try {
       const updated = await updateTransportJobStatus(job.id, next, token);
@@ -183,6 +205,28 @@ export default function ActiveJobPage() {
       alert(e?.message ?? 'Neizdevās atjaunināt statusu');
     } finally {
       setAdvancing(false);
+    }
+  };
+
+  const handleProofSubmit = async () => {
+    if (!token || !job) return;
+    setProofSubmitting(true);
+    setProofError(null);
+    try {
+      const updated = await submitDeliveryProof(
+        job.id,
+        {
+          notes: proofNotes.trim() || undefined,
+          recipientName: proofRecipient.trim() || undefined,
+        },
+        token,
+      );
+      setJob(updated);
+      setShowProofModal(false);
+    } catch (e: any) {
+      setProofError(e?.message ?? 'Neizdevās iesniegt piegādes apstiprinājumu');
+    } finally {
+      setProofSubmitting(false);
     }
   };
 
@@ -196,6 +240,88 @@ export default function ActiveJobPage() {
 
   return (
     <div className="space-y-6">
+      {/* Delivery Proof Modal */}
+      {showProofModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center">
+                  <ClipboardCheck className="h-5 w-5 text-green-700" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-gray-900">Piegādes apstiprinājums</h2>
+                  <p className="text-xs text-muted-foreground">Aizpildiet un iesniedziet</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowProofModal(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                  Saņēmēja vārds
+                </label>
+                <input
+                  type="text"
+                  value={proofRecipient}
+                  onChange={(e) => setProofRecipient(e.target.value)}
+                  placeholder="Jānis Bērziņš"
+                  className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                  Piezīmes (pēc izvēles)
+                </label>
+                <textarea
+                  value={proofNotes}
+                  onChange={(e) => setProofNotes(e.target.value)}
+                  placeholder="Piegāde veiksmīga, bez bojājumiem..."
+                  rows={3}
+                  className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                />
+              </div>
+              {proofError && (
+                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  {proofError}
+                </p>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 pb-6 flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 h-11"
+                onClick={() => setShowProofModal(false)}
+                disabled={proofSubmitting}
+              >
+                Atcelt
+              </Button>
+              <Button
+                className="flex-1 h-11 bg-green-600 hover:bg-green-700 text-white"
+                onClick={handleProofSubmit}
+                disabled={proofSubmitting}
+              >
+                {proofSubmitting ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                )}
+                {proofSubmitting ? 'Sūta...' : 'Apstiprināt piegādi'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

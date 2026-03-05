@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { useCart } from '@/lib/cart-context';
 import {
   getMaterials,
-  createMaterialOrder,
+  getMaterialCategories,
   type ApiMaterial,
   type MaterialCategory,
   type MaterialUnit,
@@ -15,7 +17,9 @@ import {
   Check,
   Leaf,
   Loader2,
+  Minus,
   Package,
+  Plus,
   RefreshCw,
   Search,
   ShoppingCart,
@@ -25,17 +29,17 @@ import {
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const CATEGORY_META: Record<MaterialCategory, { label: string; emoji: string }> = {
-  SAND: { label: 'Smiltis', emoji: '🟡' },
-  GRAVEL: { label: 'Grants', emoji: '⚫' },
-  STONE: { label: 'Akmens', emoji: '🪨' },
-  CONCRETE: { label: 'Betons', emoji: '🔲' },
-  SOIL: { label: 'Augsne', emoji: '🟫' },
-  RECYCLED_CONCRETE: { label: 'Recikl. Betons', emoji: '♻️' },
-  RECYCLED_SOIL: { label: 'Recikl. Augsne', emoji: '♻️' },
-  ASPHALT: { label: 'Asfalts', emoji: '🛣️' },
-  CLAY: { label: 'Māls', emoji: '🏺' },
-  OTHER: { label: 'Cits', emoji: '📦' },
+const CATEGORY_LABEL: Record<MaterialCategory, string> = {
+  SAND: 'Smiltis',
+  GRAVEL: 'Grants',
+  STONE: 'Akmens',
+  CONCRETE: 'Betons',
+  SOIL: 'Augsne',
+  RECYCLED_CONCRETE: 'Recikl. Betons',
+  RECYCLED_SOIL: 'Recikl. Augsne',
+  ASPHALT: 'Asfalts',
+  CLAY: 'Māls',
+  OTHER: 'Cits',
 };
 
 const UNIT_LABEL: Record<MaterialUnit, string> = {
@@ -45,257 +49,140 @@ const UNIT_LABEL: Record<MaterialUnit, string> = {
   LOAD: 'krāvums',
 };
 
-// ── Order modal ────────────────────────────────────────────────────────────────
+// ── Add-to-cart modal ─────────────────────────────────────────────────────────
 
-interface OrderForm {
-  quantity: string;
-  deliveryAddress: string;
-  deliveryCity: string;
-  deliveryPostal: string;
-  deliveryDate: string;
-  notes: string;
-}
-
-function OrderModal({
+function AddToCartModal({
   material,
-  companyId,
-  token,
   onClose,
-  onSuccess,
+  onAdded,
 }: {
   material: ApiMaterial;
-  companyId: string;
-  token: string;
   onClose: () => void;
-  onSuccess: () => void;
+  onAdded: () => void;
 }) {
-  const [form, setForm] = useState<OrderForm>({
-    quantity: String(material.minOrder ?? 1),
-    deliveryAddress: '',
-    deliveryCity: '',
-    deliveryPostal: '',
-    deliveryDate: '',
-    notes: '',
-  });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const { addItem, items } = useCart();
+  const existing = items.find((i) => i.material.id === material.id);
+  const step = material.unit === 'TONNE' || material.unit === 'M3' ? 0.5 : 1;
+  const min = material.minOrder ?? step;
+  const [qty, setQty] = useState<number>(existing?.quantity ?? min);
+  const [added, setAdded] = useState(false);
 
-  const qty = parseFloat(form.quantity) || 0;
-  const subtotal = qty * material.basePrice;
-  const vat = subtotal * 0.21;
-  const total = subtotal + vat;
+  function adjust(delta: number) {
+    setQty((q) => Math.max(min, parseFloat((q + delta).toFixed(2))));
+  }
 
-  const set =
-    (k: keyof OrderForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      setForm((f) => ({ ...f, [k]: e.target.value }));
+  function handleAdd() {
+    addItem(material, qty);
+    setAdded(true);
+    setTimeout(() => {
+      onAdded();
+      onClose();
+    }, 800);
+  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!companyId) {
-      setError('Jūsu konts nav saistīts ar uzņēmumu — sazinieties ar B3Hub atbalstu.');
-      return;
-    }
-    if (qty <= 0) {
-      setError('Lūdzu ievadiet daudzumu.');
-      return;
-    }
-    if (!form.deliveryAddress || !form.deliveryCity) {
-      setError('Lūdzu norādiet piegādes adresi.');
-      return;
-    }
-    setSaving(true);
-    setError('');
-    try {
-      await createMaterialOrder(
-        {
-          materialId: material.id,
-          quantity: qty,
-          unit: material.unit,
-          unitPrice: material.basePrice,
-          deliveryAddress: form.deliveryAddress,
-          deliveryCity: form.deliveryCity,
-          deliveryPostal: form.deliveryPostal || '0000',
-          deliveryDate: form.deliveryDate || undefined,
-          notes: form.notes || undefined,
-          buyerId: companyId,
-        },
-        token,
-      );
-      onSuccess();
-    } catch (err: any) {
-      setError(err?.message ?? 'Kļūda veicot pasūtījumu');
-    } finally {
-      setSaving(false);
-    }
-  };
+  const lineTotal = qty * material.basePrice;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-background shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm px-4 pb-4 sm:pb-0">
+      <div className="w-full sm:max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 p-6 border-b">
+        <div className="flex items-start justify-between p-5 pb-4 border-b">
           <div>
-            <h2 className="text-lg font-bold">{material.name}</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              €{material.basePrice.toFixed(2)} / {UNIT_LABEL[material.unit]} ·{' '}
-              {material.supplier.name}
-              {material.supplier.city ? `, ${material.supplier.city}` : ''}
+            <p className="font-bold text-lg leading-tight">{material.name}</p>
+            <p className="text-sm text-muted-foreground">
+              €{material.basePrice.toFixed(2)} / {UNIT_LABEL[material.unit]}
             </p>
           </div>
-          <button onClick={onClose} className="rounded-md p-1.5 hover:bg-muted transition-colors">
-            <X className="size-4" />
+          <button
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground p-1 rounded-lg"
+          >
+            <X className="size-5" />
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Quantity */}
+        {/* Qty stepper */}
+        <div className="p-5 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">
+            <label className="text-sm font-medium mb-2 block">
               Daudzums ({UNIT_LABEL[material.unit]})
             </label>
-            <input
-              type="number"
-              min={material.minOrder ?? 1}
-              max={material.maxOrder ?? undefined}
-              step="0.5"
-              value={form.quantity}
-              onChange={set('quantity')}
-              className="w-full rounded-lg border bg-muted/30 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-              required
-            />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => adjust(-step)}
+                disabled={qty <= min}
+                className="rounded-xl border p-2.5 hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <Minus className="size-4" />
+              </button>
+              <input
+                type="number"
+                value={qty}
+                min={min}
+                step={step}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  if (!isNaN(v) && v >= min) setQty(parseFloat(v.toFixed(2)));
+                }}
+                className="flex-1 text-center rounded-xl border px-3 py-2.5 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+              <button
+                onClick={() => adjust(step)}
+                className="rounded-xl border p-2.5 hover:bg-muted transition-colors"
+              >
+                <Plus className="size-4" />
+              </button>
+            </div>
             {material.minOrder && (
               <p className="text-xs text-muted-foreground mt-1">
-                Minimālais pasūtījums: {material.minOrder} {UNIT_LABEL[material.unit]}
+                Min. pasūtījums: {material.minOrder} {UNIT_LABEL[material.unit]}
               </p>
             )}
           </div>
 
-          {/* Delivery address */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">
-                Piegādes adrese
-              </label>
-              <input
-                type="text"
-                placeholder="Iela, mājas numurs"
-                value={form.deliveryAddress}
-                onChange={set('deliveryAddress')}
-                className="w-full rounded-lg border bg-muted/30 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">
-                Pilsēta
-              </label>
-              <input
-                type="text"
-                placeholder="Rīga"
-                value={form.deliveryCity}
-                onChange={set('deliveryCity')}
-                className="w-full rounded-lg border bg-muted/30 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">
-                Pasta indekss
-              </label>
-              <input
-                type="text"
-                placeholder="LV-1001"
-                value={form.deliveryPostal}
-                onChange={set('deliveryPostal')}
-                className="w-full rounded-lg border bg-muted/30 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-            </div>
+          {/* Price preview */}
+          <div className="flex items-center justify-between rounded-xl bg-muted/50 px-4 py-3">
+            <span className="text-sm text-muted-foreground">Kopā</span>
+            <span className="font-bold text-lg">€{lineTotal.toFixed(2)}</span>
           </div>
 
-          {/* Date */}
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">
-              Vēlamais piegādes datums
-            </label>
-            <input
-              type="date"
-              value={form.deliveryDate}
-              onChange={set('deliveryDate')}
-              min={new Date().toISOString().split('T')[0]}
-              className="w-full rounded-lg border bg-muted/30 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">
-              Piezīmes
-            </label>
-            <textarea
-              rows={2}
-              placeholder="Piegādes instrukcijas, kontaktpersona..."
-              value={form.notes}
-              onChange={set('notes')}
-              className="w-full rounded-lg border bg-muted/30 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
-            />
-          </div>
-
-          {/* Price summary */}
-          <div className="rounded-xl bg-muted/40 border p-4 space-y-1.5 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">
-                {qty > 0
-                  ? `${qty} ${UNIT_LABEL[material.unit]} × €${material.basePrice.toFixed(2)}`
-                  : 'Daudzums'}
-              </span>
-              <span>€{subtotal.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-muted-foreground">
-              <span>PVN 21%</span>
-              <span>€{vat.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between font-bold pt-1 border-t">
-              <span>Kopā</span>
-              <span className="text-red-600">€{total.toFixed(2)}</span>
-            </div>
-          </div>
-
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              {error}
-            </p>
-          )}
-
+          {/* Add button */}
           <button
-            type="submit"
-            disabled={saving}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+            onClick={handleAdd}
+            disabled={added}
+            className={`w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-bold text-white transition-all ${
+              added ? 'bg-green-600' : 'bg-red-600 hover:bg-red-700'
+            }`}
           >
-            {saving ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <ShoppingCart className="size-4" />
-            )}
-            Pasūtīt
+            <ShoppingCart className="size-4" />
+            {added ? 'Pievienots!' : existing ? 'Atjaunināt grozu' : 'Pievienot grozam'}
           </button>
-        </form>
+        </div>
       </div>
     </div>
   );
 }
 
-// ── Success toast ──────────────────────────────────────────────────────────────
+// ── Cart bar ───────────────────────────────────────────────────────────────────
 
-function SuccessToast({ onClose }: { onClose: () => void }) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 4000);
-    return () => clearTimeout(t);
-  }, [onClose]);
+function CartBar() {
+  const { count, total } = useCart();
+  if (count === 0) return null;
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl bg-green-600 text-white px-5 py-3 shadow-lg text-sm font-semibold animate-in slide-in-from-bottom-4">
-      <Check className="size-4" />
-      Pasūtījums veiksmīgi iesniegts!
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 rounded-2xl bg-gray-900 text-white px-5 py-3 shadow-2xl text-sm whitespace-nowrap">
+      <ShoppingCart className="size-4 shrink-0" />
+      <span className="font-semibold">
+        {count} prece{count !== 1 ? 's' : ''} grozā
+      </span>
+      <span className="text-gray-400">·</span>
+      <span className="font-bold">€{total.toFixed(2)}</span>
+      <Link
+        href="/dashboard/checkout"
+        className="flex items-center gap-1.5 rounded-xl bg-red-600 hover:bg-red-700 px-3 py-1.5 font-bold text-white transition-colors ml-2"
+      >
+        Norēķināties
+        <ArrowRight className="size-3.5" />
+      </Link>
     </div>
   );
 }
@@ -309,7 +196,9 @@ function MaterialCard({
   material: ApiMaterial;
   onOrder: (m: ApiMaterial) => void;
 }) {
-  const cat = CATEGORY_META[material.category] ?? { label: material.category, emoji: '📦' };
+  const { items } = useCart();
+  const catLabel = CATEGORY_LABEL[material.category] ?? material.category;
+  const cartQty = items.find((i) => i.material.id === material.id)?.quantity;
 
   return (
     <div className="flex flex-col rounded-2xl border bg-card hover:shadow-md transition-shadow overflow-hidden">
@@ -317,8 +206,8 @@ function MaterialCard({
       {material.images?.[0] ? (
         <img src={material.images[0]} alt={material.name} className="h-36 w-full object-cover" />
       ) : (
-        <div className="h-36 w-full bg-linear-to-br from-stone-100 to-stone-200 flex items-center justify-center text-4xl">
-          {cat.emoji}
+        <div className="h-36 w-full bg-linear-to-br from-stone-100 to-stone-200 flex items-center justify-center">
+          <Package className="size-12 text-stone-400" />
         </div>
       )}
 
@@ -334,7 +223,7 @@ function MaterialCard({
           </div>
           <div className="flex flex-col items-end gap-1 shrink-0">
             <span className="text-xs rounded-full bg-muted px-2 py-0.5 font-medium whitespace-nowrap">
-              {cat.label}
+              {catLabel}
             </span>
             {material.isRecycled && (
               <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 rounded-full px-2 py-0.5">
@@ -382,10 +271,12 @@ function MaterialCard({
           {material.inStock ? (
             <button
               onClick={() => onOrder(material)}
-              className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-2 text-xs font-bold text-white hover:bg-red-700 transition-colors"
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-white transition-colors ${
+                cartQty ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+              }`}
             >
               <ShoppingCart className="size-3.5" />
-              Pasūtīt
+              {cartQty ? `Grozā ${cartQty}${UNIT_LABEL[material.unit]}` : 'Grozam'}
             </button>
           ) : (
             <span className="text-xs text-muted-foreground border rounded-xl px-3 py-2">
@@ -401,16 +292,16 @@ function MaterialCard({
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function CatalogPage() {
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const router = useRouter();
 
   const [materials, setMaterials] = useState<ApiMaterial[]>([]);
+  const [categories, setCategories] = useState<MaterialCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [category, setCategory] = useState<MaterialCategory | ''>('');
   const [orderTarget, setOrderTarget] = useState<ApiMaterial | null>(null);
-  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     if (!token) router.push('/');
@@ -420,16 +311,21 @@ export default function CatalogPage() {
     if (!token) return;
     setLoading(true);
     try {
-      const data = await getMaterials(token, {
-        category: category || undefined,
-        search: search || undefined,
-      });
+      const [data, cats] = await Promise.all([
+        getMaterials(token, {
+          category: category || undefined,
+          search: search || undefined,
+        }),
+        categories.length === 0 ? getMaterialCategories(token) : Promise.resolve(categories),
+      ]);
       setMaterials(data);
+      if (categories.length === 0) setCategories(cats);
     } catch {
       /**/
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, category, search]);
 
   useEffect(() => {
@@ -442,12 +338,8 @@ export default function CatalogPage() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  const categories = Object.keys(CATEGORY_META) as MaterialCategory[];
-
-  const companyId = user?.company?.id ?? '';
-
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6">
+    <div className="flex flex-col gap-6 p-4 sm:p-6 pb-24">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
@@ -506,7 +398,7 @@ export default function CatalogPage() {
                   : 'bg-muted text-muted-foreground hover:bg-muted/70'
               }`}
             >
-              {CATEGORY_META[c].emoji} {CATEGORY_META[c].label}
+              {CATEGORY_LABEL[c] ?? c}
             </button>
           ))}
         </div>
@@ -556,22 +448,17 @@ export default function CatalogPage() {
         </>
       )}
 
-      {/* Order modal */}
+      {/* Add-to-cart modal */}
       {orderTarget && (
-        <OrderModal
+        <AddToCartModal
           material={orderTarget}
-          companyId={companyId}
-          token={token!}
           onClose={() => setOrderTarget(null)}
-          onSuccess={() => {
-            setOrderTarget(null);
-            setShowSuccess(true);
-          }}
+          onAdded={() => setOrderTarget(null)}
         />
       )}
 
-      {/* Success toast */}
-      {showSuccess && <SuccessToast onClose={() => setShowSuccess(false)} />}
+      {/* Cart bar */}
+      <CartBar />
     </div>
   );
 }

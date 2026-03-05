@@ -14,6 +14,10 @@ import { VehiclesModule } from './vehicles/vehicles.module';
 import { TransportJobsModule } from './transport-jobs/transport-jobs.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { InvoicesModule } from './invoices/invoices.module';
+import { CompanyModule } from './company/company.module';
+import { CarrierSettingsModule } from './carrier-settings/carrier-settings.module';
+import { DriverScheduleModule } from './driver-schedule/driver-schedule.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -32,6 +36,10 @@ import { InvoicesModule } from './invoices/invoices.module';
     TransportJobsModule,
     NotificationsModule,
     InvoicesModule,
+    CompanyModule,
+    CarrierSettingsModule,
+    DriverScheduleModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

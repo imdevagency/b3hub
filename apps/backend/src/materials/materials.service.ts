@@ -125,7 +125,13 @@ export class MaterialsService {
   }
 
   async getCategories() {
-    return Object.values(MaterialCategory);
+    const rows = await this.prisma.material.findMany({
+      where: { active: true },
+      select: { category: true },
+      distinct: ['category'],
+      orderBy: { category: 'asc' },
+    });
+    return rows.map((r) => r.category);
   }
 
   async search(query: string) {

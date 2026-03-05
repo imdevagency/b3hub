@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   Banknote,
   Building2,
+  CalendarClock,
   Car,
   ClipboardList,
   FolderOpen,
@@ -13,16 +14,25 @@ import {
   LayoutGrid,
   LogOut,
   MapPin,
+  MapPinned,
   Package,
+  Receipt,
   Settings,
   ShoppingCart,
-  Trash2,
   Truck,
   ShieldCheck,
+  Users,
 } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth-context';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Sidebar,
   SidebarContent,
@@ -43,14 +53,16 @@ const ROLE_NAV: Record<Mode, NavItem[]> = {
   BUYER: [
     { label: 'Informācijas Panelis', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Materiālu Katalogs', href: '/dashboard/catalog', icon: Package },
+    { label: 'Grozs', href: '/dashboard/checkout', icon: ShoppingCart },
     { label: 'Mani Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
-    { label: 'Pasūtīt Konteineru', href: '/dashboard/order', icon: Trash2 },
+    { label: 'Rēķini', href: '/dashboard/invoices', icon: Receipt },
+    { label: 'Pasūtīt', href: '/dashboard/order', icon: LayoutGrid },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
   SUPPLIER: [
     { label: 'Informācijas Panelis', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Mani Materiāli', href: '/dashboard/catalog', icon: Package },
-    { label: 'Ienākošie Pasūtījumi', href: '/dashboard/orders', icon: ShoppingCart },
+    { label: 'Mani Materiāli', href: '/dashboard/materials', icon: Package },
+    { label: 'Ienākošie Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
   CARRIER: [
@@ -59,6 +71,7 @@ const ROLE_NAV: Record<Mode, NavItem[]> = {
     { label: 'Job Board', href: '/dashboard/jobs', icon: MapPin },
     { label: 'Mani Darbi', href: '/dashboard/orders', icon: ClipboardList },
     { label: 'Aktīvais Darbs', href: '/dashboard/active', icon: Truck },
+    { label: 'Darba Grafiks', href: '/dashboard/schedule', icon: CalendarClock },
     { label: 'Ieņēmumi', href: '/dashboard/earnings', icon: Banknote },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
@@ -68,12 +81,6 @@ const MODE_LABEL: Record<Mode, string> = {
   BUYER: 'Pasūtītājs',
   SUPPLIER: 'Piegādātājs',
   CARRIER: 'Pārvadātājs',
-};
-
-const MODE_EMOJI: Record<Mode, string> = {
-  BUYER: '🛒',
-  SUPPLIER: '📦',
-  CARRIER: '🚛',
 };
 
 const LS_MODE_KEY = 'b3hub_active_mode';
@@ -88,12 +95,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     if (!user) return ['BUYER'];
     const modes: Mode[] = [];
     const isAdmin = user.userType === 'ADMIN';
-    // userType defaults to BUYER in the DB for all users, so we must check
-    // transport/sell flags explicitly to avoid showing BUYER to transport-only users
     const isTransport = user.canTransport || user.userType === 'CARRIER';
 
-    // BUYER: non-transport users + admins (who see everything)
-    if (isAdmin || (!isTransport && user.userType === 'BUYER')) modes.push('BUYER');
+    // BUYER: any user whose base type is BUYER gets the buyer mode (regardless of extra capabilities)
+    if (isAdmin || user.userType === 'BUYER') modes.push('BUYER');
     if (isAdmin || user.userType === 'SUPPLIER' || user.canSell) modes.push('SUPPLIER');
     if (isAdmin || isTransport) modes.push('CARRIER');
     // Ensure at least one mode
@@ -127,14 +132,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const navItems = React.useMemo(() => {
     const base = ROLE_NAV[activeMode];
+    let items: NavItem[] = [...base];
     if (activeMode === 'CARRIER' && user?.isCompany) {
-      return [
+      items = [
         base[0], // Informācijas Panelis
         { label: 'Dispečera Panelis', href: '/dashboard/fleet', icon: LayoutGrid } as NavItem,
         ...base.slice(1),
       ];
     }
-    return base;
+    if (activeMode === 'CARRIER' && user?.canSkipHire) {
+      items = [
+        ...items,
+        { label: 'Skipu Karte', href: '/dashboard/skip-map', icon: MapPinned } as NavItem,
+      ];
+    }
+    return items;
   }, [activeMode, user]);
   const isMultiRole = availableModes.length > 1;
 
@@ -156,7 +168,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">B3Hub</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {MODE_EMOJI[activeMode]} {MODE_LABEL[activeMode]}
+                    {MODE_LABEL[activeMode]}
                   </span>
                 </div>
               </Link>
@@ -166,22 +178,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
         {/* Role switcher — only shown for multi-role users, hidden when sidebar collapsed */}
         {isMultiRole && (
-          <div className="px-2 pb-1 flex gap-1 group-data-[collapsible=icon]:hidden">
-            {availableModes.map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => handleModeSwitch(mode)}
-                title={MODE_LABEL[mode]}
-                className={`flex-1 rounded-md px-1.5 py-1 text-xs font-semibold transition-colors ${
-                  activeMode === mode
-                    ? 'bg-red-600 text-white'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
-                }`}
-              >
-                {MODE_EMOJI[mode]} {MODE_LABEL[mode]}
-              </button>
-            ))}
+          <div className="px-2 pb-2 group-data-[collapsible=icon]:hidden">
+            <Select value={activeMode} onValueChange={(v) => handleModeSwitch(v as Mode)}>
+              <SelectTrigger className="h-8 w-full text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableModes.map((mode) => (
+                  <SelectItem key={mode} value={mode} className="text-xs">
+                    {MODE_LABEL[mode]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
       </SidebarHeader>
@@ -204,11 +213,70 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </SidebarGroup>
 
+        {/* Company management — only shown to company members */}
+        {user?.isCompany && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Uzņēmums</SidebarGroupLabel>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Uzņēmuma profils"
+                  isActive={pathname === '/dashboard/company'}
+                >
+                  <Link href="/dashboard/company">
+                    <Building2 />
+                    <span>Uzņēmuma profils</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              {(user.companyRole === 'OWNER' || user.companyRole === 'MANAGER') && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    tooltip="Komanda"
+                    isActive={pathname === '/dashboard/company/team'}
+                  >
+                    <Link href="/dashboard/company/team">
+                      <Users />
+                      <span>Komanda</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
+
         {/* Admin section — only shown to ADMIN users */}
         {user?.userType === 'ADMIN' && (
           <SidebarGroup>
             <SidebarGroupLabel>Administrācija</SidebarGroupLabel>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Pārskats"
+                  isActive={pathname === '/dashboard/admin'}
+                >
+                  <Link href="/dashboard/admin">
+                    <LayoutDashboard />
+                    <span>Pārskats</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Lietotāji"
+                  isActive={pathname === '/dashboard/admin/users'}
+                >
+                  <Link href="/dashboard/admin/users">
+                    <Users />
+                    <span>Lietotāji</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild

@@ -70,6 +70,8 @@ export async function getDocumentSummary(token: string): Promise<DocumentSummary
 
 export type UserType = "BUYER" | "SUPPLIER" | "CARRIER" | "ADMIN";
 
+export type CompanyRole = 'OWNER' | 'MANAGER' | 'DRIVER' | 'MEMBER';
+
 export interface User {
   id: string;
   email: string;
@@ -79,16 +81,132 @@ export interface User {
   isCompany: boolean;
   canSell: boolean;
   canTransport: boolean;
+  canSkipHire: boolean;
   status: string;
   phone?: string;
   avatar?: string;
   emailVerified: boolean;
+  companyRole?: CompanyRole;
   company?: {
     id: string;
     name: string;
     companyType: string;
     logo?: string;
   };
+}
+
+// ── Company & Team Management ─────────────────────────────────
+
+export interface Company {
+  id: string;
+  name: string;
+  legalName?: string;
+  registrationNum?: string;
+  taxId?: string;
+  companyType: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+  description?: string;
+  logo?: string;
+  verified: boolean;
+  street?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CompanyMember {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  avatar?: string;
+  companyRole?: CompanyRole;
+  canSell: boolean;
+  canTransport: boolean;
+  canSkipHire: boolean;
+  status: string;
+  emailVerified: boolean;
+  createdAt: string;
+}
+
+export interface InviteMemberInput {
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  companyRole: CompanyRole;
+  canTransport?: boolean;
+  canSell?: boolean;
+  canSkipHire?: boolean;
+}
+
+export interface UpdateMemberInput {
+  companyRole?: CompanyRole;
+  canTransport?: boolean;
+  canSell?: boolean;
+  canSkipHire?: boolean;
+}
+
+export async function getMyCompany(token: string): Promise<Company> {
+  return apiFetch<Company>('/company/me', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function updateMyCompany(
+  data: Partial<{
+    name: string; legalName: string; email: string; phone: string; website: string;
+    description: string; street: string; city: string; state: string; postalCode: string; logo: string;
+  }>,
+  token: string,
+): Promise<Company> {
+  return apiFetch<Company>('/company/me', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getCompanyMembers(token: string): Promise<CompanyMember[]> {
+  return apiFetch<CompanyMember[]>('/company/me/members', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function inviteCompanyMember(
+  data: InviteMemberInput,
+  token: string,
+): Promise<{ user: CompanyMember; tempPassword: string }> {
+  return apiFetch<{ user: CompanyMember; tempPassword: string }>('/company/me/members', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateCompanyMember(
+  memberId: string,
+  data: UpdateMemberInput,
+  token: string,
+): Promise<CompanyMember> {
+  return apiFetch<CompanyMember>(`/company/me/members/${memberId}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function removeCompanyMember(memberId: string, token: string): Promise<void> {
+  await apiFetch<void>(`/company/me/members/${memberId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
 }
 
 export interface AuthResponse {
@@ -230,6 +348,7 @@ export interface CreateSkipHireInput {
   wasteCategory: SkipWasteCategory;
   skipSize: SkipSize;
   deliveryDate: string; // ISO date string
+  carrierId?: string;   // selected from quotes
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
@@ -277,6 +396,26 @@ export async function getMySkipHireOrders(token: string): Promise<SkipHireOrder[
   return apiFetch<SkipHireOrder[]>("/skip-hire/my", {
     headers: { Authorization: `Bearer ${token}` },
   });
+}
+
+// ── Skip hire quotes (carrier comparison) ─────────────────────
+
+export interface SkipHireQuote {
+  carrierId: string;
+  carrierName: string;
+  carrierLogo: string | null;
+  carrierRating: number | null;
+  price: number;
+  currency: string;
+}
+
+export async function getSkipHireQuotes(
+  size: SkipSize,
+  location: string,
+  date: string,
+): Promise<SkipHireQuote[]> {
+  const params = new URLSearchParams({ size, location, date });
+  return apiFetch<SkipHireQuote[]>(`/skip-hire/quotes?${params}`);
 }
 
 // ── Vehicles (Virtual Garage) ──────────────────────────────────
@@ -470,6 +609,49 @@ export async function assignTransportJob(
   });
 }
 
+export async function getTransportJob(id: string, token: string): Promise<ApiTransportJob> {
+  return apiFetch<ApiTransportJob>(`/transport-jobs/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export interface TransportJobLocation {
+  id: string;
+  status: TransportJobStatus;
+  currentLocation: { lat: number; lng: number; updatedAt: string } | null;
+  pickupLat: number | null;
+  pickupLng: number | null;
+  pickupAddress: string;
+  deliveryLat: number | null;
+  deliveryLng: number | null;
+  deliveryAddress: string;
+  estimatedArrival: string | null;
+}
+
+export async function getTransportJobLocation(
+  id: string,
+  token: string,
+): Promise<TransportJobLocation> {
+  return apiFetch<TransportJobLocation>(`/transport-jobs/${id}/location`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function updateTransportJobLocation(
+  id: string,
+  dto: { lat: number; lng: number },
+  token: string,
+): Promise<{ lat: number; lng: number; updatedAt: string }> {
+  return apiFetch<{ lat: number; lng: number; updatedAt: string }>(
+    `/transport-jobs/${id}/location`,
+    {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(dto),
+    },
+  );
+}
+
 // ── Materials ──────────────────────────────────────────────────
 
 export type MaterialCategory =
@@ -517,6 +699,12 @@ export interface CreateMaterialOrderInput {
   buyerId: string;
 }
 
+export async function getMaterialCategories(token: string): Promise<MaterialCategory[]> {
+  return apiFetch<MaterialCategory[]>('/materials/categories', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 export async function getMaterials(
   token: string,
   filters?: { category?: MaterialCategory; search?: string },
@@ -530,6 +718,71 @@ export async function getMaterials(
     });
   }
   return apiFetch<ApiMaterial[]>(`/materials${query}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function getMyMaterials(token: string, supplierId: string): Promise<ApiMaterial[]> {
+  return apiFetch<ApiMaterial[]>(`/materials?supplierId=${supplierId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export interface CreateMaterialInput {
+  name: string;
+  description?: string;
+  category: MaterialCategory;
+  subCategory?: string;
+  basePrice: number;
+  unit: MaterialUnit;
+  inStock?: boolean;
+  minOrder?: number;
+  maxOrder?: number;
+  isRecycled?: boolean;
+  quality?: string;
+  supplierId: string;
+}
+
+export async function createMaterial(
+  input: CreateMaterialInput,
+  token: string,
+): Promise<ApiMaterial> {
+  return apiFetch<ApiMaterial>('/materials', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+}
+
+export interface UpdateMaterialInput {
+  name?: string;
+  description?: string;
+  category?: MaterialCategory;
+  subCategory?: string;
+  basePrice?: number;
+  unit?: MaterialUnit;
+  inStock?: boolean;
+  minOrder?: number;
+  maxOrder?: number;
+  isRecycled?: boolean;
+  quality?: string;
+}
+
+export async function updateMaterial(
+  id: string,
+  input: UpdateMaterialInput,
+  token: string,
+): Promise<ApiMaterial> {
+  return apiFetch<ApiMaterial>(`/materials/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteMaterial(id: string, token: string): Promise<void> {
+  return apiFetch<void>(`/materials/${id}`, {
+    method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },
   });
 }
@@ -657,34 +910,219 @@ export interface CreateTransportJobInput {
   orderId?: string;
 }
 
-export interface ApiTransportJob {
-  id: string;
-  jobNumber: string;
-  jobType: string;
-  cargoType: string;
-  cargoWeight?: number;
-  pickupAddress: string;
-  pickupCity: string;
-  pickupDate: string;
-  pickupWindow?: string;
-  deliveryAddress: string;
-  deliveryCity: string;
-  deliveryDate: string;
-  deliveryWindow?: string;
-  distanceKm?: number;
-  rate: number;
-  pricePerTonne?: number;
-  currency: string;
-  status: string;
-  requiredVehicleType?: string;
-  requiredVehicleEnum?: string;
-  driverId?: string;
-  driver?: { id: string; firstName: string; lastName: string; phone?: string };
-  vehicle?: { id: string; licensePlate: string; vehicleType: string };
-  order?: { id: string; orderNumber: string };
+export async function createTransportJob(
+  input: CreateTransportJobInput,
+  token: string,
+): Promise<ApiTransportJob> {
+  return apiFetch<ApiTransportJob>("/transport-jobs", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
 }
 
-// ── Provider Applications ──────────────────────────────────────
+// ── Cart / Multi-item order ────────────────────────────────────────────────────
+
+export interface CartOrderItem {
+  materialId: string;
+  quantity: number;
+  unit: MaterialUnit;
+  unitPrice: number;
+}
+
+export interface CreateCartOrderInput {
+  buyerId: string;
+  deliveryAddress: string;
+  deliveryCity: string;
+  deliveryPostal: string;
+  deliveryDate?: string;
+  notes?: string;
+  items: CartOrderItem[];
+}
+
+export async function createCartOrder(
+  input: CreateCartOrderInput,
+  token: string,
+): Promise<ApiOrder> {
+  return apiFetch<ApiOrder>("/orders", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      orderType: "MATERIAL",
+      buyerId: input.buyerId,
+      deliveryAddress: input.deliveryAddress,
+      deliveryCity: input.deliveryCity,
+      deliveryState: "",
+      deliveryPostal: input.deliveryPostal,
+      deliveryDate: input.deliveryDate,
+      deliveryFee: 0,
+      notes: input.notes,
+      items: input.items,
+    }),
+  });
+}
+
+// ── Invoices ───────────────────────────────────────────────────────────────────
+
+export type PaymentStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+
+export interface ApiInvoice {
+  id: string;
+  invoiceNumber: string;
+  orderId: string;
+  subtotal: number;
+  tax: number;
+  total: number;
+  currency: string;
+  dueDate: string;
+  paidDate?: string;
+  paymentStatus: PaymentStatus;
+  pdfUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+  order: {
+    id: string;
+    orderNumber: string;
+    orderType: string;
+    status: string;
+  };
+}
+
+export interface InvoiceListResponse {
+  data: ApiInvoice[];
+  meta: { page: number; limit: number; total: number };
+}
+
+export async function getMyInvoices(
+  token: string,
+  page = 1,
+): Promise<InvoiceListResponse> {
+  return apiFetch<InvoiceListResponse>(`/invoices?page=${page}&limit=20`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function getInvoiceById(id: string, token: string): Promise<ApiInvoice> {
+  return apiFetch<ApiInvoice>(`/invoices/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function getInvoicesByOrder(
+  orderId: string,
+  token: string,
+): Promise<ApiInvoice[]> {
+  return apiFetch<ApiInvoice[]>(`/invoices/order/${orderId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function markInvoicePaid(id: string, token: string): Promise<ApiInvoice> {
+  return apiFetch<ApiInvoice>(`/invoices/${id}/pay`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Driver Schedule & Availability ────────────────────────────
+
+export interface DriverScheduleDay {
+  id?: string;
+  dayOfWeek: number; // 0 = Sun … 6 = Sat
+  enabled: boolean;
+  startTime: string; // "HH:mm"
+  endTime: string;   // "HH:mm"
+}
+
+export interface DriverDateBlock {
+  id: string;
+  blockedDate: string;
+  reason?: string | null;
+  createdAt: string;
+}
+
+export interface DriverAvailability {
+  id: string;
+  isOnline: boolean;
+  autoSchedule: boolean;
+  maxJobsPerDay: number | null;
+  available: boolean;
+  effectiveOnline: boolean;
+  weeklySchedule: DriverScheduleDay[];
+  dateBlocks: DriverDateBlock[];
+}
+
+export async function getDriverAvailability(token: string): Promise<DriverAvailability> {
+  return apiFetch<DriverAvailability>('/driver-schedule', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function toggleDriverOnline(
+  isOnline: boolean,
+  token: string,
+): Promise<{ isOnline: boolean }> {
+  return apiFetch<{ isOnline: boolean }>('/driver-schedule/online', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ isOnline }),
+  });
+}
+
+export interface UpdateDriverScheduleInput {
+  days: DriverScheduleDay[];
+  autoSchedule?: boolean;
+  maxJobsPerDay?: number | null;
+}
+
+export async function updateDriverSchedule(
+  data: UpdateDriverScheduleInput,
+  token: string,
+): Promise<DriverAvailability> {
+  return apiFetch<DriverAvailability>('/driver-schedule', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function blockDriverDate(
+  date: string,
+  reason: string | undefined,
+  token: string,
+): Promise<DriverDateBlock> {
+  return apiFetch<DriverDateBlock>('/driver-schedule/blocks', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ date, reason }),
+  });
+}
+
+export async function unblockDriverDate(id: string, token: string): Promise<void> {
+  await apiFetch<void>(`/driver-schedule/blocks/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Provider Applications ─────────────────────────────────────────────────────
+
+export interface ProviderApplicationInput {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  companyName: string;
+  regNumber?: string;
+  taxId?: string;
+  website?: string;
+  appliesForSell: boolean;
+  appliesForTransport: boolean;
+  description?: string;
+  userId?: string;
+}
+
+export type ProviderApplicationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface ProviderApplication {
   id: string;
@@ -699,16 +1137,25 @@ export interface ProviderApplication {
   appliesForSell: boolean;
   appliesForTransport: boolean;
   description?: string;
-  userId?: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  reviewedBy?: string;
+  status: ProviderApplicationStatus;
   reviewNote?: string;
+  userId?: string;
   createdAt: string;
+  updatedAt: string;
+}
+
+export async function createProviderApplication(
+  data: ProviderApplicationInput,
+): Promise<ProviderApplication> {
+  return apiFetch<ProviderApplication>('/provider-applications', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function getProviderApplications(
   token: string,
-  status?: string,
+  status?: ProviderApplicationStatus,
 ): Promise<ProviderApplication[]> {
   const qs = status ? `?status=${status}` : '';
   return apiFetch<ProviderApplication[]>(`/provider-applications${qs}`, {
@@ -718,8 +1165,8 @@ export async function getProviderApplications(
 
 export async function approveProviderApplication(
   id: string,
+  reviewNote: string,
   token: string,
-  reviewNote?: string,
 ): Promise<ProviderApplication> {
   return apiFetch<ProviderApplication>(`/provider-applications/${id}/approve`, {
     method: 'PATCH',
@@ -730,8 +1177,8 @@ export async function approveProviderApplication(
 
 export async function rejectProviderApplication(
   id: string,
+  reviewNote: string,
   token: string,
-  reviewNote?: string,
 ): Promise<ProviderApplication> {
   return apiFetch<ProviderApplication>(`/provider-applications/${id}/reject`, {
     method: 'PATCH',
@@ -740,13 +1187,101 @@ export async function rejectProviderApplication(
   });
 }
 
-export async function createTransportJob(
-  input: CreateTransportJobInput,
+// ── Admin Users ───────────────────────────────────────────────────────────────
+
+export interface AdminUser {
+  id: string;
+  email?: string;
+  phone?: string;
+  firstName: string;
+  lastName: string;
+  userType: string;
+  status: string;
+  canSell: boolean;
+  canTransport: boolean;
+  canSkipHire: boolean;
+  companyRole?: string;
+  emailVerified: boolean;
+  company?: { id: string; name: string } | null;
+  createdAt: string;
+}
+
+export async function adminGetUsers(token: string): Promise<AdminUser[]> {
+  return apiFetch<AdminUser[]>('/admin/users', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminUpdateUser(
+  id: string,
+  data: Partial<{
+    canSell: boolean;
+    canTransport: boolean;
+    canSkipHire: boolean;
+    status: string;
+    userType: string;
+  }>,
+  token: string,
+): Promise<AdminUser> {
+  return apiFetch<AdminUser>(`/admin/users/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+// ── Delivery Proof ────────────────────────────────────────────────────────────
+
+export interface DeliveryProofInput {
+  recipientName?: string;
+  notes?: string;
+  photoUrls?: string[];
+}
+
+export interface DeliveryProof {
+  id: string;
+  transportJobId: string;
+  notes?: string;
+  photoUrls: string[];
+  submittedAt: string;
+}
+
+export async function submitDeliveryProof(
+  jobId: string,
+  data: DeliveryProofInput,
   token: string,
 ): Promise<ApiTransportJob> {
-  return apiFetch<ApiTransportJob>("/transport-jobs", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(input),
+  return apiFetch<ApiTransportJob>(`/transport-jobs/${jobId}/delivery-proof`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+// ── Skip Hire Fleet Map ────────────────────────────────────────────────────────
+
+export type SkipHireMapStatus = 'CONFIRMED' | 'DELIVERED';
+
+export interface SkipMapOrder {
+  id: string;
+  orderNumber: string;
+  location: string;
+  lat: number | null;
+  lng: number | null;
+  skipSize: SkipSize;
+  wasteCategory: SkipWasteCategory;
+  status: SkipHireMapStatus;
+  deliveryDate: string;
+  contactName: string | null;
+  contactPhone: string | null;
+  notes: string | null;
+  price: number;
+  currency: string;
+  createdAt: string;
+}
+
+export async function getSkipCarrierMap(token: string): Promise<SkipMapOrder[]> {
+  return apiFetch<SkipMapOrder[]>('/skip-hire/carrier-map', {
+    headers: { Authorization: `Bearer ${token}` },
   });
 }

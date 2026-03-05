@@ -209,7 +209,7 @@ export default function AdminApplicationsPage() {
     if (!token) return;
     setActionLoading(true);
     try {
-      const updated = await approveProviderApplication(id, token);
+      const updated = await approveProviderApplication(id, '', token);
       setApps((prev) => prev.map((a) => (a.id === id ? updated : a)));
     } catch {
       /* show toast in production */
@@ -222,7 +222,7 @@ export default function AdminApplicationsPage() {
     if (!token) return;
     setActionLoading(true);
     try {
-      const updated = await rejectProviderApplication(id, token);
+      const updated = await rejectProviderApplication(id, '', token);
       setApps((prev) => prev.map((a) => (a.id === id ? updated : a)));
     } catch {
       /* show toast in production */

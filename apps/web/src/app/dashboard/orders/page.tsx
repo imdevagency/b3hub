@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import {
   getMyOrders,
@@ -214,6 +215,7 @@ function CarrierView({ token }: { token: string }) {
                 <th className="px-4 py-3 text-left font-medium">Datums</th>
                 <th className="px-4 py-3 text-left font-medium">Transportlīdzeklis</th>
                 <th className="px-4 py-3 text-right font-medium">Cena</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -268,13 +270,22 @@ function CarrierView({ token }: { token: string }) {
                     <td className="px-4 py-3 text-right font-bold tabular-nums">
                       {fmtMoney(job.rate)}
                     </td>
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        href={`/dashboard/orders/${job.id}`}
+                        className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors whitespace-nowrap"
+                      >
+                        <Truck className="size-3" />
+                        Sekot
+                      </Link>
+                    </td>
                   </tr>
                 );
               })}
             </tbody>
             <tfoot>
               <tr className="border-t bg-muted/40 text-xs font-semibold">
-                <td colSpan={7} className="px-4 py-2 text-muted-foreground">
+                <td colSpan={8} className="px-4 py-2 text-muted-foreground">
                   {filtered.length} ieraksti
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums">

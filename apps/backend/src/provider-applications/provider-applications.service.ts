@@ -71,13 +71,15 @@ export class ProviderApplicationsService {
       },
     });
 
-    // If linked to a user, grant capabilities
+    // If linked to a user, grant capabilities and set OWNER role
     if (app.userId) {
       await this.prisma.user.update({
         where: { id: app.userId },
         data: {
           ...(app.appliesForSell && { canSell: true }),
           ...(app.appliesForTransport && { canTransport: true }),
+          // First person to be approved for a company is its owner
+          companyRole: 'OWNER',
         },
       });
     }

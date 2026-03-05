@@ -52,6 +52,7 @@ export class AuthService {
         isCompany: true,
         canSell: true,
         canTransport: true,
+        companyRole: true,
         status: true,
         company: {
           select: {
@@ -63,7 +64,7 @@ export class AuthService {
     });
 
     // Generate token
-    const token = this.generateToken(user.id, user.email ?? '', user.userType, user.isCompany, user.canSell, user.canTransport, user.company?.id);
+    const token = this.generateToken(user.id, user.email ?? '', user.userType, user.isCompany, user.canSell, user.canTransport, user.company?.id, user.companyRole ?? undefined);
 
     return {
       user,
@@ -104,7 +105,7 @@ export class AuthService {
     }
 
     // Generate token
-    const token = this.generateToken(user.id, user.email ?? '', user.userType, user.isCompany, user.canSell, user.canTransport, user.company?.id);
+    const token = this.generateToken(user.id, user.email ?? '', user.userType, user.isCompany, user.canSell, user.canTransport, user.company?.id, user.companyRole ?? undefined);
 
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
@@ -142,6 +143,8 @@ export class AuthService {
         isCompany: true,
         canSell: true,
         canTransport: true,
+        canSkipHire: true,
+        companyRole: true,
         status: true,
         emailVerified: true,
         phoneVerified: true,
@@ -150,11 +153,8 @@ export class AuthService {
             id: true,
             name: true,
             companyType: true,
-            logo: true,
           },
         },
-        driverProfile: true,
-        buyerProfile: true,
       },
     });
 
@@ -196,8 +196,9 @@ export class AuthService {
     canSell: boolean,
     canTransport: boolean,
     companyId?: string,
+    companyRole?: string,
   ): string {
-    const payload = { sub: userId, email, userType, isCompany, canSell, canTransport, companyId };
+    const payload = { sub: userId, email, userType, isCompany, canSell, canTransport, companyId, companyRole };
     return this.jwtService.sign(payload);
   }
 }

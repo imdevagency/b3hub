@@ -7,7 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { OrderStatus, TransportJobStatus } from '@prisma/client';
+import { OrderStatus, OrderType, TransportJobStatus, TransportJobType } from '@prisma/client';
 import { RequestingUser } from '../common/types/requesting-user.interface';
 
 @Injectable()
@@ -44,7 +44,7 @@ export class OrdersService {
     const total = subtotal + tax + (orderData.deliveryFee || 0);
 
     // Create order with items
-    return this.prisma.order.create({
+    const order = await this.prisma.order.create({
       data: {
         orderNumber,
         orderType: orderData.orderType,
@@ -95,6 +95,21 @@ export class OrdersService {
         },
       },
     });
+
+    // Auto-create a transport job for material orders so drivers see it on the job board immediately.
+    if (orderData.orderType === OrderType.MATERIAL && items.length > 0) {
+      try {
+        await this.spawnTransportJob(order.id, items, orderData, total);
+      } catch (err) {
+        // Non-fatal — log but don't roll back the order
+        console.error(
+          `[OrdersService] Failed to auto-create transport job for order ${order.id}:`,
+          err,
+        );
+      }
+    }
+
+    return order;
   }
 
   async findAll(currentUser: RequestingUser, status?: OrderStatus) {
@@ -374,6 +389,75 @@ export class OrdersService {
     }
 
     return { buyer, seller, transport };
+  }
+
+  /**
+   * Auto-create a MATERIAL_DELIVERY transport job linked to the order.
+   * Pickup address = first item's supplier company address.
+   * The job is immediately AVAILABLE on the driver job board.
+   */
+  private async spawnTransportJob(
+    orderId: string,
+    items: CreateOrderDto['items'],
+    orderData: Omit<CreateOrderDto, 'items'>,
+    orderTotal: number,
+  ): Promise<void> {
+    const firstMaterial = await this.prisma.material.findUnique({
+      where: { id: items[0].materialId },
+      include: {
+        supplier: {
+          select: { name: true, street: true, city: true, state: true, postalCode: true },
+        },
+      },
+    });
+
+    if (!firstMaterial?.supplier) {
+      console.warn(
+        `[OrdersService] Could not find supplier for material ${items[0].materialId} — transport job skipped`,
+      );
+      return;
+    }
+
+    const totalWeight = items.reduce((sum, item) => sum + item.quantity, 0);
+    const cargoType = firstMaterial.name;
+    const pickupDate = orderData.deliveryDate ? new Date(orderData.deliveryDate) : new Date();
+    const jobNumber = await this.generateTransportJobNumber();
+
+    await this.prisma.transportJob.create({
+      data: {
+        jobNumber,
+        jobType: TransportJobType.MATERIAL_DELIVERY,
+        orderId,
+        pickupAddress: firstMaterial.supplier.street,
+        pickupCity: firstMaterial.supplier.city,
+        pickupState: firstMaterial.supplier.state ?? '',
+        pickupPostal: firstMaterial.supplier.postalCode ?? '',
+        pickupDate,
+        deliveryAddress: orderData.deliveryAddress,
+        deliveryCity: orderData.deliveryCity,
+        deliveryState: orderData.deliveryState ?? '',
+        deliveryPostal: orderData.deliveryPostal ?? '',
+        deliveryDate: pickupDate,
+        cargoType,
+        cargoWeight: totalWeight,
+        rate: orderTotal,
+        currency: 'EUR',
+        status: TransportJobStatus.AVAILABLE,
+      },
+    });
+
+    console.log(
+      `[OrdersService] Transport job ${jobNumber} created for order ${orderId} (pickup: ${firstMaterial.supplier.city} → delivery: ${orderData.deliveryCity})`,
+    );
+  }
+
+  private async generateTransportJobNumber(): Promise<string> {
+    const count = await this.prisma.transportJob.count();
+    const date = new Date();
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const number = (count + 1).toString().padStart(5, '0');
+    return `TRJ${year}${month}${number}`;
   }
 
   private async generateOrderNumber(): Promise<string> {

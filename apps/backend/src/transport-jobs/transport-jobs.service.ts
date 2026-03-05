@@ -8,6 +8,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TransportJobStatus } from '@prisma/client';
 import { UpdateStatusDto, ALLOWED_DRIVER_STATUSES } from './dto/update-status.dto';
 import { CreateTransportJobDto } from './dto/create-transport-job.dto';
+import { UpdateLocationDto } from './dto/update-location.dto';
+import { SubmitDeliveryProofDto } from './dto/submit-delivery-proof.dto';
 
 // Valid next-state transitions for a driver
 const NEXT_STATUS: Partial<Record<TransportJobStatus, TransportJobStatus>> = {
@@ -286,6 +288,78 @@ export class TransportJobsService {
     return this.prisma.transportJob.update({
       where: { id },
       data: { status: dto.status },
+      select: this.jobSelect,
+    });
+  }
+
+  // ── Driver: update GPS location ───────────────────────────────
+  async updateLocation(id: string, driverId: string, dto: UpdateLocationDto) {
+    const job = await this.prisma.transportJob.findUnique({ where: { id } });
+    if (!job) throw new NotFoundException('Transport job not found');
+    if (job.driverId !== driverId) throw new ForbiddenException('This is not your job');
+
+    const location = { lat: dto.lat, lng: dto.lng, updatedAt: new Date().toISOString() };
+
+    // Update job's currentLocation
+    await this.prisma.transportJob.update({
+      where: { id },
+      data: { currentLocation: location },
+    });
+
+    // Also update the driver profile's currentLocation if it exists
+    await this.prisma.driverProfile.updateMany({
+      where: { userId: driverId },
+      data: { currentLocation: location },
+    });
+
+    return location;
+  }
+
+  // ── Get current GPS location for a job ───────────────────────
+  async getLocation(id: string) {
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        status: true,
+        currentLocation: true,
+        pickupLat: true,
+        pickupLng: true,
+        pickupAddress: true,
+        deliveryLat: true,
+        deliveryLng: true,
+        deliveryAddress: true,
+        estimatedArrival: true,
+      },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+    return job;
+  }
+
+  // ── Submit delivery proof (transitions job → DELIVERED) ──────
+  async submitDeliveryProof(id: string, driverId: string, dto: SubmitDeliveryProofDto) {
+    const job = await this.prisma.transportJob.findUnique({ where: { id } });
+    if (!job) throw new NotFoundException('Transport job not found');
+    if (job.driverId !== driverId) throw new ForbiddenException('This is not your job');
+    if (job.status !== TransportJobStatus.AT_DELIVERY) {
+      throw new BadRequestException('Job must be AT_DELIVERY to submit proof');
+    }
+
+    await this.prisma.deliveryProof.create({
+      data: {
+        transportJobId: id,
+        recipientName: dto.recipientName?.trim() || 'Confirmed',
+        recipientSignature: 'CONFIRMED',
+        driverSignature: 'CONFIRMED',
+        photos: dto.photos ?? [],
+        notes: dto.notes,
+        deliveredAt: new Date(),
+      },
+    });
+
+    return this.prisma.transportJob.update({
+      where: { id },
+      data: { status: TransportJobStatus.DELIVERED },
       select: this.jobSelect,
     });
   }
