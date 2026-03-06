@@ -39,10 +39,14 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { CalendarDays, Users, ChevronRight, CircleCheck } from 'lucide-react';
 
 // Dynamic import — Mapbox needs browser
-const TransportJobsMapDynamic = dynamic(
-  () => import('@/components/tracking/TransportJobsMap'),
-  { ssr: false, loading: () => <div className="flex h-full items-center justify-center rounded-xl bg-zinc-800 text-zinc-500 text-sm">Karte ielādējas…</div> }
-);
+const TransportJobsMapDynamic = dynamic(() => import('@/components/tracking/TransportJobsMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center rounded-xl bg-zinc-800 text-zinc-500 text-sm">
+      Karte ielādējas…
+    </div>
+  ),
+});
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -174,7 +178,7 @@ function mapApiJob(j: ApiTransportJob): TransportJob {
     distanceKm: j.distanceKm ?? 0,
     date: d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' }),
     time: d.toLocaleTimeString('lv-LV', { hour: '2-digit', minute: '2-digit' }),
-    priceTotal: j.rate,
+    priceTotal: j.rate ?? 0,
     pricePerTonne: j.pricePerTonne ?? 0,
     currency: j.currency,
   };
@@ -700,7 +704,6 @@ export default function JobsPage() {
 
       {/* ── Split-pane: job list (40%) + map (60%) ───────────────────────── */}
       <div className="flex flex-col gap-4 overflow-hidden md:flex-row md:h-[calc(100vh-200px)]">
-
         {/* LEFT: banner + job cards */}
         <div
           className={`flex flex-col gap-4 md:w-[40%] md:overflow-y-auto md:pr-1 ${
@@ -756,7 +759,9 @@ export default function JobsPage() {
               {filteredJobs.map((job) => (
                 <div
                   key={job.id}
-                  ref={(el) => { if (el) jobCardRefs.current.set(job.id, el); }}
+                  ref={(el) => {
+                    if (el) jobCardRefs.current.set(job.id, el);
+                  }}
                   onClick={() => handleCardSelect(job.id)}
                   className={`cursor-pointer rounded-xl border shadow-sm p-5 space-y-4 transition-all hover:shadow-md ${
                     selectedJobId === job.id
@@ -833,7 +838,10 @@ export default function JobsPage() {
                     {user?.canTransport && user?.isCompany && (
                       <Button
                         className="flex-1 bg-gray-900 hover:bg-gray-800 text-white"
-                        onClick={(e) => { e.stopPropagation(); openDispatch(job); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openDispatch(job);
+                        }}
                       >
                         <CalendarDays className="h-4 w-4 mr-2" />
                         Plānot darbu
@@ -842,7 +850,10 @@ export default function JobsPage() {
                     {(!user?.isCompany || !user?.canTransport) && (
                       <Button
                         className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                        onClick={(e) => { e.stopPropagation(); handleAccept(job.id); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAccept(job.id);
+                        }}
                       >
                         <Truck className="h-4 w-4 mr-2" />
                         Pieņemt darbu

@@ -378,7 +378,7 @@ export default function ActiveJobPage() {
                     {STATUS_LABEL[currentStatus]}
                   </span>
                   <span className="text-xl font-extrabold text-red-600">
-                    €{job.rate.toFixed(2)}
+                    €{(job.rate ?? 0).toFixed(2)}
                   </span>
                 </div>
                 <ProgressBar currentStatus={currentStatus} />
