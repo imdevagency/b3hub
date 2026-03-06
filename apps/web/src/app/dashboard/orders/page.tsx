@@ -238,7 +238,9 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
   const fetchJob = useCallback(async () => {
     try {
       const data = await getMyActiveTransportJob(token);
-      setJob(data);
+      // Only show jobs that are in-progress (not delivered or assigned-but-not-started)
+      const isActive = data != null && (STATUS_STEPS as readonly string[]).includes(data.status) && data.status !== 'DELIVERED';
+      setJob(isActive ? data : null);
     } catch {
       /**/
     } finally {
@@ -489,8 +491,10 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
       {job &&
         (() => {
           const currentStatus = job.status as JobStatus;
-          const nextStatus = NEXT_STATUS[currentStatus];
           const currentIndex = STATUS_STEPS.indexOf(currentStatus);
+          // Safety: if status is not a known in-progress status, show empty state
+          if (currentIndex === -1 || currentStatus === 'DELIVERED') return null;
+          const nextStatus = NEXT_STATUS[currentStatus];
           const isHeadingToPickup =
             currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP';
 
