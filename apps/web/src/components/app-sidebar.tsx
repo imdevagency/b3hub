@@ -74,7 +74,6 @@ const ROLE_NAV: Record<Mode, NavItem[]> = {
     { label: 'Mans Autoparks', href: '/dashboard/garage', icon: Car },
     { label: 'Job Board', href: '/dashboard/jobs', icon: MapPin },
     { label: 'Mani Darbi', href: '/dashboard/orders', icon: ClipboardList },
-    { label: 'Aktīvais Darbs', href: '/dashboard/active', icon: Truck },
     { label: 'Darba Grafiks', href: '/dashboard/schedule', icon: CalendarClock },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
