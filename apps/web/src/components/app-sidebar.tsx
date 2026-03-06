@@ -13,7 +13,6 @@ import {
   LayoutGrid,
   LogOut,
   MapPin,
-  MapPinned,
   Package,
   Receipt,
   Settings,
@@ -136,12 +135,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         base[0], // Informācijas Panelis
         { label: 'Dispečera Panelis', href: '/dashboard/fleet', icon: LayoutGrid } as NavItem,
         ...base.slice(1),
-      ];
-    }
-    if (activeMode === 'CARRIER' && user?.canSkipHire) {
-      items = [
-        ...items,
-        { label: 'Skipu Karte', href: '/dashboard/skip-map', icon: MapPinned } as NavItem,
       ];
     }
     return items;
