@@ -27,9 +27,10 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
     const modes: Mode[] = [];
     const isAdmin = user.userType === 'ADMIN';
     const isTransport = user.canTransport || user.userType === 'CARRIER';
-    // Buyer mode: only pure buyers — transporters do NOT get buyer access
-    const isPureBuyer = user.userType === 'BUYER' && !isTransport;
-    if (isAdmin || isPureBuyer) modes.push('BUYER');
+    // Buyer mode: BUYER type users, EXCEPT pure-transport individuals (driver with no company/sell flags)
+    const isPureTransportIndividual = isTransport && !user.canSell && !user.isCompany;
+    const isBuyer = user.userType === 'BUYER' && !isPureTransportIndividual;
+    if (isAdmin || isBuyer) modes.push('BUYER');
     if (isAdmin || user.userType === 'SUPPLIER' || user.canSell) modes.push('SUPPLIER');
     if (isAdmin || isTransport) modes.push('CARRIER');
     // Fallback: if no mode resolved (shouldn't happen), give BUYER

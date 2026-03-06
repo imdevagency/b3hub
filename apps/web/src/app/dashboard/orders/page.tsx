@@ -239,7 +239,10 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
     try {
       const data = await getMyActiveTransportJob(token);
       // Only show jobs that are in-progress (not delivered or assigned-but-not-started)
-      const isActive = data != null && (STATUS_STEPS as readonly string[]).includes(data.status) && data.status !== 'DELIVERED';
+      const isActive =
+        data != null &&
+        (STATUS_STEPS as readonly string[]).includes(data.status) &&
+        data.status !== 'DELIVERED';
       setJob(isActive ? data : null);
     } catch {
       /**/
@@ -762,7 +765,8 @@ function CarrierHistoryView({ token }: { token: string }) {
           <div className="space-y-1.5">
             <p className="text-base font-bold text-gray-800">Nav neviena darba</p>
             <p className="text-sm text-muted-foreground max-w-xs">
-              Vēl neesat pieņēmuši nevienu darbu. Atveriet darbu dēli, lai atrastu un pieņemtu jaunus kravu pārvadāšanas darbus.
+              Vēl neesat pieņēmuši nevienu darbu. Atveriet darbu dēli, lai atrastu un pieņemtu
+              jaunus kravu pārvadāšanas darbus.
             </p>
           </div>
           <Link
@@ -1013,7 +1017,8 @@ function SupplierView({ token }: { token: string }) {
           <div className="space-y-1.5">
             <p className="text-base font-bold text-gray-800">Nav ienākošu pasūtījumu</p>
             <p className="text-sm text-muted-foreground max-w-xs">
-              Kad pircēji veiks pasūtījumu, tas parādīsies šeit. Pārliecinieties, ka jūsu piedāvājumi ir aktīvi.
+              Kad pircēji veiks pasūtījumu, tas parādīsies šeit. Pārliecinieties, ka jūsu
+              piedāvājumi ir aktīvi.
             </p>
           </div>
           <Link
@@ -1245,7 +1250,8 @@ function BuyerView({ token }: { token: string }) {
             <div className="space-y-1.5">
               <p className="text-base font-bold text-gray-800">Nav konteineru pasūtījumu</p>
               <p className="text-sm text-muted-foreground max-w-xs">
-                Jums vēl nav neviena konteinera nomas pasūtījuma. Pasūtiet konteineru atkritumu izvešanai.
+                Jums vēl nav neviena konteinera nomas pasūtījuma. Pasūtiet konteineru atkritumu
+                izvešanai.
               </p>
             </div>
             <Link
@@ -1325,7 +1331,8 @@ function BuyerView({ token }: { token: string }) {
           <div className="space-y-1.5">
             <p className="text-base font-bold text-gray-800">Nav materiālu pasūtījumu</p>
             <p className="text-sm text-muted-foreground max-w-xs">
-              Jums vēl nav neviena materiālu pasūtījuma. Apskatiet piedāvājumus un pasūtiet nepieciešamos materiālus.
+              Jums vēl nav neviena materiālu pasūtījuma. Apskatiet piedāvājumus un pasūtiet
+              nepieciešamos materiālus.
             </p>
           </div>
           <Link
