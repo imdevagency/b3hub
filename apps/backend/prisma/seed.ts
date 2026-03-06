@@ -112,6 +112,29 @@ async function main() {
 
   console.log('\n🔑 Password for all accounts: Demo1234!\n');
 
+  // ── DriverProfiles for canTransport accounts ───────────────────────────────
+  const transportEmails = ['driver@demo.com', 'demo@demo.com', 'baltbuve@demo.com'];
+  for (const email of transportEmails) {
+    const u = await prisma.user.findUnique({ where: { email } });
+    if (!u) continue;
+    const expiry = new Date();
+    expiry.setFullYear(expiry.getFullYear() + 5);
+    await prisma.driverProfile.upsert({
+      where: { userId: u.id },
+      update: {},
+      create: {
+        userId: u.id,
+        licenseNumber: `DRV-${u.id.slice(-8).toUpperCase()}`,
+        licenseType: ['B', 'C', 'CE'],
+        licenseExpiry: expiry,
+        certifications: [],
+        isOnline: false,
+        available: true,
+      },
+    });
+    console.log(`✅  DriverProfile created for ${email}`);
+  }
+
   // ── Demo supplier company ──────────────────────────────────────────────────
   const sellerUser = await prisma.user.findUnique({ where: { email: 'seller@demo.com' } });
 

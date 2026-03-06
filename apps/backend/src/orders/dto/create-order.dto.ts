@@ -66,6 +66,14 @@ export class CreateOrderDto {
   @IsString()
   notes?: string;
 
+  @IsOptional()
+  @IsString()
+  siteContactName?: string;
+
+  @IsOptional()
+  @IsString()
+  siteContactPhone?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => OrderItemDto)

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   View,
   Text,
@@ -759,27 +760,44 @@ export default function JobsScreen() {
     AsyncStorage.setItem(ASYNC_KEY, JSON.stringify(savedSearches));
   }, [savedSearches]);
 
-  // ── Avoid Empty Runs: fetch active job when feature is toggled ON ─────
+  // ── Auto-enable: when screen is focused, check for active delivery job ─
+  useFocusEffect(
+    useCallback(() => {
+      if (!token) return;
+      api.transportJobs.myActive(token).then((job: ApiTransportJob | null) => {
+        const isDelivering =
+          job?.status === 'EN_ROUTE_DELIVERY' ||
+          job?.status === 'AT_DELIVERY' ||
+          job?.status === 'ACCEPTED' ||
+          job?.status === 'LOADED';
+        if (job && job.deliveryLat != null && job.deliveryLng != null) {
+          setActiveJobDeliveryCity(job.deliveryCity);
+          setActiveJobDeliveryLat(job.deliveryLat);
+          setActiveJobDeliveryLng(job.deliveryLng);
+          // Auto-enable if driver has any active job (not if user had dismissed)
+          if (isDelivering) setAvoidEmptyRuns(true);
+        } else if (!avoidEmptyRuns) {
+          // No active job — clear state but don't disable if user manually enabled
+          setActiveJobDeliveryCity(null);
+          setActiveJobDeliveryLat(null);
+          setActiveJobDeliveryLng(null);
+          setReturnTrips([]);
+        }
+      });
+    }, [token]),
+  );
+
+  // ── Manual toggle: also refresh active job when user turns it ON ─────────
   useEffect(() => {
     if (!avoidEmptyRuns || !token) {
-      setActiveJobDeliveryCity(null);
-      setActiveJobDeliveryLat(null);
-      setActiveJobDeliveryLng(null);
-      setReturnTrips([]);
-      return;
-    }
-    api.transportJobs.myActive(token).then((job: ApiTransportJob | null) => {
-      if (job && job.deliveryLat != null && job.deliveryLng != null) {
-        setActiveJobDeliveryCity(job.deliveryCity);
-        setActiveJobDeliveryLat(job.deliveryLat);
-        setActiveJobDeliveryLng(job.deliveryLng);
-      } else {
+      if (!avoidEmptyRuns) {
         setActiveJobDeliveryCity(null);
         setActiveJobDeliveryLat(null);
         setActiveJobDeliveryLng(null);
         setReturnTrips([]);
       }
-    });
+      return;
+    }
   }, [avoidEmptyRuns, token]);
 
   // ── Avoid Empty Runs: fetch return trips when coords or radius changes ──
@@ -864,6 +882,7 @@ export default function JobsScreen() {
           try {
             await api.transportJobs.accept(jobId, token);
             setAllJobs((prev) => prev.filter((j) => j.id !== jobId));
+            setReturnTrips((prev) => prev.filter((j) => j.id !== jobId));
             router.replace('/(tabs)/active');
           } catch (err: any) {
             Alert.alert('Kļūda', err.message ?? 'Neizdevās pieņemt darbu');
@@ -902,7 +921,7 @@ export default function JobsScreen() {
               {t.jobs.planTour}
             </Text>
           </TouchableOpacity>
-          {/* Avoid Empty Runs toggle */}
+          {/* Avoid Empty Runs toggle — auto-enabled when active job exists */}
           <TouchableOpacity
             style={[styles.filterToggle, avoidEmptyRuns && styles.filterToggleReturn]}
             onPress={() => setAvoidEmptyRuns((v) => !v)}
@@ -911,7 +930,7 @@ export default function JobsScreen() {
             <Text
               style={[styles.filterToggleText, avoidEmptyRuns && styles.filterToggleTextActive]}
             >
-              {t.avoidEmptyRuns.toggleShort}
+              {avoidEmptyRuns ? t.avoidEmptyRuns.toggleShort : t.avoidEmptyRuns.toggleShort}
             </Text>
             {avoidEmptyRuns && returnTrips.length > 0 && (
               <View style={styles.returnCountBadge}>

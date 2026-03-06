@@ -537,7 +537,7 @@ export interface ApiTransportJob {
   driverId: string | null;
   driver: { id: string; firstName: string; lastName: string; phone: string | null } | null;
   vehicle: { id: string; licensePlate: string; vehicleType: string } | null;
-  order: { id: string; orderNumber: string } | null;
+  order: { id: string; orderNumber: string; siteContactName: string | null; siteContactPhone: string | null } | null;
 }
 
 export async function getAvailableTransportJobs(token: string): Promise<ApiTransportJob[]> {
@@ -836,7 +836,14 @@ export interface ApiOrder {
   deliveryDate: string | null;
   total: number;
   currency: string;
+  siteContactName?: string | null;
+  siteContactPhone?: string | null;
   buyer?: { id: string; firstName: string; lastName: string; phone?: string } | null;
+  transportJobs?: {
+    id: string;
+    status: string;
+    driver: { id: string; firstName: string; lastName: string; phone: string | null } | null;
+  }[];
   createdAt: string;
 }
 
@@ -937,6 +944,8 @@ export interface CreateCartOrderInput {
   deliveryPostal: string;
   deliveryDate?: string;
   notes?: string;
+  siteContactName?: string;
+  siteContactPhone?: string;
   items: CartOrderItem[];
 }
 
@@ -957,6 +966,8 @@ export async function createCartOrder(
       deliveryDate: input.deliveryDate,
       deliveryFee: 0,
       notes: input.notes,
+      siteContactName: input.siteContactName,
+      siteContactPhone: input.siteContactPhone,
       items: input.items,
     }),
   });

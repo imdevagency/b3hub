@@ -89,6 +89,11 @@ export class OrdersController {
     return this.ordersService.updateStatus(id, OrderStatus.CONFIRMED);
   }
 
+  @Post(':id/start-loading')
+  startLoading(@Param('id') id: string) {
+    return this.ordersService.updateStatus(id, OrderStatus.IN_PROGRESS);
+  }
+
   @Post(':id/cancel')
   cancel(@Param('id') id: string, @CurrentUser() user: any) {
     return this.ordersService.cancel(id, {

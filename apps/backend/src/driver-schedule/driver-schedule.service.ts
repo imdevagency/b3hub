@@ -12,21 +12,40 @@ import { UpdateScheduleDto } from './dto/update-schedule.dto';
 export class DriverScheduleService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // ── Guard: ensure caller has a DriverProfile ──────────────────────────────
-  private async requireDriverProfile(userId: string) {
-    const profile = await this.prisma.driverProfile.findUnique({
-      where: { userId },
-    });
-    if (!profile) {
-      throw new ForbiddenException(
-        'You do not have a driver profile. Contact your company admin.',
-      );
+  // ── Auto-create a minimal DriverProfile for any canTransport user ─────────
+  private async getOrCreateDriverProfile(userId: string) {
+    const existing = await this.prisma.driverProfile.findUnique({ where: { userId } });
+    if (existing) return existing;
+
+    // Check user actually has canTransport permission
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.canTransport) {
+      throw new ForbiddenException('Transport permission not granted.');
     }
-    return profile;
+
+    const expiry = new Date();
+    expiry.setFullYear(expiry.getFullYear() + 5);
+
+    return this.prisma.driverProfile.create({
+      data: {
+        userId,
+        licenseNumber: `DRV-${userId.slice(-8).toUpperCase()}`,
+        licenseType: ['B', 'C'],
+        licenseExpiry: expiry,
+        certifications: [],
+      },
+    });
+  }
+
+  // ── Guard: ensure caller has a DriverProfile (auto-create if needed) ─────
+  private async requireDriverProfile(userId: string) {
+    return this.getOrCreateDriverProfile(userId);
   }
 
   // ── Get full availability state (status + schedule + blocks) ─────────────
   async getMyAvailability(userId: string) {
+    await this.getOrCreateDriverProfile(userId);
+
     const profile = await this.prisma.driverProfile.findUnique({
       where: { userId },
       include: {

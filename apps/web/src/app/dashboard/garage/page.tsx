@@ -334,14 +334,14 @@ export default function GaragePage() {
       {/* ── Add/Edit Sheet ── */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
+          <SheetHeader className="px-6 pt-6 pb-4">
             <SheetTitle className="flex items-center gap-2">
               <Car className="h-5 w-5 text-red-600" />
               {editingId ? 'Rediģēt transportlīdzekli' : 'Pievienot jaunu transportlīdzekli'}
             </SheetTitle>
           </SheetHeader>
 
-          <div className="mt-6 flex flex-col gap-5">
+          <div className="flex flex-col gap-5 px-6 pb-6">
             {/* Vehicle type */}
             <div className="flex flex-col gap-1.5">
               <Label>Transportlīdzekļa veids *</Label>

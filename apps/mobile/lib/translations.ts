@@ -266,6 +266,7 @@ export const lv = {
     kmAway: (n: number) => `${n} km no galamērķa`,
     returnBadge: 'ATPAKAĻBRAUCIENS',
     learnMore: 'Kā tas darbojas?',
+    seeAllJobs: 'Skatīt visus darbus no šīs vietas →',
     howItWorksTitle: 'Kā darbojas tukšbraucienu izvairīšanās?',
     howItWorksBody:
       'Pēc piegādes jūsu kravas automašīna parasti atgriežas tukša. Šī funkcija meklē pieejamos darbus, kuru iekraušanas vieta atrodas netālu no jūsu piegādes galamērķa — tādejādi jūs varat doties uz nākamo kravu tieši no izkraušanas vietas, nebraucot tukšam no sākuma punkta.',
@@ -291,6 +292,9 @@ export const lv = {
     call: 'Zvanīt',
     navigate: 'Navigēt',
     noContact: 'Kontakts nav norādīts',
+    noContactDesc: 'Pasūtījumā nav norādīta kontaktpersona',
+    siteForeman: 'Objekta atbildīgais',
+    callDelivery: 'Zvanīt uz objektu',
   },
 
   earnings: {
@@ -360,6 +364,31 @@ export const lv = {
     errorTitle: 'Navigācijas kļūda',
     startNav: 'Sākt navigāciju',
     stopNav: 'Apturēt navigāciju',
+  },
+
+  deliveryProof: {
+    title: 'Piegādes apstiprinājums',
+    subtitle: 'Apstipriniet piegādi ar parakstu',
+    recipientName: 'Saņēmēja vārds (pēc izvēles)',
+    recipientNamePlaceholder: 'Piemērs: J. Bērziņš',
+    notes: 'Piezīmes (pēc izvēles)',
+    notesPlaceholder: 'Jebkādas piegādes piezīmes...',
+    signatureLabel: 'Saņēmēja paraksts',
+    signatureHint: 'Zīmējiet ar pirkstu',
+    clearSignature: 'Dzēst parakstu',
+    photosLabel: 'Piegādes foto',
+    addPhoto: 'Pievienot foto',
+    takePhoto: 'Uzņemt',
+    pickFromLibrary: 'Galerija',
+    cancel: 'Atcelt',
+    removePhoto: 'Noņemt',
+    submit: 'Apstiprināt piegādi',
+    submitting: 'Nosūta...',
+    successTitle: 'Piegāde apstiprināta!',
+    successMessage: 'Darbs ir pabeigts.',
+    errorTitle: 'Kļūda',
+    signatureRequired: 'Lūdzu, pievienojiet saņēmēja parakstu.',
+    cameraPermission: 'Kamera nav atļauta. Lūdzu, atļaujiet piekļuvi iestatījumos.',
   },
 };
 

@@ -7,7 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { OrderStatus, OrderType, TransportJobStatus, TransportJobType } from '@prisma/client';
+import { OrderStatus, OrderType, PaymentStatus, TransportJobStatus, TransportJobType } from '@prisma/client';
 import { RequestingUser } from '../common/types/requesting-user.interface';
 
 @Injectable()
@@ -58,6 +58,8 @@ export class OrdersService {
         deliveryWindow: orderData.deliveryWindow,
         deliveryFee: orderData.deliveryFee,
         notes: orderData.notes,
+        siteContactName: orderData.siteContactName,
+        siteContactPhone: orderData.siteContactPhone,
         subtotal,
         tax,
         total,
@@ -130,6 +132,15 @@ export class OrdersService {
         buyer: {
           select: {
             name: true,
+          },
+        },
+        transportJobs: {
+          select: {
+            id: true,
+            status: true,
+            driver: {
+              select: { id: true, firstName: true, lastName: true, phone: true },
+            },
           },
         },
       },
@@ -232,7 +243,16 @@ export class OrdersService {
             postalCode: true,
           },
         },
-        transportJobs: true,
+        transportJobs: {
+          include: {
+            driver: {
+              select: { id: true, firstName: true, lastName: true, phone: true },
+            },
+            vehicle: {
+              select: { id: true, licensePlate: true, vehicleType: true },
+            },
+          },
+        },
         invoices: true,
       },
     });
@@ -261,6 +281,8 @@ export class OrdersService {
     if (updateOrderDto.deliveryWindow) updateData.deliveryWindow = updateOrderDto.deliveryWindow;
     if (updateOrderDto.deliveryFee !== undefined) updateData.deliveryFee = updateOrderDto.deliveryFee;
     if (updateOrderDto.notes) updateData.notes = updateOrderDto.notes;
+    if (updateOrderDto.siteContactName !== undefined) updateData.siteContactName = updateOrderDto.siteContactName;
+    if (updateOrderDto.siteContactPhone !== undefined) updateData.siteContactPhone = updateOrderDto.siteContactPhone;
     if (updateOrderDto.paymentStatus) updateData.paymentStatus = updateOrderDto.paymentStatus;
 
     return this.prisma.order.update({
@@ -277,12 +299,27 @@ export class OrdersService {
   }
 
   async updateStatus(id: string, status: OrderStatus) {
-    await this.findOne(id); // Check if exists
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: { invoices: { select: { id: true } } },
+    });
+    if (!order) throw new NotFoundException(`Order ${id} not found`);
 
-    return this.prisma.order.update({
+    const updated = await this.prisma.order.update({
       where: { id },
       data: { status },
     });
+
+    // Auto-create an invoice when a seller confirms the order, unless one already exists
+    if (status === OrderStatus.CONFIRMED && order.invoices.length === 0) {
+      try {
+        await this.spawnInvoice(order);
+      } catch (err) {
+        console.error(`[OrdersService] Failed to auto-create invoice for order ${id}:`, err);
+      }
+    }
+
+    return updated;
   }
 
   async cancel(id: string, currentUser: RequestingUser) {
@@ -389,6 +426,43 @@ export class OrdersService {
     }
 
     return { buyer, seller, transport };
+  }
+
+  private async spawnInvoice(order: {
+    id: string;
+    subtotal: number;
+    tax: number;
+    total: number;
+    currency: string;
+    createdById: string;
+  }): Promise<void> {
+    const invoiceNumber = await this.generateInvoiceNumber();
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 30); // Net-30 payment terms
+
+    await this.prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        orderId: order.id,
+        subtotal: order.subtotal,
+        tax: order.tax,
+        total: order.total,
+        currency: order.currency,
+        dueDate,
+        paymentStatus: PaymentStatus.PENDING,
+      },
+    });
+
+    console.log(`[OrdersService] Invoice ${invoiceNumber} created for order ${order.id}`);
+  }
+
+  private async generateInvoiceNumber(): Promise<string> {
+    const count = await this.prisma.invoice.count();
+    const date = new Date();
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const number = (count + 1).toString().padStart(5, '0');
+    return `INV${year}${month}${number}`;
   }
 
   /**

@@ -2,7 +2,6 @@
 
 import { useCallback, useState } from 'react';
 import Map, { Marker, Popup, NavigationControl } from 'react-map-gl/mapbox';
-import 'mapbox-gl/dist/mapbox-gl.css';
 import type { SkipMapOrder, SkipSize } from '@/lib/api';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;

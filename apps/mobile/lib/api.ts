@@ -121,7 +121,14 @@ export interface ApiOrder {
   deliveryDate: string | null;
   total: number;
   currency: string;
+  siteContactName: string | null;
+  siteContactPhone: string | null;
   buyer?: { id: string; firstName: string; lastName: string; phone?: string } | null;
+  transportJobs?: {
+    id: string;
+    status: string;
+    driver: { id: string; firstName: string; lastName: string; phone: string | null } | null;
+  }[];
   createdAt: string;
 }
 
@@ -152,7 +159,7 @@ export interface ApiTransportJob {
   driverId: string | null;
   driver: { id: string; firstName: string; lastName: string; phone: string | null } | null;
   vehicle: { id: string; licensePlate: string; vehicleType: string } | null;
-  order: { id: string; orderNumber: string } | null;
+  order: { id: string; orderNumber: string; siteContactName: string | null; siteContactPhone: string | null } | null;
 }
 
 // Extends ApiTransportJob with a precomputed distance from the anchor coords
@@ -203,6 +210,8 @@ export interface CreateMaterialOrderInput {
   deliveryCity: string;
   deliveryPostal?: string;
   deliveryDate: string;
+  siteContactName?: string;
+  siteContactPhone?: string;
 }
 
 async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
@@ -258,6 +267,21 @@ export const api = {
       apiFetch<ApiOrder[]>("/orders", {
         headers: { Authorization: `Bearer ${token}` },
       }),
+    confirm: (id: string, token: string) =>
+      apiFetch<ApiOrder>(`/orders/${id}/confirm`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    cancel: (id: string, token: string) =>
+      apiFetch<ApiOrder>(`/orders/${id}/cancel`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    startLoading: (id: string, token: string) =>
+      apiFetch<ApiOrder>(`/orders/${id}/start-loading`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
   },
 
   skipHire: {
@@ -303,6 +327,18 @@ export const api = {
         body: JSON.stringify({ status }),
       }),
 
+    /** Submit delivery proof — transitions job AT_DELIVERY → DELIVERED. */
+    deliveryProof: (
+      id: string,
+      dto: { recipientName?: string; notes?: string; photos?: string[] },
+      token: string,
+    ) =>
+      apiFetch<ApiTransportJob>(`/transport-jobs/${id}/delivery-proof`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(dto),
+      }),
+
     /** Avoid Empty Runs — jobs near the given coords (delivery destination). */
     returnTrips: (lat: number, lng: number, radiusKm: number, token: string) =>
       apiFetch<ApiReturnTripJob[]>(
@@ -342,6 +378,8 @@ export const api = {
           deliveryCity: input.deliveryCity,
           deliveryPostal: input.deliveryPostal,
           deliveryDate: input.deliveryDate,
+          siteContactName: input.siteContactName,
+          siteContactPhone: input.siteContactPhone,
         }),
       }),
   },

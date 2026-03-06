@@ -18,6 +18,9 @@ import { Search, X, Leaf, ShoppingCart } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiMaterial, MaterialCategory, MaterialUnit } from '@/lib/api';
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+
+const MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -121,6 +124,8 @@ interface OrderForm {
   city: string;
   postal: string;
   date: string;
+  siteContactName: string;
+  siteContactPhone: string;
 }
 
 function OrderModal({
@@ -142,10 +147,26 @@ function OrderModal({
     city: '',
     postal: '',
     date: '',
+    siteContactName: '',
+    siteContactPhone: '',
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const placesRef = useRef<any>(null);
+
   useEffect(() => {
-    if (visible) setForm({ quantity: '1', address: '', city: '', postal: '', date: '' });
+    if (visible) {
+      setForm({
+        quantity: '1',
+        address: '',
+        city: '',
+        postal: '',
+        date: '',
+        siteContactName: '',
+        siteContactPhone: '',
+      });
+      placesRef.current?.setAddressText?.('');
+    }
   }, [visible]);
 
   if (!material) return null;
@@ -182,7 +203,10 @@ function OrderModal({
           <View style={{ width: 20 }} />
         </View>
 
-        <ScrollView contentContainerStyle={{ padding: 20, gap: 12 }}>
+        <ScrollView
+          contentContainerStyle={{ padding: 20, gap: 12 }}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Material summary */}
           <View style={s.matSummaryBox}>
             <Text style={s.matSummaryName}>{material.name}</Text>
@@ -205,19 +229,85 @@ function OrderModal({
             />
           </View>
 
-          {/* Address */}
-          <View style={s.fieldGroup}>
+          {/* Address — Google Places Autocomplete */}
+          <View style={[s.fieldGroup, { zIndex: 10 }]}>
             <Text style={s.fieldLabel}>Piegādes adrese *</Text>
-            <TextInput
-              style={s.fieldInput}
-              value={form.address}
-              onChangeText={set('address')}
-              placeholder="Ielas nosaukums, nr."
-              placeholderTextColor="#9ca3af"
+            <GooglePlacesAutocomplete
+              ref={placesRef}
+              placeholder="Sākt rakstīt adresi..."
+              fetchDetails
+              onPress={(data, details = null) => {
+                if (details?.address_components) {
+                  let route = '';
+                  let streetNumber = '';
+                  let city = '';
+                  let postal = '';
+                  for (const c of details.address_components) {
+                    if (c.types.includes('route')) route = c.long_name;
+                    else if (c.types.includes('street_number')) streetNumber = c.long_name;
+                    else if (c.types.includes('locality')) city = c.long_name;
+                    else if (c.types.includes('postal_code')) postal = c.long_name;
+                  }
+                  const address = route
+                    ? `${route}${streetNumber ? ' ' + streetNumber : ''}`
+                    : data.description;
+                  setForm((f) => ({ ...f, address, city, postal }));
+                } else {
+                  setForm((f) => ({ ...f, address: data.description }));
+                }
+              }}
+              query={{
+                key: MAPS_KEY,
+                language: 'lv',
+                components: 'country:lv|country:lt|country:ee',
+              }}
+              textInputProps={{
+                onChangeText: (text: string) => setForm((f) => ({ ...f, address: text })),
+                placeholderTextColor: '#9ca3af',
+              }}
+              styles={{
+                textInputContainer: { padding: 0, margin: 0 },
+                textInput: {
+                  backgroundColor: '#fff',
+                  borderRadius: 10,
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                  fontSize: 15,
+                  color: '#111827',
+                  borderWidth: 1,
+                  borderColor: '#e5e7eb',
+                  height: 'auto' as any,
+                  marginBottom: 0,
+                },
+                listView: {
+                  backgroundColor: '#ffffff',
+                  borderRadius: 12,
+                  marginTop: 4,
+                  borderWidth: 1,
+                  borderColor: '#e5e7eb',
+                  shadowColor: '#000',
+                  shadowOpacity: 0.08,
+                  shadowRadius: 8,
+                  shadowOffset: { width: 0, height: 4 },
+                  elevation: 6,
+                },
+                description: { fontSize: 14, color: '#374151' },
+                row: { paddingHorizontal: 14, paddingVertical: 12 },
+                separator: { height: 1, backgroundColor: '#f3f4f6' },
+                poweredContainer: {
+                  paddingHorizontal: 14,
+                  paddingVertical: 6,
+                  borderTopWidth: 1,
+                  borderTopColor: '#f3f4f6',
+                },
+              }}
+              enablePoweredByContainer
+              keyboardShouldPersistTaps="handled"
+              listUnderlayColor="#f9fafb"
             />
           </View>
 
-          {/* City + Postal */}
+          {/* City + Postal — auto-filled, still editable */}
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <View style={[s.fieldGroup, { flex: 2 }]}>
               <Text style={s.fieldLabel}>Pilsēta *</Text>
@@ -251,6 +341,36 @@ function OrderModal({
               placeholder="2025-12-31"
               placeholderTextColor="#9ca3af"
               keyboardType="numbers-and-punctuation"
+            />
+          </View>
+
+          {/* Site contact — optional */}
+          <View
+            style={[
+              s.fieldGroup,
+              { backgroundColor: '#fff', borderRadius: 12, padding: 12, gap: 10 },
+            ]}
+          >
+            <Text style={[s.fieldLabel, { marginBottom: 0, color: '#374151', fontWeight: '600' }]}>
+              Objekta kontaktpersona (nav obligāts)
+            </Text>
+            <Text style={{ fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>
+              Šoferis varēs sazināties ar šo personu piegādes brīdī
+            </Text>
+            <TextInput
+              style={s.fieldInput}
+              value={form.siteContactName}
+              onChangeText={set('siteContactName')}
+              placeholder="Vārds, uzvārds"
+              placeholderTextColor="#9ca3af"
+            />
+            <TextInput
+              style={s.fieldInput}
+              value={form.siteContactPhone}
+              onChangeText={set('siteContactPhone')}
+              placeholder="+371 20 000 000"
+              placeholderTextColor="#9ca3af"
+              keyboardType="phone-pad"
             />
           </View>
 
@@ -357,6 +477,8 @@ export default function CatalogScreen() {
           deliveryCity: form.city.trim(),
           deliveryPostal: form.postal.trim() || undefined,
           deliveryDate: form.date.trim(),
+          siteContactName: form.siteContactName.trim() || undefined,
+          siteContactPhone: form.siteContactPhone.trim() || undefined,
         },
         token,
       );

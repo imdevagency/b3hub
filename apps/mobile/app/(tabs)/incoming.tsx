@@ -8,6 +8,7 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/lib/translations';
@@ -23,6 +24,7 @@ import {
   MapPin,
   Check,
   Inbox,
+  RefreshCw,
 } from 'lucide-react-native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -46,6 +48,7 @@ function mapApiOrder(o: ApiOrder): IncomingOrder {
     PENDING: 'PENDING',
     CONFIRMED: 'CONFIRMED',
     PROCESSING: 'CONFIRMED',
+    IN_PROGRESS: 'LOADING',
     LOADING: 'LOADING',
     DELIVERING: 'DISPATCHED',
     DELIVERED: 'DISPATCHED',
@@ -89,11 +92,13 @@ function LoadingModal({
   visible,
   onClose,
   onConfirm,
+  confirming,
 }: {
   order: IncomingOrder;
   visible: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  confirming?: boolean;
 }) {
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
@@ -149,8 +154,16 @@ function LoadingModal({
         {/* Confirm button */}
         <View style={modalStyles.footer}>
           <Text style={modalStyles.footerDesc}>{t.incoming.loadingDesc}</Text>
-          <TouchableOpacity style={modalStyles.confirmBtn} onPress={onConfirm}>
-            <Text style={modalStyles.confirmBtnText}>{t.incoming.confirmLoad}</Text>
+          <TouchableOpacity
+            style={[modalStyles.confirmBtn, confirming && { opacity: 0.6 }]}
+            onPress={onConfirm}
+            disabled={confirming}
+          >
+            {confirming ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text style={modalStyles.confirmBtnText}>{t.incoming.confirmLoad}</Text>
+            )}
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -164,12 +177,15 @@ function OrderCard({
   onConfirm,
   onReject,
   onStartLoading,
+  actioning,
 }: {
   order: IncomingOrder;
   onConfirm: (id: string) => void;
   onReject: (id: string) => void;
   onStartLoading: (id: string) => void;
+  actioning: string | null;
 }) {
+  const isBusy = actioning === order.id;
   const statusInfo = STATUS_COLORS[order.status];
 
   return (
@@ -216,24 +232,48 @@ function OrderCard({
       {/* Actions based on status */}
       {order.status === 'PENDING' && (
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.rejectBtn} onPress={() => onReject(order.id)}>
-            <Text style={styles.rejectBtnText}>{t.incoming.reject}</Text>
+          <TouchableOpacity
+            style={[styles.rejectBtn, isBusy && { opacity: 0.5 }]}
+            onPress={() => onReject(order.id)}
+            disabled={!!isBusy}
+          >
+            {isBusy ? (
+              <ActivityIndicator size="small" color="#dc2626" />
+            ) : (
+              <Text style={styles.rejectBtnText}>{t.incoming.reject}</Text>
+            )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.confirmBtn} onPress={() => onConfirm(order.id)}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={styles.confirmBtnText}>{t.incoming.confirm}</Text>
-              <Check size={14} color="#ffffff" />
-            </View>
+          <TouchableOpacity
+            style={[styles.confirmBtn, isBusy && { opacity: 0.5 }]}
+            onPress={() => onConfirm(order.id)}
+            disabled={!!isBusy}
+          >
+            {isBusy ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={styles.confirmBtnText}>{t.incoming.confirm}</Text>
+                <Check size={14} color="#ffffff" />
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       )}
 
       {order.status === 'CONFIRMED' && (
-        <TouchableOpacity style={styles.loadingBtn} onPress={() => onStartLoading(order.id)}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Package size={16} color="#ffffff" />
-            <Text style={styles.loadingBtnText}>{t.incoming.confirmLoad}</Text>
-          </View>
+        <TouchableOpacity
+          style={[styles.loadingBtn, isBusy && { opacity: 0.5 }]}
+          onPress={() => onStartLoading(order.id)}
+          disabled={!!isBusy}
+        >
+          {isBusy ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Package size={16} color="#ffffff" />
+              <Text style={styles.loadingBtnText}>{t.incoming.confirmLoad}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       )}
     </View>
@@ -245,28 +285,44 @@ export default function IncomingScreen() {
   const { token } = useAuth();
   const [orders, setOrders] = useState<IncomingOrder[]>([]);
   const [fetching, setFetching] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadingOrder, setLoadingOrder] = useState<IncomingOrder | null>(null);
+  const [actioning, setActioning] = useState<string | null>(null);
+  const [confirmingLoad, setConfirmingLoad] = useState(false);
 
-  const fetchOrders = useCallback(async () => {
-    if (!token) return;
-    try {
-      const data = await api.orders.myOrders(token);
-      setOrders(data.map(mapApiOrder));
-    } catch (e) {
-      console.error('Failed to load orders', e);
-    } finally {
-      setFetching(false);
-    }
-  }, [token]);
+  const fetchOrders = useCallback(
+    async (isRefresh = false) => {
+      if (!token) return;
+      if (!isRefresh) setFetching(true);
+      try {
+        const data = await api.orders.myOrders(token);
+        setOrders(data.map(mapApiOrder));
+      } catch (e) {
+        console.error('Failed to load orders', e);
+        Alert.alert('Kļūda', 'Neizdevās ielādēt pasūtījumus.');
+      } finally {
+        setFetching(false);
+        setRefreshing(false);
+      }
+    },
+    [token],
+  );
 
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
 
-  const handleConfirm = (id: string) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status: 'CONFIRMED' as OrderStatus } : o)),
-    );
+  const handleConfirm = async (id: string) => {
+    if (!token) return;
+    setActioning(id);
+    try {
+      const updated = await api.orders.confirm(id, token);
+      setOrders((prev) => prev.map((o) => (o.id === id ? mapApiOrder(updated) : o)));
+    } catch (e: any) {
+      Alert.alert('Kļūda', e.message ?? 'Neizdevās apstiprināt pasūtījumu.');
+    } finally {
+      setActioning(null);
+    }
   };
 
   const handleReject = (id: string) => {
@@ -275,7 +331,18 @@ export default function IncomingScreen() {
       {
         text: 'Noraidīt',
         style: 'destructive',
-        onPress: () => setOrders((prev) => prev.filter((o) => o.id !== id)),
+        onPress: async () => {
+          if (!token) return;
+          setActioning(id);
+          try {
+            await api.orders.cancel(id, token);
+            setOrders((prev) => prev.filter((o) => o.id !== id));
+          } catch (e: any) {
+            Alert.alert('Kļūda', e.message ?? 'Neizdevās noraidīt pasūtījumu.');
+          } finally {
+            setActioning(null);
+          }
+        },
       },
     ]);
   };
@@ -285,15 +352,18 @@ export default function IncomingScreen() {
     if (order) setLoadingOrder(order);
   };
 
-  const handleConfirmLoad = () => {
-    if (loadingOrder) {
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.id === loadingOrder.id ? { ...o, status: 'DISPATCHED' as OrderStatus } : o,
-        ),
-      );
+  const handleConfirmLoad = async () => {
+    if (!loadingOrder || !token) return;
+    setConfirmingLoad(true);
+    try {
+      const updated = await api.orders.startLoading(loadingOrder.id, token);
+      setOrders((prev) => prev.map((o) => (o.id === loadingOrder.id ? mapApiOrder(updated) : o)));
       setLoadingOrder(null);
       Alert.alert('✅ Iekraušana apstiprināta', 'Transporta darbs sākts. Pircējs ir informēts.');
+    } catch (e: any) {
+      Alert.alert('Kļūda', e.message ?? 'Neizdevās apstiprināt iekraušanu.');
+    } finally {
+      setConfirmingLoad(false);
     }
   };
 
@@ -326,7 +396,19 @@ export default function IncomingScreen() {
           <Text style={styles.emptyDesc}>{t.incoming.emptyDesc}</Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.list}>
+        <ScrollView
+          contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true);
+                fetchOrders(true);
+              }}
+              tintColor="#dc2626"
+            />
+          }
+        >
           {orders.map((order) => (
             <OrderCard
               key={order.id}
@@ -334,6 +416,7 @@ export default function IncomingScreen() {
               onConfirm={handleConfirm}
               onReject={handleReject}
               onStartLoading={handleStartLoading}
+              actioning={actioning}
             />
           ))}
         </ScrollView>
@@ -344,8 +427,9 @@ export default function IncomingScreen() {
         <LoadingModal
           order={loadingOrder}
           visible={!!loadingOrder}
-          onClose={() => setLoadingOrder(null)}
+          onClose={() => !confirmingLoad && setLoadingOrder(null)}
           onConfirm={handleConfirmLoad}
+          confirming={confirmingLoad}
         />
       )}
     </SafeAreaView>

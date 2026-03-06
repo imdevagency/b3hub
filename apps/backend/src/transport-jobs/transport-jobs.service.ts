@@ -58,7 +58,7 @@ export class TransportJobsService {
       select: { id: true, licensePlate: true, vehicleType: true },
     },
     order: {
-      select: { id: true, orderNumber: true },
+      select: { id: true, orderNumber: true, siteContactName: true, siteContactPhone: true },
     },
   } as const;
 

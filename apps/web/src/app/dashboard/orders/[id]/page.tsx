@@ -22,6 +22,7 @@ import {
   Circle,
   Clock,
   Package,
+  Phone,
   RefreshCw,
   Truck,
   User,
@@ -380,6 +381,29 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Site Contact ── */}
+      {(job.order?.siteContactName || job.order?.siteContactPhone) && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-start gap-3">
+          <div className="p-2 bg-green-50 rounded-xl">
+            <Phone className="h-4 w-4 text-green-600" />
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 mb-0.5">Objekta kontaktpersona</p>
+            {job.order.siteContactName && (
+              <p className="text-sm font-medium text-slate-900">{job.order.siteContactName}</p>
+            )}
+            {job.order.siteContactPhone && (
+              <a
+                href={`tel:${job.order.siteContactPhone}`}
+                className="text-xs text-green-600 hover:underline font-medium"
+              >
+                {job.order.siteContactPhone}
+              </a>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Cargo summary ── */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5">

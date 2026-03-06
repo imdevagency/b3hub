@@ -406,6 +406,10 @@ model Order {
   status        OrderStatus
   paymentStatus PaymentStatus
 
+  // Site contact (foreman / on-site contact the driver can call)
+  siteContactName  String?
+  siteContactPhone String?
+
   // Special instructions
   notes         String?
   internalNotes String?

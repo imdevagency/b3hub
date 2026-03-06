@@ -469,6 +469,16 @@ function SupplierView({ token }: { token: string }) {
                         <MapPin className="size-3 text-muted-foreground mt-0.5 shrink-0" />
                         <span>{order.deliveryAddress || order.deliveryCity || '—'}</span>
                       </div>
+                      {order.siteContactPhone && (
+                        <a
+                          href={`tel:${order.siteContactPhone}`}
+                          className="mt-1 flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                          title={order.siteContactName ?? 'Objekta kontakts'}
+                        >
+                          <Phone className="size-3" />
+                          {order.siteContactName ?? order.siteContactPhone}
+                        </a>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       {fmtDate(order.deliveryDate)}
@@ -711,6 +721,33 @@ function BuyerView({ token }: { token: string }) {
                         <MapPin className="size-3 text-muted-foreground mt-0.5 shrink-0" />
                         <span>{o.deliveryAddress || o.deliveryCity || '—'}</span>
                       </div>
+                      {/* Driver contact when in transit */}
+                      {(() => {
+                        const driver = o.transportJobs?.find(
+                          (j) =>
+                            j.status === 'EN_ROUTE_DELIVERY' ||
+                            j.status === 'AT_DELIVERY' ||
+                            j.status === 'LOADED',
+                        )?.driver;
+                        if (!driver) return null;
+                        return (
+                          <div className="mt-1.5 flex items-center gap-1.5">
+                            <User className="size-3 text-blue-500 shrink-0" />
+                            <span className="text-xs text-blue-700 font-medium">
+                              {driver.firstName} {driver.lastName}
+                            </span>
+                            {driver.phone && (
+                              <a
+                                href={`tel:${driver.phone}`}
+                                className="flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-100 transition-colors"
+                              >
+                                <Phone className="size-3" />
+                                Zvanīt
+                              </a>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       {fmtDate(o.deliveryDate)}

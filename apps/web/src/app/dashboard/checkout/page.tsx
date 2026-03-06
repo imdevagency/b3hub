@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { useCart } from '@/lib/cart-context';
 import { createCartOrder, type CartOrderItem } from '@/lib/api';
+import { AddressAutocomplete, type PlaceAddress } from '@/components/ui/AddressAutocomplete';
 import {
   ArrowLeft,
   ArrowRight,
@@ -25,6 +26,8 @@ interface DeliveryForm {
   postal: string;
   date: string;
   notes: string;
+  siteContactName: string;
+  siteContactPhone: string;
 }
 
 export default function CheckoutPage() {
@@ -38,6 +41,8 @@ export default function CheckoutPage() {
     postal: '',
     date: '',
     notes: '',
+    siteContactName: '',
+    siteContactPhone: '',
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -56,6 +61,15 @@ export default function CheckoutPage() {
   const set =
     (k: keyof DeliveryForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const handleAddressSelect = (place: PlaceAddress) => {
+    setForm((f) => ({
+      ...f,
+      address: place.address,
+      city: place.city || f.city,
+      postal: place.postal || f.postal,
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,6 +99,8 @@ export default function CheckoutPage() {
           deliveryPostal: form.postal || '0000',
           deliveryDate: form.date || undefined,
           notes: form.notes || undefined,
+          siteContactName: form.siteContactName || undefined,
+          siteContactPhone: form.siteContactPhone || undefined,
           items: orderItems,
         },
         token!,
@@ -218,11 +234,11 @@ export default function CheckoutPage() {
             <div className="p-5 space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1.5">Piegādes adrese *</label>
-                <input
-                  type="text"
-                  placeholder="Iela, mājas numurs"
+                <AddressAutocomplete
                   value={form.address}
-                  onChange={set('address')}
+                  onChange={(v) => setForm((f) => ({ ...f, address: v }))}
+                  onSelect={handleAddressSelect}
+                  placeholder="Sākt rakstīt adresi..."
                   required
                   className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
@@ -264,11 +280,47 @@ export default function CheckoutPage() {
                 <label className="block text-sm font-medium mb-1.5">Piezīmes</label>
                 <textarea
                   rows={3}
-                  placeholder="Piegādes instrukcijas, kontaktpersona, darba laiki..."
+                  placeholder="Piegādes instrukcijas, darba laiki..."
                   value={form.notes}
                   onChange={set('notes')}
                   className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
                 />
+              </div>
+
+              {/* Site contact */}
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 p-4 space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-700">Objekta kontaktpersona</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Šoferis var sazināties ar šo personu piegādes brīdī
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-slate-600">
+                      Vārds, uzvārds
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Jānis Bērziņš"
+                      value={form.siteContactName}
+                      onChange={set('siteContactName')}
+                      className="w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-slate-600">
+                      Tālrunis
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="+371 20 000 000"
+                      value={form.siteContactPhone}
+                      onChange={set('siteContactPhone')}
+                      className="w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>

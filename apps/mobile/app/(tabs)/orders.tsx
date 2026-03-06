@@ -6,6 +6,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  Linking,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -14,7 +16,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 import type { SkipHireOrder, ApiOrder } from '@/lib/api';
-import { MapPin, CalendarDays, Trash2, Package, Truck } from 'lucide-react-native';
+import { MapPin, CalendarDays, Trash2, Package, Truck, Phone, User } from 'lucide-react-native';
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -104,12 +106,39 @@ function MaterialOrderCard({ order }: { order: ApiOrder }) {
         </View>
       </View>
       <View style={s.orderDivider} />
-      {order.status === 'SHIPPED' && (
-        <View style={s.trackRow}>
-          <Truck size={14} color="#0284c7" />
-          <Text style={s.trackText}>Piegāde ceļā</Text>
-        </View>
-      )}
+      {order.status === 'SHIPPED' &&
+        (() => {
+          const activeJob = order.transportJobs?.find(
+            (j) =>
+              j.status === 'EN_ROUTE_DELIVERY' ||
+              j.status === 'AT_DELIVERY' ||
+              j.status === 'LOADED',
+          );
+          const driver = activeJob?.driver;
+          return (
+            <View style={s.driverRow}>
+              <View style={s.driverInfo}>
+                <User size={14} color="#0284c7" />
+                <Text style={s.driverName}>
+                  {driver ? `${driver.firstName} ${driver.lastName}` : 'Šoferis ceļā'}
+                </Text>
+              </View>
+              {driver?.phone ? (
+                <TouchableOpacity
+                  style={s.callDriverBtn}
+                  onPress={() =>
+                    Linking.openURL(`tel:${driver.phone}`).catch(() =>
+                      Alert.alert('Kļūda', 'Neizdevās iniciēt zvanu'),
+                    )
+                  }
+                >
+                  <Phone size={14} color="#ffffff" />
+                  <Text style={s.callDriverText}>Zvanīt</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          );
+        })()}
       <View style={s.orderBottom}>
         {order.deliveryAddress ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
@@ -325,6 +354,28 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
   trackText: { fontSize: 12, fontWeight: '600', color: '#0284c7' },
+  driverRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#e0f2fe',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+  driverInfo: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
+  driverName: { fontSize: 13, fontWeight: '600', color: '#0284c7' },
+  callDriverBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#0284c7',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  callDriverText: { fontSize: 12, fontWeight: '700', color: '#ffffff' },
   orderBottom: { gap: 4 },
   orderMeta: { fontSize: 13, color: '#374151' },
   matRow: {
