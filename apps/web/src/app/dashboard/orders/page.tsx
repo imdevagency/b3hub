@@ -32,6 +32,7 @@ import {
   Package,
   Phone,
   RefreshCw,
+  Search,
   Trash2,
   Truck,
   User,
@@ -748,8 +749,27 @@ function CarrierHistoryView({ token }: { token: string }) {
       {/* Table */}
       {loading ? (
         <div className="py-16 text-center text-muted-foreground text-sm">Ielādē...</div>
+      ) : jobs.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center">
+          <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center">
+            <Truck className="h-10 w-10 text-red-300" />
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-base font-bold text-gray-800">Nav neviena darba</p>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Vēl neesat pieņēmuši nevienu darbu. Atveriet darbu dēli, lai atrastu un pieņemtu jaunus kravu pārvadāšanas darbus.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/jobs"
+            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl px-5 py-2.5 text-sm transition-colors"
+          >
+            <Search className="h-4 w-4" />
+            Meklēt darbus
+          </Link>
+        </div>
       ) : filtered.length === 0 ? (
-        <div className="py-16 text-center space-y-2">
+        <div className="py-12 text-center space-y-2">
           <Truck className="mx-auto size-10 text-muted-foreground/40" />
           <p className="text-muted-foreground text-sm">Nav darbu šajā kategorijā</p>
         </div>
@@ -974,9 +994,23 @@ function SupplierView({ token }: { token: string }) {
       {loading ? (
         <div className="py-16 text-center text-muted-foreground text-sm">Ielādē...</div>
       ) : orders.length === 0 ? (
-        <div className="py-16 text-center space-y-2">
-          <Package className="mx-auto size-10 text-muted-foreground/40" />
-          <p className="text-muted-foreground text-sm">Nav ienākošu pasūtījumu</p>
+        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center">
+          <div className="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center">
+            <Package className="h-10 w-10 text-emerald-300" />
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-base font-bold text-gray-800">Nav ienākošu pasūtījumu</p>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Kad pircēji veiks pasūtījumu, tas parādīsies šeit. Pārliecinieties, ka jūsu piedāvājumi ir aktīvi.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/listings"
+            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl px-5 py-2.5 text-sm transition-colors"
+          >
+            <Package className="h-4 w-4" />
+            Pārvaldīt piedāvājumus
+          </Link>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border">
@@ -1192,9 +1226,23 @@ function BuyerView({ token }: { token: string }) {
       ) : tab === 'skip' ? (
         /* Skip-hire table */
         skipOrders.length === 0 ? (
-          <div className="py-16 text-center space-y-2">
-            <Trash2 className="mx-auto size-10 text-muted-foreground/40" />
-            <p className="text-muted-foreground text-sm">Nav konteineru pasūtījumu</p>
+          <div className="flex flex-col items-center justify-center py-24 gap-5 text-center">
+            <div className="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center">
+              <Trash2 className="h-10 w-10 text-blue-300" />
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-base font-bold text-gray-800">Nav konteineru pasūtījumu</p>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                Jums vēl nav neviena konteinera nomas pasūtījuma. Pasūtiet konteineru atkritumu izvešanai.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/skip-hire"
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl px-5 py-2.5 text-sm transition-colors"
+            >
+              <Trash2 className="h-4 w-4" />
+              Pasūtīt konteineru
+            </Link>
           </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border">
@@ -1258,9 +1306,23 @@ function BuyerView({ token }: { token: string }) {
         )
       ) : /* Material orders table */
       matOrders.length === 0 ? (
-        <div className="py-16 text-center space-y-2">
-          <Package className="mx-auto size-10 text-muted-foreground/40" />
-          <p className="text-muted-foreground text-sm">Nav materiālu pasūtījumu</p>
+        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center">
+          <div className="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center">
+            <Package className="h-10 w-10 text-blue-300" />
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-base font-bold text-gray-800">Nav materiālu pasūtījumu</p>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Jums vēl nav neviena materiālu pasūtījuma. Apskatiet piedāvājumus un pasūtiet nepieciešamos materiālus.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/materials"
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl px-5 py-2.5 text-sm transition-colors"
+          >
+            <Search className="h-4 w-4" />
+            Meklēt materiālus
+          </Link>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border">
