@@ -31,7 +31,7 @@ interface DeliveryForm {
 }
 
 export default function CheckoutPage() {
-  const { user, token } = useAuth();
+  const { user, token, isLoading } = useAuth();
   const router = useRouter();
   const { items, updateQty, removeItem, clearCart, subtotal, vat, total } = useCart();
 
@@ -48,8 +48,8 @@ export default function CheckoutPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!token) router.push('/');
-  }, [token, router]);
+    if (!isLoading && !token) router.push('/');
+  }, [token, isLoading, router]);
 
   // Redirect to catalog if cart is empty (after initial render)
   useEffect(() => {

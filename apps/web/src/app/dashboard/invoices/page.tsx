@@ -58,7 +58,7 @@ function StatusBadge({ status }: { status: PaymentStatus }) {
 // ── Invoices page ─────────────────────────────────────────────────────────────
 
 export default function InvoicesPage() {
-  const { token } = useAuth();
+  const { token, isLoading } = useAuth();
   const router = useRouter();
 
   const [invoices, setInvoices] = useState<ApiInvoice[]>([]);
@@ -70,8 +70,8 @@ export default function InvoicesPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!token) router.push('/');
-  }, [token, router]);
+    if (!isLoading && !token) router.push('/');
+  }, [token, isLoading, router]);
 
   const load = useCallback(async () => {
     if (!token) return;

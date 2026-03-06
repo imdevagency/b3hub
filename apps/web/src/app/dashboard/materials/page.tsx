@@ -448,7 +448,7 @@ function DeleteConfirm({
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function MyMaterialsPage() {
-  const { user, token } = useAuth();
+  const { user, token, isLoading } = useAuth();
   const router = useRouter();
 
   const [materials, setMaterials] = useState<ApiMaterial[]>([]);
@@ -459,8 +459,8 @@ export default function MyMaterialsPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!token) router.push('/');
-  }, [token, router]);
+    if (!isLoading && !token) router.push('/');
+  }, [token, isLoading, router]);
 
   const supplierId = user?.company?.id ?? '';
 

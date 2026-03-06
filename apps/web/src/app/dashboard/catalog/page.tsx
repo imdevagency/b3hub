@@ -292,7 +292,7 @@ function MaterialCard({
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function CatalogPage() {
-  const { token } = useAuth();
+  const { token, isLoading } = useAuth();
   const router = useRouter();
 
   const [materials, setMaterials] = useState<ApiMaterial[]>([]);
@@ -304,8 +304,8 @@ export default function CatalogPage() {
   const [orderTarget, setOrderTarget] = useState<ApiMaterial | null>(null);
 
   useEffect(() => {
-    if (!token) router.push('/');
-  }, [token, router]);
+    if (!isLoading && !token) router.push('/');
+  }, [token, isLoading, router]);
 
   const load = useCallback(async () => {
     if (!token) return;

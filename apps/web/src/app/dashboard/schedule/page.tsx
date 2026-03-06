@@ -188,7 +188,7 @@ function OnlineToggle({
 
 export default function DriverSchedulePage() {
   const router = useRouter();
-  const { user, token } = useAuth();
+  const { user, token, isLoading } = useAuth();
 
   const [data, setData] = useState<DriverAvailability | null>(null);
   const [schedule, setSchedule] = useState<DriverScheduleDay[]>([]);
@@ -221,6 +221,7 @@ export default function DriverSchedulePage() {
   }, [token]);
 
   useEffect(() => {
+    if (isLoading) return;
     if (!token) {
       router.push('/');
       return;
@@ -230,7 +231,7 @@ export default function DriverSchedulePage() {
       return;
     }
     load();
-  }, [token, user, router, load]);
+  }, [token, isLoading, user, router, load]);
 
   const handleToggle = async () => {
     if (!token || !data) return;
