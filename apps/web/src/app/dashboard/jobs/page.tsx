@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import {
   ChevronDown,
@@ -36,6 +37,12 @@ import {
 } from '@/lib/api';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { CalendarDays, Users, ChevronRight, CircleCheck } from 'lucide-react';
+
+// Dynamic import — Mapbox needs browser
+const TransportJobsMapDynamic = dynamic(
+  () => import('@/components/tracking/TransportJobsMap'),
+  { ssr: false, loading: () => <div className="flex h-full items-center justify-center rounded-xl bg-zinc-800 text-zinc-500 text-sm">Karte ielādējas…</div> }
+);
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -254,6 +261,11 @@ export default function JobsPage() {
   const setField = (k: keyof CreateTransportJobInput, v: string | number) =>
     setCreateForm((p) => ({ ...p, [k]: v }));
 
+  // Map selection state
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [mobileView, setMobileView] = useState<'list' | 'map'>('list');
+  const jobCardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
   }, [user, isLoading, router]);
@@ -430,6 +442,18 @@ export default function JobsPage() {
     if (!panelOpen && activeFilter) setDraft({ ...activeFilter });
     setPanelOpen((v) => !v);
   };
+
+  const handleCardSelect = useCallback((id: string) => {
+    setSelectedJobId((prev) => (prev === id ? null : id));
+  }, []);
+
+  const handleMapSelect = useCallback((id: string | null) => {
+    setSelectedJobId(id);
+    if (id) {
+      const el = jobCardRefs.current.get(id);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, []);
 
   const filterLabel = () => {
     const parts: string[] = [];
@@ -648,147 +672,202 @@ export default function JobsPage() {
         </div>
       )}
 
-      {/* "Drive wherever you want" banner */}
-      {!activeFilter && !panelOpen && (
-        <div className="flex gap-4 bg-white border-l-4 border-l-red-600 border rounded-xl p-5 shadow-sm">
-          <span className="text-3xl mt-0.5">🗺️</span>
-          <div className="flex-1 space-y-1">
-            <p className="font-bold text-base text-gray-900">Braukā kur vēlies!</p>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Tu izlemj, kādā rādiusā vēlies pieņemt darbus. Iestatiet rādiusu ap savu uzņēmumu vai
-              jebkuru citu vietu, un mēs parādīsim tikai atbilstošos maršrutus. Varat saglabāt
-              vairākas meklēšanas.
-            </p>
-            <button
-              type="button"
-              onClick={() => setPanelOpen(true)}
-              className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-red-600 hover:text-red-700 transition-colors"
-            >
-              Iestatīt rādiusu →
-            </button>
-          </div>
-        </div>
-      )}
+      {/* ── Mobile view toggle ───────────────────────────────────────────── */}
+      <div className="flex md:hidden gap-1 rounded-lg bg-muted p-1">
+        <button
+          type="button"
+          onClick={() => setMobileView('list')}
+          className={`flex-1 rounded-md py-2 text-sm font-semibold transition-colors ${
+            mobileView === 'list'
+              ? 'bg-white shadow text-gray-900'
+              : 'text-muted-foreground hover:text-gray-900'
+          }`}
+        >
+          📋 Saraksts
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileView('map')}
+          className={`flex-1 rounded-md py-2 text-sm font-semibold transition-colors ${
+            mobileView === 'map'
+              ? 'bg-white shadow text-gray-900'
+              : 'text-muted-foreground hover:text-gray-900'
+          }`}
+        >
+          🗺️ Karte
+        </button>
+      </div>
 
-      {/* Job list */}
-      {loadingJobs ? (
-        <div className="flex items-center justify-center py-20">
-          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : jobError ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
-          <span className="text-5xl">⚠️</span>
-          <p className="text-base font-semibold text-foreground">Kļūda ielādējot darbus</p>
-          <p className="text-sm text-muted-foreground">{jobError}</p>
-          <Button variant="outline" size="sm" onClick={handleRefresh}>
-            Mēģināt vēlreiz
-          </Button>
-        </div>
-      ) : filteredJobs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
-          <span className="text-5xl">🔍</span>
-          <p className="text-base font-semibold text-foreground">Nav atrasts neviens darbs</p>
-          <p className="text-sm text-muted-foreground">Mēģiniet mainīt filtra iestatījumus</p>
-          <Button variant="outline" size="sm" onClick={handleReset}>
-            Notīrīt filtru
-          </Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          {filteredJobs.map((job) => (
-            <div
-              key={job.id}
-              className="bg-white rounded-xl border shadow-sm p-5 space-y-4 hover:shadow-md transition-shadow"
-            >
-              {/* Card header */}
-              <div className="flex items-start justify-between">
-                <div className="space-y-0.5">
-                  <p className="text-xs font-mono text-muted-foreground tracking-wider">
-                    {job.jobNumber}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{job.vehicleEmoji}</span>
-                    <span className="font-bold text-base text-gray-900">{job.vehicleType}</span>
-                  </div>
-                </div>
-                <span className="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full border border-green-200">
-                  Pieejams
-                </span>
-              </div>
+      {/* ── Split-pane: job list (40%) + map (60%) ───────────────────────── */}
+      <div className="flex flex-col gap-4 overflow-hidden md:flex-row md:h-[calc(100vh-200px)]">
 
-              {/* Payload pill */}
-              <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2.5 border">
-                <span className="text-sm font-bold text-gray-900">{job.weightTonnes} t</span>
-                <span className="w-1 h-1 rounded-full bg-gray-400 inline-block" />
-                <span className="text-sm text-gray-700">{job.payload}</span>
-              </div>
-
-              {/* Route */}
-              <div className="space-y-1 pl-1">
-                <div className="flex items-center gap-3">
-                  <div className="w-2.5 h-2.5 rounded-full bg-gray-400 border-2 border-gray-200 shrink-0" />
-                  <div>
-                    <p className="font-semibold text-sm text-gray-900">{job.fromCity}</p>
-                    <p className="text-xs text-muted-foreground">{job.fromAddress}</p>
-                  </div>
-                </div>
-                <div className="w-px h-4 bg-gray-200 ml-1.5" />
-                <div className="flex items-center gap-3">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-600 border-2 border-red-200 shrink-0" />
-                  <div>
-                    <p className="font-semibold text-sm text-gray-900">{job.toCity}</p>
-                    <p className="text-xs text-muted-foreground">{job.toAddress}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Meta row */}
-              <div className="flex items-center justify-between pt-3 border-t">
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5" />
-                    {job.date} · {job.time}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Ruler className="h-3.5 w-3.5" />
-                    {job.distanceKm} km
-                  </span>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-extrabold text-red-600">
-                    {job.priceTotal.toFixed(2)} {job.currency}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {job.pricePerTonne.toFixed(2)} {job.currency} / t
-                  </p>
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex gap-2">
-                {user?.canTransport && user?.isCompany && (
-                  <Button
-                    className="flex-1 bg-gray-900 hover:bg-gray-800 text-white"
-                    onClick={() => openDispatch(job)}
-                  >
-                    <CalendarDays className="h-4 w-4 mr-2" />
-                    Plānot darbu
-                  </Button>
-                )}
-                {(!user?.isCompany || !user?.canTransport) && (
-                  <Button
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                    onClick={() => handleAccept(job.id)}
-                  >
-                    <Truck className="h-4 w-4 mr-2" />
-                    Pieņemt darbu
-                  </Button>
-                )}
+        {/* LEFT: banner + job cards */}
+        <div
+          className={`flex flex-col gap-4 md:w-[40%] md:overflow-y-auto md:pr-1 ${
+            mobileView === 'map' ? 'hidden md:flex' : 'flex'
+          }`}
+        >
+          {/* "Drive wherever you want" banner */}
+          {!activeFilter && !panelOpen && (
+            <div className="flex gap-4 bg-white border-l-4 border-l-red-600 border rounded-xl p-5 shadow-sm">
+              <span className="text-3xl mt-0.5">🗺️</span>
+              <div className="flex-1 space-y-1">
+                <p className="font-bold text-base text-gray-900">Braukā kur vēlies!</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Tu izlemj, kādā rādiusā vēlies pieņemt darbus. Iestatiet rādiusu ap savu uzņēmumu
+                  vai jebkuru citu vietu, un mēs parādīsim tikai atbilstošos maršrutus.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setPanelOpen(true)}
+                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-red-600 hover:text-red-700 transition-colors"
+                >
+                  Iestatīt rādiusu →
+                </button>
               </div>
             </div>
-          ))}
+          )}
+
+          {/* Job cards */}
+          {loadingJobs ? (
+            <div className="flex items-center justify-center py-20">
+              <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : jobError ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
+              <span className="text-5xl">⚠️</span>
+              <p className="text-base font-semibold text-foreground">Kļūda ielādējot darbus</p>
+              <p className="text-sm text-muted-foreground">{jobError}</p>
+              <Button variant="outline" size="sm" onClick={handleRefresh}>
+                Mēģināt vēlreiz
+              </Button>
+            </div>
+          ) : filteredJobs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
+              <span className="text-5xl">🔍</span>
+              <p className="text-base font-semibold text-foreground">Nav atrasts neviens darbs</p>
+              <p className="text-sm text-muted-foreground">Mēģiniet mainīt filtra iestatījumus</p>
+              <Button variant="outline" size="sm" onClick={handleReset}>
+                Notīrīt filtru
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 pb-4">
+              {filteredJobs.map((job) => (
+                <div
+                  key={job.id}
+                  ref={(el) => { if (el) jobCardRefs.current.set(job.id, el); }}
+                  onClick={() => handleCardSelect(job.id)}
+                  className={`cursor-pointer rounded-xl border shadow-sm p-5 space-y-4 transition-all hover:shadow-md ${
+                    selectedJobId === job.id
+                      ? 'border-blue-400 ring-2 ring-blue-400 bg-blue-50/40'
+                      : 'bg-white'
+                  }`}
+                >
+                  {/* Card header */}
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-mono text-muted-foreground tracking-wider">
+                        {job.jobNumber}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{job.vehicleEmoji}</span>
+                        <span className="font-bold text-base text-gray-900">{job.vehicleType}</span>
+                      </div>
+                    </div>
+                    <span className="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full border border-green-200">
+                      Pieejams
+                    </span>
+                  </div>
+
+                  {/* Payload pill */}
+                  <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2.5 border">
+                    <span className="text-sm font-bold text-gray-900">{job.weightTonnes} t</span>
+                    <span className="w-1 h-1 rounded-full bg-gray-400 inline-block" />
+                    <span className="text-sm text-gray-700">{job.payload}</span>
+                  </div>
+
+                  {/* Route */}
+                  <div className="space-y-1 pl-1">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2.5 h-2.5 rounded-full bg-gray-400 border-2 border-gray-200 shrink-0" />
+                      <div>
+                        <p className="font-semibold text-sm text-gray-900">{job.fromCity}</p>
+                        <p className="text-xs text-muted-foreground">{job.fromAddress}</p>
+                      </div>
+                    </div>
+                    <div className="w-px h-4 bg-gray-200 ml-1.5" />
+                    <div className="flex items-center gap-3">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-600 border-2 border-red-200 shrink-0" />
+                      <div>
+                        <p className="font-semibold text-sm text-gray-900">{job.toCity}</p>
+                        <p className="text-xs text-muted-foreground">{job.toAddress}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Meta row */}
+                  <div className="flex items-center justify-between pt-3 border-t">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5" />
+                        {job.date} · {job.time}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Ruler className="h-3.5 w-3.5" />
+                        {job.distanceKm} km
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-extrabold text-red-600">
+                        {job.priceTotal.toFixed(2)} {job.currency}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {job.pricePerTonne.toFixed(2)} {job.currency} / t
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex gap-2">
+                    {user?.canTransport && user?.isCompany && (
+                      <Button
+                        className="flex-1 bg-gray-900 hover:bg-gray-800 text-white"
+                        onClick={(e) => { e.stopPropagation(); openDispatch(job); }}
+                      >
+                        <CalendarDays className="h-4 w-4 mr-2" />
+                        Plānot darbu
+                      </Button>
+                    )}
+                    {(!user?.isCompany || !user?.canTransport) && (
+                      <Button
+                        className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                        onClick={(e) => { e.stopPropagation(); handleAccept(job.id); }}
+                      >
+                        <Truck className="h-4 w-4 mr-2" />
+                        Pieņemt darbu
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+
+        {/* RIGHT: Map panel */}
+        <div
+          className={`rounded-xl overflow-hidden h-[70vw] md:h-auto min-h-75 shrink-0 md:w-[60%] ${
+            mobileView === 'list' ? 'hidden md:block' : 'block'
+          }`}
+        >
+          <TransportJobsMapDynamic
+            jobs={filteredJobs}
+            selectedId={selectedJobId}
+            onSelect={handleMapSelect}
+          />
+        </div>
+      </div>
 
       {/* ── Dispatch Sheet ─────────────────────────────────────────────────── */}
       <Sheet open={!!dispatchJob} onOpenChange={(o) => !o && setDispatchJob(null)}>
