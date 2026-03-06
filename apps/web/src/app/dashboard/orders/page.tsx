@@ -217,7 +217,7 @@ function mapsUrl(lat: number, lng: number): string {
 
 // ── Active-job tab ─────────────────────────────────────────────────────────────
 
-function ActiveJobTab({ token }: { token: string }) {
+function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () => void }) {
   const router = useRouter();
   const [job, setJob] = useState<ApiTransportJob | null>(null);
   const [loading, setLoading] = useState(true);
@@ -230,6 +230,9 @@ function ActiveJobTab({ token }: { token: string }) {
   const [proofNotes, setProofNotes] = useState('');
   const [proofSubmitting, setProofSubmitting] = useState(false);
   const [proofError, setProofError] = useState<string | null>(null);
+
+  // Delivery success modal
+  const [deliveredJob, setDeliveredJob] = useState<ApiTransportJob | null>(null);
 
   const fetchJob = useCallback(async () => {
     try {
@@ -291,6 +294,9 @@ function ActiveJobTab({ token }: { token: string }) {
       );
       setJob(updated);
       setShowProofModal(false);
+      if (updated.status === 'DELIVERED') {
+        setDeliveredJob(updated);
+      }
     } catch (e: any) {
       setProofError(e?.message ?? 'Neizdevās iesniegt piegādes apstiprinājumu');
     } finally {
@@ -308,6 +314,58 @@ function ActiveJobTab({ token }: { token: string }) {
 
   return (
     <div className="space-y-6">
+      {/* Delivery Success Modal */}
+      {deliveredJob && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            {/* Success header */}
+            <div className="bg-green-50 px-6 py-8 flex flex-col items-center gap-3">
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle className="h-9 w-9 text-green-600" />
+              </div>
+              <h2 className="text-xl font-extrabold text-green-800">Piegāde pabeigta!</h2>
+              <p className="text-sm text-green-700 text-center">
+                Darbs #{deliveredJob.jobNumber} veiksmīgi pabeigts
+              </p>
+            </div>
+            {/* Details */}
+            <div className="px-6 py-5 space-y-3">
+              <div className="flex items-center gap-2 text-sm">
+                <MapPin className="h-4 w-4 text-gray-400 shrink-0" />
+                <span className="text-gray-700 font-medium">{deliveredJob.pickupCity}</span>
+                <ArrowRight className="h-3.5 w-3.5 text-gray-400" />
+                <span className="text-gray-700 font-medium">{deliveredJob.deliveryCity}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Truck className="h-4 w-4 text-gray-400 shrink-0" />
+                <span className="text-gray-600">{deliveredJob.cargoType}</span>
+                {deliveredJob.cargoWeight != null && (
+                  <span className="text-gray-400">· {deliveredJob.cargoWeight} t</span>
+                )}
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t">
+                <span className="text-sm text-muted-foreground">Nopelnīts</span>
+                <span className="text-2xl font-extrabold text-green-700">
+                  €{(deliveredJob.rate ?? 0).toFixed(2)}
+                </span>
+              </div>
+            </div>
+            {/* Actions */}
+            <div className="px-6 pb-6">
+              <Button
+                className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-bold text-base"
+                onClick={() => {
+                  setDeliveredJob(null);
+                  onDelivered?.();
+                }}
+              >
+                Skatīt vēsturi
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delivery Proof Modal */}
       {showProofModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm px-4">
@@ -813,7 +871,11 @@ function CarrierView({ token }: { token: string }) {
           </button>
         ))}
       </div>
-      {tab === 'active' ? <ActiveJobTab token={token} /> : <CarrierHistoryView token={token} />}
+      {tab === 'active' ? (
+        <ActiveJobTab token={token} onDelivered={() => setTab('history')} />
+      ) : (
+        <CarrierHistoryView token={token} />
+      )}
     </div>
   );
 }
