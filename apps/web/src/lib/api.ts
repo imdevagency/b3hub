@@ -235,19 +235,22 @@ async function apiFetch<T>(
   options?: RequestInit
 ): Promise<T> {
   const res = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
     headers: {
       "Content-Type": "application/json",
       ...options?.headers,
     },
-    ...options,
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Request failed" }));
+    const text = await res.text().catch(() => "");
+    let error: { message?: string } = { message: "Request failed" };
+    try { error = text ? JSON.parse(text) : error; } catch { /* keep default */ }
     throw new Error(error.message || `HTTP ${res.status}`);
   }
 
-  return res.json();
+  const text = await res.text();
+  return (text ? JSON.parse(text) : {}) as T;
 }
 
 export async function registerUser(data: RegisterInput): Promise<AuthResponse> {

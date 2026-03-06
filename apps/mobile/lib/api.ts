@@ -216,15 +216,17 @@ export interface CreateMaterialOrderInput {
 
 async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
     headers: {
       "Content-Type": "application/json",
       ...options?.headers,
     },
-    ...options,
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Request failed" }));
+    const errText = await res.text().catch(() => "");
+    let error: { message?: string } = { message: "Request failed" };
+    try { error = errText ? JSON.parse(errText) : error; } catch { /* keep default */ }
     throw new Error(error.message || `HTTP ${res.status}`);
   }
 
