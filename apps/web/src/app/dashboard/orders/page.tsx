@@ -283,7 +283,10 @@ function ActiveJobTab({ token }: { token: string }) {
     try {
       const updated = await submitDeliveryProof(
         job.id,
-        { notes: proofNotes.trim() || undefined, recipientName: proofRecipient.trim() || undefined },
+        {
+          notes: proofNotes.trim() || undefined,
+          recipientName: proofRecipient.trim() || undefined,
+        },
         token,
       );
       setJob(updated);
@@ -467,12 +470,16 @@ function ActiveJobTab({ token }: { token: string }) {
 
               {/* Route detail card */}
               <div className="bg-white border rounded-2xl p-5 space-y-4 shadow-sm">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide">Maršruts</h3>
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide">
+                  Maršruts
+                </h3>
                 {/* Pickup */}
                 <div className="flex items-start gap-3">
                   <div className="w-3 h-3 rounded-full bg-red-600 border-2 border-red-200 mt-1 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Iekraušana</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
+                      Iekraušana
+                    </p>
                     <p className="font-semibold text-sm text-gray-900 mt-0.5">{job.pickupCity}</p>
                     <p className="text-xs text-muted-foreground truncate">{job.pickupAddress}</p>
                     {job.pickupWindow && (
@@ -499,7 +506,9 @@ function ActiveJobTab({ token }: { token: string }) {
                 <div className="flex items-start gap-3">
                   <div className="w-3 h-3 rounded-full bg-green-600 border-2 border-green-200 mt-1 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Piegāde</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
+                      Piegāde
+                    </p>
                     <p className="font-semibold text-sm text-gray-900 mt-0.5">{job.deliveryCity}</p>
                     <p className="text-xs text-muted-foreground truncate">{job.deliveryAddress}</p>
                     {job.deliveryWindow && (
@@ -526,19 +535,27 @@ function ActiveJobTab({ token }: { token: string }) {
               {/* Cargo details */}
               <div className="bg-white border rounded-2xl px-5 py-4 shadow-sm flex flex-wrap gap-6">
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Krava</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
+                    Krava
+                  </p>
                   <p className="font-bold text-gray-900 mt-0.5">{job.cargoType}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Svars</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
+                    Svars
+                  </p>
                   <p className="font-bold text-gray-900 mt-0.5">{job.cargoWeight ?? '—'} t</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Attālums</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
+                    Attālums
+                  </p>
                   <p className="font-bold text-gray-900 mt-0.5">{job.distanceKm ?? '—'} km</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Transportl.</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
+                    Transportl.
+                  </p>
                   <p className="font-bold text-gray-900 mt-0.5">
                     {job.requiredVehicleType ?? job.requiredVehicleEnum ?? '—'}
                   </p>
@@ -796,11 +813,7 @@ function CarrierView({ token }: { token: string }) {
           </button>
         ))}
       </div>
-      {tab === 'active' ? (
-        <ActiveJobTab token={token} />
-      ) : (
-        <CarrierHistoryView token={token} />
-      )}
+      {tab === 'active' ? <ActiveJobTab token={token} /> : <CarrierHistoryView token={token} />}
     </div>
   );
 }
