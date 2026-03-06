@@ -357,6 +357,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
                 className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-bold text-base"
                 onClick={() => {
                   setDeliveredJob(null);
+                  setJob(null);
                   onDelivered?.();
                 }}
               >
@@ -873,6 +874,7 @@ function CarrierHistoryView({ token }: { token: string }) {
 
 function CarrierView({ token }: { token: string }) {
   const [tab, setTab] = useState<'active' | 'history'>('active');
+  const [historyKey, setHistoryKey] = useState(0);
   return (
     <div className="space-y-4">
       {/* Tab switcher */}
@@ -892,9 +894,15 @@ function CarrierView({ token }: { token: string }) {
         ))}
       </div>
       {tab === 'active' ? (
-        <ActiveJobTab token={token} onDelivered={() => setTab('history')} />
+        <ActiveJobTab
+          token={token}
+          onDelivered={() => {
+            setHistoryKey((k) => k + 1);
+            setTab('history');
+          }}
+        />
       ) : (
-        <CarrierHistoryView token={token} />
+        <CarrierHistoryView key={historyKey} token={token} />
       )}
     </div>
   );
