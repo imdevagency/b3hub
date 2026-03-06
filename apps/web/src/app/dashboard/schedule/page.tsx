@@ -48,13 +48,7 @@ const DEFAULT_END = '18:00';
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const MINUTES = ['00', '15', '30', '45'];
 
-function TimePicker({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
+function TimePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [h, m] = (value ?? '00:00').split(':');
   const hh = h?.padStart(2, '0') ?? '00';
   const mm = MINUTES.includes(m ?? '') ? (m ?? '00') : '00';
@@ -70,7 +64,9 @@ function TimePicker({
         className={selectCls}
       >
         {HOURS.map((hr) => (
-          <option key={hr} value={hr}>{hr}</option>
+          <option key={hr} value={hr}>
+            {hr}
+          </option>
         ))}
       </select>
       <span className="text-slate-400 text-xs font-mono">:</span>
@@ -80,7 +76,9 @@ function TimePicker({
         className={selectCls}
       >
         {MINUTES.map((mn) => (
-          <option key={mn} value={mn}>{mn}</option>
+          <option key={mn} value={mn}>
+            {mn}
+          </option>
         ))}
       </select>
     </div>

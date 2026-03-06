@@ -109,18 +109,14 @@ function DeliveryPin({ selected }: { selected: boolean }) {
         <div className="h-1.5 w-1.5 rounded-full bg-white" />
       </div>
       {/* tail */}
-      <div
-        className={`h-1.25 w-0.5 ${selected ? 'bg-blue-500' : 'bg-red-500'}`}
-      />
+      <div className={`h-1.25 w-0.5 ${selected ? 'bg-blue-500' : 'bg-red-500'}`} />
     </div>
   );
 }
 
 // ── Lat/Lng bounds helper ──────────────────────────────────────────────────────
 
-function getBounds(
-  jobs: JobRoutePoint[]
-): [[number, number], [number, number]] | null {
+function getBounds(jobs: JobRoutePoint[]): [[number, number], [number, number]] | null {
   if (jobs.length === 0) return null;
   const lngs = jobs.flatMap((j) => [j.fromLng, j.toLng]);
   const lats = jobs.flatMap((j) => [j.fromLat, j.toLat]);

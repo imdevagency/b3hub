@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth-context';
+import { useMode, type Mode } from '@/lib/mode-context';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Select,
@@ -45,11 +46,16 @@ import {
 } from '@/components/ui/sidebar';
 
 type NavItem = { label: string; href: string; icon: React.ElementType };
-type Mode = 'BUYER' | 'SUPPLIER' | 'CARRIER';
+
+const ROLE_HOME: Record<Mode, string> = {
+  BUYER: '/dashboard/buyer',
+  SUPPLIER: '/dashboard/supplier',
+  CARRIER: '/dashboard/transporter',
+};
 
 const ROLE_NAV: Record<Mode, NavItem[]> = {
   BUYER: [
-    { label: 'Informācijas Panelis', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Informācijas Panelis', href: '/dashboard/buyer', icon: LayoutDashboard },
     { label: 'Materiālu Katalogs', href: '/dashboard/catalog', icon: Package },
     { label: 'Grozs', href: '/dashboard/checkout', icon: ShoppingCart },
     { label: 'Mani Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
@@ -58,13 +64,13 @@ const ROLE_NAV: Record<Mode, NavItem[]> = {
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
   SUPPLIER: [
-    { label: 'Informācijas Panelis', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Informācijas Panelis', href: '/dashboard/supplier', icon: LayoutDashboard },
     { label: 'Mani Materiāli', href: '/dashboard/materials', icon: Package },
     { label: 'Ienākošie Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
   CARRIER: [
-    { label: 'Informācijas Panelis', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Informācijas Panelis', href: '/dashboard/transporter', icon: LayoutDashboard },
     { label: 'Mans Autoparks', href: '/dashboard/garage', icon: Car },
     { label: 'Job Board', href: '/dashboard/jobs', icon: MapPin },
     { label: 'Mani Darbi', href: '/dashboard/orders', icon: ClipboardList },
@@ -80,51 +86,15 @@ const MODE_LABEL: Record<Mode, string> = {
   CARRIER: 'Pārvadātājs',
 };
 
-const LS_MODE_KEY = 'b3hub_active_mode';
-
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, logout } = useAuth();
+  const { activeMode, setActiveMode, availableModes } = useMode();
   const router = useRouter();
   const pathname = usePathname();
 
-  // Determine which modes this user has access to
-  const availableModes = React.useMemo<Mode[]>(() => {
-    if (!user) return ['BUYER'];
-    const modes: Mode[] = [];
-    const isAdmin = user.userType === 'ADMIN';
-    const isTransport = user.canTransport || user.userType === 'CARRIER';
-
-    // BUYER: any user whose base type is BUYER gets the buyer mode (regardless of extra capabilities)
-    if (isAdmin || user.userType === 'BUYER') modes.push('BUYER');
-    if (isAdmin || user.userType === 'SUPPLIER' || user.canSell) modes.push('SUPPLIER');
-    if (isAdmin || isTransport) modes.push('CARRIER');
-    // Ensure at least one mode
-    if (modes.length === 0) modes.push('BUYER');
-    return modes;
-  }, [user]);
-
-  // Active mode — persisted to localStorage
-  const defaultMode: Mode = availableModes[0];
-  const [activeMode, setActiveMode] = React.useState<Mode>(defaultMode);
-
-  // Hydrate from localStorage once mounted
-  React.useEffect(() => {
-    try {
-      const stored = localStorage.getItem(LS_MODE_KEY) as Mode | null;
-      if (stored && availableModes.includes(stored)) setActiveMode(stored);
-    } catch {
-      /* ignore */
-    }
-  }, [availableModes]);
-
   const handleModeSwitch = (mode: Mode) => {
     setActiveMode(mode);
-    try {
-      localStorage.setItem(LS_MODE_KEY, mode);
-    } catch {
-      /* ignore */
-    }
-    router.push('/dashboard');
+    router.push(ROLE_HOME[mode]);
   };
 
   const navItems = React.useMemo(() => {
@@ -132,15 +102,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     let items: NavItem[] = [...base];
     if (activeMode === 'CARRIER' && user?.isCompany) {
       items = [
-        base[0], // Informācijas Panelis
+        base[0],
         { label: 'Dispečera Panelis', href: '/dashboard/fleet', icon: LayoutGrid } as NavItem,
         ...base.slice(1),
       ];
     }
     return items;
   }, [activeMode, user]);
-  const isMultiRole = availableModes.length > 1;
 
+  const isMultiRole = availableModes.length > 1;
   const initials = user
     ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase()
     : '?';
@@ -167,7 +137,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
 
-        {/* Role switcher — only shown for multi-role users, hidden when sidebar collapsed */}
+        {/* Role switcher — only for multi-role users, hidden when collapsed */}
         {isMultiRole && (
           <div className="px-2 pb-2 group-data-[collapsible=icon]:hidden">
             <Select value={activeMode} onValueChange={(v) => handleModeSwitch(v as Mode)}>
@@ -187,7 +157,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Role-based nav */}
         <SidebarGroup>
           <SidebarGroupLabel>Izvēlne</SidebarGroupLabel>
           <SidebarMenu>
@@ -204,7 +173,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </SidebarGroup>
 
-        {/* Company management — only shown to company members */}
+        {/* Company management */}
         {user?.isCompany && (
           <SidebarGroup>
             <SidebarGroupLabel>Uzņēmums</SidebarGroupLabel>
@@ -239,7 +208,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroup>
         )}
 
-        {/* Admin section — only shown to ADMIN users */}
+        {/* Admin section */}
         {user?.userType === 'ADMIN' && (
           <SidebarGroup>
             <SidebarGroupLabel>Administrācija</SidebarGroupLabel>
@@ -284,7 +253,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroup>
         )}
 
-        {/* Settings pinned to bottom */}
+        {/* Settings */}
         <SidebarGroup className="mt-auto">
           <SidebarMenu>
             <SidebarMenuItem>
@@ -329,10 +298,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Iziet"
-              onClick={() => {
-                logout();
-                router.push('/');
-              }}
+              onClick={() => { logout(); router.push('/'); }}
               className="text-muted-foreground hover:text-red-600 hover:bg-red-50"
             >
               <LogOut />

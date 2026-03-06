@@ -143,7 +143,7 @@ function CarrierView({ token }: { token: string }) {
 
   const totalEarnings = filtered
     .filter((j) => j.status === 'DELIVERED')
-    .reduce((s, j) => s + j.rate, 0);
+    .reduce((s, j) => s + (j.rate ?? 0), 0);
 
   return (
     <div className="space-y-4">
@@ -268,7 +268,7 @@ function CarrierView({ token }: { token: string }) {
                       )}
                     </td>
                     <td className="px-4 py-3 text-right font-bold tabular-nums">
-                      {fmtMoney(job.rate)}
+                      {fmtMoney(job.rate ?? 0)}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link
@@ -289,7 +289,7 @@ function CarrierView({ token }: { token: string }) {
                   {filtered.length} ieraksti
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums">
-                  {fmtMoney(filtered.reduce((s, j) => s + j.rate, 0))}
+                  {fmtMoney(filtered.reduce((s, j) => s + (j.rate ?? 0), 0))}
                 </td>
               </tr>
             </tfoot>
