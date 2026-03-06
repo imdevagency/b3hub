@@ -298,7 +298,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Iziet"
-              onClick={() => { logout(); router.push('/'); }}
+              onClick={() => {
+                logout();
+                router.push('/');
+              }}
               className="text-muted-foreground hover:text-red-600 hover:bg-red-50"
             >
               <LogOut />

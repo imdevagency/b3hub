@@ -19,7 +19,13 @@ import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
 
 type Stat = { label: string; value: string; icon: LucideIcon; hint?: string };
-type Action = { label: string; description: string; icon: LucideIcon; href: string; primary?: boolean };
+type Action = {
+  label: string;
+  description: string;
+  icon: LucideIcon;
+  href: string;
+  primary?: boolean;
+};
 
 const n = (v?: number) => (v !== undefined ? String(v) : '—');
 
@@ -75,14 +81,19 @@ export default function BuyerDashboardPage() {
   const [data, setData] = useState<DashboardStats | null>(null);
 
   // Sync sidebar mode to BUYER when this page is active
-  useEffect(() => { setActiveMode('BUYER'); }, [setActiveMode]);
+  useEffect(() => {
+    setActiveMode('BUYER');
+  }, [setActiveMode]);
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
   }, [user, isLoading, router]);
 
   useEffect(() => {
-    if (user && token) getDashboardStats(token).then(setData).catch(() => {});
+    if (user && token)
+      getDashboardStats(token)
+        .then(setData)
+        .catch(() => {});
   }, [user, token]);
 
   if (isLoading || !user) {
@@ -94,17 +105,54 @@ export default function BuyerDashboardPage() {
   }
 
   const stats: Stat[] = [
-    { label: 'Aktīvie Pasūtījumi', value: n(data?.activeOrders), icon: ShoppingCart, hint: 'Procesā' },
+    {
+      label: 'Aktīvie Pasūtījumi',
+      value: n(data?.activeOrders),
+      icon: ShoppingCart,
+      hint: 'Procesā',
+    },
     { label: 'Konteineru Pasūtījumi', value: n(data?.myOrders), icon: Trash2, hint: 'Skip hire' },
-    { label: 'Gaida Piegāde', value: n(data?.awaitingDelivery), icon: Truck, hint: 'Gaidāmās piegādes' },
-    { label: 'Mani Dokumenti', value: n(data?.documents), icon: FolderOpen, hint: 'Rēķini un lapas' },
+    {
+      label: 'Gaida Piegāde',
+      value: n(data?.awaitingDelivery),
+      icon: Truck,
+      hint: 'Gaidāmās piegādes',
+    },
+    {
+      label: 'Mani Dokumenti',
+      value: n(data?.documents),
+      icon: FolderOpen,
+      hint: 'Rēķini un lapas',
+    },
   ];
 
   const actions: Action[] = [
-    { label: 'Pasūtīt Materiālus', description: 'Smiltis, grants, betons, šķembas — ātra pasūtīšana tiešri no kataloga', icon: Package, href: '/dashboard/catalog', primary: true },
-    { label: 'Pasūtīt Konteineru', description: 'Rezervēt atkritumu konteineru savai darba vai mājas vietai', icon: Trash2, href: '/dashboard/order', primary: true },
-    { label: 'Mani Pasūtījumi', description: 'Izsekot visiem aktīvajiem pasūtījumiem un to statusam', icon: ClipboardList, href: '/dashboard/orders' },
-    { label: 'Mani Dokumenti', description: 'Rēķini, svēršanas lapas un citi dokumenti', icon: FolderOpen, href: '/dashboard/documents' },
+    {
+      label: 'Pasūtīt Materiālus',
+      description: 'Smiltis, grants, betons, šķembas — ātra pasūtīšana tiešri no kataloga',
+      icon: Package,
+      href: '/dashboard/catalog',
+      primary: true,
+    },
+    {
+      label: 'Pasūtīt Konteineru',
+      description: 'Rezervēt atkritumu konteineru savai darba vai mājas vietai',
+      icon: Trash2,
+      href: '/dashboard/order',
+      primary: true,
+    },
+    {
+      label: 'Mani Pasūtījumi',
+      description: 'Izsekot visiem aktīvajiem pasūtījumiem un to statusam',
+      icon: ClipboardList,
+      href: '/dashboard/orders',
+    },
+    {
+      label: 'Mani Dokumenti',
+      description: 'Rēķini, svēršanas lapas un citi dokumenti',
+      icon: FolderOpen,
+      href: '/dashboard/documents',
+    },
   ];
 
   return (
@@ -134,7 +182,9 @@ export default function BuyerDashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <p className="text-lg font-bold">Kas jums vajadzīgs šodien?</p>
-            <p className="text-sm text-blue-100">Materiāli, konteineri vai pakalpojumi — viss vienā vietā.</p>
+            <p className="text-sm text-blue-100">
+              Materiāli, konteineri vai pakalpojumi — viss vienā vietā.
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
@@ -155,25 +205,35 @@ export default function BuyerDashboardPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {stats.map((s) => <StatCard key={s.label} stat={s} />)}
+        {stats.map((s) => (
+          <StatCard key={s.label} stat={s} />
+        ))}
       </div>
 
       {/* Actions */}
       <div>
-        <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Ātrās darbības</p>
+        <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          Ātrās darbības
+        </p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {actions.map((a) => <ActionCard key={a.label} action={a} />)}
+          {actions.map((a) => (
+            <ActionCard key={a.label} action={a} />
+          ))}
         </div>
       </div>
 
       {/* Activity */}
       <div>
-        <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Pēdējā aktivitāte</p>
+        <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          Pēdējā aktivitāte
+        </p>
         <Card className="shadow-none border-border/50">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <Inbox className="mb-3 h-10 w-10 text-muted-foreground/25" />
             <p className="text-sm font-medium text-muted-foreground">Nav pēdējās aktivitātes</p>
-            <p className="mt-1 text-xs text-muted-foreground/60">Jūsu pasūtījumi parādīsīsies šeit.</p>
+            <p className="mt-1 text-xs text-muted-foreground/60">
+              Jūsu pasūtījumi parādīsīsies šeit.
+            </p>
           </CardContent>
         </Card>
       </div>

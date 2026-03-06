@@ -20,7 +20,13 @@ import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
 
 type Stat = { label: string; value: string; icon: LucideIcon; hint?: string };
-type Action = { label: string; description: string; icon: LucideIcon; href: string; primary?: boolean };
+type Action = {
+  label: string;
+  description: string;
+  icon: LucideIcon;
+  href: string;
+  primary?: boolean;
+};
 
 const n = (v?: number) => (v !== undefined ? String(v) : '—');
 const money = (v?: number) => (v !== undefined ? `€${Math.round(v).toLocaleString('lv-LV')}` : '—');
@@ -77,14 +83,19 @@ export default function SupplierDashboardPage() {
   const [data, setData] = useState<DashboardStats | null>(null);
 
   // Sync sidebar mode to SUPPLIER when this page is active
-  useEffect(() => { setActiveMode('SUPPLIER'); }, [setActiveMode]);
+  useEffect(() => {
+    setActiveMode('SUPPLIER');
+  }, [setActiveMode]);
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
   }, [user, isLoading, router]);
 
   useEffect(() => {
-    if (user && token) getDashboardStats(token).then(setData).catch(() => {});
+    if (user && token)
+      getDashboardStats(token)
+        .then(setData)
+        .catch(() => {});
   }, [user, token]);
 
   if (isLoading || !user) {
@@ -96,18 +107,65 @@ export default function SupplierDashboardPage() {
   }
 
   const stats: Stat[] = [
-    { label: 'Aktīvie Sludinājumi', value: n(data?.activeListings), icon: Package, hint: 'Publicēti produkti' },
-    { label: 'Gaida Pasūtījumi', value: n(data?.pendingOrders), icon: ShoppingCart, hint: 'Gaida izpildi' },
-    { label: 'Mēneša Ieņēmumi', value: money(data?.monthlyRevenue), icon: TrendingUp, hint: 'Šajā mēnesī' },
-    { label: 'Mani Dokumenti', value: n(data?.documents), icon: FolderOpen, hint: 'Rēķini un līgumi' },
+    {
+      label: 'Aktīvie Sludinājumi',
+      value: n(data?.activeListings),
+      icon: Package,
+      hint: 'Publicēti produkti',
+    },
+    {
+      label: 'Gaida Pasūtījumi',
+      value: n(data?.pendingOrders),
+      icon: ShoppingCart,
+      hint: 'Gaida izpildi',
+    },
+    {
+      label: 'Mēneša Ieņēmumi',
+      value: money(data?.monthlyRevenue),
+      icon: TrendingUp,
+      hint: 'Šajā mēnesī',
+    },
+    {
+      label: 'Mani Dokumenti',
+      value: n(data?.documents),
+      icon: FolderOpen,
+      hint: 'Rēķini un līgumi',
+    },
   ];
 
   const actions: Action[] = [
-    { label: 'Mani Materiāli', description: 'Pārvaldīt savus materiālu sludinājumus, cenas un krājumus', icon: Package, href: '/dashboard/materials', primary: true },
-    { label: 'Pievienot Materiālu', description: 'Publicēt jaunu produktu vai pakalpojumu katalogā', icon: Plus, href: '/dashboard/materials/new', primary: true },
-    { label: 'Ienākošie Pasūtījumi', description: 'Skatīt un apstrādāt jaunus pasūtījumus no pircējiem', icon: ClipboardList, href: '/dashboard/orders' },
-    { label: 'Analītika', description: 'Pārdošanas statistika un produktu veiktspējas rādītāji', icon: BarChart3, href: '/dashboard/orders' },
-    { label: 'Mani Dokumenti', description: 'Rēķini, līgumi un materiālu sertifikāti', icon: FolderOpen, href: '/dashboard/documents' },
+    {
+      label: 'Mani Materiāli',
+      description: 'Pārvaldīt savus materiālu sludinājumus, cenas un krājumus',
+      icon: Package,
+      href: '/dashboard/materials',
+      primary: true,
+    },
+    {
+      label: 'Pievienot Materiālu',
+      description: 'Publicēt jaunu produktu vai pakalpojumu katalogā',
+      icon: Plus,
+      href: '/dashboard/materials/new',
+      primary: true,
+    },
+    {
+      label: 'Ienākošie Pasūtījumi',
+      description: 'Skatīt un apstrādāt jaunus pasūtījumus no pircējiem',
+      icon: ClipboardList,
+      href: '/dashboard/orders',
+    },
+    {
+      label: 'Analītika',
+      description: 'Pārdošanas statistika un produktu veiktspējas rādītāji',
+      icon: BarChart3,
+      href: '/dashboard/orders',
+    },
+    {
+      label: 'Mani Dokumenti',
+      description: 'Rēķini, līgumi un materiālu sertifikāti',
+      icon: FolderOpen,
+      href: '/dashboard/documents',
+    },
   ];
 
   return (
@@ -130,7 +188,9 @@ export default function SupplierDashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <p className="text-lg font-bold">Jūsu produkti tirgo B3Hub</p>
-            <p className="text-sm text-emerald-100">Pievienojiet vairāk produktu, lai palielinātu pārdošanas apjomu.</p>
+            <p className="text-sm text-emerald-100">
+              Pievienojiet vairāk produktu, lai palielinātu pārdošanas apjomu.
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
@@ -151,25 +211,35 @@ export default function SupplierDashboardPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {stats.map((s) => <StatCard key={s.label} stat={s} />)}
+        {stats.map((s) => (
+          <StatCard key={s.label} stat={s} />
+        ))}
       </div>
 
       {/* Actions */}
       <div>
-        <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Ātrās darbības</p>
+        <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          Ātrās darbības
+        </p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {actions.map((a) => <ActionCard key={a.label} action={a} />)}
+          {actions.map((a) => (
+            <ActionCard key={a.label} action={a} />
+          ))}
         </div>
       </div>
 
       {/* Activity */}
       <div>
-        <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Pēdējā aktivitāte</p>
+        <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          Pēdējā aktivitāte
+        </p>
         <Card className="shadow-none border-border/50">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <Inbox className="mb-3 h-10 w-10 text-muted-foreground/25" />
             <p className="text-sm font-medium text-muted-foreground">Nav pēdējās aktivitātes</p>
-            <p className="mt-1 text-xs text-muted-foreground/60">Jaunas pasūtījumi un pārdošanas parādīsīsies šeit.</p>
+            <p className="mt-1 text-xs text-muted-foreground/60">
+              Jaunas pasūtījumi un pārdošanas parādīsīsies šeit.
+            </p>
           </CardContent>
         </Card>
       </div>
