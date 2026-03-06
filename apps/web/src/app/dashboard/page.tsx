@@ -243,12 +243,6 @@ const ROLE_ACTIONS: Record<string, Action[]> = {
       href: '/jobs/complete',
     },
     {
-      label: 'Ieņēmumi',
-      description: 'Izsekot saviem maksājumiem',
-      icon: Banknote,
-      href: '/earnings',
-    },
-    {
       label: 'Mani Dokumenti',
       description: 'CMR piezīmes un piegādes apstiprinājumi',
       icon: FolderOpen,

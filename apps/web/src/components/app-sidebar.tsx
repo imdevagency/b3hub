@@ -4,7 +4,6 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  Banknote,
   Building2,
   CalendarClock,
   Car,
@@ -72,7 +71,6 @@ const ROLE_NAV: Record<Mode, NavItem[]> = {
     { label: 'Mani Darbi', href: '/dashboard/orders', icon: ClipboardList },
     { label: 'Aktīvais Darbs', href: '/dashboard/active', icon: Truck },
     { label: 'Darba Grafiks', href: '/dashboard/schedule', icon: CalendarClock },
-    { label: 'Ieņēmumi', href: '/dashboard/earnings', icon: Banknote },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
 };

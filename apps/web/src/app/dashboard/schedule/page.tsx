@@ -26,6 +26,7 @@ import {
   Truck,
   XCircle,
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -41,6 +42,50 @@ const DAYS = [
 
 const DEFAULT_START = '07:00';
 const DEFAULT_END = '18:00';
+
+// ── 24-hour time picker ───────────────────────────────────────────────────────
+
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+const MINUTES = ['00', '15', '30', '45'];
+
+function TimePicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [h, m] = (value ?? '00:00').split(':');
+  const hh = h?.padStart(2, '0') ?? '00';
+  const mm = MINUTES.includes(m ?? '') ? (m ?? '00') : '00';
+
+  const selectCls =
+    'rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs font-mono text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-300 appearance-none cursor-pointer';
+
+  return (
+    <div className="flex items-center gap-0.5">
+      <select
+        value={hh}
+        onChange={(e) => onChange(`${e.target.value}:${mm}`)}
+        className={selectCls}
+      >
+        {HOURS.map((hr) => (
+          <option key={hr} value={hr}>{hr}</option>
+        ))}
+      </select>
+      <span className="text-slate-400 text-xs font-mono">:</span>
+      <select
+        value={mm}
+        onChange={(e) => onChange(`${hh}:${e.target.value}`)}
+        className={selectCls}
+      >
+        {MINUTES.map((mn) => (
+          <option key={mn} value={mn}>{mn}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 function buildDefaultSchedule(existing: DriverScheduleDay[]): DriverScheduleDay[] {
   return DAYS.map(({ dow }) => {
@@ -297,20 +342,11 @@ export default function DriverSchedulePage() {
           </h2>
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <span>Auto-režīms</span>
-            <button
-              onClick={() => setAutoSchedule((v) => !v)}
-              className={[
-                'relative w-10 h-5 rounded-full transition-colors duration-200',
-                autoSchedule ? 'bg-green-500' : 'bg-slate-300',
-              ].join(' ')}
-            >
-              <span
-                className={[
-                  'absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200',
-                  autoSchedule ? 'translate-x-5' : 'translate-x-0.5',
-                ].join(' ')}
-              />
-            </button>
+            <Switch
+              checked={autoSchedule}
+              onCheckedChange={(v) => setAutoSchedule(v)}
+              className="data-[state=checked]:bg-green-500"
+            />
           </div>
         </div>
 
@@ -341,20 +377,11 @@ export default function DriverSchedulePage() {
                 ].join(' ')}
               >
                 {/* Day toggle */}
-                <button
-                  onClick={() => updateDay(dow, { enabled: !day.enabled })}
-                  className={[
-                    'relative w-9 h-5 rounded-full transition-colors duration-200 flex-shrink-0',
-                    day.enabled ? 'bg-green-500' : 'bg-slate-300',
-                  ].join(' ')}
-                >
-                  <span
-                    className={[
-                      'absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200',
-                      day.enabled ? 'translate-x-4' : 'translate-x-0.5',
-                    ].join(' ')}
-                  />
-                </button>
+                <Switch
+                  checked={day.enabled}
+                  onCheckedChange={(v) => updateDay(dow, { enabled: v })}
+                  className="flex-shrink-0 data-[state=checked]:bg-green-500"
+                />
 
                 {/* Day name */}
                 <span
@@ -369,18 +396,14 @@ export default function DriverSchedulePage() {
                 {/* Time inputs */}
                 {day.enabled ? (
                   <div className="flex items-center gap-2 ml-auto">
-                    <input
-                      type="time"
+                    <TimePicker
                       value={day.startTime}
-                      onChange={(e) => updateDay(dow, { startTime: e.target.value })}
-                      className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-mono text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-300"
+                      onChange={(v) => updateDay(dow, { startTime: v })}
                     />
                     <span className="text-slate-400 text-xs">—</span>
-                    <input
-                      type="time"
+                    <TimePicker
                       value={day.endTime}
-                      onChange={(e) => updateDay(dow, { endTime: e.target.value })}
-                      className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-mono text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-300"
+                      onChange={(v) => updateDay(dow, { endTime: v })}
                     />
                   </div>
                 ) : (
