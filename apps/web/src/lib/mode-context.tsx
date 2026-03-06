@@ -2,8 +2,9 @@
 
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { type Mode } from '@/lib/api';
 
-export type Mode = 'BUYER' | 'SUPPLIER' | 'CARRIER';
+export type { Mode };
 
 const LS_MODE_KEY = 'b3hub_active_mode';
 
@@ -22,20 +23,11 @@ const ModeContext = createContext<ModeContextValue>({
 export function ModeProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
 
-  const availableModes = useMemo<Mode[]>(() => {
-    if (!user) return ['BUYER'];
-    const modes: Mode[] = [];
-    const isAdmin = user.userType === 'ADMIN';
-    const isTransport = user.canTransport || user.userType === 'CARRIER';
-    // Buyer mode: BUYER type users, EXCEPT pure-transport individuals (driver with no company/sell flags)
-    const isPureTransportIndividual = isTransport && !user.canSell && !user.isCompany;
-    const isBuyer = user.userType === 'BUYER' && !isPureTransportIndividual;
-    if (isAdmin || isBuyer) modes.push('BUYER');
-    if (isAdmin || user.userType === 'SUPPLIER' || user.canSell) modes.push('SUPPLIER');
-    if (isAdmin || isTransport) modes.push('CARRIER');
-    // Fallback: if no mode resolved (shouldn't happen), give BUYER
-    return modes.length > 0 ? modes : ['BUYER'];
-  }, [user]);
+  // Backend computes available modes — just read them directly
+  const availableModes = useMemo<Mode[]>(
+    () => (user?.availableModes as Mode[] | undefined) ?? ['BUYER'],
+    [user],
+  );
 
   const [activeMode, setActiveModeState] = useState<Mode>(availableModes[0]);
 

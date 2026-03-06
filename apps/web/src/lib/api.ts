@@ -69,6 +69,7 @@ export async function getDocumentSummary(token: string): Promise<DocumentSummary
 // ── Users ─────────────────────────────────────────────────────
 
 export type UserType = "BUYER" | "SUPPLIER" | "CARRIER" | "ADMIN";
+export type Mode = 'BUYER' | 'SUPPLIER' | 'CARRIER';
 
 export type CompanyRole = 'OWNER' | 'MANAGER' | 'DRIVER' | 'MEMBER';
 
@@ -87,6 +88,7 @@ export interface User {
   avatar?: string;
   emailVerified: boolean;
   companyRole?: CompanyRole;
+  availableModes: Mode[];
   company?: {
     id: string;
     name: string;

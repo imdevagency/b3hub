@@ -162,7 +162,17 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    return user;
+    // Compute available dashboard modes server-side — single source of truth
+    const modes: string[] = [];
+    const isAdmin = user.userType === 'ADMIN';
+    const isTransport = user.canTransport || user.userType === 'CARRIER';
+    // A pure-transport individual (driver with no company/sell) doesn't get buyer mode
+    const isPureTransportIndividual = isTransport && !user.canSell && !user.isCompany;
+    if (isAdmin || (user.userType === 'BUYER' && !isPureTransportIndividual)) modes.push('BUYER');
+    if (isAdmin || user.userType === 'SUPPLIER' || user.canSell) modes.push('SUPPLIER');
+    if (isAdmin || isTransport) modes.push('CARRIER');
+
+    return { ...user, availableModes: modes.length > 0 ? modes : ['BUYER'] };
   }
 
   async updateProfile(userId: string, data: { firstName?: string; lastName?: string; phone?: string }) {
