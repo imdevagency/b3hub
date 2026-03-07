@@ -6,7 +6,10 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TransportJobStatus } from '@prisma/client';
-import { UpdateStatusDto, ALLOWED_DRIVER_STATUSES } from './dto/update-status.dto';
+import {
+  UpdateStatusDto,
+  ALLOWED_DRIVER_STATUSES,
+} from './dto/update-status.dto';
 import { CreateTransportJobDto } from './dto/create-transport-job.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
 import { SubmitDeliveryProofDto } from './dto/submit-delivery-proof.dto';
@@ -58,7 +61,12 @@ export class TransportJobsService {
       select: { id: true, licensePlate: true, vehicleType: true },
     },
     order: {
-      select: { id: true, orderNumber: true, siteContactName: true, siteContactPhone: true },
+      select: {
+        id: true,
+        orderNumber: true,
+        siteContactName: true,
+        siteContactPhone: true,
+      },
     },
   } as const;
 
@@ -177,7 +185,9 @@ export class TransportJobsService {
     // Ensure driver has no other active job
     const activeJob = await this.findMyActiveJob(driverId);
     if (activeJob) {
-      throw new BadRequestException('You already have an active job. Complete it first.');
+      throw new BadRequestException(
+        'You already have an active job. Complete it first.',
+      );
     }
 
     return this.prisma.transportJob.update({
@@ -203,7 +213,9 @@ export class TransportJobsService {
     return available
       .filter((job) => {
         if (job.pickupLat == null || job.pickupLng == null) return false;
-        return this.haversineKm(lat, lng, job.pickupLat, job.pickupLng) <= radiusKm;
+        return (
+          this.haversineKm(lat, lng, job.pickupLat, job.pickupLng) <= radiusKm
+        );
       })
       .map((job) => ({
         ...job,
@@ -214,7 +226,12 @@ export class TransportJobsService {
       .sort((a, b) => a.returnDistanceKm - b.returnDistanceKm);
   }
 
-  private haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  private haversineKm(
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number,
+  ): number {
     const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLng = ((lng2 - lng1) * Math.PI) / 180;
@@ -241,15 +258,21 @@ export class TransportJobsService {
     if (!job) throw new NotFoundException('Transport job not found');
 
     if (job.status !== TransportJobStatus.AVAILABLE) {
-      throw new BadRequestException('Job is no longer available for assignment');
+      throw new BadRequestException(
+        'Job is no longer available for assignment',
+      );
     }
 
-    const driver = await this.prisma.user.findUnique({ where: { id: body.driverId } });
+    const driver = await this.prisma.user.findUnique({
+      where: { id: body.driverId },
+    });
     if (!driver || !driver.canTransport) {
       throw new BadRequestException('User is not a valid driver');
     }
 
-    const vehicle = await this.prisma.vehicle.findUnique({ where: { id: body.vehicleId } });
+    const vehicle = await this.prisma.vehicle.findUnique({
+      where: { id: body.vehicleId },
+    });
     if (!vehicle) {
       throw new NotFoundException('Vehicle not found');
     }
@@ -296,9 +319,14 @@ export class TransportJobsService {
   async updateLocation(id: string, driverId: string, dto: UpdateLocationDto) {
     const job = await this.prisma.transportJob.findUnique({ where: { id } });
     if (!job) throw new NotFoundException('Transport job not found');
-    if (job.driverId !== driverId) throw new ForbiddenException('This is not your job');
+    if (job.driverId !== driverId)
+      throw new ForbiddenException('This is not your job');
 
-    const location = { lat: dto.lat, lng: dto.lng, updatedAt: new Date().toISOString() };
+    const location = {
+      lat: dto.lat,
+      lng: dto.lng,
+      updatedAt: new Date().toISOString(),
+    };
 
     // Update job's currentLocation
     await this.prisma.transportJob.update({
@@ -337,10 +365,15 @@ export class TransportJobsService {
   }
 
   // ── Submit delivery proof (transitions job → DELIVERED) ──────
-  async submitDeliveryProof(id: string, driverId: string, dto: SubmitDeliveryProofDto) {
+  async submitDeliveryProof(
+    id: string,
+    driverId: string,
+    dto: SubmitDeliveryProofDto,
+  ) {
     const job = await this.prisma.transportJob.findUnique({ where: { id } });
     if (!job) throw new NotFoundException('Transport job not found');
-    if (job.driverId !== driverId) throw new ForbiddenException('This is not your job');
+    if (job.driverId !== driverId)
+      throw new ForbiddenException('This is not your job');
     if (job.status !== TransportJobStatus.AT_DELIVERY) {
       throw new BadRequestException('Job must be AT_DELIVERY to submit proof');
     }

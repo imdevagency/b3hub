@@ -18,7 +18,10 @@ export default function DashboardRedirectPage() {
 
   useEffect(() => {
     if (isLoading) return;
-    if (!user) { router.replace('/login'); return; }
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
     router.replace(ROLE_HOME[activeMode]);
   }, [user, isLoading, activeMode, router]);
 

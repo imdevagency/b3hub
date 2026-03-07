@@ -24,19 +24,14 @@ const textVariants = cva('text-base', {
 });
 
 export interface TextProps
-  extends React.ComponentPropsWithoutRef<typeof RNText>,
-    VariantProps<typeof textVariants> {}
+  extends React.ComponentPropsWithoutRef<typeof RNText>, VariantProps<typeof textVariants> {}
 
 const Text = React.forwardRef<React.ElementRef<typeof RNText>, TextProps>(
   ({ className, variant, size, ...props }, ref) => {
     return (
-      <RNText
-        ref={ref}
-        className={cn(textVariants({ variant, size }), className)}
-        {...props}
-      />
+      <RNText ref={ref} className={cn(textVariants({ variant, size }), className)} {...props} />
     );
-  }
+  },
 );
 
 Text.displayName = 'Text';

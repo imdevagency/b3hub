@@ -1,5 +1,11 @@
 import 'dotenv/config';
-import { PrismaClient, UserType, UserStatus, MaterialCategory, MaterialUnit } from '@prisma/client';
+import {
+  PrismaClient,
+  UserType,
+  UserStatus,
+  MaterialCategory,
+  MaterialUnit,
+} from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
 
@@ -100,12 +106,10 @@ async function main() {
         status: UserStatus.ACTIVE,
       },
     });
-    const caps = [
-      user.canSell ? '📦 sell' : '',
-      user.canTransport ? '🚛 transport' : '',
-    ]
-      .filter(Boolean)
-      .join('  ') || '🛒 buyer only';
+    const caps =
+      [user.canSell ? '📦 sell' : '', user.canTransport ? '🚛 transport' : '']
+        .filter(Boolean)
+        .join('  ') || '🛒 buyer only';
 
     console.log(`✅  ${account.email.padEnd(24)} │ ${caps}`);
   }
@@ -113,7 +117,11 @@ async function main() {
   console.log('\n🔑 Password for all accounts: Demo1234!\n');
 
   // ── DriverProfiles for canTransport accounts ───────────────────────────────
-  const transportEmails = ['driver@demo.com', 'demo@demo.com', 'baltbuve@demo.com'];
+  const transportEmails = [
+    'driver@demo.com',
+    'demo@demo.com',
+    'baltbuve@demo.com',
+  ];
   for (const email of transportEmails) {
     const u = await prisma.user.findUnique({ where: { email } });
     if (!u) continue;
@@ -136,7 +144,9 @@ async function main() {
   }
 
   // ── Demo supplier company ──────────────────────────────────────────────────
-  const sellerUser = await prisma.user.findUnique({ where: { email: 'seller@demo.com' } });
+  const sellerUser = await prisma.user.findUnique({
+    where: { email: 'seller@demo.com' },
+  });
 
   const demoCompany = await prisma.company.upsert({
     where: { registrationNum: 'LV40003123456' },
@@ -168,7 +178,9 @@ async function main() {
   console.log(`✅  Company: ${demoCompany.name} (id: ${demoCompany.id})`);
 
   // ── Demo buyer company (so buyer@demo.com can place orders) ───────────────
-  const buyerUser = await prisma.user.findUnique({ where: { email: 'buyer@demo.com' } });
+  const buyerUser = await prisma.user.findUnique({
+    where: { email: 'buyer@demo.com' },
+  });
 
   const buyerCompany = await prisma.company.upsert({
     where: { registrationNum: 'LV40001234567' },
@@ -199,8 +211,12 @@ async function main() {
   console.log(`✅  Company: ${buyerCompany.name} (id: ${buyerCompany.id})`);
 
   // ── Full-service demo company (demo@demo.com + baltbuve@demo.com) ──────────
-  const demoUser = await prisma.user.findUnique({ where: { email: 'demo@demo.com' } });
-  const baltbuveUser = await prisma.user.findUnique({ where: { email: 'baltbuve@demo.com' } });
+  const demoUser = await prisma.user.findUnique({
+    where: { email: 'demo@demo.com' },
+  });
+  const baltbuveUser = await prisma.user.findUnique({
+    where: { email: 'baltbuve@demo.com' },
+  });
 
   const baltbuveCompany = await prisma.company.upsert({
     where: { registrationNum: 'LV40009999999' },
@@ -235,13 +251,16 @@ async function main() {
     });
   }
 
-  console.log(`✅  Company: ${baltbuveCompany.name} (id: ${baltbuveCompany.id})`);
+  console.log(
+    `✅  Company: ${baltbuveCompany.name} (id: ${baltbuveCompany.id})`,
+  );
 
   // ── Demo materials ─────────────────────────────────────────────────────────
   const materials = [
     {
       name: 'Smiltis (Frakcija 0-4 mm)',
-      description: 'Tīra kvarca smiltis celtniecībai un apzaļumošanai. Mitruma saturs < 5%.',
+      description:
+        'Tīra kvarca smiltis celtniecībai un apzaļumošanai. Mitruma saturs < 5%.',
       category: MaterialCategory.SAND,
       subCategory: 'Kvarca smiltis',
       basePrice: 9.5,
@@ -254,7 +273,8 @@ async function main() {
     },
     {
       name: 'Šķembas (Frakcija 8-16 mm)',
-      description: 'Granīta šķembas ceļu seguma pamatnei un betona maisījumiem.',
+      description:
+        'Granīta šķembas ceļu seguma pamatnei un betona maisījumiem.',
       category: MaterialCategory.GRAVEL,
       subCategory: 'Granīta šķembas',
       basePrice: 12.0,
@@ -280,7 +300,8 @@ async function main() {
     },
     {
       name: 'Dolomīts (Frakcija 16-32 mm)',
-      description: 'Dolomīta šķembas — lieliski piemērotas ceļu pamatnei un pagalmu segumiem.',
+      description:
+        'Dolomīta šķembas — lieliski piemērotas ceļu pamatnei un pagalmu segumiem.',
       category: MaterialCategory.STONE,
       subCategory: 'Dolomīts',
       basePrice: 14.5,
@@ -293,7 +314,8 @@ async function main() {
     },
     {
       name: 'Melnzeme (Dārza augsne)',
-      description: 'Auglīga dārza augsne ar humusa piedevu. Piemērota apzaļumošanai.',
+      description:
+        'Auglīga dārza augsne ar humusa piedevu. Piemērota apzaļumošanai.',
       category: MaterialCategory.SOIL,
       subCategory: 'Dārza augsne',
       basePrice: 18.0,
@@ -319,7 +341,8 @@ async function main() {
     },
     {
       name: 'Reciklēts betons (Frakcija 0-40 mm)',
-      description: 'Reciklēts betona materiāls ceļu un pamatņu izbūvei. Nav piemērots ekspozīcijas slānim.',
+      description:
+        'Reciklēts betona materiāls ceļu un pamatņu izbūvei. Nav piemērots ekspozīcijas slānim.',
       category: MaterialCategory.RECYCLED_CONCRETE,
       subCategory: 'RC šķembas',
       basePrice: 6.0,
@@ -332,7 +355,8 @@ async function main() {
     },
     {
       name: 'Asfalta granulāts (RAP)',
-      description: 'Reciklēts asfalta granulāts jauna asfalta ražošanai vai ceļu pamatnei.',
+      description:
+        'Reciklēts asfalta granulāts jauna asfalta ražošanai vai ceļu pamatnei.',
       category: MaterialCategory.ASPHALT,
       subCategory: 'RAP granulāts',
       basePrice: 8.5,
@@ -351,7 +375,13 @@ async function main() {
     });
     if (!existing) {
       await prisma.material.create({
-        data: { ...mat, supplierId: demoCompany.id, currency: 'EUR', certificates: [], images: [] },
+        data: {
+          ...mat,
+          supplierId: demoCompany.id,
+          currency: 'EUR',
+          certificates: [],
+          images: [],
+        },
       });
       console.log(`  📦  ${mat.name}`);
     }

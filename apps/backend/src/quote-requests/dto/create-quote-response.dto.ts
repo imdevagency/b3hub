@@ -1,4 +1,11 @@
-import { IsEnum, IsISO8601, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsISO8601,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { MaterialUnit } from '@prisma/client';
 

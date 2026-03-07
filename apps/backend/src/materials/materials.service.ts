@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
@@ -85,7 +89,11 @@ export class MaterialsService {
   ) {
     const material = await this.findOne(id);
 
-    if (currentUser && currentUser.userType !== 'ADMIN' && currentUser.companyId) {
+    if (
+      currentUser &&
+      currentUser.userType !== 'ADMIN' &&
+      currentUser.companyId
+    ) {
       if (material.supplierId !== currentUser.companyId) {
         throw new ForbiddenException('You do not own this material');
       }
@@ -112,7 +120,11 @@ export class MaterialsService {
   ) {
     const material = await this.findOne(id);
 
-    if (currentUser && currentUser.userType !== 'ADMIN' && currentUser.companyId) {
+    if (
+      currentUser &&
+      currentUser.userType !== 'ADMIN' &&
+      currentUser.companyId
+    ) {
       if (material.supplierId !== currentUser.companyId) {
         throw new ForbiddenException('You do not own this material');
       }
@@ -177,10 +189,7 @@ export class MaterialsService {
         category: params.category as any,
         ...(params.quantity
           ? {
-              OR: [
-                { minOrder: null },
-                { minOrder: { lte: params.quantity } },
-              ],
+              OR: [{ minOrder: null }, { minOrder: { lte: params.quantity } }],
             }
           : {}),
       },
@@ -212,7 +221,9 @@ export class MaterialsService {
           Math.cos((56.9 * Math.PI) / 180) *
             Math.cos((params.lat * Math.PI) / 180) *
             Math.sin(dLng / 2) ** 2;
-        distanceKm = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+        distanceKm = Math.round(
+          R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)),
+        );
       }
       return {
         ...m,
@@ -226,7 +237,10 @@ export class MaterialsService {
     // Filter out suppliers whose radius is set and buyer is outside it
     if (params.lat != null && params.lng != null) {
       results = results.filter(
-        (r) => r.deliveryRadiusKm == null || r.distanceKm == null || r.distanceKm <= r.deliveryRadiusKm,
+        (r) =>
+          r.deliveryRadiusKm == null ||
+          r.distanceKm == null ||
+          r.distanceKm <= r.deliveryRadiusKm,
       );
     }
 

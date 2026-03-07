@@ -21,7 +21,9 @@ export class CarrierSettingsService {
       include: { company: true },
     });
     if (!user?.company) {
-      throw new ForbiddenException('No company is associated with your account');
+      throw new ForbiddenException(
+        'No company is associated with your account',
+      );
     }
     if (!ALLOWED_TYPES.includes(user.company.companyType)) {
       throw new ForbiddenException(

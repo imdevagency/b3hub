@@ -1,6 +1,7 @@
 # B3Hub - Construction Marketplace Platform Architecture
 
 ## Overview
+
 B3Hub is a digital marketplace platform connecting construction companies, material suppliers, waste management companies, carriers, and drivers for efficient construction site supply, disposal, and circular economy management.
 
 ---
@@ -8,6 +9,7 @@ B3Hub is a digital marketplace platform connecting construction companies, mater
 ## System Architecture
 
 ### Technology Stack
+
 - **Backend**: NestJS (TypeScript)
 - **Web Frontend**: Next.js 14+ (App Router)
 - **Mobile**: Expo (React Native)
@@ -24,6 +26,7 @@ B3Hub is a digital marketplace platform connecting construction companies, mater
 ### Core Entities
 
 #### 1. **Users & Authentication**
+
 ```prisma
 model User {
   id            String   @id @default(cuid())
@@ -36,20 +39,20 @@ model User {
   status        UserStatus // ACTIVE, PENDING, SUSPENDED
   emailVerified Boolean  @default(false)
   phoneVerified Boolean  @default(false)
-  
+
   // Relations
   company       Company? @relation(fields: [companyId], references: [id])
   companyId     String?
-  
+
   // User-specific profiles
   driverProfile   DriverProfile?
   buyerProfile    BuyerProfile?
-  
+
   // Activity
   orders        Order[]
   transportJobs TransportJob[]
   notifications Notification[]
-  
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
@@ -72,6 +75,7 @@ enum UserStatus {
 ```
 
 #### 2. **Companies**
+
 ```prisma
 model Company {
   id              String      @id @default(cuid())
@@ -80,25 +84,25 @@ model Company {
   registrationNum String?     @unique
   taxId           String?
   companyType     CompanyType
-  
+
   // Contact
   email           String
   phone           String
   website         String?
-  
+
   // Address
   street          String
   city            String
   state           String
   postalCode      String
   country         String     @default("DE")
-  
+
   // Business info
   description     String?
   logo            String?
   verified        Boolean    @default(false)
   rating          Float?
-  
+
   // Relations
   users           User[]
   materials       Material[]
@@ -106,7 +110,7 @@ model Company {
   vehicles        Vehicle[]
   orders          Order[]
   recyclingCenters RecyclingCenter[]
-  
+
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 }
@@ -121,6 +125,7 @@ enum CompanyType {
 ```
 
 #### 3. **Materials**
+
 ```prisma
 model Material {
   id            String         @id @default(cuid())
@@ -128,31 +133,31 @@ model Material {
   description   String?
   category      MaterialCategory
   subCategory   String?
-  
+
   // Pricing
   basePrice     Float
   unit          MaterialUnit   // TONNE, M3, PIECE
   currency      String         @default("EUR")
-  
+
   // Stock & Availability
   inStock       Boolean        @default(true)
   minOrder      Float?
   maxOrder      Float?
-  
+
   // Quality
   isRecycled    Boolean        @default(false)
   quality       String?        // Quality grade
   certificates  String[]       // Certification IDs
-  
+
   // Media
   images        String[]
   specifications Json?
-  
+
   // Relations
   supplier      Company        @relation(fields: [supplierId], references: [id])
   supplierId    String
   orderItems    OrderItem[]
-  
+
   active        Boolean        @default(true)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -180,6 +185,7 @@ enum MaterialUnit {
 ```
 
 #### 4. **Containers**
+
 ```prisma
 model Container {
   id            String          @id @default(cuid())
@@ -187,22 +193,22 @@ model Container {
   size          ContainerSize
   volume        Float           // in m3
   maxWeight     Float           // in tonnes
-  
+
   // Pricing
   rentalPrice   Float           // per day
   deliveryFee   Float
   pickupFee     Float
   currency      String          @default("EUR")
-  
+
   // Availability
   status        ContainerStatus
   location      String?         // Current location
-  
+
   // Relations
   owner         Company         @relation(fields: [ownerId], references: [id])
   ownerId       String
   containerOrders ContainerOrder[]
-  
+
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 }
@@ -233,18 +239,19 @@ enum ContainerStatus {
 ```
 
 #### 5. **Orders**
+
 ```prisma
 model Order {
   id              String        @id @default(cuid())
   orderNumber     String        @unique
   orderType       OrderType
-  
+
   // Customer info
   buyer           Company       @relation(fields: [buyerId], references: [id])
   buyerId         String
   createdBy       User          @relation(fields: [createdById], references: [id])
   createdById     String
-  
+
   // Delivery details
   deliveryAddress String
   deliveryCity    String
@@ -252,28 +259,28 @@ model Order {
   deliveryPostal  String
   deliveryDate    DateTime?
   deliveryWindow  String?       // e.g., "8:00-12:00"
-  
+
   // Pricing
   subtotal        Float
   tax             Float
   deliveryFee     Float
   total           Float
   currency        String        @default("EUR")
-  
+
   // Status
   status          OrderStatus
   paymentStatus   PaymentStatus
-  
+
   // Special instructions
   notes           String?
   internalNotes   String?
-  
+
   // Relations
   items           OrderItem[]
   containerOrders ContainerOrder[]
   transportJobs   TransportJob[]
   invoices        Invoice[]
-  
+
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
@@ -306,45 +313,46 @@ enum PaymentStatus {
 
 model OrderItem {
   id          String   @id @default(cuid())
-  
+
   order       Order    @relation(fields: [orderId], references: [id])
   orderId     String
-  
+
   material    Material @relation(fields: [materialId], references: [id])
   materialId  String
-  
+
   quantity    Float
   unit        MaterialUnit
   unitPrice   Float
   total       Float
-  
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 ```
 
 #### 6. **Container Orders**
+
 ```prisma
 model ContainerOrder {
   id              String          @id @default(cuid())
-  
+
   order           Order           @relation(fields: [orderId], references: [id])
   orderId         String
-  
+
   container       Container       @relation(fields: [containerId], references: [id])
   containerId     String
-  
+
   // Rental period
   startDate       DateTime
   endDate         DateTime?
   actualEndDate   DateTime?
-  
+
   // Purpose
   purpose         WastePurpose
   wasteType       WasteType?
   estimatedWeight Float?
   actualWeight    Float?
-  
+
   // Pricing
   rentalDays      Int
   dailyRate       Float
@@ -352,16 +360,16 @@ model ContainerOrder {
   pickupFee       Float
   disposalFee     Float?
   total           Float
-  
+
   // Status
   status          ContainerOrderStatus
-  
+
   // Delivery & Pickup
   deliveryJob     TransportJob?   @relation("ContainerDelivery", fields: [deliveryJobId], references: [id])
   deliveryJobId   String?
   pickupJob       TransportJob?   @relation("ContainerPickup", fields: [pickupJobId], references: [id])
   pickupJobId     String?
-  
+
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 }
@@ -399,17 +407,18 @@ enum ContainerOrderStatus {
 ```
 
 #### 7. **Transport & Logistics**
+
 ```prisma
 model TransportJob {
   id              String            @id @default(cuid())
   jobNumber       String            @unique
-  
+
   // Job details
   order           Order?            @relation(fields: [orderId], references: [id])
   orderId         String?
-  
+
   jobType         TransportJobType
-  
+
   // Pickup
   pickupAddress   String
   pickupCity      String
@@ -417,7 +426,7 @@ model TransportJob {
   pickupPostal    String
   pickupDate      DateTime
   pickupWindow    String?
-  
+
   // Delivery
   deliveryAddress String
   deliveryCity    String
@@ -425,17 +434,17 @@ model TransportJob {
   deliveryPostal  String
   deliveryDate    DateTime
   deliveryWindow  String?
-  
+
   // Cargo
   cargoType       String
   cargoWeight     Float?
   cargoVolume     Float?
   specialRequirements String?
-  
+
   // Pricing
   rate            Float
   currency        String            @default("EUR")
-  
+
   // Assignment
   carrier         Company?          @relation(fields: [carrierId], references: [id])
   carrierId       String?
@@ -443,21 +452,21 @@ model TransportJob {
   driverId        String?
   vehicle         Vehicle?          @relation(fields: [vehicleId], references: [id])
   vehicleId       String?
-  
+
   // Status
   status          TransportJobStatus
-  
+
   // Tracking
   currentLocation Json?
   estimatedArrival DateTime?
-  
+
   // Proof of delivery
   deliveryProof   DeliveryProof?
-  
+
   // Relations
   containerDeliveries ContainerOrder[] @relation("ContainerDelivery")
   containerPickups    ContainerOrder[] @relation("ContainerPickup")
-  
+
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 }
@@ -485,60 +494,61 @@ enum TransportJobStatus {
 
 model DeliveryProof {
   id              String       @id @default(cuid())
-  
+
   transportJob    TransportJob @relation(fields: [transportJobId], references: [id])
   transportJobId  String       @unique
-  
+
   // Signatures
   recipientName   String
   recipientSignature String    // Base64 or URL
   driverSignature String       // Base64 or URL
-  
+
   // Photos
   photos          String[]     // URLs
-  
+
   // Timestamps
   deliveredAt     DateTime
-  
+
   // Notes
   notes           String?
-  
+
   createdAt       DateTime     @default(now())
 }
 ```
 
 #### 8. **Vehicles & Fleet**
+
 ```prisma
 model Vehicle {
   id              String        @id @default(cuid())
-  
+
   // Vehicle details
   make            String
   model           String
   year            Int
   licensePlate    String        @unique
   vin             String?
-  
+
   // Type & Capacity
   vehicleType     VehicleType
   capacity        Float         // in tonnes
   volumeCapacity  Float?        // in m3
-  
+
   // Owner
   company         Company       @relation(fields: [companyId], references: [id])
   companyId       String
-  
+
   // Status
   status          VehicleStatus
   currentLocation Json?
-  
+
   // Insurance & Compliance
   insuranceExpiry DateTime?
   inspectionExpiry DateTime?
-  
+
   // Relations
   transportJobs   TransportJob[]
-  
+
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
@@ -562,139 +572,143 @@ enum VehicleStatus {
 ```
 
 #### 9. **Recycling & Circular Economy**
+
 ```prisma
 model RecyclingCenter {
   id              String        @id @default(cuid())
   name            String
-  
+
   // Location
   address         String
   city            String
   state           String
   postalCode      String
   coordinates     Json?         // {lat, lng}
-  
+
   // Owner
   company         Company       @relation(fields: [companyId], references: [id])
   companyId       String
-  
+
   // Capabilities
   acceptedWasteTypes WasteType[]
   capacity        Float         // tonnes per day
   certifications  String[]
-  
+
   // Operating hours
   operatingHours  Json          // {monday: {open, close}, ...}
-  
+
   // Status
   active          Boolean       @default(true)
-  
+
   // Relations
   wasteRecords    WasteRecord[]
-  
+
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
 
 model WasteRecord {
   id              String          @id @default(cuid())
-  
+
   // Source
   containerOrder  ContainerOrder? @relation(fields: [containerOrderId], references: [id])
   containerOrderId String?
-  
+
   // Recycling center
   recyclingCenter RecyclingCenter @relation(fields: [recyclingCenterId], references: [id])
   recyclingCenterId String
-  
+
   // Waste details
   wasteType       WasteType
   weight          Float
   volume          Float?
-  
+
   // Processing
   processedDate   DateTime?
   recyclableWeight Float?
   recyclingRate   Float?        // percentage
-  
+
   // Output
   producedMaterialId String?    // If converted to recycled material
-  
+
   // Compliance
   certificateUrl  String?
-  
+
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 }
 ```
 
 #### 10. **Driver Profiles**
+
 ```prisma
 model DriverProfile {
   id              String   @id @default(cuid())
-  
+
   user            User     @relation(fields: [userId], references: [id])
   userId          String   @unique
-  
+
   // License info
   licenseNumber   String   @unique
   licenseType     String[] // ["B", "C", "CE"]
   licenseExpiry   DateTime
-  
+
   // Certifications
   certifications  String[]
-  
+
   // Performance
   rating          Float?
   completedJobs   Int      @default(0)
-  
+
   // Status
   available       Boolean  @default(true)
   currentLocation Json?
-  
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
 ```
 
 #### 11. **Buyer Profiles**
+
 ```prisma
 model BuyerProfile {
   id              String   @id @default(cuid())
-  
+
   user            User     @relation(fields: [userId], references: [id])
   userId          String   @unique
-  
+
   // Preferences
   preferredSuppliers String[]
   preferredCarriers  String[]
-  
+
   // Credit
   creditLimit     Float?
   creditUsed      Float    @default(0)
   paymentTerms    String?  // e.g., "NET30"
-  
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
 ```
 
 #### 12. **Notifications**
+
 ```prisma
 model Notification {
   id          String           @id @default(cuid())
-  
+
   user        User             @relation(fields: [userId], references: [id])
   userId      String
-  
+
   type        NotificationType
   title       String
   message     String
   data        Json?            // Additional data
-  
+
   read        Boolean          @default(false)
   readAt      DateTime?
-  
+
   createdAt   DateTime         @default(now())
 }
 
@@ -711,28 +725,29 @@ enum NotificationType {
 ```
 
 #### 13. **Invoices**
+
 ```prisma
 model Invoice {
   id            String        @id @default(cuid())
   invoiceNumber String        @unique
-  
+
   order         Order         @relation(fields: [orderId], references: [id])
   orderId       String
-  
+
   // Amounts
   subtotal      Float
   tax           Float
   total         Float
   currency      String        @default("EUR")
-  
+
   // Payment
   dueDate       DateTime
   paidDate      DateTime?
   paymentStatus PaymentStatus
-  
+
   // Documents
   pdfUrl        String?
-  
+
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
@@ -826,6 +841,7 @@ src/
 ## API Endpoints Structure
 
 ### Authentication
+
 ```
 POST   /api/v1/auth/register
 POST   /api/v1/auth/login
@@ -837,6 +853,7 @@ GET    /api/v1/auth/me
 ```
 
 ### Users
+
 ```
 GET    /api/v1/users
 GET    /api/v1/users/:id
@@ -847,6 +864,7 @@ PUT    /api/v1/users/:id/profile
 ```
 
 ### Companies
+
 ```
 GET    /api/v1/companies
 GET    /api/v1/companies/:id
@@ -857,6 +875,7 @@ POST   /api/v1/companies/:id/verify
 ```
 
 ### Materials
+
 ```
 GET    /api/v1/materials
 GET    /api/v1/materials/:id
@@ -868,6 +887,7 @@ GET    /api/v1/materials/search
 ```
 
 ### Containers
+
 ```
 GET    /api/v1/containers
 GET    /api/v1/containers/:id
@@ -878,6 +898,7 @@ GET    /api/v1/containers/available
 ```
 
 ### Orders
+
 ```
 GET    /api/v1/orders
 GET    /api/v1/orders/:id
@@ -890,6 +911,7 @@ GET    /api/v1/orders/:id/invoice
 ```
 
 ### Transport Jobs
+
 ```
 GET    /api/v1/transport/jobs
 GET    /api/v1/transport/jobs/:id
@@ -904,6 +926,7 @@ PUT    /api/v1/transport/jobs/:id/location
 ```
 
 ### Recycling
+
 ```
 GET    /api/v1/recycling/centers
 GET    /api/v1/recycling/centers/:id
@@ -914,6 +937,7 @@ GET    /api/v1/recycling/records/:id
 ```
 
 ### Fleet
+
 ```
 GET    /api/v1/fleet/vehicles
 GET    /api/v1/fleet/vehicles/:id
@@ -924,6 +948,7 @@ GET    /api/v1/fleet/vehicles/:id/location
 ```
 
 ### Notifications
+
 ```
 GET    /api/v1/notifications
 GET    /api/v1/notifications/:id
@@ -933,6 +958,7 @@ DELETE /api/v1/notifications/:id
 ```
 
 ### Analytics
+
 ```
 GET    /api/v1/analytics/dashboard
 GET    /api/v1/analytics/orders
@@ -995,6 +1021,7 @@ App
 ### Key Mobile Features
 
 #### For Buyers (Construction Companies)
+
 - Browse and order materials
 - Rent containers
 - Schedule deliveries
@@ -1003,6 +1030,7 @@ App
 - Rate suppliers and drivers
 
 #### For Suppliers
+
 - Manage product catalog
 - View and process orders
 - Update inventory
@@ -1010,6 +1038,7 @@ App
 - View analytics
 
 #### For Carriers
+
 - Browse available transport jobs
 - Assign drivers to jobs
 - Track fleet in real-time
@@ -1017,6 +1046,7 @@ App
 - View earnings
 
 #### For Drivers
+
 - View available jobs
 - Accept/reject jobs
 - Navigate to pickup/delivery
@@ -1025,6 +1055,7 @@ App
 - Track earnings
 
 #### For Recyclers
+
 - Manage recycling centers
 - Process waste records
 - Track recycling rates
@@ -1087,6 +1118,7 @@ app/
 ### Key Web Features
 
 #### Admin Dashboard
+
 - Platform overview and KPIs
 - User management
 - Company verification
@@ -1094,6 +1126,7 @@ app/
 - System settings
 
 #### Buyer Dashboard
+
 - Order management
 - Material catalog browsing
 - Container booking
@@ -1101,6 +1134,7 @@ app/
 - Invoice management
 
 #### Supplier Dashboard
+
 - Product management
 - Order processing
 - Inventory management
@@ -1108,6 +1142,7 @@ app/
 - Customer analytics
 
 #### Carrier Dashboard
+
 - Job management
 - Fleet tracking
 - Driver management
@@ -1115,6 +1150,7 @@ app/
 - Earnings reports
 
 #### Recycler Dashboard
+
 - Center management
 - Waste processing
 - Recycling analytics
@@ -1151,6 +1187,7 @@ const permissions = {
 ```
 
 ### Multi-Tenant Architecture
+
 - Users can belong to one company
 - Companies can have multiple users with different roles
 - Cross-company visibility controlled by permissions
@@ -1164,22 +1201,22 @@ const permissions = {
 
 ```typescript
 // Order updates
-'order:created'
-'order:updated'
-'order:status_changed'
+'order:created';
+'order:updated';
+'order:status_changed';
 
 // Transport tracking
-'transport:assigned'
-'transport:location_update'
-'transport:status_changed'
+'transport:assigned';
+'transport:location_update';
+'transport:status_changed';
 
 // Notifications
-'notification:new'
-'notification:read'
+'notification:new';
+'notification:read';
 
 // Chat (future)
-'message:new'
-'message:typing'
+'message:new';
+'message:typing';
 ```
 
 ---
@@ -1211,6 +1248,7 @@ storage/
 ## Key Workflows
 
 ### 1. Material Order Flow
+
 1. Buyer browses materials
 2. Adds items to cart
 3. Selects delivery date/location
@@ -1223,6 +1261,7 @@ storage/
 10. Payment processed
 
 ### 2. Container Rental Flow
+
 1. Buyer requests container
 2. Selects size, type, dates
 3. System finds available container
@@ -1235,6 +1274,7 @@ storage/
 10. Invoice generated
 
 ### 3. Waste-to-Resource Flow
+
 1. Container with waste picked up
 2. Delivered to recycling center
 3. Waste weighed and recorded
@@ -1250,18 +1290,21 @@ storage/
 ## Performance Considerations
 
 ### Caching Strategy
+
 - Redis for session management
 - API response caching for catalog data
 - Real-time data: no caching
 - CDN for static assets
 
 ### Database Optimization
+
 - Proper indexing on foreign keys
 - Composite indexes for common queries
 - Pagination for list endpoints
 - Database connection pooling
 
 ### API Rate Limiting
+
 - Per-user rate limits
 - Per-company rate limits
 - Public endpoints: stricter limits
@@ -1285,6 +1328,7 @@ storage/
 ## Monitoring & Analytics
 
 ### Application Metrics
+
 - API response times
 - Error rates
 - Active users
@@ -1292,6 +1336,7 @@ storage/
 - Transport efficiency
 
 ### Business Metrics
+
 - Revenue tracking
 - Order volume
 - Material flow

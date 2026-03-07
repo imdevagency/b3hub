@@ -3,7 +3,9 @@
 ## What's Been Implemented ✅
 
 ### 1. **Database Schema** (Prisma)
+
 Complete schema with 15+ models covering:
+
 - Users & Authentication
 - Companies & Organizations
 - Materials Catalog
@@ -14,6 +16,7 @@ Complete schema with 15+ models covering:
 - Notifications & Invoices
 
 ### 2. **Authentication Module**
+
 - JWT-based authentication
 - User registration and login
 - Password hashing with bcrypt
@@ -22,6 +25,7 @@ Complete schema with 15+ models covering:
 - Protected routes
 
 ### 3. **Materials Module**
+
 - Full CRUD operations
 - Category filtering
 - Search functionality
@@ -30,6 +34,7 @@ Complete schema with 15+ models covering:
 - Recycled materials support
 
 ### 4. **Orders Module**
+
 - Create orders with multiple items
 - Auto-calculate totals and tax
 - Order status management
@@ -37,6 +42,7 @@ Complete schema with 15+ models covering:
 - Auto-generated order numbers
 
 ### 5. **Common Utilities**
+
 - Custom decorators (@CurrentUser, @Roles)
 - Guards (RolesGuard, JwtAuthGuard)
 - Exception filters
@@ -44,6 +50,7 @@ Complete schema with 15+ models covering:
 - DTOs with validation
 
 ### 6. **Main Application**
+
 - Global validation pipes
 - CORS configuration
 - API versioning (/api/v1)
@@ -100,11 +107,13 @@ apps/backend/src/
 ## Next Steps to Run
 
 1. **Navigate to backend:**
+
    ```bash
    cd apps/backend
    ```
 
 2. **Install dependencies:**
+
    ```bash
    npm install
    ```
@@ -114,11 +123,13 @@ apps/backend/src/
    - Copy `.env.example` to `.env` and update credentials
 
 4. **Generate Prisma client:**
+
    ```bash
    npm run prisma:generate
    ```
 
 5. **Push database schema:**
+
    ```bash
    npm run prisma:push
    ```
@@ -131,6 +142,7 @@ apps/backend/src/
 ## Testing the API
 
 ### Register a new user:
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
@@ -144,6 +156,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 ```
 
 ### Login:
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
@@ -154,6 +167,7 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 ```
 
 ### Get profile (with token):
+
 ```bash
 curl http://localhost:3000/api/v1/auth/me \
   -H "Authorization: Bearer YOUR_TOKEN_HERE"
@@ -162,6 +176,7 @@ curl http://localhost:3000/api/v1/auth/me \
 ## Still To Implement
 
 ### Core Modules:
+
 - [ ] Companies module (company registration, verification)
 - [ ] Containers module (container inventory, availability)
 - [ ] Transport module (job management, driver assignment)
@@ -172,6 +187,7 @@ curl http://localhost:3000/api/v1/auth/me \
 - [ ] Analytics module (reporting, dashboards)
 
 ### Additional Features:
+
 - [ ] File upload (Supabase Storage integration)
 - [ ] Email notifications (SendGrid/AWS SES)
 - [ ] WebSocket for real-time updates
@@ -188,11 +204,13 @@ Once running, the following endpoints are available:
 **Base URL:** `http://localhost:3000/api/v1`
 
 ### Auth Endpoints:
+
 - `POST /auth/register` - Register new user
 - `POST /auth/login` - Login
 - `GET /auth/me` - Get current user (protected)
 
 ### Materials Endpoints (protected):
+
 - `GET /materials` - List materials
 - `GET /materials/:id` - Get material
 - `POST /materials` - Create material (Supplier/Admin)
@@ -202,6 +220,7 @@ Once running, the following endpoints are available:
 - `GET /materials/search?q=term` - Search materials
 
 ### Orders Endpoints (protected):
+
 - `GET /orders` - List orders
 - `GET /orders/:id` - Get order
 - `POST /orders` - Create order
@@ -212,6 +231,7 @@ Once running, the following endpoints are available:
 ## Database Models
 
 Key models in the schema:
+
 - User (authentication & profiles)
 - Company (organizations)
 - Material (catalog items)

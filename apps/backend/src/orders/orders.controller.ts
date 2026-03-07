@@ -5,7 +5,6 @@ import {
   Body,
   Patch,
   Param,
-  Delete,
   UseGuards,
   Query,
 } from '@nestjs/common';
@@ -73,7 +72,11 @@ export class OrdersController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto, @CurrentUser() user: any) {
+  update(
+    @Param('id') id: string,
+    @Body() updateOrderDto: UpdateOrderDto,
+    @CurrentUser() user: any,
+  ) {
     return this.ordersService.update(id, updateOrderDto, {
       userId: user.userId,
       userType: user.userType,

@@ -1,8 +1,7 @@
 export const lv = {
   welcome: {
     title: 'Laipni lūgti B3Hub',
-    subtitle:
-      'Jūsu visaptverošā platforma celtniecības materiāliem, pasūtījumiem un loģistikai.',
+    subtitle: 'Jūsu visaptverošā platforma celtniecības materiāliem, pasūtījumiem un loģistikai.',
     getStarted: 'Sākt',
     signIn: 'Ieiet',
     features: {
@@ -167,12 +166,12 @@ export const lv = {
       newOrder: 'Jauns pasūtījums',
     },
     status: {
-      PENDING:   { label: 'Gaida apstiprinājumu', bg: '#fef3c7', color: '#d97706' },
-      CONFIRMED: { label: 'Apstiprināts',          bg: '#dbeafe', color: '#2563eb' },
-      DELIVERED: { label: 'Piegādāts',             bg: '#f3e8ff', color: '#7c3aed' },
-      COLLECTED: { label: 'Savākts',               bg: '#d1fae5', color: '#059669' },
-      COMPLETED: { label: 'Pabeigts',              bg: '#d1fae5', color: '#059669' },
-      CANCELLED: { label: 'Atcelts',               bg: '#fee2e2', color: '#dc2626' },
+      PENDING: { label: 'Gaida apstiprinājumu', bg: '#fef3c7', color: '#d97706' },
+      CONFIRMED: { label: 'Apstiprināts', bg: '#dbeafe', color: '#2563eb' },
+      DELIVERED: { label: 'Piegādāts', bg: '#f3e8ff', color: '#7c3aed' },
+      COLLECTED: { label: 'Savākts', bg: '#d1fae5', color: '#059669' },
+      COMPLETED: { label: 'Pabeigts', bg: '#d1fae5', color: '#059669' },
+      CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: '#dc2626' },
     } as Record<string, { label: string; bg: string; color: string }>,
     myOrders: 'Mani pasūtījumi',
     noOrders: 'Nav pasūtījumu',
@@ -391,7 +390,7 @@ export const lv = {
     openBadge: 'Atklāts',
     quotedBadge: 'Ar piedāvājumiem',
     alreadyResponded: 'Jūs jau esat iesnieguši piedāvājumu ✓',
-    responseCount: (n: number) => n === 1 ? '1 piedāvājums' : `${n} piedāvājumi`,
+    responseCount: (n: number) => (n === 1 ? '1 piedāvājums' : `${n} piedāvājumi`),
     noResponses: 'Vēl nav piedāvājumu',
     submitBtn: 'Iesniegt piedāvājumu',
     viewDetails: 'Skatīt detaļas',
@@ -527,4 +526,3 @@ export type Translations = typeof lv;
 
 /** Currently active translations – swap this export to change language. */
 export const t = lv;
-

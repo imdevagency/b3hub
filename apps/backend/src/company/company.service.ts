@@ -75,7 +75,9 @@ export class CompanyService {
 
   private assertIsOwner(currentUser: RequestingUser): void {
     if (currentUser.companyRole !== 'OWNER') {
-      throw new ForbiddenException('Only the company owner can perform this action');
+      throw new ForbiddenException(
+        'Only the company owner can perform this action',
+      );
     }
   }
 
@@ -145,7 +147,9 @@ export class CompanyService {
 
     // Check for duplicate email
     if (dto.email) {
-      const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      const existing = await this.prisma.user.findUnique({
+        where: { email: dto.email },
+      });
       if (existing) {
         throw new BadRequestException('A user with this email already exists');
       }
@@ -164,7 +168,8 @@ export class CompanyService {
         password: hashedPassword,
         companyId,
         companyRole: dto.companyRole,
-        canTransport: dto.canTransport ?? (dto.companyRole === CompanyRole.DRIVER),
+        canTransport:
+          dto.canTransport ?? dto.companyRole === CompanyRole.DRIVER,
         canSell: dto.canSell ?? false,
         status: 'ACTIVE',
       },
@@ -186,7 +191,8 @@ export class CompanyService {
     const member = await this.prisma.user.findFirst({
       where: { id: memberId, companyId },
     });
-    if (!member) throw new NotFoundException('Member not found in your company');
+    if (!member)
+      throw new NotFoundException('Member not found in your company');
 
     // Only owners can promote to OWNER or MANAGER
     if (
@@ -195,11 +201,17 @@ export class CompanyService {
         dto.companyRole === CompanyRole.MANAGER) &&
       currentUser.companyRole !== 'OWNER'
     ) {
-      throw new ForbiddenException('Only owners can set the owner or manager role');
+      throw new ForbiddenException(
+        'Only owners can set the owner or manager role',
+      );
     }
 
     // Owners cannot demote themselves
-    if (memberId === currentUser.userId && dto.companyRole && dto.companyRole !== CompanyRole.OWNER) {
+    if (
+      memberId === currentUser.userId &&
+      dto.companyRole &&
+      dto.companyRole !== CompanyRole.OWNER
+    ) {
       throw new BadRequestException('You cannot change your own owner role');
     }
 
@@ -207,7 +219,9 @@ export class CompanyService {
       where: { id: memberId },
       data: {
         ...(dto.companyRole !== undefined && { companyRole: dto.companyRole }),
-        ...(dto.canTransport !== undefined && { canTransport: dto.canTransport }),
+        ...(dto.canTransport !== undefined && {
+          canTransport: dto.canTransport,
+        }),
         ...(dto.canSell !== undefined && { canSell: dto.canSell }),
       },
       select: MEMBER_SELECT,
@@ -219,13 +233,16 @@ export class CompanyService {
     this.assertIsOwnerOrManager(currentUser);
 
     if (memberId === currentUser.userId) {
-      throw new BadRequestException('You cannot remove yourself from the company');
+      throw new BadRequestException(
+        'You cannot remove yourself from the company',
+      );
     }
 
     const member = await this.prisma.user.findFirst({
       where: { id: memberId, companyId },
     });
-    if (!member) throw new NotFoundException('Member not found in your company');
+    if (!member)
+      throw new NotFoundException('Member not found in your company');
 
     // Don't delete — deactivate and detach from company
     await this.prisma.user.update({
@@ -244,8 +261,9 @@ export class CompanyService {
 
   private generateTempPassword(): string {
     const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-    return Array.from({ length: 10 }, () =>
-      chars[Math.floor(Math.random() * chars.length)],
+    return Array.from(
+      { length: 10 },
+      () => chars[Math.floor(Math.random() * chars.length)],
     ).join('');
   }
 }

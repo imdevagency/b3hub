@@ -8,7 +8,6 @@ import {
   RefreshCw,
   Users,
   Search,
-  ShieldCheck,
   Truck,
   Package,
   SkipForward,

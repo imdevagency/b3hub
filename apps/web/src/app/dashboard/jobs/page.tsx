@@ -32,11 +32,9 @@ import {
   type Vehicle,
   type ApiDriver,
   type CreateTransportJobInput,
-  type TransportJobType,
-  type VehicleTypeEnum,
 } from '@/lib/api';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { CalendarDays, Users, ChevronRight, CircleCheck } from 'lucide-react';
+import { CalendarDays, Users, CircleCheck } from 'lucide-react';
 
 // Dynamic import — Mapbox needs browser
 const TransportJobsMapDynamic = dynamic(() => import('@/components/tracking/TransportJobsMap'), {

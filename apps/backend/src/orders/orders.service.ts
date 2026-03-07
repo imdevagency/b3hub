@@ -7,7 +7,13 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { OrderStatus, OrderType, PaymentStatus, TransportJobStatus, TransportJobType } from '@prisma/client';
+import {
+  OrderStatus,
+  OrderType,
+  PaymentStatus,
+  TransportJobStatus,
+  TransportJobType,
+} from '@prisma/client';
 import { RequestingUser } from '../common/types/requesting-user.interface';
 
 @Injectable()
@@ -17,9 +23,13 @@ export class OrdersService {
   async create(createOrderDto: CreateOrderDto, currentUser: RequestingUser) {
     // Transport-only users cannot place orders
     const transportOnly =
-      currentUser.canTransport && !currentUser.canSell && currentUser.userType !== 'ADMIN';
+      currentUser.canTransport &&
+      !currentUser.canSell &&
+      currentUser.userType !== 'ADMIN';
     if (transportOnly) {
-      throw new ForbiddenException('Transport-only accounts cannot create orders');
+      throw new ForbiddenException(
+        'Transport-only accounts cannot create orders',
+      );
     }
 
     const userId = currentUser.userId;
@@ -54,7 +64,9 @@ export class OrdersService {
         deliveryCity: orderData.deliveryCity,
         deliveryState: orderData.deliveryState,
         deliveryPostal: orderData.deliveryPostal,
-        deliveryDate: orderData.deliveryDate ? new Date(orderData.deliveryDate) : undefined,
+        deliveryDate: orderData.deliveryDate
+          ? new Date(orderData.deliveryDate)
+          : undefined,
         deliveryWindow: orderData.deliveryWindow,
         deliveryFee: orderData.deliveryFee,
         notes: orderData.notes,
@@ -139,7 +151,12 @@ export class OrdersService {
             id: true,
             status: true,
             driver: {
-              select: { id: true, firstName: true, lastName: true, phone: true },
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                phone: true,
+              },
             },
           },
         },
@@ -162,7 +179,9 @@ export class OrdersService {
     // Transport-only users have no buying capability — skip the "created by" bucket
     // so they don't appear in order listings as buyers and can't create orders.
     const transportOnly =
-      currentUser.canTransport && !currentUser.canSell && currentUser.userType !== 'ADMIN';
+      currentUser.canTransport &&
+      !currentUser.canSell &&
+      currentUser.userType !== 'ADMIN';
 
     if (!transportOnly) {
       orConditions.push({ createdById: currentUser.userId });
@@ -189,7 +208,9 @@ export class OrdersService {
     if (currentUser.userType === 'ADMIN') return;
 
     const transportOnly =
-      currentUser.canTransport && !currentUser.canSell && currentUser.userType !== 'ADMIN';
+      currentUser.canTransport &&
+      !currentUser.canSell &&
+      currentUser.userType !== 'ADMIN';
 
     // Buyer: created this order (not applicable to transport-only accounts)
     if (!transportOnly && order.createdById === currentUser.userId) return;
@@ -197,7 +218,10 @@ export class OrdersService {
     // Seller: has their materials in this order
     if (currentUser.canSell && currentUser.companyId) {
       const count = await this.prisma.orderItem.count({
-        where: { orderId: order.id, material: { supplierId: currentUser.companyId } },
+        where: {
+          orderId: order.id,
+          material: { supplierId: currentUser.companyId },
+        },
       });
       if (count > 0) return;
     }
@@ -246,7 +270,12 @@ export class OrdersService {
         transportJobs: {
           include: {
             driver: {
-              select: { id: true, firstName: true, lastName: true, phone: true },
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                phone: true,
+              },
             },
             vehicle: {
               select: { id: true, licensePlate: true, vehicleType: true },
@@ -268,22 +297,36 @@ export class OrdersService {
     return order;
   }
 
-  async update(id: string, updateOrderDto: UpdateOrderDto, currentUser: RequestingUser) {
+  async update(
+    id: string,
+    updateOrderDto: UpdateOrderDto,
+    currentUser: RequestingUser,
+  ) {
     await this.findOne(id, currentUser); // Check existence and ownership
 
     const updateData: any = {};
-    
-    if (updateOrderDto.deliveryAddress) updateData.deliveryAddress = updateOrderDto.deliveryAddress;
-    if (updateOrderDto.deliveryCity) updateData.deliveryCity = updateOrderDto.deliveryCity;
-    if (updateOrderDto.deliveryState) updateData.deliveryState = updateOrderDto.deliveryState;
-    if (updateOrderDto.deliveryPostal) updateData.deliveryPostal = updateOrderDto.deliveryPostal;
-    if (updateOrderDto.deliveryDate) updateData.deliveryDate = new Date(updateOrderDto.deliveryDate);
-    if (updateOrderDto.deliveryWindow) updateData.deliveryWindow = updateOrderDto.deliveryWindow;
-    if (updateOrderDto.deliveryFee !== undefined) updateData.deliveryFee = updateOrderDto.deliveryFee;
+
+    if (updateOrderDto.deliveryAddress)
+      updateData.deliveryAddress = updateOrderDto.deliveryAddress;
+    if (updateOrderDto.deliveryCity)
+      updateData.deliveryCity = updateOrderDto.deliveryCity;
+    if (updateOrderDto.deliveryState)
+      updateData.deliveryState = updateOrderDto.deliveryState;
+    if (updateOrderDto.deliveryPostal)
+      updateData.deliveryPostal = updateOrderDto.deliveryPostal;
+    if (updateOrderDto.deliveryDate)
+      updateData.deliveryDate = new Date(updateOrderDto.deliveryDate);
+    if (updateOrderDto.deliveryWindow)
+      updateData.deliveryWindow = updateOrderDto.deliveryWindow;
+    if (updateOrderDto.deliveryFee !== undefined)
+      updateData.deliveryFee = updateOrderDto.deliveryFee;
     if (updateOrderDto.notes) updateData.notes = updateOrderDto.notes;
-    if (updateOrderDto.siteContactName !== undefined) updateData.siteContactName = updateOrderDto.siteContactName;
-    if (updateOrderDto.siteContactPhone !== undefined) updateData.siteContactPhone = updateOrderDto.siteContactPhone;
-    if (updateOrderDto.paymentStatus) updateData.paymentStatus = updateOrderDto.paymentStatus;
+    if (updateOrderDto.siteContactName !== undefined)
+      updateData.siteContactName = updateOrderDto.siteContactName;
+    if (updateOrderDto.siteContactPhone !== undefined)
+      updateData.siteContactPhone = updateOrderDto.siteContactPhone;
+    if (updateOrderDto.paymentStatus)
+      updateData.paymentStatus = updateOrderDto.paymentStatus;
 
     return this.prisma.order.update({
       where: { id },
@@ -315,7 +358,10 @@ export class OrdersService {
       try {
         await this.spawnInvoice(order);
       } catch (err) {
-        console.error(`[OrdersService] Failed to auto-create invoice for order ${id}:`, err);
+        console.error(
+          `[OrdersService] Failed to auto-create invoice for order ${id}:`,
+          err,
+        );
       }
     }
 
@@ -325,8 +371,13 @@ export class OrdersService {
   async cancel(id: string, currentUser: RequestingUser) {
     const order = await this.findOne(id, currentUser);
 
-    if (order.status === OrderStatus.DELIVERED || order.status === OrderStatus.COMPLETED) {
-      throw new BadRequestException('Cannot cancel a delivered or completed order');
+    if (
+      order.status === OrderStatus.DELIVERED ||
+      order.status === OrderStatus.COMPLETED
+    ) {
+      throw new BadRequestException(
+        'Cannot cancel a delivered or completed order',
+      );
     }
 
     return this.prisma.order.update({
@@ -339,21 +390,33 @@ export class OrdersService {
     const { userId, canSell, canTransport, companyId } = currentUser;
 
     // ── Always compute buyer section ──────────────────────────────────────────
-    const [activeOrders, awaitingDelivery, skipHireOrders, documents] = await Promise.all([
-      this.prisma.order.count({
-        where: {
-          createdById: userId,
-          status: { in: [OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.IN_PROGRESS] },
-        },
-      }),
-      this.prisma.order.count({
-        where: { createdById: userId, status: OrderStatus.DELIVERED },
-      }),
-      this.prisma.skipHireOrder.count({ where: { userId } }),
-      this.prisma.document.count({ where: { ownerId: userId } }),
-    ]);
+    const [activeOrders, awaitingDelivery, skipHireOrders, documents] =
+      await Promise.all([
+        this.prisma.order.count({
+          where: {
+            createdById: userId,
+            status: {
+              in: [
+                OrderStatus.PENDING,
+                OrderStatus.CONFIRMED,
+                OrderStatus.IN_PROGRESS,
+              ],
+            },
+          },
+        }),
+        this.prisma.order.count({
+          where: { createdById: userId, status: OrderStatus.DELIVERED },
+        }),
+        this.prisma.skipHireOrder.count({ where: { userId } }),
+        this.prisma.document.count({ where: { ownerId: userId } }),
+      ]);
 
-    const buyer = { activeOrders, awaitingDelivery, myOrders: skipHireOrders, documents };
+    const buyer = {
+      activeOrders,
+      awaitingDelivery,
+      myOrders: skipHireOrders,
+      documents,
+    };
 
     // ── Seller section (only if canSell) ──────────────────────────────────────
     let seller: Record<string, any> | null = null;
@@ -361,7 +424,9 @@ export class OrdersService {
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const [activeListings, pendingOrders, revenueResult] = await Promise.all([
-        this.prisma.material.count({ where: { supplierId: companyId, active: true } }),
+        this.prisma.material.count({
+          where: { supplierId: companyId, active: true },
+        }),
         this.prisma.order.count({
           where: {
             status: OrderStatus.PENDING,
@@ -372,7 +437,14 @@ export class OrdersService {
           where: {
             material: { supplierId: companyId },
             order: {
-              status: { in: [OrderStatus.CONFIRMED, OrderStatus.IN_PROGRESS, OrderStatus.DELIVERED, OrderStatus.COMPLETED] },
+              status: {
+                in: [
+                  OrderStatus.CONFIRMED,
+                  OrderStatus.IN_PROGRESS,
+                  OrderStatus.DELIVERED,
+                  OrderStatus.COMPLETED,
+                ],
+              },
               createdAt: { gte: startOfMonth },
             },
           },
@@ -387,7 +459,12 @@ export class OrdersService {
       };
     } else if (canSell) {
       // canSell but no company linked yet
-      seller = { activeListings: 0, pendingOrders: 0, monthlyRevenue: 0, documents };
+      seller = {
+        activeListings: 0,
+        pendingOrders: 0,
+        monthlyRevenue: 0,
+        documents,
+      };
     }
 
     // ── Transport section (only if canTransport) ──────────────────────────────
@@ -453,7 +530,9 @@ export class OrdersService {
       },
     });
 
-    console.log(`[OrdersService] Invoice ${invoiceNumber} created for order ${order.id}`);
+    console.log(
+      `[OrdersService] Invoice ${invoiceNumber} created for order ${order.id}`,
+    );
   }
 
   private async generateInvoiceNumber(): Promise<string> {
@@ -480,7 +559,13 @@ export class OrdersService {
       where: { id: items[0].materialId },
       include: {
         supplier: {
-          select: { name: true, street: true, city: true, state: true, postalCode: true },
+          select: {
+            name: true,
+            street: true,
+            city: true,
+            state: true,
+            postalCode: true,
+          },
         },
       },
     });
@@ -494,7 +579,9 @@ export class OrdersService {
 
     const totalWeight = items.reduce((sum, item) => sum + item.quantity, 0);
     const cargoType = firstMaterial.name;
-    const pickupDate = orderData.deliveryDate ? new Date(orderData.deliveryDate) : new Date();
+    const pickupDate = orderData.deliveryDate
+      ? new Date(orderData.deliveryDate)
+      : new Date();
     const jobNumber = await this.generateTransportJobNumber();
 
     await this.prisma.transportJob.create({

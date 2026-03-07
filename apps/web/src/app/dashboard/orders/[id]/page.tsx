@@ -21,7 +21,6 @@ import {
   CheckCircle2,
   Circle,
   Clock,
-  Package,
   Phone,
   RefreshCw,
   Truck,

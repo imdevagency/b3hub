@@ -17,7 +17,6 @@ import {
   Receipt,
   Settings,
   ShoppingCart,
-  Truck,
   ShieldCheck,
   Users,
 } from 'lucide-react';

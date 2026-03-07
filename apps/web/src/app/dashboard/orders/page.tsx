@@ -51,7 +51,7 @@ function fmtDate(iso: string | null | undefined): string {
   });
 }
 
-function fmtMoney(n: number, currency = 'EUR'): string {
+function fmtMoney(n: number): string {
   return `€${Math.round(n).toLocaleString('lv-LV')}`;
 }
 
@@ -175,7 +175,7 @@ function StaticMapEmbed({
     <div className="w-full rounded-2xl overflow-hidden border shadow-sm" style={{ height: 280 }}>
       {key ? (
         <iframe
-          title="Maršruts"
+          title={`Maršruts: ${pickupLabel} → ${deliveryLabel}`}
           width="100%"
           height="100%"
           style={{ border: 0 }}
@@ -1115,7 +1115,7 @@ function SupplierView({ token }: { token: string }) {
                       {fmtDate(order.deliveryDate)}
                     </td>
                     <td className="px-4 py-3 text-right font-bold tabular-nums">
-                      {fmtMoney(order.total, order.currency)}
+                      {fmtMoney(order.total)}
                     </td>
                     <td className="px-4 py-3">
                       {order.status === 'PENDING' ? (
@@ -1414,7 +1414,7 @@ function BuyerView({ token }: { token: string }) {
                       {fmtDate(o.deliveryDate)}
                     </td>
                     <td className="px-4 py-3 text-right font-bold tabular-nums">
-                      {fmtMoney(o.total, o.currency)}
+                      {fmtMoney(o.total)}
                     </td>
                   </tr>
                 );

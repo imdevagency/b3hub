@@ -14,7 +14,6 @@ import {
 } from '@/lib/api';
 import {
   ArrowRight,
-  Check,
   Leaf,
   Loader2,
   Minus,

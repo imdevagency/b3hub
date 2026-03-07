@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import type { ApiMaterial, MaterialUnit } from './api';
+import type { ApiMaterial } from './api';
 
 // ── Types ─────────────────────────────────────────────────────
 

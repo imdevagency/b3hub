@@ -26,25 +26,32 @@ Update the following values in `.env`:
 ## Prisma Workflow
 
 ### 1. Generate Prisma Client
+
 After modifying `prisma/schema.prisma`:
+
 ```bash
 npm run prisma:generate
 ```
 
 ### 2. Create and Apply Migrations
+
 ```bash
 npm run prisma:migrate
 # Follow prompts to name your migration
 ```
 
 ### 3. Push Schema (Development)
+
 Quick way to sync schema without creating migration files:
+
 ```bash
 npm run prisma:push
 ```
 
 ### 4. Prisma Studio
+
 Visual database browser:
+
 ```bash
 npm run prisma:studio
 ```

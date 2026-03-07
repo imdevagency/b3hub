@@ -29,7 +29,10 @@ export class MaterialsController {
   constructor(private readonly materialsService: MaterialsService) {}
 
   @Post()
-  create(@Body() createMaterialDto: CreateMaterialDto, @CurrentUser() user: any) {
+  create(
+    @Body() createMaterialDto: CreateMaterialDto,
+    @CurrentUser() user: any,
+  ) {
     assertCanSell(user);
     return this.materialsService.create(createMaterialDto);
   }
@@ -82,7 +85,11 @@ export class MaterialsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateMaterialDto: UpdateMaterialDto, @CurrentUser() user: any) {
+  update(
+    @Param('id') id: string,
+    @Body() updateMaterialDto: UpdateMaterialDto,
+    @CurrentUser() user: any,
+  ) {
     assertCanSell(user);
     return this.materialsService.update(id, updateMaterialDto, {
       userId: user.userId,

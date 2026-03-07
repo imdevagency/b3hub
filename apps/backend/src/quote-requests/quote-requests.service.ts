@@ -7,14 +7,22 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateQuoteRequestDto } from './dto/create-quote-request.dto';
 import { CreateQuoteResponseDto } from './dto/create-quote-response.dto';
-import { OrderStatus, OrderType, PaymentStatus, QuoteRequestStatus, QuoteResponseStatus } from '@prisma/client';
+import {
+  OrderStatus,
+  OrderType,
+  PaymentStatus,
+  QuoteRequestStatus,
+  QuoteResponseStatus,
+} from '@prisma/client';
 
 const INCLUDE_REQUEST = {
   buyer: { select: { id: true, firstName: true, lastName: true, phone: true } },
   responses: {
     orderBy: { pricePerUnit: 'asc' as const },
     include: {
-      supplier: { select: { id: true, name: true, city: true, rating: true, phone: true } },
+      supplier: {
+        select: { id: true, name: true, city: true, rating: true, phone: true },
+      },
     },
   },
 } as const;
@@ -52,7 +60,8 @@ export class QuoteRequestsService {
       include: INCLUDE_REQUEST,
     });
     if (!req) throw new NotFoundException('Quote request not found');
-    if (req.buyerId !== userId) throw new ForbiddenException('Not your request');
+    if (req.buyerId !== userId)
+      throw new ForbiddenException('Not your request');
     return req;
   }
 
@@ -68,7 +77,10 @@ export class QuoteRequestsService {
   // ── Buyer: accept a specific supplier response → creates order
   async acceptResponse(requestId: string, responseId: string, userId: string) {
     const req = await this.findOne(requestId, userId);
-    if (req.status !== QuoteRequestStatus.PENDING && req.status !== QuoteRequestStatus.QUOTED) {
+    if (
+      req.status !== QuoteRequestStatus.PENDING &&
+      req.status !== QuoteRequestStatus.QUOTED
+    ) {
       throw new BadRequestException('This request is no longer open');
     }
 
@@ -139,19 +151,23 @@ export class QuoteRequestsService {
           ...(existingMaterial
             ? {
                 items: {
-                  create: [{
-                    materialId: existingMaterial.id,
-                    quantity: req.quantity,
-                    unit: req.unit,
-                    unitPrice,
-                    total: subtotal,
-                  }],
+                  create: [
+                    {
+                      materialId: existingMaterial.id,
+                      quantity: req.quantity,
+                      unit: req.unit,
+                      unitPrice,
+                      total: subtotal,
+                    },
+                  ],
                 },
               }
             : {}),
         },
         include: {
-          items: { include: { material: { select: { name: true, category: true } } } },
+          items: {
+            include: { material: { select: { name: true, category: true } } },
+          },
         },
       });
 
@@ -162,11 +178,22 @@ export class QuoteRequestsService {
   }
 
   // ── Supplier: respond to a request ───────────────────────────
-  async addResponse(requestId: string, dto: CreateQuoteResponseDto, companyId: string) {
-    const req = await this.prisma.quoteRequest.findUnique({ where: { id: requestId } });
+  async addResponse(
+    requestId: string,
+    dto: CreateQuoteResponseDto,
+    companyId: string,
+  ) {
+    const req = await this.prisma.quoteRequest.findUnique({
+      where: { id: requestId },
+    });
     if (!req) throw new NotFoundException('Quote request not found');
-    if (req.status !== QuoteRequestStatus.PENDING && req.status !== QuoteRequestStatus.QUOTED) {
-      throw new BadRequestException('This request is no longer accepting responses');
+    if (
+      req.status !== QuoteRequestStatus.PENDING &&
+      req.status !== QuoteRequestStatus.QUOTED
+    ) {
+      throw new BadRequestException(
+        'This request is no longer accepting responses',
+      );
     }
 
     const totalPrice = Math.round(dto.pricePerUnit * req.quantity * 100) / 100;
@@ -199,7 +226,9 @@ export class QuoteRequestsService {
   // ── Supplier: list all open requests they can respond to ─────
   async findOpenRequests() {
     return this.prisma.quoteRequest.findMany({
-      where: { status: { in: [QuoteRequestStatus.PENDING, QuoteRequestStatus.QUOTED] } },
+      where: {
+        status: { in: [QuoteRequestStatus.PENDING, QuoteRequestStatus.QUOTED] },
+      },
       include: {
         buyer: { select: { firstName: true, lastName: true } },
         responses: { select: { supplierId: true } },

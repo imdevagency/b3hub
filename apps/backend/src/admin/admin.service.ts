@@ -46,8 +46,12 @@ export class AdminService {
       where: { id },
       data: {
         ...(data.canSell !== undefined && { canSell: data.canSell }),
-        ...(data.canTransport !== undefined && { canTransport: data.canTransport }),
-        ...(data.canSkipHire !== undefined && { canSkipHire: data.canSkipHire }),
+        ...(data.canTransport !== undefined && {
+          canTransport: data.canTransport,
+        }),
+        ...(data.canSkipHire !== undefined && {
+          canSkipHire: data.canSkipHire,
+        }),
         ...(data.status !== undefined && { status: data.status as any }),
         ...(data.userType !== undefined && { userType: data.userType as any }),
       },
@@ -56,18 +60,26 @@ export class AdminService {
   }
 
   async getStats() {
-    const [totalUsers, totalOrders, pendingApplications, activeJobs] = await Promise.all([
-      this.prisma.user.count(),
-      this.prisma.order.count(),
-      this.prisma.providerApplication.count({ where: { status: 'PENDING' } }),
-      this.prisma.transportJob.count({
-        where: {
-          status: {
-            in: ['ACCEPTED', 'EN_ROUTE_PICKUP', 'AT_PICKUP', 'LOADED', 'EN_ROUTE_DELIVERY', 'AT_DELIVERY'],
+    const [totalUsers, totalOrders, pendingApplications, activeJobs] =
+      await Promise.all([
+        this.prisma.user.count(),
+        this.prisma.order.count(),
+        this.prisma.providerApplication.count({ where: { status: 'PENDING' } }),
+        this.prisma.transportJob.count({
+          where: {
+            status: {
+              in: [
+                'ACCEPTED',
+                'EN_ROUTE_PICKUP',
+                'AT_PICKUP',
+                'LOADED',
+                'EN_ROUTE_DELIVERY',
+                'AT_DELIVERY',
+              ],
+            },
           },
-        },
-      }),
-    ]);
+        }),
+      ]);
     return { totalUsers, totalOrders, pendingApplications, activeJobs };
   }
 }

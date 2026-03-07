@@ -1,7 +1,6 @@
 'use client';
 
 import { Loader2, MapPin, Package, CalendarDays, Tag } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { SKIP_SIZES, WASTE_TYPES } from './Step1Container';
 
 interface OrderSummary {

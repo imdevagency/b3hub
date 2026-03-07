@@ -169,8 +169,7 @@ export class SkipHireService {
     const order = await this.prisma.skipHireOrder.findUnique({
       where: { orderNumber },
     });
-    if (!order)
-      throw new NotFoundException(`Order ${orderNumber} not found`);
+    if (!order) throw new NotFoundException(`Order ${orderNumber} not found`);
     return order;
   }
 
@@ -221,7 +220,9 @@ export class SkipHireService {
     });
 
     if (!user?.canSkipHire) {
-      throw new ForbiddenException('Skip hire map access not enabled for this account');
+      throw new ForbiddenException(
+        'Skip hire map access not enabled for this account',
+      );
     }
     if (!user.companyId) {
       throw new ForbiddenException('User is not associated with a company');
@@ -257,20 +258,28 @@ export class SkipHireService {
       select: { companyId: true, canSkipHire: true },
     });
     if (!user?.canSkipHire)
-      throw new ForbiddenException('Skip hire access not enabled for this account');
+      throw new ForbiddenException(
+        'Skip hire access not enabled for this account',
+      );
     if (!user.companyId)
       throw new ForbiddenException('User is not associated with a company');
 
     const order = await this.prisma.skipHireOrder.findUnique({ where: { id } });
     if (!order) throw new NotFoundException(`Skip hire order ${id} not found`);
     if (order.carrierId !== user.companyId)
-      throw new ForbiddenException('This order does not belong to your company');
+      throw new ForbiddenException(
+        'This order does not belong to your company',
+      );
 
     const expectedNext = ALLOWED[order.status];
     if (!expectedNext)
-      throw new BadRequestException(`No carrier transition allowed from status ${order.status}`);
+      throw new BadRequestException(
+        `No carrier transition allowed from status ${order.status}`,
+      );
     if (newStatus !== expectedNext)
-      throw new BadRequestException(`Expected next status to be ${expectedNext}`);
+      throw new BadRequestException(
+        `Expected next status to be ${expectedNext}`,
+      );
 
     return this.prisma.skipHireOrder.update({
       where: { id },

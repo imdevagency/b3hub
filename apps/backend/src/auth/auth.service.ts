@@ -17,8 +17,15 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const { email, password, firstName, lastName, userType, isCompany, companyId } =
-      registerDto;
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      userType,
+      isCompany,
+      companyId,
+    } = registerDto;
 
     // Check if user already exists
     const existingUser = await this.prisma.user.findUnique({
@@ -64,7 +71,16 @@ export class AuthService {
     });
 
     // Generate token
-    const token = this.generateToken(user.id, user.email ?? '', user.userType, user.isCompany, user.canSell, user.canTransport, user.company?.id, user.companyRole ?? undefined);
+    const token = this.generateToken(
+      user.id,
+      user.email ?? '',
+      user.userType,
+      user.isCompany,
+      user.canSell,
+      user.canTransport,
+      user.company?.id,
+      user.companyRole ?? undefined,
+    );
 
     return {
       user,
@@ -105,7 +121,16 @@ export class AuthService {
     }
 
     // Generate token
-    const token = this.generateToken(user.id, user.email ?? '', user.userType, user.isCompany, user.canSell, user.canTransport, user.company?.id, user.companyRole ?? undefined);
+    const token = this.generateToken(
+      user.id,
+      user.email ?? '',
+      user.userType,
+      user.isCompany,
+      user.canSell,
+      user.canTransport,
+      user.company?.id,
+      user.companyRole ?? undefined,
+    );
 
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
@@ -167,15 +192,20 @@ export class AuthService {
     const isAdmin = user.userType === 'ADMIN';
     const isTransport = user.canTransport;
     // A pure-transport individual (driver with no company/sell) doesn't get buyer mode
-    const isPureTransportIndividual = isTransport && !user.canSell && !user.isCompany;
-    if (isAdmin || (user.userType === 'BUYER' && !isPureTransportIndividual)) modes.push('BUYER');
+    const isPureTransportIndividual =
+      isTransport && !user.canSell && !user.isCompany;
+    if (isAdmin || (user.userType === 'BUYER' && !isPureTransportIndividual))
+      modes.push('BUYER');
     if (isAdmin || user.canSell) modes.push('SUPPLIER');
     if (isAdmin || isTransport) modes.push('CARRIER');
 
     return { ...user, availableModes: modes.length > 0 ? modes : ['BUYER'] };
   }
 
-  async updateProfile(userId: string, data: { firstName?: string; lastName?: string; phone?: string }) {
+  async updateProfile(
+    userId: string,
+    data: { firstName?: string; lastName?: string; phone?: string },
+  ) {
     return this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -208,7 +238,16 @@ export class AuthService {
     companyId?: string,
     companyRole?: string,
   ): string {
-    const payload = { sub: userId, email, userType, isCompany, canSell, canTransport, companyId, companyRole };
+    const payload = {
+      sub: userId,
+      email,
+      userType,
+      isCompany,
+      canSell,
+      canTransport,
+      companyId,
+      companyRole,
+    };
     return this.jwtService.sign(payload);
   }
 }

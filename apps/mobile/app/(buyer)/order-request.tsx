@@ -317,8 +317,6 @@ const CATEGORY_ICON: Record<string, string> = {
   OTHER: '📦',
 };
 
-
-
 // ── Pulsing animation ────────────────────────────────────────────
 
 function SearchingAnimation() {
@@ -543,25 +541,31 @@ export default function OrderRequestScreen() {
 
   // ── Step 1: tap map to drop pin ──────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const onMapPress = useCallback(async (feature: any) => {
-    const coords = feature?.geometry?.coordinates as number[] | undefined;
-    if (!Array.isArray(coords) || coords.length < 2) return;
-    const [longitude, latitude] = coords;
-    setPin({ latitude, longitude });
-    setAddress('Nosakām adresi...');
-    const { address: addr, city: c } = await reverseGeocodeWithCity(latitude, longitude);
-    setAddress(addr);
-    setCity(c);
-  }, [reverseGeocodeWithCity]);
+  const onMapPress = useCallback(
+    async (feature: any) => {
+      const coords = feature?.geometry?.coordinates as number[] | undefined;
+      if (!Array.isArray(coords) || coords.length < 2) return;
+      const [longitude, latitude] = coords;
+      setPin({ latitude, longitude });
+      setAddress('Nosakām adresi...');
+      const { address: addr, city: c } = await reverseGeocodeWithCity(latitude, longitude);
+      setAddress(addr);
+      setCity(c);
+    },
+    [reverseGeocodeWithCity],
+  );
 
-  const onGeoSearchChange = useCallback((text: string) => {
-    setGeoSearchText(text);
-    if (geoSearchTimer.current) clearTimeout(geoSearchTimer.current);
-    geoSearchTimer.current = setTimeout(async () => {
-      const results = await forwardGeocode(text);
-      setGeoSuggestions(results);
-    }, 350);
-  }, [forwardGeocode]);
+  const onGeoSearchChange = useCallback(
+    (text: string) => {
+      setGeoSearchText(text);
+      if (geoSearchTimer.current) clearTimeout(geoSearchTimer.current);
+      geoSearchTimer.current = setTimeout(async () => {
+        const results = await forwardGeocode(text);
+        setGeoSuggestions(results);
+      }, 350);
+    },
+    [forwardGeocode],
+  );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onPlaceSelected = useCallback((feature: any) => {
@@ -718,12 +722,7 @@ export default function OrderRequestScreen() {
   const renderMap = () => (
     <View style={{ flex: 1 }}>
       {/* Map fills screen */}
-      <BaseMap
-        cameraRef={cameraRef}
-        center={RIGA_CENTER}
-        zoom={10}
-        onPress={onMapPress}
-      >
+      <BaseMap cameraRef={cameraRef} center={RIGA_CENTER} zoom={10} onPress={onMapPress}>
         <UserLayer />
         {pin && (
           <MapboxGL.PointAnnotation id="deliveryPin" coordinate={[pin.longitude, pin.latitude]}>
@@ -766,7 +765,9 @@ export default function OrderRequestScreen() {
               renderItem={({ item }) => (
                 <TouchableOpacity style={sa.placesRow} onPress={() => onPlaceSelected(item)}>
                   <MapPin size={13} color="#9ca3af" style={{ marginRight: 6 }} />
-                  <Text style={sa.placesDesc} numberOfLines={2}>{item.place_name}</Text>
+                  <Text style={sa.placesDesc} numberOfLines={2}>
+                    {item.place_name}
+                  </Text>
                 </TouchableOpacity>
               )}
             />

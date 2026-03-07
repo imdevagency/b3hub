@@ -41,6 +41,7 @@ npm install
 1. **Create a Supabase project** at [supabase.com](https://supabase.com)
 
 2. **Configure environment variables** in `apps/backend/.env`:
+
    ```bash
    DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
    DIRECT_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
@@ -50,6 +51,7 @@ npm install
    ```
 
 3. **Generate Prisma Client**:
+
    ```bash
    cd apps/backend
    npm run prisma:generate
@@ -67,21 +69,27 @@ npm install
 Run each application in development mode:
 
 **Backend (NestJS)**
+
 ```bash
 npm run dev:backend
 ```
+
 The API will run on http://localhost:3000
 
 **Web (Next.js)**
+
 ```bash
 npm run dev:web
 ```
+
 The web app will run on http://localhost:3000 (or next available port)
 
 **Mobile (Expo)**
+
 ```bash
 npm run dev:mobile
 ```
+
 Then scan the QR code with Expo Go app on your phone
 
 ### Building for Production
@@ -105,6 +113,7 @@ npm run build:mobile
 ## Project Details
 
 ### Backend (apps/backend)
+
 - Built with NestJS
 - RESTful API structure
 - Prisma ORM for database access
@@ -114,12 +123,14 @@ npm run build:mobile
 - Hot-reload in development
 
 **Prisma Commands:**
+
 - `npm run prisma:generate` - Generate Prisma Client
 - `npm run prisma:migrate` - Create and run migrations
 - `npm run prisma:studio` - Open Prisma Studio GUI
 - `npm run prisma:push` - Push schema to database
 
 ### Web (apps/web)
+
 - Built with Next.js 15
 - App Router
 - TypeScript and Tailwind CSS
@@ -127,6 +138,7 @@ npm run build:mobile
 - ESLint configured
 
 ### Mobile (apps/mobile)
+
 - Built with Expo
 - TypeScript template
 - NativeWind (Tailwind for React Native)

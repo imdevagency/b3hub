@@ -4,7 +4,6 @@ import {
   IsEmail,
   IsBoolean,
   IsEnum,
-  MinLength,
 } from 'class-validator';
 import { CompanyRole } from '@prisma/client';
 

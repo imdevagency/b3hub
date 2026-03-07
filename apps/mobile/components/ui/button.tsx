@@ -26,12 +26,11 @@ const buttonVariants = cva(
       variant: 'default',
       size: 'default',
     },
-  }
+  },
 );
 
 export interface ButtonProps
-  extends React.ComponentPropsWithoutRef<typeof Pressable>,
-    VariantProps<typeof buttonVariants> {}
+  extends React.ComponentPropsWithoutRef<typeof Pressable>, VariantProps<typeof buttonVariants> {}
 
 const Button = React.forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
   ({ className, variant, size, ...props }, ref) => {
@@ -42,7 +41,7 @@ const Button = React.forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>
         {...props}
       />
     );
-  }
+  },
 );
 
 Button.displayName = 'Button';

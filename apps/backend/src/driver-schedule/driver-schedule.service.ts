@@ -14,7 +14,9 @@ export class DriverScheduleService {
 
   // ── Auto-create a minimal DriverProfile for any canTransport user ─────────
   private async getOrCreateDriverProfile(userId: string) {
-    const existing = await this.prisma.driverProfile.findUnique({ where: { userId } });
+    const existing = await this.prisma.driverProfile.findUnique({
+      where: { userId },
+    });
     if (existing) return existing;
 
     // Check user actually has canTransport permission
@@ -84,7 +86,10 @@ export class DriverScheduleService {
         where: { id: profile.id },
         data: {
           autoSchedule: dto.autoSchedule ?? profile.autoSchedule,
-          maxJobsPerDay: dto.maxJobsPerDay !== undefined ? dto.maxJobsPerDay : profile.maxJobsPerDay,
+          maxJobsPerDay:
+            dto.maxJobsPerDay !== undefined
+              ? dto.maxJobsPerDay
+              : profile.maxJobsPerDay,
         },
       });
 
@@ -196,7 +201,9 @@ export class DriverScheduleService {
 
       // Compare current HH:mm against window
       const currentTime = now.toTimeString().slice(0, 5); // "HH:MM"
-      return currentTime >= schedule.startTime && currentTime <= schedule.endTime;
+      return (
+        currentTime >= schedule.startTime && currentTime <= schedule.endTime
+      );
     }
 
     // Manual mode: just use the isOnline flag

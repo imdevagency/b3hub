@@ -1,6 +1,6 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
-export type UserType = "BUYER" | "SUPPLIER" | "CARRIER" | "ADMIN";
+export type UserType = 'BUYER' | 'SUPPLIER' | 'CARRIER' | 'ADMIN';
 
 export interface User {
   id: string;
@@ -160,7 +160,12 @@ export interface ApiTransportJob {
   driverId: string | null;
   driver: { id: string; firstName: string; lastName: string; phone: string | null } | null;
   vehicle: { id: string; licensePlate: string; vehicleType: string } | null;
-  order: { id: string; orderNumber: string; siteContactName: string | null; siteContactPhone: string | null } | null;
+  order: {
+    id: string;
+    orderNumber: string;
+    siteContactName: string | null;
+    siteContactPhone: string | null;
+  } | null;
 }
 
 // Extends ApiTransportJob with a precomputed distance from the anchor coords
@@ -339,15 +344,19 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
   const res = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       ...options?.headers,
     },
   });
 
   if (!res.ok) {
-    const errText = await res.text().catch(() => "");
-    let error: { message?: string } = { message: "Request failed" };
-    try { error = errText ? JSON.parse(errText) : error; } catch { /* keep default */ }
+    const errText = await res.text().catch(() => '');
+    let error: { message?: string } = { message: 'Request failed' };
+    try {
+      error = errText ? JSON.parse(errText) : error;
+    } catch {
+      /* keep default */
+    }
     throw new Error(error.message || `HTTP ${res.status}`);
   }
 
@@ -358,14 +367,14 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
 
 export const api = {
   register: (data: RegisterInput) =>
-    apiFetch<AuthResponse>("/auth/register", {
-      method: "POST",
+    apiFetch<AuthResponse>('/auth/register', {
+      method: 'POST',
       body: JSON.stringify(data),
     }),
 
   login: (data: LoginInput) =>
-    apiFetch<AuthResponse>("/auth/login", {
-      method: "POST",
+    apiFetch<AuthResponse>('/auth/login', {
+      method: 'POST',
       body: JSON.stringify(data),
     }),
 
@@ -383,11 +392,11 @@ export const api = {
 
   orders: {
     stats: (token: string) =>
-      apiFetch<Record<string, any>>("/orders/stats", {
+      apiFetch<Record<string, any>>('/orders/stats', {
         headers: { Authorization: `Bearer ${token}` },
       }),
     myOrders: (token: string) =>
-      apiFetch<ApiOrder[]>("/orders", {
+      apiFetch<ApiOrder[]>('/orders', {
         headers: { Authorization: `Bearer ${token}` },
       }),
     confirm: (id: string, token: string) =>
@@ -409,27 +418,27 @@ export const api = {
 
   skipHire: {
     create: (data: CreateSkipHireInput, token?: string) =>
-      apiFetch<SkipHireOrder>("/skip-hire", {
-        method: "POST",
+      apiFetch<SkipHireOrder>('/skip-hire', {
+        method: 'POST',
         ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
         body: JSON.stringify(data),
       }),
 
     myOrders: (token: string) =>
-      apiFetch<SkipHireOrder[]>("/skip-hire/my", {
+      apiFetch<SkipHireOrder[]>('/skip-hire/my', {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
     /** Carrier: list all CONFIRMED + DELIVERED skips for this carrier company. */
     carrierOrders: (token: string) =>
-      apiFetch<SkipHireOrder[]>("/skip-hire/carrier-map", {
+      apiFetch<SkipHireOrder[]>('/skip-hire/carrier-map', {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
     /** Carrier: advance a skip order status (CONFIRMED→DELIVERED or DELIVERED→COLLECTED). */
     updateCarrierStatus: (id: string, status: SkipHireStatus, token: string) =>
       apiFetch<SkipHireOrder>(`/skip-hire/${id}/carrier-status`, {
-        method: "PATCH",
+        method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
       }),
@@ -437,29 +446,29 @@ export const api = {
 
   transportJobs: {
     available: (token: string) =>
-      apiFetch<ApiTransportJob[]>("/transport-jobs", {
+      apiFetch<ApiTransportJob[]>('/transport-jobs', {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
     myActive: (token: string) =>
-      apiFetch<ApiTransportJob | null>("/transport-jobs/my-active", {
+      apiFetch<ApiTransportJob | null>('/transport-jobs/my-active', {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
     myJobs: (token: string) =>
-      apiFetch<ApiTransportJob[]>("/transport-jobs/my-jobs", {
+      apiFetch<ApiTransportJob[]>('/transport-jobs/my-jobs', {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
     accept: (id: string, token: string) =>
       apiFetch<ApiTransportJob>(`/transport-jobs/${id}/accept`, {
-        method: "POST",
+        method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       }),
 
     updateStatus: (id: string, status: TransportJobStatus, token: string) =>
       apiFetch<ApiTransportJob>(`/transport-jobs/${id}/status`, {
-        method: "PATCH",
+        method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
       }),
@@ -486,9 +495,8 @@ export const api = {
 
   materials: {
     getAll: (token: string, params?: Record<string, string>) => {
-      const qs = params && Object.keys(params).length
-        ? '?' + new URLSearchParams(params).toString()
-        : '';
+      const qs =
+        params && Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
       // Use search endpoint when a 'search' param is provided
       const path = params?.search
         ? `/materials/search?q=${encodeURIComponent(params.search)}${params.category ? `&category=${params.category}` : ''}`
@@ -530,12 +538,14 @@ export const api = {
         body: JSON.stringify({
           orderType: 'MATERIAL',
           buyerId: input.buyerId,
-          items: [{
-            materialId: input.materialId,
-            quantity: input.quantity,
-            unit: input.unit,
-            unitPrice: input.unitPrice,
-          }],
+          items: [
+            {
+              materialId: input.materialId,
+              quantity: input.quantity,
+              unit: input.unit,
+              unitPrice: input.unitPrice,
+            },
+          ],
           deliveryAddress: input.deliveryAddress,
           deliveryCity: input.deliveryCity,
           deliveryPostal: input.deliveryPostal,
@@ -719,10 +729,7 @@ export const api = {
       }),
 
     /** Check whether the user already reviewed an order. */
-    status: (
-      params: { orderId?: string; skipOrderId?: string },
-      token: string,
-    ) => {
+    status: (params: { orderId?: string; skipOrderId?: string }, token: string) => {
       const qs = new URLSearchParams(
         Object.fromEntries(
           Object.entries(params).filter(([, v]) => v != null) as [string, string][],

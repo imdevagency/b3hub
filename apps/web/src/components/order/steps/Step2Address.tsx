@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, LocateFixed, MapPin, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 // ── Latvian city suggestions for fallback autocomplete ─────────────────────────
 

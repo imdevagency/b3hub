@@ -12,32 +12,34 @@ export class SupabaseService {
     if (url && key) {
       this.supabase = createClient(url, key);
     } else {
-      this.logger.warn('Supabase credentials not configured — Supabase features disabled.');
+      this.logger.warn(
+        'Supabase credentials not configured — Supabase features disabled.',
+      );
     }
   }
 
   getClient(): SupabaseClient {
     if (!this.supabase) {
-      throw new Error('Supabase is not configured. Set SUPABASE_URL and SUPABASE_KEY in .env');
+      throw new Error(
+        'Supabase is not configured. Set SUPABASE_URL and SUPABASE_KEY in .env',
+      );
     }
     return this.supabase;
   }
 
   // Storage example methods
   async uploadFile(bucket: string, path: string, file: Buffer) {
-    const { data, error } = await this.getClient().storage
-      .from(bucket)
+    const { data, error } = await this.getClient()
+      .storage.from(bucket)
       .upload(path, file);
-    
+
     if (error) throw error;
     return data;
   }
 
   async getPublicUrl(bucket: string, path: string) {
-    const { data } = this.getClient().storage
-      .from(bucket)
-      .getPublicUrl(path);
-    
+    const { data } = this.getClient().storage.from(bucket).getPublicUrl(path);
+
     return data.publicUrl;
   }
 }

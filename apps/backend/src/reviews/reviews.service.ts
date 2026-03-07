@@ -15,10 +15,14 @@ export class ReviewsService {
   // ── Buyer: submit a review ────────────────────────────────────
   async create(dto: CreateReviewDto, userId: string) {
     if (!dto.orderId && !dto.skipOrderId) {
-      throw new BadRequestException('Either orderId or skipOrderId must be provided');
+      throw new BadRequestException(
+        'Either orderId or skipOrderId must be provided',
+      );
     }
     if (dto.orderId && dto.skipOrderId) {
-      throw new BadRequestException('Provide either orderId or skipOrderId, not both');
+      throw new BadRequestException(
+        'Provide either orderId or skipOrderId, not both',
+      );
     }
 
     let companyId: string;
@@ -32,14 +36,18 @@ export class ReviewsService {
         },
       });
       if (!order) throw new NotFoundException('Order not found');
-      if (order.createdById !== userId) throw new ForbiddenException('Not your order');
+      if (order.createdById !== userId)
+        throw new ForbiddenException('Not your order');
       if (order.status !== 'DELIVERED' && order.status !== 'COMPLETED') {
         throw new BadRequestException('Can only review a delivered order');
       }
 
       // Guard: no duplicate review for same order
-      const existing = await this.prisma.review.findUnique({ where: { orderId: dto.orderId } });
-      if (existing) throw new ConflictException('You already reviewed this order');
+      const existing = await this.prisma.review.findUnique({
+        where: { orderId: dto.orderId },
+      });
+      if (existing)
+        throw new ConflictException('You already reviewed this order');
 
       companyId = order.items[0]?.material?.supplierId ?? order.buyerId;
     } else {
@@ -48,22 +56,28 @@ export class ReviewsService {
         where: { id: dto.skipOrderId },
       });
       if (!skipOrder) throw new NotFoundException('Skip hire order not found');
-      if (skipOrder.userId !== userId) throw new ForbiddenException('Not your order');
+      if (skipOrder.userId !== userId)
+        throw new ForbiddenException('Not your order');
       if (
         skipOrder.status !== 'COLLECTED' &&
         skipOrder.status !== 'COMPLETED'
       ) {
-        throw new BadRequestException('Can only review a completed skip hire order');
+        throw new BadRequestException(
+          'Can only review a completed skip hire order',
+        );
       }
       if (!skipOrder.carrierId) {
-        throw new BadRequestException('No carrier assigned to this skip hire order');
+        throw new BadRequestException(
+          'No carrier assigned to this skip hire order',
+        );
       }
 
       // Guard: no duplicate review
       const existing = await this.prisma.review.findUnique({
         where: { skipOrderId: dto.skipOrderId },
       });
-      if (existing) throw new ConflictException('You already reviewed this order');
+      if (existing)
+        throw new ConflictException('You already reviewed this order');
 
       companyId = skipOrder.carrierId;
     }
@@ -102,7 +116,11 @@ export class ReviewsService {
   }
 
   // ── Check if the current user has already reviewed an order ──
-  async getReviewStatus(userId: string, orderId?: string, skipOrderId?: string) {
+  async getReviewStatus(
+    userId: string,
+    orderId?: string,
+    skipOrderId?: string,
+  ) {
     if (orderId) {
       const r = await this.prisma.review.findUnique({ where: { orderId } });
       return { reviewed: !!r && r.reviewerId === userId };

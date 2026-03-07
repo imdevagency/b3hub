@@ -24,17 +24,21 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
 // ── Latvian city coords ────────────────────────────────────────────────────────
-const JURMALA  = { lat: 56.9677, lng: 23.7718 };
-const RIGA     = { lat: 56.9496, lng: 24.1052 };
-const OGRE     = { lat: 56.8153, lng: 24.6037 };
-const SIGULDA  = { lat: 57.1534, lng: 24.8600 };
-const JELGAVA  = { lat: 56.6490, lng: 23.7124 };
+const JURMALA = { lat: 56.9677, lng: 23.7718 };
+const RIGA = { lat: 56.9496, lng: 24.1052 };
+const OGRE = { lat: 56.8153, lng: 24.6037 };
+const SIGULDA = { lat: 57.1534, lng: 24.86 };
+const JELGAVA = { lat: 56.649, lng: 23.7124 };
 
 async function main() {
   // ── Find driver@demo.com ───────────────────────────────────────────────────
-  const driver = await prisma.user.findUnique({ where: { email: 'driver@demo.com' } });
+  const driver = await prisma.user.findUnique({
+    where: { email: 'driver@demo.com' },
+  });
   if (!driver) {
-    console.error('❌  driver@demo.com not found — run the main seed first: npm run seed');
+    console.error(
+      '❌  driver@demo.com not found — run the main seed first: npm run seed',
+    );
     process.exit(1);
   }
 
@@ -91,7 +95,9 @@ async function main() {
       driverId: driver.id,
     },
   });
-  console.log(`✅  DEMO-001  ACCEPTED   Jūrmala → Rīga          (driver: ${driver.email})`);
+  console.log(
+    `✅  DEMO-001  ACCEPTED   Jūrmala → Rīga          (driver: ${driver.email})`,
+  );
 
   // ── DEMO-002: AVAILABLE return trip — pickup near Rīga (delivery of DEMO-001)
   //    Rīga construction site → Ogre recycling center
@@ -109,8 +115,8 @@ async function main() {
       pickupPostal: 'LV-1019',
       pickupDate: tomorrow,
       pickupWindow: '13:00–15:00',
-      pickupLat: 56.9430,  // ~1 km south of DEMO-001 delivery
-      pickupLng: 24.1120,
+      pickupLat: 56.943, // ~1 km south of DEMO-001 delivery
+      pickupLng: 24.112,
 
       deliveryAddress: 'Rūpniecības iela 5',
       deliveryCity: 'Ogre',
@@ -132,7 +138,9 @@ async function main() {
       status: TransportJobStatus.AVAILABLE,
     },
   });
-  console.log(`✅  DEMO-002  AVAILABLE  Rīga → Ogre             (return trip, 1 km from DEMO-001 delivery)`);
+  console.log(
+    `✅  DEMO-002  AVAILABLE  Rīga → Ogre             (return trip, 1 km from DEMO-001 delivery)`,
+  );
 
   // ── DEMO-003: AVAILABLE return trip — pickup near Rīga, different direction
   //    Rīga → Sigulda (gravel backhaul)
@@ -149,8 +157,8 @@ async function main() {
       pickupPostal: 'LV-1002',
       pickupDate: dayAfter,
       pickupWindow: '07:00–09:00',
-      pickupLat: 56.9600,  // ~1.5 km north-west of DEMO-001 delivery
-      pickupLng: 24.0800,
+      pickupLat: 56.96, // ~1.5 km north-west of DEMO-001 delivery
+      pickupLng: 24.08,
 
       deliveryAddress: 'Gaujas iela 22',
       deliveryCity: 'Sigulda',
@@ -172,7 +180,9 @@ async function main() {
       status: TransportJobStatus.AVAILABLE,
     },
   });
-  console.log(`✅  DEMO-003  AVAILABLE  Rīga → Sigulda          (return trip, 3 km from DEMO-001 delivery)`);
+  console.log(
+    `✅  DEMO-003  AVAILABLE  Rīga → Sigulda          (return trip, 3 km from DEMO-001 delivery)`,
+  );
 
   // ── DEMO extra: a job far away — should NOT appear in 50 km return-trip radius
   await prisma.transportJob.deleteMany({ where: { jobNumber: 'DEMO-004' } });
@@ -212,7 +222,9 @@ async function main() {
       status: TransportJobStatus.AVAILABLE,
     },
   });
-  console.log(`✅  DEMO-004  AVAILABLE  Jelgava → Rīga          (far away — appears in job board, not return trips)`);
+  console.log(
+    `✅  DEMO-004  AVAILABLE  Jelgava → Rīga          (far away — appears in job board, not return trips)`,
+  );
 
   console.log(`
 ┌─────────────────────────────────────────────────────────────┐
@@ -228,5 +240,8 @@ async function main() {
 }
 
 main()
-  .catch((e) => { console.error(e); process.exit(1); })
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
   .finally(() => prisma.$disconnect());

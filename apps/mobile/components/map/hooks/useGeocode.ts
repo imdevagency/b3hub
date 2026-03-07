@@ -63,8 +63,7 @@ export function useGeocode(): UseGeocodeResult {
     setLoading(true);
     try {
       const url =
-        `${BASE}/${lng},${lat}.json` +
-        `?types=address,place&language=lv&access_token=${TOKEN}`;
+        `${BASE}/${lng},${lat}.json` + `?types=address,place&language=lv&access_token=${TOKEN}`;
       const res = await fetch(url);
       const json = await res.json();
       return (json.features?.[0]?.place_name as string | undefined) ?? '';
@@ -81,14 +80,13 @@ export function useGeocode(): UseGeocodeResult {
       setLoading(true);
       try {
         const url =
-          `${BASE}/${lng},${lat}.json` +
-          `?types=address,place&language=lv&access_token=${TOKEN}`;
+          `${BASE}/${lng},${lat}.json` + `?types=address,place&language=lv&access_token=${TOKEN}`;
         const res = await fetch(url);
         const json = await res.json();
         const feature = json.features?.[0];
         if (feature) {
-          const cityCtx = (feature.context ?? []).find(
-            (c: { id: string; text: string }) => c.id.startsWith('place'),
+          const cityCtx = (feature.context ?? []).find((c: { id: string; text: string }) =>
+            c.id.startsWith('place'),
           );
           return { address: feature.place_name as string, city: (cityCtx?.text as string) ?? '' };
         }

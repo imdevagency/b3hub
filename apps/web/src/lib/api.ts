@@ -1,17 +1,17 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
 // ── Document Management ───────────────────────────────────────
 
 export type DocumentType =
-  | "INVOICE"
-  | "WEIGHING_SLIP"
-  | "DELIVERY_PROOF"
-  | "WASTE_CERTIFICATE"
-  | "DELIVERY_NOTE"
-  | "CONTRACT"
-  | "OTHER";
+  | 'INVOICE'
+  | 'WEIGHING_SLIP'
+  | 'DELIVERY_PROOF'
+  | 'WASTE_CERTIFICATE'
+  | 'DELIVERY_NOTE'
+  | 'CONTRACT'
+  | 'OTHER';
 
-export type DocumentStatus = "DRAFT" | "ISSUED" | "SIGNED" | "ARCHIVED";
+export type DocumentStatus = 'DRAFT' | 'ISSUED' | 'SIGNED' | 'ARCHIVED';
 
 export interface Document {
   id: string;
@@ -47,28 +47,28 @@ export async function getMyDocuments(
     status?: DocumentStatus;
     orderId?: string;
     search?: string;
-  }
+  },
 ): Promise<{ documents: Document[]; total: number }> {
   const qs = new URLSearchParams();
-  if (params?.type) qs.set("type", params.type);
-  if (params?.status) qs.set("status", params.status);
-  if (params?.orderId) qs.set("orderId", params.orderId);
-  if (params?.search) qs.set("search", params.search);
-  const query = qs.toString() ? `?${qs}` : "";
+  if (params?.type) qs.set('type', params.type);
+  if (params?.status) qs.set('status', params.status);
+  if (params?.orderId) qs.set('orderId', params.orderId);
+  if (params?.search) qs.set('search', params.search);
+  const query = qs.toString() ? `?${qs}` : '';
   return apiFetch(`/documents${query}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
 
 export async function getDocumentSummary(token: string): Promise<DocumentSummary> {
-  return apiFetch("/documents/summary", {
+  return apiFetch('/documents/summary', {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
 
 // ── Users ─────────────────────────────────────────────────────
 
-export type UserType = "BUYER" | "SUPPLIER" | "CARRIER" | "ADMIN";
+export type UserType = 'BUYER' | 'SUPPLIER' | 'CARRIER' | 'ADMIN';
 export type Mode = 'BUYER' | 'SUPPLIER' | 'CARRIER';
 
 export type CompanyRole = 'OWNER' | 'MANAGER' | 'DRIVER' | 'MEMBER';
@@ -163,8 +163,17 @@ export async function getMyCompany(token: string): Promise<Company> {
 
 export async function updateMyCompany(
   data: Partial<{
-    name: string; legalName: string; email: string; phone: string; website: string;
-    description: string; street: string; city: string; state: string; postalCode: string; logo: string;
+    name: string;
+    legalName: string;
+    email: string;
+    phone: string;
+    website: string;
+    description: string;
+    street: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    logo: string;
   }>,
   token: string,
 ): Promise<Company> {
@@ -232,22 +241,23 @@ export interface LoginInput {
   password: string;
 }
 
-async function apiFetch<T>(
-  endpoint: string,
-  options?: RequestInit
-): Promise<T> {
+async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       ...options?.headers,
     },
   });
 
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    let error: { message?: string } = { message: "Request failed" };
-    try { error = text ? JSON.parse(text) : error; } catch { /* keep default */ }
+    const text = await res.text().catch(() => '');
+    let error: { message?: string } = { message: 'Request failed' };
+    try {
+      error = text ? JSON.parse(text) : error;
+    } catch {
+      /* keep default */
+    }
     throw new Error(error.message || `HTTP ${res.status}`);
   }
 
@@ -256,21 +266,21 @@ async function apiFetch<T>(
 }
 
 export async function registerUser(data: RegisterInput): Promise<AuthResponse> {
-  return apiFetch<AuthResponse>("/auth/register", {
-    method: "POST",
+  return apiFetch<AuthResponse>('/auth/register', {
+    method: 'POST',
     body: JSON.stringify(data),
   });
 }
 
 export async function loginUser(data: LoginInput): Promise<AuthResponse> {
-  return apiFetch<AuthResponse>("/auth/login", {
-    method: "POST",
+  return apiFetch<AuthResponse>('/auth/login', {
+    method: 'POST',
     body: JSON.stringify(data),
   });
 }
 
 export async function getMe(token: string): Promise<User> {
-  return apiFetch<User>("/auth/me", {
+  return apiFetch<User>('/auth/me', {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
@@ -290,7 +300,7 @@ export interface DashboardStats {
   // BUYER (company + personal)
   activeOrders?: number;
   awaitingDelivery?: number;
-  myOrders?: number;      // skip hire orders count
+  myOrders?: number; // skip hire orders count
   documents?: number;
   // SUPPLIER
   activeListings?: number;
@@ -304,7 +314,7 @@ export interface DashboardStats {
 }
 
 export async function getDashboardStats(token: string): Promise<DashboardStats> {
-  return apiFetch<DashboardStats>("/orders/stats", {
+  return apiFetch<DashboardStats>('/orders/stats', {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
@@ -312,22 +322,22 @@ export async function getDashboardStats(token: string): Promise<DashboardStats> 
 // ── Skip Hire ──────────────────────────────────────────────────
 
 export type SkipWasteCategory =
-  | "MIXED"
-  | "GREEN_GARDEN"
-  | "CONCRETE_RUBBLE"
-  | "WOOD"
-  | "METAL_SCRAP"
-  | "ELECTRONICS_WEEE";
+  | 'MIXED'
+  | 'GREEN_GARDEN'
+  | 'CONCRETE_RUBBLE'
+  | 'WOOD'
+  | 'METAL_SCRAP'
+  | 'ELECTRONICS_WEEE';
 
-export type SkipSize = "MINI" | "MIDI" | "BUILDERS" | "LARGE";
+export type SkipSize = 'MINI' | 'MIDI' | 'BUILDERS' | 'LARGE';
 
 export type SkipHireStatus =
-  | "PENDING"
-  | "CONFIRMED"
-  | "DELIVERED"
-  | "COLLECTED"
-  | "COMPLETED"
-  | "CANCELLED";
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'DELIVERED'
+  | 'COLLECTED'
+  | 'COMPLETED'
+  | 'CANCELLED';
 
 export interface SkipHireOrder {
   id: string;
@@ -353,7 +363,7 @@ export interface CreateSkipHireInput {
   wasteCategory: SkipWasteCategory;
   skipSize: SkipSize;
   deliveryDate: string; // ISO date string
-  carrierId?: string;   // selected from quotes
+  carrierId?: string; // selected from quotes
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
@@ -362,43 +372,43 @@ export interface CreateSkipHireInput {
 
 // Frontend → backend waste category mapping
 const WASTE_CATEGORY_MAP: Record<string, SkipWasteCategory> = {
-  mixed:       "MIXED",
-  green:       "GREEN_GARDEN",
-  rubble:      "CONCRETE_RUBBLE",
-  wood:        "WOOD",
-  metal:       "METAL_SCRAP",
-  electronics: "ELECTRONICS_WEEE",
+  mixed: 'MIXED',
+  green: 'GREEN_GARDEN',
+  rubble: 'CONCRETE_RUBBLE',
+  wood: 'WOOD',
+  metal: 'METAL_SCRAP',
+  electronics: 'ELECTRONICS_WEEE',
 };
 
 // Frontend → backend skip size mapping
 const SKIP_SIZE_MAP: Record<string, SkipSize> = {
-  mini:     "MINI",
-  midi:     "MIDI",
-  builders: "BUILDERS",
-  large:    "LARGE",
+  mini: 'MINI',
+  midi: 'MIDI',
+  builders: 'BUILDERS',
+  large: 'LARGE',
 };
 
 export function mapWasteCategory(frontendId: string): SkipWasteCategory {
-  return WASTE_CATEGORY_MAP[frontendId] ?? "MIXED";
+  return WASTE_CATEGORY_MAP[frontendId] ?? 'MIXED';
 }
 
 export function mapSkipSize(frontendId: string): SkipSize {
-  return SKIP_SIZE_MAP[frontendId] ?? "MIDI";
+  return SKIP_SIZE_MAP[frontendId] ?? 'MIDI';
 }
 
 export async function createSkipHireOrder(
   data: CreateSkipHireInput,
-  token?: string
+  token?: string,
 ): Promise<SkipHireOrder> {
-  return apiFetch<SkipHireOrder>("/skip-hire", {
-    method: "POST",
+  return apiFetch<SkipHireOrder>('/skip-hire', {
+    method: 'POST',
     body: JSON.stringify(data),
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 }
 
 export async function getMySkipHireOrders(token: string): Promise<SkipHireOrder[]> {
-  return apiFetch<SkipHireOrder[]>("/skip-hire/my", {
+  return apiFetch<SkipHireOrder[]>('/skip-hire/my', {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
@@ -426,15 +436,15 @@ export async function getSkipHireQuotes(
 // ── Vehicles (Virtual Garage) ──────────────────────────────────
 
 export type VehicleType =
-  | "DUMP_TRUCK"
-  | "FLATBED_TRUCK"
-  | "SEMI_TRAILER"
-  | "HOOK_LIFT"
-  | "SKIP_LOADER"
-  | "TANKER"
-  | "VAN";
+  | 'DUMP_TRUCK'
+  | 'FLATBED_TRUCK'
+  | 'SEMI_TRAILER'
+  | 'HOOK_LIFT'
+  | 'SKIP_LOADER'
+  | 'TANKER'
+  | 'VAN';
 
-export type VehicleStatus = "ACTIVE" | "IN_USE" | "MAINTENANCE" | "INACTIVE";
+export type VehicleStatus = 'ACTIVE' | 'IN_USE' | 'MAINTENANCE' | 'INACTIVE';
 
 export interface Vehicle {
   id: string;
@@ -445,7 +455,7 @@ export interface Vehicle {
   licensePlate: string;
   vin?: string;
   imageUrl?: string;
-  capacity: number;       // load weight in tonnes
+  capacity: number; // load weight in tonnes
   maxGrossWeight?: number; // total permitted weight in tonnes
   volumeCapacity?: number; // m³
   driveType?: string;
@@ -472,17 +482,14 @@ export interface CreateVehicleInput {
 }
 
 export async function getMyVehicles(token: string): Promise<Vehicle[]> {
-  return apiFetch<Vehicle[]>("/vehicles", {
+  return apiFetch<Vehicle[]>('/vehicles', {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
 
-export async function createVehicle(
-  data: CreateVehicleInput,
-  token: string
-): Promise<Vehicle> {
-  return apiFetch<Vehicle>("/vehicles", {
-    method: "POST",
+export async function createVehicle(data: CreateVehicleInput, token: string): Promise<Vehicle> {
+  return apiFetch<Vehicle>('/vehicles', {
+    method: 'POST',
     body: JSON.stringify(data),
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -491,10 +498,10 @@ export async function createVehicle(
 export async function updateVehicle(
   id: string,
   data: Partial<CreateVehicleInput>,
-  token: string
+  token: string,
 ): Promise<Vehicle> {
   return apiFetch<Vehicle>(`/vehicles/${id}`, {
-    method: "PATCH",
+    method: 'PATCH',
     body: JSON.stringify(data),
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -502,7 +509,7 @@ export async function updateVehicle(
 
 export async function deleteVehicle(id: string, token: string): Promise<void> {
   await apiFetch<void>(`/vehicles/${id}`, {
-    method: "DELETE",
+    method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },
   });
 }
@@ -510,9 +517,16 @@ export async function deleteVehicle(id: string, token: string): Promise<void> {
 // ── Transport Jobs ─────────────────────────────────────────────
 
 export type TransportJobStatus =
-  | "AVAILABLE" | "ASSIGNED" | "ACCEPTED" | "EN_ROUTE_PICKUP"
-  | "AT_PICKUP" | "LOADED" | "EN_ROUTE_DELIVERY" | "AT_DELIVERY"
-  | "DELIVERED" | "CANCELLED";
+  | 'AVAILABLE'
+  | 'ASSIGNED'
+  | 'ACCEPTED'
+  | 'EN_ROUTE_PICKUP'
+  | 'AT_PICKUP'
+  | 'LOADED'
+  | 'EN_ROUTE_DELIVERY'
+  | 'AT_DELIVERY'
+  | 'DELIVERED'
+  | 'CANCELLED';
 
 export interface ApiTransportJob {
   id: string;
@@ -542,36 +556,41 @@ export interface ApiTransportJob {
   driverId: string | null;
   driver: { id: string; firstName: string; lastName: string; phone: string | null } | null;
   vehicle: { id: string; licensePlate: string; vehicleType: string } | null;
-  order: { id: string; orderNumber: string; siteContactName: string | null; siteContactPhone: string | null } | null;
+  order: {
+    id: string;
+    orderNumber: string;
+    siteContactName: string | null;
+    siteContactPhone: string | null;
+  } | null;
 }
 
 export async function getAvailableTransportJobs(token: string): Promise<ApiTransportJob[]> {
-  return apiFetch<ApiTransportJob[]>("/transport-jobs", {
+  return apiFetch<ApiTransportJob[]>('/transport-jobs', {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
 
 export async function getAllTransportJobs(token: string): Promise<ApiTransportJob[]> {
-  return apiFetch<ApiTransportJob[]>("/transport-jobs/fleet", {
+  return apiFetch<ApiTransportJob[]>('/transport-jobs/fleet', {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
 
 export async function acceptTransportJob(id: string, token: string): Promise<ApiTransportJob> {
   return apiFetch<ApiTransportJob>(`/transport-jobs/${id}/accept`, {
-    method: "POST",
+    method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });
 }
 
 export async function getMyTransportJobs(token: string): Promise<ApiTransportJob[]> {
-  return apiFetch<ApiTransportJob[]>("/transport-jobs/my-jobs", {
+  return apiFetch<ApiTransportJob[]>('/transport-jobs/my-jobs', {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
 
 export async function getMyActiveTransportJob(token: string): Promise<ApiTransportJob | null> {
-  const result = await apiFetch<ApiTransportJob | null>("/transport-jobs/my-active", {
+  const result = await apiFetch<ApiTransportJob | null>('/transport-jobs/my-active', {
     headers: { Authorization: `Bearer ${token}` },
   });
   return result ?? null;
@@ -583,8 +602,8 @@ export async function updateTransportJobStatus(
   token: string,
 ): Promise<ApiTransportJob> {
   return apiFetch<ApiTransportJob>(`/transport-jobs/${id}/status`, {
-    method: "PATCH",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ status }),
   });
 }
@@ -597,7 +616,7 @@ export interface ApiDriver {
 }
 
 export async function getTransportDrivers(token: string): Promise<ApiDriver[]> {
-  return apiFetch<ApiDriver[]>("/transport-jobs/drivers", {
+  return apiFetch<ApiDriver[]>('/transport-jobs/drivers', {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
@@ -608,8 +627,8 @@ export async function assignTransportJob(
   token: string,
 ): Promise<ApiTransportJob> {
   return apiFetch<ApiTransportJob>(`/transport-jobs/${id}/assign`, {
-    method: "PATCH",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 }
@@ -650,7 +669,7 @@ export async function updateTransportJobLocation(
   return apiFetch<{ lat: number; lng: number; updatedAt: string }>(
     `/transport-jobs/${id}/location`,
     {
-      method: "PATCH",
+      method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify(dto),
     },
@@ -660,10 +679,18 @@ export async function updateTransportJobLocation(
 // ── Materials ──────────────────────────────────────────────────
 
 export type MaterialCategory =
-  | "SAND" | "GRAVEL" | "STONE" | "CONCRETE" | "SOIL"
-  | "RECYCLED_CONCRETE" | "RECYCLED_SOIL" | "ASPHALT" | "CLAY" | "OTHER";
+  | 'SAND'
+  | 'GRAVEL'
+  | 'STONE'
+  | 'CONCRETE'
+  | 'SOIL'
+  | 'RECYCLED_CONCRETE'
+  | 'RECYCLED_SOIL'
+  | 'ASPHALT'
+  | 'CLAY'
+  | 'OTHER';
 
-export type MaterialUnit = "TONNE" | "M3" | "PIECE" | "LOAD";
+export type MaterialUnit = 'TONNE' | 'M3' | 'PIECE' | 'LOAD';
 
 export interface ApiMaterial {
   id: string;
@@ -715,8 +742,8 @@ export async function getMaterials(
   filters?: { category?: MaterialCategory; search?: string },
 ): Promise<ApiMaterial[]> {
   const qs = new URLSearchParams();
-  if (filters?.category) qs.set("category", filters.category);
-  const query = qs.toString() ? `?${qs}` : "";
+  if (filters?.category) qs.set('category', filters.category);
+  const query = qs.toString() ? `?${qs}` : '';
   if (filters?.search) {
     return apiFetch<ApiMaterial[]>(`/materials/search?q=${encodeURIComponent(filters.search)}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -796,15 +823,15 @@ export async function createMaterialOrder(
   input: CreateMaterialOrderInput,
   token: string,
 ): Promise<ApiOrder> {
-  return apiFetch<ApiOrder>("/orders", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+  return apiFetch<ApiOrder>('/orders', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      orderType: "MATERIAL",
+      orderType: 'MATERIAL',
       buyerId: input.buyerId,
       deliveryAddress: input.deliveryAddress,
       deliveryCity: input.deliveryCity,
-      deliveryState: "",
+      deliveryState: '',
       deliveryPostal: input.deliveryPostal,
       deliveryDate: input.deliveryDate,
       deliveryFee: 0,
@@ -853,7 +880,7 @@ export interface ApiOrder {
 }
 
 export async function getMyOrders(token: string, status?: string): Promise<ApiOrder[]> {
-  const qs = status ? `?status=${status}` : "";
+  const qs = status ? `?status=${status}` : '';
   return apiFetch<ApiOrder[]>(`/orders${qs}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -861,14 +888,14 @@ export async function getMyOrders(token: string, status?: string): Promise<ApiOr
 
 export async function confirmOrder(id: string, token: string): Promise<ApiOrder> {
   return apiFetch<ApiOrder>(`/orders/${id}/confirm`, {
-    method: "POST",
+    method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });
 }
 
 export async function cancelOrder(id: string, token: string): Promise<ApiOrder> {
   return apiFetch<ApiOrder>(`/orders/${id}/cancel`, {
-    method: "POST",
+    method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });
 }
@@ -876,20 +903,20 @@ export async function cancelOrder(id: string, token: string): Promise<ApiOrder> 
 // ── Transport Jobs ──────────────────────────────────────────────
 
 export type TransportJobType =
-  | "MATERIAL_DELIVERY"
-  | "CONTAINER_DELIVERY"
-  | "CONTAINER_PICKUP"
-  | "WASTE_COLLECTION"
-  | "EQUIPMENT_TRANSPORT";
+  | 'MATERIAL_DELIVERY'
+  | 'CONTAINER_DELIVERY'
+  | 'CONTAINER_PICKUP'
+  | 'WASTE_COLLECTION'
+  | 'EQUIPMENT_TRANSPORT';
 
 export type VehicleTypeEnum =
-  | "DUMP_TRUCK"
-  | "FLATBED_TRUCK"
-  | "SEMI_TRAILER"
-  | "HOOK_LIFT"
-  | "SKIP_LOADER"
-  | "TANKER"
-  | "VAN";
+  | 'DUMP_TRUCK'
+  | 'FLATBED_TRUCK'
+  | 'SEMI_TRAILER'
+  | 'HOOK_LIFT'
+  | 'SKIP_LOADER'
+  | 'TANKER'
+  | 'VAN';
 
 export interface CreateTransportJobInput {
   jobType: TransportJobType;
@@ -898,14 +925,14 @@ export interface CreateTransportJobInput {
   pickupCity: string;
   pickupState?: string;
   pickupPostal?: string;
-  pickupDate: string;          // ISO date string
+  pickupDate: string; // ISO date string
   pickupWindow?: string;
   // Delivery
   deliveryAddress: string;
   deliveryCity: string;
   deliveryState?: string;
   deliveryPostal?: string;
-  deliveryDate: string;        // ISO date string
+  deliveryDate: string; // ISO date string
   deliveryWindow?: string;
   // Cargo
   cargoType: string;
@@ -926,9 +953,9 @@ export async function createTransportJob(
   input: CreateTransportJobInput,
   token: string,
 ): Promise<ApiTransportJob> {
-  return apiFetch<ApiTransportJob>("/transport-jobs", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+  return apiFetch<ApiTransportJob>('/transport-jobs', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
 }
@@ -958,15 +985,15 @@ export async function createCartOrder(
   input: CreateCartOrderInput,
   token: string,
 ): Promise<ApiOrder> {
-  return apiFetch<ApiOrder>("/orders", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+  return apiFetch<ApiOrder>('/orders', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      orderType: "MATERIAL",
+      orderType: 'MATERIAL',
       buyerId: input.buyerId,
       deliveryAddress: input.deliveryAddress,
       deliveryCity: input.deliveryCity,
-      deliveryState: "",
+      deliveryState: '',
       deliveryPostal: input.deliveryPostal,
       deliveryDate: input.deliveryDate,
       deliveryFee: 0,
@@ -1009,10 +1036,7 @@ export interface InvoiceListResponse {
   meta: { page: number; limit: number; total: number };
 }
 
-export async function getMyInvoices(
-  token: string,
-  page = 1,
-): Promise<InvoiceListResponse> {
+export async function getMyInvoices(token: string, page = 1): Promise<InvoiceListResponse> {
   return apiFetch<InvoiceListResponse>(`/invoices?page=${page}&limit=20`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -1024,10 +1048,7 @@ export async function getInvoiceById(id: string, token: string): Promise<ApiInvo
   });
 }
 
-export async function getInvoicesByOrder(
-  orderId: string,
-  token: string,
-): Promise<ApiInvoice[]> {
+export async function getInvoicesByOrder(orderId: string, token: string): Promise<ApiInvoice[]> {
   return apiFetch<ApiInvoice[]>(`/invoices/order/${orderId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -1047,7 +1068,7 @@ export interface DriverScheduleDay {
   dayOfWeek: number; // 0 = Sun … 6 = Sat
   enabled: boolean;
   startTime: string; // "HH:mm"
-  endTime: string;   // "HH:mm"
+  endTime: string; // "HH:mm"
 }
 
 export interface DriverDateBlock {

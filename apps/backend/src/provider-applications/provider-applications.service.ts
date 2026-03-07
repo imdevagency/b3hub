@@ -48,7 +48,9 @@ export class ProviderApplicationsService {
 
   /** Admin — get one application */
   async findOne(id: string) {
-    const app = await this.prisma.providerApplication.findUnique({ where: { id } });
+    const app = await this.prisma.providerApplication.findUnique({
+      where: { id },
+    });
     if (!app) throw new NotFoundException('Application not found');
     return app;
   }

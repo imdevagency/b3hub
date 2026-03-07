@@ -29,7 +29,11 @@ export class SkipHireController {
    */
   @Get('quotes')
   getQuotes(@Query() query: GetQuotesQueryDto) {
-    return this.skipHireService.getQuotes(query.size, query.location, query.date);
+    return this.skipHireService.getQuotes(
+      query.size,
+      query.location,
+      query.date,
+    );
   }
 
   /**
@@ -109,7 +113,11 @@ export class SkipHireController {
     @Body() dto: UpdateSkipHireStatusDto,
     @Request() req: any,
   ) {
-    return this.skipHireService.updateCarrierStatus(id, dto.status, req.user.userId);
+    return this.skipHireService.updateCarrierStatus(
+      id,
+      dto.status,
+      req.user.userId,
+    );
   }
 
   /**
@@ -118,10 +126,7 @@ export class SkipHireController {
    */
   @Patch(':id/status')
   @UseGuards(JwtAuthGuard, AdminGuard)
-  updateStatus(
-    @Param('id') id: string,
-    @Body() dto: UpdateSkipHireStatusDto,
-  ) {
+  updateStatus(@Param('id') id: string, @Body() dto: UpdateSkipHireStatusDto) {
     return this.skipHireService.updateStatus(id, dto);
   }
 

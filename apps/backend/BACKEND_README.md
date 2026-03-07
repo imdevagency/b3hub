@@ -1,6 +1,7 @@
 # B3Hub Backend - Installation & Setup Guide
 
 ## Prerequisites
+
 - Node.js 18+
 - PostgreSQL 14+
 - npm or yarn
@@ -8,33 +9,39 @@
 ## Installation
 
 1. **Install dependencies:**
+
    ```bash
    cd apps/backend
    npm install
    ```
 
 2. **Set up environment variables:**
+
    ```bash
    cp .env.example .env
    ```
-   
+
    Then update `.env` with your actual database credentials:
+
    ```env
    DATABASE_URL="postgresql://user:password@localhost:5432/b3hub?schema=public"
    JWT_SECRET="your-secret-key"
    ```
 
 3. **Generate Prisma Client:**
+
    ```bash
    npm run prisma:generate
    ```
 
 4. **Run database migrations:**
+
    ```bash
    npm run prisma:migrate
    ```
-   
+
    Or push schema directly:
+
    ```bash
    npm run prisma:push
    ```
@@ -60,11 +67,13 @@ The API will be available at `http://localhost:3000/api/v1`
 ## API Endpoints
 
 ### Authentication
+
 - `POST /api/v1/auth/register` - Register new user
 - `POST /api/v1/auth/login` - Login
 - `GET /api/v1/auth/me` - Get current user profile
 
 ### Materials
+
 - `GET /api/v1/materials` - List all materials
 - `GET /api/v1/materials/:id` - Get material details
 - `POST /api/v1/materials` - Create material (Supplier/Admin only)
@@ -74,6 +83,7 @@ The API will be available at `http://localhost:3000/api/v1`
 - `GET /api/v1/materials/search?q=query` - Search materials
 
 ### Orders
+
 - `GET /api/v1/orders` - List all orders
 - `GET /api/v1/orders/:id` - Get order details
 - `POST /api/v1/orders` - Create new order
@@ -84,6 +94,7 @@ The API will be available at `http://localhost:3000/api/v1`
 ## Database Schema
 
 The application uses the following main entities:
+
 - **Users** - Platform users (buyers, suppliers, carriers, drivers, recyclers, admins)
 - **Companies** - Organizations operating on the platform
 - **Materials** - Construction materials catalog
@@ -112,6 +123,7 @@ The application uses the following main entities:
 ## Authentication
 
 All protected endpoints require a JWT token in the Authorization header:
+
 ```
 Authorization: Bearer <token>
 ```
@@ -119,6 +131,7 @@ Authorization: Bearer <token>
 ## Next Steps
 
 ### Remaining Modules to Implement:
+
 1. Companies module
 2. Containers module
 3. Transport module
@@ -128,6 +141,7 @@ Authorization: Bearer <token>
 7. Analytics module
 
 ### Features to Add:
+
 - File upload for images/documents
 - Email notifications
 - Real-time updates via WebSockets
