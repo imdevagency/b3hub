@@ -3,23 +3,44 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { t } from '@/lib/translations';
-import { HardHat, Package, Recycle } from 'lucide-react-native';
+import { HardHat, Trash2, Truck } from 'lucide-react-native';
+import type React from 'react';
 
-const FEATURES = [
+type LucideIcon = React.ComponentType<{ size?: number; color?: string }>;
+
+interface ServiceTile {
+  icon: LucideIcon;
+  title: string;
+  desc: string;
+  bg: string;
+  iconBg: string;
+  iconColor: string;
+}
+
+const SERVICES: ServiceTile[] = [
   {
-    Icon: HardHat,
-    title: t.welcome.features.materials.title,
-    desc: t.welcome.features.materials.desc,
+    icon: HardHat,
+    title: t.welcome.services.materials.title,
+    desc: t.welcome.services.materials.desc,
+    bg: '#fff7ed',
+    iconBg: '#fed7aa',
+    iconColor: '#c2410c',
   },
   {
-    Icon: Package,
-    title: t.welcome.features.containers.title,
-    desc: t.welcome.features.containers.desc,
+    icon: Trash2,
+    title: t.welcome.services.container.title,
+    desc: t.welcome.services.container.desc,
+    bg: '#f0fdf4',
+    iconBg: '#bbf7d0',
+    iconColor: '#15803d',
   },
   {
-    Icon: Recycle,
-    title: t.welcome.features.recycling.title,
-    desc: t.welcome.features.recycling.desc,
+    icon: Truck,
+    title: t.welcome.services.freight.title,
+    desc: t.welcome.services.freight.desc,
+    bg: '#eff6ff',
+    iconBg: '#bfdbfe',
+    iconColor: '#1d4ed8',
   },
 ];
 
@@ -39,22 +60,42 @@ export default function WelcomeScreen() {
           <Text style={styles.subtitle}>{t.welcome.subtitle}</Text>
         </View>
 
-        {/* Feature cards */}
-        <View style={styles.featureCard}>
-          {FEATURES.map((f) => (
-            <View key={f.title} style={styles.featureRow}>
-              <View style={styles.featureIcon}>
-                <f.Icon size={22} color="#dc2626" />
+        {/* Service tiles */}
+        <View style={styles.tilesWrap}>
+          {/* Top row — Materials + Container */}
+          <View style={styles.tilesRow}>
+            {SERVICES.slice(0, 2).map((s) => {
+              const Icon = s.icon;
+              return (
+                <View key={s.title} style={[styles.tile, { backgroundColor: s.bg }]}>
+                  <View style={[styles.tileIcon, { backgroundColor: s.iconBg }]}>
+                    <Icon size={20} color={s.iconColor} />
+                  </View>
+                  <Text style={styles.tileTitle}>{s.title}</Text>
+                  <Text style={styles.tileDesc}>{s.desc}</Text>
+                </View>
+              );
+            })}
+          </View>
+          {/* Full-width — Freight */}
+          {(() => {
+            const s = SERVICES[2];
+            const Icon = s.icon;
+            return (
+              <View style={[styles.tileFull, { backgroundColor: s.bg }]}>
+                <View style={[styles.tileIcon, { backgroundColor: s.iconBg }]}>
+                  <Icon size={20} color={s.iconColor} />
+                </View>
+                <View style={styles.tileFullText}>
+                  <Text style={styles.tileTitle}>{s.title}</Text>
+                  <Text style={styles.tileDesc}>{s.desc}</Text>
+                </View>
               </View>
-              <View style={styles.featureText}>
-                <Text style={styles.featureTitle}>{f.title}</Text>
-                <Text style={styles.featureDesc}>{f.desc}</Text>
-              </View>
-            </View>
-          ))}
+            );
+          })()}
         </View>
 
-        {/* Buttons */}
+        {/* CTA buttons */}
         <View style={styles.buttons}>
           <TouchableOpacity
             style={styles.primaryBtn}
@@ -72,6 +113,16 @@ export default function WelcomeScreen() {
             <Text style={styles.secondaryBtnText}>{t.welcome.signIn}</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Become a partner */}
+        <TouchableOpacity
+          style={styles.partnerWrap}
+          activeOpacity={0.7}
+          onPress={() => router.push('/(auth)/partner')}
+        >
+          <Text style={styles.partnerLabel}>{t.welcome.becomePartner}</Text>
+          <Text style={styles.partnerCta}>{t.welcome.partnerCta}</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -81,45 +132,54 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#fff' },
   scroll: {
     flexGrow: 1,
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
     paddingTop: 48,
     paddingBottom: 40,
-    justifyContent: 'space-between',
+    gap: 28,
   },
-  logoWrap: { alignItems: 'center', marginBottom: 32 },
+  logoWrap: { alignItems: 'center' },
   logoBox: {
-    width: 80,
-    height: 80,
+    width: 72,
+    height: 72,
     backgroundColor: '#dc2626',
-    borderRadius: 20,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  logoText: { color: '#fff', fontSize: 32, fontWeight: '800' },
-  title: { fontSize: 28, fontWeight: '700', color: '#111827', textAlign: 'center' },
-  subtitle: { fontSize: 15, color: '#6b7280', textAlign: 'center', marginTop: 10, lineHeight: 22 },
-  featureCard: {
-    backgroundColor: '#fef2f2',
-    borderRadius: 20,
-    padding: 24,
-    gap: 16,
-    marginBottom: 32,
+  logoText: { color: '#fff', fontSize: 28, fontWeight: '800' },
+  title: { fontSize: 26, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  subtitle: { fontSize: 14, color: '#6b7280', textAlign: 'center', marginTop: 8, lineHeight: 20 },
+
+  tilesWrap: { gap: 10 },
+  tilesRow: { flexDirection: 'row', gap: 10 },
+  tile: {
+    flex: 1,
+    borderRadius: 16,
+    padding: 16,
+    gap: 8,
+    minHeight: 110,
+    justifyContent: 'center',
   },
-  featureRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  featureIcon: {
-    width: 48,
-    height: 48,
-    backgroundColor: '#fff',
-    borderRadius: 12,
+  tileFull: {
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  tileFullText: { flex: 1 },
+  tileIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  featureEmoji: { fontSize: 22 },
-  featureText: { flex: 1 },
-  featureTitle: { fontSize: 14, fontWeight: '600', color: '#111827' },
-  featureDesc: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  buttons: { gap: 12 },
+  tileTitle: { fontSize: 13, fontWeight: '700', color: '#111827' },
+  tileDesc: { fontSize: 11, color: '#6b7280', marginTop: 2, lineHeight: 15 },
+
+  buttons: { gap: 10 },
   primaryBtn: {
     backgroundColor: '#dc2626',
     borderRadius: 14,
@@ -131,8 +191,12 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#e5e7eb',
   },
   secondaryBtnText: { color: '#374151', fontWeight: '600', fontSize: 16 },
+
+  partnerWrap: { alignItems: 'center', paddingBottom: 4 },
+  partnerLabel: { fontSize: 13, color: '#9ca3af' },
+  partnerCta: { fontSize: 13, color: '#dc2626', fontWeight: '600', marginTop: 3 },
 });

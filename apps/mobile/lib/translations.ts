@@ -1,21 +1,23 @@
 export const lv = {
   welcome: {
     title: 'Laipni lūgti B3Hub',
-    subtitle: 'Jūsu visaptverošā platforma celtniecības materiāliem, pasūtījumiem un loģistikai.',
+    subtitle: 'Celtniecības materiāli, konteineri un pārvadājumi — vienā vietā.',
     getStarted: 'Sākt',
     signIn: 'Ieiet',
-    features: {
+    becomePartner: 'Pārdevējs vai pārvadātājs?',
+    partnerCta: 'Kļūt par partneri →',
+    services: {
       materials: {
-        title: 'Materiāli',
-        desc: 'Pārlūkot un pasūtīt celtniecības materiālus',
+        title: 'Pasūtīt materiālus',
+        desc: 'Grants, smilts, betons — piegāde uz būvlaukumu',
       },
-      containers: {
-        title: 'Konteineri',
-        desc: 'Izsekot konteineriem un piegādēm',
+      container: {
+        title: 'Nomāt konteineru',
+        desc: 'Atkritumu izvešana 24h laikā',
       },
-      recycling: {
-        title: 'Pārstrāde',
-        desc: 'Apsaimniekot atkritumus ilgtspējīgi',
+      freight: {
+        title: 'Kravu pārvadāšana',
+        desc: 'Pasūtīt pārvadājumu starp punktiem',
       },
     },
   },
@@ -77,7 +79,7 @@ export const lv = {
   },
 
   home: {
-    greeting: 'Labu dienu,',
+    greeting: 'Labdien,',
     overview: 'Pārskats',
     quickActions: 'Ātrās darbības',
     stats: {
@@ -85,11 +87,20 @@ export const lv = {
       orders: 'Pasūtījumi',
       pending: 'Gaida',
     },
-    actions: {
-      materials: 'Materiāli',
-      orders: 'Pasūtījumi',
-      shipments: 'Sūtījumi',
-      recycling: 'Pārstrāde',
+    services: {
+      materials: 'Pasūtīt materiālus',
+      container: 'Nomāt konteineru',
+      freight: 'Kravu pārvadāšana',
+    },
+    activeOrder: 'Aktīvais pasūtījums',
+    trackOrder: 'Izsekot →',
+    recentOrders: 'Nesenie pasūtījumi',
+    allOrders: 'Visi pasūtījumi →',
+    noActiveOrders: 'Nav aktīvu pasūtījumu',
+    partnerBanner: {
+      title: 'Pelniet ar B3Hub',
+      desc: 'Pārdodiet materiālus vai piedāvājiet transportu.',
+      cta: 'Kļūt par partneri →',
     },
   },
 
@@ -519,6 +530,23 @@ export const lv = {
     errorTitle: 'Kļūda',
     errorMessage: 'Neizdevās iesniegt vērtējumu. Lūdzu, mēģiniet vēlreiz.',
     rateBtn: 'Novērtēt pakalpojumu',
+  },
+
+  partner: {
+    title: 'Kļūt par partneri',
+    subtitle: 'Pelniet ar B3Hub platformu',
+    seller: {
+      title: 'Pārdot materiālus',
+      desc: 'Reģistrējiet savu karjeru vai izgāztuvi. Saņemiet pasūtījumus tieši no būvuzņēmumiem un privātpersonām.',
+      cta: 'Pieteikties kā pārdevējs',
+    },
+    carrier: {
+      title: 'Piedāvāt transportu',
+      desc: 'Pārlūkojiet pieejamos darbus un pieņemiet tos pēc savas izvēles. Pelniet par katru piegādi.',
+      cta: 'Pieteikties kā pārvadātājs',
+    },
+    note: 'Pieteikumu izskatīsim 1–2 darba dienu laikā.',
+    back: '← Atpakaļ',
   },
 };
 
