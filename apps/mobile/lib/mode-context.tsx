@@ -1,7 +1,25 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { useAuth } from './auth-context';
 
 export type AppMode = 'buyer' | 'seller' | 'driver';
+
+export const MODE_HOME: Record<AppMode, string> = {
+  buyer: '/(buyer)/home',
+  seller: '/(seller)/incoming',
+  driver: '/(driver)/jobs',
+};
+
+/** Derive the best default mode from the user's role flags. */
+function defaultModeForUser(
+  user: { userType: string; canSell: boolean; canTransport: boolean } | null,
+): AppMode {
+  if (!user) return 'buyer';
+  // Pure carrier / driver-only user
+  if (user.userType === 'CARRIER' || (user.canTransport && !user.canSell)) return 'driver';
+  // Pure supplier / seller-only user
+  if (user.userType === 'SUPPLIER' || (user.canSell && !user.canTransport)) return 'seller';
+  return 'buyer';
+}
 
 interface ModeContextValue {
   mode: AppMode;
@@ -22,7 +40,12 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
     return modes;
   }, [user?.canSell, user?.canTransport]);
 
-  const [mode, setModeState] = useState<AppMode>('buyer');
+  const [mode, setModeState] = useState<AppMode>(() => defaultModeForUser(user));
+
+  // Re-derive mode when user logs in or out so drivers/sellers land in the right UI.
+  useEffect(() => {
+    setModeState(defaultModeForUser(user));
+  }, [user?.id]);
 
   const setMode = (newMode: AppMode) => {
     if (availableModes.includes(newMode)) {

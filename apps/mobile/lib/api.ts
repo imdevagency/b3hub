@@ -76,6 +76,7 @@ export interface SkipHireOrder {
   contactEmail?: string | null;
   contactPhone?: string | null;
   notes?: string | null;
+  carrierId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -200,6 +201,126 @@ export interface ApiMaterial {
   };
 }
 
+// ─── Supplier Offers & Quote Requests ─────────────────────────────────────
+
+export interface SupplierOffer {
+  id: string;
+  name: string;
+  category: MaterialCategory;
+  unit: MaterialUnit;
+  basePrice: number;
+  totalPrice: number;
+  distanceKm: number | null;
+  etaDays: number;
+  isInstant: true;
+  deliveryRadiusKm: number | null;
+  supplier: {
+    id: string;
+    name: string;
+    city: string | null;
+    rating: number | null;
+    phone: string | null;
+  };
+}
+
+export type QuoteRequestStatus = 'PENDING' | 'QUOTED' | 'ACCEPTED' | 'CANCELLED' | 'EXPIRED';
+export type QuoteResponseStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+
+/** Shape returned by GET /quote-requests/open (supplier view — no buyer address, only city) */
+export interface OpenQuoteRequest {
+  id: string;
+  requestNumber: string;
+  materialCategory: MaterialCategory;
+  materialName: string;
+  quantity: number;
+  unit: MaterialUnit;
+  deliveryCity: string;
+  notes: string | null;
+  status: QuoteRequestStatus;
+  createdAt: string;
+  buyer: { firstName: string; lastName: string };
+  /** Array of supplier IDs that already responded */
+  responses: { supplierId: string }[];
+}
+
+export interface QuoteResponse {
+  id: string;
+  supplierId: string;
+  pricePerUnit: number;
+  totalPrice: number;
+  unit: MaterialUnit;
+  etaDays: number;
+  notes: string | null;
+  validUntil: string | null;
+  status: QuoteResponseStatus;
+  supplier: {
+    id: string;
+    name: string;
+    city: string | null;
+    rating: number | null;
+  };
+}
+
+export interface QuoteRequest {
+  id: string;
+  requestNumber: string;
+  materialCategory: MaterialCategory;
+  materialName: string;
+  quantity: number;
+  unit: MaterialUnit;
+  deliveryAddress: string;
+  deliveryCity: string;
+  status: QuoteRequestStatus;
+  responses: QuoteResponse[];
+  createdAt: string;
+}
+
+// ─── Vehicles ──────────────────────────────────────────────────────────────
+
+export type VehicleType = 'TRUCK' | 'SEMI_TRUCK' | 'TIPPER' | 'FLATBED' | 'VAN' | 'OTHER';
+
+export interface ApiVehicle {
+  id: string;
+  licensePlate: string;
+  vehicleType: VehicleType;
+  make: string;
+  model: string;
+  year?: number | null;
+  payloadTonnes?: number | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+// ─── Invoices ──────────────────────────────────────────────────────────────
+
+export type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+
+export interface ApiInvoice {
+  id: string;
+  invoiceNumber: string;
+  status: InvoiceStatus;
+  subtotal: number;
+  vatAmount: number;
+  total: number;
+  currency: string;
+  issuedAt: string | null;
+  dueDate: string | null;
+  paidAt: string | null;
+  order?: { id: string; orderNumber: string } | null;
+}
+
+// ─── Notifications ─────────────────────────────────────────────────────────
+
+export interface ApiNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  data?: Record<string, unknown> | null;
+  createdAt: string;
+}
+
 export interface CreateMaterialOrderInput {
   buyerId: string;
   materialId: string;
@@ -298,6 +419,20 @@ export const api = {
       apiFetch<SkipHireOrder[]>("/skip-hire/my", {
         headers: { Authorization: `Bearer ${token}` },
       }),
+
+    /** Carrier: list all CONFIRMED + DELIVERED skips for this carrier company. */
+    carrierOrders: (token: string) =>
+      apiFetch<SkipHireOrder[]>("/skip-hire/carrier-map", {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    /** Carrier: advance a skip order status (CONFIRMED→DELIVERED or DELIVERED→COLLECTED). */
+    updateCarrierStatus: (id: string, status: SkipHireStatus, token: string) =>
+      apiFetch<SkipHireOrder>(`/skip-hire/${id}/carrier-status`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status }),
+      }),
   },
 
   transportJobs: {
@@ -363,6 +498,31 @@ export const api = {
       });
     },
 
+    getOne: (id: string, token: string) =>
+      apiFetch<ApiMaterial>(`/materials/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    create: (data: Partial<ApiMaterial> & { basePrice: number; name: string }, token: string) =>
+      apiFetch<ApiMaterial>('/materials', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+      }),
+
+    update: (id: string, data: Partial<ApiMaterial>, token: string) =>
+      apiFetch<ApiMaterial>(`/materials/${id}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+      }),
+
+    remove: (id: string, token: string) =>
+      apiFetch<void>(`/materials/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
     createOrder: (input: CreateMaterialOrderInput, token: string) =>
       apiFetch<ApiOrder>('/orders', {
         method: 'POST',
@@ -384,5 +544,200 @@ export const api = {
           siteContactPhone: input.siteContactPhone,
         }),
       }),
+
+    getOffers: (
+      params: { category: MaterialCategory; quantity: number; lat?: number; lng?: number },
+      token: string,
+    ) => {
+      const qs = new URLSearchParams({
+        category: params.category,
+        quantity: String(params.quantity),
+        ...(params.lat != null ? { lat: String(params.lat), lng: String(params.lng) } : {}),
+      }).toString();
+      return apiFetch<SupplierOffer[]>(`/materials/offers?${qs}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    },
+  },
+
+  quoteRequests: {
+    create: (
+      dto: {
+        materialCategory: MaterialCategory;
+        materialName: string;
+        quantity: number;
+        unit: MaterialUnit;
+        deliveryAddress: string;
+        deliveryCity: string;
+        deliveryLat?: number;
+        deliveryLng?: number;
+        notes?: string;
+      },
+      token: string,
+    ) =>
+      apiFetch<QuoteRequest>('/quote-requests', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(dto),
+      }),
+
+    get: (id: string, token: string) =>
+      apiFetch<QuoteRequest>(`/quote-requests/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    list: (token: string) =>
+      apiFetch<QuoteRequest[]>('/quote-requests', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    accept: (id: string, responseId: string, token: string) =>
+      apiFetch<ApiOrder>(`/quote-requests/${id}/accept/${responseId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    /** Supplier: list all open requests they can respond to. */
+    openRequests: (token: string) =>
+      apiFetch<OpenQuoteRequest[]>('/quote-requests/open', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    /** Supplier: submit a price proposal for a quote request. */
+    respond: (
+      id: string,
+      dto: {
+        pricePerUnit: number;
+        unit: MaterialUnit;
+        etaDays: number;
+        notes?: string;
+        validUntil?: string;
+      },
+      token: string,
+    ) =>
+      apiFetch<QuoteResponse>(`/quote-requests/${id}/respond`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(dto),
+      }),
+  },
+
+  vehicles: {
+    getAll: (token: string) =>
+      apiFetch<ApiVehicle[]>('/vehicles', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    getOne: (id: string, token: string) =>
+      apiFetch<ApiVehicle>(`/vehicles/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    create: (data: Omit<ApiVehicle, 'id' | 'createdAt'>, token: string) =>
+      apiFetch<ApiVehicle>('/vehicles', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+      }),
+
+    update: (id: string, data: Partial<Omit<ApiVehicle, 'id' | 'createdAt'>>, token: string) =>
+      apiFetch<ApiVehicle>(`/vehicles/${id}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+      }),
+
+    remove: (id: string, token: string) =>
+      apiFetch<void>(`/vehicles/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+  },
+
+  invoices: {
+    getAll: (token: string) =>
+      apiFetch<ApiInvoice[]>('/invoices', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    getByOrder: (orderId: string, token: string) =>
+      apiFetch<ApiInvoice[]>(`/invoices/order/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    getOne: (id: string, token: string) =>
+      apiFetch<ApiInvoice>(`/invoices/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    markAsPaid: (id: string, token: string) =>
+      apiFetch<ApiInvoice>(`/invoices/${id}/pay`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+  },
+
+  notifications: {
+    getAll: (token: string) =>
+      apiFetch<ApiNotification[]>('/notifications', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    unreadCount: (token: string) =>
+      apiFetch<{ count: number }>('/notifications/unread-count', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    markAllRead: (token: string) =>
+      apiFetch<void>('/notifications/read-all', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    markRead: (id: string, token: string) =>
+      apiFetch<void>(`/notifications/${id}/read`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+  },
+
+  reviews: {
+    /** Buyer: submit a rating for a completed order. */
+    create: (
+      dto: {
+        rating: number;
+        comment?: string;
+        orderId?: string;
+        skipOrderId?: string;
+      },
+      token: string,
+    ) =>
+      apiFetch<{ id: string }>('/reviews', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(dto),
+      }),
+
+    /** Check whether the user already reviewed an order. */
+    status: (
+      params: { orderId?: string; skipOrderId?: string },
+      token: string,
+    ) => {
+      const qs = new URLSearchParams(
+        Object.fromEntries(
+          Object.entries(params).filter(([, v]) => v != null) as [string, string][],
+        ),
+      ).toString();
+      return apiFetch<{ reviewed: boolean }>(`/reviews/status?${qs}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    },
+
+    /** Get all reviews for a company (public). */
+    byCompany: (companyId: string, token: string) =>
+      apiFetch<{ id: string; rating: number; comment?: string; createdAt: string }[]>(
+        `/reviews/company/${companyId}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      ),
   },
 };

@@ -221,6 +221,21 @@ enum NotificationType {
   SYSTEM_ALERT
 }
 
+enum QuoteRequestStatus {
+  PENDING
+  QUOTED
+  ACCEPTED
+  CANCELLED
+  EXPIRED
+}
+
+enum QuoteResponseStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
 // ================================
 // MODELS
 // ================================
@@ -252,10 +267,12 @@ model User {
   buyerProfile  BuyerProfile?
 
   // Activity
-  ordersCreated Order[]
-  transportJobs TransportJob[]
-  notifications Notification[]
-  vehicles      Vehicle[]
+  ordersCreated  Order[]
+  transportJobs  TransportJob[]
+  notifications  Notification[]
+  vehicles       Vehicle[]
+  quoteRequests  QuoteRequest[]
+  reviews        Review[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -297,12 +314,14 @@ model Company {
   orders           Order[]
   recyclingCenters RecyclingCenter[]
   carrierJobs      TransportJob[]
+  quoteResponses   QuoteResponse[]
 
   // Carrier comparison engine
   carrierPricing     CarrierPricing[]     @relation("CarrierPricing")
   serviceZones       CarrierServiceZone[] @relation("CarrierServiceZones")
   availabilityBlocks CarrierAvailability[] @relation("CarrierAvailability")
   assignedSkipOrders SkipHireOrder[]      @relation("AssignedSkipCarrier")
+  reviews            Review[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -323,9 +342,10 @@ model Material {
   currency  String       @default("EUR")
 
   // Stock & Availability
-  inStock  Boolean @default(true)
-  minOrder Float?
-  maxOrder Float?
+  inStock          Boolean @default(true)
+  minOrder         Float?
+  maxOrder         Float?
+  deliveryRadiusKm Int?    @default(100) // km radius the supplier delivers
 
   // Quality
   isRecycled   Boolean  @default(false)
@@ -1017,4 +1037,86 @@ model DriverDateBlock {
 
   @@unique([driverProfileId, blockedDate])
   @@map("driver_date_blocks")
+}
+
+// ── Material Marketplace: Quote Requests ─────────────────────────────────────
+
+// A buyer's open request for pricing when no instant offer is available
+model QuoteRequest {
+  id            String             @id @default(cuid())
+  requestNumber String             @unique
+
+  buyer   User   @relation(fields: [buyerId], references: [id])
+  buyerId String
+
+  // What they want
+  materialCategory MaterialCategory
+  materialName     String
+  quantity         Float
+  unit             MaterialUnit
+
+  // Delivery
+  deliveryAddress String
+  deliveryCity    String
+  deliveryLat     Float?
+  deliveryLng     Float?
+
+  // Status & notes
+  status QuoteRequestStatus @default(PENDING)
+  notes  String?
+
+  responses QuoteResponse[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("quote_requests")
+}
+
+// A supplier's response to a QuoteRequest
+model QuoteResponse {
+  id String @id @default(cuid())
+
+  request   QuoteRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  requestId String
+
+  supplier   Company @relation(fields: [supplierId], references: [id])
+  supplierId String
+
+  pricePerUnit Float
+  totalPrice   Float
+  unit         MaterialUnit
+  etaDays      Int
+  notes        String?
+  validUntil   DateTime?
+
+  status QuoteResponseStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("quote_responses")
+}
+
+// ── Reviews / Ratings ─────────────────────────────────────────────────────────
+
+// A buyer review submitted after a completed order
+model Review {
+  id      String @id @default(cuid())
+  rating  Int    // 1–5 stars
+  comment String?
+
+  reviewer   User   @relation(fields: [reviewerId], references: [id])
+  reviewerId String
+
+  company   Company @relation(fields: [companyId], references: [id])
+  companyId String
+
+  // Exactly one of these is set per review
+  orderId     String? @unique // material order
+  skipOrderId String? @unique // skip-hire order
+
+  createdAt DateTime @default(now())
+
+  @@map("reviews")
 }

@@ -20,7 +20,7 @@ export default function OrderConfirmation() {
       <SafeAreaView style={s.safe}>
         <View style={s.center}>
           <Text style={s.centerText}>Nav pasūtījuma.</Text>
-          <TouchableOpacity onPress={() => router.replace('/(tabs)/home')} style={s.centerLink}>
+          <TouchableOpacity onPress={() => router.replace('/')} style={s.centerLink}>
             <Text style={s.centerLinkText}>Atpakaļ uz sākumu</Text>
           </TouchableOpacity>
         </View>
@@ -79,7 +79,7 @@ export default function OrderConfirmation() {
           style={s.primaryBtn}
           onPress={() => {
             reset();
-            router.replace('/(tabs)/orders');
+            router.replace('/(buyer)/orders');
           }}
           activeOpacity={0.8}
         >

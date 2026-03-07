@@ -98,6 +98,21 @@ export class SkipHireController {
   }
 
   /**
+   * PATCH /api/v1/skip-hire/:id/carrier-status
+   * Carriers update delivery progress for their own skip orders.
+   * Allowed: CONFIRMED → DELIVERED, DELIVERED → COLLECTED
+   */
+  @Patch(':id/carrier-status')
+  @UseGuards(JwtAuthGuard)
+  updateCarrierStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateSkipHireStatusDto,
+    @Request() req: any,
+  ) {
+    return this.skipHireService.updateCarrierStatus(id, dto.status, req.user.userId);
+  }
+
+  /**
    * PATCH /api/v1/skip-hire/:id/status
    * Update the lifecycle status (admin only).
    */

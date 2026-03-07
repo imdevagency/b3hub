@@ -236,6 +236,48 @@ export class SkipHireService {
     });
   }
 
+  // ── Carrier: update own skip status ───────────────────────────
+  /**
+   * Allowed carrier transitions:
+   *   CONFIRMED  → DELIVERED  (skip has been placed at site)
+   *   DELIVERED  → COLLECTED  (skip has been collected back)
+   */
+  async updateCarrierStatus(
+    id: string,
+    newStatus: SkipHireStatus,
+    userId: string,
+  ) {
+    const ALLOWED: Partial<Record<SkipHireStatus, SkipHireStatus>> = {
+      [SkipHireStatus.CONFIRMED]: SkipHireStatus.DELIVERED,
+      [SkipHireStatus.DELIVERED]: SkipHireStatus.COLLECTED,
+    };
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { companyId: true, canSkipHire: true },
+    });
+    if (!user?.canSkipHire)
+      throw new ForbiddenException('Skip hire access not enabled for this account');
+    if (!user.companyId)
+      throw new ForbiddenException('User is not associated with a company');
+
+    const order = await this.prisma.skipHireOrder.findUnique({ where: { id } });
+    if (!order) throw new NotFoundException(`Skip hire order ${id} not found`);
+    if (order.carrierId !== user.companyId)
+      throw new ForbiddenException('This order does not belong to your company');
+
+    const expectedNext = ALLOWED[order.status];
+    if (!expectedNext)
+      throw new BadRequestException(`No carrier transition allowed from status ${order.status}`);
+    if (newStatus !== expectedNext)
+      throw new BadRequestException(`Expected next status to be ${expectedNext}`);
+
+    return this.prisma.skipHireOrder.update({
+      where: { id },
+      data: { status: newStatus },
+    });
+  }
+
   // ── Helpers ───────────────────────────────────────────────────
   private async generateOrderNumber(): Promise<string> {
     const count = await this.prisma.skipHireOrder.count();

@@ -1,5 +1,5 @@
 /**
- * AddressPicker — full-screen Google Places address picker with draggable pin.
+ * AddressPicker — full-screen Mapbox address picker with tap-to-place pin.
  *
  * Usage:
  *   <AddressPicker
@@ -13,14 +13,14 @@
  *   />
  *
  * The user can:
- *   1. Type an address → Google Places autocomplete
+ *   1. Type an address → Mapbox Geocoding autocomplete
  *   2. Tap a suggestion → map flies to that location
- *   3. Drag the pin to fine-tune the exact gate/bay/entrance
+ *   3. Tap the map to fine-tune the exact gate/bay/entrance
  *   4. Press Confirm → returns address + precise coords
  *
- * API key is read from EXPO_PUBLIC_GOOGLE_MAPS_API_KEY env var.
+ * Token is read from EXPO_PUBLIC_MAPBOX_TOKEN env var.
  */
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -30,12 +30,12 @@ import {
   Platform,
   KeyboardAvoidingView,
   ActivityIndicator,
+  TextInput,
+  FlatList,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, MapPressEvent, Region } from 'react-native-maps';
-import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
-import { MapPin, X, Check } from 'lucide-react-native';
-
-const GOOGLE_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
+import MapboxGL from '@rnmapbox/maps';
+import { MapPin, X, Check, Search } from 'lucide-react-native';
+import { BaseMap, useGeocode, GeocodeSuggestion } from '@/components/map';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface PickedLocation {
@@ -72,59 +72,57 @@ export function AddressPicker({
   onClose,
   pinColor = '#dc2626',
 }: AddressPickerProps) {
-  const mapRef = useRef<MapView>(null);
+  const cameraRef = useRef<MapboxGL.Camera>(null);
+  const { forwardGeocode, reverseGeocode, loading: geocodeLoading } = useGeocode();
 
   const [lat, setLat] = useState(initialLat ?? DEFAULT_LAT);
   const [lng, setLng] = useState(initialLng ?? DEFAULT_LNG);
   const [address, setAddress] = useState(initialAddress ?? '');
-  const [geocoding, setGeocoding] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fly the map to given coords with a tight zoom
+  // Fly the map camera to given coords
   const flyTo = (newLat: number, newLng: number) => {
     setLat(newLat);
     setLng(newLng);
-    const region: Region = {
-      latitude: newLat,
-      longitude: newLng,
-      latitudeDelta: 0.004,
-      longitudeDelta: 0.004,
-    };
-    mapRef.current?.animateToRegion(region, 500);
+    cameraRef.current?.setCamera({
+      centerCoordinate: [newLng, newLat],
+      zoomLevel: 15,
+      animationDuration: 500,
+    });
   };
 
-  // User tapped the map directly → move pin, reverse-geocode address
-  const handleMapPress = async (e: MapPressEvent) => {
-    const { latitude, longitude } = e.nativeEvent.coordinate;
-    setLat(latitude);
-    setLng(longitude);
-    await reverseGeocode(latitude, longitude);
+  // User tapped the map → move pin + reverse-geocode
+  const handleMapPress = useCallback(
+    async (feature: any) => {
+      const coords = (feature?.geometry?.coordinates ?? feature?.coordinates) as
+        | number[]
+        | undefined;
+      if (!Array.isArray(coords) || coords.length < 2) return;
+      const [longitude, latitude] = coords;
+      setLat(latitude);
+      setLng(longitude);
+      const label = await reverseGeocode(latitude, longitude);
+      if (label) setAddress(label);
+    },
+    [reverseGeocode],
+  ); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onSearchChange = (text: string) => {
+    setSearchText(text);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      forwardGeocode(text).then(setSuggestions);
+    }, 350);
   };
 
-  // Drag ended → reverse-geocode
-  const handleDragEnd = async (e: any) => {
-    const { latitude, longitude } = e.nativeEvent.coordinate;
-    setLat(latitude);
-    setLng(longitude);
-    await reverseGeocode(latitude, longitude);
-  };
-
-  const reverseGeocode = async (rlat: number, rlng: number) => {
-    if (!GOOGLE_KEY) return;
-    setGeocoding(true);
-    try {
-      const url =
-        `https://maps.googleapis.com/maps/api/geocode/json` +
-        `?latlng=${rlat},${rlng}&key=${GOOGLE_KEY}&language=lv`;
-      const res = await fetch(url);
-      const json = await res.json();
-      if (json.results?.[0]) {
-        setAddress(json.results[0].formatted_address);
-      }
-    } catch {
-      // silently ignore — user still has the pin coords
-    } finally {
-      setGeocoding(false);
-    }
+  const onSelectSuggestion = (item: GeocodeSuggestion) => {
+    const [pLng, pLat] = item.center;
+    setAddress(item.place_name);
+    setSearchText(item.place_name);
+    setSuggestions([]);
+    flyTo(pLat, pLng);
   };
 
   const handleConfirm = () => {
@@ -152,72 +150,51 @@ export function AddressPicker({
           <View style={{ width: 36 }} />
         </View>
 
-        {/* ── Autocomplete search bar ── */}
+        {/* ── Search bar ── */}
         <View style={styles.searchWrapper}>
-          <GooglePlacesAutocomplete
-            placeholder="Search address…"
-            query={{
-              key: GOOGLE_KEY,
-              language: 'lv',
-              components: 'country:lv|country:lt|country:ee|country:de',
-            }}
-            fetchDetails
-            onPress={(data, details) => {
-              if (!details) return;
-              const { lat: pLat, lng: pLng } = details.geometry.location;
-              setAddress(data.description);
-              flyTo(pLat, pLng);
-            }}
-            styles={{
-              container: { flex: 0 },
-              textInput: styles.searchInput,
-              listView: styles.searchList,
-              row: styles.searchRow,
-              description: styles.searchDesc,
-              poweredContainer: { display: 'none' },
-            }}
-            textInputProps={{
-              defaultValue: initialAddress,
-              clearButtonMode: 'while-editing',
-              placeholderTextColor: '#9ca3af',
-            }}
-            enablePoweredByContainer={false}
-            keepResultsAfterBlur
-          />
+          <View style={styles.searchInputRow}>
+            <Search size={16} color="#9ca3af" style={{ marginLeft: 10 }} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search address…"
+              placeholderTextColor="#9ca3af"
+              value={searchText}
+              onChangeText={onSearchChange}
+              autoCorrect={false}
+            />
+            {geocodeLoading && (
+              <ActivityIndicator size="small" color="#6b7280" style={{ marginRight: 10 }} />
+            )}
+          </View>
+          {suggestions.length > 0 && (
+            <FlatList
+              style={styles.searchList}
+              keyboardShouldPersistTaps="handled"
+              data={suggestions}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity style={styles.searchRow} onPress={() => onSelectSuggestion(item)}>
+                  <MapPin size={13} color="#9ca3af" style={{ marginRight: 6, marginTop: 1 }} />
+                  <Text style={styles.searchDesc} numberOfLines={2}>
+                    {item.place_name}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+          )}
         </View>
 
         {/* ── Map ── */}
         <View style={styles.mapWrapper}>
-          <MapView
-            ref={mapRef}
-            style={StyleSheet.absoluteFillObject}
-            provider={PROVIDER_GOOGLE}
-            initialRegion={{
-              latitude: lat,
-              longitude: lng,
-              latitudeDelta: 0.04,
-              longitudeDelta: 0.04,
-            }}
-            onPress={handleMapPress}
-            showsUserLocation
-            showsMyLocationButton={false}
-            showsCompass={false}
-            toolbarEnabled={false}
-          >
-            <Marker
-              coordinate={{ latitude: lat, longitude: lng }}
-              draggable
-              onDragEnd={handleDragEnd}
-              anchor={{ x: 0.5, y: 1 }}
-              tracksViewChanges={false}
-            >
+          <BaseMap cameraRef={cameraRef} center={[lng, lat]} zoom={13} onPress={handleMapPress}>
+            <MapboxGL.PointAnnotation id="pin" coordinate={[lng, lat]}>
               <PinMarker color={pinColor} />
-            </Marker>
-          </MapView>
+            </MapboxGL.PointAnnotation>
+          </BaseMap>
 
           {/* Hint overlay */}
           <View style={styles.mapHint}>
-            <Text style={styles.mapHintText}>Drag pin to fine-tune exact location</Text>
+            <Text style={styles.mapHintText}>Tap the map to move the pin</Text>
           </View>
         </View>
 
@@ -226,7 +203,7 @@ export function AddressPicker({
           <View style={styles.footerAddr}>
             <MapPin size={16} color={pinColor} style={{ marginTop: 2 }} />
             <Text style={styles.footerAddrText} numberOfLines={2}>
-              {geocoding ? (
+              {geocodeLoading ? (
                 <ActivityIndicator size="small" color="#6b7280" />
               ) : (
                 address || 'Tap the map or search above'
@@ -237,7 +214,7 @@ export function AddressPicker({
           <TouchableOpacity
             style={[styles.confirmBtn, { backgroundColor: pinColor }]}
             onPress={handleConfirm}
-            disabled={geocoding}
+            disabled={geocodeLoading}
           >
             <Check size={18} color="#fff" />
             <Text style={styles.confirmBtnText}>Confirm</Text>
@@ -320,14 +297,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     zIndex: 10,
   },
-  searchInput: {
-    height: 44,
+  searchInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#f3f4f6',
     borderRadius: 12,
-    paddingHorizontal: 14,
+    height: 44,
+    gap: 6,
+  },
+  searchInput: {
+    flex: 1,
     fontSize: 15,
     color: '#111827',
-    borderWidth: 0,
+    paddingRight: 12,
   },
   searchList: {
     backgroundColor: '#ffffff',

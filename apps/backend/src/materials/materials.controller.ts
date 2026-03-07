@@ -57,6 +57,25 @@ export class MaterialsController {
     return this.materialsService.search(query);
   }
 
+  /**
+   * Hybrid marketplace: instant supplier offers for a material category.
+   * GET /materials/offers?category=SAND&quantity=10&lat=56.9&lng=24.1
+   */
+  @Get('offers')
+  getOffers(
+    @Query('category') category: string,
+    @Query('quantity') quantity: string,
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
+  ) {
+    return this.materialsService.getOffers({
+      category,
+      quantity: parseFloat(quantity ?? '1'),
+      lat: lat ? parseFloat(lat) : undefined,
+      lng: lng ? parseFloat(lng) : undefined,
+    });
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.materialsService.findOne(id);

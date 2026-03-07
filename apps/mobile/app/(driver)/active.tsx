@@ -57,6 +57,43 @@ export default function ActiveJobScreen() {
   const [returnTrips, setReturnTrips] = React.useState<ApiReturnTripJob[]>([]);
   const [returnTripsLoading, setReturnTripsLoading] = React.useState(false);
   const [returnDismissed, setReturnDismissed] = React.useState(false);
+  const [acceptingReturnId, setAcceptingReturnId] = React.useState<string | null>(null);
+
+  // ── Fetch return trips when status enters EN_ROUTE_DELIVERY / AT_DELIVERY ──
+  useEffect(() => {
+    if (!token || !job) return;
+    const status = job.status as JobStatus;
+    if (!RETURN_TRIP_STATUSES.includes(status)) return;
+    if (job.deliveryLat == null || job.deliveryLng == null) return;
+    setReturnTripsLoading(true);
+    api.transportJobs
+      .returnTrips(job.deliveryLat, job.deliveryLng, 75, token)
+      .then((trips) => setReturnTrips(trips))
+      .catch(() => setReturnTrips([]))
+      .finally(() => setReturnTripsLoading(false));
+  }, [token, job?.status, job?.deliveryLat, job?.deliveryLng]);
+
+  const handleAcceptReturnTrip = (tripId: string, fromCity: string, toCity: string) => {
+    if (!token) return;
+    Alert.alert('Pieņemt atpakaļceļa darbu?', `${fromCity} → ${toCity}`, [
+      { text: 'Atcelt', style: 'cancel' },
+      {
+        text: 'Pieņemt',
+        onPress: async () => {
+          setAcceptingReturnId(tripId);
+          try {
+            await api.transportJobs.accept(tripId, token);
+            setReturnTrips((prev) => prev.filter((t) => t.id !== tripId));
+            Alert.alert('✓ Darbs pieņemts', 'Atpakaļceļa darbs pievienots jūsu darbu sarakstam.');
+          } catch (err: any) {
+            Alert.alert('Kļūda', err.message ?? 'Neizdevās pieņemt darbu');
+          } finally {
+            setAcceptingReturnId(null);
+          }
+        },
+      },
+    ]);
+  };
 
   const fetchActiveJob = useCallback(async () => {
     if (!token) return;
@@ -102,7 +139,7 @@ export default function ActiveJobScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={[]}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color="#dc2626" />
         </View>
@@ -112,12 +149,12 @@ export default function ActiveJobScreen() {
 
   if (!job) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={[]}>
         <View style={styles.empty}>
           <Map size={48} color="#d1d5db" />
           <Text style={styles.emptyTitle}>{t.activeJob.noJob}</Text>
           <Text style={styles.emptyDesc}>{t.activeJob.noJobDesc}</Text>
-          <TouchableOpacity style={styles.goBtn} onPress={() => router.push('/(tabs)/jobs')}>
+          <TouchableOpacity style={styles.goBtn} onPress={() => router.push('/(driver)/jobs')}>
             <Text style={styles.goBtnText}>{t.activeJob.goToJobs}</Text>
           </TouchableOpacity>
         </View>
@@ -207,7 +244,7 @@ export default function ActiveJobScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Header */}
         <View style={styles.header}>
@@ -375,12 +412,28 @@ export default function ActiveJobScreen() {
                           {rt.cargoWeight ?? 0} t · {rt.cargoType}
                         </Text>
                         <Text style={styles.returnMiniPrice}>€{rt.rate.toFixed(0)}</Text>
+                        <TouchableOpacity
+                          style={[
+                            styles.returnMiniAcceptBtn,
+                            acceptingReturnId === rt.id && { opacity: 0.6 },
+                          ]}
+                          onPress={() =>
+                            handleAcceptReturnTrip(rt.id, rt.pickupCity, rt.deliveryCity)
+                          }
+                          disabled={acceptingReturnId !== null}
+                        >
+                          {acceptingReturnId === rt.id ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                          ) : (
+                            <Text style={styles.returnMiniAcceptText}>Pieņemt →</Text>
+                          )}
+                        </TouchableOpacity>
                       </View>
                     ))}
                   </ScrollView>
                   <TouchableOpacity
                     style={styles.returnStripCta}
-                    onPress={() => router.push('/(tabs)/jobs')}
+                    onPress={() => router.push('/(driver)/jobs')}
                   >
                     <Text style={styles.returnStripCtaText}>{t.avoidEmptyRuns.seeAllJobs}</Text>
                   </TouchableOpacity>
@@ -587,7 +640,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: '#d1fae5',
-    width: 160,
+    width: 170,
   },
   returnMiniKmBadge: {
     flexDirection: 'row',
@@ -603,6 +656,14 @@ const styles = StyleSheet.create({
   returnMiniRoute: { fontSize: 13, fontWeight: '600', color: '#111827' },
   returnMiniWeight: { fontSize: 11, color: '#6b7280', marginTop: 4 },
   returnMiniPrice: { fontSize: 15, fontWeight: '800', color: '#059669', marginTop: 6 },
+  returnMiniAcceptBtn: {
+    marginTop: 8,
+    backgroundColor: '#059669',
+    borderRadius: 8,
+    paddingVertical: 7,
+    alignItems: 'center',
+  },
+  returnMiniAcceptText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   returnStripCta: { marginTop: 10 },
   returnStripCtaText: { fontSize: 13, color: '#059669', fontWeight: '600' },
 

@@ -371,14 +371,14 @@ export default function IncomingScreen() {
 
   if (fetching) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={[]}>
         <ActivityIndicator color="#dc2626" style={{ flex: 1, marginTop: 40 }} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t.incoming.title}</Text>

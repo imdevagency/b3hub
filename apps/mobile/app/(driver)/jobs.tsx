@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useFocusEffect } from 'expo-router';
+
 import {
   View,
   Text,
@@ -21,11 +21,9 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
-import { api, ApiTransportJob, ApiReturnTripJob } from '@/lib/api';
-import { JobRouteMap } from '@/components/ui/JobRouteMap';
-import type { ExtraPin } from '@/components/ui/JobRouteMap';
+import { api, ApiTransportJob } from '@/lib/api';
+
 import {
-  Map,
   MapPin,
   Navigation2,
   Calendar,
@@ -35,9 +33,9 @@ import {
   Truck,
   X,
   Route,
-  Info,
   CheckCircle2,
-  ListChecks,
+  Zap,
+  ChevronRight,
 } from 'lucide-react-native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -81,7 +79,50 @@ interface ReturnTripJob extends TransportJob {
   returnDistanceKm: number;
 }
 
-const RETURN_RADIUS_OPTIONS = [25, 50, 100, 150];
+const RADIUS_OPTIONS = [25, 50, 100, 150, 200];
+const ASYNC_KEY = 'b3hub_saved_job_searches';
+
+// If delivery of job A is within this threshold of pickup of job B it's a natural chain
+const CHAIN_THRESHOLD_KM = 45;
+
+interface SmartChain {
+  jobA: TransportJob;
+  jobB: TransportJob;
+  gapKm: number;
+}
+
+function detectSmartChain(jobs: TransportJob[]): SmartChain | null {
+  let best: SmartChain | null = null;
+  for (let i = 0; i < jobs.length; i++) {
+    for (let j = 0; j < jobs.length; j++) {
+      if (i === j) continue;
+      const a = jobs[i];
+      const b = jobs[j];
+      if (!a.toLat || !a.toLng || !b.fromLat || !b.fromLng) continue;
+      const gap = Math.round(haversineKm(a.toLat, a.toLng, b.fromLat, b.fromLng));
+      if (gap > CHAIN_THRESHOLD_KM) continue;
+      if (!best || gap < best.gapKm) {
+        best = { jobA: a, jobB: b, gapKm: gap };
+      }
+    }
+  }
+  return best;
+}
+
+// Nearest available jobs to a given point (for the accept bottom sheet)
+function nearbyJobs(
+  lat: number,
+  lng: number,
+  allJobs: TransportJob[],
+  excludeId: string,
+  topN = 3,
+): { job: TransportJob; gapKm: number }[] {
+  return allJobs
+    .filter((j) => j.id !== excludeId && j.fromLat && j.fromLng)
+    .map((j) => ({ job: j, gapKm: Math.round(haversineKm(lat, lng, j.fromLat, j.fromLng)) }))
+    .sort((a, b) => a.gapKm - b.gapKm)
+    .slice(0, topN);
+}
 
 // ── Latvian city coords (haversine radius filtering) ──────────────────────────
 const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
@@ -155,13 +196,6 @@ function mapJob(j: ApiTransportJob): TransportJob {
   };
 }
 
-const RADIUS_OPTIONS = [25, 50, 100, 150, 200];
-const ASYNC_KEY = 'b3hub_saved_job_searches';
-
-function mapReturnTripJob(j: ApiReturnTripJob): ReturnTripJob {
-  return { ...mapJob(j), returnDistanceKm: j.returnDistanceKm };
-}
-
 // ── Filter logic ──────────────────────────────────────────────────────────────
 function filterJobs(jobs: TransportJob[], filter: SearchFilter | null): TransportJob[] {
   if (!filter) return jobs;
@@ -212,201 +246,150 @@ function RadiusRow({ selected, onChange }: { selected: number; onChange: (v: num
   );
 }
 
-// ── "Drive wherever you want" banner ─────────────────────────────────────────
-function DriveWhereverBanner({ onSetRadius }: { onSetRadius: () => void }) {
-  return (
-    <View style={styles.banner}>
-      <Map size={32} color="#6b7280" style={{ marginTop: 2 }} />
-      <View style={styles.bannerBody}>
-        <Text style={styles.bannerTitle}>{t.jobSearch.driveTitle}</Text>
-        <Text style={styles.bannerDesc}>{t.jobSearch.driveDesc}</Text>
-        <TouchableOpacity style={styles.bannerBtn} onPress={onSetRadius}>
-          <Text style={styles.bannerBtnText}>
-            {t.jobSearch.setRadius} {'→'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
-// ── Avoid Empty Runs — radius chips ──────────────────────────────────────────
-function ReturnRadiusRow({
-  selected,
-  onChange,
+// ── Smart Route Banner ───────────────────────────────────────────────────────
+function SmartRouteBanner({
+  chain,
+  onAccept,
+  onDismiss,
 }: {
-  selected: number;
-  onChange: (v: number) => void;
+  chain: SmartChain;
+  onAccept: () => void;
+  onDismiss: () => void;
 }) {
+  const totalPrice = chain.jobA.priceTotal + chain.jobB.priceTotal;
+  const totalDist = chain.jobA.distanceKm + chain.jobB.distanceKm;
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
-      <View style={styles.radiusChips}>
-        {RETURN_RADIUS_OPTIONS.map((r) => (
-          <TouchableOpacity
-            key={r}
-            style={[styles.chip, styles.chipReturn, selected === r && styles.chipReturnActive]}
-            onPress={() => onChange(r)}
-          >
-            <Text style={[styles.chipText, selected === r && styles.chipReturnTextActive]}>
-              {r} km
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </ScrollView>
-  );
-}
-
-// ── Avoid Empty Runs — info banner ────────────────────────────────────────────
-function AvoidEmptyRunsBanner({
-  activeJobDeliveryCity,
-  returnRadius,
-  onRadiusChange,
-  returnCount,
-  onHowItWorks,
-}: {
-  activeJobDeliveryCity: string | null;
-  returnRadius: number;
-  onRadiusChange: (v: number) => void;
-  returnCount: number;
-  onHowItWorks: () => void;
-}) {
-  return (
-    <View style={styles.returnBanner}>
-      <View style={styles.returnBannerHeader}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-          <Route size={18} color="#059669" />
-          <Text style={styles.returnBannerTitle}>{t.avoidEmptyRuns.bannerTitle}</Text>
+    <View style={styles.smartBanner}>
+      <View style={styles.smartBannerTop}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Zap size={15} color="#7c3aed" />
+          <Text style={styles.smartBannerTitle}>{t.jobs.smartRoute}</Text>
         </View>
-        <TouchableOpacity onPress={onHowItWorks} style={styles.returnBannerInfo}>
-          <Info size={16} color="#6b7280" />
+        <TouchableOpacity onPress={onDismiss} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <X size={15} color="#9ca3af" />
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.returnBannerDesc}>
-        {activeJobDeliveryCity
-          ? t.avoidEmptyRuns.bannerDesc(activeJobDeliveryCity)
-          : t.avoidEmptyRuns.bannerDescGeneric}
-      </Text>
-
-      {activeJobDeliveryCity && (
-        <>
-          <Text style={styles.returnRadiusLabel}>{t.avoidEmptyRuns.radiusLabel}:</Text>
-          <ReturnRadiusRow selected={returnRadius} onChange={onRadiusChange} />
-          <Text style={styles.returnFoundLabel}>{t.avoidEmptyRuns.found(returnCount)}</Text>
-        </>
-      )}
-
-      {!activeJobDeliveryCity && (
-        <Text style={styles.returnNoActiveJob}>{t.avoidEmptyRuns.noActiveJob}</Text>
-      )}
-    </View>
-  );
-}
-
-// ── Avoid Empty Runs — return trip card ───────────────────────────────────────
-function ReturnTripCard({ job, onAccept }: { job: ReturnTripJob; onAccept: (id: string) => void }) {
-  return (
-    <View style={[styles.card, styles.returnCard]}>
-      {/* Return badge row */}
-      <View style={styles.returnCardBadgeRow}>
-        <View style={styles.returnBadge}>
-          <Route size={10} color="#059669" />
-          <Text style={styles.returnBadgeText}>{t.avoidEmptyRuns.returnBadge}</Text>
-        </View>
-        <Text style={styles.returnKmAway}>{t.avoidEmptyRuns.kmAway(job.returnDistanceKm)}</Text>
-      </View>
-
-      {/* Header row */}
-      <View style={styles.cardHeader}>
-        <View style={styles.cardHeaderLeft}>
-          <Text style={styles.jobNumber}>{job.jobNumber}</Text>
-          <View style={styles.vehicleRow}>
-            <Truck size={16} color="#6b7280" />
-            <Text style={styles.vehicleType}>{job.vehicleType}</Text>
-          </View>
-        </View>
-        <View style={styles.availableBadge}>
-          <Text style={styles.availableBadgeText}>{t.jobs.available}</Text>
-        </View>
-      </View>
-
-      {/* Payload pill */}
-      <View style={styles.payloadRow}>
-        <Text style={styles.payloadWeight}>{job.weightTonnes} t</Text>
-        <View style={styles.payloadDot} />
-        <Text style={styles.payloadMaterial}>{job.payload}</Text>
-      </View>
-
-      {/* Route */}
-      <View style={styles.routeSection}>
-        <View style={styles.routeRow}>
-          <View style={[styles.routeDotFrom, { borderColor: '#a7f3d0' }]} />
-          <View>
-            <Text style={styles.routeCity}>{job.fromCity}</Text>
-            <Text style={styles.routeAddress}>{job.fromAddress}</Text>
-          </View>
-        </View>
-        <View style={styles.routeLine} />
-        <View style={styles.routeRow}>
-          <View style={styles.routeDotTo} />
-          <View>
-            <Text style={styles.routeCity}>{job.toCity}</Text>
-            <Text style={styles.routeAddress}>{job.toAddress}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Meta */}
-      <View style={styles.cardMeta}>
-        <View style={styles.metaItem}>
-          <Calendar size={14} color="#6b7280" />
-          <View>
-            <Text style={styles.metaValue}>{job.date}</Text>
-            <Text style={styles.metaSub}>{job.time} Uhr</Text>
-          </View>
-        </View>
-        <View style={styles.metaItem}>
-          <Ruler size={14} color="#6b7280" />
-          <Text style={styles.metaValue}>{job.distanceKm} km</Text>
-        </View>
-        <View style={styles.priceBlock}>
-          <Text style={styles.priceTotal}>
-            {job.priceTotal.toFixed(2)} {job.currency}
+      {/* Route chain visualisation */}
+      <View style={styles.smartChainRow}>
+        <View style={styles.smartChainJob}>
+          <Text style={styles.smartChainCity} numberOfLines={1}>
+            {chain.jobA.fromCity}
           </Text>
-          <Text style={styles.pricePerTonne}>
-            {job.pricePerTonne.toFixed(2)} {job.currency}
-            {t.jobs.perTonne}
+          <ChevronRight size={12} color="#9ca3af" />
+          <Text style={[styles.smartChainCity, { color: '#7c3aed' }]} numberOfLines={1}>
+            {chain.jobA.toCity}
+          </Text>
+        </View>
+        <View style={styles.smartGapPill}>
+          <Route size={10} color="#7c3aed" />
+          <Text style={styles.smartGapText}>{t.jobs.smartRouteGap(chain.gapKm)}</Text>
+        </View>
+        <View style={styles.smartChainJob}>
+          <Text style={styles.smartChainCity} numberOfLines={1}>
+            {chain.jobB.fromCity}
+          </Text>
+          <ChevronRight size={12} color="#9ca3af" />
+          <Text style={[styles.smartChainCity, { color: '#7c3aed' }]} numberOfLines={1}>
+            {chain.jobB.toCity}
           </Text>
         </View>
       </View>
 
-      {/* Accept */}
-      <TouchableOpacity style={styles.acceptBtnReturn} onPress={() => onAccept(job.id)}>
-        <Text style={styles.acceptBtnText}>{t.jobs.accept}</Text>
+      <View style={styles.smartStats}>
+        <Text style={styles.smartStatPrice}>€{totalPrice.toFixed(0)}</Text>
+        <Text style={styles.smartStatDist}>{totalDist} km</Text>
+        <Text style={styles.smartStatSaved}>{t.jobs.smartRouteSaved(chain.gapKm)}</Text>
+      </View>
+
+      <TouchableOpacity style={styles.smartAcceptBtn} onPress={onAccept}>
+        <Zap size={14} color="#fff" />
+        <Text style={styles.smartAcceptBtnText}>{t.jobs.smartRouteAccept}</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-// ── Avoid Empty Runs — how it works modal ────────────────────────────────────
-function HowItWorksModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+// ── Accept Bottom Sheet ───────────────────────────────────────────────────────
+function AcceptBottomSheet({
+  job,
+  nearby,
+  onConfirm,
+  onClose,
+}: {
+  job: TransportJob;
+  nearby: { job: TransportJob; gapKm: number }[];
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalBox}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <Route size={22} color="#059669" />
-            <Text style={styles.modalTitle}>{t.avoidEmptyRuns.howItWorksTitle}</Text>
+    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
+      <View style={styles.sheetOverlay}>
+        <TouchableOpacity style={styles.sheetOverlayTouch} onPress={onClose} activeOpacity={1} />
+        <View style={styles.sheetContainer}>
+          {/* Handle */}
+          <View style={styles.sheetHandle} />
+
+          <Text style={styles.sheetTitle}>{t.jobs.acceptSheetTitle}</Text>
+
+          {/* Job summary */}
+          <View style={styles.sheetJobCard}>
+            <View style={styles.sheetJobHeader}>
+              <Text style={styles.sheetJobNum}>{job.jobNumber}</Text>
+              <Text style={styles.sheetJobPrice}>€{job.priceTotal.toFixed(0)}</Text>
+            </View>
+            <View style={styles.sheetRouteRow}>
+              <View style={[styles.sheetRouteDot, { backgroundColor: '#16a34a' }]} />
+              <Text style={styles.sheetRouteCity}>{job.fromCity}</Text>
+              <ChevronRight size={14} color="#9ca3af" />
+              <View style={[styles.sheetRouteDot, { backgroundColor: '#dc2626' }]} />
+              <Text style={styles.sheetRouteCity}>{job.toCity}</Text>
+            </View>
+            <View style={styles.sheetJobMeta}>
+              <Truck size={12} color="#9ca3af" />
+              <Text style={styles.sheetMetaText}>{job.vehicleType}</Text>
+              <Text style={styles.sheetMetaDot}>·</Text>
+              <Ruler size={12} color="#9ca3af" />
+              <Text style={styles.sheetMetaText}>{job.distanceKm} km</Text>
+              <Text style={styles.sheetMetaDot}>·</Text>
+              <Text style={styles.sheetMetaText}>{job.weightTonnes} t</Text>
+            </View>
           </View>
-          <Text style={[styles.returnBannerDesc, { color: '#374151', marginTop: 6 }]}>
-            {t.avoidEmptyRuns.howItWorksBody}
-          </Text>
-          <TouchableOpacity
-            style={[styles.applyBtn, { marginTop: 8, backgroundColor: '#059669' }]}
-            onPress={onClose}
-          >
-            <Text style={styles.applyBtnText}>{t.avoidEmptyRuns.gotIt}</Text>
+
+          {/* Return suggestions */}
+          {nearby.length > 0 && (
+            <View style={styles.sheetReturnSection}>
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}
+              >
+                <Route size={14} color="#059669" />
+                <Text style={styles.sheetReturnTitle}>{t.jobs.acceptSheetReturnTitle}</Text>
+              </View>
+              {nearby.map(({ job: nj, gapKm }) => (
+                <View key={nj.id} style={styles.sheetReturnCard}>
+                  <View style={styles.sheetReturnLeft}>
+                    <View style={styles.sheetReturnKmBadge}>
+                      <Text style={styles.sheetReturnKmText}>{t.jobs.acceptSheetGapKm(gapKm)}</Text>
+                    </View>
+                    <View style={styles.sheetRouteRow}>
+                      <Text style={styles.sheetReturnCity}>{nj.fromCity}</Text>
+                      <ChevronRight size={11} color="#9ca3af" />
+                      <Text style={styles.sheetReturnCity}>{nj.toCity}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.sheetReturnPrice}>€{nj.priceTotal.toFixed(0)}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {nearby.length === 0 && (
+            <Text style={styles.sheetReturnNone}>{t.jobs.acceptSheetReturnNone}</Text>
+          )}
+
+          {/* CTA */}
+          <TouchableOpacity style={styles.sheetAcceptBtn} onPress={onConfirm}>
+            <Text style={styles.sheetAcceptBtnText}>{t.jobs.acceptAndGo}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -716,18 +699,9 @@ export default function JobsScreen() {
   const [saveModalVisible, setSaveModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // ── Avoid Empty Runs state ────────────────────────────────────
-  const [avoidEmptyRuns, setAvoidEmptyRuns] = useState(false);
-  const [returnRadius, setReturnRadius] = useState(50); // km
-  const [activeJobDeliveryCity, setActiveJobDeliveryCity] = useState<string | null>(null);
-  const [activeJobDeliveryLat, setActiveJobDeliveryLat] = useState<number | null>(null);
-  const [activeJobDeliveryLng, setActiveJobDeliveryLng] = useState<number | null>(null);
-  const [returnTrips, setReturnTrips] = useState<ReturnTripJob[]>([]);
-  const [howItWorksVisible, setHowItWorksVisible] = useState(false);
-
-  // ── Tour planner state ────────────────────────────────────────
-  const [tourMode, setTourMode] = useState(false);
-  const [tourSelected, setTourSelected] = useState<Set<string>>(new Set());
+  // ── Accept sheet + smart chain ────────────────────────────────
+  const [acceptSheetJob, setAcceptSheetJob] = useState<TransportJob | null>(null);
+  const [smartChainDismissed, setSmartChainDismissed] = useState<Set<string>>(new Set());
 
   const panelAnim = useRef(new Animated.Value(0)).current;
 
@@ -760,57 +734,6 @@ export default function JobsScreen() {
     AsyncStorage.setItem(ASYNC_KEY, JSON.stringify(savedSearches));
   }, [savedSearches]);
 
-  // ── Auto-enable: when screen is focused, check for active delivery job ─
-  useFocusEffect(
-    useCallback(() => {
-      if (!token) return;
-      api.transportJobs.myActive(token).then((job: ApiTransportJob | null) => {
-        const isDelivering =
-          job?.status === 'EN_ROUTE_DELIVERY' ||
-          job?.status === 'AT_DELIVERY' ||
-          job?.status === 'ACCEPTED' ||
-          job?.status === 'LOADED';
-        if (job && job.deliveryLat != null && job.deliveryLng != null) {
-          setActiveJobDeliveryCity(job.deliveryCity);
-          setActiveJobDeliveryLat(job.deliveryLat);
-          setActiveJobDeliveryLng(job.deliveryLng);
-          // Auto-enable if driver has any active job (not if user had dismissed)
-          if (isDelivering) setAvoidEmptyRuns(true);
-        } else if (!avoidEmptyRuns) {
-          // No active job — clear state but don't disable if user manually enabled
-          setActiveJobDeliveryCity(null);
-          setActiveJobDeliveryLat(null);
-          setActiveJobDeliveryLng(null);
-          setReturnTrips([]);
-        }
-      });
-    }, [token]),
-  );
-
-  // ── Manual toggle: also refresh active job when user turns it ON ─────────
-  useEffect(() => {
-    if (!avoidEmptyRuns || !token) {
-      if (!avoidEmptyRuns) {
-        setActiveJobDeliveryCity(null);
-        setActiveJobDeliveryLat(null);
-        setActiveJobDeliveryLng(null);
-        setReturnTrips([]);
-      }
-      return;
-    }
-  }, [avoidEmptyRuns, token]);
-
-  // ── Avoid Empty Runs: fetch return trips when coords or radius changes ──
-  useEffect(() => {
-    if (!avoidEmptyRuns || !token || activeJobDeliveryLat == null || activeJobDeliveryLng == null) {
-      return;
-    }
-    api.transportJobs
-      .returnTrips(activeJobDeliveryLat, activeJobDeliveryLng, returnRadius, token)
-      .then((jobs: ApiReturnTripJob[]) => setReturnTrips(jobs.map(mapReturnTripJob)))
-      .catch(() => setReturnTrips([]));
-  }, [avoidEmptyRuns, activeJobDeliveryLat, activeJobDeliveryLng, returnRadius, token]);
-
   // Animate panel
   useEffect(() => {
     Animated.timing(panelAnim, {
@@ -822,6 +745,11 @@ export default function JobsScreen() {
   }, [panelOpen]);
 
   const filteredJobs = filterJobs(allJobs, activeFilter);
+  const smartChain = filteredJobs.length >= 2 ? detectSmartChain(filteredJobs) : null;
+  const visibleSmartChain =
+    smartChain && !smartChainDismissed.has(`${smartChain.jobA.id}-${smartChain.jobB.id}`)
+      ? smartChain
+      : null;
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -872,29 +800,28 @@ export default function JobsScreen() {
     setPanelOpen((v) => !v);
   };
 
-  const handleAccept = (jobId: string) => {
-    if (!token) return;
-    Alert.alert(t.jobs.accepted, t.jobs.acceptedDesc, [
-      { text: 'Atcelt', style: 'cancel' },
-      {
-        text: 'Pieņemt',
-        onPress: async () => {
-          try {
-            await api.transportJobs.accept(jobId, token);
-            setAllJobs((prev) => prev.filter((j) => j.id !== jobId));
-            setReturnTrips((prev) => prev.filter((j) => j.id !== jobId));
-            router.replace('/(tabs)/active');
-          } catch (err: any) {
-            Alert.alert('Kļūda', err.message ?? 'Neizdevās pieņemt darbu');
-          }
-        },
-      },
-    ]);
+  const handleAcceptPressed = (jobId: string) => {
+    const job = filteredJobs.find((j) => j.id === jobId) ?? allJobs.find((j) => j.id === jobId);
+    if (!job) return;
+    setAcceptSheetJob(job);
+  };
+
+  const handleConfirmAccept = async () => {
+    if (!acceptSheetJob || !token) return;
+    const jobId = acceptSheetJob.id;
+    setAcceptSheetJob(null);
+    try {
+      await api.transportJobs.accept(jobId, token);
+      setAllJobs((prev) => prev.filter((j) => j.id !== jobId));
+      router.replace('/(driver)/active');
+    } catch (err: any) {
+      Alert.alert('Kļūda', err.message ?? 'Neizdevās pieņemt darbu');
+    }
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={[]}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color="#dc2626" />
         </View>
@@ -903,41 +830,11 @@ export default function JobsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       {/* Top bar */}
       <View style={styles.topBar}>
         <Text style={styles.screenTitle}>{t.jobs.title}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {/* Tour planner toggle */}
-          <TouchableOpacity
-            style={[styles.filterToggle, tourMode && styles.filterToggleTour]}
-            onPress={() => {
-              setTourMode((v) => !v);
-              setTourSelected(new Set());
-            }}
-          >
-            <ListChecks size={14} color={tourMode ? '#ffffff' : '#9ca3af'} />
-            <Text style={[styles.filterToggleText, tourMode && styles.filterToggleTextActive]}>
-              {t.jobs.planTour}
-            </Text>
-          </TouchableOpacity>
-          {/* Avoid Empty Runs toggle — auto-enabled when active job exists */}
-          <TouchableOpacity
-            style={[styles.filterToggle, avoidEmptyRuns && styles.filterToggleReturn]}
-            onPress={() => setAvoidEmptyRuns((v) => !v)}
-          >
-            <Route size={14} color={avoidEmptyRuns ? '#ffffff' : '#9ca3af'} />
-            <Text
-              style={[styles.filterToggleText, avoidEmptyRuns && styles.filterToggleTextActive]}
-            >
-              {avoidEmptyRuns ? t.avoidEmptyRuns.toggleShort : t.avoidEmptyRuns.toggleShort}
-            </Text>
-            {avoidEmptyRuns && returnTrips.length > 0 && (
-              <View style={styles.returnCountBadge}>
-                <Text style={styles.returnCountBadgeText}>{returnTrips.length}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
           {/* Filter button */}
           <TouchableOpacity
             style={[styles.filterToggle, panelOpen && styles.filterToggleActive]}
@@ -986,84 +883,24 @@ export default function JobsScreen() {
           <ActiveFilterPill filter={activeFilter} onClear={handleReset} />
         )}
 
-        {/* "Drive wherever you want" banner — only when no filter set and not in empty-runs mode */}
-        {!activeFilter && !panelOpen && !avoidEmptyRuns && (
-          <DriveWhereverBanner onSetRadius={() => setPanelOpen(true)} />
-        )}
-
-        {/* ── Avoid Empty Runs section ──────────────────────── */}
-        {avoidEmptyRuns && (
-          <>
-            <AvoidEmptyRunsBanner
-              activeJobDeliveryCity={activeJobDeliveryCity}
-              returnRadius={returnRadius}
-              onRadiusChange={setReturnRadius}
-              returnCount={returnTrips.length}
-              onHowItWorks={() => setHowItWorksVisible(true)}
+        {/* Smart Route Banner — auto-detected chain, shown above results */}
+        {visibleSmartChain && (
+          <View style={{ marginHorizontal: 16, marginBottom: 4 }}>
+            <SmartRouteBanner
+              chain={visibleSmartChain}
+              onAccept={() => {
+                // Accept job A first via the sheet
+                setAcceptSheetJob(visibleSmartChain.jobA);
+              }}
+              onDismiss={() =>
+                setSmartChainDismissed((prev) => {
+                  const next = new Set(prev);
+                  next.add(`${visibleSmartChain.jobA.id}-${visibleSmartChain.jobB.id}`);
+                  return next;
+                })
+              }
             />
-
-            {activeJobDeliveryCity && returnTrips.length === 0 && (
-              <View style={styles.returnEmpty}>
-                <Route size={32} color="#d1d5db" />
-                <Text style={styles.returnEmptyText}>{t.avoidEmptyRuns.noReturnTrips}</Text>
-              </View>
-            )}
-
-            {returnTrips.length > 0 && (
-              <>
-                {/* Spatial overview map — delivery anchor + all return pickups */}
-                {activeJobDeliveryLat != null && activeJobDeliveryLng != null && (
-                  <View style={{ marginHorizontal: 16, marginBottom: 8 }}>
-                    <JobRouteMap
-                      pickup={{
-                        lat: activeJobDeliveryLat,
-                        lng: activeJobDeliveryLng,
-                        label: activeJobDeliveryCity ?? 'Piegāde',
-                      }}
-                      delivery={
-                        returnTrips.length > 0
-                          ? {
-                              lat: returnTrips[0].fromLat,
-                              lng: returnTrips[0].fromLng,
-                              label: returnTrips[0].fromCity,
-                            }
-                          : {
-                              lat: activeJobDeliveryLat,
-                              lng: activeJobDeliveryLng,
-                            }
-                      }
-                      extras={returnTrips.slice(1).map(
-                        (job): ExtraPin => ({
-                          lat: job.fromLat,
-                          lng: job.fromLng,
-                          label: job.fromCity,
-                          type: 'return',
-                        }),
-                      )}
-                      height={200}
-                      borderRadius={16}
-                      showToPickupLeg={false}
-                    />
-                  </View>
-                )}
-
-                <View style={[styles.list, { marginTop: 8 }]}>
-                  {returnTrips.map((job) => (
-                    <ReturnTripCard key={job.id} job={job} onAccept={handleAccept} />
-                  ))}
-                </View>
-              </>
-            )}
-
-            {/* Divider */}
-            {filteredJobs.length > 0 && (
-              <View style={styles.returnDivider}>
-                <View style={styles.returnDividerLine} />
-                <Text style={styles.returnDividerLabel}>{t.jobs.availableJobs}</Text>
-                <View style={styles.returnDividerLine} />
-              </View>
-            )}
-          </>
+          </View>
         )}
 
         {/* Results header */}
@@ -1087,52 +924,11 @@ export default function JobsScreen() {
         ) : (
           <View style={styles.list}>
             {filteredJobs.map((job) => (
-              <JobCard
-                key={job.id}
-                job={job}
-                onAccept={handleAccept}
-                tourMode={tourMode}
-                selected={tourSelected.has(job.id)}
-                onToggleSelect={(id) =>
-                  setTourSelected((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(id)) next.delete(id);
-                    else next.add(id);
-                    return next;
-                  })
-                }
-              />
+              <JobCard key={job.id} job={job} onAccept={handleAcceptPressed} />
             ))}
           </View>
         )}
       </ScrollView>
-
-      {/* Tour planner floating CTA */}
-      {tourMode && tourSelected.size >= 2 && (
-        <View style={styles.tourFab}>
-          <TouchableOpacity
-            style={styles.tourFabBtn}
-            onPress={() => {
-              const ids = Array.from(tourSelected);
-              const jobs = filteredJobs.filter((j) => ids.includes(j.id));
-              router.push({
-                pathname: '/tour-planner',
-                params: { jobsJson: JSON.stringify(jobs) },
-              });
-            }}
-          >
-            <Route size={18} color="#ffffff" />
-            <Text style={styles.tourFabText}>{t.jobs.planTourBtn(tourSelected.size)}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Tour mode selection hint */}
-      {tourMode && tourSelected.size < 2 && (
-        <View style={styles.tourHint}>
-          <Text style={styles.tourHintText}>{t.jobs.planTourHint}</Text>
-        </View>
-      )}
 
       {/* Save-search modal */}
       <SaveSearchModal
@@ -1142,8 +938,22 @@ export default function JobsScreen() {
         onClose={() => setSaveModalVisible(false)}
       />
 
-      {/* How It Works modal */}
-      <HowItWorksModal visible={howItWorksVisible} onClose={() => setHowItWorksVisible(false)} />
+      {/* Accept bottom sheet */}
+      {acceptSheetJob && (
+        <AcceptBottomSheet
+          job={acceptSheetJob}
+          nearby={nearbyJobs(
+            acceptSheetJob.toLat,
+            acceptSheetJob.toLng,
+            allJobs,
+            acceptSheetJob.id,
+          )}
+          onConfirm={handleConfirmAccept}
+          onClose={() => setAcceptSheetJob(null)}
+        />
+      )}
+
+      {/* How It Works modal removed — tukšbrauciens lives in active.tsx */}
     </SafeAreaView>
   );
 }
@@ -1300,37 +1110,6 @@ const styles = StyleSheet.create({
   },
   activePillClearText: { fontSize: 11, fontWeight: '700', color: '#ffffff' },
 
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#ffffff',
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 16,
-    padding: 16,
-    gap: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-    borderLeftWidth: 4,
-    borderLeftColor: '#dc2626',
-  },
-  bannerEmoji: { fontSize: 30, marginTop: 2 },
-  bannerBody: { flex: 1, gap: 6 },
-  bannerTitle: { fontSize: 17, fontWeight: '800', color: '#111827' },
-  bannerDesc: { fontSize: 13, color: '#6b7280', lineHeight: 19 },
-  bannerBtn: {
-    alignSelf: 'flex-start',
-    marginTop: 6,
-    backgroundColor: '#dc2626',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  bannerBtnText: { fontSize: 13, fontWeight: '700', color: '#ffffff' },
-
   resultsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1355,6 +1134,25 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
     gap: 12,
+  },
+  cardSelected: {
+    borderWidth: 2,
+    borderColor: '#16a34a',
+    backgroundColor: '#f0fdf4',
+  },
+  tourCheckWrap: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 5,
+  },
+  tourCheckEmpty: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    backgroundColor: '#ffffff',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -1446,171 +1244,6 @@ const styles = StyleSheet.create({
   },
   emptyResetBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
-  // ── Avoid Empty Runs ───────────────────────────────────────────
-  filterToggleReturn: { backgroundColor: '#059669' },
-  filterToggleTour: { backgroundColor: '#7c3aed' },
-
-  // ── Tour planner ───────────────────────────────────────────────
-  cardSelected: {
-    borderWidth: 2,
-    borderColor: '#16a34a',
-    backgroundColor: '#f0fdf4',
-  },
-  tourCheckWrap: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    zIndex: 5,
-  },
-  tourCheckEmpty: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: '#d1d5db',
-    backgroundColor: '#ffffff',
-  },
-  tourFab: {
-    position: 'absolute',
-    bottom: 24,
-    left: 24,
-    right: 24,
-    zIndex: 50,
-  },
-  tourFabBtn: {
-    backgroundColor: '#7c3aed',
-    borderRadius: 16,
-    paddingVertical: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    shadowColor: '#7c3aed',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  tourFabText: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
-  tourHint: {
-    position: 'absolute',
-    bottom: 24,
-    left: 24,
-    right: 24,
-    zIndex: 50,
-    backgroundColor: 'rgba(124,58,237,0.9)',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-  },
-  tourHintText: { color: '#ffffff', fontSize: 13, fontWeight: '500' },
-
-  returnCountBadge: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    minWidth: 16,
-    alignItems: 'center',
-  },
-  returnCountBadgeText: { fontSize: 10, fontWeight: '800', color: '#059669' },
-
-  returnBanner: {
-    backgroundColor: '#ffffff',
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 16,
-    padding: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#059669',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  returnBannerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  returnBannerTitle: { fontSize: 16, fontWeight: '800', color: '#111827', flex: 1 },
-  returnBannerInfo: { padding: 4 },
-  returnBannerDesc: { fontSize: 13, color: '#6b7280', lineHeight: 19 },
-  returnRadiusLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6b7280',
-    marginTop: 12,
-    marginBottom: 2,
-    letterSpacing: 0.4,
-  },
-  returnFoundLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#059669',
-    marginTop: 8,
-  },
-  returnNoActiveJob: {
-    fontSize: 13,
-    color: '#9ca3af',
-    marginTop: 8,
-    lineHeight: 19,
-    fontStyle: 'italic',
-  },
-
-  chipReturn: { borderColor: '#6ee7b7' },
-  chipReturnActive: { backgroundColor: '#059669', borderColor: '#059669' },
-  chipReturnTextActive: { color: '#ffffff' },
-
-  returnCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#059669',
-  },
-  returnCardBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: -4,
-  },
-  returnBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#d1fae5',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  returnBadgeText: { fontSize: 10, fontWeight: '800', color: '#059669', letterSpacing: 0.5 },
-  returnKmAway: { fontSize: 11, fontWeight: '600', color: '#6b7280' },
-  acceptBtnReturn: {
-    backgroundColor: '#059669',
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-
-  returnEmpty: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    gap: 8,
-    marginHorizontal: 16,
-  },
-  returnEmptyText: { fontSize: 13, color: '#9ca3af', textAlign: 'center' },
-
-  returnDivider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginTop: 20,
-    marginBottom: 4,
-    gap: 10,
-  },
-  returnDividerLine: { flex: 1, height: 1, backgroundColor: '#e5e7eb' },
-  returnDividerLabel: { fontSize: 11, fontWeight: '700', color: '#9ca3af', letterSpacing: 0.5 },
-
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.55)',
@@ -1656,4 +1289,169 @@ const styles = StyleSheet.create({
   },
   modalSaveDisabled: { opacity: 0.5 },
   modalSaveText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
+
+  // ── Smart Route Banner ─────────────────────────────────────────
+  smartBanner: {
+    backgroundColor: '#f5f3ff',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: '#ddd6fe',
+    gap: 10,
+  },
+  smartBannerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  smartBannerTitle: { fontSize: 13, fontWeight: '800', color: '#6d28d9', letterSpacing: 0.3 },
+  smartChainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'nowrap',
+  },
+  smartChainJob: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    overflow: 'hidden',
+  },
+  smartChainCity: { fontSize: 12, fontWeight: '700', color: '#374151', flexShrink: 1 },
+  smartGapPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#ede9fe',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    flexShrink: 0,
+  },
+  smartGapText: { fontSize: 10, fontWeight: '700', color: '#7c3aed' },
+  smartStats: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  smartStatPrice: { fontSize: 16, fontWeight: '800', color: '#111827' },
+  smartStatDist: { fontSize: 12, color: '#6b7280' },
+  smartStatSaved: {
+    fontSize: 11,
+    color: '#059669',
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'right',
+  },
+  smartAcceptBtn: {
+    backgroundColor: '#7c3aed',
+    borderRadius: 12,
+    paddingVertical: 11,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+  },
+  smartAcceptBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+
+  // ── Accept Bottom Sheet ────────────────────────────────────────
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  sheetOverlayTouch: { flex: 1 },
+  sheetContainer: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 36,
+    gap: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 12,
+  },
+  sheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#e5e7eb',
+    alignSelf: 'center',
+    marginBottom: 6,
+  },
+  sheetTitle: { fontSize: 18, fontWeight: '800', color: '#111827' },
+  sheetJobCard: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 14,
+    padding: 14,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  sheetJobHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sheetJobNum: { fontSize: 13, fontWeight: '700', color: '#6b7280' },
+  sheetJobPrice: { fontSize: 20, fontWeight: '800', color: '#dc2626' },
+  sheetRouteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'nowrap',
+  },
+  sheetRouteDot: { width: 10, height: 10, borderRadius: 5, flexShrink: 0 },
+  sheetRouteCity: { fontSize: 14, fontWeight: '700', color: '#111827', flexShrink: 1 },
+  sheetJobMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    flexWrap: 'wrap',
+  },
+  sheetMetaText: { fontSize: 12, color: '#6b7280' },
+  sheetMetaDot: { fontSize: 12, color: '#d1d5db' },
+  sheetReturnSection: {
+    backgroundColor: '#f0fdf4',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#d1fae5',
+    gap: 6,
+  },
+  sheetReturnTitle: { fontSize: 13, fontWeight: '700', color: '#065f46' },
+  sheetReturnCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#d1fae5',
+  },
+  sheetReturnLeft: { flex: 1, gap: 4 },
+  sheetReturnKmBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#d1fae5',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  sheetReturnKmText: { fontSize: 10, fontWeight: '700', color: '#059669' },
+  sheetReturnCity: { fontSize: 13, fontWeight: '600', color: '#111827' },
+  sheetReturnPrice: { fontSize: 15, fontWeight: '800', color: '#059669', marginLeft: 8 },
+  sheetReturnNone: { fontSize: 12, color: '#9ca3af', textAlign: 'center', paddingVertical: 8 },
+  sheetAcceptBtn: {
+    backgroundColor: '#dc2626',
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: 'center',
+    shadowColor: '#dc2626',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  sheetAcceptBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
 });

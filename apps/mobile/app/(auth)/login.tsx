@@ -46,7 +46,7 @@ export default function LoginScreen() {
     try {
       const res = await api.login(data);
       await setAuth(res.user, res.token);
-      router.replace('/(tabs)/home');
+      router.replace('/');
     } catch (err) {
       setApiError(err instanceof Error ? err.message : t.login.failed);
     }

@@ -18,6 +18,8 @@ import { CompanyModule } from './company/company.module';
 import { CarrierSettingsModule } from './carrier-settings/carrier-settings.module';
 import { DriverScheduleModule } from './driver-schedule/driver-schedule.module';
 import { AdminModule } from './admin/admin.module';
+import { QuoteRequestsModule } from './quote-requests/quote-requests.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -40,6 +42,8 @@ import { AdminModule } from './admin/admin.module';
     CarrierSettingsModule,
     DriverScheduleModule,
     AdminModule,
+    QuoteRequestsModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

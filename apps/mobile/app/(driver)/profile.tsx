@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Pencil, X, Check, LogOut } from 'lucide-react-native';
+import { Pencil, X, Check, LogOut, Bell, Truck, ChevronRight } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
 import { api } from '@/lib/api';
@@ -89,7 +89,7 @@ export default function ProfileScreen() {
   const set = (key: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [key]: v }));
 
   return (
-    <SafeAreaView style={s.safe}>
+    <SafeAreaView style={s.safe} edges={[]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Avatar header */}
         <View style={s.avatarSection}>
@@ -123,6 +123,30 @@ export default function ProfileScreen() {
               </View>
             ))}
           </View>
+
+          {/* Quick links */}
+          <TouchableOpacity
+            style={s.linkRow}
+            onPress={() => router.push('/(driver)/vehicles')}
+            activeOpacity={0.8}
+          >
+            <View style={s.linkLeft}>
+              <Truck size={16} color="#374151" />
+              <Text style={s.linkText}>Mani transportlīdzekļi</Text>
+            </View>
+            <ChevronRight size={16} color="#9ca3af" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={s.linkRow}
+            onPress={() => router.push('/notifications')}
+            activeOpacity={0.8}
+          >
+            <View style={s.linkLeft}>
+              <Bell size={16} color="#374151" />
+              <Text style={s.linkText}>Paziņojumi</Text>
+            </View>
+            <ChevronRight size={16} color="#9ca3af" />
+          </TouchableOpacity>
 
           {/* Sign out */}
           <TouchableOpacity style={s.signOutBtn} onPress={handleLogout} activeOpacity={0.8}>
@@ -282,6 +306,23 @@ const s = StyleSheet.create({
   rowBorder: { borderBottomWidth: 1, borderBottomColor: '#f9fafb' },
   rowLabel: { fontSize: 14, color: '#6b7280' },
   rowValue: { fontSize: 14, fontWeight: '500', color: '#111827' },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  linkLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  linkText: { fontSize: 15, color: '#111827', fontWeight: '500' },
   signOutBtn: {
     flexDirection: 'row',
     alignItems: 'center',

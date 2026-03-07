@@ -114,14 +114,14 @@ export default function EarningsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={[]}>
         <ActivityIndicator color="#dc2626" style={{ flex: 1, marginTop: 40 }} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Title */}
         <Text style={styles.title}>{t.earnings.title}</Text>

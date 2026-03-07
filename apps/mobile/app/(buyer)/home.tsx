@@ -25,10 +25,10 @@ type QuickAction = { icon: LucideIcon; label: string; route?: string };
 
 const ROLE_ACTIONS: Record<string, QuickAction[]> = {
   BUYER: [
-    { icon: ShoppingCart, label: 'Pirkt materiālus', route: '/(tabs)/catalog' },
+    { icon: ShoppingCart, label: 'Pirkt materiālus', route: '/(buyer)/order-request' },
     { icon: Trash2, label: 'Nomāt konteineru', route: '/order' },
-    { icon: ClipboardList, label: 'Pasūtījumi', route: '/(tabs)/orders' },
-    { icon: User, label: 'Profils', route: '/(tabs)/profile' },
+    { icon: ClipboardList, label: 'Pasūtījumi', route: '/(buyer)/orders' },
+    { icon: User, label: 'Profils', route: '/(buyer)/profile' },
   ],
   SUPPLIER: [
     { icon: Package, label: 'Mani produkti' },
@@ -78,7 +78,7 @@ export default function HomeScreen() {
   const actions = ROLE_ACTIONS[role] ?? ROLE_ACTIONS.BUYER;
 
   return (
-    <SafeAreaView style={s.safe}>
+    <SafeAreaView style={s.safe} edges={[]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={s.header}>

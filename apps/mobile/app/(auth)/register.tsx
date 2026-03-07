@@ -91,7 +91,7 @@ export default function RegisterScreen() {
       const { confirmPassword: _c, ...payload } = data;
       const res = await api.register(payload);
       await setAuth(res.user, res.token);
-      router.replace('/(tabs)/home');
+      router.replace('/');
     } catch (err) {
       setApiError(err instanceof Error ? err.message : t.register.failed);
     }

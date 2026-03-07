@@ -16,7 +16,17 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 import type { SkipHireOrder, ApiOrder } from '@/lib/api';
-import { MapPin, CalendarDays, Trash2, Package, Truck, Phone, User } from 'lucide-react-native';
+import {
+  MapPin,
+  CalendarDays,
+  Trash2,
+  Package,
+  Truck,
+  Phone,
+  User,
+  Star,
+} from 'lucide-react-native';
+import { RatingModal } from '@/components/ui/RatingModal';
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -50,8 +60,9 @@ function formatDate(iso: string): string {
 
 // ── Skip-hire card ────────────────────────────────────────────
 
-function OrderCard({ order }: { order: SkipHireOrder }) {
+function OrderCard({ order, onRate }: { order: SkipHireOrder; onRate?: () => void }) {
   const status = t.skipHire.status[order.status] ?? t.skipHire.status.PENDING;
+  const canRate = order.status === 'COLLECTED' || order.status === 'COMPLETED';
   return (
     <View style={s.orderCard}>
       <View style={s.orderTop}>
@@ -79,6 +90,12 @@ function OrderCard({ order }: { order: SkipHireOrder }) {
       <View style={s.orderFooter}>
         <Text style={s.orderPrice}>€{order.price}</Text>
         <Text style={s.orderCurrency}>{order.currency}</Text>
+        {canRate && onRate && (
+          <TouchableOpacity style={s.rateBtn} onPress={onRate} activeOpacity={0.8}>
+            <Star size={13} color="#f59e0b" fill="#f59e0b" />
+            <Text style={s.rateBtnText}>{t.rating.rateBtn}</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -87,11 +104,16 @@ function OrderCard({ order }: { order: SkipHireOrder }) {
 // ── Material order card ───────────────────────────────────────
 
 function MaterialOrderCard({ order }: { order: ApiOrder }) {
+  const router = useRouter();
   const st = MAT_STATUS[order.status] ?? MAT_STATUS.PENDING;
   const first = order.items[0];
   const extra = order.items.length - 1;
   return (
-    <View style={s.orderCard}>
+    <TouchableOpacity
+      style={s.orderCard}
+      onPress={() => router.push(`/(buyer)/order/${order.id}`)}
+      activeOpacity={0.88}
+    >
       <View style={s.orderTop}>
         <View style={s.orderTopLeft}>
           <Text style={s.orderNum}>{order.orderNumber}</Text>
@@ -168,7 +190,7 @@ function MaterialOrderCard({ order }: { order: ApiOrder }) {
         <Text style={s.orderPrice}>€{order.total.toFixed(2)}</Text>
         <Text style={s.orderCurrency}>{order.currency}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -181,6 +203,7 @@ export default function OrdersScreen() {
   const [matOrders, setMatOrders] = useState<ApiOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [ratingSkipId, setRatingSkipId] = useState<string | null>(null);
 
   const loadOrders = useCallback(async () => {
     if (!token) {
@@ -212,7 +235,7 @@ export default function OrdersScreen() {
   };
 
   return (
-    <SafeAreaView style={s.safe}>
+    <SafeAreaView style={s.safe} edges={[]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -256,7 +279,7 @@ export default function OrdersScreen() {
           ) : (
             <View style={s.list}>
               {skipOrders.map((o) => (
-                <OrderCard key={o.id} order={o} />
+                <OrderCard key={o.id} order={o} onRate={() => setRatingSkipId(o.id)} />
               ))}
             </View>
           )}
@@ -288,6 +311,20 @@ export default function OrdersScreen() {
 
         <View style={{ height: 24 }} />
       </ScrollView>
+
+      {/* Rating modal for skip-hire orders */}
+      {ratingSkipId && token && (
+        <RatingModal
+          visible={!!ratingSkipId}
+          onClose={() => setRatingSkipId(null)}
+          onSuccess={() => {
+            setRatingSkipId(null);
+            loadOrders();
+          }}
+          token={token}
+          skipOrderId={ratingSkipId}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -389,7 +426,24 @@ const s = StyleSheet.create({
   },
   matDetail: { fontSize: 12, color: '#6b7280', flex: 1 },
   matPrice: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  orderFooter: { flexDirection: 'row', alignItems: 'baseline', gap: 4, marginTop: 10 },
+  orderFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    flexWrap: 'wrap',
+  },
+  rateBtn: {
+    marginLeft: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#fef9c3',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  rateBtnText: { fontSize: 12, fontWeight: '600', color: '#a16207' },
   orderPrice: { fontSize: 20, fontWeight: '700', color: '#111827' },
   orderCurrency: { fontSize: 12, color: '#9ca3af' },
 

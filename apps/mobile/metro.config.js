@@ -18,6 +18,15 @@ config.resolver.nodeModulesPaths = [
 // Guarantee a single React instance — intercepts ALL require('react') calls
 // including those originating from inside node_modules (e.g. react-native)
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+  // Resolve @/ path aliases to the mobile project root
+  if (moduleName.startsWith("@/")) {
+    return context.resolveRequest(
+      context,
+      path.resolve(projectRoot, moduleName.slice(2)),
+      platform
+    );
+  }
+
   if (moduleName === "react") {
     return {
       filePath: require.resolve("react", {

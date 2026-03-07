@@ -1,16 +1,15 @@
 /**
- * maps.ts — Google Maps utilities for B3Hub
+ * maps.ts — Mapbox utilities for B3Hub
  *
  * Wraps:
- *  • Routes API v2  — real road polylines + distance/duration for each leg
- *  • Route Optimization API — multi-stop delivery ordering
- *  • Polyline codec  — decodes Google's compact encoded-polyline format
+ *  • Directions API v5        — real road polylines + distance/duration
+ *  • Optimization API v1      — multi-stop delivery ordering (≤12 stops)
  *
  * All calls are fire-and-forget safe: every async function has a graceful
  * fallback (straight-line or original order) so the map never hard-crashes.
  */
 
-const MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
+const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -45,44 +44,6 @@ export interface OptimizedRoute {
   totalDistanceKm: number;
 }
 
-// ── Polyline decoder ──────────────────────────────────────────────────────────
-// Based on Google's specification: https://developers.google.com/maps/documentation/utilities/polylinealgorithm
-
-export function decodePolyline(encoded: string): LatLng[] {
-  const result: LatLng[] = [];
-  let index = 0;
-  let lat = 0;
-  let lng = 0;
-
-  while (index < encoded.length) {
-    let shift = 0;
-    let b: number;
-    let raw = 0;
-
-    do {
-      b = encoded.charCodeAt(index++) - 63;
-      raw |= (b & 0x1f) << shift;
-      shift += 5;
-    } while (b >= 0x20);
-
-    lat += raw & 1 ? ~(raw >> 1) : raw >> 1;
-
-    shift = 0;
-    raw = 0;
-
-    do {
-      b = encoded.charCodeAt(index++) - 63;
-      raw |= (b & 0x1f) << shift;
-      shift += 5;
-    } while (b >= 0x20);
-
-    lng += raw & 1 ? ~(raw >> 1) : raw >> 1;
-    result.push({ latitude: lat / 1e5, longitude: lng / 1e5 });
-  }
-
-  return result;
-}
-
 // ── Duration formatter ────────────────────────────────────────────────────────
 
 function formatDuration(seconds: number): string {
@@ -94,14 +55,13 @@ function formatDuration(seconds: number): string {
   return m === 0 ? `${h} h` : `${h} h ${m} min`;
 }
 
-// ── Routes API v2 ─────────────────────────────────────────────────────────────
+// ── Directions API v5 ─────────────────────────────────────────────────────────
 
 /**
- * Fetch a real driving route between two points using the Google Routes API v2.
- * Returns decoded polyline coords + distance/duration metadata.
+ * Fetch a real driving route between two points using the Mapbox Directions API.
+ * Returns decoded GeoJSON coords + distance/duration metadata.
  *
- * Falls back to a straight two-point line on any error so the map always
- * renders something.
+ * Falls back to a straight two-point line on any error.
  */
 export async function fetchRoute(origin: Stop, destination: Stop): Promise<RouteInfo> {
   const fallback: RouteInfo = {
@@ -114,52 +74,40 @@ export async function fetchRoute(origin: Stop, destination: Stop): Promise<Route
     durationSec: 0,
   };
 
-  if (!MAPS_KEY) return fallback;
+  if (!MAPBOX_TOKEN) return fallback;
 
   try {
-    const res = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': MAPS_KEY,
-        'X-Goog-FieldMask':
-          'routes.polyline.encodedPolyline,routes.distanceMeters,routes.duration',
-      },
-      body: JSON.stringify({
-        origin: {
-          location: { latLng: { latitude: origin.lat, longitude: origin.lng } },
-        },
-        destination: {
-          location: { latLng: { latitude: destination.lat, longitude: destination.lng } },
-        },
-        travelMode: 'DRIVE',
-        routingPreference: 'TRAFFIC_AWARE',
-        units: 'METRIC',
-      }),
-    });
+    const url =
+      `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/` +
+      `${origin.lng},${origin.lat};${destination.lng},${destination.lat}` +
+      `?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`;
 
+    const res = await fetch(url);
     if (!res.ok) return fallback;
 
     const data = (await res.json()) as {
       routes?: Array<{
-        polyline?: { encodedPolyline?: string };
-        distanceMeters?: number;
-        duration?: string; // e.g. "4253s"
+        geometry?: { coordinates?: number[][] };
+        distance?: number;
+        duration?: number;
       }>;
     };
 
     const route = data?.routes?.[0];
-    if (!route?.polyline?.encodedPolyline) return fallback;
+    if (!route?.geometry?.coordinates?.length) return fallback;
 
-    const coords = decodePolyline(route.polyline.encodedPolyline);
-    const distanceKm = route.distanceMeters ? route.distanceMeters / 1000 : 0;
-    const durationSec = route.duration
-      ? parseInt(route.duration.replace('s', ''), 10)
-      : 0;
+    // Mapbox returns [longitude, latitude]; convert to {latitude, longitude}
+    const coords: LatLng[] = route.geometry.coordinates.map(([lng, lat]) => ({
+      latitude: lat,
+      longitude: lng,
+    }));
+
+    const distanceKm = route.distance ? Math.round((route.distance / 1000) * 10) / 10 : 0;
+    const durationSec = route.duration ? Math.round(route.duration) : 0;
 
     return {
       coords,
-      distanceKm: Math.round(distanceKm * 10) / 10,
+      distanceKm,
       durationLabel: formatDuration(durationSec),
       durationSec,
     };
@@ -168,14 +116,11 @@ export async function fetchRoute(origin: Stop, destination: Stop): Promise<Route
   }
 }
 
-// ── Route Optimization API ────────────────────────────────────────────────────
+// ── Optimization API v1 ───────────────────────────────────────────────────────
 
 /**
- * Given an ordered list of stops, ask the Route Optimization API to reorder
- * them for minimum travel time.
- *
- * Useful when a driver has accepted multiple jobs in one day: pass all
- * pickup+delivery pairs, get back the optimal visit order.
+ * Given a list of stops, ask the Mapbox Optimization API to reorder them for
+ * minimum travel time. Supports up to 12 waypoints.
  *
  * Falls back to the original order on any error.
  */
@@ -186,53 +131,37 @@ export async function optimizeRoute(stops: Stop[]): Promise<OptimizedRoute> {
     totalDistanceKm: 0,
   };
 
-  if (!MAPS_KEY || stops.length < 2) return fallback;
+  if (!MAPBOX_TOKEN || stops.length < 2) return fallback;
 
   try {
-    // Route Optimization API uses a different base URL
-    const res = await fetch(
-      `https://routeoptimization.googleapis.com/v1/projects/-:optimizeTours?key=${MAPS_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: {
-            shipments: stops.map((stop, i) => ({
-              pickups: [
-                {
-                  arrivalLocation: { latitude: stop.lat, longitude: stop.lng },
-                  label: stop.label ?? `stop-${i}`,
-                },
-              ],
-            })),
-            vehicles: [
-              {
-                startLocation: { latitude: stops[0].lat, longitude: stops[0].lng },
-                endLocation: { latitude: stops[stops.length - 1].lat, longitude: stops[stops.length - 1].lng },
-                costPerKilometer: 1,
-              },
-            ],
-          },
-        }),
-      },
-    );
+    const coordStr = stops.map((s) => `${s.lng},${s.lat}`).join(';');
+    const url =
+      `https://api.mapbox.com/optimized-trips/v1/mapbox/driving/${coordStr}` +
+      `?geometries=geojson&roundtrip=false&source=first&destination=last` +
+      `&access_token=${MAPBOX_TOKEN}`;
 
+    const res = await fetch(url);
     if (!res.ok) return fallback;
 
     const data = (await res.json()) as {
-      routes?: Array<{
-        visits?: Array<{ shipmentIndex?: number }>;
-        metrics?: { totalDistance?: { meters?: number } };
-      }>;
+      code?: string;
+      waypoints?: Array<{ waypoint_index: number }>;
+      trips?: Array<{ distance?: number }>;
     };
 
-    const route = data?.routes?.[0];
-    if (!route?.visits?.length) return fallback;
+    if (data.code !== 'Ok' || !data.waypoints?.length) return fallback;
 
-    const visitOrder = route.visits.map((v) => v.shipmentIndex ?? 0);
-    const orderedStops = visitOrder.map((i) => stops[i]);
-    const totalDistanceKm = route.metrics?.totalDistance?.meters
-      ? Math.round((route.metrics.totalDistance.meters / 1000) * 10) / 10
+    // waypoints[i].waypoint_index = optimized visit position of input stop i
+    const orderedStops = new Array<Stop>(stops.length);
+    const visitOrder = new Array<number>(stops.length);
+    for (let i = 0; i < stops.length; i++) {
+      const pos = data.waypoints[i].waypoint_index;
+      orderedStops[pos] = stops[i];
+      visitOrder[pos] = i;
+    }
+
+    const totalDistanceKm = data.trips?.[0]?.distance
+      ? Math.round((data.trips[0].distance / 1000) * 10) / 10
       : 0;
 
     return { orderedStops, visitOrder, totalDistanceKm };
