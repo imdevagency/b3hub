@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/lib/translations';
-import { Check, Clock } from 'lucide-react-native';
+import { Check, Clock, TrendingUp, CalendarDays, BarChart2, CheckCircle2 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiTransportJob } from '@/lib/api';
 
@@ -129,18 +129,30 @@ export default function EarningsScreen() {
         {/* Stats grid */}
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, styles.statCardPrimary]}>
+            <View style={styles.statCardTop}>
+              <TrendingUp size={18} color="rgba(255,255,255,0.65)" />
+            </View>
             <Text style={styles.statLabelLight}>{t.earnings.today}</Text>
             <Text style={styles.statValueLight}>€{stats.todayEarnings}</Text>
           </View>
           <View style={styles.statCard}>
+            <View style={styles.statCardTop}>
+              <CalendarDays size={18} color="#d1d5db" />
+            </View>
             <Text style={styles.statLabel}>{t.earnings.thisWeek}</Text>
             <Text style={styles.statValue}>€{stats.weekEarnings}</Text>
           </View>
           <View style={styles.statCard}>
+            <View style={styles.statCardTop}>
+              <BarChart2 size={18} color="#d1d5db" />
+            </View>
             <Text style={styles.statLabel}>{t.earnings.thisMonth}</Text>
             <Text style={styles.statValue}>€{stats.monthEarnings}</Text>
           </View>
           <View style={styles.statCard}>
+            <View style={styles.statCardTop}>
+              <CheckCircle2 size={18} color="#d1d5db" />
+            </View>
             <Text style={styles.statLabel}>{t.earnings.completedJobs}</Text>
             <Text style={styles.statValue}>{stats.completedJobs}</Text>
           </View>
@@ -224,6 +236,7 @@ const styles = StyleSheet.create({
   statLabelLight: { fontSize: 12, color: '#fca5a5', fontWeight: '500' },
   statValue: { fontSize: 22, fontWeight: '800', color: '#111827', marginTop: 4 },
   statValueLight: { fontSize: 22, fontWeight: '800', color: '#ffffff', marginTop: 4 },
+  statCardTop: { alignSelf: 'flex-end', marginBottom: 6 },
 
   pendingCard: {
     backgroundColor: '#fffbeb',
@@ -248,8 +261,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     padding: 14,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   historyJob: { fontSize: 13, fontWeight: '700', color: '#111827' },
   historyRoute: { fontSize: 13, color: '#6b7280', marginTop: 2 },

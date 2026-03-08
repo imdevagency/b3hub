@@ -19,6 +19,7 @@ import { z } from 'zod';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { t } from '@/lib/translations';
+import { ChevronLeft, Eye, EyeOff } from 'lucide-react-native';
 
 type UserType = 'BUYER' | 'SUPPLIER' | 'CARRIER';
 
@@ -65,6 +66,8 @@ export default function RegisterScreen() {
   const router = useRouter();
   const { setAuth } = useAuth();
   const [apiError, setApiError] = useState<string | null>(null);
+  const [showPw, setShowPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
 
   const {
     control,
@@ -109,8 +112,8 @@ export default function RegisterScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <TouchableOpacity style={s.backBtn} onPress={() => router.back()}>
-            <Text style={s.backText}>{t.register.back}</Text>
+          <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
+            <ChevronLeft size={22} color="#374151" />
           </TouchableOpacity>
 
           <Text style={s.title}>{t.register.title}</Text>
@@ -223,7 +226,7 @@ export default function RegisterScreen() {
                       style={[s.typeBtn, value === ut.value ? s.typeBtnActive : null]}
                       onPress={() => onChange(ut.value)}
                     >
-                      <ut.Icon size={24} color={value === ut.value ? '#dc2626' : '#6b7280'} />
+                      <Text style={s.typeEmoji}>{ut.emoji}</Text>
                       <Text style={[s.typeLabel, value === ut.value ? s.typeLabelActive : null]}>
                         {ut.label}
                       </Text>
@@ -249,7 +252,7 @@ export default function RegisterScreen() {
                         style={[s.typeBtn, value === k.value ? s.typeBtnActive : null]}
                         onPress={() => onChange(k.value)}
                       >
-                        <k.Icon size={24} color={value === k.value ? '#dc2626' : '#6b7280'} />
+                        <Text style={s.typeEmoji}>{k.emoji}</Text>
                         <Text style={[s.typeLabel, value === k.value ? s.typeLabelActive : null]}>
                           {k.label}
                         </Text>
@@ -269,15 +272,20 @@ export default function RegisterScreen() {
               control={control}
               name="password"
               render={({ field: { onChange, value, onBlur } }) => (
-                <TextInput
-                  style={[s.input, errors.password ? s.inputError : null]}
-                  placeholder={t.register.passwordPlaceholder}
-                  placeholderTextColor="#9ca3af"
-                  secureTextEntry
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                />
+                <View style={[s.inputRow, errors.password ? s.inputRowError : null]}>
+                  <TextInput
+                    style={s.inputFlex}
+                    placeholder={t.register.passwordPlaceholder}
+                    placeholderTextColor="#9ca3af"
+                    secureTextEntry={!showPw}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                  />
+                  <TouchableOpacity style={s.eyeBtn} onPress={() => setShowPw((v) => !v)} hitSlop={8}>
+                    {showPw ? <EyeOff size={18} color="#9ca3af" /> : <Eye size={18} color="#9ca3af" />}
+                  </TouchableOpacity>
+                </View>
               )}
             />
             {errors.password && <Text style={s.fieldError}>{errors.password.message}</Text>}
@@ -290,15 +298,20 @@ export default function RegisterScreen() {
               control={control}
               name="confirmPassword"
               render={({ field: { onChange, value, onBlur } }) => (
-                <TextInput
-                  style={[s.input, errors.confirmPassword ? s.inputError : null]}
-                  placeholder={t.register.confirmPasswordPlaceholder}
-                  placeholderTextColor="#9ca3af"
-                  secureTextEntry
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                />
+                <View style={[s.inputRow, errors.confirmPassword ? s.inputRowError : null]}>
+                  <TextInput
+                    style={s.inputFlex}
+                    placeholder={t.register.confirmPasswordPlaceholder}
+                    placeholderTextColor="#9ca3af"
+                    secureTextEntry={!showConfirmPw}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                  />
+                  <TouchableOpacity style={s.eyeBtn} onPress={() => setShowConfirmPw((v) => !v)} hitSlop={8}>
+                    {showConfirmPw ? <EyeOff size={18} color="#9ca3af" /> : <Eye size={18} color="#9ca3af" />}
+                  </TouchableOpacity>
+                </View>
               )}
             />
             {errors.confirmPassword && (
@@ -331,8 +344,32 @@ const s = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 40,
   },
-  backBtn: { marginBottom: 24 },
-  backText: { fontSize: 16, color: '#374151' },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    backgroundColor: '#fff',
+  },
+  inputRowError: { borderColor: '#f87171' },
+  inputFlex: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: '#111827',
+  },
+  eyeBtn: { paddingHorizontal: 14, paddingVertical: 14 },
   title: { fontSize: 28, fontWeight: '700', color: '#111827', marginBottom: 4 },
   subtitle: { fontSize: 14, color: '#6b7280', marginBottom: 24 },
   link: { color: '#dc2626', fontWeight: '600' },

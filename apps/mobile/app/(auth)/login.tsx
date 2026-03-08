@@ -19,6 +19,7 @@ import { z } from 'zod';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { t } from '@/lib/translations';
+import { ChevronLeft, Eye, EyeOff } from 'lucide-react-native';
 
 const schema = z.object({
   email: z.string().email(t.login.validation.invalidEmail),
@@ -31,6 +32,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const { setAuth } = useAuth();
   const [apiError, setApiError] = useState<string | null>(null);
+  const [showPw, setShowPw] = useState(false);
 
   const {
     control,
@@ -65,8 +67,8 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Back */}
-          <TouchableOpacity style={s.backBtn} onPress={() => router.back()}>
-            <Text style={s.backText}>←</Text>
+          <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
+            <ChevronLeft size={22} color="#374151" />
           </TouchableOpacity>
 
           {/* Logo */}
@@ -122,15 +124,20 @@ export default function LoginScreen() {
               control={control}
               name="password"
               render={({ field: { onChange, value, onBlur } }) => (
-                <TextInput
-                  style={[s.input, errors.password && s.inputError]}
-                  placeholder={t.login.passwordPlaceholder}
-                  placeholderTextColor="#9ca3af"
-                  secureTextEntry
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                />
+                <View style={[s.inputRow, errors.password && s.inputRowError]}>
+                  <TextInput
+                    style={s.inputFlex}
+                    placeholder={t.login.passwordPlaceholder}
+                    placeholderTextColor="#9ca3af"
+                    secureTextEntry={!showPw}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                  />
+                  <TouchableOpacity style={s.eyeBtn} onPress={() => setShowPw((v) => !v)} hitSlop={8}>
+                    {showPw ? <EyeOff size={18} color="#9ca3af" /> : <Eye size={18} color="#9ca3af" />}
+                  </TouchableOpacity>
+                </View>
               )}
             />
             {errors.password && <Text style={s.fieldError}>{errors.password.message}</Text>}
@@ -165,7 +172,23 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 32,
   },
-  backText: { fontSize: 18, color: '#374151' },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    backgroundColor: '#fff',
+  },
+  inputRowError: { borderColor: '#f87171' },
+  inputFlex: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: '#111827',
+  },
+  eyeBtn: { paddingHorizontal: 14, paddingVertical: 14 },
   logoWrap: { alignItems: 'center', marginBottom: 32 },
   logoBox: {
     width: 64,

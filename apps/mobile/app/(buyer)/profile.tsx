@@ -35,6 +35,19 @@ export default function ProfileScreen() {
   const roleLabel = t.mode[mode];
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`;
 
+  const USER_TYPE_LABEL: Record<string, string> = {
+    BUYER: 'Pircējs',
+    SUPPLIER: 'Piegādātājs',
+    CARRIER: 'Pārvadātājs',
+    ADMIN: 'Administrators',
+  };
+  const STATUS_LABEL: Record<string, string> = {
+    ACTIVE: 'Aktīvs',
+    PENDING: 'Gaida apstiprināšanu',
+    SUSPENDED: 'Apturēts',
+    INACTIVE: 'Neaktīvs',
+  };
+
   const handleLogout = () => {
     Alert.alert('Iziet', 'Vai tiešām vēlaties izrakstīties?', [
       { text: 'Atcelt', style: 'cancel' },
@@ -82,8 +95,8 @@ export default function ProfileScreen() {
   const INFO_ROWS = [
     { label: t.profile.email, value: user?.email },
     { label: t.profile.phone, value: user?.phone || '—' },
-    { label: t.profile.accountType, value: user?.userType },
-    { label: t.profile.status, value: user?.status },
+    { label: t.profile.accountType, value: USER_TYPE_LABEL[user?.userType ?? ''] ?? user?.userType },
+    { label: t.profile.status, value: STATUS_LABEL[user?.status ?? ''] ?? user?.status },
   ];
 
   const set = (key: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [key]: v }));

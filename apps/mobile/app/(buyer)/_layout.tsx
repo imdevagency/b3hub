@@ -9,7 +9,21 @@ import { Home, Package, User } from 'lucide-react-native';
 import { ModeSwitcher } from '@/components/ui/ModeSwitcher';
 import { t } from '@/lib/translations';
 
-const TAB_BAR = { borderTopColor: '#e5e7eb', backgroundColor: '#ffffff' };
+// Uber-style tab bar: no harsh border, soft upward shadow, taller for thumb comfort
+const TAB_BAR = {
+  backgroundColor: '#ffffff',
+  borderTopWidth: 0,
+  height: 62,
+  paddingTop: 6,
+  paddingBottom: 4,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: -3 },
+  shadowOpacity: 0.07,
+  shadowRadius: 12,
+  elevation: 20,
+};
+
+const TAB_LABEL_STYLE = { fontSize: 11, fontWeight: '600' as const };
 
 export default function BuyerLayout() {
   const { user, isLoading } = useAuth();
@@ -41,6 +55,7 @@ export default function BuyerLayout() {
           tabBarActiveTintColor: '#dc2626',
           tabBarInactiveTintColor: '#9ca3af',
           tabBarStyle: TAB_BAR,
+          tabBarLabelStyle: TAB_LABEL_STYLE,
         }}
       >
         <Tabs.Screen

@@ -1,25 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiOrder } from '@/lib/api';
 import { t } from '@/lib/translations';
-import {
-  HardHat,
-  Trash2,
-  Truck,
-  ChevronRight,
-  Package,
-} from 'lucide-react-native';
+import { HardHat, Trash2, Truck, ChevronRight, Package, Bell } from 'lucide-react-native';
 
 // ── Types ───────────────────────────────────────────────────────────────────────────────────
 
@@ -97,6 +84,15 @@ const SERVICE_TILES: ServiceTile[] = [
   },
 ];
 
+// ── Time-based greeting ──────────────────────────────────────────────────────────────────────
+
+function timeGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Labrīt';
+  if (h < 17) return 'Labdien';
+  return 'Labvakar';
+}
+
 // ── Skeleton pulse ──────────────────────────────────────────────────────────────────
 
 function SkeletonBox({
@@ -138,6 +134,7 @@ function SkeletonBox({
 export default function HomeScreen() {
   const { user, token } = useAuth();
   const router = useRouter();
+  const greeting = timeGreeting();
   const [orders, setOrders] = useState<ApiOrder[] | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -151,8 +148,7 @@ export default function HomeScreen() {
   }, [token]);
 
   const activeOrder = orders?.find((o) => ACTIVE_STATUSES.has(o.status)) ?? null;
-  const recentOrders =
-    orders?.filter((o) => !ACTIVE_STATUSES.has(o.status)).slice(0, 3) ?? [];
+  const recentOrders = orders?.filter((o) => !ACTIVE_STATUSES.has(o.status)).slice(0, 3) ?? [];
   const isPartnerEligible = !user?.canSell && !user?.canTransport;
 
   return (
@@ -161,11 +157,18 @@ export default function HomeScreen() {
         {/* ── Header ── */}
         <View style={s.header}>
           <View>
-            <Text style={s.headerGreeting}>{t.home.greeting}</Text>
+            <Text style={s.headerGreeting}>{greeting}</Text>
             <Text style={s.headerName}>
               {user?.firstName} {user?.lastName}
             </Text>
           </View>
+          <TouchableOpacity
+            style={s.bellBtn}
+            onPress={() => router.push('/notifications' as any)}
+            activeOpacity={0.7}
+          >
+            <Bell size={22} color="#fff" />
+          </TouchableOpacity>
         </View>
 
         <View style={s.body}>
@@ -217,9 +220,7 @@ export default function HomeScreen() {
             <TouchableOpacity
               style={[s.card, s.activeOrderCard]}
               activeOpacity={0.8}
-              onPress={() =>
-                router.push(`/(buyer)/order/${activeOrder.id}` as any)
-              }
+              onPress={() => router.push(`/(buyer)/order/${activeOrder.id}` as any)}
             >
               <View style={s.activeOrderHeader}>
                 <View
@@ -252,10 +253,7 @@ export default function HomeScreen() {
               {recentOrders.map((o, i) => (
                 <TouchableOpacity
                   key={o.id}
-                  style={[
-                    s.orderRow,
-                    i < recentOrders.length - 1 && s.orderRowBorder,
-                  ]}
+                  style={[s.orderRow, i < recentOrders.length - 1 && s.orderRowBorder]}
                   activeOpacity={0.7}
                   onPress={() => router.push(`/(buyer)/order/${o.id}` as any)}
                 >
@@ -268,9 +266,7 @@ export default function HomeScreen() {
                       {o.deliveryCity}
                     </Text>
                   </View>
-                  <Text style={s.orderRowStatus}>
-                    {STATUS_LABEL[o.status] ?? o.status}
-                  </Text>
+                  <Text style={s.orderRowStatus}>{STATUS_LABEL[o.status] ?? o.status}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -307,9 +303,21 @@ const s = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 36,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
   },
   headerGreeting: { color: '#fca5a5', fontSize: 13 },
   headerName: { color: '#fff', fontSize: 20, fontWeight: '700', marginTop: 2 },
+  bellBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
 
   body: { paddingHorizontal: 16, marginTop: -20, gap: 12, paddingBottom: 32 },
 
