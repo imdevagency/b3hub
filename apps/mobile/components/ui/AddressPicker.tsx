@@ -188,7 +188,9 @@ export function AddressPicker({
         <View style={styles.mapWrapper}>
           <BaseMap cameraRef={cameraRef} center={[lng, lat]} zoom={13} onPress={handleMapPress}>
             <MapboxGL.PointAnnotation id="pin" coordinate={[lng, lat]}>
-              <PinMarker color={pinColor} />
+              <View collapsable={false}>
+                <PinMarker color={pinColor} />
+              </View>
             </MapboxGL.PointAnnotation>
           </BaseMap>
 

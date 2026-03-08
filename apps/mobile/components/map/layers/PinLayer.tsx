@@ -34,7 +34,9 @@ export function PinLayer({ id, coordinate, type = 'custom', label, color = '#6b7
 
   return (
     <MapboxGL.PointAnnotation id={id} coordinate={coord}>
-      <MarkerForType type={type} label={label} color={color} />
+      <View collapsable={false}>
+        <MarkerForType type={type} label={label} color={color} />
+      </View>
     </MapboxGL.PointAnnotation>
   );
 }
