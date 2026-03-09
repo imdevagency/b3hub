@@ -76,7 +76,7 @@ const SERVICE_TILES: ServiceTile[] = [
     bg: '#fff7ed',
     iconBg: '#fed7aa',
     iconColor: '#c2410c',
-    route: '/(buyer)/order-request',
+    route: '/order-request',
   },
   {
     id: 'container',
@@ -94,7 +94,7 @@ const SERVICE_TILES: ServiceTile[] = [
     bg: '#eff6ff',
     iconBg: '#bfdbfe',
     iconColor: '#1d4ed8',
-    route: '/(buyer)/order-request',
+    route: '/order-request',
   },
 ];
 

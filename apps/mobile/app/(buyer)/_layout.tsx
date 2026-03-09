@@ -85,7 +85,6 @@ export default function BuyerLayout() {
         />
         <Tabs.Screen name="profile" options={{ href: null }} />
         <Tabs.Screen name="invoices" options={{ href: null }} />
-        <Tabs.Screen name="order-request" options={{ href: null }} />
         <Tabs.Screen name="order/[id]" options={{ href: null }} />
       </Tabs>
       <Sidebar

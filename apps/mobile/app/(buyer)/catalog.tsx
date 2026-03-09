@@ -296,7 +296,7 @@ export default function CatalogScreen() {
                 material={m}
                 onOrder={(mat) => {
                   router.push({
-                    pathname: '/(buyer)/order-request',
+                    pathname: '/order-request',
                     params: {
                       materialId: mat.id,
                       materialName: mat.name,
