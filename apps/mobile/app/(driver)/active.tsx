@@ -291,17 +291,26 @@ export default function ActiveJobScreen() {
             </Text>
           </View>
 
-          {/* Progress bar */}
+          {/* Progress stepper */}
           <View style={styles.progressBar}>
             {STATUS_STEPS.map((step, i) => (
-              <View
-                key={step}
-                style={[
-                  styles.progressDot,
-                  i <= currentIndex && styles.progressDotActive,
-                  i < currentIndex && styles.progressDotDone,
-                ]}
-              />
+              <React.Fragment key={step}>
+                <View
+                  style={[
+                    styles.progressDot,
+                    i < currentIndex && styles.progressDotDone,
+                    i === currentIndex && styles.progressDotActive,
+                  ]}
+                />
+                {i < STATUS_STEPS.length - 1 && (
+                  <View
+                    style={[
+                      styles.progressLine,
+                      i < currentIndex && styles.progressLineDone,
+                    ]}
+                  />
+                )}
+              </React.Fragment>
             ))}
           </View>
         </View>
@@ -525,7 +534,6 @@ const styles = StyleSheet.create({
   progressBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
     paddingTop: 4,
   },
   progressDot: {
@@ -533,10 +541,21 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     backgroundColor: '#e5e7eb',
-    flex: 1,
   },
-  progressDotActive: { backgroundColor: '#fca5a5' },
+  progressDotActive: {
+    backgroundColor: '#dc2626',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    shadowColor: '#dc2626',
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 3,
+  },
   progressDotDone: { backgroundColor: '#dc2626' },
+  progressLine: { flex: 1, height: 2, backgroundColor: '#e5e7eb' },
+  progressLineDone: { backgroundColor: '#dc2626' },
 
   detailsCard: {
     backgroundColor: '#ffffff',

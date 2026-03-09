@@ -182,13 +182,13 @@ const styles = StyleSheet.create({
   buttons: { gap: 10 },
   primaryBtn: {
     backgroundColor: '#dc2626',
-    borderRadius: 14,
+    borderRadius: 999,
     paddingVertical: 16,
     alignItems: 'center',
   },
   primaryBtnText: { color: '#fff', fontWeight: '600', fontSize: 16 },
   secondaryBtn: {
-    borderRadius: 14,
+    borderRadius: 999,
     paddingVertical: 16,
     alignItems: 'center',
     borderWidth: 1.5,

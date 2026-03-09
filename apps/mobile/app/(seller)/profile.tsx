@@ -82,8 +82,8 @@ export default function ProfileScreen() {
   const INFO_ROWS = [
     { label: t.profile.email, value: user?.email },
     { label: t.profile.phone, value: user?.phone || '—' },
-    { label: t.profile.accountType, value: user?.userType },
-    { label: t.profile.status, value: user?.status },
+    { label: t.profile.accountType, value: ({ BUYER: 'Pircējs', SUPPLIER: 'Piegādātājs', CARRIER: 'Pārvadātājs', ADMIN: 'Administrators' } as Record<string,string>)[user?.userType ?? ''] ?? user?.userType },
+    { label: t.profile.status, value: ({ ACTIVE: 'Aktīvs', PENDING: 'Gaida apstiprināšanu', SUSPENDED: 'Apturēts', INACTIVE: 'Neaktīvs' } as Record<string,string>)[user?.status ?? ''] ?? user?.status },
   ];
 
   const set = (key: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [key]: v }));
