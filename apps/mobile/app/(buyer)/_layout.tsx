@@ -5,7 +5,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
-import { Home, Package, User, Receipt } from 'lucide-react-native';
+import { Home, LayoutGrid, MoreVertical, Package } from 'lucide-react-native';
 import { ModeSwitcher } from '@/components/ui/ModeSwitcher';
 import { t } from '@/lib/translations';
 
@@ -73,21 +73,21 @@ export default function BuyerLayout() {
           }}
         />
         <Tabs.Screen
-          name="profile"
+          name="catalog"
           options={{
-            title: t.tabs.profile,
-            tabBarIcon: ({ color }) => <User size={22} color={color} />,
+            title: t.tabs.catalog,
+            tabBarIcon: ({ color }) => <LayoutGrid size={22} color={color} />,
           }}
         />
-        {/* Accessible via quick-action, not shown in tab bar */}
         <Tabs.Screen
-          name="invoices"
+          name="more"
           options={{
-            title: 'Rēķini',
-            tabBarIcon: ({ color }) => <Receipt size={22} color={color} />,
+            title: t.tabs.more,
+            tabBarIcon: ({ color }) => <MoreVertical size={22} color={color} />,
           }}
         />
-        <Tabs.Screen name="catalog" options={{ href: null }} />
+        <Tabs.Screen name="profile" options={{ href: null }} />
+        <Tabs.Screen name="invoices" options={{ href: null }} />
         <Tabs.Screen name="order-request" options={{ href: null }} />
         <Tabs.Screen name="order/[id]" options={{ href: null }} />
       </Tabs>

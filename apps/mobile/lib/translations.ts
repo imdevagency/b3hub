@@ -201,6 +201,7 @@ export const lv = {
     catalog: 'Katalogs',
     quotes: 'Pieprasījumi',
     skips: 'Konteineri',
+    more: 'Vairāk',
   },
 
   mode: {

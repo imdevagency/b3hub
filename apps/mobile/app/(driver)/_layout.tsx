@@ -5,7 +5,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
-import { ClipboardList, Map, Trash2, Wallet, User } from 'lucide-react-native';
+import { ClipboardList, Map, MoreVertical, Trash2 } from 'lucide-react-native';
 import { ModeSwitcher } from '@/components/ui/ModeSwitcher';
 import { t } from '@/lib/translations';
 
@@ -79,20 +79,14 @@ export default function DriverLayout() {
           }}
         />
         <Tabs.Screen
-          name="earnings"
+          name="more"
           options={{
-            title: t.tabs.earnings,
-            tabBarIcon: ({ color }) => <Wallet size={22} color={color} />,
+            title: t.tabs.more,
+            tabBarIcon: ({ color }) => <MoreVertical size={22} color={color} />,
           }}
         />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: t.tabs.profile,
-            tabBarIcon: ({ color }) => <User size={22} color={color} />,
-          }}
-        />
-        {/* Accessible via profile, not shown in tab bar */}
+        <Tabs.Screen name="earnings" options={{ href: null }} />
+        <Tabs.Screen name="profile" options={{ href: null }} />
         <Tabs.Screen name="vehicles" options={{ href: null }} />
       </Tabs>
     </SafeAreaView>
