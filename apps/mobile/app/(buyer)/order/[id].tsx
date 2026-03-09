@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -26,7 +26,8 @@ import {
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import type { ApiOrder } from '@/lib/api';
+import type { ApiOrder, JobLocation } from '@/lib/api';
+import { JobRouteMap } from '@/components/ui/JobRouteMap';
 import { t } from '@/lib/translations';
 import { RatingModal } from '@/components/ui/RatingModal';
 
@@ -76,6 +77,9 @@ export default function OrderDetailScreen() {
   const [actionLoading, setActionLoading] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [alreadyRated, setAlreadyRated] = useState(false);
+  const [driverLoc, setDriverLoc] = useState<{ lat: number; lng: number } | null>(null);
+  const [jobLoc, setJobLoc] = useState<JobLocation | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
     if (!token || !id) return;
@@ -103,6 +107,41 @@ export default function OrderDetailScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Poll driver GPS while order is in transit
+  useEffect(() => {
+    const liveJob = order?.transportJobs?.find(
+      (j) =>
+        j.status === 'EN_ROUTE_DELIVERY' ||
+        j.status === 'AT_DELIVERY' ||
+        j.status === 'LOADED' ||
+        j.status === 'EN_ROUTE_PICKUP' ||
+        j.status === 'AT_PICKUP',
+    );
+
+    if (!liveJob || !token) {
+      setDriverLoc(null);
+      setJobLoc(null);
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      return;
+    }
+
+    const poll = async () => {
+      try {
+        const data = await api.transportJobs.getLocation(liveJob.id, token);
+        setJobLoc(data);
+        if (data.currentLocation) {
+          setDriverLoc({ lat: data.currentLocation.lat, lng: data.currentLocation.lng });
+        }
+      } catch { /* silent — don’t disrupt buyer UX */ }
+    };
+
+    poll();
+    pollingRef.current = setInterval(poll, 10_000);
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [order, token]);
 
   const handleCancel = () => {
     Alert.alert('Atcelt pasūtījumu?', 'Šo darbību nevar atsaukt.', [
@@ -182,15 +221,44 @@ export default function OrderDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+        {/* Live driver tracking map */}
+        {activeJob && driverLoc &&
+          jobLoc?.pickupLat != null && jobLoc.deliveryLat != null && (
+          <View style={s.trackingCard}>
+            <View style={s.trackingHeader}>
+              <Truck size={14} color="#dc2626" />
+              <Text style={s.trackingTitle}>Tiešraides atrašanās vieta</Text>
+              <View style={s.liveTag}>
+                <Text style={s.liveTagText}>TIEŠRAIDE</Text>
+              </View>
+            </View>
+            <JobRouteMap
+              pickup={{
+                lat: jobLoc.pickupLat,
+                lng: jobLoc.pickupLng ?? 0,
+                label: 'Iekraušana',
+              }}
+              delivery={{
+                lat: jobLoc.deliveryLat,
+                lng: jobLoc.deliveryLng ?? 0,
+                label: 'Piegāde',
+              }}
+              current={driverLoc}
+              showToPickupLeg={false}
+              height={220}
+            />
+          </View>
+        )}
+
         {/* Driver card — if order is in transit */}
         {driver && (
           <View style={s.driverCard}>
             <View style={s.driverCardRow}>
-              <Truck size={18} color="#0284c7" />
+              <Truck size={18} color="#dc2626" />
               <Text style={s.driverTitle}>Šoferis ceļā</Text>
             </View>
             <View style={s.driverInfo}>
-              <User size={14} color="#0284c7" />
+              <User size={14} color="#dc2626" />
               <Text style={s.driverName}>
                 {driver.firstName} {driver.lastName}
               </Text>
@@ -359,22 +427,22 @@ const s = StyleSheet.create({
   statusBadgeText: { fontSize: 12, fontWeight: '700' },
   content: { padding: 16, gap: 12, paddingBottom: 48 },
   driverCard: {
-    backgroundColor: '#e0f2fe',
+    backgroundColor: '#fff7f7',
     borderRadius: 14,
     padding: 14,
     gap: 10,
     borderLeftWidth: 3,
-    borderLeftColor: '#0284c7',
+    borderLeftColor: '#dc2626',
   },
   driverCardRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  driverTitle: { fontSize: 14, fontWeight: '700', color: '#0c4a6e' },
+  driverTitle: { fontSize: 14, fontWeight: '700', color: '#111827' },
   driverInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  driverName: { fontSize: 14, fontWeight: '600', color: '#0369a1', flex: 1 },
+  driverName: { fontSize: 14, fontWeight: '600', color: '#dc2626', flex: 1 },
   callBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#0284c7',
+    backgroundColor: '#dc2626',
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -513,4 +581,32 @@ const s = StyleSheet.create({
   alreadyRatedText: { fontSize: 13, fontWeight: '600', color: '#a16207' },
   emptyWrap: { alignItems: 'center', paddingTop: 80, gap: 12 },
   emptyText: { fontSize: 16, color: '#6b7280' },
+  trackingCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  trackingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#fff7f7',
+    borderBottomWidth: 1,
+    borderBottomColor: '#fee2e2',
+  },
+  trackingTitle: { fontSize: 12, fontWeight: '700', color: '#374151', flex: 1 },
+  liveTag: {
+    backgroundColor: '#dc2626',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  liveTagText: { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
 });

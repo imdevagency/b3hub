@@ -168,6 +168,19 @@ export interface ApiTransportJob {
   } | null;
 }
 
+export interface JobLocation {
+  id: string;
+  status: string;
+  currentLocation: { lat: number; lng: number; updatedAt: string } | null;
+  pickupLat: number | null;
+  pickupLng: number | null;
+  pickupAddress: string | null;
+  deliveryLat: number | null;
+  deliveryLng: number | null;
+  deliveryAddress: string | null;
+  estimatedArrival: string | null;
+}
+
 // Extends ApiTransportJob with a precomputed distance from the anchor coords
 export interface ApiReturnTripJob extends ApiTransportJob {
   returnDistanceKm: number;
@@ -491,6 +504,23 @@ export const api = {
         `/transport-jobs/return-trips?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}`,
         { headers: { Authorization: `Bearer ${token}` } },
       ),
+
+    /** Driver pushes current GPS position — fire-and-forget. */
+    updateLocation: (id: string, lat: number, lng: number, token: string) =>
+      apiFetch<{ lat: number; lng: number; updatedAt: string }>(
+        `/transport-jobs/${id}/location`,
+        {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ lat, lng }),
+        },
+      ),
+
+    /** Buyer polls this to get live driver position. */
+    getLocation: (id: string, token: string) =>
+      apiFetch<JobLocation>(`/transport-jobs/${id}/location`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
   },
 
   materials: {

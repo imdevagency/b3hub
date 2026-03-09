@@ -53,6 +53,8 @@ export default function ActiveJobScreen() {
   const [currentLat, setCurrentLat] = React.useState<number | null>(null);
   const [currentLng, setCurrentLng] = React.useState<number | null>(null);
   const locationSub = useRef<Location.LocationSubscription | null>(null);
+  // Keep a stable ref to the current job so the GPS callback can access its id
+  const jobRef = useRef<ApiTransportJob | null>(null);
   // Return trips — fetched automatically when nearing delivery
   const [returnTrips, setReturnTrips] = React.useState<ApiReturnTripJob[]>([]);
   const [returnTripsLoading, setReturnTripsLoading] = React.useState(false);
@@ -100,6 +102,7 @@ export default function ActiveJobScreen() {
     try {
       const data = await api.transportJobs.myActive(token);
       setJob(data);
+      jobRef.current = data;
     } catch (e) {
       console.error('Failed to fetch active job', e);
     } finally {
@@ -125,8 +128,14 @@ export default function ActiveJobScreen() {
           timeInterval: 10_000, // or every 10 s
         },
         (loc) => {
-          setCurrentLat(loc.coords.latitude);
-          setCurrentLng(loc.coords.longitude);
+          const { latitude, longitude } = loc.coords;
+          setCurrentLat(latitude);
+          setCurrentLng(longitude);
+          // Push GPS to backend — silent fail so driver UX is never blocked
+          const activeId = jobRef.current?.id;
+          if (activeId && token) {
+            api.transportJobs.updateLocation(activeId, latitude, longitude, token).catch(() => {});
+          }
         },
       );
     })();
@@ -304,10 +313,7 @@ export default function ActiveJobScreen() {
                 />
                 {i < STATUS_STEPS.length - 1 && (
                   <View
-                    style={[
-                      styles.progressLine,
-                      i < currentIndex && styles.progressLineDone,
-                    ]}
+                    style={[styles.progressLine, i < currentIndex && styles.progressLineDone]}
                   />
                 )}
               </React.Fragment>
