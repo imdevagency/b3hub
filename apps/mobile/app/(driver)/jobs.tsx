@@ -262,7 +262,7 @@ function SmartRouteBanner({
     <View style={styles.smartBanner}>
       <View style={styles.smartBannerTop}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Zap size={15} color="#7c3aed" />
+          <Zap size={15} color="#d97706" />
           <Text style={styles.smartBannerTitle}>{t.jobs.smartRoute}</Text>
         </View>
         <TouchableOpacity onPress={onDismiss} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -277,12 +277,12 @@ function SmartRouteBanner({
             {chain.jobA.fromCity}
           </Text>
           <ChevronRight size={12} color="#9ca3af" />
-          <Text style={[styles.smartChainCity, { color: '#7c3aed' }]} numberOfLines={1}>
+          <Text style={[styles.smartChainCity, { color: '#d97706' }]} numberOfLines={1}>
             {chain.jobA.toCity}
           </Text>
         </View>
         <View style={styles.smartGapPill}>
-          <Route size={10} color="#7c3aed" />
+          <Route size={10} color="#d97706" />
           <Text style={styles.smartGapText}>{t.jobs.smartRouteGap(chain.gapKm)}</Text>
         </View>
         <View style={styles.smartChainJob}>
@@ -290,7 +290,7 @@ function SmartRouteBanner({
             {chain.jobB.fromCity}
           </Text>
           <ChevronRight size={12} color="#9ca3af" />
-          <Text style={[styles.smartChainCity, { color: '#7c3aed' }]} numberOfLines={1}>
+          <Text style={[styles.smartChainCity, { color: '#d97706' }]} numberOfLines={1}>
             {chain.jobB.toCity}
           </Text>
         </View>
@@ -305,6 +305,7 @@ function SmartRouteBanner({
       <TouchableOpacity style={styles.smartAcceptBtn} onPress={onAccept}>
         <Zap size={14} color="#fff" />
         <Text style={styles.smartAcceptBtnText}>{t.jobs.smartRouteAccept}</Text>
+        <Text style={styles.smartAcceptBtnSub}>€{(chain.jobA.priceTotal + chain.jobB.priceTotal).toFixed(0)}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -1188,22 +1189,22 @@ const styles = StyleSheet.create({
   routeSection: { gap: 0, paddingLeft: 2 },
   routeRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 3 },
   routeDotFrom: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#6b7280',
-    borderWidth: 2,
-    borderColor: '#d1d5db',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#16a34a',
+    borderWidth: 2.5,
+    borderColor: '#bbf7d0',
   },
   routeDotTo: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
     backgroundColor: '#dc2626',
-    borderWidth: 2,
+    borderWidth: 2.5,
     borderColor: '#fca5a5',
   },
-  routeLine: { width: 2, height: 12, backgroundColor: '#e5e7eb', marginLeft: 4 },
+  routeLine: { width: 2, height: 14, backgroundColor: '#e5e7eb', marginLeft: 5 },
   routeCity: { fontSize: 14, fontWeight: '700', color: '#111827' },
   routeAddress: { fontSize: 12, color: '#9ca3af' },
 
@@ -1225,9 +1226,14 @@ const styles = StyleSheet.create({
 
   acceptBtn: {
     backgroundColor: '#dc2626',
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: 13,
+    borderRadius: 999,
     alignItems: 'center',
+    shadowColor: '#dc2626',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
   acceptBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
 
@@ -1292,11 +1298,11 @@ const styles = StyleSheet.create({
 
   // ── Smart Route Banner ─────────────────────────────────────────
   smartBanner: {
-    backgroundColor: '#f5f3ff',
+    backgroundColor: '#fffbeb',
     borderRadius: 16,
     padding: 14,
     borderWidth: 1.5,
-    borderColor: '#ddd6fe',
+    borderColor: '#fde68a',
     gap: 10,
   },
   smartBannerTop: {
@@ -1304,7 +1310,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  smartBannerTitle: { fontSize: 13, fontWeight: '800', color: '#6d28d9', letterSpacing: 0.3 },
+  smartBannerTitle: { fontSize: 13, fontWeight: '800', color: '#92400e', letterSpacing: 0.3 },
   smartChainRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1323,13 +1329,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: '#ede9fe',
+    backgroundColor: '#fef3c7',
     borderRadius: 8,
     paddingHorizontal: 6,
     paddingVertical: 3,
     flexShrink: 0,
   },
-  smartGapText: { fontSize: 10, fontWeight: '700', color: '#7c3aed' },
+  smartGapText: { fontSize: 10, fontWeight: '700', color: '#b45309' },
   smartStats: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   smartStatPrice: { fontSize: 16, fontWeight: '800', color: '#111827' },
   smartStatDist: { fontSize: 12, color: '#6b7280' },
@@ -1341,15 +1347,21 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   smartAcceptBtn: {
-    backgroundColor: '#7c3aed',
-    borderRadius: 12,
-    paddingVertical: 11,
+    backgroundColor: '#d97706',
+    borderRadius: 999,
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 7,
+    shadowColor: '#d97706',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   smartAcceptBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  smartAcceptBtnSub: { color: 'rgba(255,255,255,0.8)', fontWeight: '800', fontSize: 15 },
 
   // ── Accept Bottom Sheet ────────────────────────────────────────
   sheetOverlay: {
