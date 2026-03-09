@@ -1,4 +1,4 @@
-import { IsEnum } from 'class-validator';
+import { IsEnum, IsOptional, IsNumber, Min } from 'class-validator';
 import { TransportJobStatus } from '@prisma/client';
 
 const ALLOWED_DRIVER_STATUSES: TransportJobStatus[] = [
@@ -13,6 +13,12 @@ const ALLOWED_DRIVER_STATUSES: TransportJobStatus[] = [
 export class UpdateStatusDto {
   @IsEnum(TransportJobStatus, { message: 'Invalid status' })
   status: TransportJobStatus;
+
+  /** Actual weigh-bridge reading in kg — required when status = LOADED */
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  weightKg?: number;
 }
 
 export { ALLOWED_DRIVER_STATUSES };

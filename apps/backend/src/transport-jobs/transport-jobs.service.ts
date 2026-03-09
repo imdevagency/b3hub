@@ -345,9 +345,19 @@ export class TransportJobsService {
       );
     }
 
+    // Weight ticket required when loading
+    if (dto.status === TransportJobStatus.LOADED && !dto.weightKg) {
+      throw new BadRequestException('Weight ticket reading (weightKg) is required when marking job as LOADED');
+    }
+
     const updatedJob = await this.prisma.transportJob.update({
       where: { id },
-      data: { status: dto.status },
+      data: {
+        status: dto.status,
+        ...(dto.status === TransportJobStatus.LOADED && dto.weightKg
+          ? { actualWeightKg: dto.weightKg }
+          : {}),
+      },
       select: this.jobSelect,
     });
 

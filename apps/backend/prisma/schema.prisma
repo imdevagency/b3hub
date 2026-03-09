@@ -536,8 +536,9 @@ model TransportJob {
 
   // Cargo
   cargoType           String
-  cargoWeight         Float?
+  cargoWeight         Float?   // estimated weight in tonnes
   cargoVolume         Float?
+  actualWeightKg      Float?   // actual weigh-bridge reading at pickup
   specialRequirements String?
 
   // Required vehicle

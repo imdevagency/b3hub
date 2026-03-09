@@ -486,11 +486,11 @@ export const api = {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
-    updateStatus: (id: string, status: TransportJobStatus, token: string) =>
+    updateStatus: (id: string, status: TransportJobStatus, token: string, weightKg?: number) =>
       apiFetch<ApiTransportJob>(`/transport-jobs/${id}/status`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, ...(weightKg != null ? { weightKg } : {}) }),
       }),
 
     /** Submit delivery proof — transitions job AT_DELIVERY → DELIVERED. */

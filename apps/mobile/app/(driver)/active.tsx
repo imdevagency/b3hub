@@ -9,6 +9,9 @@ import {
   ActivityIndicator,
   Linking,
   Platform,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -60,6 +63,11 @@ export default function ActiveJobScreen() {
   const [returnTripsLoading, setReturnTripsLoading] = React.useState(false);
   const [returnDismissed, setReturnDismissed] = React.useState(false);
   const [acceptingReturnId, setAcceptingReturnId] = React.useState<string | null>(null);
+
+  // ── Weight ticket modal ──────────────────────────────────────
+  const [weightModalVisible, setWeightModalVisible] = React.useState(false);
+  const [weightInput, setWeightInput] = React.useState('');
+  const [weightSubmitting, setWeightSubmitting] = React.useState(false);
 
   // ── Fetch return trips when status enters EN_ROUTE_DELIVERY / AT_DELIVERY ──
   useEffect(() => {
@@ -253,6 +261,13 @@ export default function ActiveJobScreen() {
       return;
     }
 
+    // AT_PICKUP → LOADED requires weight ticket reading
+    if (currentStatus === 'AT_PICKUP') {
+      setWeightInput('');
+      setWeightModalVisible(true);
+      return;
+    }
+
     Alert.alert(t.activeJob.updateStatus, `→ ${t.activeJob.status[nextStatus]}`, [
       { text: 'Atcelt', style: 'cancel' },
       {
@@ -267,6 +282,25 @@ export default function ActiveJobScreen() {
         },
       },
     ]);
+  };
+
+  const handleWeightConfirm = async () => {
+    if (!token || !job) return;
+    const kg = parseFloat(weightInput.replace(',', '.'));
+    if (!kg || kg <= 0 || isNaN(kg)) {
+      Alert.alert('Kļūda', 'Ievadiet derīgu svaru kilogramos.');
+      return;
+    }
+    setWeightSubmitting(true);
+    try {
+      const updated = await api.transportJobs.updateStatus(job.id, 'LOADED', token, kg);
+      setJob(updated);
+      setWeightModalVisible(false);
+    } catch (err: any) {
+      Alert.alert('Kļūda', err.message ?? 'Neizdevās atjaunināt statusu');
+    } finally {
+      setWeightSubmitting(false);
+    }
   };
 
   return (
@@ -507,6 +541,61 @@ export default function ActiveJobScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* ── Weight Ticket Modal ── */}
+      <Modal
+        visible={weightModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setWeightModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.weightOverlay}
+        >
+          <View style={styles.weightSheet}>
+            <View style={styles.weightHandle} />
+            <Text style={styles.weightTitle}>⚖️ Svēršanas biļete</Text>
+            <Text style={styles.weightSubtitle}>
+              Ievadiet faktisko svēršanas rādījumu (kg), pirms atzīmēt kravu kā iekrauta.
+            </Text>
+            <View style={styles.weightInputRow}>
+              <TextInput
+                style={styles.weightInput}
+                keyboardType="decimal-pad"
+                placeholder="piem. 18500"
+                placeholderTextColor="#9ca3af"
+                value={weightInput}
+                onChangeText={setWeightInput}
+                autoFocus
+              />
+              <Text style={styles.weightUnit}>kg</Text>
+            </View>
+            {job?.cargoWeight != null && (
+              <Text style={styles.weightHint}>
+                Paredzētais svars: {(job.cargoWeight * 1000).toFixed(0)} kg ({job.cargoWeight} t)
+              </Text>
+            )}
+            <View style={styles.weightActions}>
+              <TouchableOpacity
+                style={styles.weightCancel}
+                onPress={() => setWeightModalVisible(false)}
+              >
+                <Text style={styles.weightCancelText}>Atcelt</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.weightConfirm, weightSubmitting && { opacity: 0.6 }]}
+                onPress={handleWeightConfirm}
+                disabled={weightSubmitting}
+              >
+                <Text style={styles.weightConfirmText}>
+                  {weightSubmitting ? 'Saglabā...' : 'Apstiprināt iekraušanu'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -722,4 +811,71 @@ const styles = StyleSheet.create({
     backgroundColor: '#dc2626',
   },
   goBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+
+  // ── Weight Ticket Modal ────────────────────────────────────────
+  weightOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  weightSheet: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+    gap: 14,
+  },
+  weightHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#e5e7eb',
+    alignSelf: 'center',
+    marginBottom: 4,
+  },
+  weightTitle: { fontSize: 20, fontWeight: '800', color: '#111827' },
+  weightSubtitle: { fontSize: 14, color: '#6b7280', lineHeight: 20 },
+  weightInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#f9fafb',
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+  },
+  weightInput: {
+    flex: 1,
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#111827',
+    paddingVertical: 12,
+  },
+  weightUnit: { fontSize: 18, fontWeight: '600', color: '#6b7280' },
+  weightHint: { fontSize: 13, color: '#9ca3af', fontStyle: 'italic' },
+  weightActions: { flexDirection: 'row', gap: 12, marginTop: 4 },
+  weightCancel: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+  },
+  weightCancelText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
+  weightConfirm: {
+    flex: 2,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#dc2626',
+    alignItems: 'center',
+    shadowColor: '#dc2626',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  weightConfirmText: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
 });
