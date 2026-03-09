@@ -25,6 +25,7 @@ import {
   Phone,
   User,
   Star,
+  Plus,
 } from 'lucide-react-native';
 import { RatingModal } from '@/components/ui/RatingModal';
 
@@ -140,7 +141,7 @@ function MaterialOrderCard({ order }: { order: ApiOrder }) {
           return (
             <View style={s.driverRow}>
               <View style={s.driverInfo}>
-                <User size={14} color="#0284c7" />
+                <User size={14} color="#dc2626" />
                 <Text style={s.driverName}>
                   {driver ? `${driver.firstName} ${driver.lastName}` : 'Šoferis ceļā'}
                 </Text>
@@ -250,7 +251,10 @@ export default function OrdersScreen() {
             onPress={() => router.push('/order')}
             activeOpacity={0.85}
           >
-            <Text style={s.newBtnText}>＋ {t.skipHire.orderNew}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Plus size={14} color="#fff" strokeWidth={2.5} />
+              <Text style={s.newBtnText}>{t.skipHire.orderNew}</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -395,19 +399,19 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#e0f2fe',
+    backgroundColor: '#fff7f7',
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,
     marginBottom: 10,
   },
   driverInfo: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
-  driverName: { fontSize: 13, fontWeight: '600', color: '#0284c7' },
+  driverName: { fontSize: 13, fontWeight: '600', color: '#dc2626' },
   callDriverBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#0284c7',
+    backgroundColor: '#dc2626',
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 5,

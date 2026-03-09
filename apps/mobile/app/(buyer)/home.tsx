@@ -54,6 +54,18 @@ const STATUS_DOT: Record<string, string> = {
   DELIVERING: '#16a34a',
 };
 
+const STATUS_BADGE: Record<string, { bg: string; color: string }> = {
+  PENDING: { bg: '#fef3c7', color: '#d97706' },
+  CONFIRMED: { bg: '#dbeafe', color: '#1d4ed8' },
+  PROCESSING: { bg: '#ede9fe', color: '#6d28d9' },
+  LOADING: { bg: '#fce7f3', color: '#be185d' },
+  DISPATCHED: { bg: '#dcfce7', color: '#15803d' },
+  DELIVERING: { bg: '#dcfce7', color: '#15803d' },
+  DELIVERED: { bg: '#f0fdf4', color: '#15803d' },
+  COMPLETED: { bg: '#f0fdf4', color: '#15803d' },
+  CANCELLED: { bg: '#fee2e2', color: '#b91c1c' },
+};
+
 const SERVICE_TILES: ServiceTile[] = [
   {
     id: 'materials',
@@ -266,7 +278,18 @@ export default function HomeScreen() {
                       {o.deliveryCity}
                     </Text>
                   </View>
-                  <Text style={s.orderRowStatus}>{STATUS_LABEL[o.status] ?? o.status}</Text>
+                  {(() => {
+                    const badge = STATUS_BADGE[o.status];
+                    return badge ? (
+                      <View style={[s.orderStatusBadge, { backgroundColor: badge.bg }]}>
+                        <Text style={[s.orderStatusBadgeText, { color: badge.color }]}>
+                          {STATUS_LABEL[o.status] ?? o.status}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text style={s.orderRowStatus}>{STATUS_LABEL[o.status] ?? o.status}</Text>
+                    );
+                  })()}
                 </TouchableOpacity>
               ))}
             </View>
@@ -402,6 +425,12 @@ const s = StyleSheet.create({
   orderRowNum: { fontSize: 13, fontWeight: '600', color: '#111827' },
   orderRowAddr: { fontSize: 11, color: '#9ca3af' },
   orderRowStatus: { fontSize: 11, color: '#6b7280' },
+  orderStatusBadge: {
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  orderStatusBadgeText: { fontSize: 11, fontWeight: '600' },
 
   // Partner banner
   partnerBanner: {

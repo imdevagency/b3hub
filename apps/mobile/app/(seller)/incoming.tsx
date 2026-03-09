@@ -18,17 +18,16 @@ import {
   Clock,
   CheckCircle2,
   Package,
-  Truck,
   X,
   Square,
   MapPin,
   Check,
   Inbox,
-  RefreshCw,
 } from 'lucide-react-native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type OrderStatus = 'PENDING' | 'CONFIRMED' | 'LOADING' | 'DISPATCHED';
+type FilterStatus = OrderStatus | 'ALL';
 
 interface IncomingOrder {
   id: string;
@@ -368,6 +367,17 @@ export default function IncomingScreen() {
   };
 
   const pendingCount = orders.filter((o) => o.status === 'PENDING').length;
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>('ALL');
+  const visibleOrders =
+    filterStatus === 'ALL' ? orders : orders.filter((o) => o.status === filterStatus);
+
+  const STATUS_FILTERS: { key: FilterStatus; label: string }[] = [
+    { key: 'ALL', label: 'Visi' },
+    { key: 'PENDING', label: 'Jauni' },
+    { key: 'CONFIRMED', label: 'Apstiprināti' },
+    { key: 'LOADING', label: 'Iekraušana' },
+    { key: 'DISPATCHED', label: 'Nosūtīti' },
+  ];
 
   if (fetching) {
     return (
@@ -384,10 +394,40 @@ export default function IncomingScreen() {
         <Text style={styles.headerTitle}>{t.incoming.title}</Text>
         {pendingCount > 0 && (
           <View style={styles.pendingBadge}>
-            <Text style={styles.pendingBadgeText}>{pendingCount} jauns</Text>
+            <Text style={styles.pendingBadgeText}>{pendingCount} jaun{pendingCount === 1 ? 's' : 'i'}</Text>
           </View>
         )}
       </View>
+
+      {/* Status filter chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterRow}
+      >
+        {STATUS_FILTERS.map((f) => {
+          const count = f.key === 'ALL' ? orders.length : orders.filter((o) => o.status === f.key).length;
+          return (
+            <TouchableOpacity
+              key={f.key}
+              style={[styles.filterChip, filterStatus === f.key && styles.filterChipActive]}
+              onPress={() => setFilterStatus(f.key)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.filterChipText, filterStatus === f.key && styles.filterChipTextActive]}>
+                {f.label}
+              </Text>
+              {count > 0 && (
+                <View style={[styles.filterChipCount, filterStatus === f.key && styles.filterChipCountActive]}>
+                  <Text style={[styles.filterChipCountText, filterStatus === f.key && styles.filterChipCountTextActive]}>
+                    {count}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
 
       {orders.length === 0 ? (
         <View style={styles.empty}>
@@ -409,7 +449,14 @@ export default function IncomingScreen() {
             />
           }
         >
-          {orders.map((order) => (
+          {visibleOrders.length === 0 && (
+            <View style={styles.empty}>
+              <Inbox size={36} color="#d1d5db" />
+              <Text style={styles.emptyTitle}>Nav pasūtījumu</Text>
+              <Text style={styles.emptyDesc}>Šajā kategorijā nav pasūtījumu</Text>
+            </View>
+          )}
+          {visibleOrders.map((order) => (
             <OrderCard
               key={order.id}
               order={order}
@@ -450,14 +497,43 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 24, fontWeight: '700', color: '#111827', flex: 1 },
   pendingBadge: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: '#dc2626',
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: '#fde68a',
   },
-  pendingBadgeText: { color: '#d97706', fontWeight: '700', fontSize: 12 },
+  pendingBadgeText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+
+  filterRow: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  filterChipActive: {
+    backgroundColor: '#dc2626',
+    borderColor: '#dc2626',
+  },
+  filterChipText: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  filterChipTextActive: { color: '#fff' },
+  filterChipCount: {
+    backgroundColor: '#e5e7eb',
+    borderRadius: 999,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
+  filterChipCountActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
+  filterChipCountText: { fontSize: 11, fontWeight: '700', color: '#374151' },
+  filterChipCountTextActive: { color: '#fff' },
 
   list: { padding: 16, gap: 12 },
 
@@ -534,7 +610,7 @@ const styles = StyleSheet.create({
   loadingBtn: {
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#db2777',
+    backgroundColor: '#dc2626',
     alignItems: 'center',
   },
   loadingBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
