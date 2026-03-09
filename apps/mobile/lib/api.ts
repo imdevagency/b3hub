@@ -403,6 +403,13 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  updatePushToken: (pushToken: string | null, token: string) =>
+    apiFetch<{ ok: boolean }>('/auth/push-token', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ pushToken }),
+    }),
+
   orders: {
     stats: (token: string) =>
       apiFetch<Record<string, any>>('/orders/stats', {

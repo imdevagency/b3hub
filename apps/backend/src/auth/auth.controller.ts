@@ -31,4 +31,14 @@ export class AuthController {
   async updateProfile(@CurrentUser() user: any, @Body() dto: UpdateProfileDto) {
     return this.authService.updateProfile(user.userId, dto);
   }
+
+  @Patch('push-token')
+  @UseGuards(JwtAuthGuard)
+  async updatePushToken(
+    @CurrentUser() user: any,
+    @Body('pushToken') pushToken: string | null,
+  ) {
+    await this.authService.updatePushToken(user.userId, pushToken ?? null);
+    return { ok: true };
+  }
 }

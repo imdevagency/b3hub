@@ -13,6 +13,8 @@ import {
 import { CreateTransportJobDto } from './dto/create-transport-job.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
 import { SubmitDeliveryProofDto } from './dto/submit-delivery-proof.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/dto/create-notification.dto';
 
 // Valid next-state transitions for a driver
 const NEXT_STATUS: Partial<Record<TransportJobStatus, TransportJobStatus>> = {
@@ -26,7 +28,10 @@ const NEXT_STATUS: Partial<Record<TransportJobStatus, TransportJobStatus>> = {
 
 @Injectable()
 export class TransportJobsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   private jobSelect = {
     id: true,
@@ -73,7 +78,7 @@ export class TransportJobsService {
   // ── Create a new transport job ────────────────────────────────
   async create(dto: CreateTransportJobDto) {
     const jobNumber = await this.generateJobNumber();
-    return this.prisma.transportJob.create({
+    const job = await this.prisma.transportJob.create({
       data: {
         jobNumber,
         jobType: dto.jobType,
@@ -108,6 +113,25 @@ export class TransportJobsService {
       },
       select: this.jobSelect,
     });
+
+    // Notify all active drivers about the new job (fire-and-forget)
+    this.notifyAllDrivers(
+      `🚚 Jauns darbs: ${dto.pickupCity} → ${dto.deliveryCity}`,
+      `${dto.cargoType}${dto.cargoWeight ? ` • ${dto.cargoWeight}t` : ''} • ${dto.distanceKm ? `${Math.round(dto.distanceKm ?? 0)} km` : 'attālums nav norādīts'}`,
+    ).catch(() => {});
+
+    return job;
+  }
+
+  private async notifyAllDrivers(title: string, message: string) {
+    const drivers = await this.prisma.user.findMany({
+      where: { canTransport: true, status: 'ACTIVE' },
+      select: { id: true },
+    });
+    await this.notifications.createForMany(
+      drivers.map((d) => d.id),
+      { type: NotificationType.SYSTEM_ALERT, title, message },
+    );
   }
 
   private async generateJobNumber(): Promise<string> {
@@ -190,7 +214,7 @@ export class TransportJobsService {
       );
     }
 
-    return this.prisma.transportJob.update({
+    const updatedJob = await this.prisma.transportJob.update({
       where: { id },
       data: {
         status: TransportJobStatus.ACCEPTED,
@@ -198,9 +222,22 @@ export class TransportJobsService {
       },
       select: this.jobSelect,
     });
+
+    // Notify buyer if job has an order
+    const buyerId = (updatedJob as any).order?.buyerId ?? (updatedJob as any).order?.buyer?.id;
+    if (buyerId) {
+      this.notifications.create({
+        userId: buyerId,
+        type: NotificationType.TRANSPORT_ASSIGNED,
+        title: '🚚 Šoferis pieņēmis darbu',
+        message: `${updatedJob.jobNumber} • ${updatedJob.pickupCity} → ${updatedJob.deliveryCity}`,
+      }).catch(() => {});
+    }
+
+    return updatedJob;
   }
 
-  // ── Avoid Empty Runs — return trip suggestions ────────────────
+  // ── Avoid Empty Runs — return trip suggestions ────────────
   // Returns AVAILABLE jobs whose pickup location is within `radiusKm`
   // of the given coords (typically the driver's delivery destination).
   async findReturnTrips(lat: number, lng: number, radiusKm: number) {
@@ -308,14 +345,30 @@ export class TransportJobsService {
       );
     }
 
-    return this.prisma.transportJob.update({
+    const updatedJob = await this.prisma.transportJob.update({
       where: { id },
       data: { status: dto.status },
       select: this.jobSelect,
     });
+
+    // Notify relevant parties on key transitions
+    if (dto.status === TransportJobStatus.DELIVERED) {
+      const order = (updatedJob as any).order;
+      if (order?.buyerId || order?.buyer?.id) {
+        const buyerId = order.buyerId ?? order.buyer.id;
+        this.notifications.create({
+          userId: buyerId,
+          type: NotificationType.ORDER_DELIVERED,
+          title: '✅ Piegāde pabeigta',
+          message: `Pasūtījums ${order.orderNumber ?? updatedJob.jobNumber} ir piegādāts.`,
+        }).catch(() => {});
+      }
+    }
+
+    return updatedJob;
   }
 
-  // ── Driver: update GPS location ───────────────────────────────
+  // ── Driver: update GPS location ─────────────────────────
   async updateLocation(id: string, driverId: string, dto: UpdateLocationDto) {
     const job = await this.prisma.transportJob.findUnique({ where: { id } });
     if (!job) throw new NotFoundException('Transport job not found');

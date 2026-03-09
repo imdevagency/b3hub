@@ -257,6 +257,7 @@ model User {
   status        UserStatus   @default(ACTIVE) // buyers are auto-activated
   emailVerified Boolean      @default(false)
   phoneVerified Boolean      @default(false)
+  pushToken     String?      // Expo push token for native notifications
 
   // Relations
   company   Company? @relation(fields: [companyId], references: [id])

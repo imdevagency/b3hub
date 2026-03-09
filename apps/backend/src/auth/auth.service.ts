@@ -202,6 +202,13 @@ export class AuthService {
     return { ...user, availableModes: modes.length > 0 ? modes : ['BUYER'] };
   }
 
+  async updatePushToken(userId: string, pushToken: string | null) {
+    await this.prisma.$executeRaw`
+      UPDATE users SET "pushToken" = ${pushToken} WHERE id = ${userId}
+    `;
+    return { id: userId };
+  }
+
   async updateProfile(
     userId: string,
     data: { firstName?: string; lastName?: string; phone?: string },
