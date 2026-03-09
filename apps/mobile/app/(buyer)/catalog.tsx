@@ -5,12 +5,11 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   RefreshControl,
   TextInput,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { Search, X, Leaf, ShoppingCart } from 'lucide-react-native';
+import { Search, X, Leaf, ChevronRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -57,84 +56,85 @@ const CATEGORY_ICON: Record<MaterialCategory | 'ALL', string> = {
 };
 
 const CATEGORY_COLOR: Record<MaterialCategory | 'ALL', string> = {
-  ALL: '#6b7280',
-  SAND: '#d97706',
-  GRAVEL: '#64748b',
-  STONE: '#6b7280',
-  CONCRETE: '#4b5563',
-  SOIL: '#92400e',
-  RECYCLED_CONCRETE: '#059669',
-  RECYCLED_SOIL: '#16a34a',
-  ASPHALT: '#374151',
-  CLAY: '#b45309',
-  OTHER: '#6b7280',
+  ALL: '#111827',
+  SAND: '#111827',
+  GRAVEL: '#111827',
+  STONE: '#111827',
+  CONCRETE: '#111827',
+  SOIL: '#111827',
+  RECYCLED_CONCRETE: '#111827',
+  RECYCLED_SOIL: '#111827',
+  ASPHALT: '#111827',
+  CLAY: '#111827',
+  OTHER: '#111827',
 };
 
 const CATEGORY_BG: Record<MaterialCategory | 'ALL', string> = {
   ALL: '#f3f4f6',
-  SAND: '#fef3c7',
-  GRAVEL: '#f1f5f9',
+  SAND: '#f3f4f6',
+  GRAVEL: '#f3f4f6',
   STONE: '#f3f4f6',
-  CONCRETE: '#e5e7eb',
-  SOIL: '#fef3c7',
-  RECYCLED_CONCRETE: '#d1fae5',
-  RECYCLED_SOIL: '#dcfce7',
-  ASPHALT: '#e5e7eb',
-  CLAY: '#fef3c7',
+  CONCRETE: '#f3f4f6',
+  SOIL: '#f3f4f6',
+  RECYCLED_CONCRETE: '#f0fdf4',
+  RECYCLED_SOIL: '#f0fdf4',
+  ASPHALT: '#f3f4f6',
+  CLAY: '#f3f4f6',
   OTHER: '#f3f4f6',
 };
 
-// ── Material Card (redesigned) ──────────────────────────────
+// ── Material Card ───────────────────────────────────────────
 
 function MaterialCard({
   material,
   onOrder,
+  isLast = false,
 }: {
   material: ApiMaterial;
   onOrder: (m: ApiMaterial) => void;
+  isLast?: boolean;
 }) {
-  const accent = CATEGORY_COLOR[material.category];
-  const iconBg = CATEGORY_BG[material.category];
+  const iconBg = material.isRecycled ? '#f0fdf4' : '#f3f4f6';
   return (
-    <TouchableOpacity style={s.card} onPress={() => onOrder(material)} activeOpacity={0.88}>
-      {/* Accent stripe */}
-      <View style={[s.cardStripe, { backgroundColor: accent }]} />
+    <TouchableOpacity
+      style={[s.card, isLast && s.cardLast]}
+      onPress={() => onOrder(material)}
+      activeOpacity={0.92}
+    >
+      {/* Left: icon */}
+      <View style={[s.cardIconWrap, { backgroundColor: iconBg }]}>
+        <Text style={s.cardIcon}>{CATEGORY_ICON[material.category]}</Text>
+      </View>
 
+      {/* Middle: info */}
       <View style={s.cardBody}>
-        {/* Top row */}
-        <View style={s.cardTop}>
-          <View style={[s.cardIconWrap, { backgroundColor: iconBg }]}>
-            <Text style={s.cardIcon}>{CATEGORY_ICON[material.category]}</Text>
-          </View>
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={s.cardName} numberOfLines={2}>
-              {material.name}
-            </Text>
-            <Text style={s.cardSupplier} numberOfLines={1}>
-              {material.supplier?.name ?? 'Nezināms piegādātājs'}
-            </Text>
-          </View>
+        <View style={s.cardTopRow}>
+          <Text style={s.cardName} numberOfLines={1}>
+            {material.name}
+          </Text>
           {material.isRecycled && (
             <View style={s.recycledBadge}>
               <Leaf size={9} color="#15803d" />
-              <Text style={s.recycledText}>Rec.</Text>
+              <Text style={s.recycledText}>Eco</Text>
             </View>
           )}
         </View>
+        <Text style={s.cardSupplier} numberOfLines={1}>
+          {material.supplier?.name ?? 'Nezināms piegādātājs'}
+        </Text>
+        <View style={s.cardMeta}>
+          <View style={s.categoryPill}>
+            <Text style={s.categoryPillText}>{CATEGORY_LABELS[material.category]}</Text>
+          </View>
+        </View>
+      </View>
 
-        {/* Bottom row */}
-        <View style={s.cardBottom}>
-          <View>
-            <Text style={[s.cardPrice, { color: accent }]}>
-              €{material.basePrice.toFixed(2)}
-              <Text style={s.cardUnit}> / {UNIT_SHORT[material.unit]}</Text>
-            </Text>
-            <Text style={s.cardCategory}>{CATEGORY_LABELS[material.category]}</Text>
-          </View>
-          <View style={[s.orderBtn, { backgroundColor: accent }]}>
-            <ShoppingCart size={13} color="#fff" />
-            <Text style={s.orderBtnText}>Prasīt cenu</Text>
-          </View>
+      {/* Right: price + arrow */}
+      <View style={s.cardRight}>
+        <Text style={s.cardPrice}>€{material.basePrice.toFixed(2)}</Text>
+        <Text style={s.cardUnit}>/ {UNIT_SHORT[material.unit]}</Text>
+        <View style={s.cardArrow}>
+          <ChevronRight size={14} color="#fff" strokeWidth={2.5} />
         </View>
       </View>
     </TouchableOpacity>
@@ -192,20 +192,20 @@ export default function CatalogScreen() {
   };
 
   return (
-    <ScreenContainer bg="#f9fafb">
+    <ScreenContainer bg="#f8f8f8">
       {/* Header */}
       <View style={s.header}>
-        <View>
-          <Text style={s.headerTitle}>Materiālu katalogs</Text>
-          <Text style={s.headerSub}>
-            {loading ? 'Ielādē...' : `${materials.length} materiāli pieejami`}
+        <Text style={s.headerTitle}>Katalogs</Text>
+        <View style={s.headerCountBadge}>
+          <Text style={s.headerCountText}>
+            {loading ? '…' : materials.length}
           </Text>
         </View>
       </View>
 
       {/* Search bar */}
       <View style={s.searchBar}>
-        <Search size={16} color="#9ca3af" />
+        <Search size={15} color="#9ca3af" strokeWidth={2} />
         <TextInput
           style={s.searchInput}
           placeholder="Meklēt materiālus…"
@@ -220,10 +220,10 @@ export default function CatalogScreen() {
               setSearch('');
               loadMaterials('', category);
             }}
-            hitSlop={8}
+            hitSlop={10}
           >
             <View style={s.searchClearBtn}>
-              <X size={10} color="#fff" />
+              <X size={9} color="#fff" strokeWidth={3} />
             </View>
           </TouchableOpacity>
         )}
@@ -237,21 +237,16 @@ export default function CatalogScreen() {
       >
         {CATEGORIES.map((cat) => {
           const active = category === cat;
-          const color = CATEGORY_COLOR[cat];
           return (
             <TouchableOpacity
               key={cat}
-              style={[
-                s.pill,
-                active
-                  ? { backgroundColor: color, borderColor: color }
-                  : { borderColor: '#e5e7eb' },
-              ]}
+              style={[s.pill, active && s.pillActive]}
               onPress={() => onCategory(cat)}
               activeOpacity={0.75}
             >
-              <Text style={s.pillEmoji}>{CATEGORY_ICON[cat]}</Text>
-              <Text style={[s.pillText, active && s.pillTextActive]}>{CATEGORY_LABELS[cat]}</Text>
+              <Text style={[s.pillText, active && s.pillTextActive]}>
+                {CATEGORY_LABELS[cat]}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -294,7 +289,8 @@ export default function CatalogScreen() {
               )}
             </View>
           ) : (
-            materials.map((m) => (
+            <View style={s.cardGroup}>
+            {materials.map((m, idx) => (
               <MaterialCard
                 key={m.id}
                 material={m}
@@ -312,8 +308,10 @@ export default function CatalogScreen() {
                     },
                   });
                 }}
+                isLast={idx === materials.length - 1}
               />
-            ))
+            ))}
+            </View>
           )}
           <View style={{ height: 24 }} />
         </ScrollView>
@@ -325,12 +323,27 @@ export default function CatalogScreen() {
 // ── Styles ─────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f9fafb' },
+  safe: { flex: 1, backgroundColor: '#f8f8f8' },
 
   // Header
-  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 14 },
-  headerTitle: { fontSize: 26, fontWeight: '800', color: '#111827', letterSpacing: -0.5 },
-  headerSub: { fontSize: 13, color: '#9ca3af', marginTop: 2, fontWeight: '500' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 16,
+  },
+  headerTitle: { fontSize: 28, fontWeight: '800', color: '#111827', letterSpacing: -0.8, flex: 1 },
+  headerCountBadge: {
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    minWidth: 32,
+    alignItems: 'center',
+  },
+  headerCountText: { fontSize: 13, fontWeight: '700', color: '#fff' },
 
   // Search
   searchBar: {
@@ -340,108 +353,110 @@ const s = StyleSheet.create({
     backgroundColor: '#fff',
     marginHorizontal: 16,
     marginBottom: 12,
-    borderRadius: 14,
+    borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 13,
     borderWidth: 1,
-    borderColor: '#f3f4f6',
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    borderColor: '#ebebeb',
   },
-  searchInput: { flex: 1, fontSize: 15, color: '#111827', fontWeight: '500' },
+  searchInput: { flex: 1, fontSize: 15, color: '#111827', fontWeight: '400' },
   searchClearBtn: {
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: '#9ca3af',
+    backgroundColor: '#c4c4c4',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   // Pills
-  pillsContainer: { paddingHorizontal: 16, paddingBottom: 12, gap: 8 },
+  pillsContainer: { paddingHorizontal: 16, paddingBottom: 14, gap: 6 },
   pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
     backgroundColor: '#fff',
     borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderWidth: 1.5,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
   },
-  pillEmoji: { fontSize: 13 },
+  pillActive: {
+    backgroundColor: '#111827',
+    borderColor: '#111827',
+  },
   pillText: { fontSize: 13, color: '#374151', fontWeight: '600' },
   pillTextActive: { color: '#fff' },
 
   // List
-  list: { paddingHorizontal: 16, paddingTop: 2, gap: 10 },
+  list: { paddingHorizontal: 16, paddingTop: 2, gap: 12 },
 
-  // Card
+  // Card group — single grouped container
+  cardGroup: {
+    marginHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+
+  // Card — row layout, no individual shadow — sits inside group
   card: {
     backgroundColor: '#fff',
-    borderRadius: 18,
-    overflow: 'hidden',
     flexDirection: 'row',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#ebebeb',
   },
-  cardStripe: { width: 4 },
-  cardBody: { flex: 1, padding: 14, gap: 12 },
-  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  cardLast: { borderBottomWidth: 0 },
   cardIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  cardIcon: { fontSize: 22 },
-  cardName: { fontSize: 15, fontWeight: '700', color: '#111827', lineHeight: 20 },
-  cardSupplier: { fontSize: 12, color: '#9ca3af', fontWeight: '500', marginTop: 1 },
+  cardIcon: { fontSize: 26 },
+  cardBody: { flex: 1, gap: 3 },
+  cardTopRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  cardName: { fontSize: 15, fontWeight: '700', color: '#111827', flex: 1 },
+  cardSupplier: { fontSize: 12, color: '#9ca3af', fontWeight: '400' },
+  cardMeta: { flexDirection: 'row', marginTop: 2 },
+  categoryPill: {
+    backgroundColor: '#f3f4f6',
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  categoryPillText: { fontSize: 11, fontWeight: '600', color: '#6b7280' },
   recycledBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
     backgroundColor: '#dcfce7',
-    borderRadius: 8,
+    borderRadius: 6,
     paddingHorizontal: 6,
-    paddingVertical: 3,
-    alignSelf: 'flex-start',
+    paddingVertical: 2,
     flexShrink: 0,
   },
   recycledText: { fontSize: 10, fontWeight: '700', color: '#15803d' },
-  cardBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cardPrice: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
-  cardUnit: { fontSize: 12, fontWeight: '400', color: '#9ca3af' },
-  cardCategory: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#9ca3af',
-    marginTop: 1,
-    letterSpacing: 0.3,
-  },
-  orderBtn: {
-    flexDirection: 'row',
+  cardRight: { alignItems: 'flex-end', gap: 2, flexShrink: 0 },
+  cardPrice: { fontSize: 18, fontWeight: '800', color: '#111827', letterSpacing: -0.5 },
+  cardUnit: { fontSize: 11, color: '#9ca3af', fontWeight: '400' },
+  cardArrow: {
+    marginTop: 6,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: '#111827',
     alignItems: 'center',
-    gap: 5,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    justifyContent: 'center',
   },
-  orderBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 
   // Empty
   empty: { alignItems: 'center', paddingVertical: 64, gap: 10 },
-  emptyEmoji: { fontSize: 48 },
+  emptyEmoji: { fontSize: 44 },
   emptyTitle: { fontSize: 17, fontWeight: '700', color: '#374151', marginTop: 4 },
   emptyDesc: { fontSize: 13, color: '#9ca3af', textAlign: 'center', maxWidth: 240, lineHeight: 19 },
   emptyReset: {
