@@ -1,12 +1,13 @@
 import { Tabs } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
-import { FileText, Inbox, LayoutGrid, MoreVertical } from 'lucide-react-native';
-import { ModeSwitcher } from '@/components/ui/ModeSwitcher';
+import { FileText, Inbox, LayoutGrid, Wallet } from 'lucide-react-native';
+import { TopBar } from '@/components/ui/TopBar';
+import { Sidebar } from '@/components/ui/Sidebar';
 import { t } from '@/lib/translations';
 
 const TAB_BAR = {
@@ -23,10 +24,13 @@ const TAB_BAR = {
 };
 const TAB_LABEL_STYLE = { fontSize: 11, fontWeight: '600' as const };
 
+const ACCENT = '#16a34a';
+
 export default function SellerLayout() {
   const { user, isLoading } = useAuth();
   const { isMultiRole } = useMode();
   const router = useRouter();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -46,11 +50,11 @@ export default function SellerLayout() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-      {isMultiRole && <ModeSwitcher />}
+      <TopBar accentColor={ACCENT} onMenuPress={() => setSidebarOpen(true)} />
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: '#16a34a',
+          tabBarActiveTintColor: ACCENT,
           tabBarInactiveTintColor: '#9ca3af',
           tabBarStyle: TAB_BAR,
           tabBarLabelStyle: TAB_LABEL_STYLE,
@@ -77,16 +81,22 @@ export default function SellerLayout() {
             tabBarIcon: ({ color }) => <LayoutGrid size={22} color={color} />,
           }}
         />
-        <Tabs.Screen name="earnings" options={{ href: null }} />
-        <Tabs.Screen name="profile" options={{ href: null }} />
         <Tabs.Screen
-          name="more"
+          name="earnings"
           options={{
-            title: t.tabs.more,
-            tabBarIcon: ({ color }) => <MoreVertical size={22} color={color} />,
+            title: t.tabs.earnings,
+            tabBarIcon: ({ color }) => <Wallet size={22} color={color} />,
           }}
         />
+        <Tabs.Screen name="profile" options={{ href: null }} />
       </Tabs>
+      <Sidebar
+        visible={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        role="seller"
+        accentColor={ACCENT}
+        isMultiRole={isMultiRole}
+      />
     </SafeAreaView>
   );
 }
