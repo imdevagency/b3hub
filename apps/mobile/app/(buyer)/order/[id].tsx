@@ -9,7 +9,7 @@ import {
   Alert,
   Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
@@ -189,7 +189,7 @@ export default function OrderDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container} edges={['top']}>
+      <ScreenContainer bg="#f2f2f7">
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
             <ArrowLeft size={22} color="#111827" />
@@ -198,13 +198,13 @@ export default function OrderDetailScreen() {
           <View style={{ width: 22 }} />
         </View>
         <SkeletonDetail />
-      </SafeAreaView>
+      </ScreenContainer>
     );
   }
 
   if (!order) {
     return (
-      <SafeAreaView style={s.container} edges={['top']}>
+      <ScreenContainer bg="#f2f2f7">
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
             <ArrowLeft size={22} color="#111827" />
@@ -216,7 +216,7 @@ export default function OrderDetailScreen() {
           <Package size={48} color="#9ca3af" />
           <Text style={s.emptyText}>Pasūtījums nav atrasts</Text>
         </View>
-      </SafeAreaView>
+      </ScreenContainer>
     );
   }
 
@@ -228,7 +228,7 @@ export default function OrderDetailScreen() {
   const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status);
 
   return (
-    <SafeAreaView style={s.container} edges={['top']}>
+    <ScreenContainer bg="#f2f2f7">
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
@@ -464,7 +464,7 @@ export default function OrderDetailScreen() {
           orderId={id}
         />
       )}
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

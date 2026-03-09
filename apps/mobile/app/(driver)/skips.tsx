@@ -24,7 +24,7 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import MapboxGL from '@rnmapbox/maps';
 import {
   Trash2,
@@ -97,12 +97,22 @@ function pinColor(status: string): string {
 
 // ── DetailRow ─────────────────────────────────────────────────────────────────
 
-function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function DetailRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
   return (
     <View style={s.detailRow}>
       {icon}
       <Text style={s.detailLabel}>{label}:</Text>
-      <Text style={s.detailValue} numberOfLines={2}>{value}</Text>
+      <Text style={s.detailValue} numberOfLines={2}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -119,7 +129,11 @@ interface OrderCardProps {
 function OrderCard({ order, onStatusUpdate, updating, flat = false }: OrderCardProps) {
   const [expanded, setExpanded] = useState(flat);
 
-  const statusInfo = cs.status[order.status] ?? { label: order.status, bg: '#f3f4f6', color: '#374151' };
+  const statusInfo = cs.status[order.status] ?? {
+    label: order.status,
+    bg: '#f3f4f6',
+    color: '#374151',
+  };
   const sizeLabel = cs.sizes[order.skipSize] ?? order.skipSize;
   const wasteLabel = cs.wasteTypes[order.wasteCategory] ?? order.wasteCategory;
   const canDeliver = order.status === 'CONFIRMED';
@@ -158,7 +172,9 @@ function OrderCard({ order, onStatusUpdate, updating, flat = false }: OrderCardP
           </View>
           <View style={s.metaRow}>
             <MapPin size={13} color="#6b7280" />
-            <Text style={s.metaText} numberOfLines={1}>{order.location}</Text>
+            <Text style={s.metaText} numberOfLines={1}>
+              {order.location}
+            </Text>
           </View>
           <View style={s.metaRow}>
             <Package size={13} color="#6b7280" />
@@ -167,21 +183,50 @@ function OrderCard({ order, onStatusUpdate, updating, flat = false }: OrderCardP
             <Text style={s.metaText}>{formatDate(order.deliveryDate)}</Text>
           </View>
         </View>
-        {!flat && (expanded ? <ChevronUp size={18} color="#9ca3af" /> : <ChevronDown size={18} color="#9ca3af" />)}
+        {!flat &&
+          (expanded ? (
+            <ChevronUp size={18} color="#9ca3af" />
+          ) : (
+            <ChevronDown size={18} color="#9ca3af" />
+          ))}
       </TouchableOpacity>
 
       {(expanded || flat) && (
         <View style={s.expandedBody}>
           <View style={s.divider} />
-          <DetailRow icon={<Package size={14} color="#6b7280" />} label={cs.size} value={sizeLabel} />
-          <DetailRow icon={<Trash2 size={14} color="#6b7280" />} label={cs.wasteType} value={wasteLabel} />
-          <DetailRow icon={<MapPin size={14} color="#6b7280" />} label={cs.address} value={order.location} />
-          <DetailRow icon={<Calendar size={14} color="#6b7280" />} label={cs.deliveryDate} value={formatDate(order.deliveryDate)} />
+          <DetailRow
+            icon={<Package size={14} color="#6b7280" />}
+            label={cs.size}
+            value={sizeLabel}
+          />
+          <DetailRow
+            icon={<Trash2 size={14} color="#6b7280" />}
+            label={cs.wasteType}
+            value={wasteLabel}
+          />
+          <DetailRow
+            icon={<MapPin size={14} color="#6b7280" />}
+            label={cs.address}
+            value={order.location}
+          />
+          <DetailRow
+            icon={<Calendar size={14} color="#6b7280" />}
+            label={cs.deliveryDate}
+            value={formatDate(order.deliveryDate)}
+          />
           {order.contactName && (
-            <DetailRow icon={<Phone size={14} color="#6b7280" />} label={cs.client} value={order.contactName} />
+            <DetailRow
+              icon={<Phone size={14} color="#6b7280" />}
+              label={cs.client}
+              value={order.contactName}
+            />
           )}
           {order.contactPhone && (
-            <DetailRow icon={<Phone size={14} color="#6b7280" />} label={cs.phone} value={order.contactPhone} />
+            <DetailRow
+              icon={<Phone size={14} color="#6b7280" />}
+              label={cs.phone}
+              value={order.contactPhone}
+            />
           )}
           {order.notes ? (
             <View style={s.notesBox}>
@@ -190,7 +235,11 @@ function OrderCard({ order, onStatusUpdate, updating, flat = false }: OrderCardP
           ) : null}
 
           <View style={s.actionRow}>
-            <TouchableOpacity style={s.navBtn} onPress={() => openMaps(order.location)} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={s.navBtn}
+              onPress={() => openMaps(order.location)}
+              activeOpacity={0.8}
+            >
               <Navigation2 size={15} color={ACCENT} />
               <Text style={s.navBtnText}>{cs.navigate}</Text>
             </TouchableOpacity>
@@ -218,7 +267,9 @@ function OrderCard({ order, onStatusUpdate, updating, flat = false }: OrderCardP
               ) : (
                 <>
                   <CheckCircle2 size={17} color="#fff" />
-                  <Text style={s.statusBtnText}>{canDeliver ? cs.markDelivered : cs.markCollected}</Text>
+                  <Text style={s.statusBtnText}>
+                    {canDeliver ? cs.markDelivered : cs.markCollected}
+                  </Text>
                   <ArrowRight size={15} color="rgba(255,255,255,0.7)" />
                 </>
               )}
@@ -255,14 +306,20 @@ function SkipsMapView({ orders, onStatusUpdate, updatingId }: MapViewProps) {
       missing.map(async (o) => ({ id: o.id, coord: await geocodeAddress(o.location) })),
     ).then((results) => {
       const next: Record<string, [number, number]> = { ...coords };
-      results.forEach(({ id, coord }) => { if (coord) next[id] = coord; });
+      results.forEach(({ id, coord }) => {
+        if (coord) next[id] = coord;
+      });
       setCoords(next);
       setGeocoding(false);
 
       const all = Object.values(next);
       if (all.length === 0 || !cameraRef.current) return;
       if (all.length === 1) {
-        cameraRef.current.setCamera({ centerCoordinate: all[0], zoomLevel: 14, animationDuration: 600 });
+        cameraRef.current.setCamera({
+          centerCoordinate: all[0],
+          zoomLevel: 14,
+          animationDuration: 600,
+        });
       } else {
         const lngs = all.map((c) => c[0]);
         const lats = all.map((c) => c[1]);
@@ -326,7 +383,9 @@ function SkipsMapView({ orders, onStatusUpdate, updatingId }: MapViewProps) {
           <View style={[s.legendDot, { backgroundColor: '#7c3aed' }]} />
           <Text style={s.legendLabel}>Savākt</Text>
         </View>
-        <Text style={s.legendCount}>{resolved.length}/{orders.length}</Text>
+        <Text style={s.legendCount}>
+          {resolved.length}/{orders.length}
+        </Text>
       </View>
 
       {selected && (
@@ -344,7 +403,10 @@ function SkipsMapView({ orders, onStatusUpdate, updatingId }: MapViewProps) {
               <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
                 <OrderCard
                   order={selected}
-                  onStatusUpdate={(id, status) => { closeSheet(); onStatusUpdate(id, status); }}
+                  onStatusUpdate={(id, status) => {
+                    closeSheet();
+                    onStatusUpdate(id, status);
+                  }}
                   updating={updatingId === selected.id}
                   flat
                 />
@@ -384,9 +446,14 @@ export default function CarrierSkipsScreen() {
     [token],
   );
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  const onRefresh = useCallback(() => { setRefreshing(true); load(true); }, [load]);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    load(true);
+  }, [load]);
 
   const handleStatusUpdate = useCallback(
     async (id: string, newStatus: SkipHireStatus) => {
@@ -412,7 +479,7 @@ export default function CarrierSkipsScreen() {
   const toCollect = orders.filter((o) => o.status === 'DELIVERED');
 
   return (
-    <SafeAreaView style={s.root} edges={['top']}>
+    <ScreenContainer bg="#f9fafb">
       {/* ── Header ── */}
       <View style={s.header}>
         <View>
@@ -434,7 +501,12 @@ export default function CarrierSkipsScreen() {
               <Map size={16} color={viewMode === 'map' ? '#fff' : '#6b7280'} />
             </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={() => load()} style={s.refreshBtn} hitSlop={8} disabled={loading}>
+          <TouchableOpacity
+            onPress={() => load()}
+            style={s.refreshBtn}
+            hitSlop={8}
+            disabled={loading}
+          >
             <RefreshCw size={20} color={loading ? '#d1d5db' : ACCENT} />
           </TouchableOpacity>
         </View>
@@ -475,13 +547,20 @@ export default function CarrierSkipsScreen() {
         <ScrollView
           style={s.list}
           contentContainerStyle={s.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />
+          }
         >
           {toDeliver.length > 0 && (
             <>
               <Text style={s.section}>Jāpiegādā ({toDeliver.length})</Text>
               {toDeliver.map((o) => (
-                <OrderCard key={o.id} order={o} onStatusUpdate={handleStatusUpdate} updating={updatingId === o.id} />
+                <OrderCard
+                  key={o.id}
+                  order={o}
+                  onStatusUpdate={handleStatusUpdate}
+                  updating={updatingId === o.id}
+                />
               ))}
             </>
           )}
@@ -491,13 +570,18 @@ export default function CarrierSkipsScreen() {
                 Jāsavāc ({toCollect.length})
               </Text>
               {toCollect.map((o) => (
-                <OrderCard key={o.id} order={o} onStatusUpdate={handleStatusUpdate} updating={updatingId === o.id} />
+                <OrderCard
+                  key={o.id}
+                  order={o}
+                  onStatusUpdate={handleStatusUpdate}
+                  updating={updatingId === o.id}
+                />
               ))}
             </>
           )}
         </ScrollView>
       )}
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 
@@ -506,33 +590,94 @@ export default function CarrierSkipsScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#f9fafb' },
 
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 10, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 10,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
   headerTitle: { fontSize: 20, fontWeight: '700', color: '#111827' },
   headerSubtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   refreshBtn: { padding: 8 },
 
-  toggle: { flexDirection: 'row', backgroundColor: '#f3f4f6', borderRadius: 10, padding: 3, gap: 3 },
-  toggleBtn: { width: 34, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  toggle: {
+    flexDirection: 'row',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 10,
+    padding: 3,
+    gap: 3,
+  },
+  toggleBtn: {
+    width: 34,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   toggleActive: { backgroundColor: ACCENT },
 
-  chipRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4 },
+  chipRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
   chip: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 },
   chipText: { fontSize: 12, fontWeight: '600' },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   emptyTitle: { fontSize: 17, fontWeight: '600', color: '#374151', marginTop: 10 },
   emptyDesc: { fontSize: 14, color: '#9ca3af', textAlign: 'center', lineHeight: 20, marginTop: 4 },
-  retryBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20, borderWidth: 1.5, borderColor: ACCENT },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: ACCENT,
+  },
   retryText: { color: ACCENT, fontWeight: '600', fontSize: 14 },
 
   list: { flex: 1 },
   listContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24, gap: 10 },
-  section: { fontSize: 12, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, paddingHorizontal: 2 },
+  section: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+    paddingHorizontal: 2,
+  },
 
-  card: { backgroundColor: '#fff', borderRadius: 14, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
   cardHeader: { flexDirection: 'row', alignItems: 'center', padding: 14 },
-  iconBox: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  iconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 3 },
   orderNumber: { fontSize: 14, fontWeight: '700', color: '#111827', flex: 1 },
   badge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
@@ -548,28 +693,138 @@ const s = StyleSheet.create({
   notesBox: { backgroundColor: '#fef9c3', borderRadius: 8, padding: 10, marginBottom: 10 },
   notesText: { fontSize: 13, color: '#713f12' },
   actionRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
-  navBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1.5, borderColor: ACCENT, borderRadius: 10, paddingVertical: 9 },
+  navBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: ACCENT,
+    borderRadius: 10,
+    paddingVertical: 9,
+  },
   navBtnText: { color: ACCENT, fontWeight: '600', fontSize: 13 },
-  callBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1.5, borderColor: '#d1d5db', borderRadius: 10, paddingVertical: 9 },
+  callBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: '#d1d5db',
+    borderRadius: 10,
+    paddingVertical: 9,
+  },
   callBtnText: { color: '#374151', fontWeight: '600', fontSize: 13 },
-  statusBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: ACCENT, borderRadius: 12, paddingVertical: 13 },
+  statusBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: ACCENT,
+    borderRadius: 12,
+    paddingVertical: 13,
+  },
   statusBtnText: { color: '#fff', fontWeight: '700', fontSize: 15, flex: 1 },
 
-  mapPin: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 },
-  mapPinTail: { alignSelf: 'center', width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 8, borderLeftColor: 'transparent', borderRightColor: 'transparent' },
+  mapPin: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  mapPinTail: {
+    alignSelf: 'center',
+    width: 0,
+    height: 0,
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderTopWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+  },
 
-  geocodeOverlay: { position: 'absolute', top: 16, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 4 },
+  geocodeOverlay: {
+    position: 'absolute',
+    top: 16,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
   geocodeText: { fontSize: 13, color: '#374151', fontWeight: '500' },
 
-  legend: { position: 'absolute', bottom: 20, left: 16, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 4 },
+  legend: {
+    position: 'absolute',
+    bottom: 20,
+    left: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
   legendLabel: { fontSize: 12, color: '#374151', fontWeight: '500' },
   legendCount: { fontSize: 11, color: '#9ca3af' },
 
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
-  sheet: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#f9fafb', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 16 },
-  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#d1d5db', alignSelf: 'center', marginTop: 8, marginBottom: 4 },
-  sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10 },
+  sheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#f9fafb',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 16,
+  },
+  sheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#d1d5db',
+    alignSelf: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
   sheetTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
 });

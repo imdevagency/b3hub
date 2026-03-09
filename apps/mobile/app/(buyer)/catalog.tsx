@@ -9,7 +9,7 @@ import {
   RefreshControl,
   TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Search, X, Leaf, ShoppingCart } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
@@ -192,7 +192,7 @@ export default function CatalogScreen() {
   };
 
   return (
-    <SafeAreaView style={s.safe} edges={['top']}>
+    <ScreenContainer bg="#f9fafb">
       {/* Header */}
       <View style={s.header}>
         <View>
@@ -318,7 +318,7 @@ export default function CatalogScreen() {
           <View style={{ height: 24 }} />
         </ScrollView>
       )}
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

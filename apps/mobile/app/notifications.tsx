@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -147,7 +147,7 @@ export default function NotificationsScreen() {
   const unreadCount = notifs.filter((n) => !n.isRead).length;
 
   return (
-    <SafeAreaView style={s.container} edges={['top']}>
+    <ScreenContainer standalone>
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
@@ -191,7 +191,7 @@ export default function NotificationsScreen() {
           )}
         </ScrollView>
       )}
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

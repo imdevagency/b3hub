@@ -10,7 +10,9 @@ let _Notifications: typeof import('expo-notifications') | null = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   _Notifications = require('expo-notifications');
-} catch { /* Expo Go */ }
+} catch {
+  /* Expo Go */
+}
 
 // Show notifications as banners even when app is in foreground
 try {
@@ -23,7 +25,9 @@ try {
       shouldSetBadge: true,
     }),
   });
-} catch { /* ignore */ }
+} catch {
+  /* ignore */
+}
 
 export default function RootLayout() {
   const notifListener = useRef<{ remove(): void } | null>(null);
@@ -35,7 +39,9 @@ export default function RootLayout() {
         _Notifications?.addNotificationReceivedListener(() => {
           // Badge / state updates can be wired here if needed
         }) ?? null;
-    } catch { /* Expo Go */ }
+    } catch {
+      /* Expo Go */
+    }
     return () => notifListener.current?.remove();
   }, []);
 

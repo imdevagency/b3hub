@@ -1,17 +1,5 @@
-import React, {
-  createContext,
-  useContext,
-  useRef,
-  useState,
-  useCallback,
-} from 'react';
-import {
-  Animated,
-  Text,
-  StyleSheet,
-  View,
-  Platform,
-} from 'react-native';
+import React, { createContext, useContext, useRef, useState, useCallback } from 'react';
+import { Animated, Text, StyleSheet, View, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckCircle2, XCircle, Info } from 'lucide-react-native';
 
@@ -106,8 +94,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 // ── Banner ───────────────────────────────────────────────────────────────────
 const VARIANT_STYLE: Record<ToastVariant, { bg: string; border: string; color: string }> = {
   success: { bg: '#052e16', border: '#16a34a', color: '#4ade80' },
-  error:   { bg: '#450a0a', border: '#dc2626', color: '#f87171' },
-  info:    { bg: '#0c1a2e', border: '#3b82f6', color: '#93c5fd' },
+  error: { bg: '#450a0a', border: '#dc2626', color: '#f87171' },
+  info: { bg: '#0c1a2e', border: '#3b82f6', color: '#93c5fd' },
 };
 
 const ICONS: Record<ToastVariant, React.ComponentType<{ size: number; color: string }>> = {

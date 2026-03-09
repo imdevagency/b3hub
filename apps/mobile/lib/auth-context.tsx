@@ -25,12 +25,10 @@ const USER_KEY = 'b3hub_user';
 async function registerForPushNotifications(): Promise<string | null> {
   try {
     if (!_Notifications || !_Device) return null; // Expo Go — native module missing
-    if (!_Device.isDevice) return null;             // Simulator — skip
+    if (!_Device.isDevice) return null; // Simulator — skip
     const { status: existing } = await _Notifications.getPermissionsAsync();
     const finalStatus =
-      existing === 'granted'
-        ? existing
-        : (await _Notifications.requestPermissionsAsync()).status;
+      existing === 'granted' ? existing : (await _Notifications.requestPermissionsAsync()).status;
     if (finalStatus !== 'granted') return null;
 
     if (Platform.OS === 'android') {

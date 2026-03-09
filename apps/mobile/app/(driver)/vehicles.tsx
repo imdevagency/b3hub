@@ -14,7 +14,7 @@ import {
   Alert,
   Switch,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Plus, Pencil, Trash2, Truck } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
@@ -339,7 +339,7 @@ export default function VehiclesScreen() {
   };
 
   return (
-    <SafeAreaView style={s.container} edges={['top']}>
+    <ScreenContainer bg="#f2f2f7">
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
           <ArrowLeft size={22} color="#111827" />
@@ -410,7 +410,7 @@ export default function VehiclesScreen() {
         onSave={handleSave}
         saving={saving}
       />
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

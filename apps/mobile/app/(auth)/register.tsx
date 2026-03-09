@@ -154,7 +154,10 @@ export default function RegisterScreen() {
   };
 
   const goNext = () => {
-    if (!validate()) { haptics.warning(); return; }
+    if (!validate()) {
+      haptics.warning();
+      return;
+    }
     if (step < TOTAL_STEPS) {
       haptics.selection();
       setStep((s) => s + 1);
@@ -207,7 +210,10 @@ export default function RegisterScreen() {
             <TouchableOpacity
               key={r.value}
               style={[s.roleCard, active && { borderColor: r.color, backgroundColor: r.bg }]}
-              onPress={() => { haptics.light(); setUserType(r.value); }}
+              onPress={() => {
+                haptics.light();
+                setUserType(r.value);
+              }}
               activeOpacity={0.8}
             >
               <View style={s.roleCardHeader}>

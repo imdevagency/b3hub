@@ -21,7 +21,7 @@ import {
   Platform,
   Animated,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import {
   FileText,
   ChevronDown,
@@ -452,7 +452,7 @@ export default function SellerQuotesScreen() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
+    <ScreenContainer bg="#f9fafb">
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -525,7 +525,7 @@ export default function SellerQuotesScreen() {
           token={token}
         />
       )}
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

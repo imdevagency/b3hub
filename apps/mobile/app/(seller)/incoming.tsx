@@ -523,7 +523,13 @@ const styles = StyleSheet.create({
   },
   pendingBadgeText: { color: '#fff', fontWeight: '700', fontSize: 12 },
 
-  filterRow: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' },
+  filterRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -195,7 +195,10 @@ export default function HomeScreen() {
                   key={tile.id}
                   style={[s.tile, { backgroundColor: tile.bg }]}
                   activeOpacity={0.75}
-                  onPress={() => { haptics.light(); router.push(tile.route as any); }}
+                  onPress={() => {
+                    haptics.light();
+                    router.push(tile.route as any);
+                  }}
                 >
                   <View style={[s.tileIcon, { backgroundColor: tile.iconBg }]}>
                     <Icon size={22} color={tile.iconColor} />
@@ -212,7 +215,10 @@ export default function HomeScreen() {
               <TouchableOpacity
                 style={[s.tileFull, { backgroundColor: tile.bg }]}
                 activeOpacity={0.75}
-                onPress={() => { haptics.light(); router.push(tile.route as any); }}
+                onPress={() => {
+                  haptics.light();
+                  router.push(tile.route as any);
+                }}
               >
                 <View style={[s.tileIcon, { backgroundColor: tile.iconBg }]}>
                   <Icon size={22} color={tile.iconColor} />
