@@ -175,45 +175,62 @@ export default function ActiveJobScreen() {
   const currentIndex = STATUS_STEPS.indexOf(currentStatus);
   const nextStatus = NEXT_STATUS[currentStatus];
 
-  // ── Navigate — in-app Navigation SDK (requires dev build)
-  //   Falls back to deep-link for Expo Go / environments where the native
-  //   Navigation SDK module is unavailable.
+  // ── Navigate — Schüttflix-style app picker ────────────────────────────────
+  //   Shows Waze / Google Maps / Apple Maps action sheet.
+  //   Always uses coordinates (not address text) for precision.
   const handleNavigate = () => {
     const isHeadingToPickup = currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP';
 
-    // If we have coords, launch the in-app navigation screen
-    if (job.deliveryLat != null && job.deliveryLng != null) {
-      const params: Record<string, string> = {
-        deliveryLat: String(job.deliveryLat),
-        deliveryLng: String(job.deliveryLng),
-        label: `${job.deliveryAddress}, ${job.deliveryCity}`,
-      };
-      if (isHeadingToPickup && job.pickupLat != null && job.pickupLng != null) {
-        params.pickupLat = String(job.pickupLat);
-        params.pickupLng = String(job.pickupLng);
-      }
-      router.push({ pathname: '/navigation', params });
+    const lat = isHeadingToPickup ? (job.pickupLat ?? job.deliveryLat) : job.deliveryLat;
+    const lng = isHeadingToPickup ? (job.pickupLng ?? job.deliveryLng) : job.deliveryLng;
+    const label = isHeadingToPickup
+      ? `${job.pickupAddress}, ${job.pickupCity}`
+      : `${job.deliveryAddress}, ${job.deliveryCity}`;
+
+    if (lat == null || lng == null) {
+      // Coords missing — fall back to address search in Google Maps web
+      const encoded = encodeURIComponent(label);
+      Linking.openURL(
+        `https://www.google.com/maps/dir/?api=1&destination=${encoded}&travelmode=driving`,
+      ).catch(() => Alert.alert('Kļūda', 'Neizdevās atvērt navigāciju'));
       return;
     }
 
-    // Fallback: deep-link to external maps app
-    const address = isHeadingToPickup
-      ? `${job.pickupAddress}, ${job.pickupCity}`
-      : `${job.deliveryAddress}, ${job.deliveryCity}`;
-    const encoded = encodeURIComponent(address);
-    const url =
-      Platform.OS === 'ios'
-        ? `maps://?daddr=${encoded}&dirflg=d`
-        : `google.navigation:q=${encoded}&mode=d`;
+    const openUrl = (url: string, fallback: string) =>
+      Linking.canOpenURL(url)
+        .then((ok) => Linking.openURL(ok ? url : fallback))
+        .catch(() => Alert.alert('Kļūda', 'Neizdevās atvērt navigāciju'));
 
-    Linking.canOpenURL(url)
-      .then((supported) => {
-        if (supported) return Linking.openURL(url);
-        return Linking.openURL(
-          `https://www.google.com/maps/dir/?api=1&destination=${encoded}&travelmode=driving`,
-        );
-      })
-      .catch(() => Alert.alert('Kļūda', 'Neizdevās atvērt navigāciju'));
+    const wazeUrl = `waze://?ll=${lat},${lng}&navigate=yes`;
+    const googleUrlNative =
+      Platform.OS === 'ios'
+        ? `comgooglemaps://?daddr=${lat},${lng}&directionsmode=driving`
+        : `google.navigation:q=${lat},${lng}&mode=d`;
+    const googleFallback = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+    const appleUrl = `maps://?daddr=${lat},${lng}&dirflg=d`;
+
+    const options: { text: string; onPress: () => void }[] = [
+      {
+        text: 'Waze',
+        onPress: () => openUrl(wazeUrl, googleFallback),
+      },
+      {
+        text: 'Google Maps',
+        onPress: () => openUrl(googleUrlNative, googleFallback),
+      },
+    ];
+
+    if (Platform.OS === 'ios') {
+      options.push({
+        text: 'Apple Maps',
+        onPress: () => openUrl(appleUrl, googleFallback),
+      });
+    }
+
+    Alert.alert('Atvērt navigāciju', label, [
+      ...options.map((o) => ({ text: o.text, onPress: o.onPress })),
+      { text: 'Atcelt', style: 'cancel' as const },
+    ]);
   };
 
   const handleCall = (phone: string | null | undefined, name?: string | null) => {
