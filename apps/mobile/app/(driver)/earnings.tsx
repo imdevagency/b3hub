@@ -1,5 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/lib/translations';
 import { Check, Clock, TrendingUp, Banknote, CheckCircle2 } from 'lucide-react-native';
@@ -139,7 +146,6 @@ export default function EarningsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView showsVerticalScrollIndicator={false}>
-
         {/* ── Red hero header ── */}
         <View style={styles.header}>
           <Text style={styles.headerSuper}>{t.earnings.title}</Text>
@@ -165,7 +171,6 @@ export default function EarningsScreen() {
         </View>
 
         <View style={styles.body}>
-
           {/* ── Summary row ── */}
           <View style={styles.summaryRow}>
             <View style={styles.summaryCard}>
@@ -175,11 +180,15 @@ export default function EarningsScreen() {
               <Text style={styles.summaryValue}>{stats.completedJobs}</Text>
               <Text style={styles.summaryLabel}>{t.earnings.completedJobs}</Text>
             </View>
-            <View style={[styles.summaryCard, { backgroundColor: '#fffbeb', borderColor: '#fde68a' }]}>
+            <View
+              style={[styles.summaryCard, { backgroundColor: '#fffbeb', borderColor: '#fde68a' }]}
+            >
               <View style={[styles.summaryIcon, { backgroundColor: '#fef3c7' }]}>
                 <Clock size={18} color="#d97706" />
               </View>
-              <Text style={[styles.summaryValue, { color: '#92400e' }]}>€{stats.pendingPayout.toFixed(0)}</Text>
+              <Text style={[styles.summaryValue, { color: '#92400e' }]}>
+                €{stats.pendingPayout.toFixed(0)}
+              </Text>
               <Text style={[styles.summaryLabel, { color: '#a16207' }]}>{t.earnings.pending}</Text>
             </View>
             <View style={styles.summaryCard}>
@@ -204,10 +213,7 @@ export default function EarningsScreen() {
                 {history.map((job, idx) => (
                   <View
                     key={job.id}
-                    style={[
-                      styles.historyRow,
-                      idx < history.length - 1 && styles.historyRowBorder,
-                    ]}
+                    style={[styles.historyRow, idx < history.length - 1 && styles.historyRowBorder]}
                   >
                     <View
                       style={[
@@ -268,7 +274,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   headerSuper: { fontSize: 13, color: '#fca5a5', fontWeight: '500', letterSpacing: 0.3 },
-  heroAmount: { fontSize: 42, fontWeight: '800', color: '#ffffff', marginTop: 2, letterSpacing: -1 },
+  heroAmount: {
+    fontSize: 42,
+    fontWeight: '800',
+    color: '#ffffff',
+    marginTop: 2,
+    letterSpacing: -1,
+  },
 
   periodRow: {
     flexDirection: 'row',

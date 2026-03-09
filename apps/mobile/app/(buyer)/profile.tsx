@@ -95,7 +95,10 @@ export default function ProfileScreen() {
   const INFO_ROWS = [
     { label: t.profile.email, value: user?.email },
     { label: t.profile.phone, value: user?.phone || '—' },
-    { label: t.profile.accountType, value: USER_TYPE_LABEL[user?.userType ?? ''] ?? user?.userType },
+    {
+      label: t.profile.accountType,
+      value: USER_TYPE_LABEL[user?.userType ?? ''] ?? user?.userType,
+    },
     { label: t.profile.status, value: STATUS_LABEL[user?.status ?? ''] ?? user?.status },
   ];
 

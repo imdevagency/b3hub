@@ -1322,3 +1322,176 @@ export async function getSkipCarrierMap(token: string): Promise<SkipMapOrder[]> 
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+
+export type NotificationType =
+  | 'ORDER_CREATED'
+  | 'ORDER_CONFIRMED'
+  | 'ORDER_DELIVERED'
+  | 'TRANSPORT_ASSIGNED'
+  | 'TRANSPORT_STARTED'
+  | 'TRANSPORT_COMPLETED'
+  | 'PAYMENT_RECEIVED'
+  | 'SYSTEM_ALERT';
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  isRead: boolean;
+  data?: Record<string, any>;
+  createdAt: string;
+}
+
+export interface NotificationPage {
+  data: AppNotification[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export async function getNotifications(
+  token: string,
+  page = 1,
+  limit = 20,
+): Promise<NotificationPage> {
+  return apiFetch<NotificationPage>(`/notifications?page=${page}&limit=${limit}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function getUnreadNotificationCount(token: string): Promise<{ count: number }> {
+  return apiFetch<{ count: number }>('/notifications/unread-count', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function markAllNotificationsRead(token: string): Promise<{ updated: number }> {
+  return apiFetch<{ updated: number }>('/notifications/read-all', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function markNotificationRead(id: string, token: string): Promise<AppNotification> {
+  return apiFetch<AppNotification>(`/notifications/${id}/read`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Quote Requests ─────────────────────────────────────────────────────────────
+
+export type QuoteRequestStatus = 'PENDING' | 'QUOTED' | 'ACCEPTED' | 'CANCELLED' | 'EXPIRED';
+export type QuoteResponseStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+
+export interface QuoteSupplier {
+  id: string;
+  name: string;
+  city: string;
+  rating?: number;
+  phone?: string;
+}
+
+export interface QuoteResponse {
+  id: string;
+  pricePerUnit: number;
+  unit: MaterialUnit;
+  etaDays: number;
+  notes?: string;
+  validUntil?: string;
+  status: QuoteResponseStatus;
+  supplier: QuoteSupplier;
+  createdAt: string;
+}
+
+export interface QuoteRequest {
+  id: string;
+  requestNumber: string;
+  materialCategory: MaterialCategory;
+  materialName: string;
+  quantity: number;
+  unit: MaterialUnit;
+  deliveryAddress: string;
+  deliveryCity: string;
+  deliveryLat?: number;
+  deliveryLng?: number;
+  notes?: string;
+  status: QuoteRequestStatus;
+  responses: QuoteResponse[];
+  createdAt: string;
+}
+
+export interface CreateQuoteRequestInput {
+  materialCategory: MaterialCategory;
+  materialName: string;
+  quantity: number;
+  unit: MaterialUnit;
+  deliveryAddress: string;
+  deliveryCity: string;
+  deliveryLat?: number;
+  deliveryLng?: number;
+  notes?: string;
+}
+
+export interface CreateQuoteResponseInput {
+  pricePerUnit: number;
+  unit: MaterialUnit;
+  etaDays: number;
+  notes?: string;
+  validUntil?: string;
+}
+
+export async function createQuoteRequest(
+  input: CreateQuoteRequestInput,
+  token: string,
+): Promise<QuoteRequest> {
+  return apiFetch<QuoteRequest>('/quote-requests', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function getMyQuoteRequests(token: string): Promise<QuoteRequest[]> {
+  return apiFetch<QuoteRequest[]>('/quote-requests', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function getQuoteRequest(id: string, token: string): Promise<QuoteRequest> {
+  return apiFetch<QuoteRequest>(`/quote-requests/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function getOpenQuoteRequests(token: string): Promise<QuoteRequest[]> {
+  return apiFetch<QuoteRequest[]>('/quote-requests/open', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function respondToQuoteRequest(
+  id: string,
+  input: CreateQuoteResponseInput,
+  token: string,
+): Promise<QuoteRequest> {
+  return apiFetch<QuoteRequest>(`/quote-requests/${id}/respond`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function acceptQuoteResponse(
+  requestId: string,
+  responseId: string,
+  token: string,
+): Promise<QuoteRequest> {
+  return apiFetch<QuoteRequest>(`/quote-requests/${requestId}/accept/${responseId}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

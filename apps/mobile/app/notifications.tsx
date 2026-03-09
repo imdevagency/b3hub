@@ -11,29 +11,42 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
-  ArrowLeft, BellOff, CheckCheck,
-  Package, CheckCircle2, Truck, XCircle,
-  Briefcase, Award, Banknote, FileText, Bell,
+  ArrowLeft,
+  BellOff,
+  CheckCheck,
+  Package,
+  CheckCircle2,
+  Truck,
+  XCircle,
+  Briefcase,
+  Award,
+  Banknote,
+  FileText,
+  Bell,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiNotification } from '@/lib/api';
 
 type LucideIcon = React.ComponentType<{ size?: number; color?: string }>;
-interface TypeInfo { Icon: LucideIcon; bg: string; iconColor: string }
+interface TypeInfo {
+  Icon: LucideIcon;
+  bg: string;
+  iconColor: string;
+}
 
 const TYPE_INFO: Record<string, TypeInfo> = {
-  ORDER_PLACED:     { Icon: Package,      bg: '#fff7ed', iconColor: '#c2410c' },
-  ORDER_CONFIRMED:  { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#16a34a' },
-  ORDER_SHIPPED:    { Icon: Truck,        bg: '#eff6ff', iconColor: '#1d4ed8' },
-  ORDER_DELIVERED:  { Icon: CheckCircle2, bg: '#dcfce7', iconColor: '#15803d' },
-  ORDER_CANCELLED:  { Icon: XCircle,      bg: '#fef2f2', iconColor: '#dc2626' },
-  JOB_AVAILABLE:    { Icon: Briefcase,    bg: '#f5f3ff', iconColor: '#6d28d9' },
-  JOB_ACCEPTED:     { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#059669' },
-  JOB_COMPLETED:    { Icon: Award,        bg: '#fffbeb', iconColor: '#d97706' },
-  PAYMENT_RECEIVED: { Icon: Banknote,     bg: '#f0fdf4', iconColor: '#16a34a' },
-  INVOICE_ISSUED:   { Icon: FileText,     bg: '#f8fafc', iconColor: '#475569' },
-  SYSTEM:           { Icon: Bell,         bg: '#f3f4f6', iconColor: '#6b7280' },
+  ORDER_PLACED: { Icon: Package, bg: '#fff7ed', iconColor: '#c2410c' },
+  ORDER_CONFIRMED: { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#16a34a' },
+  ORDER_SHIPPED: { Icon: Truck, bg: '#eff6ff', iconColor: '#1d4ed8' },
+  ORDER_DELIVERED: { Icon: CheckCircle2, bg: '#dcfce7', iconColor: '#15803d' },
+  ORDER_CANCELLED: { Icon: XCircle, bg: '#fef2f2', iconColor: '#dc2626' },
+  JOB_AVAILABLE: { Icon: Briefcase, bg: '#f5f3ff', iconColor: '#6d28d9' },
+  JOB_ACCEPTED: { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#059669' },
+  JOB_COMPLETED: { Icon: Award, bg: '#fffbeb', iconColor: '#d97706' },
+  PAYMENT_RECEIVED: { Icon: Banknote, bg: '#f0fdf4', iconColor: '#16a34a' },
+  INVOICE_ISSUED: { Icon: FileText, bg: '#f8fafc', iconColor: '#475569' },
+  SYSTEM: { Icon: Bell, bg: '#f3f4f6', iconColor: '#6b7280' },
 };
 const DEFAULT_TYPE_INFO: TypeInfo = { Icon: Bell, bg: '#f3f4f6', iconColor: '#6b7280' };
 

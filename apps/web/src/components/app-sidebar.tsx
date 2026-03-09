@@ -13,6 +13,7 @@ import {
   LayoutGrid,
   LogOut,
   MapPin,
+  MessageSquare,
   Package,
   Receipt,
   Settings,
@@ -58,6 +59,7 @@ const ROLE_NAV: Record<Mode, NavItem[]> = {
     { label: 'Materiālu Katalogs', href: '/dashboard/catalog', icon: Package },
     { label: 'Grozs', href: '/dashboard/checkout', icon: ShoppingCart },
     { label: 'Mani Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
+    { label: 'Cenu Pieprasījumi', href: '/dashboard/quote-requests', icon: MessageSquare },
     { label: 'Rēķini', href: '/dashboard/invoices', icon: Receipt },
     { label: 'Pasūtīt', href: '/dashboard/order', icon: LayoutGrid },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
@@ -66,6 +68,7 @@ const ROLE_NAV: Record<Mode, NavItem[]> = {
     { label: 'Informācijas Panelis', href: '/dashboard/supplier', icon: LayoutDashboard },
     { label: 'Mani Materiāli', href: '/dashboard/materials', icon: Package },
     { label: 'Ienākošie Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
+    { label: 'Pieprasījumu Tirgus', href: '/dashboard/quote-requests/open', icon: MessageSquare },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
   CARRIER: [

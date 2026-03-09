@@ -46,16 +46,16 @@ const CATEGORIES = Object.keys(CATEGORY_LABELS) as MaterialCategory[];
 const UNITS = Object.keys(UNIT_LABELS) as MaterialUnit[];
 
 const CATEGORY_COLOR: Record<MaterialCategory, { bg: string; color: string }> = {
-  SAND:              { bg: '#fef9c3', color: '#a16207' },
-  GRAVEL:            { bg: '#f1f5f9', color: '#475569' },
-  STONE:             { bg: '#f1f5f9', color: '#374151' },
-  CONCRETE:          { bg: '#f4f4f5', color: '#52525b' },
-  SOIL:              { bg: '#f0fdf4', color: '#15803d' },
+  SAND: { bg: '#fef9c3', color: '#a16207' },
+  GRAVEL: { bg: '#f1f5f9', color: '#475569' },
+  STONE: { bg: '#f1f5f9', color: '#374151' },
+  CONCRETE: { bg: '#f4f4f5', color: '#52525b' },
+  SOIL: { bg: '#f0fdf4', color: '#15803d' },
   RECYCLED_CONCRETE: { bg: '#ecfdf5', color: '#059669' },
-  RECYCLED_SOIL:     { bg: '#f0fdf4', color: '#16a34a' },
-  ASPHALT:           { bg: '#f1f5f9', color: '#1e293b' },
-  CLAY:              { bg: '#fff7ed', color: '#c2410c' },
-  OTHER:             { bg: '#f3f4f6', color: '#6b7280' },
+  RECYCLED_SOIL: { bg: '#f0fdf4', color: '#16a34a' },
+  ASPHALT: { bg: '#f1f5f9', color: '#1e293b' },
+  CLAY: { bg: '#fff7ed', color: '#c2410c' },
+  OTHER: { bg: '#f3f4f6', color: '#6b7280' },
 };
 
 // ── Types ──────────────────────────────────────────────────────
@@ -96,7 +96,12 @@ function ListingCard({
   return (
     <View style={s.card}>
       <View style={s.cardHeader}>
-        <View style={[s.cardIconCircle, { backgroundColor: CATEGORY_COLOR[material.category]?.bg ?? '#f3f4f6' }]}>
+        <View
+          style={[
+            s.cardIconCircle,
+            { backgroundColor: CATEGORY_COLOR[material.category]?.bg ?? '#f3f4f6' },
+          ]}
+        >
           <PackageSearch size={16} color={CATEGORY_COLOR[material.category]?.color ?? '#6b7280'} />
         </View>
         <View style={{ flex: 1, gap: 2 }}>

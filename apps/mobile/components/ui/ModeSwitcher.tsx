@@ -1,12 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Modal,
-  Pressable,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ShoppingCart, Store, Truck, ChevronDown, Check } from 'lucide-react-native';
 import { useMode, AppMode, MODE_HOME } from '@/lib/mode-context';
@@ -16,7 +9,14 @@ import { t } from '@/lib/translations';
 
 const MODE_CONFIG: Record<
   AppMode,
-  { label: string; sub: string; iconBg: string; iconColor: string; pillBg: string; pillText: string }
+  {
+    label: string;
+    sub: string;
+    iconBg: string;
+    iconColor: string;
+    pillBg: string;
+    pillText: string;
+  }
 > = {
   buyer: {
     label: t.mode.buyer,
@@ -239,4 +239,3 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
-

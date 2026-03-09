@@ -14,16 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiOrder } from '@/lib/api';
-import {
-  Clock,
-  CheckCircle2,
-  Package,
-  X,
-  Square,
-  MapPin,
-  Check,
-  Inbox,
-} from 'lucide-react-native';
+import { Clock, CheckCircle2, Package, X, Square, MapPin, Check, Inbox } from 'lucide-react-native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type OrderStatus = 'PENDING' | 'CONFIRMED' | 'LOADING' | 'DISPATCHED';
@@ -394,7 +385,9 @@ export default function IncomingScreen() {
         <Text style={styles.headerTitle}>{t.incoming.title}</Text>
         {pendingCount > 0 && (
           <View style={styles.pendingBadge}>
-            <Text style={styles.pendingBadgeText}>{pendingCount} jaun{pendingCount === 1 ? 's' : 'i'}</Text>
+            <Text style={styles.pendingBadgeText}>
+              {pendingCount} jaun{pendingCount === 1 ? 's' : 'i'}
+            </Text>
           </View>
         )}
       </View>
@@ -406,7 +399,8 @@ export default function IncomingScreen() {
         contentContainerStyle={styles.filterRow}
       >
         {STATUS_FILTERS.map((f) => {
-          const count = f.key === 'ALL' ? orders.length : orders.filter((o) => o.status === f.key).length;
+          const count =
+            f.key === 'ALL' ? orders.length : orders.filter((o) => o.status === f.key).length;
           return (
             <TouchableOpacity
               key={f.key}
@@ -414,12 +408,27 @@ export default function IncomingScreen() {
               onPress={() => setFilterStatus(f.key)}
               activeOpacity={0.75}
             >
-              <Text style={[styles.filterChipText, filterStatus === f.key && styles.filterChipTextActive]}>
+              <Text
+                style={[
+                  styles.filterChipText,
+                  filterStatus === f.key && styles.filterChipTextActive,
+                ]}
+              >
                 {f.label}
               </Text>
               {count > 0 && (
-                <View style={[styles.filterChipCount, filterStatus === f.key && styles.filterChipCountActive]}>
-                  <Text style={[styles.filterChipCountText, filterStatus === f.key && styles.filterChipCountTextActive]}>
+                <View
+                  style={[
+                    styles.filterChipCount,
+                    filterStatus === f.key && styles.filterChipCountActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipCountText,
+                      filterStatus === f.key && styles.filterChipCountTextActive,
+                    ]}
+                  >
                     {count}
                   </Text>
                 </View>

@@ -134,8 +134,16 @@ export default function LoginScreen() {
                     onChangeText={onChange}
                     onBlur={onBlur}
                   />
-                  <TouchableOpacity style={s.eyeBtn} onPress={() => setShowPw((v) => !v)} hitSlop={8}>
-                    {showPw ? <EyeOff size={18} color="#9ca3af" /> : <Eye size={18} color="#9ca3af" />}
+                  <TouchableOpacity
+                    style={s.eyeBtn}
+                    onPress={() => setShowPw((v) => !v)}
+                    hitSlop={8}
+                  >
+                    {showPw ? (
+                      <EyeOff size={18} color="#9ca3af" />
+                    ) : (
+                      <Eye size={18} color="#9ca3af" />
+                    )}
                   </TouchableOpacity>
                 </View>
               )}

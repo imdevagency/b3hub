@@ -282,8 +282,16 @@ export default function RegisterScreen() {
                     onChangeText={onChange}
                     onBlur={onBlur}
                   />
-                  <TouchableOpacity style={s.eyeBtn} onPress={() => setShowPw((v) => !v)} hitSlop={8}>
-                    {showPw ? <EyeOff size={18} color="#9ca3af" /> : <Eye size={18} color="#9ca3af" />}
+                  <TouchableOpacity
+                    style={s.eyeBtn}
+                    onPress={() => setShowPw((v) => !v)}
+                    hitSlop={8}
+                  >
+                    {showPw ? (
+                      <EyeOff size={18} color="#9ca3af" />
+                    ) : (
+                      <Eye size={18} color="#9ca3af" />
+                    )}
                   </TouchableOpacity>
                 </View>
               )}
@@ -308,8 +316,16 @@ export default function RegisterScreen() {
                     onChangeText={onChange}
                     onBlur={onBlur}
                   />
-                  <TouchableOpacity style={s.eyeBtn} onPress={() => setShowConfirmPw((v) => !v)} hitSlop={8}>
-                    {showConfirmPw ? <EyeOff size={18} color="#9ca3af" /> : <Eye size={18} color="#9ca3af" />}
+                  <TouchableOpacity
+                    style={s.eyeBtn}
+                    onPress={() => setShowConfirmPw((v) => !v)}
+                    hitSlop={8}
+                  >
+                    {showConfirmPw ? (
+                      <EyeOff size={18} color="#9ca3af" />
+                    ) : (
+                      <Eye size={18} color="#9ca3af" />
+                    )}
                   </TouchableOpacity>
                 </View>
               )}

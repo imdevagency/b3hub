@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import {
   RefreshCw,
@@ -11,10 +12,25 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  List,
+  Map,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
 import { getAllTransportJobs, type ApiTransportJob } from '@/lib/api';
+
+const FleetMap = dynamic(
+  () => import('@/components/fleet-map').then((m) => ({ default: m.FleetMap })),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="rounded-2xl border border-slate-200 bg-slate-100 animate-pulse"
+        style={{ height: 520 }}
+      />
+    ),
+  },
+);
 
 // ── Status config ─────────────────────────────────────────────
 
@@ -143,6 +159,7 @@ export default function FleetPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
@@ -221,6 +238,32 @@ export default function FleetPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex rounded-lg border border-input overflow-hidden">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-background text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              <List className="h-3.5 w-3.5" />
+              Saraksts
+            </button>
+            <button
+              onClick={() => setViewMode('map')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-l border-input ${
+                viewMode === 'map'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-background text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              <Map className="h-3.5 w-3.5" />
+              Karte
+            </button>
+          </div>
+
           <Button
             variant="outline"
             size="sm"
@@ -279,45 +322,50 @@ export default function FleetPage() {
         ))}
       </div>
 
-      {/* Filter + search */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex gap-1 flex-wrap">
-          {STATUS_FILTERS.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setStatusFilter(f.key)}
-              className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                statusFilter === f.key
-                  ? 'bg-red-600 text-white'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/70'
-              }`}
-            >
-              {f.label}
-              {f.key !== 'ALL' && (
-                <span className="ml-1.5 opacity-70">
-                  {f.key === 'ACTIVE'
-                    ? stats.active
-                    : f.key === 'AVAILABLE'
-                      ? stats.available
-                      : f.key === 'DELIVERED'
-                        ? jobs.filter((j) => j.status === 'DELIVERED').length
-                        : jobs.filter((j) => j.status === 'CANCELLED').length}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-        <input
-          type="text"
-          placeholder="Meklēt pēc maršruta, šofera, kravas..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="ml-auto h-8 rounded-md border border-input bg-background px-3 text-xs focus:outline-none focus:ring-2 focus:ring-ring w-64"
-        />
-      </div>
+      {/* Map view */}
+      {viewMode === 'map' && <FleetMap jobs={jobs} />}
 
-      {/* Jobs table */}
-      {error ? (
+      {/* Filter + search — list mode only */}
+      {viewMode === 'list' && (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex gap-1 flex-wrap">
+            {STATUS_FILTERS.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setStatusFilter(f.key)}
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                  statusFilter === f.key
+                    ? 'bg-red-600 text-white'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/70'
+                }`}
+              >
+                {f.label}
+                {f.key !== 'ALL' && (
+                  <span className="ml-1.5 opacity-70">
+                    {f.key === 'ACTIVE'
+                      ? stats.active
+                      : f.key === 'AVAILABLE'
+                        ? stats.available
+                        : f.key === 'DELIVERED'
+                          ? jobs.filter((j) => j.status === 'DELIVERED').length
+                          : jobs.filter((j) => j.status === 'CANCELLED').length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+          <input
+            type="text"
+            placeholder="Meklēt pēc maršruta, šofera, kravas..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="ml-auto h-8 rounded-md border border-input bg-background px-3 text-xs focus:outline-none focus:ring-2 focus:ring-ring w-64"
+          />
+        </div>
+      )}
+
+      {/* Jobs table — list mode only */}
+      {viewMode === 'list' && (error ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
           <AlertCircle className="mx-auto mb-2 h-8 w-8 text-red-400" />
           <p className="text-sm font-medium text-red-700">{error}</p>
@@ -432,7 +480,7 @@ export default function FleetPage() {
             {filtered.length} no {jobs.length} darb{jobs.length === 1 ? 'a' : 'iem'}
           </div>
         </div>
-      )}
+      ))}
     </div>
   );
 }
