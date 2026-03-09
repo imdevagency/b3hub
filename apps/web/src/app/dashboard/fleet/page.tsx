@@ -365,122 +365,123 @@ export default function FleetPage() {
       )}
 
       {/* Jobs table — list mode only */}
-      {viewMode === 'list' && (error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
-          <AlertCircle className="mx-auto mb-2 h-8 w-8 text-red-400" />
-          <p className="text-sm font-medium text-red-700">{error}</p>
-          <Button variant="outline" size="sm" className="mt-3" onClick={fetchJobs}>
-            Mēģināt vēlreiz
-          </Button>
-        </div>
-      ) : loading && jobs.length === 0 ? (
-        <div className="flex h-40 items-center justify-center">
-          <div className="h-7 w-7 animate-spin rounded-full border-b-2 border-red-600" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed p-12 text-center">
-          <Truck className="mx-auto mb-3 h-10 w-10 text-muted-foreground/25" />
-          <p className="text-sm font-medium text-muted-foreground">Darbi nav atrasti</p>
-          <p className="mt-1 text-xs text-muted-foreground/60">
-            Izmainiet filtrus vai izveidojiet jaunu darbu Job Board lapā.
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-auto rounded-xl border border-border/50">
-          <table className="min-w-full text-sm">
-            <thead className="bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 text-left">Darba nr.</th>
-                <th className="px-4 py-3 text-left">Veids</th>
-                <th className="px-4 py-3 text-left">Maršruts</th>
-                <th className="px-4 py-3 text-left">Krava</th>
-                <th className="px-4 py-3 text-left">Šoferis / Transports</th>
-                <th className="px-4 py-3 text-left">Datums</th>
-                <th className="px-4 py-3 text-left">Statuss</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/40">
-              {filtered.map((job) => (
-                <tr key={job.id} className="bg-background hover:bg-muted/20 transition-colors">
-                  {/* Job number */}
-                  <td className="px-4 py-3 font-mono text-xs font-semibold text-muted-foreground">
-                    {job.jobNumber}
-                  </td>
-
-                  {/* Job type */}
-                  <td className="px-4 py-3">
-                    <span className="text-xs">{JOB_TYPE_LV[job.jobType] ?? job.jobType}</span>
-                  </td>
-
-                  {/* Route */}
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1.5 font-medium">
-                      <span>{job.pickupCity}</span>
-                      <span className="text-muted-foreground">→</span>
-                      <span>{job.deliveryCity}</span>
-                    </div>
-                    {job.distanceKm && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{job.distanceKm} km</p>
-                    )}
-                  </td>
-
-                  {/* Cargo */}
-                  <td className="px-4 py-3">
-                    <p className="font-medium">{job.cargoType}</p>
-                    {job.cargoWeight && (
-                      <p className="text-xs text-muted-foreground">{job.cargoWeight} t</p>
-                    )}
-                  </td>
-
-                  {/* Driver + vehicle */}
-                  <td className="px-4 py-3">
-                    {job.driver ? (
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <User className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="font-medium text-xs">
-                            {job.driver.firstName} {job.driver.lastName}
-                          </span>
-                        </div>
-                        {job.vehicle && (
-                          <p className="text-xs text-muted-foreground mt-0.5 ml-5">
-                            {VEHICLE_LV[job.vehicle.vehicleType] ?? job.vehicle.vehicleType}
-                            {' · '}
-                            {job.vehicle.licensePlate}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => router.push('/dashboard/jobs')}
-                        className="text-xs font-medium text-amber-600 hover:text-amber-700 hover:underline"
-                      >
-                        + Piešķirt šoferi
-                      </button>
-                    )}
-                  </td>
-
-                  {/* Pickup date */}
-                  <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {formatDate(job.pickupDate)}
-                    {job.pickupWindow && <p className="text-xs">{job.pickupWindow}</p>}
-                  </td>
-
-                  {/* Status */}
-                  <td className="px-4 py-3">
-                    <StatusBadge status={job.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* Table footer */}
-          <div className="border-t bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
-            {filtered.length} no {jobs.length} darb{jobs.length === 1 ? 'a' : 'iem'}
+      {viewMode === 'list' &&
+        (error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+            <AlertCircle className="mx-auto mb-2 h-8 w-8 text-red-400" />
+            <p className="text-sm font-medium text-red-700">{error}</p>
+            <Button variant="outline" size="sm" className="mt-3" onClick={fetchJobs}>
+              Mēģināt vēlreiz
+            </Button>
           </div>
-        </div>
-      ))}
+        ) : loading && jobs.length === 0 ? (
+          <div className="flex h-40 items-center justify-center">
+            <div className="h-7 w-7 animate-spin rounded-full border-b-2 border-red-600" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="rounded-xl border border-dashed p-12 text-center">
+            <Truck className="mx-auto mb-3 h-10 w-10 text-muted-foreground/25" />
+            <p className="text-sm font-medium text-muted-foreground">Darbi nav atrasti</p>
+            <p className="mt-1 text-xs text-muted-foreground/60">
+              Izmainiet filtrus vai izveidojiet jaunu darbu Job Board lapā.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-auto rounded-xl border border-border/50">
+            <table className="min-w-full text-sm">
+              <thead className="bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3 text-left">Darba nr.</th>
+                  <th className="px-4 py-3 text-left">Veids</th>
+                  <th className="px-4 py-3 text-left">Maršruts</th>
+                  <th className="px-4 py-3 text-left">Krava</th>
+                  <th className="px-4 py-3 text-left">Šoferis / Transports</th>
+                  <th className="px-4 py-3 text-left">Datums</th>
+                  <th className="px-4 py-3 text-left">Statuss</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/40">
+                {filtered.map((job) => (
+                  <tr key={job.id} className="bg-background hover:bg-muted/20 transition-colors">
+                    {/* Job number */}
+                    <td className="px-4 py-3 font-mono text-xs font-semibold text-muted-foreground">
+                      {job.jobNumber}
+                    </td>
+
+                    {/* Job type */}
+                    <td className="px-4 py-3">
+                      <span className="text-xs">{JOB_TYPE_LV[job.jobType] ?? job.jobType}</span>
+                    </td>
+
+                    {/* Route */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5 font-medium">
+                        <span>{job.pickupCity}</span>
+                        <span className="text-muted-foreground">→</span>
+                        <span>{job.deliveryCity}</span>
+                      </div>
+                      {job.distanceKm && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{job.distanceKm} km</p>
+                      )}
+                    </td>
+
+                    {/* Cargo */}
+                    <td className="px-4 py-3">
+                      <p className="font-medium">{job.cargoType}</p>
+                      {job.cargoWeight && (
+                        <p className="text-xs text-muted-foreground">{job.cargoWeight} t</p>
+                      )}
+                    </td>
+
+                    {/* Driver + vehicle */}
+                    <td className="px-4 py-3">
+                      {job.driver ? (
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <User className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="font-medium text-xs">
+                              {job.driver.firstName} {job.driver.lastName}
+                            </span>
+                          </div>
+                          {job.vehicle && (
+                            <p className="text-xs text-muted-foreground mt-0.5 ml-5">
+                              {VEHICLE_LV[job.vehicle.vehicleType] ?? job.vehicle.vehicleType}
+                              {' · '}
+                              {job.vehicle.licensePlate}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => router.push('/dashboard/jobs')}
+                          className="text-xs font-medium text-amber-600 hover:text-amber-700 hover:underline"
+                        >
+                          + Piešķirt šoferi
+                        </button>
+                      )}
+                    </td>
+
+                    {/* Pickup date */}
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {formatDate(job.pickupDate)}
+                      {job.pickupWindow && <p className="text-xs">{job.pickupWindow}</p>}
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-4 py-3">
+                      <StatusBadge status={job.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Table footer */}
+            <div className="border-t bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
+              {filtered.length} no {jobs.length} darb{jobs.length === 1 ? 'a' : 'iem'}
+            </div>
+          </div>
+        ))}
     </div>
   );
 }

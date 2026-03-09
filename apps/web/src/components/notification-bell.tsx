@@ -109,9 +109,7 @@ export function NotificationBell() {
     try {
       await markNotificationRead(id, token);
       setCount((c) => Math.max(0, c - 1));
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
-      );
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
     } catch {
       // ignore
     }

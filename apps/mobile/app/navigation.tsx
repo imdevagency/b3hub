@@ -81,6 +81,9 @@ export default function NavigationScreen() {
 }
 
 function NavigationScreenNative() {
+  // _NavigationView is guaranteed non-null here (checked in parent)
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const NavView = _NavigationView!;
   const router = useRouter();
   const params = useLocalSearchParams<{
     pickupLat?: string;
@@ -187,7 +190,7 @@ function NavigationScreenNative() {
     // Wire listeners before starting
     setOnNavigationReady(() => startNav());
     setOnArrival(() => handleArrival());
-    setOnRemainingTimeOrDistanceChanged((data) => {
+    setOnRemainingTimeOrDistanceChanged((data: any) => {
       if (!mounted) return;
       const mins = Math.round((data.seconds ?? 0) / 60);
       setEta(mins > 0 ? `${mins} min` : '');
@@ -223,7 +226,7 @@ function NavigationScreenNative() {
   return (
     <View style={StyleSheet.absoluteFillObject}>
       {/* Full-screen Google Navigation View */}
-      <_NavigationView
+      <NavView
         style={StyleSheet.absoluteFillObject}
         onNavigationViewControllerCreated={(vc: NavigationViewController) => {
           navViewControllerRef.current = vc;

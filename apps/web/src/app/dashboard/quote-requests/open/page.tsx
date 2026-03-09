@@ -133,9 +133,7 @@ function RespondPanel({ request, token, onClose, onResponded }: RespondPanelProp
           {/* Price + unit */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">
-                Cena (EUR) *
-              </label>
+              <label className="text-xs font-medium text-slate-600 block mb-1">Cena (EUR) *</label>
               <input
                 type="number"
                 min={0.01}
@@ -257,9 +255,7 @@ function OpenRequestCard({ request, onRespond }: OpenRequestCardProps) {
             {request.deliveryAddress}, {request.deliveryCity}
           </div>
 
-          {request.notes && (
-            <p className="text-xs text-slate-500 mt-1 italic">"{request.notes}"</p>
-          )}
+          {request.notes && <p className="text-xs text-slate-500 mt-1 italic">"{request.notes}"</p>}
 
           <p className="text-[11px] text-muted-foreground/60 mt-2">
             Pieprasīts {fmtDate(request.createdAt)}

@@ -22,7 +22,16 @@ import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { api, ApiTransportJob, ApiReturnTripJob } from '@/lib/api';
 import { JobRouteMap } from '@/components/ui/JobRouteMap';
-import { Map, Phone, CheckCircle2, Navigation2, Route, Truck, Camera, CheckCircle } from 'lucide-react-native';
+import {
+  Map,
+  Phone,
+  CheckCircle2,
+  Navigation2,
+  Route,
+  Truck,
+  Camera,
+  CheckCircle,
+} from 'lucide-react-native';
 
 // ── Status progression ────────────────────────────────────────────────────────
 const STATUS_STEPS = [
@@ -588,7 +597,11 @@ export default function ActiveJobScreen() {
             >
               {pickupPhotoUri ? (
                 <View style={styles.photoPreview}>
-                  <Image source={{ uri: pickupPhotoUri }} style={styles.photoThumb} resizeMode="cover" />
+                  <Image
+                    source={{ uri: pickupPhotoUri }}
+                    style={styles.photoThumb}
+                    resizeMode="cover"
+                  />
                   <View style={styles.photoCheck}>
                     <CheckCircle size={14} color="#16a34a" />
                     <Text style={styles.photoCheckText}>Foto uzņemts</Text>

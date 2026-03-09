@@ -33,7 +33,8 @@ const SLIDES: Slide[] = [
     circleBg: '#fed7aa',
     tag: 'MATERIĀLI',
     title: 'Celtniecības materiāli\npiegādāti uz objektu',
-    subtitle: 'Smiltis, grants, šķembas un desmitiem citu materiālu — pasūti ar dažiem pieskārieniem.',
+    subtitle:
+      'Smiltis, grants, šķembas un desmitiem citu materiālu — pasūti ar dažiem pieskārieniem.',
   },
   {
     key: 'container',
@@ -49,7 +50,8 @@ const SLIDES: Slide[] = [
     circleBg: '#bfdbfe',
     tag: 'PĀRVADĀJUMI',
     title: 'Uzticami kravas\npārvadājumi ar GPS',
-    subtitle: 'Reāllaika izsekošana, automātisks svara protokols un atgriešanās braucienu plānošana.',
+    subtitle:
+      'Reāllaika izsekošana, automātisks svara protokols un atgriešanās braucienu plānošana.',
   },
 ];
 
@@ -58,13 +60,7 @@ function Dots({ active, count }: { active: number; count: number }) {
   return (
     <View style={s.dotsRow}>
       {Array.from({ length: count }).map((_, i) => (
-        <View
-          key={i}
-          style={[
-            s.dot,
-            i === active ? s.dotActive : s.dotInactive,
-          ]}
-        />
+        <View key={i} style={[s.dot, i === active ? s.dotActive : s.dotInactive]} />
       ))}
     </View>
   );
@@ -103,10 +99,9 @@ export default function WelcomeScreen() {
   const listRef = useRef<FlatList>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
 
-  const onScroll = Animated.event(
-    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-    { useNativeDriver: false },
-  );
+  const onScroll = Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
+    useNativeDriver: false,
+  });
 
   const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const idx = Math.round(e.nativeEvent.contentOffset.x / W);
@@ -167,14 +162,8 @@ export default function WelcomeScreen() {
       <View style={s.footer}>
         <Dots active={activeIdx} count={SLIDES.length} />
 
-        <TouchableOpacity
-          style={s.primaryBtn}
-          activeOpacity={0.85}
-          onPress={goNext}
-        >
-          <Text style={s.primaryBtnText}>
-            {isLast ? 'Sākt — tas ir bezmaksas' : 'Tālāk'}
-          </Text>
+        <TouchableOpacity style={s.primaryBtn} activeOpacity={0.85} onPress={goNext}>
+          <Text style={s.primaryBtnText}>{isLast ? 'Sākt — tas ir bezmaksas' : 'Tālāk'}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -182,7 +171,9 @@ export default function WelcomeScreen() {
           activeOpacity={0.8}
           onPress={() => router.push('/(auth)/login')}
         >
-          <Text style={s.secondaryBtnText}>Jau ir konts? <Text style={s.secondaryBtnLink}>Pierakstīties</Text></Text>
+          <Text style={s.secondaryBtnText}>
+            Jau ir konts? <Text style={s.secondaryBtnLink}>Pierakstīties</Text>
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity

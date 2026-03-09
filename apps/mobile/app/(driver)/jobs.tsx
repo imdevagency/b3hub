@@ -660,9 +660,7 @@ function JobMapView({
               onSelected={() => onJobSelect(job)}
             >
               <View style={[mapStyles.pin, { backgroundColor: color }]}>
-                <Text style={mapStyles.pinPrice}>
-                  {job.priceTotal.toFixed(0)}€
-                </Text>
+                <Text style={mapStyles.pinPrice}>{job.priceTotal.toFixed(0)}€</Text>
               </View>
               <MapboxGL.Callout title="" />
             </MapboxGL.PointAnnotation>
@@ -672,14 +670,23 @@ function JobMapView({
 
       {/* Radius chips overlay */}
       <View style={mapStyles.radiusOverlay}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={mapStyles.radiusChipsRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={mapStyles.radiusChipsRow}
+        >
           {RADIUS_OPTIONS.map((r) => (
             <TouchableOpacity
               key={r}
               style={[mapStyles.radiusChip, mapRadius === r && mapStyles.radiusChipActive]}
               onPress={() => onRadiusChange(r)}
             >
-              <Text style={[mapStyles.radiusChipText, mapRadius === r && mapStyles.radiusChipTextActive]}>
+              <Text
+                style={[
+                  mapStyles.radiusChipText,
+                  mapRadius === r && mapStyles.radiusChipTextActive,
+                ]}
+              >
                 {r} km
               </Text>
             </TouchableOpacity>
@@ -761,7 +768,8 @@ export default function JobsScreen() {
   // Load online status on mount
   useEffect(() => {
     if (!token) return;
-    api.driverSchedule.getStatus(token)
+    api.driverSchedule
+      .getStatus(token)
       .then((s) => setIsOnline(s.isOnline))
       .catch(() => setIsOnline(false));
   }, [token]);
@@ -820,7 +828,9 @@ export default function JobsScreen() {
         },
       );
     })();
-    return () => { sub?.remove(); };
+    return () => {
+      sub?.remove();
+    };
   }, [viewMode]);
 
   const filteredJobs = filterJobs(allJobs, activeFilter);
@@ -926,15 +936,14 @@ export default function JobsScreen() {
             onPress={handleToggleOnline}
             disabled={togglingOnline || isOnline === null}
           >
-            <View style={[
-              styles.onlineDot,
-              isOnline === true && styles.onlineDotActive,
-              isOnline === false && styles.onlineDotOffline,
-            ]} />
-            <Text style={[
-              styles.onlinePillText,
-              isOnline === true && styles.onlinePillTextActive,
-            ]}>
+            <View
+              style={[
+                styles.onlineDot,
+                isOnline === true && styles.onlineDotActive,
+                isOnline === false && styles.onlineDotOffline,
+              ]}
+            />
+            <Text style={[styles.onlinePillText, isOnline === true && styles.onlinePillTextActive]}>
               {togglingOnline ? '...' : isOnline === true ? 'Tiešsaistē' : 'Bezsaistē'}
             </Text>
           </TouchableOpacity>
@@ -947,7 +956,9 @@ export default function JobsScreen() {
               onPress={() => setViewMode('list')}
             >
               <List size={14} color={viewMode === 'list' ? '#ffffff' : '#9ca3af'} />
-              <Text style={[styles.viewToggleText, viewMode === 'list' && styles.viewToggleTextActive]}>
+              <Text
+                style={[styles.viewToggleText, viewMode === 'list' && styles.viewToggleTextActive]}
+              >
                 Saraksts
               </Text>
             </TouchableOpacity>
@@ -956,7 +967,9 @@ export default function JobsScreen() {
               onPress={() => setViewMode('map')}
             >
               <Map size={14} color={viewMode === 'map' ? '#ffffff' : '#9ca3af'} />
-              <Text style={[styles.viewToggleText, viewMode === 'map' && styles.viewToggleTextActive]}>
+              <Text
+                style={[styles.viewToggleText, viewMode === 'map' && styles.viewToggleTextActive]}
+              >
                 Karte
               </Text>
             </TouchableOpacity>
@@ -977,15 +990,19 @@ export default function JobsScreen() {
           )}
         </View>
       </View>
-
       {/* Offline banner */}
       {isOnline === false && (
-        <TouchableOpacity style={styles.offlineBanner} onPress={handleToggleOnline} activeOpacity={0.85}>
-          <Text style={styles.offlineBannerText}>⚫ Jūs esat bezsaistē — darbi nav redzami pieņemšanai</Text>
+        <TouchableOpacity
+          style={styles.offlineBanner}
+          onPress={handleToggleOnline}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.offlineBannerText}>
+            ⚫ Jūs esat bezsaistē — darbi nav redzami pieņemšanai
+          </Text>
           <Text style={styles.offlineBannerCta}>Iet tiešsaistē →</Text>
         </TouchableOpacity>
       )}
-
       {/* Map view */}
       {viewMode === 'map' ? (
         <JobMapView
@@ -997,68 +1014,68 @@ export default function JobsScreen() {
           onJobSelect={setAcceptSheetJob}
         />
       ) : (
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#dc2626" />
-        }
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Collapsible search panel */}
-        <Animated.View
-          style={[
-            styles.panelWrapper,
-            {
-              maxHeight: panelAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 700] }),
-              opacity: panelAnim,
-            },
-          ]}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#dc2626" />
+          }
+          keyboardShouldPersistTaps="handled"
         >
-          <SearchPanel
-            draft={draft}
-            onChange={setDraft}
-            savedSearches={savedSearches}
-            onApply={handleApply}
-            onReset={handleReset}
-            onSaveSearch={handleSaveSearch}
-            onApplySaved={handleApplySaved}
-            onDeleteSaved={(id) => setSavedSearches((prev) => prev.filter((s) => s.id !== id))}
-          />
-        </Animated.View>
+          {/* Collapsible search panel */}
+          <Animated.View
+            style={[
+              styles.panelWrapper,
+              {
+                maxHeight: panelAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 700] }),
+                opacity: panelAnim,
+              },
+            ]}
+          >
+            <SearchPanel
+              draft={draft}
+              onChange={setDraft}
+              savedSearches={savedSearches}
+              onApply={handleApply}
+              onReset={handleReset}
+              onSaveSearch={handleSaveSearch}
+              onApplySaved={handleApplySaved}
+              onDeleteSaved={(id) => setSavedSearches((prev) => prev.filter((s) => s.id !== id))}
+            />
+          </Animated.View>
 
-        {/* Active filter pill */}
-        {activeFilter && !panelOpen && (
-          <ActiveFilterPill filter={activeFilter} onClear={handleReset} />
-        )}
+          {/* Active filter pill */}
+          {activeFilter && !panelOpen && (
+            <ActiveFilterPill filter={activeFilter} onClear={handleReset} />
+          )}
 
-        {/* Results header */}
-        <View style={styles.resultsHeader}>
-          <Text style={styles.resultsCount}>{t.jobSearch.results(filteredJobs.length)}</Text>
-          <Text style={styles.sortLabel}>
-            {t.jobSearch.sortNewest} {'↓'}
-          </Text>
-        </View>
-
-        {/* Job list */}
-        {filteredJobs.length === 0 ? (
-          <View style={styles.empty}>
-            <Search size={44} color="#d1d5db" />
-            <Text style={styles.emptyTitle}>{t.jobs.empty}</Text>
-            <Text style={styles.emptyDesc}>{t.jobs.emptyDesc}</Text>
-            <TouchableOpacity style={styles.emptyResetBtn} onPress={handleReset}>
-              <Text style={styles.emptyResetBtnText}>{t.jobSearch.resetFilter}</Text>
-            </TouchableOpacity>
+          {/* Results header */}
+          <View style={styles.resultsHeader}>
+            <Text style={styles.resultsCount}>{t.jobSearch.results(filteredJobs.length)}</Text>
+            <Text style={styles.sortLabel}>
+              {t.jobSearch.sortNewest} {'↓'}
+            </Text>
           </View>
-        ) : (
-          <View style={styles.list}>
-            {filteredJobs.map((job) => (
-              <JobCard key={job.id} job={job} onAccept={handleAcceptPressed} />
-            ))}
-          </View>
-        )}
-      </ScrollView>
-      )} {/* end map/list conditional */}
 
+          {/* Job list */}
+          {filteredJobs.length === 0 ? (
+            <View style={styles.empty}>
+              <Search size={44} color="#d1d5db" />
+              <Text style={styles.emptyTitle}>{t.jobs.empty}</Text>
+              <Text style={styles.emptyDesc}>{t.jobs.emptyDesc}</Text>
+              <TouchableOpacity style={styles.emptyResetBtn} onPress={handleReset}>
+                <Text style={styles.emptyResetBtnText}>{t.jobSearch.resetFilter}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.list}>
+              {filteredJobs.map((job) => (
+                <JobCard key={job.id} job={job} onAccept={handleAcceptPressed} />
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      )}{' '}
+      {/* end map/list conditional */}
       {/* Save-search modal */}
       <SaveSearchModal
         visible={saveModalVisible}
@@ -1066,7 +1083,6 @@ export default function JobsScreen() {
         onSave={handleConfirmSave}
         onClose={() => setSaveModalVisible(false)}
       />
-
       {/* Accept bottom sheet */}
       {acceptSheetJob && (
         <AcceptBottomSheet
@@ -1081,7 +1097,6 @@ export default function JobsScreen() {
           onClose={() => setAcceptSheetJob(null)}
         />
       )}
-
       {/* How It Works modal removed — tukšbrauciens lives in active.tsx */}
     </SafeAreaView>
   );

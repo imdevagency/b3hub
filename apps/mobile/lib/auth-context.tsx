@@ -13,9 +13,7 @@ async function registerForPushNotifications(): Promise<string | null> {
   if (!Device.isDevice) return null; // Expo Go simulator — skip
   const { status: existing } = await Notifications.getPermissionsAsync();
   const finalStatus =
-    existing === 'granted'
-      ? existing
-      : (await Notifications.requestPermissionsAsync()).status;
+    existing === 'granted' ? existing : (await Notifications.requestPermissionsAsync()).status;
   if (finalStatus !== 'granted') return null;
 
   if (Platform.OS === 'android') {

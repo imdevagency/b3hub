@@ -257,7 +257,7 @@ function ListingModal({
                 onPress={() => set('category')(cat)}
               >
                 <Text style={[s.chipText, form.category === cat && s.chipTextActive]}>
-                  {CATEGORY_ICON[cat]} {CATEGORY_LABELS[cat]}
+                  {CATEGORY_LABELS[cat]}
                 </Text>
               </TouchableOpacity>
             ))}

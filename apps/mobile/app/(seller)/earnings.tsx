@@ -51,7 +51,14 @@ type Period = 'today' | 'week' | 'month';
 
 // ── Helpers ────────────────────────────────────────────────────
 
-const REVENUE_STATUSES = ['CONFIRMED', 'PROCESSING', 'IN_PROGRESS', 'SHIPPED', 'DELIVERED', 'COMPLETED'];
+const REVENUE_STATUSES = [
+  'CONFIRMED',
+  'PROCESSING',
+  'IN_PROGRESS',
+  'SHIPPED',
+  'DELIVERED',
+  'COMPLETED',
+];
 const PENDING_STATUSES = ['PENDING'];
 
 function computeRevenue(orders: ApiOrder[]): { stats: RevenueStats; entries: OrderEntry[] } {
@@ -61,7 +68,10 @@ function computeRevenue(orders: ApiOrder[]): { stats: RevenueStats; entries: Ord
   weekStart.setDate(weekStart.getDate() - weekStart.getDay());
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  let todayRevenue = 0, weekRevenue = 0, monthRevenue = 0, pendingRevenue = 0;
+  let todayRevenue = 0,
+    weekRevenue = 0,
+    monthRevenue = 0,
+    pendingRevenue = 0;
   const entries: OrderEntry[] = [];
 
   for (const order of orders) {
@@ -80,7 +90,8 @@ function computeRevenue(orders: ApiOrder[]): { stats: RevenueStats; entries: Ord
           : 'Pircējs',
         date: d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' }),
         amount,
-        status: order.status === 'DELIVERED' || order.status === 'COMPLETED' ? 'delivered' : 'confirmed',
+        status:
+          order.status === 'DELIVERED' || order.status === 'COMPLETED' ? 'delivered' : 'confirmed',
       });
     } else if (PENDING_STATUSES.includes(order.status)) {
       pendingRevenue += amount;
@@ -98,9 +109,10 @@ function computeRevenue(orders: ApiOrder[]): { stats: RevenueStats; entries: Ord
   }
 
   const confirmedOrders = orders.filter((o) => REVENUE_STATUSES.includes(o.status));
-  const avgOrderValue = confirmedOrders.length > 0
-    ? confirmedOrders.reduce((s, o) => s + (o.total ?? 0), 0) / confirmedOrders.length
-    : 0;
+  const avgOrderValue =
+    confirmedOrders.length > 0
+      ? confirmedOrders.reduce((s, o) => s + (o.total ?? 0), 0) / confirmedOrders.length
+      : 0;
 
   return {
     stats: {
@@ -132,41 +144,51 @@ export default function SellerEarningsScreen() {
   });
   const [entries, setEntries] = useState<OrderEntry[]>([]);
 
-  const load = useCallback(async (silent = false) => {
-    if (!token) return;
-    if (!silent) setLoading(true);
-    try {
-      const orders = await api.orders.myOrders(token);
-      const { stats: s, entries: e } = computeRevenue(orders);
-      setStats(s);
-      setEntries(e);
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [token]);
+  const load = useCallback(
+    async (silent = false) => {
+      if (!token) return;
+      if (!silent) setLoading(true);
+      try {
+        const orders = await api.orders.myOrders(token);
+        const { stats: s, entries: e } = computeRevenue(orders);
+        setStats(s);
+        setEntries(e);
+      } catch {
+        // silent
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [token],
+  );
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  const onRefresh = () => { setRefreshing(true); load(true); };
+  const onRefresh = () => {
+    setRefreshing(true);
+    load(true);
+  };
 
   const heroAmount =
-    period === 'today' ? stats.todayRevenue :
-    period === 'week'  ? stats.weekRevenue  :
-                         stats.monthRevenue;
+    period === 'today'
+      ? stats.todayRevenue
+      : period === 'week'
+        ? stats.weekRevenue
+        : stats.monthRevenue;
 
   const PERIODS: { key: Period; label: string }[] = [
     { key: 'today', label: 'Šodien' },
-    { key: 'week',  label: 'Šonedēļ' },
+    { key: 'week', label: 'Šonedēļ' },
     { key: 'month', label: 'Šomēnes' },
   ];
 
   const STATUS_STYLE: Record<OrderEntry['status'], { bg: string; color: string; label: string }> = {
     delivered: { bg: '#dcfce7', color: '#15803d', label: 'Piegādāts' },
     confirmed: { bg: '#dbeafe', color: '#1d4ed8', label: 'Apstiprin.' },
-    pending:   { bg: '#fef3c7', color: '#d97706', label: 'Gaida' },
+    pending: { bg: '#fef3c7', color: '#d97706', label: 'Gaida' },
   };
 
   if (loading) {
@@ -218,7 +240,9 @@ export default function SellerEarningsScreen() {
               <View style={[s.cardIcon, { backgroundColor: '#fef3c7' }]}>
                 <Clock size={18} color="#d97706" />
               </View>
-              <Text style={[s.cardVal, { color: '#92400e' }]}>€{stats.pendingRevenue.toFixed(0)}</Text>
+              <Text style={[s.cardVal, { color: '#92400e' }]}>
+                €{stats.pendingRevenue.toFixed(0)}
+              </Text>
               <Text style={[s.cardLabel, { color: '#a16207' }]}>Gaida apstiprin.</Text>
             </View>
             <View style={s.card}>
@@ -242,9 +266,10 @@ export default function SellerEarningsScreen() {
                 style={[
                   s.trendFill,
                   {
-                    width: stats.monthRevenue > 0
-                      ? `${Math.min(100, (stats.monthRevenue / Math.max(stats.weekRevenue * 4, stats.monthRevenue)) * 100)}%` as any
-                      : '0%',
+                    width:
+                      stats.monthRevenue > 0
+                        ? (`${Math.min(100, (stats.monthRevenue / Math.max(stats.weekRevenue * 4, stats.monthRevenue)) * 100)}%` as any)
+                        : '0%',
                   },
                 ]}
               />
@@ -267,20 +292,26 @@ export default function SellerEarningsScreen() {
                     <View key={e.id}>
                       <View style={s.entryRow}>
                         <View style={[s.entryDot, { backgroundColor: meta.bg }]}>
-                          {e.status === 'delivered'
-                            ? <CheckCircle2 size={13} color={meta.color} />
-                            : e.status === 'confirmed'
-                            ? <Package size={13} color={meta.color} />
-                            : <Clock size={13} color={meta.color} />}
+                          {e.status === 'delivered' ? (
+                            <CheckCircle2 size={13} color={meta.color} />
+                          ) : e.status === 'confirmed' ? (
+                            <Package size={13} color={meta.color} />
+                          ) : (
+                            <Clock size={13} color={meta.color} />
+                          )}
                         </View>
                         <View style={s.entryBody}>
                           <Text style={s.entryBuyer}>{e.buyerName}</Text>
-                          <Text style={s.entryMeta}>#{e.orderNumber} · {e.date}</Text>
+                          <Text style={s.entryMeta}>
+                            #{e.orderNumber} · {e.date}
+                          </Text>
                         </View>
                         <View style={s.entryRight}>
                           <Text style={s.entryAmount}>€{e.amount}</Text>
                           <View style={[s.entryBadge, { backgroundColor: meta.bg }]}>
-                            <Text style={[s.entryBadgeText, { color: meta.color }]}>{meta.label}</Text>
+                            <Text style={[s.entryBadgeText, { color: meta.color }]}>
+                              {meta.label}
+                            </Text>
                           </View>
                         </View>
                       </View>
@@ -337,7 +368,13 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
-  cardIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  cardIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cardVal: { fontSize: 18, fontWeight: '800', color: '#111827' },
   cardLabel: { fontSize: 10, color: '#9ca3af', fontWeight: '500', textAlign: 'center' },
 

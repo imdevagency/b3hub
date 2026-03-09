@@ -137,7 +137,8 @@ export default function OrderDetailScreen() {
           // ETA — only when en-route to delivery
           if (
             (liveJob.status === 'EN_ROUTE_DELIVERY' || liveJob.status === 'AT_DELIVERY') &&
-            data.deliveryLat != null && data.deliveryLng != null
+            data.deliveryLat != null &&
+            data.deliveryLng != null
           ) {
             const R = 6371;
             const dLat = ((data.deliveryLat - loc.lat) * Math.PI) / 180;
@@ -145,13 +146,15 @@ export default function OrderDetailScreen() {
             const a =
               Math.sin(dLat / 2) ** 2 +
               Math.cos((loc.lat * Math.PI) / 180) *
-              Math.cos((data.deliveryLat * Math.PI) / 180) *
-              Math.sin(dLng / 2) ** 2;
+                Math.cos((data.deliveryLat * Math.PI) / 180) *
+                Math.sin(dLng / 2) ** 2;
             const distKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             setEtaMinutes(Math.max(1, Math.round(distKm / 0.6)));
           }
         }
-      } catch { /* silent — don’t disrupt buyer UX */ }
+      } catch {
+        /* silent — don’t disrupt buyer UX */
+      }
     };
 
     poll();
@@ -240,8 +243,7 @@ export default function OrderDetailScreen() {
 
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         {/* Live driver tracking map */}
-        {activeJob && driverLoc &&
-          jobLoc?.pickupLat != null && jobLoc.deliveryLat != null && (
+        {activeJob && driverLoc && jobLoc?.pickupLat != null && jobLoc.deliveryLat != null && (
           <View style={s.trackingCard}>
             <View style={s.trackingHeader}>
               <Truck size={14} color="#dc2626" />
@@ -405,7 +407,7 @@ export default function OrderDetailScreen() {
               }
               activeOpacity={0.85}
             >
-              <Text style={s.reorderBtnText}>🔁  Pasūtīt vēlreiz</Text>
+              <Text style={s.reorderBtnText}>🔁 Pasūtīt vēlreiz</Text>
             </TouchableOpacity>
           )}
 

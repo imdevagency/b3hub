@@ -1,7 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, RefreshCw, MessageSquare, CheckCircle2, Clock, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Plus,
+  RefreshCw,
+  MessageSquare,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
 import {
@@ -74,7 +83,11 @@ const STATUS_CFG: Record<
 };
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('lv-LV', { day: '2-digit', month: 'short', year: 'numeric' });
+  return new Date(iso).toLocaleDateString('lv-LV', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 function fmtEur(n: number) {
@@ -83,7 +96,18 @@ function fmtEur(n: number) {
 
 // ── New RFQ modal ─────────────────────────────────────────────────────────────
 
-const CATEGORIES: MaterialCategory[] = ['SAND', 'GRAVEL', 'STONE', 'CONCRETE', 'SOIL', 'RECYCLED_CONCRETE', 'RECYCLED_SOIL', 'ASPHALT', 'CLAY', 'OTHER'];
+const CATEGORIES: MaterialCategory[] = [
+  'SAND',
+  'GRAVEL',
+  'STONE',
+  'CONCRETE',
+  'SOIL',
+  'RECYCLED_CONCRETE',
+  'RECYCLED_SOIL',
+  'ASPHALT',
+  'CLAY',
+  'OTHER',
+];
 const UNITS: MaterialUnit[] = ['TONNE', 'M3', 'PIECE', 'LOAD'];
 
 interface NewRfqModalProps {
@@ -131,7 +155,12 @@ function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-base font-semibold">Jauns Cenu Pieprasījums</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-lg leading-none">×</button>
+          <button
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground text-lg leading-none"
+          >
+            ×
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -145,12 +174,16 @@ function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{CATEGORY_LV[c]}</option>
+                  <option key={c} value={c}>
+                    {CATEGORY_LV[c]}
+                  </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">Materiāla nosaukums *</label>
+              <label className="text-xs font-medium text-slate-600 block mb-1">
+                Materiāla nosaukums *
+              </label>
               <input
                 value={form.materialName}
                 onChange={(e) => set('materialName', e.target.value)}
@@ -181,7 +214,9 @@ function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 {UNITS.map((u) => (
-                  <option key={u} value={u}>{UNIT_LV[u]} ({u})</option>
+                  <option key={u} value={u}>
+                    {UNIT_LV[u]} ({u})
+                  </option>
                 ))}
               </select>
             </div>
@@ -190,7 +225,9 @@ function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
           {/* Delivery */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">Piegādes adrese *</label>
+              <label className="text-xs font-medium text-slate-600 block mb-1">
+                Piegādes adrese *
+              </label>
               <input
                 value={form.deliveryAddress}
                 onChange={(e) => set('deliveryAddress', e.target.value)}
@@ -224,7 +261,9 @@ function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" type="button" onClick={onClose}>Atcelt</Button>
+            <Button variant="outline" type="button" onClick={onClose}>
+              Atcelt
+            </Button>
             <Button type="submit" disabled={saving}>
               {saving ? 'Sūta...' : 'Nosūtīt Pieprasījumu'}
             </Button>
@@ -394,7 +433,9 @@ export default function QuoteRequestsPage() {
     }
   }, [token]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const handleCreated = (r: QuoteRequest) => {
     setShowModal(false);
@@ -441,7 +482,11 @@ export default function QuoteRequestsPage() {
           {[
             { label: 'Kopā', value: requests.length, color: 'text-slate-700' },
             { label: 'Aktīvie', value: pending, color: 'text-amber-600' },
-            { label: 'Pieņemtie', value: requests.filter((r) => r.status === 'ACCEPTED').length, color: 'text-green-600' },
+            {
+              label: 'Pieņemtie',
+              value: requests.filter((r) => r.status === 'ACCEPTED').length,
+              color: 'text-green-600',
+            },
           ].map((s) => (
             <div key={s.label} className="rounded-xl border bg-white p-4">
               <p className="text-xs text-muted-foreground">{s.label}</p>
@@ -485,11 +530,7 @@ export default function QuoteRequestsPage() {
 
       {/* New RFQ modal */}
       {showModal && token && (
-        <NewRfqModal
-          token={token}
-          onClose={() => setShowModal(false)}
-          onCreated={handleCreated}
-        />
+        <NewRfqModal token={token} onClose={() => setShowModal(false)} onCreated={handleCreated} />
       )}
     </div>
   );

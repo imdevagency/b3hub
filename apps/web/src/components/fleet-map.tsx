@@ -10,16 +10,16 @@ const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
 
 // Pin color by status
 const STATUS_PIN: Record<string, string> = {
-  AVAILABLE: '#f59e0b',     // amber
-  ASSIGNED: '#6366f1',      // indigo
-  ACCEPTED: '#3b82f6',      // blue
+  AVAILABLE: '#f59e0b', // amber
+  ASSIGNED: '#6366f1', // indigo
+  ACCEPTED: '#3b82f6', // blue
   EN_ROUTE_PICKUP: '#f97316', // orange
-  AT_PICKUP: '#ec4899',     // pink
-  LOADED: '#8b5cf6',        // violet
+  AT_PICKUP: '#ec4899', // pink
+  LOADED: '#8b5cf6', // violet
   EN_ROUTE_DELIVERY: '#22c55e', // green
-  AT_DELIVERY: '#10b981',   // emerald
-  DELIVERED: '#94a3b8',     // slate
-  CANCELLED: '#ef4444',     // red
+  AT_DELIVERY: '#10b981', // emerald
+  DELIVERED: '#94a3b8', // slate
+  CANCELLED: '#ef4444', // red
 };
 
 const STATUS_LV: Record<string, string> = {
@@ -64,10 +64,11 @@ export function FleetMap({ jobs }: FleetMapProps) {
   const mapRef = useRef<any>(null);
 
   const mappable = useMemo(
-    () => jobs.map((j) => ({ job: j, coord: jobCoord(j) })).filter((x) => x.coord !== null) as {
-      job: ApiTransportJob;
-      coord: { lat: number; lng: number };
-    }[],
+    () =>
+      jobs.map((j) => ({ job: j, coord: jobCoord(j) })).filter((x) => x.coord !== null) as {
+        job: ApiTransportJob;
+        coord: { lat: number; lng: number };
+      }[],
     [jobs],
   );
 
@@ -104,9 +105,7 @@ export function FleetMap({ jobs }: FleetMapProps) {
   if (mappable.length === 0) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center h-96">
-        <p className="text-sm text-muted-foreground">
-          Nav darbu ar koordinātām kartē
-        </p>
+        <p className="text-sm text-muted-foreground">Nav darbu ar koordinātām kartē</p>
       </div>
     );
   }
@@ -154,52 +153,53 @@ export function FleetMap({ jobs }: FleetMapProps) {
           </Marker>
         ))}
 
-        {selected && (() => {
-          const coord = jobCoord(selected);
-          if (!coord) return null;
-          return (
-            <Popup
-              longitude={coord.lng}
-              latitude={coord.lat}
-              anchor="bottom"
-              onClose={() => setSelected(null)}
-              closeOnClick={false}
-              maxWidth="240px"
-            >
-              <div className="p-1 space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: STATUS_PIN[selected.status] ?? '#64748b' }}
-                  />
-                  <p className="text-xs font-bold text-slate-800 leading-tight">
-                    {selected.jobNumber}
+        {selected &&
+          (() => {
+            const coord = jobCoord(selected);
+            if (!coord) return null;
+            return (
+              <Popup
+                longitude={coord.lng}
+                latitude={coord.lat}
+                anchor="bottom"
+                onClose={() => setSelected(null)}
+                closeOnClick={false}
+                maxWidth="240px"
+              >
+                <div className="p-1 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: STATUS_PIN[selected.status] ?? '#64748b' }}
+                    />
+                    <p className="text-xs font-bold text-slate-800 leading-tight">
+                      {selected.jobNumber}
+                    </p>
+                  </div>
+                  <p className="text-xs text-slate-600">
+                    {STATUS_LV[selected.status] ?? selected.status}
                   </p>
+                  <p className="text-xs text-slate-500 leading-snug">
+                    {selected.pickupCity} → {selected.deliveryCity}
+                  </p>
+                  {selected.driver && (
+                    <p className="text-xs text-slate-500">
+                      🧑 {selected.driver.firstName} {selected.driver.lastName}
+                    </p>
+                  )}
+                  {selected.cargoWeight && (
+                    <p className="text-xs text-slate-500">📦 {selected.cargoWeight} t</p>
+                  )}
+                  <button
+                    onClick={() => router.push(`/dashboard/orders/${selected.id}`)}
+                    className="mt-1 w-full rounded-md bg-red-600 text-white text-xs font-semibold py-1.5 hover:bg-red-700 transition-colors"
+                  >
+                    Skatīt Detaļas →
+                  </button>
                 </div>
-                <p className="text-xs text-slate-600">
-                  {STATUS_LV[selected.status] ?? selected.status}
-                </p>
-                <p className="text-xs text-slate-500 leading-snug">
-                  {selected.pickupCity} → {selected.deliveryCity}
-                </p>
-                {selected.driver && (
-                  <p className="text-xs text-slate-500">
-                    🧑 {selected.driver.firstName} {selected.driver.lastName}
-                  </p>
-                )}
-                {selected.cargoWeight && (
-                  <p className="text-xs text-slate-500">📦 {selected.cargoWeight} t</p>
-                )}
-                <button
-                  onClick={() => router.push(`/dashboard/orders/${selected.id}`)}
-                  className="mt-1 w-full rounded-md bg-red-600 text-white text-xs font-semibold py-1.5 hover:bg-red-700 transition-colors"
-                >
-                  Skatīt Detaļas →
-                </button>
-              </div>
-            </Popup>
-          );
-        })()}
+              </Popup>
+            );
+          })()}
       </Map>
 
       {/* Legend */}
@@ -208,15 +208,17 @@ export function FleetMap({ jobs }: FleetMapProps) {
           Statuss
         </p>
         <div className="space-y-1">
-          {(['EN_ROUTE_PICKUP', 'EN_ROUTE_DELIVERY', 'AT_PICKUP', 'AT_DELIVERY'] as const).map((s) => (
-            <div key={s} className="flex items-center gap-1.5">
-              <span
-                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: STATUS_PIN[s] }}
-              />
-              <span className="text-[10px] text-slate-600">{STATUS_LV[s]}</span>
-            </div>
-          ))}
+          {(['EN_ROUTE_PICKUP', 'EN_ROUTE_DELIVERY', 'AT_PICKUP', 'AT_DELIVERY'] as const).map(
+            (s) => (
+              <div key={s} className="flex items-center gap-1.5">
+                <span
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: STATUS_PIN[s] }}
+                />
+                <span className="text-[10px] text-slate-600">{STATUS_LV[s]}</span>
+              </div>
+            ),
+          )}
         </div>
       </div>
 

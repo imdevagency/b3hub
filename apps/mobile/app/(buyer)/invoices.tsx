@@ -47,23 +47,45 @@ function fmtEur(n: number): string {
   return `€${n.toFixed(2)}`;
 }
 
-const STATUS_META: Record<InvoiceStatus, { label: string; bg: string; color: string; icon: React.ReactNode }> = {
-  DRAFT:     { label: 'Melnraksts', bg: '#f3f4f6', color: '#6b7280',  icon: <FileText size={13} color="#6b7280" /> },
-  ISSUED:    { label: 'Izrakstīts', bg: '#dbeafe', color: '#1d4ed8',  icon: <Clock size={13} color="#1d4ed8" /> },
-  PAID:      { label: 'Apmaksāts',  bg: '#dcfce7', color: '#15803d',  icon: <CheckCircle2 size={13} color="#15803d" /> },
-  OVERDUE:   { label: 'Kavēts',     bg: '#fee2e2', color: '#b91c1c',  icon: <AlertCircle size={13} color="#b91c1c" /> },
-  CANCELLED: { label: 'Atcelts',    bg: '#f3f4f6', color: '#9ca3af',  icon: <X size={13} color="#9ca3af" /> },
+const STATUS_META: Record<
+  InvoiceStatus,
+  { label: string; bg: string; color: string; icon: React.ReactNode }
+> = {
+  DRAFT: {
+    label: 'Melnraksts',
+    bg: '#f3f4f6',
+    color: '#6b7280',
+    icon: <FileText size={13} color="#6b7280" />,
+  },
+  ISSUED: {
+    label: 'Izrakstīts',
+    bg: '#dbeafe',
+    color: '#1d4ed8',
+    icon: <Clock size={13} color="#1d4ed8" />,
+  },
+  PAID: {
+    label: 'Apmaksāts',
+    bg: '#dcfce7',
+    color: '#15803d',
+    icon: <CheckCircle2 size={13} color="#15803d" />,
+  },
+  OVERDUE: {
+    label: 'Kavēts',
+    bg: '#fee2e2',
+    color: '#b91c1c',
+    icon: <AlertCircle size={13} color="#b91c1c" />,
+  },
+  CANCELLED: {
+    label: 'Atcelts',
+    bg: '#f3f4f6',
+    color: '#9ca3af',
+    icon: <X size={13} color="#9ca3af" />,
+  },
 };
 
 // ── Invoice row ────────────────────────────────────────────────
 
-function InvoiceRow({
-  invoice,
-  onPress,
-}: {
-  invoice: ApiInvoice;
-  onPress: () => void;
-}) {
+function InvoiceRow({ invoice, onPress }: { invoice: ApiInvoice; onPress: () => void }) {
   const meta = STATUS_META[invoice.status];
   const overdue =
     invoice.status === 'OVERDUE' ||
@@ -78,11 +100,11 @@ function InvoiceRow({
       </View>
       <View style={s.rowBody}>
         <Text style={s.rowNum}>#{invoice.invoiceNumber}</Text>
-        {invoice.order && (
-          <Text style={s.rowOrder}>Pasūt. #{invoice.order.orderNumber}</Text>
-        )}
+        {invoice.order && <Text style={s.rowOrder}>Pasūt. #{invoice.order.orderNumber}</Text>}
         <Text style={s.rowDate}>
-          {invoice.dueDate ? `Termiņš: ${fmtDate(invoice.dueDate)}` : `Izrakstīts: ${fmtDate(invoice.issuedAt)}`}
+          {invoice.dueDate
+            ? `Termiņš: ${fmtDate(invoice.dueDate)}`
+            : `Izrakstīts: ${fmtDate(invoice.issuedAt)}`}
         </Text>
       </View>
       <View style={s.rowRight}>
@@ -121,9 +143,7 @@ function InvoiceModal({
           <View style={m.header}>
             <View>
               <Text style={m.title}>Rēķins #{invoice.invoiceNumber}</Text>
-              {invoice.order && (
-                <Text style={m.sub}>Pasūtījums #{invoice.order.orderNumber}</Text>
-              )}
+              {invoice.order && <Text style={m.sub}>Pasūtījums #{invoice.order.orderNumber}</Text>}
             </View>
             <TouchableOpacity style={m.closeBtn} onPress={onClose}>
               <X size={18} color="#6b7280" />
@@ -210,23 +230,31 @@ export default function InvoicesScreen() {
   // Filter
   const [filter, setFilter] = useState<InvoiceStatus | 'ALL'>('ALL');
 
-  const load = useCallback(async (silent = false) => {
-    if (!token) return;
-    if (!silent) setLoading(true);
-    try {
-      const data = await api.invoices.getAll(token);
-      setInvoices(data);
-    } catch {
-      // silent fail — show empty state
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [token]);
+  const load = useCallback(
+    async (silent = false) => {
+      if (!token) return;
+      if (!silent) setLoading(true);
+      try {
+        const data = await api.invoices.getAll(token);
+        setInvoices(data);
+      } catch {
+        // silent fail — show empty state
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [token],
+  );
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  const onRefresh = () => { setRefreshing(true); load(true); };
+  const onRefresh = () => {
+    setRefreshing(true);
+    load(true);
+  };
 
   const handlePay = async () => {
     if (!selected || !token) return;
@@ -244,10 +272,10 @@ export default function InvoicesScreen() {
   };
 
   const FILTERS: { key: InvoiceStatus | 'ALL'; label: string }[] = [
-    { key: 'ALL',      label: 'Visi' },
-    { key: 'ISSUED',   label: 'Gaida' },
-    { key: 'OVERDUE',  label: 'Kavēti' },
-    { key: 'PAID',     label: 'Apmaksāti' },
+    { key: 'ALL', label: 'Visi' },
+    { key: 'ISSUED', label: 'Gaida' },
+    { key: 'OVERDUE', label: 'Kavēti' },
+    { key: 'PAID', label: 'Apmaksāti' },
   ];
 
   const visible = filter === 'ALL' ? invoices : invoices.filter((i) => i.status === filter);
@@ -276,8 +304,8 @@ export default function InvoicesScreen() {
           {overdueCount > 0
             ? `${overdueCount} kavēts rēķins — ${fmtEur(totalOwed)} jāsamaksā`
             : invoices.length > 0
-            ? 'Visi rēķini kārtībā'
-            : 'Nav rēķinu'}
+              ? 'Visi rēķini kārtībā'
+              : 'Nav rēķinu'}
         </Text>
       </View>
 
@@ -304,7 +332,9 @@ export default function InvoicesScreen() {
         style={s.list}
         contentContainerStyle={s.listContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#dc2626" />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#dc2626" />
+        }
       >
         {visible.length === 0 ? (
           <View style={s.empty}>

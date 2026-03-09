@@ -32,7 +32,14 @@ type UserType = 'BUYER' | 'SUPPLIER' | 'CARRIER';
 // ── Constants ──────────────────────────────────────────────────
 const TOTAL_STEPS = 3;
 
-const ROLES: { value: UserType; emoji: string; title: string; desc: string; color: string; bg: string }[] = [
+const ROLES: {
+  value: UserType;
+  emoji: string;
+  title: string;
+  desc: string;
+  color: string;
+  bg: string;
+}[] = [
   {
     value: 'BUYER',
     emoji: '🛎️',
@@ -288,7 +295,9 @@ export default function RegisterScreen() {
       </View>
 
       <View style={s.field}>
-        <Text style={s.label}>Tālrunis <Text style={s.optional}>(neobligāts)</Text></Text>
+        <Text style={s.label}>
+          Tālrunis <Text style={s.optional}>(neobligāts)</Text>
+        </Text>
         <TextInput
           style={s.input}
           placeholder="+371 2X XXX XXX"
@@ -364,10 +373,8 @@ export default function RegisterScreen() {
       )}
 
       <Text style={s.legalText}>
-        Reģistrējoties, jūs piekrītat mūsu{' '}
-        <Text style={s.legalLink}>Lietošanas noteikumiem</Text>
-        {' '}un{' '}
-        <Text style={s.legalLink}>Privātuma politikai</Text>.
+        Reģistrējoties, jūs piekrītat mūsu <Text style={s.legalLink}>Lietošanas noteikumiem</Text>{' '}
+        un <Text style={s.legalLink}>Privātuma politikai</Text>.
       </Text>
     </>
   );
@@ -384,7 +391,9 @@ export default function RegisterScreen() {
           <TouchableOpacity style={s.backBtn} onPress={goBack} activeOpacity={0.7}>
             <ChevronLeft size={22} color="#374151" />
           </TouchableOpacity>
-          <Text style={s.headerLabel}>Solis {step} no {TOTAL_STEPS}</Text>
+          <Text style={s.headerLabel}>
+            Solis {step} no {TOTAL_STEPS}
+          </Text>
           <View style={{ width: 40 }} />
         </View>
         <ProgressBar step={step} />
@@ -422,7 +431,9 @@ export default function RegisterScreen() {
               onPress={() => router.replace('/(auth)/login')}
               activeOpacity={0.7}
             >
-              <Text style={s.signInText}>Jau ir konts? <Text style={s.signInLink}>Pierakstīties</Text></Text>
+              <Text style={s.signInText}>
+                Jau ir konts? <Text style={s.signInLink}>Pierakstīties</Text>
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -465,7 +476,12 @@ const s = StyleSheet.create({
     padding: 16,
     backgroundColor: '#fff',
   },
-  roleCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 },
+  roleCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 6,
+  },
   roleEmoji: { fontSize: 28 },
   checkBadge: {
     width: 20,
@@ -522,7 +538,13 @@ const s = StyleSheet.create({
     backgroundColor: '#fff',
   },
   inputRowErr: { borderColor: '#f87171' },
-  inputFlex: { flex: 1, paddingHorizontal: 16, paddingVertical: 14, fontSize: 15, color: '#111827' },
+  inputFlex: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: '#111827',
+  },
   eyeBtn: { paddingHorizontal: 14, paddingVertical: 14 },
 
   // Password strength
