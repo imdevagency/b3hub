@@ -714,6 +714,10 @@ export default function JobsScreen() {
   const { token } = useAuth();
   const router = useRouter();
 
+  // ── Online / Offline toggle ───────────────────────────────────
+  const [isOnline, setIsOnline] = useState<boolean | null>(null);
+  const [togglingOnline, setTogglingOnline] = useState(false);
+
   // ── View mode ─────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
@@ -753,6 +757,27 @@ export default function JobsScreen() {
       setRefreshing(false);
     }
   }, [token]);
+
+  // Load online status on mount
+  useEffect(() => {
+    if (!token) return;
+    api.driverSchedule.getStatus(token)
+      .then((s) => setIsOnline(s.isOnline))
+      .catch(() => setIsOnline(false));
+  }, [token]);
+
+  const handleToggleOnline = async () => {
+    if (!token || togglingOnline || isOnline === null) return;
+    setTogglingOnline(true);
+    try {
+      const res = await api.driverSchedule.toggleOnline(!isOnline, token);
+      setIsOnline(res.isOnline);
+    } catch (e) {
+      Alert.alert('Kļūda', 'Neizdevās mainīt statusu');
+    } finally {
+      setTogglingOnline(false);
+    }
+  };
 
   // Load jobs on mount
   useEffect(() => {
@@ -857,6 +882,13 @@ export default function JobsScreen() {
 
   const handleConfirmAccept = async () => {
     if (!acceptSheetJob || !token) return;
+    if (isOnline === false) {
+      Alert.alert('Bezsaistē', 'Lai pieņemtu darbu, jums jābūt tiešsaistē.', [
+        { text: 'Atcelt', style: 'cancel' },
+        { text: 'Iet tiešsaistē', onPress: handleToggleOnline },
+      ]);
+      return;
+    }
     const jobId = acceptSheetJob.id;
     setAcceptSheetJob(null);
     try {
@@ -882,7 +914,31 @@ export default function JobsScreen() {
     <SafeAreaView style={styles.container} edges={[]}>
       {/* Top bar */}
       <View style={styles.topBar}>
-        <Text style={styles.screenTitle}>{t.jobs.title}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Text style={styles.screenTitle}>{t.jobs.title}</Text>
+          {/* Online status pill */}
+          <TouchableOpacity
+            style={[
+              styles.onlinePill,
+              isOnline === true && styles.onlinePillActive,
+              isOnline === false && styles.onlinePillOffline,
+            ]}
+            onPress={handleToggleOnline}
+            disabled={togglingOnline || isOnline === null}
+          >
+            <View style={[
+              styles.onlineDot,
+              isOnline === true && styles.onlineDotActive,
+              isOnline === false && styles.onlineDotOffline,
+            ]} />
+            <Text style={[
+              styles.onlinePillText,
+              isOnline === true && styles.onlinePillTextActive,
+            ]}>
+              {togglingOnline ? '...' : isOnline === true ? 'Tiešsaistē' : 'Bezsaistē'}
+            </Text>
+          </TouchableOpacity>
+        </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           {/* Map / List toggle */}
           <View style={styles.viewToggle}>
@@ -921,6 +977,14 @@ export default function JobsScreen() {
           )}
         </View>
       </View>
+
+      {/* Offline banner */}
+      {isOnline === false && (
+        <TouchableOpacity style={styles.offlineBanner} onPress={handleToggleOnline} activeOpacity={0.85}>
+          <Text style={styles.offlineBannerText}>⚫ Jūs esat bezsaistē — darbi nav redzami pieņemšanai</Text>
+          <Text style={styles.offlineBannerCta}>Iet tiešsaistē →</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Map view */}
       {viewMode === 'map' ? (
@@ -1050,6 +1114,38 @@ const styles = StyleSheet.create({
   filterToggleText: { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
   filterToggleTextActive: { color: '#ffffff' },
   filterDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#fbbf24' },
+
+  // ── Online toggle ─────────────────────────────────────────────
+  onlinePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#374151',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#4b5563',
+  },
+  onlinePillActive: { backgroundColor: '#14532d', borderColor: '#16a34a' },
+  onlinePillOffline: { backgroundColor: '#374151', borderColor: '#4b5563' },
+  onlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#6b7280' },
+  onlineDotActive: { backgroundColor: '#22c55e' },
+  onlineDotOffline: { backgroundColor: '#6b7280' },
+  onlinePillText: { fontSize: 12, fontWeight: '700', color: '#9ca3af' },
+  onlinePillTextActive: { color: '#4ade80' },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#1c1917',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#292524',
+  },
+  offlineBannerText: { fontSize: 13, color: '#9ca3af', fontWeight: '500' },
+  offlineBannerCta: { fontSize: 13, fontWeight: '700', color: '#22c55e' },
 
   viewToggle: {
     flexDirection: 'row',

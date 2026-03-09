@@ -784,4 +784,20 @@ export const api = {
         { headers: { Authorization: `Bearer ${token}` } },
       ),
   },
+
+  driverSchedule: {
+    /** Returns the driver's current availability state including isOnline. */
+    getStatus: (token: string) =>
+      apiFetch<{ isOnline: boolean; effectiveOnline: boolean }>('/driver-schedule', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    /** Toggle online / offline. Returns updated { isOnline } state. */
+    toggleOnline: (isOnline: boolean, token: string) =>
+      apiFetch<{ isOnline: boolean }>('/driver-schedule/online', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ isOnline }),
+      }),
+  },
 };
