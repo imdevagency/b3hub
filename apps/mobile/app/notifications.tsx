@@ -10,24 +10,32 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, BellOff, CheckCheck } from 'lucide-react-native';
+import {
+  ArrowLeft, BellOff, CheckCheck,
+  Package, CheckCircle2, Truck, XCircle,
+  Briefcase, Award, Banknote, FileText, Bell,
+} from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiNotification } from '@/lib/api';
 
-const TYPE_ICON: Record<string, string> = {
-  ORDER_PLACED: '📦',
-  ORDER_CONFIRMED: '✅',
-  ORDER_SHIPPED: '🚚',
-  ORDER_DELIVERED: '🏁',
-  ORDER_CANCELLED: '❌',
-  JOB_AVAILABLE: '💼',
-  JOB_ACCEPTED: '🤝',
-  JOB_COMPLETED: '🏆',
-  PAYMENT_RECEIVED: '💶',
-  INVOICE_ISSUED: '🧾',
-  SYSTEM: '🔔',
+type LucideIcon = React.ComponentType<{ size?: number; color?: string }>;
+interface TypeInfo { Icon: LucideIcon; bg: string; iconColor: string }
+
+const TYPE_INFO: Record<string, TypeInfo> = {
+  ORDER_PLACED:     { Icon: Package,      bg: '#fff7ed', iconColor: '#c2410c' },
+  ORDER_CONFIRMED:  { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#16a34a' },
+  ORDER_SHIPPED:    { Icon: Truck,        bg: '#eff6ff', iconColor: '#1d4ed8' },
+  ORDER_DELIVERED:  { Icon: CheckCircle2, bg: '#dcfce7', iconColor: '#15803d' },
+  ORDER_CANCELLED:  { Icon: XCircle,      bg: '#fef2f2', iconColor: '#dc2626' },
+  JOB_AVAILABLE:    { Icon: Briefcase,    bg: '#f5f3ff', iconColor: '#6d28d9' },
+  JOB_ACCEPTED:     { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#059669' },
+  JOB_COMPLETED:    { Icon: Award,        bg: '#fffbeb', iconColor: '#d97706' },
+  PAYMENT_RECEIVED: { Icon: Banknote,     bg: '#f0fdf4', iconColor: '#16a34a' },
+  INVOICE_ISSUED:   { Icon: FileText,     bg: '#f8fafc', iconColor: '#475569' },
+  SYSTEM:           { Icon: Bell,         bg: '#f3f4f6', iconColor: '#6b7280' },
 };
+const DEFAULT_TYPE_INFO: TypeInfo = { Icon: Bell, bg: '#f3f4f6', iconColor: '#6b7280' };
 
 function timeAgo(iso: string): string {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -44,6 +52,7 @@ function NotifCard({
   notif: ApiNotification;
   onMarkRead: (id: string) => void;
 }) {
+  const { Icon, bg, iconColor } = TYPE_INFO[notif.type] ?? DEFAULT_TYPE_INFO;
   return (
     <TouchableOpacity
       style={[s.card, !notif.isRead && s.cardUnread]}
@@ -51,7 +60,9 @@ function NotifCard({
       activeOpacity={0.88}
     >
       <View style={s.iconWrap}>
-        <Text style={s.icon}>{TYPE_ICON[notif.type] ?? '🔔'}</Text>
+        <View style={[s.iconCircle, { backgroundColor: bg }]}>
+          <Icon size={20} color={iconColor} />
+        </View>
         {!notif.isRead && <View style={s.unreadDot} />}
       </View>
       <View style={{ flex: 1, gap: 2 }}>
@@ -132,9 +143,9 @@ export default function NotificationsScreen() {
         {unreadCount > 0 ? (
           <TouchableOpacity onPress={markAllRead} disabled={markingAll} hitSlop={12}>
             {markingAll ? (
-              <ActivityIndicator size="small" color="#6b7280" />
+              <ActivityIndicator size="small" color="#dc2626" />
             ) : (
-              <CheckCheck size={20} color="#3b82f6" />
+              <CheckCheck size={20} color="#dc2626" />
             )}
           </TouchableOpacity>
         ) : (
@@ -143,7 +154,7 @@ export default function NotificationsScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 48 }} size="large" color="#3b82f6" />
+        <ActivityIndicator style={{ marginTop: 48 }} size="large" color="#dc2626" />
       ) : (
         <ScrollView
           contentContainerStyle={s.list}
@@ -151,7 +162,7 @@ export default function NotificationsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => load(true)}
-              tintColor="#3b82f6"
+              tintColor="#dc2626"
             />
           }
         >
@@ -179,8 +190,11 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
   },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
   list: { padding: 16, gap: 10 },
@@ -198,12 +212,18 @@ const s = StyleSheet.create({
     elevation: 2,
   },
   cardUnread: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#fef9f9',
     borderLeftWidth: 3,
-    borderLeftColor: '#3b82f6',
+    borderLeftColor: '#dc2626',
   },
   iconWrap: { position: 'relative' },
-  icon: { fontSize: 28 },
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   unreadDot: {
     position: 'absolute',
     top: -2,
@@ -211,9 +231,9 @@ const s = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#dc2626',
     borderWidth: 1.5,
-    borderColor: '#eff6ff',
+    borderColor: '#fff',
   },
   cardTitle: { fontSize: 14, fontWeight: '700', color: '#111827' },
   cardMsg: { fontSize: 13, color: '#374151', lineHeight: 18 },

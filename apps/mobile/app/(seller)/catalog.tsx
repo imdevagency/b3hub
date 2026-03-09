@@ -45,17 +45,17 @@ const UNIT_LABELS: Record<MaterialUnit, string> = {
 const CATEGORIES = Object.keys(CATEGORY_LABELS) as MaterialCategory[];
 const UNITS = Object.keys(UNIT_LABELS) as MaterialUnit[];
 
-const CATEGORY_ICON: Record<MaterialCategory, string> = {
-  SAND: '🏜️',
-  GRAVEL: '🪨',
-  STONE: '🗿',
-  CONCRETE: '🧱',
-  SOIL: '🌱',
-  RECYCLED_CONCRETE: '♻️',
-  RECYCLED_SOIL: '🌿',
-  ASPHALT: '🛣️',
-  CLAY: '🟤',
-  OTHER: '📦',
+const CATEGORY_COLOR: Record<MaterialCategory, { bg: string; color: string }> = {
+  SAND:              { bg: '#fef9c3', color: '#a16207' },
+  GRAVEL:            { bg: '#f1f5f9', color: '#475569' },
+  STONE:             { bg: '#f1f5f9', color: '#374151' },
+  CONCRETE:          { bg: '#f4f4f5', color: '#52525b' },
+  SOIL:              { bg: '#f0fdf4', color: '#15803d' },
+  RECYCLED_CONCRETE: { bg: '#ecfdf5', color: '#059669' },
+  RECYCLED_SOIL:     { bg: '#f0fdf4', color: '#16a34a' },
+  ASPHALT:           { bg: '#f1f5f9', color: '#1e293b' },
+  CLAY:              { bg: '#fff7ed', color: '#c2410c' },
+  OTHER:             { bg: '#f3f4f6', color: '#6b7280' },
 };
 
 // ── Types ──────────────────────────────────────────────────────
@@ -96,7 +96,9 @@ function ListingCard({
   return (
     <View style={s.card}>
       <View style={s.cardHeader}>
-        <Text style={s.cardIcon}>{CATEGORY_ICON[material.category]}</Text>
+        <View style={[s.cardIconCircle, { backgroundColor: CATEGORY_COLOR[material.category]?.bg ?? '#f3f4f6' }]}>
+          <PackageSearch size={16} color={CATEGORY_COLOR[material.category]?.color ?? '#6b7280'} />
+        </View>
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={s.cardName} numberOfLines={1}>
             {material.name}
@@ -491,7 +493,13 @@ const s = StyleSheet.create({
     elevation: 2,
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  cardIcon: { fontSize: 24 },
+  cardIconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cardName: { fontSize: 15, fontWeight: '700', color: '#111827' },
   cardCategory: { fontSize: 12, color: '#6b7280' },
   stockBadge: {

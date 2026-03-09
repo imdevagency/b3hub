@@ -653,7 +653,7 @@ function JobCard({
           <Calendar size={14} color="#6b7280" />
           <View>
             <Text style={styles.metaValue}>{job.date}</Text>
-            <Text style={styles.metaSub}>{job.time} Uhr</Text>
+            <Text style={styles.metaSub}>{job.time}</Text>
           </View>
         </View>
         <View style={styles.metaItem}>
