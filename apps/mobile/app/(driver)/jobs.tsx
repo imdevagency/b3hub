@@ -19,6 +19,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
+import MapboxGL from '@rnmapbox/maps';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { api, ApiTransportJob } from '@/lib/api';
@@ -35,6 +37,8 @@ import {
   Route,
   CheckCircle2,
   ChevronRight,
+  Map,
+  List,
 } from 'lucide-react-native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -589,10 +593,135 @@ function JobCard({
   );
 }
 
+// ── Job Map View ─────────────────────────────────────────────────────────────
+function pinColor(distKm: number | null): string {
+  if (distKm === null) return '#6b7280';
+  if (distKm < 50) return '#16a34a';
+  if (distKm < 120) return '#f59e0b';
+  return '#dc2626';
+}
+
+interface JobMapViewProps {
+  jobs: TransportJob[];
+  driverLat: number | null;
+  driverLng: number | null;
+  mapRadius: number;
+  onRadiusChange: (r: number) => void;
+  onJobSelect: (job: TransportJob) => void;
+}
+
+function JobMapView({
+  jobs,
+  driverLat,
+  driverLng,
+  mapRadius,
+  onRadiusChange,
+  onJobSelect,
+}: JobMapViewProps) {
+  const centerLat = driverLat ?? 56.946;
+  const centerLng = driverLng ?? 24.105; // Riga default
+
+  const visibleJobs = jobs.filter((j) => {
+    if (driverLat === null || driverLng === null) return true;
+    return haversineKm(driverLat, driverLng, j.fromLat, j.fromLng) <= mapRadius;
+  });
+
+  return (
+    <View style={{ flex: 1 }}>
+      <MapboxGL.MapView
+        style={{ flex: 1 }}
+        styleURL={MapboxGL.StyleURL.Dark}
+        logoEnabled={false}
+        attributionEnabled={false}
+      >
+        <MapboxGL.Camera
+          centerCoordinate={[centerLng, centerLat]}
+          zoomLevel={driverLat ? 7 : 6}
+          animationDuration={500}
+        />
+
+        {/* Driver location dot */}
+        {driverLat !== null && driverLng !== null && (
+          <MapboxGL.UserLocation visible androidRenderMode="gps" />
+        )}
+
+        {/* Job pickup pins */}
+        {visibleJobs.map((job) => {
+          const distKm =
+            driverLat !== null && driverLng !== null
+              ? haversineKm(driverLat, driverLng, job.fromLat, job.fromLng)
+              : null;
+          const color = pinColor(distKm);
+          return (
+            <MapboxGL.PointAnnotation
+              key={job.id}
+              id={`pin-${job.id}`}
+              coordinate={[job.fromLng, job.fromLat]}
+              onSelected={() => onJobSelect(job)}
+            >
+              <View style={[mapStyles.pin, { backgroundColor: color }]}>
+                <Text style={mapStyles.pinPrice}>
+                  {job.priceTotal.toFixed(0)}€
+                </Text>
+              </View>
+              <MapboxGL.Callout title="" />
+            </MapboxGL.PointAnnotation>
+          );
+        })}
+      </MapboxGL.MapView>
+
+      {/* Radius chips overlay */}
+      <View style={mapStyles.radiusOverlay}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={mapStyles.radiusChipsRow}>
+          {RADIUS_OPTIONS.map((r) => (
+            <TouchableOpacity
+              key={r}
+              style={[mapStyles.radiusChip, mapRadius === r && mapStyles.radiusChipActive]}
+              onPress={() => onRadiusChange(r)}
+            >
+              <Text style={[mapStyles.radiusChipText, mapRadius === r && mapStyles.radiusChipTextActive]}>
+                {r} km
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Job count badge */}
+      <View style={mapStyles.countBadge}>
+        <Text style={mapStyles.countBadgeText}>{visibleJobs.length} darbi</Text>
+      </View>
+
+      {/* Legend */}
+      <View style={mapStyles.legend}>
+        {[
+          { color: '#16a34a', label: '<50 km' },
+          { color: '#f59e0b', label: '50–120 km' },
+          { color: '#dc2626', label: '>120 km' },
+        ].map((item) => (
+          <View key={item.label} style={mapStyles.legendItem}>
+            <View style={[mapStyles.legendDot, { backgroundColor: item.color }]} />
+            <Text style={mapStyles.legendText}>{item.label}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function JobsScreen() {
   const { token } = useAuth();
   const router = useRouter();
+
+  // ── View mode ─────────────────────────────────────────────────
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+
+  // ── Driver location (for map) ──────────────────────────────────
+  const [driverLat, setDriverLat] = useState<number | null>(null);
+  const [driverLng, setDriverLng] = useState<number | null>(null);
+  const [mapRadius, setMapRadius] = useState<number>(100);
+
   const [allJobs, setAllJobs] = useState<TransportJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<SearchFilter | null>(null);
@@ -650,6 +779,24 @@ export default function JobsScreen() {
       useNativeDriver: false,
     }).start();
   }, [panelOpen]);
+
+  // Driver GPS for map view
+  useEffect(() => {
+    if (viewMode !== 'map') return;
+    let sub: Location.LocationSubscription | null = null;
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+      sub = await Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.Balanced, distanceInterval: 50 },
+        (loc) => {
+          setDriverLat(loc.coords.latitude);
+          setDriverLng(loc.coords.longitude);
+        },
+      );
+    })();
+    return () => { sub?.remove(); };
+  }, [viewMode]);
 
   const filteredJobs = filterJobs(allJobs, activeFilter);
 
@@ -737,20 +884,55 @@ export default function JobsScreen() {
       <View style={styles.topBar}>
         <Text style={styles.screenTitle}>{t.jobs.title}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {/* Filter button */}
-          <TouchableOpacity
-            style={[styles.filterToggle, panelOpen && styles.filterToggleActive]}
-            onPress={togglePanel}
-          >
-            <Settings2 size={14} color={panelOpen ? '#ffffff' : '#9ca3af'} />
-            <Text style={[styles.filterToggleText, panelOpen && styles.filterToggleTextActive]}>
-              {t.jobSearch.filterTitle}
-            </Text>
-            {activeFilter && <View style={styles.filterDot} />}
-          </TouchableOpacity>
+          {/* Map / List toggle */}
+          <View style={styles.viewToggle}>
+            <TouchableOpacity
+              style={[styles.viewToggleBtn, viewMode === 'list' && styles.viewToggleBtnActive]}
+              onPress={() => setViewMode('list')}
+            >
+              <List size={14} color={viewMode === 'list' ? '#ffffff' : '#9ca3af'} />
+              <Text style={[styles.viewToggleText, viewMode === 'list' && styles.viewToggleTextActive]}>
+                Saraksts
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.viewToggleBtn, viewMode === 'map' && styles.viewToggleBtnActive]}
+              onPress={() => setViewMode('map')}
+            >
+              <Map size={14} color={viewMode === 'map' ? '#ffffff' : '#9ca3af'} />
+              <Text style={[styles.viewToggleText, viewMode === 'map' && styles.viewToggleTextActive]}>
+                Karte
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Filter button — list mode only */}
+          {viewMode === 'list' && (
+            <TouchableOpacity
+              style={[styles.filterToggle, panelOpen && styles.filterToggleActive]}
+              onPress={togglePanel}
+            >
+              <Settings2 size={14} color={panelOpen ? '#ffffff' : '#9ca3af'} />
+              <Text style={[styles.filterToggleText, panelOpen && styles.filterToggleTextActive]}>
+                {t.jobSearch.filterTitle}
+              </Text>
+              {activeFilter && <View style={styles.filterDot} />}
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
+      {/* Map view */}
+      {viewMode === 'map' ? (
+        <JobMapView
+          jobs={filteredJobs}
+          driverLat={driverLat}
+          driverLng={driverLng}
+          mapRadius={mapRadius}
+          onRadiusChange={setMapRadius}
+          onJobSelect={setAcceptSheetJob}
+        />
+      ) : (
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -811,6 +993,7 @@ export default function JobsScreen() {
           </View>
         )}
       </ScrollView>
+      )} {/* end map/list conditional */}
 
       {/* Save-search modal */}
       <SaveSearchModal
@@ -867,6 +1050,24 @@ const styles = StyleSheet.create({
   filterToggleText: { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
   filterToggleTextActive: { color: '#ffffff' },
   filterDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#fbbf24' },
+
+  viewToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#374151',
+    borderRadius: 20,
+    padding: 3,
+  },
+  viewToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 18,
+  },
+  viewToggleBtnActive: { backgroundColor: '#dc2626' },
+  viewToggleText: { fontSize: 12, fontWeight: '600', color: '#9ca3af' },
+  viewToggleTextActive: { color: '#ffffff' },
 
   scrollContent: { paddingBottom: 32 },
   panelWrapper: { overflow: 'hidden' },
@@ -1280,4 +1481,74 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   sheetAcceptBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+});
+
+// ── Map styles ────────────────────────────────────────────────────────────────
+const mapStyles = StyleSheet.create({
+  pin: {
+    minWidth: 52,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.4)',
+  },
+  pinPrice: { fontSize: 12, fontWeight: '800', color: '#ffffff' },
+
+  radiusOverlay: {
+    position: 'absolute',
+    bottom: 80,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 12,
+  },
+  radiusChipsRow: { flexDirection: 'row', gap: 8 },
+  radiusChip: {
+    backgroundColor: 'rgba(31,41,55,0.88)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#4b5563',
+  },
+  radiusChipActive: { backgroundColor: '#dc2626', borderColor: '#dc2626' },
+  radiusChipText: { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
+  radiusChipTextActive: { color: '#ffffff' },
+
+  countBadge: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    backgroundColor: 'rgba(31,41,55,0.88)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#4b5563',
+  },
+  countBadgeText: { fontSize: 13, fontWeight: '700', color: '#f9fafb' },
+
+  legend: {
+    position: 'absolute',
+    bottom: 16,
+    left: 14,
+    flexDirection: 'row',
+    gap: 12,
+    backgroundColor: 'rgba(31,41,55,0.88)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#4b5563',
+  },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  legendDot: { width: 10, height: 10, borderRadius: 5 },
+  legendText: { fontSize: 11, fontWeight: '600', color: '#d1d5db' },
 });
