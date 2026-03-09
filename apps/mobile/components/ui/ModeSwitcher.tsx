@@ -62,10 +62,13 @@ export function ModeSwitcher() {
   function handleSwitch(m: AppMode) {
     setOpen(false);
     if (m === mode) return;
-    // Short delay so sheet can close before navigation
+    // Short delay so sheet can close before navigation.
+    // Navigate to root '/' — index.tsx watches `mode` and redirects to the
+    // correct role home. This avoids "unmatched route" when replacing across
+    // different Tab group navigators (buyer ↔ seller ↔ driver).
     setTimeout(() => {
       setMode(m);
-      router.replace(MODE_HOME[m] as any);
+      router.replace('/' as any);
     }, 160);
   }
 

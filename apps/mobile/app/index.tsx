@@ -12,7 +12,12 @@ export default function Index() {
   useEffect(() => {
     if (isLoading) return;
     if (user) {
-      router.replace(MODE_HOME[mode] as any);
+      // Small timeout so any pending mode state update from ModeSwitcher
+      // has committed before we read it here.
+      const t = setTimeout(() => {
+        router.replace(MODE_HOME[mode] as any);
+      }, 50);
+      return () => clearTimeout(t);
     } else {
       router.replace('/(auth)/welcome');
     }
