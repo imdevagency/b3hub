@@ -5,7 +5,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
-import { FileText, Inbox, LayoutGrid, User } from 'lucide-react-native';
+import { FileText, Inbox, LayoutGrid, User, Wallet } from 'lucide-react-native';
 import { ModeSwitcher } from '@/components/ui/ModeSwitcher';
 import { t } from '@/lib/translations';
 
@@ -75,6 +75,13 @@ export default function SellerLayout() {
           options={{
             title: t.tabs.catalog,
             tabBarIcon: ({ color }) => <LayoutGrid size={22} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="earnings"
+          options={{
+            title: 'Ieņēmumi',
+            tabBarIcon: ({ color }) => <Wallet size={22} color={color} />,
           }}
         />
         <Tabs.Screen

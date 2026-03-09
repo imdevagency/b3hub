@@ -79,6 +79,7 @@ export default function OrderDetailScreen() {
   const [alreadyRated, setAlreadyRated] = useState(false);
   const [driverLoc, setDriverLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [jobLoc, setJobLoc] = useState<JobLocation | null>(null);
+  const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
@@ -131,7 +132,24 @@ export default function OrderDetailScreen() {
         const data = await api.transportJobs.getLocation(liveJob.id, token);
         setJobLoc(data);
         if (data.currentLocation) {
-          setDriverLoc({ lat: data.currentLocation.lat, lng: data.currentLocation.lng });
+          const loc = { lat: data.currentLocation.lat, lng: data.currentLocation.lng };
+          setDriverLoc(loc);
+          // ETA — only when en-route to delivery
+          if (
+            (liveJob.status === 'EN_ROUTE_DELIVERY' || liveJob.status === 'AT_DELIVERY') &&
+            data.deliveryLat != null && data.deliveryLng != null
+          ) {
+            const R = 6371;
+            const dLat = ((data.deliveryLat - loc.lat) * Math.PI) / 180;
+            const dLng = ((data.deliveryLng - loc.lng) * Math.PI) / 180;
+            const a =
+              Math.sin(dLat / 2) ** 2 +
+              Math.cos((loc.lat * Math.PI) / 180) *
+              Math.cos((data.deliveryLat * Math.PI) / 180) *
+              Math.sin(dLng / 2) ** 2;
+            const distKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            setEtaMinutes(Math.max(1, Math.round(distKm / 0.6)));
+          }
         }
       } catch { /* silent — don’t disrupt buyer UX */ }
     };
@@ -250,6 +268,23 @@ export default function OrderDetailScreen() {
           </View>
         )}
 
+        {/* ETA card — shown when driver is en-route to delivery */}
+        {etaMinutes != null && activeJob?.status === 'EN_ROUTE_DELIVERY' && (
+          <View style={s.etaCard}>
+            <View style={s.etaLeft}>
+              <Text style={s.etaEmoji}>🚚</Text>
+              <View>
+                <Text style={s.etaLabel}>Piegāde paredzama</Text>
+                <Text style={s.etaValue}>pēc ~{etaMinutes} min</Text>
+              </View>
+            </View>
+            <View style={s.etaLive}>
+              <View style={s.etaDot} />
+              <Text style={s.etaLiveText}>TIEŠRAIDE</Text>
+            </View>
+          </View>
+        )}
+
         {/* Driver card — if order is in transit */}
         {driver && (
           <View style={s.driverCard}>
@@ -354,6 +389,26 @@ export default function OrderDetailScreen() {
               <Text style={s.deliveredText}>Pasūtījums piegādāts!</Text>
             </View>
           )}
+          {/* Re-order button */}
+          {order.status === 'DELIVERED' && (
+            <TouchableOpacity
+              style={s.reorderBtn}
+              onPress={() =>
+                router.push({
+                  pathname: '/(buyer)/order-request',
+                  params: {
+                    prefillMaterial: order.items[0]?.material?.name ?? '',
+                    prefillAddress: order.deliveryAddress ?? '',
+                    prefillCity: order.deliveryCity ?? '',
+                  },
+                })
+              }
+              activeOpacity={0.85}
+            >
+              <Text style={s.reorderBtnText}>🔁  Pasūtīt vēlreiz</Text>
+            </TouchableOpacity>
+          )}
+
           {order.status === 'DELIVERED' && !alreadyRated && (
             <TouchableOpacity
               style={s.rateBtn}
@@ -570,6 +625,39 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   rateBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  // ETA card
+  etaCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#16a34a',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  etaLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  etaEmoji: { fontSize: 28 },
+  etaLabel: { fontSize: 11, color: '#6b7280', fontWeight: '500' },
+  etaValue: { fontSize: 20, fontWeight: '800', color: '#111827', marginTop: 2 },
+  etaLive: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  etaDot: { width: 7, height: 7, borderRadius: 999, backgroundColor: '#16a34a' },
+  etaLiveText: { fontSize: 10, fontWeight: '800', color: '#16a34a', letterSpacing: 0.5 },
+
+  // Re-order button
+  reorderBtn: {
+    backgroundColor: '#111827',
+    borderRadius: 999,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  reorderBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+
   alreadyRated: {
     flexDirection: 'row',
     alignItems: 'center',

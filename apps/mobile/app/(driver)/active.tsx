@@ -12,15 +12,17 @@ import {
   Modal,
   TextInput,
   KeyboardAvoidingView,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { api, ApiTransportJob, ApiReturnTripJob } from '@/lib/api';
 import { JobRouteMap } from '@/components/ui/JobRouteMap';
-import { Map, Phone, CheckCircle2, Navigation2, Route, Truck } from 'lucide-react-native';
+import { Map, Phone, CheckCircle2, Navigation2, Route, Truck, Camera, CheckCircle } from 'lucide-react-native';
 
 // ── Status progression ────────────────────────────────────────────────────────
 const STATUS_STEPS = [
@@ -68,6 +70,23 @@ export default function ActiveJobScreen() {
   const [weightModalVisible, setWeightModalVisible] = React.useState(false);
   const [weightInput, setWeightInput] = React.useState('');
   const [weightSubmitting, setWeightSubmitting] = React.useState(false);
+  const [pickupPhotoUri, setPickupPhotoUri] = React.useState<string | null>(null);
+
+  const handleTakePickupPhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Kamera nav atļauta', 'Liešojiet kameras atļauju lietotnēs iestatījumos.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+      allowsEditing: false,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setPickupPhotoUri(result.assets[0].uri);
+    }
+  };
 
   // ── Fetch return trips when status enters EN_ROUTE_DELIVERY / AT_DELIVERY ──
   useEffect(() => {
@@ -264,6 +283,7 @@ export default function ActiveJobScreen() {
     // AT_PICKUP → LOADED requires weight ticket reading
     if (currentStatus === 'AT_PICKUP') {
       setWeightInput('');
+      setPickupPhotoUri(null);
       setWeightModalVisible(true);
       return;
     }
@@ -559,6 +579,30 @@ export default function ActiveJobScreen() {
             <Text style={styles.weightSubtitle}>
               Ievadiet faktisko svēršanas rādījumu (kg), pirms atzīmēt kravu kā iekrauta.
             </Text>
+
+            {/* Photo capture */}
+            <TouchableOpacity
+              style={[styles.photoCapture, pickupPhotoUri ? styles.photoCaptured : null]}
+              onPress={handleTakePickupPhoto}
+              activeOpacity={0.8}
+            >
+              {pickupPhotoUri ? (
+                <View style={styles.photoPreview}>
+                  <Image source={{ uri: pickupPhotoUri }} style={styles.photoThumb} resizeMode="cover" />
+                  <View style={styles.photoCheck}>
+                    <CheckCircle size={14} color="#16a34a" />
+                    <Text style={styles.photoCheckText}>Foto uzņemts</Text>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.photoPicker}>
+                  <Camera size={22} color="#6b7280" />
+                  <Text style={styles.photoPickerText}>Fotografēt svēršanas biļeti</Text>
+                  <Text style={styles.photoPickerHint}>Ieteicams, bet neobligāts</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
             <View style={styles.weightInputRow}>
               <TextInput
                 style={styles.weightInput}
@@ -878,4 +922,27 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   weightConfirmText: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
+  // Photo capture
+  photoCapture: {
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 12,
+    backgroundColor: '#f9fafb',
+  },
+  photoCaptured: {
+    borderColor: '#16a34a',
+    borderStyle: 'solid',
+    backgroundColor: '#f0fdf4',
+  },
+  photoPicker: { alignItems: 'center', gap: 6 },
+  photoPickerText: { fontSize: 14, fontWeight: '600', color: '#374151' },
+  photoPickerHint: { fontSize: 12, color: '#9ca3af' },
+  photoPreview: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  photoThumb: { width: 72, height: 72, borderRadius: 8 },
+  photoCheck: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  photoCheckText: { fontSize: 13, fontWeight: '600', color: '#16a34a' },
 });

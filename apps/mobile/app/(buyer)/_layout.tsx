@@ -5,7 +5,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
-import { Home, Package, User } from 'lucide-react-native';
+import { Home, Package, User, Receipt } from 'lucide-react-native';
 import { ModeSwitcher } from '@/components/ui/ModeSwitcher';
 import { t } from '@/lib/translations';
 
@@ -80,6 +80,13 @@ export default function BuyerLayout() {
           }}
         />
         {/* Accessible via quick-action, not shown in tab bar */}
+        <Tabs.Screen
+          name="invoices"
+          options={{
+            title: 'Rēķini',
+            tabBarIcon: ({ color }) => <Receipt size={22} color={color} />,
+          }}
+        />
         <Tabs.Screen name="catalog" options={{ href: null }} />
         <Tabs.Screen name="order-request" options={{ href: null }} />
         <Tabs.Screen name="order/[id]" options={{ href: null }} />
