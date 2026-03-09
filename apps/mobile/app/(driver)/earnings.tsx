@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { t } from '@/lib/translations';
 import { Check, Clock, TrendingUp, Banknote, CheckCircle2 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
@@ -138,14 +138,14 @@ export default function EarningsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={[]}>
+      <ScreenContainer>
         <SkeletonCard count={3} />
-      </SafeAreaView>
+      </ScreenContainer>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <ScreenContainer>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* ── Red hero header ── */}
         <View style={styles.header}>
@@ -259,7 +259,7 @@ export default function EarningsScreen() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

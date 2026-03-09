@@ -16,7 +16,7 @@ import {
   RefreshControl,
   Modal,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import {
   FileText,
   X,
@@ -293,14 +293,14 @@ export default function InvoicesScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.safe} edges={[]}>
+      <ScreenContainer>
         <SkeletonCard count={4} />
-      </SafeAreaView>
+      </ScreenContainer>
     );
   }
 
   return (
-    <SafeAreaView style={s.safe} edges={[]}>
+    <ScreenContainer>
       {/* ── Hero header ── */}
       <View style={s.hero}>
         <Text style={s.heroSuper}>Rēķini</Text>
@@ -368,7 +368,7 @@ export default function InvoicesScreen() {
           paying={paying}
         />
       )}
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

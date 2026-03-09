@@ -14,7 +14,7 @@ import {
   KeyboardAvoidingView,
   Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
@@ -186,15 +186,15 @@ export default function ActiveJobScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={[]}>
+      <ScreenContainer bg="#f9fafb">
         <SkeletonDetail />
-      </SafeAreaView>
+      </ScreenContainer>
     );
   }
 
   if (!job) {
     return (
-      <SafeAreaView style={styles.container} edges={[]}>
+      <ScreenContainer bg="#f9fafb">
         <View style={styles.empty}>
           <Map size={48} color="#d1d5db" />
           <Text style={styles.emptyTitle}>{t.activeJob.noJob}</Text>
@@ -203,7 +203,7 @@ export default function ActiveJobScreen() {
             <Text style={styles.goBtnText}>{t.activeJob.goToJobs}</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </ScreenContainer>
     );
   }
 
@@ -338,7 +338,7 @@ export default function ActiveJobScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <ScreenContainer bg="#f9fafb">
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Header */}
         <View style={styles.header}>
@@ -658,7 +658,7 @@ export default function ActiveJobScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

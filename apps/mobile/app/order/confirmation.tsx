@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import { useOrder } from '@/lib/order-context';
 import { t } from '@/lib/translations';
@@ -17,14 +17,14 @@ export default function OrderConfirmation() {
 
   if (!order) {
     return (
-      <SafeAreaView style={s.safe}>
+      <ScreenContainer standalone bg="#fff">
         <View style={s.center}>
           <Text style={s.centerText}>Nav pasūtījuma.</Text>
           <TouchableOpacity onPress={() => router.replace('/')} style={s.centerLink}>
             <Text style={s.centerLinkText}>Atpakaļ uz sākumu</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </ScreenContainer>
     );
   }
 
@@ -42,7 +42,7 @@ export default function OrderConfirmation() {
   ];
 
   return (
-    <SafeAreaView style={s.safe}>
+    <ScreenContainer standalone bg="#fff">
       <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
         {/* Success icon */}
         <View style={s.iconWrap}>
@@ -97,7 +97,7 @@ export default function OrderConfirmation() {
           <Text style={s.secondaryBtnText}>{t.skipHire.confirmation.newOrder}</Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

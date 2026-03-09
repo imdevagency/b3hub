@@ -9,7 +9,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ArrowLeft, Package, Truck } from 'lucide-react-native';
 import { t } from '../../lib/translations';
 
@@ -19,7 +19,7 @@ export default function PartnerScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={s.safe} edges={['top']}>
+    <ScreenContainer standalone bg="#fff">
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
       {/* Nav bar */}
@@ -69,7 +69,7 @@ export default function PartnerScreen() {
         {/* Footer note */}
         <Text style={s.note}>{t.partner.note}</Text>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

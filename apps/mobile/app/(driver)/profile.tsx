@@ -12,7 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import { Pencil, X, Check, LogOut, Bell, Truck, ChevronRight } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
@@ -108,7 +108,7 @@ export default function ProfileScreen() {
   const set = (key: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [key]: v }));
 
   return (
-    <SafeAreaView style={s.safe} edges={[]}>
+    <ScreenContainer bg="#f9fafb">
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Avatar header */}
         <View style={s.avatarSection}>
@@ -250,7 +250,7 @@ export default function ProfileScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

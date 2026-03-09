@@ -15,7 +15,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { X, Route, MapPin, Truck, Calendar, Ruler, ChevronRight, Zap } from 'lucide-react-native';
 import { t } from '@/lib/translations';
@@ -147,7 +147,7 @@ export default function TourPlannerScreen() {
 
   if (jobs.length === 0) {
     return (
-      <SafeAreaView style={s.safe} edges={['top']}>
+      <ScreenContainer standalone bg="#f3f4f6">
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} style={s.closeBtn}>
             <X size={20} color="#374151" />
@@ -159,7 +159,7 @@ export default function TourPlannerScreen() {
           <Route size={48} color="#d1d5db" />
           <Text style={s.emptyText}>{t.tourPlanner.noJobs}</Text>
         </View>
-      </SafeAreaView>
+      </ScreenContainer>
     );
   }
 
@@ -185,7 +185,7 @@ export default function TourPlannerScreen() {
   const totalEur = orderedJobs.reduce((sum, j) => sum + j.priceTotal, 0);
 
   return (
-    <SafeAreaView style={s.safe} edges={['top']}>
+    <ScreenContainer standalone bg="#f3f4f6">
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.closeBtn}>
@@ -268,7 +268,7 @@ export default function TourPlannerScreen() {
           <StopCard key={job.id} job={job} index={i} />
         ))}
       </ScrollView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

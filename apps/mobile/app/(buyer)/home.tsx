@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -166,7 +166,7 @@ export default function HomeScreen() {
   const isPartnerEligible = !user?.canSell && !user?.canTransport;
 
   return (
-    <SafeAreaView style={s.safe} edges={[]}>
+    <ScreenContainer bg="#f9fafb">
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* ── Header ── */}
         <View style={s.header}>
@@ -322,7 +322,7 @@ export default function HomeScreen() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

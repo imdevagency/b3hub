@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import Svg, { Path as SvgPath } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
@@ -147,7 +147,7 @@ export default function DeliveryProofScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <ScreenContainer standalone bg="#f9fafb">
       <ScrollView
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
@@ -282,7 +282,7 @@ export default function DeliveryProofScreen() {
           )}
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

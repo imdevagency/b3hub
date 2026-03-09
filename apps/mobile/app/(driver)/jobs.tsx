@@ -16,7 +16,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
@@ -916,19 +916,19 @@ export default function JobsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={[]}>
+      <ScreenContainer bg="#f3f4f6">
         <View style={styles.topBar}>
           <Text style={styles.screenTitle}>{t.jobs.title}</Text>
         </View>
         <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
           <SkeletonJobRow count={5} />
         </ScrollView>
-      </SafeAreaView>
+      </ScreenContainer>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <ScreenContainer bg="#f3f4f6">
       {/* Top bar */}
       <View style={styles.topBar}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -1105,7 +1105,7 @@ export default function JobsScreen() {
         />
       )}
       {/* How It Works modal removed — tukšbrauciens lives in active.tsx */}
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

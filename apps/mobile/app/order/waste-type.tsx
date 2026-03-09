@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useOrder } from '@/lib/order-context';
@@ -46,7 +46,7 @@ export default function Step2WasteType() {
   };
 
   return (
-    <SafeAreaView style={s.safe}>
+    <ScreenContainer standalone bg="#fff">
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
@@ -115,7 +115,7 @@ export default function Step2WasteType() {
           </Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

@@ -15,7 +15,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import {
   TrendingUp,
   Banknote,
@@ -194,14 +194,14 @@ export default function SellerEarningsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.safe} edges={[]}>
+      <ScreenContainer>
         <SkeletonCard count={3} />
-      </SafeAreaView>
+      </ScreenContainer>
     );
   }
 
   return (
-    <SafeAreaView style={s.safe} edges={[]}>
+    <ScreenContainer>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -325,7 +325,7 @@ export default function SellerEarningsScreen() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

@@ -9,7 +9,7 @@ import {
   Linking,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
@@ -237,7 +237,7 @@ export default function OrdersScreen() {
   };
 
   return (
-    <SafeAreaView style={s.safe} edges={[]}>
+    <ScreenContainer>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -330,7 +330,7 @@ export default function OrdersScreen() {
           skipOrderId={ratingSkipId}
         />
       )}
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

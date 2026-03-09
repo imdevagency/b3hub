@@ -6,7 +6,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useOrder } from '@/lib/order-context';
@@ -26,7 +26,7 @@ export default function Step1Location() {
   };
 
   return (
-    <SafeAreaView style={s.safe}>
+    <ScreenContainer standalone bg="#fff">
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -101,7 +101,7 @@ export default function Step1Location() {
         }}
         onClose={() => setPickerOpen(false)}
       />
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

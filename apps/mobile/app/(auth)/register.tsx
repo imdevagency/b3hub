@@ -20,7 +20,7 @@ import {
   Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { StatusBar } from 'expo-status-bar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -390,7 +390,7 @@ export default function RegisterScreen() {
   );
 
   return (
-    <SafeAreaView style={s.safe}>
+    <ScreenContainer standalone bg="#fff">
       <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -448,7 +448,7 @@ export default function RegisterScreen() {
           )}
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

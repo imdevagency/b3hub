@@ -14,7 +14,7 @@ import {
   Alert,
   Switch,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Plus, Pencil, Trash2, Leaf, PackageSearch } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -410,7 +410,7 @@ export default function SellerCatalog() {
   };
 
   return (
-    <SafeAreaView style={s.container} edges={[]}>
+    <ScreenContainer>
       {/* Header */}
       <View style={s.header}>
         <Text style={s.title}>Mani sludinājumi</Text>
@@ -458,7 +458,7 @@ export default function SellerCatalog() {
         onSave={handleSave}
         saving={saving}
       />
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

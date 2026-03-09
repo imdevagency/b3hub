@@ -11,7 +11,7 @@ import {
   NativeSyntheticEvent,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { StatusBar } from 'expo-status-bar';
 
 const { width: W } = Dimensions.get('window');
@@ -120,7 +120,7 @@ export default function WelcomeScreen() {
   const isLast = activeIdx === SLIDES.length - 1;
 
   return (
-    <SafeAreaView style={s.safe}>
+    <ScreenContainer standalone bg="#fff">
       <StatusBar style="dark" />
 
       {/* Skip button */}
@@ -184,7 +184,7 @@ export default function WelcomeScreen() {
           <Text style={s.partnerText}>Kļūt par partneri →</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

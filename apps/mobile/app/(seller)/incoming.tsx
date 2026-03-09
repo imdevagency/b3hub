@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
@@ -382,14 +383,14 @@ export default function IncomingScreen() {
 
   if (fetching) {
     return (
-      <SafeAreaView style={styles.container} edges={[]}>
+      <ScreenContainer bg="#f9fafb">
         <SkeletonCard count={4} />
-      </SafeAreaView>
+      </ScreenContainer>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <ScreenContainer bg="#f9fafb">
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t.incoming.title}</Text>
@@ -498,7 +499,7 @@ export default function IncomingScreen() {
           confirming={confirmingLoad}
         />
       )}
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 
