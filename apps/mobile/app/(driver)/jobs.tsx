@@ -34,7 +34,6 @@ import {
   X,
   Route,
   CheckCircle2,
-  Zap,
   ChevronRight,
 } from 'lucide-react-native';
 
@@ -81,33 +80,6 @@ interface ReturnTripJob extends TransportJob {
 
 const RADIUS_OPTIONS = [25, 50, 100, 150, 200];
 const ASYNC_KEY = 'b3hub_saved_job_searches';
-
-// If delivery of job A is within this threshold of pickup of job B it's a natural chain
-const CHAIN_THRESHOLD_KM = 45;
-
-interface SmartChain {
-  jobA: TransportJob;
-  jobB: TransportJob;
-  gapKm: number;
-}
-
-function detectSmartChain(jobs: TransportJob[]): SmartChain | null {
-  let best: SmartChain | null = null;
-  for (let i = 0; i < jobs.length; i++) {
-    for (let j = 0; j < jobs.length; j++) {
-      if (i === j) continue;
-      const a = jobs[i];
-      const b = jobs[j];
-      if (!a.toLat || !a.toLng || !b.fromLat || !b.fromLng) continue;
-      const gap = Math.round(haversineKm(a.toLat, a.toLng, b.fromLat, b.fromLng));
-      if (gap > CHAIN_THRESHOLD_KM) continue;
-      if (!best || gap < best.gapKm) {
-        best = { jobA: a, jobB: b, gapKm: gap };
-      }
-    }
-  }
-  return best;
-}
 
 // Nearest available jobs to a given point (for the accept bottom sheet)
 function nearbyJobs(
@@ -243,71 +215,6 @@ function RadiusRow({ selected, onChange }: { selected: number; onChange: (v: num
         ))}
       </View>
     </ScrollView>
-  );
-}
-
-// ── Smart Route Banner ───────────────────────────────────────────────────────
-function SmartRouteBanner({
-  chain,
-  onAccept,
-  onDismiss,
-}: {
-  chain: SmartChain;
-  onAccept: () => void;
-  onDismiss: () => void;
-}) {
-  const totalPrice = chain.jobA.priceTotal + chain.jobB.priceTotal;
-  const totalDist = chain.jobA.distanceKm + chain.jobB.distanceKm;
-  return (
-    <View style={styles.smartBanner}>
-      <View style={styles.smartBannerTop}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Zap size={15} color="#d97706" />
-          <Text style={styles.smartBannerTitle}>{t.jobs.smartRoute}</Text>
-        </View>
-        <TouchableOpacity onPress={onDismiss} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <X size={15} color="#9ca3af" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Route chain visualisation */}
-      <View style={styles.smartChainRow}>
-        <View style={styles.smartChainJob}>
-          <Text style={styles.smartChainCity} numberOfLines={1}>
-            {chain.jobA.fromCity}
-          </Text>
-          <ChevronRight size={12} color="#9ca3af" />
-          <Text style={[styles.smartChainCity, { color: '#d97706' }]} numberOfLines={1}>
-            {chain.jobA.toCity}
-          </Text>
-        </View>
-        <View style={styles.smartGapPill}>
-          <Route size={10} color="#d97706" />
-          <Text style={styles.smartGapText}>{t.jobs.smartRouteGap(chain.gapKm)}</Text>
-        </View>
-        <View style={styles.smartChainJob}>
-          <Text style={styles.smartChainCity} numberOfLines={1}>
-            {chain.jobB.fromCity}
-          </Text>
-          <ChevronRight size={12} color="#9ca3af" />
-          <Text style={[styles.smartChainCity, { color: '#d97706' }]} numberOfLines={1}>
-            {chain.jobB.toCity}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.smartStats}>
-        <Text style={styles.smartStatPrice}>€{totalPrice.toFixed(0)}</Text>
-        <Text style={styles.smartStatDist}>{totalDist} km</Text>
-        <Text style={styles.smartStatSaved}>{t.jobs.smartRouteSaved(chain.gapKm)}</Text>
-      </View>
-
-      <TouchableOpacity style={styles.smartAcceptBtn} onPress={onAccept}>
-        <Zap size={14} color="#fff" />
-        <Text style={styles.smartAcceptBtnText}>{t.jobs.smartRouteAccept}</Text>
-        <Text style={styles.smartAcceptBtnSub}>€{(chain.jobA.priceTotal + chain.jobB.priceTotal).toFixed(0)}</Text>
-      </TouchableOpacity>
-    </View>
   );
 }
 
@@ -700,9 +607,8 @@ export default function JobsScreen() {
   const [saveModalVisible, setSaveModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // ── Accept sheet + smart chain ────────────────────────────────
+  // ── Accept sheet ──────────────────────────────────────────────
   const [acceptSheetJob, setAcceptSheetJob] = useState<TransportJob | null>(null);
-  const [smartChainDismissed, setSmartChainDismissed] = useState<Set<string>>(new Set());
 
   const panelAnim = useRef(new Animated.Value(0)).current;
 
@@ -746,11 +652,6 @@ export default function JobsScreen() {
   }, [panelOpen]);
 
   const filteredJobs = filterJobs(allJobs, activeFilter);
-  const smartChain = filteredJobs.length >= 2 ? detectSmartChain(filteredJobs) : null;
-  const visibleSmartChain =
-    smartChain && !smartChainDismissed.has(`${smartChain.jobA.id}-${smartChain.jobB.id}`)
-      ? smartChain
-      : null;
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -882,26 +783,6 @@ export default function JobsScreen() {
         {/* Active filter pill */}
         {activeFilter && !panelOpen && (
           <ActiveFilterPill filter={activeFilter} onClear={handleReset} />
-        )}
-
-        {/* Smart Route Banner — auto-detected chain, shown above results */}
-        {visibleSmartChain && (
-          <View style={{ marginHorizontal: 16, marginBottom: 4 }}>
-            <SmartRouteBanner
-              chain={visibleSmartChain}
-              onAccept={() => {
-                // Accept job A first via the sheet
-                setAcceptSheetJob(visibleSmartChain.jobA);
-              }}
-              onDismiss={() =>
-                setSmartChainDismissed((prev) => {
-                  const next = new Set(prev);
-                  next.add(`${visibleSmartChain.jobA.id}-${visibleSmartChain.jobB.id}`);
-                  return next;
-                })
-              }
-            />
-          </View>
         )}
 
         {/* Results header */}
@@ -1295,73 +1176,6 @@ const styles = StyleSheet.create({
   },
   modalSaveDisabled: { opacity: 0.5 },
   modalSaveText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
-
-  // ── Smart Route Banner ─────────────────────────────────────────
-  smartBanner: {
-    backgroundColor: '#fffbeb',
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1.5,
-    borderColor: '#fde68a',
-    gap: 10,
-  },
-  smartBannerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  smartBannerTitle: { fontSize: 13, fontWeight: '800', color: '#92400e', letterSpacing: 0.3 },
-  smartChainRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flexWrap: 'nowrap',
-  },
-  smartChainJob: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    overflow: 'hidden',
-  },
-  smartChainCity: { fontSize: 12, fontWeight: '700', color: '#374151', flexShrink: 1 },
-  smartGapPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#fef3c7',
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    flexShrink: 0,
-  },
-  smartGapText: { fontSize: 10, fontWeight: '700', color: '#b45309' },
-  smartStats: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  smartStatPrice: { fontSize: 16, fontWeight: '800', color: '#111827' },
-  smartStatDist: { fontSize: 12, color: '#6b7280' },
-  smartStatSaved: {
-    fontSize: 11,
-    color: '#059669',
-    fontWeight: '600',
-    flex: 1,
-    textAlign: 'right',
-  },
-  smartAcceptBtn: {
-    backgroundColor: '#d97706',
-    borderRadius: 999,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-    shadowColor: '#d97706',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  smartAcceptBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  smartAcceptBtnSub: { color: 'rgba(255,255,255,0.8)', fontWeight: '800', fontSize: 15 },
 
   // ── Accept Bottom Sheet ────────────────────────────────────────
   sheetOverlay: {
