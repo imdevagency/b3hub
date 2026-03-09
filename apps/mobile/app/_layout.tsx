@@ -3,27 +3,38 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '@/lib/auth-context';
 import { ModeProvider } from '@/lib/mode-context';
 import { useEffect, useRef } from 'react';
-import * as Notifications from 'expo-notifications';
+
+// ── Push notifications: guarded — native module not present in Expo Go ────────
+let _Notifications: typeof import('expo-notifications') | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  _Notifications = require('expo-notifications');
+} catch { /* Expo Go */ }
 
 // Show notifications as banners even when app is in foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+try {
+  _Notifications?.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+    }),
+  });
+} catch { /* ignore */ }
 
 export default function RootLayout() {
-  const notifListener = useRef<Notifications.EventSubscription | null>(null);
+  const notifListener = useRef<{ remove(): void } | null>(null);
 
   useEffect(() => {
     // Foreground notification received listener
-    notifListener.current = Notifications.addNotificationReceivedListener(() => {
-      // Badge / state updates can be wired here if needed
-    });
+    try {
+      notifListener.current =
+        _Notifications?.addNotificationReceivedListener(() => {
+          // Badge / state updates can be wired here if needed
+        }) ?? null;
+    } catch { /* Expo Go */ }
     return () => notifListener.current?.remove();
   }, []);
 

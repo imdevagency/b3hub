@@ -1,31 +1,51 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { api, User } from './api';
+
+// ── Push notifications: guarded dynamic require ───────────────────────────────
+// expo-notifications requires a custom dev build (native module 'ExpoPushTokenManager').
+// When running in Expo Go the require will throw — catch it and disable push
+// silently so the rest of the app continues to work.
+let _Notifications: typeof import('expo-notifications') | null = null;
+let _Device: typeof import('expo-device') | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  _Notifications = require('expo-notifications');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  _Device = require('expo-device');
+} catch {
+  // Expo Go — push notifications unavailable
+}
 
 const TOKEN_KEY = 'b3hub_token';
 const USER_KEY = 'b3hub_user';
 
 /** Request permission + return Expo push token string, or null if unavailable. */
 async function registerForPushNotifications(): Promise<string | null> {
-  if (!Device.isDevice) return null; // Expo Go simulator — skip
-  const { status: existing } = await Notifications.getPermissionsAsync();
-  const finalStatus =
-    existing === 'granted' ? existing : (await Notifications.requestPermissionsAsync()).status;
-  if (finalStatus !== 'granted') return null;
+  try {
+    if (!_Notifications || !_Device) return null; // Expo Go — native module missing
+    if (!_Device.isDevice) return null;             // Simulator — skip
+    const { status: existing } = await _Notifications.getPermissionsAsync();
+    const finalStatus =
+      existing === 'granted'
+        ? existing
+        : (await _Notifications.requestPermissionsAsync()).status;
+    if (finalStatus !== 'granted') return null;
 
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-    });
+    if (Platform.OS === 'android') {
+      await _Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: _Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+      });
+    }
+
+    const { data } = await _Notifications.getExpoPushTokenAsync();
+    return data;
+  } catch {
+    return null; // Any native error — degrade silently
   }
-
-  const { data } = await Notifications.getExpoPushTokenAsync();
-  return data;
 }
 
 interface AuthContextValue {
