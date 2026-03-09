@@ -25,7 +25,14 @@ import {
   Dimensions,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import MapboxGL from '@rnmapbox/maps';
+// Lazy-load: native module not available in Expo Go
+let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  MapboxGL = require('@rnmapbox/maps').default;
+} catch {
+  /* Expo Go */
+}
 import {
   Trash2,
   MapPin,
@@ -290,7 +297,8 @@ interface MapViewProps {
 }
 
 function SkipsMapView({ orders, onStatusUpdate, updatingId }: MapViewProps) {
-  const cameraRef = useRef<MapboxGL.Camera>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cameraRef = useRef<any>(null);
   const [coords, setCoords] = useState<Record<string, [number, number]>>({});
   const [geocoding, setGeocoding] = useState(false);
   const [selected, setSelected] = useState<SkipHireOrder | null>(null);
@@ -350,7 +358,7 @@ function SkipsMapView({ orders, onStatusUpdate, updatingId }: MapViewProps) {
   return (
     <View style={{ flex: 1 }}>
       <BaseMap cameraRef={cameraRef} center={RIGA} zoom={9}>
-        {resolved.map((order) => (
+        {MapboxGL && resolved.map((order) => (
           <MapboxGL.PointAnnotation
             key={order.id}
             id={order.id}

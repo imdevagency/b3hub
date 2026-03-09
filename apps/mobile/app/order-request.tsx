@@ -22,7 +22,14 @@ import {
   TextInput,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import MapboxGL from '@rnmapbox/maps';
+// Lazy-load: native module crashes Expo Go when statically imported
+let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  MapboxGL = require('@rnmapbox/maps').default;
+} catch {
+  /* Expo Go */
+}
 import { BaseMap, UserLayer, useGeocode, RIGA_CENTER } from '@/components/map';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -416,7 +423,8 @@ export default function OrderRequestScreen() {
   const router = useRouter();
   const { user, token } = useAuth();
   const insets = useSafeAreaInsets();
-  const cameraRef = useRef<MapboxGL.Camera>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cameraRef = useRef<any>(null);
   const { forwardGeocode, reverseGeocodeWithCity, loading: geoLoading } = useGeocode();
 
   // ── Step & onboarding ─────────────────────────────────────────
@@ -724,7 +732,7 @@ export default function OrderRequestScreen() {
       {/* Map fills screen */}
       <BaseMap cameraRef={cameraRef} center={RIGA_CENTER} zoom={10} onPress={onMapPress}>
         <UserLayer />
-        {pin && (
+        {pin && MapboxGL && (
           <MapboxGL.PointAnnotation id="deliveryPin" coordinate={[pin.longitude, pin.latitude]}>
             <View style={sa.markerWrap}>
               <View style={sa.markerOuter}>

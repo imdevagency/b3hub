@@ -12,7 +12,14 @@
  */
 import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ViewStyle, ActivityIndicator } from 'react-native';
-import MapboxGL from '@rnmapbox/maps';
+// Lazy-load: native module not available in Expo Go
+let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  MapboxGL = require('@rnmapbox/maps').default;
+} catch {
+  /* Expo Go */
+}
 import { BaseMap, RouteLayer, PinLayer, useRoute } from '@/components/map';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -71,7 +78,8 @@ export function JobRouteMap({
   style,
   showToPickupLeg = true,
 }: JobRouteMapProps) {
-  const cameraRef = useRef<MapboxGL.Camera>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cameraRef = useRef<any>(null);
 
   // Route hooks — always called, pass null to disable a leg
   const { route: mainRoute, loading: routeLoading } = useRoute(pickup, delivery);

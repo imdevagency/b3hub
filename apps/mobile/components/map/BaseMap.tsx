@@ -8,15 +8,25 @@
  * the layer components in components/map/layers/.
  */
 import React from 'react';
-import { StyleSheet, ViewStyle } from 'react-native';
-import MapboxGL from '@rnmapbox/maps';
+import { StyleSheet, View, ViewStyle } from 'react-native';
+
+// Lazy-load: @rnmapbox/maps native module is not available in Expo Go.
+// Static import would crash the entire app at startup.
+let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  MapboxGL = require('@rnmapbox/maps').default;
+} catch {
+  /* Expo Go — map screens will render a placeholder */
+}
 
 /** Rīga city centre — used as a sane default centre. */
 export const RIGA_CENTER: [number, number] = [24.1052, 56.9496]; // [lng, lat]
 
 export interface BaseMapProps {
   /** Pass a ref to drive the camera imperatively (fitBounds, setCamera, etc.) */
-  cameraRef?: React.RefObject<MapboxGL.Camera | null>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  cameraRef?: React.RefObject<any>;
   /** Initial map centre as [longitude, latitude]. Defaults to Rīga. */
   center?: [number, number];
   /** Initial zoom level. Default 10. */
@@ -46,6 +56,11 @@ export function BaseMap({
   compassEnabled = false,
   showAttribution = false,
 }: BaseMapProps) {
+  // Native module unavailable in Expo Go — render empty placeholder
+  if (!MapboxGL) {
+    return <View style={[StyleSheet.absoluteFillObject, style, { backgroundColor: '#e5e7eb' }]} />;
+  }
+
   return (
     <MapboxGL.MapView
       style={[StyleSheet.absoluteFillObject, style]}

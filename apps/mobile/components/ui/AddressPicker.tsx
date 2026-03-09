@@ -33,7 +33,14 @@ import {
   TextInput,
   FlatList,
 } from 'react-native';
-import MapboxGL from '@rnmapbox/maps';
+// Lazy-load: native module not available in Expo Go
+let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  MapboxGL = require('@rnmapbox/maps').default;
+} catch {
+  /* Expo Go */
+}
 import { MapPin, X, Check, Search } from 'lucide-react-native';
 import { BaseMap, useGeocode, GeocodeSuggestion } from '@/components/map';
 
@@ -72,7 +79,8 @@ export function AddressPicker({
   onClose,
   pinColor = '#dc2626',
 }: AddressPickerProps) {
-  const cameraRef = useRef<MapboxGL.Camera>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cameraRef = useRef<any>(null);
   const { forwardGeocode, reverseGeocode, loading: geocodeLoading } = useGeocode();
 
   const [lat, setLat] = useState(initialLat ?? DEFAULT_LAT);
@@ -187,11 +195,13 @@ export function AddressPicker({
         {/* ── Map ── */}
         <View style={styles.mapWrapper}>
           <BaseMap cameraRef={cameraRef} center={[lng, lat]} zoom={13} onPress={handleMapPress}>
-            <MapboxGL.PointAnnotation id="pin" coordinate={[lng, lat]}>
-              <View collapsable={false}>
-                <PinMarker color={pinColor} />
-              </View>
-            </MapboxGL.PointAnnotation>
+            {MapboxGL && (
+              <MapboxGL.PointAnnotation id="pin" coordinate={[lng, lat]}>
+                <View collapsable={false}>
+                  <PinMarker color={pinColor} />
+                </View>
+              </MapboxGL.PointAnnotation>
+            )}
           </BaseMap>
 
           {/* Hint overlay */}

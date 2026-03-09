@@ -7,7 +7,14 @@
  * Must be placed inside a <BaseMap> (or <MapboxGL.MapView>).
  */
 import React from 'react';
-import MapboxGL from '@rnmapbox/maps';
+// Lazy-load: native module not available in Expo Go
+let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  MapboxGL = require('@rnmapbox/maps').default;
+} catch {
+  /* Expo Go */
+}
 
 interface Props {
   /** Unique id for the ShapeSource + LineLayer — must be unique per map. */
@@ -29,6 +36,7 @@ export function RouteLayer({
   width = 4,
   dashed = false,
 }: Props) {
+  if (!MapboxGL) return null;
   if (coordinates.length < 2) return null;
 
   const shape: GeoJSON.Feature<GeoJSON.LineString> = {
@@ -40,7 +48,8 @@ export function RouteLayer({
     properties: {},
   };
 
-  const lineStyle: MapboxGL.LineLayerStyle = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const lineStyle: any = {
     lineColor: color,
     lineWidth: width,
     lineCap: 'round',

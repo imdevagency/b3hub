@@ -12,7 +12,14 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import MapboxGL from '@rnmapbox/maps';
+// Lazy-load: native module not available in Expo Go
+let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  MapboxGL = require('@rnmapbox/maps').default;
+} catch {
+  /* Expo Go */
+}
 
 export type PinType = 'pickup' | 'delivery' | 'return' | 'current' | 'custom';
 
@@ -30,6 +37,7 @@ interface Props {
 }
 
 export function PinLayer({ id, coordinate, type = 'custom', label, color = '#6b7280' }: Props) {
+  if (!MapboxGL) return null;
   const coord: [number, number] = [coordinate.lng, coordinate.lat];
 
   return (

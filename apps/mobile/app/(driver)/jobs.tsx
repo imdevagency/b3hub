@@ -20,7 +20,14 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
-import MapboxGL from '@rnmapbox/maps';
+// Lazy-load: native module not available in Expo Go
+let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  MapboxGL = require('@rnmapbox/maps').default;
+} catch {
+  /* Expo Go */
+}
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { api, ApiTransportJob } from '@/lib/api';
@@ -627,6 +634,10 @@ function JobMapView({
     if (driverLat === null || driverLng === null) return true;
     return haversineKm(driverLat, driverLng, j.fromLat, j.fromLng) <= mapRadius;
   });
+
+  if (!MapboxGL) {
+    return <View style={{ flex: 1, backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center' }} />;
+  }
 
   return (
     <View style={{ flex: 1 }}>
