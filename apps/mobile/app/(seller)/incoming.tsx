@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
   },
   pendingBadgeText: { color: '#fff', fontWeight: '700', fontSize: 12 },
 
-  filterRow: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
+  filterRow: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -534,6 +534,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     borderWidth: 1,
     borderColor: '#e5e7eb',
+    alignSelf: 'flex-start',
   },
   filterChipActive: {
     backgroundColor: '#dc2626',
