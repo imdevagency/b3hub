@@ -7,6 +7,8 @@ import { api } from '@/lib/api';
 import type { ApiOrder } from '@/lib/api';
 import { t } from '@/lib/translations';
 import { HardHat, Trash2, Truck, ChevronRight, Package, Bell } from 'lucide-react-native';
+import { haptics } from '@/lib/haptics';
+import { Skeleton, SkeletonHome } from '@/components/ui/Skeleton';
 
 // ── Types ───────────────────────────────────────────────────────────────────────────────────
 
@@ -193,7 +195,7 @@ export default function HomeScreen() {
                   key={tile.id}
                   style={[s.tile, { backgroundColor: tile.bg }]}
                   activeOpacity={0.75}
-                  onPress={() => router.push(tile.route as any)}
+                  onPress={() => { haptics.light(); router.push(tile.route as any); }}
                 >
                   <View style={[s.tileIcon, { backgroundColor: tile.iconBg }]}>
                     <Icon size={22} color={tile.iconColor} />
@@ -210,7 +212,7 @@ export default function HomeScreen() {
               <TouchableOpacity
                 style={[s.tileFull, { backgroundColor: tile.bg }]}
                 activeOpacity={0.75}
-                onPress={() => router.push(tile.route as any)}
+                onPress={() => { haptics.light(); router.push(tile.route as any); }}
               >
                 <View style={[s.tileIcon, { backgroundColor: tile.iconBg }]}>
                   <Icon size={22} color={tile.iconColor} />
@@ -224,9 +226,9 @@ export default function HomeScreen() {
           {/* ── Active order ── */}
           {loading ? (
             <View style={s.card}>
-              <SkeletonBox width={140} height={12} style={{ marginBottom: 14 }} />
-              <SkeletonBox width="100%" height={22} style={{ marginBottom: 8 }} />
-              <SkeletonBox width="55%" height={12} />
+              <Skeleton width={140} height={12} style={{ marginBottom: 14 }} />
+              <Skeleton width="100%" height={22} style={{ marginBottom: 8 }} />
+              <Skeleton width="55%" height={12} />
             </View>
           ) : activeOrder ? (
             <TouchableOpacity

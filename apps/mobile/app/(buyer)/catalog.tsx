@@ -14,6 +14,7 @@ import { Search, X, Leaf, ShoppingCart } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import type { ApiMaterial, MaterialCategory, MaterialUnit } from '@/lib/api';
 
 // ── Constants ──────────────────────────────────────────────────
@@ -258,7 +259,7 @@ export default function CatalogScreen() {
 
       {/* Materials list */}
       {loading ? (
-        <ActivityIndicator color="#111827" size="large" style={{ marginTop: 64 }} />
+        <SkeletonCard count={5} />
       ) : (
         <ScrollView
           contentContainerStyle={s.list}

@@ -19,6 +19,7 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, Plus, Pencil, Trash2, Truck } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import type { ApiVehicle, VehicleType } from '@/lib/api';
 
 // ── Constants ──────────────────────────────────────────────────
@@ -357,7 +358,7 @@ export default function VehiclesScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 48 }} size="large" color="#2563eb" />
+        <SkeletonCard count={3} />
       ) : (
         <ScrollView
           contentContainerStyle={s.list}

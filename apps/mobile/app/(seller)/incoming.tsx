@@ -13,6 +13,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
+import { SkeletonCard } from '@/components/ui/Skeleton';
+import { haptics } from '@/lib/haptics';
+import { useToast } from '@/components/ui/Toast';
 import { api, type ApiOrder } from '@/lib/api';
 import { Clock, CheckCircle2, Package, X, Square, MapPin, Check, Inbox } from 'lucide-react-native';
 
@@ -273,6 +276,7 @@ function OrderCard({
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function IncomingScreen() {
   const { token } = useAuth();
+  const toast = useToast();
   const [orders, setOrders] = useState<IncomingOrder[]>([]);
   const [fetching, setFetching] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -308,8 +312,10 @@ export default function IncomingScreen() {
     try {
       const updated = await api.orders.confirm(id, token);
       setOrders((prev) => prev.map((o) => (o.id === id ? mapApiOrder(updated) : o)));
+      haptics.success();
     } catch (e: any) {
-      Alert.alert('Kļūda', e.message ?? 'Neizdevās apstiprināt pasūtījumu.');
+      haptics.error();
+      toast.error(e.message ?? 'Neizdevās apstiprināt pasūtījumu.');
     } finally {
       setActioning(null);
     }
@@ -327,8 +333,10 @@ export default function IncomingScreen() {
           try {
             await api.orders.cancel(id, token);
             setOrders((prev) => prev.filter((o) => o.id !== id));
+            haptics.success();
           } catch (e: any) {
-            Alert.alert('Kļūda', e.message ?? 'Neizdevās noraidīt pasūtījumu.');
+            haptics.error();
+            toast.error(e.message ?? 'Neizdevās noraidīt pasūtījumu.');
           } finally {
             setActioning(null);
           }
@@ -349,9 +357,11 @@ export default function IncomingScreen() {
       const updated = await api.orders.startLoading(loadingOrder.id, token);
       setOrders((prev) => prev.map((o) => (o.id === loadingOrder.id ? mapApiOrder(updated) : o)));
       setLoadingOrder(null);
-      Alert.alert('✅ Iekraušana apstiprināta', 'Transporta darbs sākts. Pircējs ir informēts.');
+      haptics.success();
+      toast.success('Iekraušana apstiprīnāta — transporta darbs sākts!');
     } catch (e: any) {
-      Alert.alert('Kļūda', e.message ?? 'Neizdevās apstiprināt iekraušanu.');
+      haptics.error();
+      toast.error(e.message ?? 'Neizdevās apstiprināt iekraušanu.');
     } finally {
       setConfirmingLoad(false);
     }
@@ -373,7 +383,7 @@ export default function IncomingScreen() {
   if (fetching) {
     return (
       <SafeAreaView style={styles.container} edges={[]}>
-        <ActivityIndicator color="#dc2626" style={{ flex: 1, marginTop: 40 }} />
+        <SkeletonCard count={4} />
       </SafeAreaView>
     );
   }

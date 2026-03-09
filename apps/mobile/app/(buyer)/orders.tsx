@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { t } from '@/lib/translations';
 import type { SkipHireOrder, ApiOrder } from '@/lib/api';
 import {
@@ -266,7 +267,7 @@ export default function OrdersScreen() {
           </View>
 
           {loading ? (
-            <ActivityIndicator color="#dc2626" size="large" style={{ marginTop: 48 }} />
+            <SkeletonCard count={4} />
           ) : skipOrders.length === 0 ? (
             <View style={s.empty}>
               <Package size={40} color="#d1d5db" />

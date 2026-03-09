@@ -12,6 +12,7 @@ import { t } from '@/lib/translations';
 import { Check, Clock, TrendingUp, Banknote, CheckCircle2 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiTransportJob } from '@/lib/api';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 
 // ── Types & helpers ───────────────────────────────────────────────────────
 interface EarningsStats {
@@ -138,7 +139,7 @@ export default function EarningsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={[]}>
-        <ActivityIndicator color="#dc2626" style={{ flex: 1, marginTop: 40 }} />
+        <SkeletonCard count={3} />
       </SafeAreaView>
     );
   }

@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, Pencil, Trash2, Leaf, PackageSearch } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import type { ApiMaterial, MaterialCategory, MaterialUnit } from '@/lib/api';
 
 // ── Constants ──────────────────────────────────────────────────
@@ -420,7 +421,7 @@ export default function SellerCatalog() {
       </View>
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 48 }} size="large" color="#16a34a" />
+        <SkeletonCard count={5} />
       ) : (
         <ScrollView
           contentContainerStyle={s.list}

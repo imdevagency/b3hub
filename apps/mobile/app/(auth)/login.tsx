@@ -20,6 +20,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { t } from '@/lib/translations';
 import { ChevronLeft, Eye, EyeOff } from 'lucide-react-native';
+import { haptics } from '@/lib/haptics';
 
 const schema = z.object({
   email: z.string().email(t.login.validation.invalidEmail),
@@ -48,8 +49,10 @@ export default function LoginScreen() {
     try {
       const res = await api.login(data);
       await setAuth(res.user, res.token);
+      haptics.success();
       router.replace('/');
     } catch (err) {
+      haptics.error();
       setApiError(err instanceof Error ? err.message : t.login.failed);
     }
   };

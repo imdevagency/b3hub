@@ -22,6 +22,8 @@ import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { api, ApiTransportJob, ApiReturnTripJob } from '@/lib/api';
 import { JobRouteMap } from '@/components/ui/JobRouteMap';
+import { haptics } from '@/lib/haptics';
+import { SkeletonDetail } from '@/components/ui/Skeleton';
 import {
   Map,
   Phone,
@@ -185,9 +187,7 @@ export default function ActiveJobScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={[]}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color="#dc2626" />
-        </View>
+        <SkeletonDetail />
       </SafeAreaView>
     );
   }
@@ -282,6 +282,7 @@ export default function ActiveJobScreen() {
 
   const handleUpdateStatus = () => {
     if (!nextStatus || !token) return;
+    haptics.medium();
 
     // AT_DELIVERY → DELIVERED requires delivery proof (photo + signature)
     if (currentStatus === 'AT_DELIVERY') {
@@ -305,7 +306,9 @@ export default function ActiveJobScreen() {
           try {
             const updated = await api.transportJobs.updateStatus(job.id, nextStatus, token);
             setJob(updated);
+            haptics.success();
           } catch (err: any) {
+            haptics.error();
             Alert.alert('Kļūda', err.message ?? 'Neizdevās atjaunināt statusu');
           }
         },
@@ -325,7 +328,9 @@ export default function ActiveJobScreen() {
       const updated = await api.transportJobs.updateStatus(job.id, 'LOADED', token, kg);
       setJob(updated);
       setWeightModalVisible(false);
+      haptics.success();
     } catch (err: any) {
+      haptics.error();
       Alert.alert('Kļūda', err.message ?? 'Neizdevās atjaunināt statusu');
     } finally {
       setWeightSubmitting(false);

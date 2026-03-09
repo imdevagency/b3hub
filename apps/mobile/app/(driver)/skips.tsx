@@ -43,6 +43,7 @@ import {
   X,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { api, SkipHireOrder, SkipHireStatus } from '@/lib/api';
 import { BaseMap } from '@/components/map';
 import { t } from '@/lib/translations';
@@ -457,9 +458,7 @@ export default function CarrierSkipsScreen() {
 
       {/* ── Content ── */}
       {loading ? (
-        <View style={s.center}>
-          <ActivityIndicator size="large" color={ACCENT} />
-        </View>
+        <SkeletonCard count={4} />
       ) : orders.length === 0 ? (
         <View style={s.center}>
           <Trash2 size={52} color="#d1d5db" />

@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '@/lib/auth-context';
 import { ModeProvider } from '@/lib/mode-context';
+import { ToastProvider } from '@/components/ui/Toast';
 import { useEffect, useRef } from 'react';
 
 // ── Push notifications: guarded — native module not present in Expo Go ────────
@@ -55,7 +56,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AuthProvider>
         <ModeProvider>
-          <Stack screenOptions={{ headerShown: false }} />
+          <ToastProvider>
+            <Stack screenOptions={{ headerShown: false }} />
+          </ToastProvider>
         </ModeProvider>
       </AuthProvider>
     </SafeAreaProvider>

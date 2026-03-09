@@ -26,6 +26,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { t } from '@/lib/translations';
 import { ChevronLeft, Eye, EyeOff, Check } from 'lucide-react-native';
+import { haptics } from '@/lib/haptics';
 
 type UserType = 'BUYER' | 'SUPPLIER' | 'CARRIER';
 
@@ -153,8 +154,9 @@ export default function RegisterScreen() {
   };
 
   const goNext = () => {
-    if (!validate()) return;
+    if (!validate()) { haptics.warning(); return; }
     if (step < TOTAL_STEPS) {
+      haptics.selection();
       setStep((s) => s + 1);
     } else {
       handleSubmit();
@@ -182,8 +184,10 @@ export default function RegisterScreen() {
         password,
       });
       await setAuth(res.user, res.token);
+      haptics.success();
       router.replace('/');
     } catch (err) {
+      haptics.error();
       setApiError(err instanceof Error ? err.message : t.register.failed);
     } finally {
       setSubmitting(false);
@@ -203,7 +207,7 @@ export default function RegisterScreen() {
             <TouchableOpacity
               key={r.value}
               style={[s.roleCard, active && { borderColor: r.color, backgroundColor: r.bg }]}
-              onPress={() => setUserType(r.value)}
+              onPress={() => { haptics.light(); setUserType(r.value); }}
               activeOpacity={0.8}
             >
               <View style={s.roleCardHeader}>

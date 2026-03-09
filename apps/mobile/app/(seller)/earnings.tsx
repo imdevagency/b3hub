@@ -26,6 +26,7 @@ import {
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiOrder } from '@/lib/api';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -194,7 +195,7 @@ export default function SellerEarningsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={s.safe} edges={[]}>
-        <ActivityIndicator color="#16a34a" style={{ flex: 1, marginTop: 80 }} />
+        <SkeletonCard count={3} />
       </SafeAreaView>
     );
   }

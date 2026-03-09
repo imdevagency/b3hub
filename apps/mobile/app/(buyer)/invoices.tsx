@@ -15,7 +15,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   Modal,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -31,6 +30,9 @@ import {
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiInvoice, type InvoiceStatus } from '@/lib/api';
+import { SkeletonCard } from '@/components/ui/Skeleton';
+import { haptics } from '@/lib/haptics';
+import { useToast } from '@/components/ui/Toast';
 
 // ── Helpers ────────────────────────────────────────────────────
 
@@ -221,6 +223,7 @@ function InvoiceModal({
 
 export default function InvoicesScreen() {
   const { token } = useAuth();
+  const toast = useToast();
   const [invoices, setInvoices] = useState<ApiInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -263,9 +266,11 @@ export default function InvoicesScreen() {
       await api.invoices.markAsPaid(selected.id, token);
       await load(true);
       setSelected(null);
-      Alert.alert('✅ Apmaksāts', 'Rēķins ir veiksmīgi atzīmēts kā apmaksāts.');
+      haptics.success();
+      toast.success('Rēķins ir veiksmīgi apmaksāts!');
     } catch (err) {
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās apstrādāt apmaksu.');
+      haptics.error();
+      toast.error(err instanceof Error ? err.message : 'Neizdevās apstrādāt apmaksu.');
     } finally {
       setPaying(false);
     }
@@ -289,7 +294,7 @@ export default function InvoicesScreen() {
   if (loading) {
     return (
       <SafeAreaView style={s.safe} edges={[]}>
-        <ActivityIndicator size="large" color="#dc2626" style={{ flex: 1, marginTop: 80 }} />
+        <SkeletonCard count={4} />
       </SafeAreaView>
     );
   }

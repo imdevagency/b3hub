@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Pencil, X, Check, LogOut, Bell, Truck, ChevronRight } from 'lucide-react-native';
+import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
 import { api } from '@/lib/api';
@@ -84,8 +85,10 @@ export default function ProfileScreen() {
         token,
       );
       await setAuth(updated, token);
+      haptics.success();
       setEditOpen(false);
     } catch {
+      haptics.error();
       Alert.alert('Kļūda', 'Neizdevās saglabāt izmaiņas. Lūdzu, mēģiniet vēlreiz.');
     } finally {
       setSaving(false);

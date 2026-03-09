@@ -26,6 +26,7 @@ import {
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import type { ApiNotification } from '@/lib/api';
 
 type LucideIcon = React.ComponentType<{ size?: number; color?: string }>;
@@ -167,7 +168,7 @@ export default function NotificationsScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 48 }} size="large" color="#dc2626" />
+        <SkeletonCard count={5} />
       ) : (
         <ScrollView
           contentContainerStyle={s.list}

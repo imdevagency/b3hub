@@ -24,6 +24,8 @@ import MapboxGL from '@rnmapbox/maps';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { api, ApiTransportJob } from '@/lib/api';
+import { haptics } from '@/lib/haptics';
+import { SkeletonJobRow } from '@/components/ui/Skeleton';
 
 import {
   MapPin,
@@ -904,8 +906,10 @@ export default function JobsScreen() {
     try {
       await api.transportJobs.accept(jobId, token);
       setAllJobs((prev) => prev.filter((j) => j.id !== jobId));
+      haptics.success();
       router.replace('/(driver)/active');
     } catch (err: any) {
+      haptics.error();
       Alert.alert('Kļūda', err.message ?? 'Neizdevās pieņemt darbu');
     }
   };
@@ -913,9 +917,12 @@ export default function JobsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={[]}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color="#dc2626" />
+        <View style={styles.topBar}>
+          <Text style={styles.screenTitle}>{t.jobs.title}</Text>
         </View>
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+          <SkeletonJobRow count={5} />
+        </ScrollView>
       </SafeAreaView>
     );
   }

@@ -40,6 +40,7 @@ import {
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api, type OpenQuoteRequest, type MaterialUnit } from '@/lib/api';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { t } from '@/lib/translations';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -481,9 +482,7 @@ export default function SellerQuotesScreen() {
 
       {/* Content */}
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={ACCENT} />
-        </View>
+        <SkeletonCard count={4} />
       ) : (
         <ScrollView
           style={styles.list}

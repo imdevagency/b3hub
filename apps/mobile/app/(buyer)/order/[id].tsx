@@ -26,6 +26,7 @@ import {
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { SkeletonDetail } from '@/components/ui/Skeleton';
 import type { ApiOrder, JobLocation } from '@/lib/api';
 import { JobRouteMap } from '@/components/ui/JobRouteMap';
 import { t } from '@/lib/translations';
@@ -196,7 +197,7 @@ export default function OrderDetailScreen() {
           <Text style={s.headerTitle}>Pasūtījums</Text>
           <View style={{ width: 22 }} />
         </View>
-        <ActivityIndicator style={{ marginTop: 80 }} size="large" color="#dc2626" />
+        <SkeletonDetail />
       </SafeAreaView>
     );
   }
