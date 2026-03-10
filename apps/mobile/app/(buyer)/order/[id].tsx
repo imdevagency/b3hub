@@ -51,6 +51,14 @@ const UNIT_SHORT: Record<string, string> = {
   LOAD: 'krava',
 };
 
+const ORDER_STEPS = [
+  { key: 'PENDING',    label: 'Pasūtīts',      hint: 'Gaida apstiprināšanu' },
+  { key: 'CONFIRMED',  label: 'Apstiprināts', hint: 'Pasūtījums apstiprināts' },
+  { key: 'PROCESSING', label: 'Sagatavo',     hint: 'Kravu sagatavo' },
+  { key: 'SHIPPED',    label: 'Ceļā',          hint: 'Šoferis izkraujā va' },
+  { key: 'DELIVERED',  label: 'Piegādāts',    hint: 'Piegāde pabeigta' },
+];
+
 function formatDate(iso: string): string {
   const d = new Date(iso + (iso.includes('T') ? '' : 'T00:00:00'));
   return d.toLocaleDateString('lv-LV', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -322,6 +330,47 @@ export default function OrderDetailScreen() {
                 </TouchableOpacity>
               ) : null}
             </View>
+          </View>
+        )}
+
+        {/* Order status timeline */}
+        {order.status !== 'CANCELLED' && (
+          <View style={s.section}>
+            <View style={s.sectionHeader}>
+              <CheckCircle size={14} color="#6b7280" />
+              <Text style={s.sectionTitle}>Izpildes progress</Text>
+            </View>
+            {ORDER_STEPS.map((step, i) => {
+              const currentIdx = ORDER_STEPS.findIndex((s) => s.key === order.status);
+              const isDone = i < currentIdx;
+              const isActive = i === currentIdx;
+              const isLast = i === ORDER_STEPS.length - 1;
+              return (
+                <View key={step.key} style={s.tlRow}>
+                  <View style={s.tlLeft}>
+                    <View style={[
+                      s.tlDot,
+                      isDone && s.tlDotDone,
+                      isActive && s.tlDotActive,
+                    ]}>
+                      {isDone && <CheckCircle size={10} color="#fff" />}
+                      {isActive && <View style={s.tlDotInner} />}
+                    </View>
+                    {!isLast && <View style={[s.tlLine, isDone && s.tlLineDone]} />}
+                  </View>
+                  <View style={s.tlContent}>
+                    <Text style={[
+                      s.tlLabel,
+                      isDone && s.tlLabelDone,
+                      isActive && s.tlLabelActive,
+                    ]}>{step.label}</Text>
+                    {isActive && (
+                      <Text style={s.tlHint}>{step.hint}</Text>
+                    )}
+                  </View>
+                </View>
+              );
+            })}
           </View>
         )}
 
@@ -784,4 +833,37 @@ const s = StyleSheet.create({
     paddingVertical: 2,
   },
   liveTagText: { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
+
+  // Order timeline
+  tlRow: { flexDirection: 'row', minHeight: 44 },
+  tlLeft: { alignItems: 'center', width: 28, marginRight: 12 },
+  tlDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+  },
+  tlDotDone: { backgroundColor: '#111827', borderColor: '#111827' },
+  tlDotActive: {
+    backgroundColor: '#fff',
+    borderColor: '#111827',
+    borderWidth: 3,
+  },
+  tlDotInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#111827',
+  },
+  tlLine: { flex: 1, width: 2, backgroundColor: '#e5e7eb', marginVertical: 2 },
+  tlLineDone: { backgroundColor: '#111827' },
+  tlContent: { flex: 1, paddingTop: 2, paddingBottom: 10 },
+  tlLabel: { fontSize: 14, fontWeight: '500', color: '#9ca3af' },
+  tlLabelDone: { color: '#374151', fontWeight: '600' },
+  tlLabelActive: { color: '#111827', fontWeight: '700' },
+  tlHint: { fontSize: 12, color: '#6b7280', marginTop: 2 },
 });

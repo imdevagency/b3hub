@@ -13,6 +13,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Image,
+  Animated,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
@@ -184,6 +185,19 @@ export default function ActiveJobScreen() {
     };
   }, []);
 
+  // ── Active-dot pulse animation ─────────────────────────────────────────────
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.45, duration: 750, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 750, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
   if (loading) {
     return (
       <ScreenContainer bg="#f9fafb">
@@ -210,6 +224,13 @@ export default function ActiveJobScreen() {
   const currentStatus = job.status as JobStatus;
   const currentIndex = STATUS_STEPS.indexOf(currentStatus);
   const nextStatus = NEXT_STATUS[currentStatus];
+
+  const phaseColor =
+    currentStatus === 'DELIVERED'
+      ? { bg: '#dcfce7', border: '#86efac', text: '#15803d', phase: 'Piegādāts ✓' }
+      : currentIndex >= 4
+      ? { bg: '#d1fae5', border: '#6ee7b7', text: '#059669', phase: 'Piegādes fāze' }
+      : { bg: '#fef3c7', border: '#fde68a', text: '#d97706', phase: 'Iekraušanas fāze' };
 
   // ── Navigate — Schüttflix-style app picker ────────────────────────────────
   //   Shows Waze / Google Maps / Apple Maps action sheet.
@@ -379,30 +400,52 @@ export default function ActiveJobScreen() {
 
         {/* Status card */}
         <View style={styles.statusCard}>
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusText}>
-              {t.activeJob.status[currentStatus] ?? currentStatus}
-            </Text>
+          {/* Phase badge + label */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={[styles.statusBadge, { backgroundColor: phaseColor.bg, borderColor: phaseColor.border }]}>
+              <Text style={[styles.statusText, { color: phaseColor.text }]}>
+                {t.activeJob.status[currentStatus] ?? currentStatus}
+              </Text>
+            </View>
+            <Text style={[styles.phaseLabel, { color: phaseColor.text }]}>{phaseColor.phase}</Text>
           </View>
 
-          {/* Progress stepper */}
+          {/* Progress stepper — phase-colored with animated pulse on active dot */}
           <View style={styles.progressBar}>
-            {STATUS_STEPS.map((step, i) => (
-              <React.Fragment key={step}>
-                <View
-                  style={[
-                    styles.progressDot,
-                    i < currentIndex && styles.progressDotDone,
-                    i === currentIndex && styles.progressDotActive,
-                  ]}
-                />
-                {i < STATUS_STEPS.length - 1 && (
-                  <View
-                    style={[styles.progressLine, i < currentIndex && styles.progressLineDone]}
-                  />
-                )}
-              </React.Fragment>
-            ))}
+            {STATUS_STEPS.map((step, i) => {
+              const isDone = i < currentIndex;
+              const isActive = i === currentIndex;
+              // Steps 0-3 = pickup phase (amber), 4-6 = delivery phase (green)
+              const dotColor = i < 4 ? '#d97706' : '#059669';
+              return (
+                <React.Fragment key={step}>
+                  {isActive ? (
+                    <Animated.View
+                      style={[
+                        styles.progressDot,
+                        styles.progressDotActive,
+                        { backgroundColor: dotColor, transform: [{ scale: pulseAnim }] },
+                      ]}
+                    />
+                  ) : (
+                    <View
+                      style={[
+                        styles.progressDot,
+                        isDone ? [styles.progressDotDone, { backgroundColor: dotColor }] : undefined,
+                      ]}
+                    />
+                  )}
+                  {i < STATUS_STEPS.length - 1 && (
+                    <View
+                      style={[
+                        styles.progressLine,
+                        isDone ? { backgroundColor: i < 3 ? '#d97706' : '#059669' } : undefined,
+                      ]}
+                    />
+                  )}
+                </React.Fragment>
+              );
+            })}
           </View>
         </View>
 
@@ -704,6 +747,7 @@ const styles = StyleSheet.create({
     borderColor: '#fecaca',
   },
   statusText: { color: '#111827', fontWeight: '700', fontSize: 14 },
+  phaseLabel: { fontSize: 12, fontWeight: '600' },
 
   progressBar: {
     flexDirection: 'row',

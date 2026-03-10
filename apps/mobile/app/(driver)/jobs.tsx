@@ -768,6 +768,7 @@ export default function JobsScreen() {
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
   const [saveModalVisible, setSaveModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [todayStats, setTodayStats] = useState<{ earnings: number; completed: number } | null>(null);
 
   // ── Accept sheet ──────────────────────────────────────────────
   const [acceptSheetJob, setAcceptSheetJob] = useState<TransportJob | null>(null);
@@ -813,6 +814,24 @@ export default function JobsScreen() {
   useEffect(() => {
     fetchJobs();
   }, [fetchJobs]);
+
+  // Today's earnings summary
+  useEffect(() => {
+    if (!token) return;
+    api.transportJobs.myJobs(token).then((jobs) => {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      let earnings = 0;
+      let completed = 0;
+      for (const j of jobs) {
+        if (j.status === 'DELIVERED') {
+          const d = new Date(j.deliveryDate ?? j.pickupDate);
+          if (d >= todayStart) { earnings += j.rate; completed++; }
+        }
+      }
+      setTodayStats({ earnings, completed });
+    }).catch(() => {});
+  }, [token]);
   // Load saved searches on mount
   useEffect(() => {
     AsyncStorage.getItem(ASYNC_KEY).then((raw) => {
@@ -1030,7 +1049,29 @@ export default function JobsScreen() {
           <Text style={styles.offlineBannerCta}>Iet tiešsaistē →</Text>
         </TouchableOpacity>
       )}
-      {/* Map view */}
+      {/* Today's earnings summary */}
+      {todayStats !== null && (
+        <View style={styles.earningsBar}>
+          <View style={styles.earningsBarItem}>
+            <Text style={styles.earningsBarValue}>
+              €{todayStats.earnings.toFixed(todayStats.earnings % 1 === 0 ? 0 : 2)}
+            </Text>
+            <Text style={styles.earningsBarLabel}>Šodien</Text>
+          </View>
+          <View style={styles.earningsBarDivider} />
+          <View style={styles.earningsBarItem}>
+            <Text style={styles.earningsBarValue}>{todayStats.completed}</Text>
+            <Text style={styles.earningsBarLabel}>Kravas šodien</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.earningsBarCta}
+            onPress={() => router.push('/(driver)/earnings')}
+          >
+            <Text style={styles.earningsBarCtaText}>Visi ienākumi →</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      {/* Map view */}}
       {viewMode === 'map' ? (
         <JobMapView
           jobs={filteredJobs}
@@ -1689,4 +1730,20 @@ const mapStyles = StyleSheet.create({
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
   legendText: { fontSize: 11, fontWeight: '600', color: '#d1d5db' },
+
+  // Earnings bar
+  earningsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111827',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 0,
+  },
+  earningsBarItem: { alignItems: 'center', paddingHorizontal: 12 },
+  earningsBarValue: { fontSize: 18, fontWeight: '800', color: '#ffffff' },
+  earningsBarLabel: { fontSize: 10, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 1 },
+  earningsBarDivider: { width: 1, height: 32, backgroundColor: '#374151' },
+  earningsBarCta: { marginLeft: 'auto', paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#374151', borderRadius: 10 },
+  earningsBarCtaText: { fontSize: 12, fontWeight: '700', color: '#e5e7eb' },
 });
