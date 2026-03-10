@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,6 +33,7 @@ type FormData = z.infer<typeof schema>;
 export default function LoginScreen() {
   const router = useRouter();
   const { setAuth } = useAuth();
+  const insets = useSafeAreaInsets();
   const [apiError, setApiError] = useState<string | null>(null);
   const [showPw, setShowPw] = useState(false);
 
@@ -58,14 +60,14 @@ export default function LoginScreen() {
   };
 
   return (
-    <ScreenContainer standalone bg="#fff">
+    <ScreenContainer standalone bg="#fff" topInset={0}>
       <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={s.scroll}
+          contentContainerStyle={[s.scroll, { paddingTop: insets.top + 16 }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -173,7 +175,7 @@ export default function LoginScreen() {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#fff' },
-  scroll: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40 },
+  scroll: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 0, paddingBottom: 40 },
   backBtn: {
     width: 40,
     height: 40,

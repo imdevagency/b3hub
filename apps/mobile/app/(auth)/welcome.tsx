@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: W } = Dimensions.get('window');
 
@@ -118,15 +119,16 @@ export default function WelcomeScreen() {
   };
 
   const isLast = activeIdx === SLIDES.length - 1;
+  const insets = useSafeAreaInsets();
 
   return (
-    <ScreenContainer standalone bg="#fff">
+    <ScreenContainer standalone bg="#fff" topInset={0}>
       <StatusBar style="dark" />
 
       {/* Skip button */}
       {!isLast && (
         <TouchableOpacity
-          style={s.skipBtn}
+          style={[s.skipBtn, { top: insets.top + 12 }]}
           onPress={() => router.push('/(auth)/register')}
           activeOpacity={0.7}
         >
@@ -135,7 +137,7 @@ export default function WelcomeScreen() {
       )}
 
       {/* Logo badge */}
-      <View style={s.logoBadge}>
+      <View style={[s.logoBadge, { paddingTop: insets.top + 12 }]}>
         <View style={s.logoBox}>
           <Text style={s.logoText}>B3</Text>
         </View>
@@ -210,7 +212,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 24,
-    paddingTop: 52,
+    paddingTop: 0,
     paddingBottom: 4,
   },
   logoBox: {

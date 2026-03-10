@@ -12,7 +12,7 @@ export function TopBar({ title = 'B3Hub', accentColor, onMenuPress }: TopBarProp
     <View style={styles.bar}>
       <TouchableOpacity
         onPress={onMenuPress}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        hitSlop={10}
         style={styles.menuBtn}
         activeOpacity={0.7}
       >

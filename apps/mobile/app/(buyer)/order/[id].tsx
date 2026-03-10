@@ -52,11 +52,11 @@ const UNIT_SHORT: Record<string, string> = {
 };
 
 const ORDER_STEPS = [
-  { key: 'PENDING',    label: 'Pasūtīts',      hint: 'Gaida apstiprināšanu' },
-  { key: 'CONFIRMED',  label: 'Apstiprināts', hint: 'Pasūtījums apstiprināts' },
-  { key: 'PROCESSING', label: 'Sagatavo',     hint: 'Kravu sagatavo' },
-  { key: 'SHIPPED',    label: 'Ceļā',          hint: 'Šoferis izkraujā va' },
-  { key: 'DELIVERED',  label: 'Piegādāts',    hint: 'Piegāde pabeigta' },
+  { key: 'PENDING', label: 'Pasūtīts', hint: 'Gaida apstiprināšanu' },
+  { key: 'CONFIRMED', label: 'Apstiprināts', hint: 'Pasūtījums apstiprināts' },
+  { key: 'PROCESSING', label: 'Sagatavo', hint: 'Kravu sagatavo' },
+  { key: 'SHIPPED', label: 'Ceļā', hint: 'Šoferis izkraujā va' },
+  { key: 'DELIVERED', label: 'Piegādāts', hint: 'Piegāde pabeigta' },
 ];
 
 function formatDate(iso: string): string {
@@ -348,25 +348,17 @@ export default function OrderDetailScreen() {
               return (
                 <View key={step.key} style={s.tlRow}>
                   <View style={s.tlLeft}>
-                    <View style={[
-                      s.tlDot,
-                      isDone && s.tlDotDone,
-                      isActive && s.tlDotActive,
-                    ]}>
+                    <View style={[s.tlDot, isDone && s.tlDotDone, isActive && s.tlDotActive]}>
                       {isDone && <CheckCircle size={10} color="#fff" />}
                       {isActive && <View style={s.tlDotInner} />}
                     </View>
                     {!isLast && <View style={[s.tlLine, isDone && s.tlLineDone]} />}
                   </View>
                   <View style={s.tlContent}>
-                    <Text style={[
-                      s.tlLabel,
-                      isDone && s.tlLabelDone,
-                      isActive && s.tlLabelActive,
-                    ]}>{step.label}</Text>
-                    {isActive && (
-                      <Text style={s.tlHint}>{step.hint}</Text>
-                    )}
+                    <Text style={[s.tlLabel, isDone && s.tlLabelDone, isActive && s.tlLabelActive]}>
+                      {step.label}
+                    </Text>
+                    {isActive && <Text style={s.tlHint}>{step.hint}</Text>}
                   </View>
                 </View>
               );

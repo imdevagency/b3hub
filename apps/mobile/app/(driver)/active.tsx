@@ -229,8 +229,8 @@ export default function ActiveJobScreen() {
     currentStatus === 'DELIVERED'
       ? { bg: '#dcfce7', border: '#86efac', text: '#15803d', phase: 'Piegādāts ✓' }
       : currentIndex >= 4
-      ? { bg: '#d1fae5', border: '#6ee7b7', text: '#059669', phase: 'Piegādes fāze' }
-      : { bg: '#fef3c7', border: '#fde68a', text: '#d97706', phase: 'Iekraušanas fāze' };
+        ? { bg: '#d1fae5', border: '#6ee7b7', text: '#059669', phase: 'Piegādes fāze' }
+        : { bg: '#fef3c7', border: '#fde68a', text: '#d97706', phase: 'Iekraušanas fāze' };
 
   // ── Navigate — Schüttflix-style app picker ────────────────────────────────
   //   Shows Waze / Google Maps / Apple Maps action sheet.
@@ -401,8 +401,15 @@ export default function ActiveJobScreen() {
         {/* Status card */}
         <View style={styles.statusCard}>
           {/* Phase badge + label */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={[styles.statusBadge, { backgroundColor: phaseColor.bg, borderColor: phaseColor.border }]}>
+          <View
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: phaseColor.bg, borderColor: phaseColor.border },
+              ]}
+            >
               <Text style={[styles.statusText, { color: phaseColor.text }]}>
                 {t.activeJob.status[currentStatus] ?? currentStatus}
               </Text>
@@ -431,7 +438,9 @@ export default function ActiveJobScreen() {
                     <View
                       style={[
                         styles.progressDot,
-                        isDone ? [styles.progressDotDone, { backgroundColor: dotColor }] : undefined,
+                        isDone
+                          ? [styles.progressDotDone, { backgroundColor: dotColor }]
+                          : undefined,
                       ]}
                     />
                   )}

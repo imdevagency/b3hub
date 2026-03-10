@@ -15,6 +15,11 @@ interface ScreenContainerProps {
   bg?: string;
   /** Pass true for screens NOT inside a tab navigator (adds top safe area inset) */
   standalone?: boolean;
+  /**
+   * Override the top safe-area inset applied by `standalone`.
+   * Pass 0 when the screen manages its own top spacing.
+   */
+  topInset?: number;
   style?: ViewStyle;
   /** Disable enter animation (e.g. for screens that animate themselves) */
   noAnimation?: boolean;
@@ -24,10 +29,12 @@ export function ScreenContainer({
   children,
   bg = '#f2f2f7',
   standalone = false,
+  topInset,
   style,
   noAnimation = false,
 }: ScreenContainerProps) {
   const insets = useSafeAreaInsets();
+  const resolvedTopInset = topInset !== undefined ? topInset : standalone ? insets.top : 0;
 
   const opacity = useRef(new Animated.Value(noAnimation ? 1 : 0)).current;
   const translateY = useRef(new Animated.Value(noAnimation ? 0 : 10)).current;
@@ -45,7 +52,7 @@ export function ScreenContainer({
       style={[
         styles.base,
         { backgroundColor: bg },
-        standalone && { paddingTop: insets.top },
+        resolvedTopInset > 0 && { paddingTop: resolvedTopInset },
         { opacity, transform: [{ translateY }] },
         style,
       ]}
@@ -60,4 +67,3 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-

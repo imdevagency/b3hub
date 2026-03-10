@@ -22,6 +22,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { t } from '@/lib/translations';
@@ -117,6 +118,7 @@ export default function RegisterScreen() {
   const router = useRouter();
   const { setAuth } = useAuth();
   const { partner } = useLocalSearchParams<{ partner?: string }>();
+  const insets = useSafeAreaInsets();
   const isPartnerFlow = partner === '1';
 
   // In partner flow ("Kļūt par partneri") hide Buyer — partners are Supplier/Carrier
@@ -467,14 +469,14 @@ export default function RegisterScreen() {
   const roleCountLabel = roles.size > 1 ? `${roles.size} lomas` : 'Solis';
 
   return (
-    <ScreenContainer standalone bg="#fff">
+    <ScreenContainer standalone bg="#fff" topInset={0}>
       <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
         {/* Header bar */}
-        <View style={s.header}>
+        <View style={[s.header, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity style={s.backBtn} onPress={goBack} activeOpacity={0.7}>
             <ChevronLeft size={22} color="#374151" />
           </TouchableOpacity>
@@ -536,7 +538,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 0,
     paddingBottom: 4,
   },
   backBtn: {
