@@ -274,6 +274,7 @@ model User {
   vehicles       Vehicle[]
   quoteRequests  QuoteRequest[]
   reviews        Review[]
+  sentMessages   ChatMessage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -578,6 +579,7 @@ model TransportJob {
   // Relations
   containerDeliveries ContainerOrder[] @relation("ContainerDelivery")
   containerPickups    ContainerOrder[] @relation("ContainerPickup")
+  chatMessages        ChatMessage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1121,4 +1123,24 @@ model Review {
   createdAt DateTime @default(now())
 
   @@map("reviews")
+}
+
+// ── Per-job Chat ──────────────────────────────────────────────────────────────
+
+model ChatMessage {
+  id             String       @id @default(cuid())
+
+  transportJob   TransportJob @relation(fields: [transportJobId], references: [id], onDelete: Cascade)
+  transportJobId String
+
+  sender         User         @relation(fields: [senderId], references: [id])
+  senderId       String
+
+  senderName     String   // denormalized for quick display
+  body           String
+
+  createdAt DateTime @default(now())
+
+  @@index([transportJobId, createdAt])
+  @@map("chat_messages")
 }

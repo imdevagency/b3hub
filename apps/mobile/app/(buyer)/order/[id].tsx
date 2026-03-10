@@ -24,6 +24,7 @@ import {
   XCircle,
   Star,
   FileDown,
+  MessageCircle,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -491,6 +492,29 @@ export default function OrderDetailScreen() {
 
         {/* Actions */}
         <View style={s.actions}>
+          {/* Chat with driver — shown whenever there's an active transport job */}
+          {activeJob && (
+            <TouchableOpacity
+              style={s.chatDriverBtn}
+              onPress={() =>
+                router.push({
+                  pathname: '/chat/[jobId]',
+                  params: {
+                    jobId: activeJob.id,
+                    title: driver
+                      ? `${driver.firstName} ${driver.lastName}`
+                      : 'Šoferis',
+                  },
+                })
+              }
+              activeOpacity={0.8}
+            >
+              <MessageCircle size={16} color="#111827" />
+              <Text style={s.chatDriverBtnText}>
+                {driver ? `Rakstīt ${driver.firstName}` : 'Rakstīt šoferim'}
+              </Text>
+            </TouchableOpacity>
+          )}
           {order.status === 'PENDING' && (
             <View style={s.pendingNote}>
               <FileText size={14} color="#6b7280" />
@@ -885,4 +909,20 @@ const s = StyleSheet.create({
   tlLabelDone: { color: '#374151', fontWeight: '600' },
   tlLabelActive: { color: '#111827', fontWeight: '700' },
   tlHint: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  chatDriverBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  chatDriverBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
 });

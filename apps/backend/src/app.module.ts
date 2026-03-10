@@ -20,6 +20,7 @@ import { DriverScheduleModule } from './driver-schedule/driver-schedule.module';
 import { AdminModule } from './admin/admin.module';
 import { QuoteRequestsModule } from './quote-requests/quote-requests.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { ReviewsModule } from './reviews/reviews.module';
     AdminModule,
     QuoteRequestsModule,
     ReviewsModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

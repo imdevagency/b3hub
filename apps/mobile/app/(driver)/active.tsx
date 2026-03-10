@@ -34,6 +34,7 @@ import {
   Truck,
   Camera,
   CheckCircle,
+  MessageCircle,
 } from 'lucide-react-native';
 
 // ── Status progression ────────────────────────────────────────────────────────
@@ -364,6 +365,18 @@ export default function ActiveJobScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{t.activeJob.title}</Text>
+          <TouchableOpacity
+            style={styles.chatHeaderBtn}
+            onPress={() =>
+              router.push({
+                pathname: '/chat/[jobId]',
+                params: { jobId: job.id, title: 'Pasūtītājs' },
+              })
+            }
+            activeOpacity={0.7}
+          >
+            <MessageCircle size={20} color="#111827" />
+          </TouchableOpacity>
           <View style={styles.priceTag}>
             <Text style={styles.price}>€{job.rate.toFixed(2)}</Text>
           </View>
@@ -1016,4 +1029,12 @@ const styles = StyleSheet.create({
   photoThumb: { width: 72, height: 72, borderRadius: 8 },
   photoCheck: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   photoCheckText: { fontSize: 13, fontWeight: '600', color: '#111827' },
+  chatHeaderBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

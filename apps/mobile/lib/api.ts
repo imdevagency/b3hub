@@ -421,6 +421,16 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
   return text.length > 0 ? (JSON.parse(text) as T) : (null as T);
 }
 
+// ─── Chat ──────────────────────────────────────────────────────────────────
+
+export interface ApiChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  body: string;
+  createdAt: string;
+}
+
 export const api = {
   register: (data: RegisterInput) =>
     apiFetch<AuthResponse>('/auth/register', {
@@ -881,6 +891,22 @@ export const api = {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify(data),
+      }),
+  },
+
+  chat: {
+    /** Fetch all messages for a transport job chat. */
+    getMessages: (jobId: string, token: string) =>
+      apiFetch<ApiChatMessage[]>(`/chat/${jobId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    /** Send a message in a transport job chat. */
+    sendMessage: (jobId: string, body: string, token: string) =>
+      apiFetch<ApiChatMessage>(`/chat/${jobId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ body }),
       }),
   },
 };
