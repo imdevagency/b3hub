@@ -54,9 +54,9 @@ export function PinLayer({ id, coordinate, type = 'custom', label, color = '#6b7
 function MarkerForType({ type, label, color }: { type: PinType; label?: string; color: string }) {
   switch (type) {
     case 'pickup':
-      return <BubbleMarker letter="P" color="#16a34a" label={label} />;
+      return <BubbleMarker letter="P" color="#111827" label={label} />;
     case 'delivery':
-      return <BubbleMarker letter="D" color="#dc2626" label={label} />;
+      return <BubbleMarker letter="D" color="#111827" label={label} />;
     case 'return':
       return <BubbleMarker letter="R" color="#059669" label={label} small />;
     case 'current':
@@ -166,7 +166,7 @@ const pin = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#1d4ed8',
+    backgroundColor: '#374151',
     borderWidth: 2,
     borderColor: '#ffffff',
   },

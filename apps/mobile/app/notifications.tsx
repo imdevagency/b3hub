@@ -37,16 +37,16 @@ interface TypeInfo {
 }
 
 const TYPE_INFO: Record<string, TypeInfo> = {
-  ORDER_PLACED: { Icon: Package, bg: '#fff7ed', iconColor: '#c2410c' },
-  ORDER_CONFIRMED: { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#16a34a' },
-  ORDER_SHIPPED: { Icon: Truck, bg: '#eff6ff', iconColor: '#1d4ed8' },
+  ORDER_PLACED: { Icon: Package, bg: '#f3f4f6', iconColor: '#374151' },
+  ORDER_CONFIRMED: { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#111827' },
+  ORDER_SHIPPED: { Icon: Truck, bg: '#f3f4f6', iconColor: '#374151' },
   ORDER_DELIVERED: { Icon: CheckCircle2, bg: '#dcfce7', iconColor: '#15803d' },
-  ORDER_CANCELLED: { Icon: XCircle, bg: '#fef2f2', iconColor: '#dc2626' },
-  JOB_AVAILABLE: { Icon: Briefcase, bg: '#f5f3ff', iconColor: '#6d28d9' },
+  ORDER_CANCELLED: { Icon: XCircle, bg: '#fef2f2', iconColor: '#111827' },
+  JOB_AVAILABLE: { Icon: Briefcase, bg: '#f3f4f6', iconColor: '#374151' },
   JOB_ACCEPTED: { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#059669' },
-  JOB_COMPLETED: { Icon: Award, bg: '#fffbeb', iconColor: '#d97706' },
-  PAYMENT_RECEIVED: { Icon: Banknote, bg: '#f0fdf4', iconColor: '#16a34a' },
-  INVOICE_ISSUED: { Icon: FileText, bg: '#f8fafc', iconColor: '#475569' },
+  JOB_COMPLETED: { Icon: Award, bg: '#f3f4f6', iconColor: '#6b7280' },
+  PAYMENT_RECEIVED: { Icon: Banknote, bg: '#f0fdf4', iconColor: '#111827' },
+  INVOICE_ISSUED: { Icon: FileText, bg: '#f9fafb', iconColor: '#6b7280' },
   SYSTEM: { Icon: Bell, bg: '#f3f4f6', iconColor: '#6b7280' },
 };
 const DEFAULT_TYPE_INFO: TypeInfo = { Icon: Bell, bg: '#f3f4f6', iconColor: '#6b7280' };
@@ -157,9 +157,9 @@ export default function NotificationsScreen() {
         {unreadCount > 0 ? (
           <TouchableOpacity onPress={markAllRead} disabled={markingAll} hitSlop={12}>
             {markingAll ? (
-              <ActivityIndicator size="small" color="#dc2626" />
+              <ActivityIndicator size="small" color="#111827" />
             ) : (
-              <CheckCheck size={20} color="#dc2626" />
+              <CheckCheck size={20} color="#111827" />
             )}
           </TouchableOpacity>
         ) : (
@@ -176,7 +176,7 @@ export default function NotificationsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => load(true)}
-              tintColor="#dc2626"
+              tintColor="#111827"
             />
           }
         >
@@ -228,7 +228,7 @@ const s = StyleSheet.create({
   cardUnread: {
     backgroundColor: '#fef9f9',
     borderLeftWidth: 3,
-    borderLeftColor: '#dc2626',
+    borderLeftColor: '#111827',
   },
   iconWrap: { position: 'relative' },
   iconCircle: {
@@ -245,7 +245,7 @@ const s = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderWidth: 1.5,
     borderColor: '#fff',
   },

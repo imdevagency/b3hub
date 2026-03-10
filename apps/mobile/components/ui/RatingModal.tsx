@@ -87,7 +87,7 @@ export function RatingModal({ visible, onClose, onSuccess, token, orderId, skipO
           {done ? (
             /* ── Success state ── */
             <View style={s.successWrap}>
-              <CheckCircle size={52} color="#16a34a" />
+              <CheckCircle size={52} color="#111827" />
               <Text style={s.successTitle}>{t.rating.successTitle}</Text>
               <Text style={s.successSub}>{t.rating.successMessage}</Text>
             </View>
@@ -103,8 +103,8 @@ export function RatingModal({ visible, onClose, onSuccess, token, orderId, skipO
                   <TouchableOpacity key={n} onPress={() => setStars(n)} activeOpacity={0.7}>
                     <Star
                       size={38}
-                      color={n <= stars ? '#f59e0b' : '#d1d5db'}
-                      fill={n <= stars ? '#f59e0b' : 'none'}
+                      color={n <= stars ? '#9ca3af' : '#d1d5db'}
+                      fill={n <= stars ? '#9ca3af' : 'none'}
                     />
                   </TouchableOpacity>
                 ))}
@@ -196,7 +196,7 @@ const s = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '600',
-    color: '#f59e0b',
+    color: '#9ca3af',
     marginBottom: 20,
   },
   input: {
@@ -210,7 +210,7 @@ const s = StyleSheet.create({
     marginBottom: 20,
   },
   submitBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 14,
     height: 50,
     alignItems: 'center',

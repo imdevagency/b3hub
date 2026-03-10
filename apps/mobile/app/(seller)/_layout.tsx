@@ -24,7 +24,7 @@ const TAB_BAR = {
 };
 const TAB_LABEL_STYLE = { fontSize: 11, fontWeight: '600' as const };
 
-const ACCENT = '#16a34a';
+const ACCENT = '#111827';
 
 export default function SellerLayout() {
   const { user, isLoading } = useAuth();
@@ -43,7 +43,7 @@ export default function SellerLayout() {
       <View
         style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}
       >
-        <ActivityIndicator size="large" color="#16a34a" />
+        <ActivityIndicator size="large" color="#111827" />
       </View>
     );
   }

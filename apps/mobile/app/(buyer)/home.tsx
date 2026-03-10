@@ -48,19 +48,19 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_DOT: Record<string, string> = {
-  PENDING: '#d97706',
-  CONFIRMED: '#2563eb',
-  PROCESSING: '#7c3aed',
-  LOADING: '#be185d',
-  DISPATCHED: '#16a34a',
-  DELIVERING: '#16a34a',
+  PENDING: '#6b7280',
+  CONFIRMED: '#111827',
+  PROCESSING: '#111827',
+  LOADING: '#374151',
+  DISPATCHED: '#111827',
+  DELIVERING: '#111827',
 };
 
 const STATUS_BADGE: Record<string, { bg: string; color: string }> = {
-  PENDING: { bg: '#fef3c7', color: '#d97706' },
-  CONFIRMED: { bg: '#dbeafe', color: '#1d4ed8' },
-  PROCESSING: { bg: '#ede9fe', color: '#6d28d9' },
-  LOADING: { bg: '#fce7f3', color: '#be185d' },
+  PENDING: { bg: '#f3f4f6', color: '#6b7280' },
+  CONFIRMED: { bg: '#f3f4f6', color: '#374151' },
+  PROCESSING: { bg: '#f3f4f6', color: '#374151' },
+  LOADING: { bg: '#f3f4f6', color: '#374151' },
   DISPATCHED: { bg: '#dcfce7', color: '#15803d' },
   DELIVERING: { bg: '#dcfce7', color: '#15803d' },
   DELIVERED: { bg: '#f0fdf4', color: '#15803d' },
@@ -73,9 +73,9 @@ const SERVICE_TILES: ServiceTile[] = [
     id: 'materials',
     icon: HardHat,
     label: t.home.services.materials,
-    bg: '#fff7ed',
-    iconBg: '#fed7aa',
-    iconColor: '#c2410c',
+    bg: '#f3f4f6',
+    iconBg: '#f3f4f6',
+    iconColor: '#374151',
     route: '/order-request',
   },
   {
@@ -91,9 +91,9 @@ const SERVICE_TILES: ServiceTile[] = [
     id: 'freight',
     icon: Truck,
     label: t.home.services.freight,
-    bg: '#eff6ff',
-    iconBg: '#bfdbfe',
-    iconColor: '#1d4ed8',
+    bg: '#f3f4f6',
+    iconBg: '#f3f4f6',
+    iconColor: '#374151',
     route: '/order-request',
   },
 ];
@@ -311,7 +311,7 @@ export default function HomeScreen() {
               onPress={() => router.push('/(auth)/partner' as any)}
             >
               <View style={s.partnerBannerIcon}>
-                <Truck size={20} color="#dc2626" />
+                <Truck size={20} color="#111827" />
               </View>
               <View style={s.partnerBannerText}>
                 <Text style={s.partnerBannerTitle}>{t.home.partnerBanner.title}</Text>
@@ -330,7 +330,7 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f9fafb' },
 
   header: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 36,
@@ -397,10 +397,10 @@ const s = StyleSheet.create({
     marginBottom: 12,
   },
   cardTitle: { fontSize: 13, fontWeight: '700', color: '#111827' },
-  cardCta: { fontSize: 12, color: '#dc2626', fontWeight: '600' },
+  cardCta: { fontSize: 12, color: '#111827', fontWeight: '600' },
 
   // Active order
-  activeOrderCard: { borderLeftWidth: 3, borderLeftColor: '#dc2626' },
+  activeOrderCard: { borderLeftWidth: 3, borderLeftColor: '#111827' },
   activeOrderHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -409,7 +409,7 @@ const s = StyleSheet.create({
   },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   activeOrderStatus: { fontSize: 12, fontWeight: '600', color: '#374151', flex: 1 },
-  activeOrderTrack: { fontSize: 12, color: '#dc2626', fontWeight: '600' },
+  activeOrderTrack: { fontSize: 12, color: '#111827', fontWeight: '600' },
   activeOrderNum: { fontSize: 16, fontWeight: '700', color: '#111827' },
   activeOrderAddr: { fontSize: 12, color: '#6b7280', marginTop: 2 },
 
@@ -462,5 +462,5 @@ const s = StyleSheet.create({
   partnerBannerText: { flex: 1 },
   partnerBannerTitle: { fontSize: 13, fontWeight: '700', color: '#111827' },
   partnerBannerDesc: { fontSize: 11, color: '#6b7280', marginTop: 2 },
-  partnerBannerCta: { fontSize: 11, color: '#dc2626', fontWeight: '700' },
+  partnerBannerCta: { fontSize: 11, color: '#111827', fontWeight: '700' },
 });

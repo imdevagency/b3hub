@@ -74,10 +74,10 @@ function mapApiOrder(o: ApiOrder): IncomingOrder {
 }
 
 const STATUS_COLORS: Record<OrderStatus, { bg: string; text: string; label: string }> = {
-  PENDING: { bg: '#fef3c7', text: '#d97706', label: 'Jauns' },
-  CONFIRMED: { bg: '#dbeafe', text: '#2563eb', label: 'Apstipārināts' },
-  LOADING: { bg: '#fce7f3', text: '#db2777', label: 'Iekraušana' },
-  DISPATCHED: { bg: '#dcfce7', text: '#16a34a', label: 'Nosūtīts' },
+  PENDING: { bg: '#f3f4f6', text: '#6b7280', label: 'Jauns' },
+  CONFIRMED: { bg: '#f3f4f6', text: '#111827', label: 'Apstipārināts' },
+  LOADING: { bg: '#f3f4f6', text: '#374151', label: 'Iekraušana' },
+  DISPATCHED: { bg: '#dcfce7', text: '#111827', label: 'Nosūtīts' },
 };
 
 // ── Loading confirmation modal (BeladeFLIX-style) ────────────────────────────
@@ -232,7 +232,7 @@ function OrderCard({
             disabled={!!isBusy}
           >
             {isBusy ? (
-              <ActivityIndicator size="small" color="#dc2626" />
+              <ActivityIndicator size="small" color="#111827" />
             ) : (
               <Text style={styles.rejectBtnText}>{t.incoming.reject}</Text>
             )}
@@ -465,7 +465,7 @@ export default function IncomingScreen() {
                 setRefreshing(true);
                 fetchOrders(true);
               }}
-              tintColor="#dc2626"
+              tintColor="#111827"
             />
           }
         >
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 24, fontWeight: '700', color: '#111827', flex: 1 },
   pendingBadge: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -544,8 +544,8 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   filterChipActive: {
-    backgroundColor: '#dc2626',
-    borderColor: '#dc2626',
+    backgroundColor: '#111827',
+    borderColor: '#111827',
   },
   filterChipText: { fontSize: 13, fontWeight: '600', color: '#374151' },
   filterChipTextActive: { color: '#fff' },
@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#f3f4f6',
   },
   priceLabel: { fontSize: 13, color: '#6b7280' },
-  priceValue: { fontSize: 22, fontWeight: '800', color: '#16a34a' },
+  priceValue: { fontSize: 22, fontWeight: '800', color: '#111827' },
 
   actionsRow: { flexDirection: 'row', gap: 10 },
   rejectBtn: {
@@ -624,12 +624,12 @@ const styles = StyleSheet.create({
     borderColor: '#fca5a5',
     alignItems: 'center',
   },
-  rejectBtnText: { fontSize: 14, fontWeight: '600', color: '#dc2626' },
+  rejectBtnText: { fontSize: 14, fontWeight: '600', color: '#111827' },
   confirmBtn: {
     flex: 2,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#16a34a',
+    backgroundColor: '#111827',
     alignItems: 'center',
   },
   confirmBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
   loadingBtn: {
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     alignItems: 'center',
   },
   loadingBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
@@ -699,7 +699,7 @@ const modalStyles = StyleSheet.create({
   },
   footerDesc: { fontSize: 13, color: '#6b7280', textAlign: 'center' },
   confirmBtn: {
-    backgroundColor: '#db2777',
+    backgroundColor: '#374151',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',

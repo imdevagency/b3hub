@@ -45,13 +45,13 @@ import { t } from '@/lib/translations';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const ACCENT = '#16a34a';
+const ACCENT = '#111827';
 const ACCENT_LIGHT = '#dcfce7';
-const ACCENT_DIM = '#14532d';
-const WARN_BG = '#fef3c7';
-const WARN_COLOR = '#d97706';
-const BLUE_BG = '#dbeafe';
-const BLUE_COLOR = '#2563eb';
+const ACCENT_DIM = '#374151';
+const WARN_BG = '#f3f4f6';
+const WARN_COLOR = '#6b7280';
+const BLUE_BG = '#f3f4f6';
+const BLUE_COLOR = '#111827';
 
 const CATEGORY_EMOJI: Record<string, string> = {
   SAND: '🏜️',

@@ -41,7 +41,7 @@ export default function PartnerScreen() {
           onPress={() => Linking.openURL(WEB_BASE + '/apply?type=seller')}
         >
           <View style={[s.iconWrap, s.sellerIcon]}>
-            <Package size={28} color="#c2410c" />
+            <Package size={28} color="#374151" />
           </View>
           <Text style={s.cardTitle}>{t.partner.seller.title}</Text>
           <Text style={s.cardDesc}>{t.partner.seller.desc}</Text>
@@ -57,7 +57,7 @@ export default function PartnerScreen() {
           onPress={() => Linking.openURL(WEB_BASE + '/apply?type=carrier')}
         >
           <View style={[s.iconWrap, s.carrierIcon]}>
-            <Truck size={28} color="#1d4ed8" />
+            <Truck size={28} color="#374151" />
           </View>
           <Text style={s.cardTitle}>{t.partner.carrier.title}</Text>
           <Text style={s.cardDesc}>{t.partner.carrier.desc}</Text>
@@ -117,8 +117,8 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
-  sellerCard: { borderTopColor: '#c2410c' },
-  carrierCard: { borderTopColor: '#1d4ed8' },
+  sellerCard: { borderTopColor: '#374151' },
+  carrierCard: { borderTopColor: '#374151' },
   iconWrap: {
     width: 56,
     height: 56,
@@ -127,8 +127,8 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 16,
   },
-  sellerIcon: { backgroundColor: '#fff7ed' },
-  carrierIcon: { backgroundColor: '#eff6ff' },
+  sellerIcon: { backgroundColor: '#f3f4f6' },
+  carrierIcon: { backgroundColor: '#f3f4f6' },
   cardTitle: {
     fontSize: 18,
     fontWeight: '700',
@@ -151,8 +151,8 @@ const s = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.2,
   },
-  sellerCta: { color: '#c2410c' },
-  carrierCta: { color: '#1d4ed8' },
+  sellerCta: { color: '#374151' },
+  carrierCta: { color: '#374151' },
   note: {
     fontSize: 13,
     color: '#9ca3af',

@@ -46,7 +46,7 @@ export default function OrderConfirmation() {
       <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
         {/* Success icon */}
         <View style={s.iconWrap}>
-          <CheckCircle2 size={72} color="#16a34a" />
+          <CheckCircle2 size={72} color="#111827" />
         </View>
 
         <Text style={s.title}>{t.skipHire.confirmation.title}</Text>
@@ -106,7 +106,7 @@ const s = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   centerText: { fontSize: 16, color: '#6b7280' },
   centerLink: { paddingVertical: 8 },
-  centerLinkText: { color: '#dc2626', fontWeight: '600' },
+  centerLinkText: { color: '#111827', fontWeight: '600' },
   body: { paddingHorizontal: 24, paddingTop: 48, paddingBottom: 40 },
   iconWrap: {
     width: 88,
@@ -133,7 +133,7 @@ const s = StyleSheet.create({
     marginBottom: 28,
   },
   orderNumCard: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 18,
     padding: 22,
     alignItems: 'center',
@@ -175,10 +175,10 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     marginBottom: 32,
   },
-  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981' },
-  statusText: { color: '#10b981', fontWeight: '600', fontSize: 13 },
+  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#374151' },
+  statusText: { color: '#374151', fontWeight: '600', fontSize: 13 },
   primaryBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',

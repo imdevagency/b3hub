@@ -569,7 +569,7 @@ export default function ActiveJobScreen() {
 
           {!nextStatus && (
             <View style={styles.completedBanner}>
-              <CheckCircle2 size={20} color="#16a34a" />
+              <CheckCircle2 size={20} color="#111827" />
               <Text style={styles.completedText}>Piegādāts!</Text>
             </View>
           )}
@@ -608,7 +608,7 @@ export default function ActiveJobScreen() {
                     resizeMode="cover"
                   />
                   <View style={styles.photoCheck}>
-                    <CheckCircle size={14} color="#16a34a" />
+                    <CheckCircle size={14} color="#111827" />
                     <Text style={styles.photoCheckText}>Foto uzņemts</Text>
                   </View>
                 </View>
@@ -676,7 +676,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerTitle: { fontSize: 24, fontWeight: '700', color: '#111827' },
   priceTag: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#fecaca',
   },
-  statusText: { color: '#dc2626', fontWeight: '700', fontSize: 14 },
+  statusText: { color: '#111827', fontWeight: '700', fontSize: 14 },
 
   progressBar: {
     flexDirection: 'row',
@@ -717,19 +717,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#e5e7eb',
   },
   progressDotActive: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     width: 14,
     height: 14,
     borderRadius: 7,
-    shadowColor: '#dc2626',
+    shadowColor: '#111827',
     shadowOpacity: 0.4,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 0 },
     elevation: 3,
   },
-  progressDotDone: { backgroundColor: '#dc2626' },
+  progressDotDone: { backgroundColor: '#111827' },
   progressLine: { flex: 1, height: 2, backgroundColor: '#e5e7eb' },
-  progressLineDone: { backgroundColor: '#dc2626' },
+  progressLineDone: { backgroundColor: '#111827' },
 
   detailsCard: {
     backgroundColor: '#ffffff',
@@ -750,11 +750,11 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderWidth: 3,
     borderColor: '#fecaca',
   },
-  routeDotEnd: { backgroundColor: '#16a34a', borderColor: '#bbf7d0' },
+  routeDotEnd: { backgroundColor: '#111827', borderColor: '#bbf7d0' },
   routeLine: { width: 2, height: 20, backgroundColor: '#e5e7eb', marginLeft: 6 },
   routeInfo: { flex: 1 },
   routeLabel: { fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5 },
@@ -768,25 +768,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  callBtnActive: { backgroundColor: '#16a34a' },
+  callBtnActive: { backgroundColor: '#111827' },
   callBtnText: { fontSize: 18 },
 
   actionsRow: { gap: 10 },
   navigateBtn: {
-    backgroundColor: '#1d4ed8',
+    backgroundColor: '#374151',
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
   },
   navigateBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   nextBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
   },
   nextBtnProof: {
-    backgroundColor: '#16a34a',
+    backgroundColor: '#111827',
   },
   nextBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   completedBanner: {
@@ -800,7 +800,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#86efac',
   },
-  completedText: { color: '#16a34a', fontWeight: '700', fontSize: 16 },
+  completedText: { color: '#111827', fontWeight: '700', fontSize: 16 },
 
   // Return trips strip
   returnStrip: {
@@ -826,7 +826,7 @@ const styles = StyleSheet.create({
   },
   returnCountPillText: { color: '#fff', fontSize: 11, fontWeight: '700' },
   returnStripDismiss: { fontSize: 16, color: '#9ca3af', paddingLeft: 8 },
-  returnStripDesc: { fontSize: 12, color: '#047857', marginTop: 4 },
+  returnStripDesc: { fontSize: 12, color: '#374151', marginTop: 4 },
   returnMiniCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -870,7 +870,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
   },
   goBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
@@ -931,9 +931,9 @@ const styles = StyleSheet.create({
     flex: 2,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     alignItems: 'center',
-    shadowColor: '#dc2626',
+    shadowColor: '#111827',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -952,7 +952,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
   },
   photoCaptured: {
-    borderColor: '#16a34a',
+    borderColor: '#111827',
     borderStyle: 'solid',
     backgroundColor: '#f0fdf4',
   },
@@ -962,5 +962,5 @@ const styles = StyleSheet.create({
   photoPreview: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   photoThumb: { width: 72, height: 72, borderRadius: 8 },
   photoCheck: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  photoCheckText: { fontSize: 13, fontWeight: '600', color: '#16a34a' },
+  photoCheckText: { fontSize: 13, fontWeight: '600', color: '#111827' },
 });

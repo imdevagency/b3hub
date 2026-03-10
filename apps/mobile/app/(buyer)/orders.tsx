@@ -40,10 +40,10 @@ const SIZE_LABEL: Record<string, string> = {
 };
 
 const MAT_STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING: { label: 'Gaida', bg: '#fef9c3', color: '#a16207' },
-  CONFIRMED: { label: 'Apstiprināts', bg: '#dbeafe', color: '#1d4ed8' },
-  PROCESSING: { label: 'Apstrādā', bg: '#ede9fe', color: '#6d28d9' },
-  SHIPPED: { label: 'Ceļā', bg: '#e0f2fe', color: '#0284c7' },
+  PENDING: { label: 'Gaida', bg: '#f3f4f6', color: '#6b7280' },
+  CONFIRMED: { label: 'Apstiprināts', bg: '#f3f4f6', color: '#374151' },
+  PROCESSING: { label: 'Apstrādā', bg: '#f3f4f6', color: '#374151' },
+  SHIPPED: { label: 'Ceļā', bg: '#f3f4f6', color: '#374151' },
   DELIVERED: { label: 'Piegādāts', bg: '#dcfce7', color: '#15803d' },
   CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: '#b91c1c' },
 };
@@ -94,7 +94,7 @@ function OrderCard({ order, onRate }: { order: SkipHireOrder; onRate?: () => voi
         <Text style={s.orderCurrency}>{order.currency}</Text>
         {canRate && onRate && (
           <TouchableOpacity style={s.rateBtn} onPress={onRate} activeOpacity={0.8}>
-            <Star size={13} color="#f59e0b" fill="#f59e0b" />
+            <Star size={13} color="#9ca3af" fill="#9ca3af" />
             <Text style={s.rateBtnText}>{t.rating.rateBtn}</Text>
           </TouchableOpacity>
         )}
@@ -142,7 +142,7 @@ function MaterialOrderCard({ order }: { order: ApiOrder }) {
           return (
             <View style={s.driverRow}>
               <View style={s.driverInfo}>
-                <User size={14} color="#dc2626" />
+                <User size={14} color="#111827" />
                 <Text style={s.driverName}>
                   {driver ? `${driver.firstName} ${driver.lastName}` : 'Šoferis ceļā'}
                 </Text>
@@ -241,7 +241,7 @@ export default function OrdersScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#dc2626" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
         }
       >
         {/* Header */}
@@ -298,7 +298,7 @@ export default function OrdersScreen() {
           </View>
 
           {loading ? (
-            <ActivityIndicator color="#dc2626" size="small" style={{ marginVertical: 20 }} />
+            <ActivityIndicator color="#111827" size="small" style={{ marginVertical: 20 }} />
           ) : matOrders.length === 0 ? (
             <View style={s.matEmpty}>
               <Package size={36} color="#d1d5db" />
@@ -349,7 +349,7 @@ const s = StyleSheet.create({
   },
   title: { fontSize: 24, fontWeight: '700', color: '#111827' },
   newBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -389,13 +389,13 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#e0f2fe',
+    backgroundColor: '#f3f4f6',
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 6,
     marginBottom: 10,
   },
-  trackText: { fontSize: 12, fontWeight: '600', color: '#0284c7' },
+  trackText: { fontSize: 12, fontWeight: '600', color: '#374151' },
   driverRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -407,12 +407,12 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
   driverInfo: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
-  driverName: { fontSize: 13, fontWeight: '600', color: '#dc2626' },
+  driverName: { fontSize: 13, fontWeight: '600', color: '#111827' },
   callDriverBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -443,12 +443,12 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#fef9c3',
+    backgroundColor: '#f3f4f6',
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  rateBtnText: { fontSize: 12, fontWeight: '600', color: '#a16207' },
+  rateBtnText: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
   orderPrice: { fontSize: 20, fontWeight: '700', color: '#111827' },
   orderCurrency: { fontSize: 12, color: '#9ca3af' },
 
@@ -458,7 +458,7 @@ const s = StyleSheet.create({
   emptyDesc: { fontSize: 14, color: '#6b7280', textAlign: 'center' },
   emptyBtn: {
     marginTop: 16,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 12,
     paddingHorizontal: 24,
     paddingVertical: 12,

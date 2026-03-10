@@ -35,10 +35,10 @@ import { RatingModal } from '@/components/ui/RatingModal';
 // ── Constants ──────────────────────────────────────────────────
 
 const STATUS_MAP: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING: { label: 'Gaida', bg: '#fef9c3', color: '#a16207' },
-  CONFIRMED: { label: 'Apstiprināts', bg: '#dbeafe', color: '#1d4ed8' },
-  PROCESSING: { label: 'Apstrādā', bg: '#ede9fe', color: '#6d28d9' },
-  SHIPPED: { label: 'Ceļā', bg: '#e0f2fe', color: '#0284c7' },
+  PENDING: { label: 'Gaida', bg: '#f3f4f6', color: '#6b7280' },
+  CONFIRMED: { label: 'Apstiprināts', bg: '#f3f4f6', color: '#374151' },
+  PROCESSING: { label: 'Apstrādā', bg: '#f3f4f6', color: '#374151' },
+  SHIPPED: { label: 'Ceļā', bg: '#f3f4f6', color: '#374151' },
   DELIVERED: { label: 'Piegādāts', bg: '#dcfce7', color: '#15803d' },
   CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: '#b91c1c' },
 };
@@ -247,7 +247,7 @@ export default function OrderDetailScreen() {
         {activeJob && driverLoc && jobLoc?.pickupLat != null && jobLoc.deliveryLat != null && (
           <View style={s.trackingCard}>
             <View style={s.trackingHeader}>
-              <Truck size={14} color="#dc2626" />
+              <Truck size={14} color="#111827" />
               <Text style={s.trackingTitle}>Tiešraides atrašanās vieta</Text>
               <View style={s.liveTag}>
                 <Text style={s.liveTagText}>TIEŠRAIDE</Text>
@@ -292,11 +292,11 @@ export default function OrderDetailScreen() {
         {driver && (
           <View style={s.driverCard}>
             <View style={s.driverCardRow}>
-              <Truck size={18} color="#dc2626" />
+              <Truck size={18} color="#111827" />
               <Text style={s.driverTitle}>Šoferis ceļā</Text>
             </View>
             <View style={s.driverInfo}>
-              <User size={14} color="#dc2626" />
+              <User size={14} color="#111827" />
               <Text style={s.driverName}>
                 {driver.firstName} {driver.lastName}
               </Text>
@@ -382,7 +382,7 @@ export default function OrderDetailScreen() {
         <View style={s.actions}>
           {order.status === 'PENDING' && (
             <View style={s.pendingNote}>
-              <FileText size={14} color="#a16207" />
+              <FileText size={14} color="#6b7280" />
               <Text style={s.pendingText}>Pasūtījums gaida apstiprinājumu</Text>
             </View>
           )}
@@ -424,7 +424,7 @@ export default function OrderDetailScreen() {
           )}
           {order.status === 'DELIVERED' && alreadyRated && (
             <View style={s.alreadyRated}>
-              <Star size={14} color="#f59e0b" fill="#f59e0b" />
+              <Star size={14} color="#9ca3af" fill="#9ca3af" />
               <Text style={s.alreadyRatedText}>{t.rating.alreadyRated}</Text>
             </View>
           )}
@@ -442,7 +442,7 @@ export default function OrderDetailScreen() {
               activeOpacity={0.8}
             >
               {actionLoading ? (
-                <ActivityIndicator size="small" color="#dc2626" />
+                <ActivityIndicator size="small" color="#111827" />
               ) : (
                 <Text style={s.cancelOrderBtnText}>Atcelt pasūtījumu</Text>
               )}
@@ -490,17 +490,17 @@ const s = StyleSheet.create({
     padding: 14,
     gap: 10,
     borderLeftWidth: 3,
-    borderLeftColor: '#dc2626',
+    borderLeftColor: '#111827',
   },
   driverCardRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   driverTitle: { fontSize: 14, fontWeight: '700', color: '#111827' },
   driverInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  driverName: { fontSize: 14, fontWeight: '600', color: '#dc2626', flex: 1 },
+  driverName: { fontSize: 14, fontWeight: '600', color: '#111827', flex: 1 },
   callBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -554,7 +554,7 @@ const s = StyleSheet.create({
     borderTopColor: '#e5e7eb',
   },
   totalLabel: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  totalValue: { fontSize: 18, fontWeight: '800', color: '#dc2626' },
+  totalValue: { fontSize: 18, fontWeight: '800', color: '#111827' },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -581,13 +581,13 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#fef9c3',
+    backgroundColor: '#f3f4f6',
     borderRadius: 12,
     padding: 12,
     borderLeftWidth: 3,
     borderLeftColor: '#ca8a04',
   },
-  pendingText: { fontSize: 13, fontWeight: '600', color: '#a16207' },
+  pendingText: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
   deliveredNote: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -596,7 +596,7 @@ const s = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     borderLeftWidth: 3,
-    borderLeftColor: '#16a34a',
+    borderLeftColor: '#111827',
   },
   deliveredText: { fontSize: 13, fontWeight: '600', color: '#15803d' },
   cancelledNote: {
@@ -607,7 +607,7 @@ const s = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     borderLeftWidth: 3,
-    borderLeftColor: '#dc2626',
+    borderLeftColor: '#111827',
   },
   cancelledText: { fontSize: 13, fontWeight: '600', color: '#b91c1c' },
   cancelOrderBtn: {
@@ -615,14 +615,14 @@ const s = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#dc2626',
+    borderColor: '#111827',
   },
-  cancelOrderBtnText: { fontSize: 15, fontWeight: '700', color: '#dc2626' },
+  cancelOrderBtnText: { fontSize: 15, fontWeight: '700', color: '#111827' },
   rateBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#f59e0b',
+    backgroundColor: '#9ca3af',
     borderRadius: 12,
     padding: 14,
     justifyContent: 'center',
@@ -637,7 +637,7 @@ const s = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#16a34a',
+    borderLeftColor: '#111827',
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 6,
@@ -649,8 +649,8 @@ const s = StyleSheet.create({
   etaLabel: { fontSize: 11, color: '#6b7280', fontWeight: '500' },
   etaValue: { fontSize: 20, fontWeight: '800', color: '#111827', marginTop: 2 },
   etaLive: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  etaDot: { width: 7, height: 7, borderRadius: 999, backgroundColor: '#16a34a' },
-  etaLiveText: { fontSize: 10, fontWeight: '800', color: '#16a34a', letterSpacing: 0.5 },
+  etaDot: { width: 7, height: 7, borderRadius: 999, backgroundColor: '#111827' },
+  etaLiveText: { fontSize: 10, fontWeight: '800', color: '#111827', letterSpacing: 0.5 },
 
   // Re-order button
   reorderBtn: {
@@ -665,11 +665,11 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#fef9c3',
+    backgroundColor: '#f3f4f6',
     borderRadius: 12,
     padding: 12,
   },
-  alreadyRatedText: { fontSize: 13, fontWeight: '600', color: '#a16207' },
+  alreadyRatedText: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
   emptyWrap: { alignItems: 'center', paddingTop: 80, gap: 12 },
   emptyText: { fontSize: 16, color: '#6b7280' },
   trackingCard: {
@@ -694,7 +694,7 @@ const s = StyleSheet.create({
   },
   trackingTitle: { fontSize: 12, fontWeight: '700', color: '#374151', flex: 1 },
   liveTag: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,

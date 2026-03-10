@@ -260,10 +260,10 @@ function AcceptBottomSheet({
               <Text style={styles.sheetJobPrice}>€{job.priceTotal.toFixed(0)}</Text>
             </View>
             <View style={styles.sheetRouteRow}>
-              <View style={[styles.sheetRouteDot, { backgroundColor: '#16a34a' }]} />
+              <View style={[styles.sheetRouteDot, { backgroundColor: '#111827' }]} />
               <Text style={styles.sheetRouteCity}>{job.fromCity}</Text>
               <ChevronRight size={14} color="#9ca3af" />
-              <View style={[styles.sheetRouteDot, { backgroundColor: '#dc2626' }]} />
+              <View style={[styles.sheetRouteDot, { backgroundColor: '#111827' }]} />
               <Text style={styles.sheetRouteCity}>{job.toCity}</Text>
             </View>
             <View style={styles.sheetJobMeta}>
@@ -522,7 +522,7 @@ function JobCard({
       {tourMode && (
         <View style={styles.tourCheckWrap}>
           {selected ? (
-            <CheckCircle2 size={22} color="#16a34a" />
+            <CheckCircle2 size={22} color="#111827" />
           ) : (
             <View style={styles.tourCheckEmpty} />
           )}
@@ -605,9 +605,9 @@ function JobCard({
 // ── Job Map View ─────────────────────────────────────────────────────────────
 function pinColor(distKm: number | null): string {
   if (distKm === null) return '#6b7280';
-  if (distKm < 50) return '#16a34a';
-  if (distKm < 120) return '#f59e0b';
-  return '#dc2626';
+  if (distKm < 50) return '#111827';
+  if (distKm < 120) return '#9ca3af';
+  return '#111827';
 }
 
 interface JobMapViewProps {
@@ -724,9 +724,9 @@ function JobMapView({
       {/* Legend */}
       <View style={mapStyles.legend}>
         {[
-          { color: '#16a34a', label: '<50 km' },
-          { color: '#f59e0b', label: '50–120 km' },
-          { color: '#dc2626', label: '>120 km' },
+          { color: '#111827', label: '<50 km' },
+          { color: '#9ca3af', label: '50–120 km' },
+          { color: '#111827', label: '>120 km' },
         ].map((item) => (
           <View key={item.label} style={mapStyles.legendItem}>
             <View style={[mapStyles.legendDot, { backgroundColor: item.color }]} />
@@ -1044,7 +1044,7 @@ export default function JobsScreen() {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#dc2626" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
           }
           keyboardShouldPersistTaps="handled"
         >
@@ -1152,10 +1152,10 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 20,
   },
-  filterToggleActive: { backgroundColor: '#dc2626' },
+  filterToggleActive: { backgroundColor: '#111827' },
   filterToggleText: { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
   filterToggleTextActive: { color: '#ffffff' },
-  filterDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#fbbf24' },
+  filterDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#9ca3af' },
 
   // ── Online toggle ─────────────────────────────────────────────
   onlinePill: {
@@ -1169,13 +1169,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#4b5563',
   },
-  onlinePillActive: { backgroundColor: '#14532d', borderColor: '#16a34a' },
+  onlinePillActive: { backgroundColor: '#111827', borderColor: '#111827' },
   onlinePillOffline: { backgroundColor: '#374151', borderColor: '#4b5563' },
   onlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#6b7280' },
-  onlineDotActive: { backgroundColor: '#22c55e' },
+  onlineDotActive: { backgroundColor: '#9ca3af' },
   onlineDotOffline: { backgroundColor: '#6b7280' },
   onlinePillText: { fontSize: 12, fontWeight: '700', color: '#9ca3af' },
-  onlinePillTextActive: { color: '#4ade80' },
+  onlinePillTextActive: { color: '#d1d5db' },
   offlineBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1187,7 +1187,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#292524',
   },
   offlineBannerText: { fontSize: 13, color: '#9ca3af', fontWeight: '500' },
-  offlineBannerCta: { fontSize: 13, fontWeight: '700', color: '#22c55e' },
+  offlineBannerCta: { fontSize: 13, fontWeight: '700', color: '#9ca3af' },
 
   viewToggle: {
     flexDirection: 'row',
@@ -1203,7 +1203,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 18,
   },
-  viewToggleBtnActive: { backgroundColor: '#dc2626' },
+  viewToggleBtnActive: { backgroundColor: '#111827' },
   viewToggleText: { fontSize: 12, fontWeight: '600', color: '#9ca3af' },
   viewToggleTextActive: { color: '#ffffff' },
 
@@ -1244,7 +1244,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#4b5563',
   },
-  chipActive: { backgroundColor: '#dc2626', borderColor: '#dc2626' },
+  chipActive: { backgroundColor: '#111827', borderColor: '#111827' },
   chipText: { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
   chipTextActive: { color: '#ffffff' },
 
@@ -1261,7 +1261,7 @@ const styles = StyleSheet.create({
     flex: 2,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     alignItems: 'center',
   },
   applyBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
@@ -1311,7 +1311,7 @@ const styles = StyleSheet.create({
   activePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fef3c7',
+    backgroundColor: '#f3f4f6',
     marginHorizontal: 16,
     marginTop: 10,
     borderRadius: 10,
@@ -1319,12 +1319,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 6,
     borderWidth: 1,
-    borderColor: '#fde68a',
+    borderColor: '#f3f4f6',
   },
-  activePillLabel: { fontSize: 11, fontWeight: '700', color: '#92400e' },
+  activePillLabel: { fontSize: 11, fontWeight: '700', color: '#6b7280' },
   activePillText: { flex: 1, fontSize: 12, fontWeight: '600', color: '#78350f' },
   activePillClear: {
-    backgroundColor: '#f59e0b',
+    backgroundColor: '#9ca3af',
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -1358,7 +1358,7 @@ const styles = StyleSheet.create({
   },
   cardSelected: {
     borderWidth: 2,
-    borderColor: '#16a34a',
+    borderColor: '#111827',
     backgroundColor: '#f0fdf4',
   },
   tourCheckWrap: {
@@ -1412,7 +1412,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#16a34a',
+    backgroundColor: '#111827',
     borderWidth: 2.5,
     borderColor: '#bbf7d0',
   },
@@ -1420,7 +1420,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderWidth: 2.5,
     borderColor: '#fca5a5',
   },
@@ -1441,15 +1441,15 @@ const styles = StyleSheet.create({
   metaValue: { fontSize: 12, fontWeight: '600', color: '#374151' },
   metaSub: { fontSize: 11, color: '#9ca3af' },
   priceBlock: { alignItems: 'flex-end' },
-  priceTotal: { fontSize: 19, fontWeight: '800', color: '#dc2626' },
+  priceTotal: { fontSize: 19, fontWeight: '800', color: '#111827' },
   pricePerTonne: { fontSize: 11, color: '#9ca3af', marginTop: 1 },
 
   acceptBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     paddingVertical: 13,
     borderRadius: 999,
     alignItems: 'center',
-    shadowColor: '#dc2626',
+    shadowColor: '#111827',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -1466,7 +1466,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 11,
     borderRadius: 10,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
   },
   emptyResetBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
@@ -1510,7 +1510,7 @@ const styles = StyleSheet.create({
     flex: 2,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     alignItems: 'center',
   },
   modalSaveDisabled: { opacity: 0.5 },
@@ -1559,7 +1559,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   sheetJobNum: { fontSize: 13, fontWeight: '700', color: '#6b7280' },
-  sheetJobPrice: { fontSize: 20, fontWeight: '800', color: '#dc2626' },
+  sheetJobPrice: { fontSize: 20, fontWeight: '800', color: '#111827' },
   sheetRouteRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1608,11 +1608,11 @@ const styles = StyleSheet.create({
   sheetReturnPrice: { fontSize: 15, fontWeight: '800', color: '#059669', marginLeft: 8 },
   sheetReturnNone: { fontSize: 12, color: '#9ca3af', textAlign: 'center', paddingVertical: 8 },
   sheetAcceptBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 14,
     paddingVertical: 15,
     alignItems: 'center',
-    shadowColor: '#dc2626',
+    shadowColor: '#111827',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
@@ -1656,7 +1656,7 @@ const mapStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#4b5563',
   },
-  radiusChipActive: { backgroundColor: '#dc2626', borderColor: '#dc2626' },
+  radiusChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
   radiusChipText: { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
   radiusChipTextActive: { color: '#ffffff' },
 

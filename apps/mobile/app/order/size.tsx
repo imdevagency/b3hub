@@ -7,10 +7,10 @@ import { t } from '@/lib/translations';
 import type { SkipSize } from '@/lib/api';
 
 const SIZES: Array<{ id: SkipSize; price: number; color: string; heightPct: number }> = [
-  { id: 'MINI', price: 89, color: '#3b82f6', heightPct: 0.28 },
-  { id: 'MIDI', price: 129, color: '#dc2626', heightPct: 0.48 },
-  { id: 'BUILDERS', price: 169, color: '#f59e0b', heightPct: 0.68 },
-  { id: 'LARGE', price: 199, color: '#10b981', heightPct: 0.88 },
+  { id: 'MINI', price: 89, color: '#374151', heightPct: 0.28 },
+  { id: 'MIDI', price: 129, color: '#111827', heightPct: 0.48 },
+  { id: 'BUILDERS', price: 169, color: '#9ca3af', heightPct: 0.68 },
+  { id: 'LARGE', price: 199, color: '#374151', heightPct: 0.88 },
 ];
 
 export default function Step3Size() {
@@ -150,7 +150,7 @@ const s = StyleSheet.create({
   headerTitle: { fontSize: 16, fontWeight: '600', color: '#111827' },
   progressWrap: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
   progressTrack: { height: 4, backgroundColor: '#f3f4f6', borderRadius: 2, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: '#dc2626', borderRadius: 2 },
+  progressFill: { height: '100%', backgroundColor: '#111827', borderRadius: 2 },
   progressLabel: { marginTop: 6, fontSize: 12, color: '#9ca3af', textAlign: 'right' },
   body: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 8 },
   stepNum: { fontSize: 64, fontWeight: '800', color: '#fef2f2', lineHeight: 68, marginBottom: 8 },
@@ -166,12 +166,12 @@ const s = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
   },
-  cardSelected: { borderColor: '#dc2626', backgroundColor: '#fff7f7' },
+  cardSelected: { borderColor: '#111827', backgroundColor: '#fff7f7' },
   popularBadge: {
     position: 'absolute',
     top: 0,
     right: 0,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderBottomLeftRadius: 10,
@@ -198,7 +198,7 @@ const s = StyleSheet.create({
   checkText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   footer: { padding: 24 },
   nextBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',

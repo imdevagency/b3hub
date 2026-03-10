@@ -82,7 +82,7 @@ export default function Step2WasteType() {
               >
                 {isSelected && (
                   <View style={s.checkBadge}>
-                    <Check size={12} color="#dc2626" />
+                    <Check size={12} color="#111827" />
                   </View>
                 )}
                 {(() => {
@@ -90,7 +90,7 @@ export default function Step2WasteType() {
                   return (
                     <WasteIcon
                       size={30}
-                      color={isSelected ? '#dc2626' : '#6b7280'}
+                      color={isSelected ? '#111827' : '#6b7280'}
                       style={{ marginBottom: 8 }}
                     />
                   );
@@ -142,7 +142,7 @@ const s = StyleSheet.create({
   headerTitle: { fontSize: 16, fontWeight: '600', color: '#111827' },
   progressWrap: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
   progressTrack: { height: 4, backgroundColor: '#f3f4f6', borderRadius: 2, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: '#dc2626', borderRadius: 2 },
+  progressFill: { height: '100%', backgroundColor: '#111827', borderRadius: 2 },
   progressLabel: { marginTop: 6, fontSize: 12, color: '#9ca3af', textAlign: 'right' },
   body: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 8 },
   stepNum: { fontSize: 64, fontWeight: '800', color: '#fef2f2', lineHeight: 68, marginBottom: 8 },
@@ -159,7 +159,7 @@ const s = StyleSheet.create({
     position: 'relative',
     minHeight: 110,
   },
-  cardSelected: { borderColor: '#dc2626', backgroundColor: '#fff7f7' },
+  cardSelected: { borderColor: '#111827', backgroundColor: '#fff7f7' },
   checkBadge: {
     position: 'absolute',
     top: 10,
@@ -167,18 +167,18 @@ const s = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkText: { color: '#fff', fontSize: 11, fontWeight: '700' },
   cardEmoji: { fontSize: 30, marginBottom: 8 },
   cardLabel: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 2 },
-  cardLabelSelected: { color: '#dc2626' },
+  cardLabelSelected: { color: '#111827' },
   cardDesc: { fontSize: 12, color: '#9ca3af' },
   footer: { padding: 24 },
   nextBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',

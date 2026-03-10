@@ -30,7 +30,7 @@ const SLIDES: Slide[] = [
   {
     key: 'materials',
     emoji: '🪨',
-    circleBg: '#fed7aa',
+    circleBg: '#f3f4f6',
     tag: 'MATERIĀLI',
     title: 'Celtniecības materiāli\npiegādāti uz objektu',
     subtitle:
@@ -47,7 +47,7 @@ const SLIDES: Slide[] = [
   {
     key: 'freight',
     emoji: '🚚',
-    circleBg: '#bfdbfe',
+    circleBg: '#f3f4f6',
     tag: 'PĀRVADĀJUMI',
     title: 'Uzticami kravas\npārvadājumi ar GPS',
     subtitle:
@@ -214,7 +214,7 @@ const s = StyleSheet.create({
   logoBox: {
     width: 36,
     height: 36,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
@@ -289,11 +289,11 @@ const s = StyleSheet.create({
     marginBottom: 4,
   },
   dot: { height: 6, borderRadius: 999 },
-  dotActive: { width: 24, backgroundColor: '#dc2626' },
+  dotActive: { width: 24, backgroundColor: '#111827' },
   dotInactive: { width: 6, backgroundColor: '#e5e7eb' },
 
   primaryBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 999,
     paddingVertical: 17,
     alignItems: 'center',
@@ -308,7 +308,7 @@ const s = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   secondaryBtnText: { color: '#6b7280', fontWeight: '500', fontSize: 15 },
-  secondaryBtnLink: { color: '#dc2626', fontWeight: '700' },
+  secondaryBtnLink: { color: '#111827', fontWeight: '700' },
 
   partnerRow: { alignItems: 'center', paddingTop: 2 },
   partnerText: { fontSize: 13, color: '#9ca3af', fontWeight: '500' },

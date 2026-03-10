@@ -57,7 +57,7 @@ import { t } from '@/lib/translations';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const ACCENT = '#dc2626';
+const ACCENT = '#111827';
 const RIGA: [number, number] = [24.1052, 56.9496];
 const SCREEN_H = Dimensions.get('window').height;
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '';
@@ -97,8 +97,8 @@ async function geocodeAddress(address: string): Promise<[number, number] | null>
 }
 
 function pinColor(status: string): string {
-  if (status === 'CONFIRMED') return '#dc2626';
-  if (status === 'DELIVERED') return '#7c3aed';
+  if (status === 'CONFIRMED') return '#111827';
+  if (status === 'DELIVERED') return '#111827';
   return '#6b7280';
 }
 
@@ -385,11 +385,11 @@ function SkipsMapView({ orders, onStatusUpdate, updatingId }: MapViewProps) {
 
       <View style={s.legend}>
         <View style={s.legendItem}>
-          <View style={[s.legendDot, { backgroundColor: '#dc2626' }]} />
+          <View style={[s.legendDot, { backgroundColor: '#111827' }]} />
           <Text style={s.legendLabel}>Piegādāt</Text>
         </View>
         <View style={s.legendItem}>
-          <View style={[s.legendDot, { backgroundColor: '#7c3aed' }]} />
+          <View style={[s.legendDot, { backgroundColor: '#111827' }]} />
           <Text style={s.legendLabel}>Savākt</Text>
         </View>
         <Text style={s.legendCount}>
@@ -526,12 +526,12 @@ export default function CarrierSkipsScreen() {
         <View style={s.chipRow}>
           {toDeliver.length > 0 && (
             <View style={[s.chip, { backgroundColor: '#fee2e2' }]}>
-              <Text style={[s.chipText, { color: '#dc2626' }]}>{toDeliver.length} jāpiegādā</Text>
+              <Text style={[s.chipText, { color: '#111827' }]}>{toDeliver.length} jāpiegādā</Text>
             </View>
           )}
           {toCollect.length > 0 && (
-            <View style={[s.chip, { backgroundColor: '#f3e8ff' }]}>
-              <Text style={[s.chipText, { color: '#7c3aed' }]}>{toCollect.length} jāsavāc</Text>
+            <View style={[s.chip, { backgroundColor: '#f3f4f6' }]}>
+              <Text style={[s.chipText, { color: '#111827' }]}>{toCollect.length} jāsavāc</Text>
             </View>
           )}
         </View>
@@ -699,7 +699,7 @@ const s = StyleSheet.create({
   detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginBottom: 7 },
   detailLabel: { fontSize: 13, color: '#6b7280', minWidth: 80 },
   detailValue: { fontSize: 13, color: '#111827', fontWeight: '500', flex: 1 },
-  notesBox: { backgroundColor: '#fef9c3', borderRadius: 8, padding: 10, marginBottom: 10 },
+  notesBox: { backgroundColor: '#f3f4f6', borderRadius: 8, padding: 10, marginBottom: 10 },
   notesText: { fontSize: 13, color: '#713f12' },
   actionRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   navBtn: {

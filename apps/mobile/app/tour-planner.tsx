@@ -46,7 +46,7 @@ interface TourJob {
 }
 
 // ── Stop number badge ──────────────────────────────────────────────────────────
-function StopBadge({ n, color = '#7c3aed' }: { n: number; color?: string }) {
+function StopBadge({ n, color = '#111827' }: { n: number; color?: string }) {
   return (
     <View style={[badge.wrap, { backgroundColor: color }]}>
       <Text style={badge.text}>{n}</Text>
@@ -77,10 +77,10 @@ function StopCard({ job, index }: { job: TourJob; index: number }) {
       <View style={s.stopBody}>
         <Text style={s.stopJobNum}>{job.jobNumber}</Text>
         <View style={s.stopRoute}>
-          <View style={[s.routeDot, { backgroundColor: '#16a34a' }]} />
+          <View style={[s.routeDot, { backgroundColor: '#111827' }]} />
           <Text style={s.stopCity}>{job.fromCity}</Text>
           <ChevronRight size={12} color="#9ca3af" />
-          <View style={[s.routeDot, { backgroundColor: '#dc2626' }]} />
+          <View style={[s.routeDot, { backgroundColor: '#111827' }]} />
           <Text style={s.stopCity}>{job.toCity}</Text>
         </View>
         <View style={s.stopMeta}>
@@ -209,7 +209,7 @@ export default function TourPlannerScreen() {
           </View>
           <View style={s.summaryDivider} />
           <View style={s.summaryItem}>
-            <Text style={[s.summaryValue, { color: '#16a34a' }]}>{totalEur.toFixed(2)} €</Text>
+            <Text style={[s.summaryValue, { color: '#111827' }]}>{totalEur.toFixed(2)} €</Text>
             <Text style={s.summaryLabel}>ienākumi</Text>
           </View>
         </View>
@@ -226,7 +226,7 @@ export default function TourPlannerScreen() {
           />
           {optimized && totalDistanceKm && totalDistanceKm > 0 && (
             <View style={s.mapBadge}>
-              <Zap size={13} color="#7c3aed" />
+              <Zap size={13} color="#111827" />
               <Text style={s.mapBadgeText}>{t.tourPlanner.totalDistance(totalDistanceKm)}</Text>
             </View>
           )}
@@ -255,7 +255,7 @@ export default function TourPlannerScreen() {
 
         {optimized && (
           <View style={s.optimizedBanner}>
-            <Zap size={15} color="#7c3aed" />
+            <Zap size={15} color="#111827" />
             <Text style={s.optimizedBannerText}>{t.tourPlanner.optimizedTitle}</Text>
           </View>
         )}
@@ -339,10 +339,10 @@ const s = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  mapBadgeText: { fontSize: 12, fontWeight: '700', color: '#7c3aed' },
+  mapBadgeText: { fontSize: 12, fontWeight: '700', color: '#111827' },
 
   optimizeBtn: {
-    backgroundColor: '#7c3aed',
+    backgroundColor: '#111827',
     marginHorizontal: 16,
     marginTop: 16,
     borderRadius: 14,
@@ -351,7 +351,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    shadowColor: '#7c3aed',
+    shadowColor: '#111827',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.35,
     shadowRadius: 10,
@@ -364,16 +364,16 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#f5f3ff',
+    backgroundColor: '#f3f4f6',
     marginHorizontal: 16,
     marginTop: 16,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderLeftWidth: 3,
-    borderLeftColor: '#7c3aed',
+    borderLeftColor: '#111827',
   },
-  optimizedBannerText: { fontSize: 14, fontWeight: '600', color: '#7c3aed' },
+  optimizedBannerText: { fontSize: 14, fontWeight: '600', color: '#111827' },
 
   sectionLabel: {
     marginHorizontal: 16,
@@ -447,7 +447,7 @@ const s = StyleSheet.create({
   stopPrice: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#16a34a',
+    color: '#111827',
     marginLeft: 'auto',
   },
 });

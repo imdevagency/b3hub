@@ -61,7 +61,7 @@ export interface AddressPickerProps {
   initialLng?: number;
   onConfirm: (loc: PickedLocation) => void;
   onClose: () => void;
-  /** Pin colour. Default '#dc2626' (red for delivery) */
+  /** Pin colour. Default '#111827' (red for delivery) */
   pinColor?: string;
 }
 
@@ -77,7 +77,7 @@ export function AddressPicker({
   initialLng,
   onConfirm,
   onClose,
-  pinColor = '#dc2626',
+  pinColor = '#111827',
 }: AddressPickerProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cameraRef = useRef<any>(null);

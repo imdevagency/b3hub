@@ -101,11 +101,11 @@ function VehicleCard({
 
       <View style={s.cardActions}>
         <TouchableOpacity style={s.editBtn} onPress={() => onEdit(vehicle)} activeOpacity={0.8}>
-          <Pencil size={14} color="#2563eb" />
+          <Pencil size={14} color="#111827" />
           <Text style={s.editBtnText}>Labot</Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.deleteBtn} onPress={() => onDelete(vehicle)} activeOpacity={0.8}>
-          <Trash2 size={14} color="#dc2626" />
+          <Trash2 size={14} color="#111827" />
           <Text style={s.deleteBtnText}>Dzēst</Text>
         </TouchableOpacity>
       </View>
@@ -249,7 +249,7 @@ function VehicleModal({
             <Switch
               value={form.isActive}
               onValueChange={(v) => set('isActive')(v)}
-              trackColor={{ true: '#2563eb', false: '#d1d5db' }}
+              trackColor={{ true: '#111827', false: '#d1d5db' }}
               thumbColor="#fff"
             />
           </View>
@@ -366,7 +366,7 @@ export default function VehiclesScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => load(true)}
-              tintColor="#2563eb"
+              tintColor="#111827"
             />
           }
         >
@@ -431,7 +431,7 @@ const s = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#111827',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -458,7 +458,7 @@ const s = StyleSheet.create({
     backgroundColor: '#dcfce7',
   },
   statusBadgeInactive: { backgroundColor: '#f3f4f6' },
-  statusText: { fontSize: 11, fontWeight: '600', color: '#16a34a' },
+  statusText: { fontSize: 11, fontWeight: '600', color: '#111827' },
   statusTextInactive: { color: '#9ca3af' },
   payload: { fontSize: 12, color: '#6b7280', marginTop: 6 },
   cardActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
@@ -471,9 +471,9 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#2563eb',
+    borderColor: '#111827',
   },
-  editBtnText: { fontSize: 13, fontWeight: '600', color: '#2563eb' },
+  editBtnText: { fontSize: 13, fontWeight: '600', color: '#111827' },
   deleteBtn: {
     flex: 1,
     flexDirection: 'row',
@@ -483,9 +483,9 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#dc2626',
+    borderColor: '#111827',
   },
-  deleteBtnText: { fontSize: 13, fontWeight: '600', color: '#dc2626' },
+  deleteBtnText: { fontSize: 13, fontWeight: '600', color: '#111827' },
   emptyWrap: { alignItems: 'center', paddingTop: 80, gap: 12 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: '#374151' },
   emptyDesc: { fontSize: 14, color: '#6b7280', textAlign: 'center' },
@@ -493,7 +493,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#111827',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 20,
@@ -514,7 +514,7 @@ const s = StyleSheet.create({
   },
   modalTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
   cancelText: { fontSize: 15, color: '#6b7280' },
-  saveText: { fontSize: 15, fontWeight: '700', color: '#2563eb' },
+  saveText: { fontSize: 15, fontWeight: '700', color: '#111827' },
   saveTextDisabled: { color: '#9ca3af' },
   formScroll: { padding: 16, gap: 4, paddingBottom: 48 },
   formLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginTop: 12, marginBottom: 4 },
@@ -538,9 +538,9 @@ const s = StyleSheet.create({
     borderColor: '#e5e7eb',
     marginRight: 8,
   },
-  chipActive: { backgroundColor: '#dbeafe', borderColor: '#2563eb' },
+  chipActive: { backgroundColor: '#f3f4f6', borderColor: '#111827' },
   chipText: { fontSize: 13, color: '#374151', fontWeight: '500' },
-  chipTextActive: { color: '#2563eb', fontWeight: '700' },
+  chipTextActive: { color: '#111827', fontWeight: '700' },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',

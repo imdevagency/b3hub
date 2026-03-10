@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   scroll: { padding: 24, gap: 20, paddingBottom: 40 },
 
   header: { gap: 4, marginBottom: 4 },
-  backText: { fontSize: 14, color: '#dc2626', fontWeight: '600', marginBottom: 12 },
+  backText: { fontSize: 14, color: '#111827', fontWeight: '600', marginBottom: 12 },
   title: { fontSize: 24, fontWeight: '800', color: '#111827' },
   subtitle: { fontSize: 14, color: '#6b7280' },
 
@@ -379,12 +379,12 @@ const styles = StyleSheet.create({
 
   // Submit
   submitBtn: {
-    backgroundColor: '#16a34a',
+    backgroundColor: '#111827',
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
-    shadowColor: '#16a34a',
+    shadowColor: '#111827',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,

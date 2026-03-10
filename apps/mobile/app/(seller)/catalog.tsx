@@ -47,15 +47,15 @@ const CATEGORIES = Object.keys(CATEGORY_LABELS) as MaterialCategory[];
 const UNITS = Object.keys(UNIT_LABELS) as MaterialUnit[];
 
 const CATEGORY_COLOR: Record<MaterialCategory, { bg: string; color: string }> = {
-  SAND: { bg: '#fef9c3', color: '#a16207' },
-  GRAVEL: { bg: '#f1f5f9', color: '#475569' },
+  SAND: { bg: '#f3f4f6', color: '#6b7280' },
+  GRAVEL: { bg: '#f1f5f9', color: '#6b7280' },
   STONE: { bg: '#f1f5f9', color: '#374151' },
   CONCRETE: { bg: '#f4f4f5', color: '#52525b' },
   SOIL: { bg: '#f0fdf4', color: '#15803d' },
   RECYCLED_CONCRETE: { bg: '#ecfdf5', color: '#059669' },
-  RECYCLED_SOIL: { bg: '#f0fdf4', color: '#16a34a' },
+  RECYCLED_SOIL: { bg: '#f0fdf4', color: '#111827' },
   ASPHALT: { bg: '#f1f5f9', color: '#1e293b' },
-  CLAY: { bg: '#fff7ed', color: '#c2410c' },
+  CLAY: { bg: '#f3f4f6', color: '#374151' },
   OTHER: { bg: '#f3f4f6', color: '#6b7280' },
 };
 
@@ -145,7 +145,7 @@ function ListingCard({
 
       <View style={s.cardActions}>
         <TouchableOpacity style={s.editBtn} onPress={() => onEdit(material)} activeOpacity={0.8}>
-          <Pencil size={14} color="#16a34a" />
+          <Pencil size={14} color="#111827" />
           <Text style={s.editBtnText}>Labot</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -153,7 +153,7 @@ function ListingCard({
           onPress={() => onDelete(material)}
           activeOpacity={0.8}
         >
-          <Trash2 size={14} color="#dc2626" />
+          <Trash2 size={14} color="#111827" />
           <Text style={s.deleteBtnText}>Dzēst</Text>
         </TouchableOpacity>
       </View>
@@ -302,7 +302,7 @@ function ListingModal({
             <Switch
               value={form.inStock}
               onValueChange={(v) => set('inStock')(v)}
-              trackColor={{ true: '#16a34a', false: '#d1d5db' }}
+              trackColor={{ true: '#111827', false: '#d1d5db' }}
               thumbColor="#fff"
             />
           </View>
@@ -311,7 +311,7 @@ function ListingModal({
             <Switch
               value={form.isRecycled}
               onValueChange={(v) => set('isRecycled')(v)}
-              trackColor={{ true: '#16a34a', false: '#d1d5db' }}
+              trackColor={{ true: '#111827', false: '#d1d5db' }}
               thumbColor="#fff"
             />
           </View>
@@ -429,7 +429,7 @@ export default function SellerCatalog() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => load(true)}
-              tintColor="#16a34a"
+              tintColor="#111827"
             />
           }
         >
@@ -481,7 +481,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#16a34a',
+    backgroundColor: '#111827',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
@@ -515,8 +515,8 @@ const s = StyleSheet.create({
     backgroundColor: '#dcfce7',
   },
   stockBadgeOut: { backgroundColor: '#fee2e2' },
-  stockText: { fontSize: 11, fontWeight: '600', color: '#16a34a' },
-  stockTextOut: { color: '#dc2626' },
+  stockText: { fontSize: 11, fontWeight: '600', color: '#111827' },
+  stockTextOut: { color: '#111827' },
   cardDivider: { height: 1, backgroundColor: '#f3f4f6', marginVertical: 10 },
   cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   cardPrice: { fontSize: 16, fontWeight: '700', color: '#111827' },
@@ -530,7 +530,7 @@ const s = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 8,
   },
-  recycledText: { fontSize: 11, color: '#16a34a', fontWeight: '600' },
+  recycledText: { fontSize: 11, color: '#111827', fontWeight: '600' },
   cardDesc: { fontSize: 12, color: '#6b7280', marginTop: 6, lineHeight: 16 },
   cardActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
   editBtn: {
@@ -542,9 +542,9 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#16a34a',
+    borderColor: '#111827',
   },
-  editBtnText: { fontSize: 13, fontWeight: '600', color: '#16a34a' },
+  editBtnText: { fontSize: 13, fontWeight: '600', color: '#111827' },
   deleteBtn: {
     flex: 1,
     flexDirection: 'row',
@@ -554,9 +554,9 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#dc2626',
+    borderColor: '#111827',
   },
-  deleteBtnText: { fontSize: 13, fontWeight: '600', color: '#dc2626' },
+  deleteBtnText: { fontSize: 13, fontWeight: '600', color: '#111827' },
   emptyWrap: { alignItems: 'center', paddingTop: 80, gap: 12 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: '#374151' },
   emptyDesc: { fontSize: 14, color: '#6b7280', textAlign: 'center' },
@@ -564,7 +564,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#16a34a',
+    backgroundColor: '#111827',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 20,
@@ -584,7 +584,7 @@ const s = StyleSheet.create({
   },
   modalTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
   cancelText: { fontSize: 15, color: '#6b7280' },
-  saveText: { fontSize: 15, fontWeight: '700', color: '#16a34a' },
+  saveText: { fontSize: 15, fontWeight: '700', color: '#111827' },
   saveTextDisabled: { color: '#9ca3af' },
   formScroll: { padding: 16, gap: 4, paddingBottom: 48 },
   formLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginTop: 12, marginBottom: 4 },
@@ -618,9 +618,9 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
-  chipActive: { backgroundColor: '#dcfce7', borderColor: '#16a34a' },
+  chipActive: { backgroundColor: '#dcfce7', borderColor: '#111827' },
   chipText: { fontSize: 13, color: '#374151', fontWeight: '500' },
-  chipTextActive: { color: '#16a34a', fontWeight: '700' },
+  chipTextActive: { color: '#111827', fontWeight: '700' },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',

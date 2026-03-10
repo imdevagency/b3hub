@@ -177,12 +177,12 @@ export const lv = {
       newOrder: 'Jauns pasūtījums',
     },
     status: {
-      PENDING: { label: 'Gaida apstiprinājumu', bg: '#fef3c7', color: '#d97706' },
-      CONFIRMED: { label: 'Apstiprināts', bg: '#dbeafe', color: '#2563eb' },
-      DELIVERED: { label: 'Piegādāts', bg: '#f3e8ff', color: '#7c3aed' },
+      PENDING: { label: 'Gaida apstiprinājumu', bg: '#f3f4f6', color: '#6b7280' },
+      CONFIRMED: { label: 'Apstiprināts', bg: '#f3f4f6', color: '#111827' },
+      DELIVERED: { label: 'Piegādāts', bg: '#f3f4f6', color: '#111827' },
       COLLECTED: { label: 'Savākts', bg: '#d1fae5', color: '#059669' },
       COMPLETED: { label: 'Pabeigts', bg: '#d1fae5', color: '#059669' },
-      CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: '#dc2626' },
+      CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: '#111827' },
     } as Record<string, { label: string; bg: string; color: string }>,
     myOrders: 'Mani pasūtījumi',
     noOrders: 'Nav pasūtījumu',
@@ -373,8 +373,8 @@ export const lv = {
     cancel: 'Atcelt',
     errorTitle: 'Kļūda',
     status: {
-      CONFIRMED: { label: 'Jāpiegādā', bg: '#dbeafe', color: '#2563eb' },
-      DELIVERED: { label: 'Piegādāts — jāsavāc', bg: '#f3e8ff', color: '#7c3aed' },
+      CONFIRMED: { label: 'Jāpiegādā', bg: '#f3f4f6', color: '#111827' },
+      DELIVERED: { label: 'Piegādāts — jāsavāc', bg: '#f3f4f6', color: '#111827' },
       COLLECTED: { label: 'Savākts', bg: '#d1fae5', color: '#059669' },
     } as Record<string, { label: string; bg: string; color: string }>,
     sizes: {

@@ -59,7 +59,7 @@ export default function Step1Location() {
             onPress={() => setPickerOpen(true)}
             activeOpacity={0.7}
           >
-            <MapPin size={18} color={isValid ? '#dc2626' : '#9ca3af'} />
+            <MapPin size={18} color={isValid ? '#111827' : '#9ca3af'} />
             <Text style={[s.locationText, !isValid && s.locationPlaceholder]} numberOfLines={2}>
               {isValid ? state.location : t.skipHire.step1.placeholder}
             </Text>
@@ -94,7 +94,7 @@ export default function Step1Location() {
         initialAddress={state.location}
         initialLat={state.locationLat ?? undefined}
         initialLng={state.locationLng ?? undefined}
-        pinColor="#dc2626"
+        pinColor="#111827"
         onConfirm={({ address, lat, lng }) => {
           setLocationWithCoords(address, lat, lng);
           setPickerOpen(false);
@@ -132,7 +132,7 @@ const s = StyleSheet.create({
     borderRadius: 2,
     overflow: 'hidden',
   },
-  progressFill: { height: '100%', backgroundColor: '#dc2626', borderRadius: 2 },
+  progressFill: { height: '100%', backgroundColor: '#111827', borderRadius: 2 },
   progressLabel: { marginTop: 6, fontSize: 12, color: '#9ca3af', textAlign: 'right' },
   body: { flex: 1, paddingHorizontal: 24, paddingTop: 32 },
   stepNum: {
@@ -156,7 +156,7 @@ const s = StyleSheet.create({
     gap: 12,
   },
   locationRowValid: {
-    borderColor: '#dc2626',
+    borderColor: '#111827',
     backgroundColor: '#fff',
   },
   locationText: {
@@ -176,7 +176,7 @@ const s = StyleSheet.create({
   },
   footer: { padding: 24 },
   nextBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',

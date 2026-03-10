@@ -132,7 +132,7 @@ export function JobRouteMap({
       {mainRoute && mainRoute.distanceKm > 0 && (
         <View style={styles.infoPill}>
           {routeLoading ? (
-            <ActivityIndicator size="small" color="#16a34a" />
+            <ActivityIndicator size="small" color="#111827" />
           ) : (
             <>
               <Text style={styles.infoDistance}>{mainRoute.distanceKm} km</Text>
@@ -158,9 +158,9 @@ export function JobRouteMap({
           />
         ))}
         {current && showToPickupLeg && toPickupCoords.length >= 2 && (
-          <RouteLayer id="toPickup" coordinates={toPickupCoords} color="#dc2626" dashed />
+          <RouteLayer id="toPickup" coordinates={toPickupCoords} color="#111827" dashed />
         )}
-        <RouteLayer id="main" coordinates={mainCoords} color="#16a34a" />
+        <RouteLayer id="main" coordinates={mainCoords} color="#111827" />
       </BaseMap>
     </View>
   );

@@ -188,8 +188,8 @@ export default function SellerEarningsScreen() {
 
   const STATUS_STYLE: Record<OrderEntry['status'], { bg: string; color: string; label: string }> = {
     delivered: { bg: '#dcfce7', color: '#15803d', label: 'Piegādāts' },
-    confirmed: { bg: '#dbeafe', color: '#1d4ed8', label: 'Apstiprin.' },
-    pending: { bg: '#fef3c7', color: '#d97706', label: 'Gaida' },
+    confirmed: { bg: '#f3f4f6', color: '#374151', label: 'Apstiprin.' },
+    pending: { bg: '#f3f4f6', color: '#6b7280', label: 'Gaida' },
   };
 
   if (loading) {
@@ -205,7 +205,7 @@ export default function SellerEarningsScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#16a34a" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
         }
       >
         {/* ── Green hero ── */}
@@ -232,23 +232,23 @@ export default function SellerEarningsScreen() {
           <View style={s.summaryRow}>
             <View style={s.card}>
               <View style={[s.cardIcon, { backgroundColor: '#dcfce7' }]}>
-                <CheckCircle2 size={18} color="#16a34a" />
+                <CheckCircle2 size={18} color="#111827" />
               </View>
               <Text style={s.cardVal}>{stats.totalOrders}</Text>
               <Text style={s.cardLabel}>Pasūtījumi</Text>
             </View>
-            <View style={[s.card, { backgroundColor: '#fffbeb', borderColor: '#fde68a' }]}>
-              <View style={[s.cardIcon, { backgroundColor: '#fef3c7' }]}>
-                <Clock size={18} color="#d97706" />
+            <View style={[s.card, { backgroundColor: '#f3f4f6', borderColor: '#f3f4f6' }]}>
+              <View style={[s.cardIcon, { backgroundColor: '#f3f4f6' }]}>
+                <Clock size={18} color="#6b7280" />
               </View>
-              <Text style={[s.cardVal, { color: '#92400e' }]}>
+              <Text style={[s.cardVal, { color: '#6b7280' }]}>
                 €{stats.pendingRevenue.toFixed(0)}
               </Text>
-              <Text style={[s.cardLabel, { color: '#a16207' }]}>Gaida apstiprin.</Text>
+              <Text style={[s.cardLabel, { color: '#6b7280' }]}>Gaida apstiprin.</Text>
             </View>
             <View style={s.card}>
-              <View style={[s.cardIcon, { backgroundColor: '#ede9fe' }]}>
-                <ArrowUpRight size={18} color="#7c3aed" />
+              <View style={[s.cardIcon, { backgroundColor: '#f3f4f6' }]}>
+                <ArrowUpRight size={18} color="#111827" />
               </View>
               <Text style={s.cardVal}>€{stats.avgOrderValue.toFixed(0)}</Text>
               <Text style={s.cardLabel}>Vid. pasūt.</Text>
@@ -258,7 +258,7 @@ export default function SellerEarningsScreen() {
           {/* ── Month trend bar ── */}
           <View style={s.trendCard}>
             <View style={s.trendHeader}>
-              <TrendingUp size={16} color="#16a34a" />
+              <TrendingUp size={16} color="#111827" />
               <Text style={s.trendTitle}>Mēneša ieņēmumi</Text>
               <Text style={s.trendAmount}>€{stats.monthRevenue.toFixed(0)}</Text>
             </View>
@@ -333,7 +333,7 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f2f2f7' },
 
   hero: {
-    backgroundColor: '#16a34a',
+    backgroundColor: '#111827',
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 28,
@@ -349,7 +349,7 @@ const s = StyleSheet.create({
   },
   chipActive: { backgroundColor: '#fff' },
   chipText: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.75)' },
-  chipTextActive: { color: '#16a34a' },
+  chipTextActive: { color: '#111827' },
 
   body: { padding: 16, gap: 16, paddingBottom: 40 },
 
@@ -391,7 +391,7 @@ const s = StyleSheet.create({
   trendTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: '#374151' },
   trendAmount: { fontSize: 15, fontWeight: '800', color: '#111827' },
   trendTrack: { height: 8, backgroundColor: '#f3f4f6', borderRadius: 999 },
-  trendFill: { height: 8, backgroundColor: '#16a34a', borderRadius: 999 },
+  trendFill: { height: 8, backgroundColor: '#111827', borderRadius: 999 },
 
   section: { gap: 10 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },

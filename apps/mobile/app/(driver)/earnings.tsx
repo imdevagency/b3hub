@@ -176,25 +176,25 @@ export default function EarningsScreen() {
           <View style={styles.summaryRow}>
             <View style={styles.summaryCard}>
               <View style={[styles.summaryIcon, { backgroundColor: '#dcfce7' }]}>
-                <CheckCircle2 size={18} color="#16a34a" />
+                <CheckCircle2 size={18} color="#111827" />
               </View>
               <Text style={styles.summaryValue}>{stats.completedJobs}</Text>
               <Text style={styles.summaryLabel}>{t.earnings.completedJobs}</Text>
             </View>
             <View
-              style={[styles.summaryCard, { backgroundColor: '#fffbeb', borderColor: '#fde68a' }]}
+              style={[styles.summaryCard, { backgroundColor: '#f3f4f6', borderColor: '#f3f4f6' }]}
             >
-              <View style={[styles.summaryIcon, { backgroundColor: '#fef3c7' }]}>
-                <Clock size={18} color="#d97706" />
+              <View style={[styles.summaryIcon, { backgroundColor: '#f3f4f6' }]}>
+                <Clock size={18} color="#6b7280" />
               </View>
-              <Text style={[styles.summaryValue, { color: '#92400e' }]}>
+              <Text style={[styles.summaryValue, { color: '#6b7280' }]}>
                 €{stats.pendingPayout.toFixed(0)}
               </Text>
-              <Text style={[styles.summaryLabel, { color: '#a16207' }]}>{t.earnings.pending}</Text>
+              <Text style={[styles.summaryLabel, { color: '#6b7280' }]}>{t.earnings.pending}</Text>
             </View>
             <View style={styles.summaryCard}>
               <View style={[styles.summaryIcon, { backgroundColor: '#fee2e2' }]}>
-                <TrendingUp size={18} color="#dc2626" />
+                <TrendingUp size={18} color="#111827" />
               </View>
               <Text style={styles.summaryValue}>€{stats.monthEarnings.toFixed(0)}</Text>
               <Text style={styles.summaryLabel}>{t.earnings.thisMonth}</Text>
@@ -219,13 +219,13 @@ export default function EarningsScreen() {
                     <View
                       style={[
                         styles.historyDot,
-                        { backgroundColor: job.paid ? '#dcfce7' : '#fef3c7' },
+                        { backgroundColor: job.paid ? '#dcfce7' : '#f3f4f6' },
                       ]}
                     >
                       {job.paid ? (
-                        <Check size={13} color="#16a34a" />
+                        <Check size={13} color="#111827" />
                       ) : (
-                        <Clock size={13} color="#d97706" />
+                        <Clock size={13} color="#6b7280" />
                       )}
                     </View>
                     <View style={styles.historyBody}>
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
 
   // ── Header ──
   header: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 28,
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   periodChipText: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.75)' },
-  periodChipTextActive: { color: '#dc2626' },
+  periodChipTextActive: { color: '#111827' },
 
   // ── Body ──
   body: { padding: 16, gap: 18, paddingBottom: 40 },
@@ -378,8 +378,8 @@ const styles = StyleSheet.create({
   historyAmount: { fontSize: 15, fontWeight: '700', color: '#111827' },
   payStatus: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   payStatusPaid: { backgroundColor: '#dcfce7' },
-  payStatusPending: { backgroundColor: '#fef3c7' },
+  payStatusPending: { backgroundColor: '#f3f4f6' },
   payStatusText: { fontSize: 10, fontWeight: '700' },
-  payStatusTextPaid: { color: '#16a34a' },
-  payStatusTextPending: { color: '#d97706' },
+  payStatusTextPaid: { color: '#111827' },
+  payStatusTextPending: { color: '#6b7280' },
 });

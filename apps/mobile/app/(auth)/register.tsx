@@ -46,15 +46,15 @@ const ROLES: {
     emoji: '🛎️',
     title: 'Pircējs',
     desc: 'Pasūti materiālus, konteinerus un transportu',
-    color: '#b45309',
-    bg: '#fef3c7',
+    color: '#9ca3af',
+    bg: '#f3f4f6',
   },
   {
     value: 'SUPPLIER',
     emoji: '📦',
     title: 'Piegādātājs',
     desc: 'Pārdod materiālus un atbildi uz pieprasījumiem',
-    color: '#047857',
+    color: '#6b7280',
     bg: '#d1fae5',
   },
   {
@@ -62,8 +62,8 @@ const ROLES: {
     emoji: '🚛',
     title: 'Pārvadātājs',
     desc: 'Pieņem kravas un nopelni uz katru braucienu',
-    color: '#1d4ed8',
-    bg: '#dbeafe',
+    color: '#374151',
+    bg: '#f3f4f6',
   },
 ];
 
@@ -94,7 +94,7 @@ function ProgressBar({ step }: { step: number }) {
 
 const pb = StyleSheet.create({
   track: { height: 3, backgroundColor: '#f3f4f6', borderRadius: 999, marginTop: 12 },
-  fill: { height: 3, backgroundColor: '#dc2626', borderRadius: 999 },
+  fill: { height: 3, backgroundColor: '#111827', borderRadius: 999 },
 });
 
 // ── Password strength ──────────────────────────────────────────
@@ -106,9 +106,9 @@ function pwStrength(pw: string): { label: string; color: string; pct: number } {
   if (/[0-9]/.test(pw)) score++;
   if (/[^a-zA-Z0-9]/.test(pw)) score++;
   if (score <= 1) return { label: 'Vāja', color: '#ef4444', pct: 0.25 };
-  if (score === 2) return { label: 'Vidēja', color: '#f97316', pct: 0.5 };
+  if (score === 2) return { label: 'Vidēja', color: '#9ca3af', pct: 0.5 };
   if (score === 3) return { label: 'Laba', color: '#eab308', pct: 0.75 };
-  return { label: 'Stipra', color: '#22c55e', pct: 1 };
+  return { label: 'Stipra', color: '#6b7280', pct: 1 };
 }
 
 // ── Main ───────────────────────────────────────────────────────
@@ -516,7 +516,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
   },
-  kindCardActive: { borderColor: '#dc2626', backgroundColor: '#fef2f2' },
+  kindCardActive: { borderColor: '#111827', backgroundColor: '#fef2f2' },
   kindEmoji: { fontSize: 22, marginBottom: 6 },
   kindLabel: { fontSize: 13, fontWeight: '700', color: '#374151', textAlign: 'center' },
   kindLabelActive: { color: '#b91c1c' },
@@ -565,7 +565,7 @@ const s = StyleSheet.create({
 
   // Legal
   legalText: { fontSize: 12, color: '#9ca3af', lineHeight: 18, marginBottom: 8 },
-  legalLink: { color: '#dc2626', fontWeight: '600' },
+  legalLink: { color: '#111827', fontWeight: '600' },
 
   // API error
   apiErrBox: {
@@ -590,7 +590,7 @@ const s = StyleSheet.create({
     backgroundColor: '#fff',
   },
   primaryBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 999,
     paddingVertical: 17,
     alignItems: 'center',
@@ -599,5 +599,5 @@ const s = StyleSheet.create({
   primaryBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   signInRow: { alignItems: 'center', paddingVertical: 4 },
   signInText: { fontSize: 14, color: '#6b7280' },
-  signInLink: { color: '#dc2626', fontWeight: '700' },
+  signInLink: { color: '#111827', fontWeight: '700' },
 });

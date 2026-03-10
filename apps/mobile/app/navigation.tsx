@@ -238,11 +238,11 @@ function NavigationScreenNative() {
         <View style={styles.hud}>
           <View style={styles.hudLeft}>
             {stage === 'initialising' ? (
-              <ActivityIndicator color="#16a34a" size="small" />
+              <ActivityIndicator color="#111827" size="small" />
             ) : stage === 'to_pickup' ? (
-              <Truck size={18} color="#16a34a" />
+              <Truck size={18} color="#111827" />
             ) : (
-              <MapPin size={18} color="#dc2626" />
+              <MapPin size={18} color="#111827" />
             )}
             <Text style={styles.hudStage}>{stageLabel}</Text>
           </View>
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   fallbackDesc: { fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 22 },
   fallbackCode: {
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    color: '#dc2626',
+    color: '#111827',
     fontSize: 13,
   },
   fallbackBtn: {

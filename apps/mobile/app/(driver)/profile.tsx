@@ -123,7 +123,7 @@ export default function ProfileScreen() {
             <Text style={s.roleBadgeText}>{roleLabel}</Text>
           </View>
           <TouchableOpacity style={s.editBtn} onPress={openEdit} activeOpacity={0.8}>
-            <Pencil size={13} color="#dc2626" />
+            <Pencil size={13} color="#111827" />
             <Text style={s.editBtnText}>Rediģēt profilu</Text>
           </TouchableOpacity>
         </View>
@@ -169,7 +169,7 @@ export default function ProfileScreen() {
 
           {/* Sign out */}
           <TouchableOpacity style={s.signOutBtn} onPress={handleLogout} activeOpacity={0.8}>
-            <LogOut size={16} color="#dc2626" />
+            <LogOut size={16} color="#111827" />
             <Text style={s.signOutText}>{t.profile.signOut}</Text>
           </TouchableOpacity>
         </View>
@@ -196,9 +196,9 @@ export default function ProfileScreen() {
             <Text style={s.modalTitle}>Rediģēt profilu</Text>
             <TouchableOpacity onPress={saveEdit} hitSlop={10} disabled={saving}>
               {saving ? (
-                <ActivityIndicator size="small" color="#dc2626" />
+                <ActivityIndicator size="small" color="#111827" />
               ) : (
-                <Check size={20} color="#dc2626" />
+                <Check size={20} color="#111827" />
               )}
             </TouchableOpacity>
           </View>
@@ -273,7 +273,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 12,
   },
-  avatarText: { color: '#dc2626', fontSize: 26, fontWeight: '700' },
+  avatarText: { color: '#111827', fontSize: 26, fontWeight: '700' },
   fullName: { fontSize: 18, fontWeight: '700', color: '#111827' },
   email: { fontSize: 14, color: '#6b7280', marginTop: 2 },
   roleBadge: {
@@ -296,7 +296,7 @@ const s = StyleSheet.create({
     paddingVertical: 7,
     backgroundColor: '#fef2f2',
   },
-  editBtnText: { color: '#dc2626', fontSize: 13, fontWeight: '600' },
+  editBtnText: { color: '#111827', fontSize: 13, fontWeight: '600' },
   body: { padding: 20 },
   card: {
     backgroundColor: '#fff',
@@ -353,7 +353,7 @@ const s = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 16,
   },
-  signOutText: { color: '#dc2626', fontWeight: '600', fontSize: 15 },
+  signOutText: { color: '#111827', fontWeight: '600', fontSize: 15 },
   // Modal
   modalHandle: { alignItems: 'center', paddingTop: 10, paddingBottom: 4 },
   handleBar: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#d1d5db' },
@@ -386,7 +386,7 @@ const s = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   saveBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',

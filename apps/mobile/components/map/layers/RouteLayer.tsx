@@ -32,7 +32,7 @@ interface Props {
 export function RouteLayer({
   id,
   coordinates,
-  color = '#16a34a',
+  color = '#111827',
   width = 4,
   dashed = false,
 }: Props) {

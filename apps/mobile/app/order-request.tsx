@@ -98,15 +98,15 @@ const CATEGORIES = Object.keys(CATEGORY_LABELS) as MaterialCategoryAll[];
 
 const CATEGORY_COLOR: Record<string, string> = {
   ALL: '#6b7280',
-  SAND: '#d97706',
+  SAND: '#6b7280',
   GRAVEL: '#64748b',
   STONE: '#6b7280',
   CONCRETE: '#4b5563',
-  SOIL: '#92400e',
+  SOIL: '#6b7280',
   RECYCLED_CONCRETE: '#059669',
-  RECYCLED_SOIL: '#16a34a',
+  RECYCLED_SOIL: '#111827',
   ASPHALT: '#374151',
-  CLAY: '#b45309',
+  CLAY: '#6b7280',
   OTHER: '#6b7280',
 };
 
@@ -263,7 +263,7 @@ const ONBOARDING_SLIDES = [
   {
     step: '01',
     icon: '📍',
-    accent: '#dc2626',
+    accent: '#111827',
     bg: '#fef2f2',
     title: 'Norādiet piegādes vietu',
     desc: 'Pieskarieties kartei vai meklējiet adresi. Mēs piegādāsim tieši uz jūsu norādīto vietu.',
@@ -271,16 +271,16 @@ const ONBOARDING_SLIDES = [
   {
     step: '02',
     icon: '🏜️',
-    accent: '#d97706',
-    bg: '#fffbeb',
+    accent: '#6b7280',
+    bg: '#f3f4f6',
     title: 'Izvēlieties materiālu',
     desc: 'Pārlūkojiet simtiem celtniecības materiālu. Filtrējiet pēc kategorijām vai meklējiet.',
   },
   {
     step: '03',
     icon: '⚡',
-    accent: '#2563eb',
-    bg: '#eff6ff',
+    accent: '#111827',
+    bg: '#f3f4f6',
     title: 'Saņemiet labākās cenas',
     desc: 'Pieprasījums aiziet visiem piegādātājiem Latvijā. Jūs izvēlaties izdevīgāko piedāvājumu.',
   },
@@ -786,7 +786,7 @@ export default function OrderRequestScreen() {
       {/* Top title strip (when no pin yet) */}
       {!pin && (
         <View style={sa.mapHintStrip}>
-          <MapPin size={14} color="#dc2626" />
+          <MapPin size={14} color="#111827" />
           <Text style={sa.mapHintText}>Pieskarieties kartei, lai izvēlētos piegādes vietu</Text>
         </View>
       )}
@@ -854,7 +854,7 @@ export default function OrderRequestScreen() {
 
         {/* Delivery location */}
         <View style={sa.locationCard}>
-          <MapPin size={15} color="#dc2626" />
+          <MapPin size={15} color="#111827" />
           <Text style={sa.locationCardText} numberOfLines={2}>
             {address}
           </Text>
@@ -981,7 +981,7 @@ export default function OrderRequestScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={sa.locationCard}>
-          <MapPin size={14} color="#dc2626" />
+          <MapPin size={14} color="#111827" />
           <Text style={sa.locationCardText} numberOfLines={1}>
             {address}
           </Text>
@@ -1029,14 +1029,14 @@ export default function OrderRequestScreen() {
               )}
               {offer.supplier.rating != null && (
                 <View style={sa.quoteMetaChip}>
-                  <Star size={11} color="#f59e0b" fill="#f59e0b" />
+                  <Star size={11} color="#9ca3af" fill="#9ca3af" />
                   <Text style={sa.quoteMetaText}>{offer.supplier.rating.toFixed(1)}</Text>
                 </View>
               )}
               {selectedOffer?.id === offer.id && (
                 <View style={[sa.quoteMetaChip, sa.selectedChip]}>
-                  <CheckCircle size={11} color="#16a34a" />
-                  <Text style={[sa.quoteMetaText, { color: '#16a34a' }]}>Izvēlēts</Text>
+                  <CheckCircle size={11} color="#111827" />
+                  <Text style={[sa.quoteMetaText, { color: '#111827' }]}>Izvēlēts</Text>
                 </View>
               )}
             </View>
@@ -1158,7 +1158,7 @@ export default function OrderRequestScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={sa.locationCard}>
-          <MapPin size={14} color="#dc2626" />
+          <MapPin size={14} color="#111827" />
           <Text style={sa.locationCardText} numberOfLines={1}>
             {address}
           </Text>
@@ -1200,14 +1200,14 @@ export default function OrderRequestScreen() {
               </View>
               {resp.supplier.rating != null && (
                 <View style={sa.quoteMetaChip}>
-                  <Star size={11} color="#f59e0b" fill="#f59e0b" />
+                  <Star size={11} color="#9ca3af" fill="#9ca3af" />
                   <Text style={sa.quoteMetaText}>{resp.supplier.rating.toFixed(1)}</Text>
                 </View>
               )}
               {selectedQuoteResponse?.id === resp.id && (
                 <View style={[sa.quoteMetaChip, sa.selectedChip]}>
-                  <CheckCircle size={11} color="#16a34a" />
-                  <Text style={[sa.quoteMetaText, { color: '#16a34a' }]}>Izvēlēts</Text>
+                  <CheckCircle size={11} color="#111827" />
+                  <Text style={[sa.quoteMetaText, { color: '#111827' }]}>Izvēlēts</Text>
                 </View>
               )}
             </View>
@@ -1341,7 +1341,7 @@ export default function OrderRequestScreen() {
   const renderSuccess = () => (
     <View style={[sa.searchingScreen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={sa.successCircle}>
-        <CheckCircle size={52} color="#16a34a" strokeWidth={1.5} />
+        <CheckCircle size={52} color="#111827" strokeWidth={1.5} />
       </View>
       <Text style={sa.searchingTitle}>Pasūtījums apstiprināts!</Text>
       <Text style={sa.searchingDesc}>
@@ -1432,7 +1432,7 @@ export default function OrderRequestScreen() {
         <View style={{ alignItems: 'center', flex: 1, paddingHorizontal: 8 }}>
           <Text style={sa.headerTitle}>Izvēlieties materiālu</Text>
           <View style={sa.headerAddressRow}>
-            <MapPin size={11} color="#dc2626" />
+            <MapPin size={11} color="#111827" />
             <Text style={sa.headerAddress} numberOfLines={1}>
               {address}
             </Text>
@@ -1568,7 +1568,7 @@ const sa = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
-  ctaBtnGreen: { backgroundColor: '#16a34a' },
+  ctaBtnGreen: { backgroundColor: '#111827' },
   ctaBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   floatingCta: {
     position: 'absolute',
@@ -1664,16 +1664,16 @@ const sa = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#dc2626',
+    shadowColor: '#111827',
     shadowOpacity: 0.5,
     shadowRadius: 6,
     elevation: 4,
   },
   markerInner: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#fff' },
-  markerStem: { width: 3, height: 10, backgroundColor: '#dc2626', borderRadius: 2 },
+  markerStem: { width: 3, height: 10, backgroundColor: '#111827', borderRadius: 2 },
 
   mapBottomSheet: {
     position: 'absolute',
@@ -1697,7 +1697,7 @@ const sa = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     marginTop: 5,
     flexShrink: 0,
   },
@@ -1720,7 +1720,7 @@ const sa = StyleSheet.create({
   materialIcon: { fontSize: 28 },
   materialName: { fontSize: 16, fontWeight: '700', color: '#111827' },
   materialSup: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
-  materialPrice: { fontSize: 15, fontWeight: '700', color: '#dc2626' },
+  materialPrice: { fontSize: 15, fontWeight: '700', color: '#111827' },
 
   locationCard: {
     flexDirection: 'row',
@@ -1734,7 +1734,7 @@ const sa = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   locationCardText: { flex: 1, fontSize: 13, color: '#374151', fontWeight: '500' },
-  locationChange: { fontSize: 13, color: '#dc2626', fontWeight: '600' },
+  locationChange: { fontSize: 13, color: '#111827', fontWeight: '600' },
 
   section: { gap: 10 },
   sectionLabel: { fontSize: 14, fontWeight: '700', color: '#111827' },
@@ -1837,7 +1837,7 @@ const sa = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#374151',
   },
   searchingPillText: { fontSize: 13, color: '#94a3b8', fontWeight: '600' },
 
@@ -1854,7 +1854,7 @@ const sa = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     borderWidth: 2,
-    borderColor: '#3b82f6',
+    borderColor: '#374151',
   },
   ringCenter: {
     width: 64,
@@ -1895,7 +1895,7 @@ const sa = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     alignSelf: 'flex-start',
-    backgroundColor: '#f59e0b',
+    backgroundColor: '#9ca3af',
     borderRadius: 8,
     paddingHorizontal: 9,
     paddingVertical: 4,
@@ -1940,7 +1940,7 @@ const sa = StyleSheet.create({
     gap: 4,
   },
   rfqFallbackTitle: { fontSize: 15, fontWeight: '700', color: '#0369a1' },
-  rfqFallbackDesc: { fontSize: 13, color: '#0284c7' },
+  rfqFallbackDesc: { fontSize: 13, color: '#374151' },
 
   // ── Confirm / Summary
   summaryCard: {

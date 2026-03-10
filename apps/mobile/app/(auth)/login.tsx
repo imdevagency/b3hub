@@ -204,7 +204,7 @@ const s = StyleSheet.create({
   logoBox: {
     width: 64,
     height: 64,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
@@ -213,7 +213,7 @@ const s = StyleSheet.create({
   logoText: { color: '#fff', fontSize: 24, fontWeight: '800' },
   title: { fontSize: 24, fontWeight: '700', color: '#111827' },
   subtitle: { fontSize: 14, color: '#6b7280', marginTop: 6 },
-  link: { color: '#dc2626', fontWeight: '600' },
+  link: { color: '#111827', fontWeight: '600' },
   errorBox: {
     backgroundColor: '#fef2f2',
     borderWidth: 1,
@@ -245,7 +245,7 @@ const s = StyleSheet.create({
   inputError: { borderColor: '#f87171' },
   fieldError: { color: '#ef4444', fontSize: 12, marginTop: 4 },
   primaryBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',

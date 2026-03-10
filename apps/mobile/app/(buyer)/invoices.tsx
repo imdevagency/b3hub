@@ -61,9 +61,9 @@ const STATUS_META: Record<
   },
   ISSUED: {
     label: 'Izrakstīts',
-    bg: '#dbeafe',
-    color: '#1d4ed8',
-    icon: <Clock size={13} color="#1d4ed8" />,
+    bg: '#f3f4f6',
+    color: '#374151',
+    icon: <Clock size={13} color="#374151" />,
   },
   PAID: {
     label: 'Apmaksāts',
@@ -98,7 +98,7 @@ function InvoiceRow({ invoice, onPress }: { invoice: ApiInvoice; onPress: () => 
   return (
     <TouchableOpacity style={s.row} onPress={onPress} activeOpacity={0.75}>
       <View style={[s.rowIcon, { backgroundColor: overdue ? '#fee2e2' : '#f0fdf4' }]}>
-        <Receipt size={20} color={overdue ? '#ef4444' : '#16a34a'} />
+        <Receipt size={20} color={overdue ? '#ef4444' : '#111827'} />
       </View>
       <View style={s.rowBody}>
         <Text style={s.rowNum}>#{invoice.invoiceNumber}</Text>
@@ -182,13 +182,13 @@ function InvoiceModal({
               <Text style={m.dateVal}>{fmtDate(invoice.issuedAt)}</Text>
             </View>
             <View style={m.dateCard}>
-              <Clock size={16} color="#d97706" />
+              <Clock size={16} color="#6b7280" />
               <Text style={m.dateLabel}>Apmaksas termiņš</Text>
               <Text style={m.dateVal}>{fmtDate(invoice.dueDate)}</Text>
             </View>
             {invoice.paidAt && (
               <View style={m.dateCard}>
-                <CheckCircle2 size={16} color="#16a34a" />
+                <CheckCircle2 size={16} color="#111827" />
                 <Text style={m.dateLabel}>Apmaksāts</Text>
                 <Text style={m.dateVal}>{fmtDate(invoice.paidAt)}</Text>
               </View>
@@ -338,7 +338,7 @@ export default function InvoicesScreen() {
         contentContainerStyle={s.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#dc2626" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
         }
       >
         {visible.length === 0 ? (
@@ -378,7 +378,7 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f2f2f7' },
 
   hero: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 28,
@@ -396,7 +396,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
-  chipActive: { backgroundColor: '#dc2626', borderColor: '#dc2626' },
+  chipActive: { backgroundColor: '#111827', borderColor: '#111827' },
   chipText: { fontSize: 13, fontWeight: '600', color: '#374151' },
   chipTextActive: { color: '#fff' },
 
@@ -537,7 +537,7 @@ const m = StyleSheet.create({
   dateLabel: { fontSize: 10, color: '#9ca3af', fontWeight: '500', textAlign: 'center' },
   dateVal: { fontSize: 13, fontWeight: '700', color: '#374151', textAlign: 'center' },
   payBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 999,
     paddingVertical: 16,
     flexDirection: 'row',
