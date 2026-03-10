@@ -2,19 +2,12 @@
  * ScreenContainer — universal page wrapper for consistent safe-area,
  * background color, and vertical layout across all screens.
  *
- * Animates in with a subtle fade + upward slide on mount (Reanimated).
+ * Animates in with a subtle fade + upward slide on mount (RN Animated).
  */
 
-import React from 'react';
-import { StyleSheet, ViewStyle } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, StyleSheet, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
-import { useEffect } from 'react';
 
 interface ScreenContainerProps {
   children: React.ReactNode;
@@ -36,19 +29,16 @@ export function ScreenContainer({
 }: ScreenContainerProps) {
   const insets = useSafeAreaInsets();
 
-  const opacity = useSharedValue(noAnimation ? 1 : 0);
-  const translateY = useSharedValue(noAnimation ? 0 : 10);
+  const opacity = useRef(new Animated.Value(noAnimation ? 1 : 0)).current;
+  const translateY = useRef(new Animated.Value(noAnimation ? 0 : 10)).current;
 
   useEffect(() => {
     if (noAnimation) return;
-    opacity.value = withTiming(1, { duration: 220, easing: Easing.out(Easing.quad) });
-    translateY.value = withTiming(0, { duration: 220, easing: Easing.out(Easing.quad) });
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 220, useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: 0, duration: 220, useNativeDriver: true }),
+    ]).start();
   }, []);
-
-  const animStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
 
   return (
     <Animated.View
@@ -56,7 +46,7 @@ export function ScreenContainer({
         styles.base,
         { backgroundColor: bg },
         standalone && { paddingTop: insets.top },
-        animStyle,
+        { opacity, transform: [{ translateY }] },
         style,
       ]}
     >
