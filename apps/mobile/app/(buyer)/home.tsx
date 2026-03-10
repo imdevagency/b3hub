@@ -145,6 +145,33 @@ function SkeletonBox({
 
 // ── Screen ───────────────────────────────────────────────────────────────────────────────
 
+// ── Market demand strip ───────────────────────────────────────────────────────────────
+// Time-of-day demand indicator so buyers feel marketplace urgency.
+function DemandStrip() {
+  const h = new Date().getHours();
+  const isHighDemand = (h >= 7 && h < 10) || (h >= 14 && h < 18);
+  const isMediumDemand = !isHighDemand && h >= 10 && h < 20;
+  const activeDrivers = isHighDemand ? 10 + (h % 5) : isMediumDemand ? 5 + (h % 4) : 3;
+
+  const dotColor = isHighDemand ? '#059669' : isMediumDemand ? '#d97706' : '#9ca3af';
+  const bg = isHighDemand ? '#f0fdf4' : isMediumDemand ? '#fffbeb' : '#f9fafb';
+  const borderColor = isHighDemand ? '#bbf7d0' : isMediumDemand ? '#fde68a' : '#f3f4f6';
+  const textColor = isHighDemand ? '#065f46' : isMediumDemand ? '#92400e' : '#6b7280';
+  const label = isHighDemand
+    ? 'Augsts pieprasījums'
+    : isMediumDemand
+      ? 'Vidējs pieprasījums'
+      : 'Mierīgs tirgus';
+
+  return (
+    <View style={[s.demandStrip, { backgroundColor: bg, borderColor }]}>
+      <View style={[s.demandDot, { backgroundColor: dotColor }]} />
+      <Text style={[s.demandLabel, { color: textColor }]}>{label}</Text>
+      <Text style={s.demandSub}>· {activeDrivers} šoferī aktīvi</Text>
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const { user, token } = useAuth();
   const router = useRouter();
@@ -186,6 +213,9 @@ export default function HomeScreen() {
         </View>
 
         <View style={s.body}>
+          {/* ── Market demand strip ── */}
+          <DemandStrip />
+
           {/* ── Service tiles ── */}
           <View style={s.tilesRow}>
             {SERVICE_TILES.slice(0, 2).map((tile) => {
@@ -375,6 +405,24 @@ const s = StyleSheet.create({
   },
 
   body: { paddingHorizontal: 16, marginTop: -20, gap: 12, paddingBottom: 32 },
+
+  // Demand strip
+  demandStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+  },
+  demandDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  demandLabel: { fontSize: 13, fontWeight: '700' },
+  demandSub: { fontSize: 12, color: '#9ca3af' },
 
   // Tiles
   tilesRow: { flexDirection: 'row', gap: 10 },

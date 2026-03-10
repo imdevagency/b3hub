@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
+import { Swipeable } from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 // Lazy-load: native module not available in Expo Go
@@ -512,10 +513,26 @@ function JobCard({
   selected?: boolean;
   onToggleSelect?: (id: string) => void;
 }) {
-  return (
+  const swipeRef = useRef<Swipeable | null>(null);
+
+  const renderRightActions = () => (
+    <TouchableOpacity
+      style={styles.swipeAccept}
+      onPress={() => {
+        swipeRef.current?.close();
+        onAccept(job.id);
+      }}
+      activeOpacity={0.85}
+    >
+      <CheckCircle2 size={22} color="#fff" />
+      <Text style={styles.swipeAcceptText}>Piemēņem</Text>
+    </TouchableOpacity>
+  );
+
+  const card = (
     <TouchableOpacity
       style={[styles.card, tourMode && selected && styles.cardSelected]}
-      activeOpacity={tourMode ? 0.7 : 1}
+      activeOpacity={tourMode ? 0.7 : 0.97}
       onPress={tourMode ? () => onToggleSelect?.(job.id) : undefined}
     >
       {/* Tour selection indicator */}
@@ -599,6 +616,20 @@ function JobCard({
         </TouchableOpacity>
       )}
     </TouchableOpacity>
+  );
+
+  if (tourMode) return card;
+
+  return (
+    <Swipeable
+      ref={swipeRef}
+      renderRightActions={renderRightActions}
+      friction={2.5}
+      rightThreshold={60}
+      overshootRight={false}
+    >
+      {card}
+    </Swipeable>
   );
 }
 
@@ -1730,6 +1761,19 @@ const mapStyles = StyleSheet.create({
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
   legendText: { fontSize: 11, fontWeight: '600', color: '#d1d5db' },
+
+  // Swipe-to-accept action
+  swipeAccept: {
+    width: 88,
+    backgroundColor: '#059669',
+    borderRadius: 16,
+    marginLeft: 8,
+    marginBottom: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  swipeAcceptText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 
   // Earnings bar
   earningsBar: {
