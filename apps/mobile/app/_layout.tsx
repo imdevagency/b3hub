@@ -4,6 +4,7 @@ import { AuthProvider } from '@/lib/auth-context';
 import { ModeProvider } from '@/lib/mode-context';
 import { ToastProvider } from '@/components/ui/Toast';
 import { useEffect, useRef } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // ── Push notifications: guarded — native module not present in Expo Go ────────
 let _Notifications: typeof import('expo-notifications') | null = null;
@@ -59,14 +60,22 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <ModeProvider>
-          <ToastProvider>
-            <Stack screenOptions={{ headerShown: false }} />
-          </ToastProvider>
-        </ModeProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <ModeProvider>
+            <ToastProvider>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  animation: 'slide_from_right',
+                  animationDuration: 280,
+                }}
+              />
+            </ToastProvider>
+          </ModeProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
