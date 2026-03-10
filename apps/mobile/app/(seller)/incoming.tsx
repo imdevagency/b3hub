@@ -9,6 +9,9 @@ import {
   Modal,
   ActivityIndicator,
   RefreshControl,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -34,6 +37,7 @@ interface IncomingOrder {
   requestedDate: string;
   price: number;
   status: OrderStatus;
+  transportJobId?: string;
 }
 
 // ── API mapper ────────────────────────────────────────────────────────────────
@@ -70,6 +74,7 @@ function mapApiOrder(o: ApiOrder): IncomingOrder {
         }),
     price: o.total,
     status: statusMap[o.status] ?? 'PENDING',
+    transportJobId: (o as any).transportJobs?.[0]?.id,
   };
 }
 
@@ -80,7 +85,7 @@ const STATUS_COLORS: Record<OrderStatus, { bg: string; text: string; label: stri
   DISPATCHED: { bg: '#dcfce7', text: '#111827', label: 'Nosūtīts' },
 };
 
-// ── Loading confirmation modal (BeladeFLIX-style) ────────────────────────────
+// ── LoadingDock — seller confirms driver has loaded ─────────────────────────────────
 function LoadingModal({
   order,
   visible,
@@ -91,9 +96,10 @@ function LoadingModal({
   order: IncomingOrder;
   visible: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (weightKg?: number) => void;
   confirming?: boolean;
 }) {
+  const [weight, setWeight] = useState('');
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <SafeAreaView style={modalStyles.container} edges={['top', 'bottom']}>
@@ -105,52 +111,76 @@ function LoadingModal({
           <View style={{ width: 32 }} />
         </View>
 
-        <ScrollView contentContainerStyle={modalStyles.body}>
-          {/* Order summary */}
-          <View style={modalStyles.summaryCard}>
-            <Text style={modalStyles.orderNum}>#{order.orderNumber}</Text>
-            <Text style={modalStyles.materialText}>{order.material}</Text>
-            <View style={modalStyles.summaryRow}>
-              <Text style={modalStyles.summaryLabel}>Svars</Text>
-              <Text style={modalStyles.summaryValue}>{order.weightTonnes}t</Text>
-            </View>
-            <View style={modalStyles.summaryRow}>
-              <Text style={modalStyles.summaryLabel}>Pircējs</Text>
-              <Text style={modalStyles.summaryValue}>{order.buyerName}</Text>
-            </View>
-            <View style={modalStyles.summaryRow}>
-              <Text style={modalStyles.summaryLabel}>Adrese</Text>
-              <Text style={modalStyles.summaryValue}>{order.deliveryAddress}</Text>
-            </View>
-            <View style={modalStyles.summaryRow}>
-              <Text style={modalStyles.summaryLabel}>Datums</Text>
-              <Text style={modalStyles.summaryValue}>{order.requestedDate}</Text>
-            </View>
-          </View>
-
-          {/* Checklist */}
-          <View style={modalStyles.checklistCard}>
-            <Text style={modalStyles.checklistTitle}>Pirms iekraušanas pārbaudīt:</Text>
-            {[
-              'Kravas automašīna atrodas pareizajā vietā',
-              'Svars sakrīt ar pasūtījumu',
-              'Materiāls ir pareizs un kvalitatīvs',
-              'Vadītājs ir klāt un gatavs',
-            ].map((item, i) => (
-              <View key={i} style={modalStyles.checkRow}>
-                <Square size={16} color="#9ca3af" />
-                <Text style={modalStyles.checkText}>{item}</Text>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
+        >
+          <ScrollView contentContainerStyle={modalStyles.body}>
+            {/* Order summary */}
+            <View style={modalStyles.summaryCard}>
+              <Text style={modalStyles.orderNum}>#{order.orderNumber}</Text>
+              <Text style={modalStyles.materialText}>{order.material}</Text>
+              <View style={modalStyles.summaryRow}>
+                <Text style={modalStyles.summaryLabel}>Svars</Text>
+                <Text style={modalStyles.summaryValue}>{order.weightTonnes}t</Text>
               </View>
-            ))}
-          </View>
-        </ScrollView>
+              <View style={modalStyles.summaryRow}>
+                <Text style={modalStyles.summaryLabel}>Pircējs</Text>
+                <Text style={modalStyles.summaryValue}>{order.buyerName}</Text>
+              </View>
+              <View style={modalStyles.summaryRow}>
+                <Text style={modalStyles.summaryLabel}>Adrese</Text>
+                <Text style={modalStyles.summaryValue}>{order.deliveryAddress}</Text>
+              </View>
+              <View style={modalStyles.summaryRow}>
+                <Text style={modalStyles.summaryLabel}>Datums</Text>
+                <Text style={modalStyles.summaryValue}>{order.requestedDate}</Text>
+              </View>
+            </View>
+
+            {/* Actual weight input */}
+            <View style={modalStyles.weightCard}>
+              <Text style={modalStyles.weightLabel}>Faktiskais svars (kg)</Text>
+              <View style={modalStyles.weightInputRow}>
+                <TextInput
+                  style={modalStyles.weightInput}
+                  value={weight}
+                  onChangeText={setWeight}
+                  keyboardType="decimal-pad"
+                  placeholder={`${order.weightTonnes * 1000}`}
+                  placeholderTextColor="#9ca3af"
+                />
+                <Text style={modalStyles.weightUnit}>kg</Text>
+              </View>
+            </View>
+
+            {/* Checklist */}
+            <View style={modalStyles.checklistCard}>
+              <Text style={modalStyles.checklistTitle}>Pirms iekraušanas pārbaudīt:</Text>
+              {[
+                'Kravas automašīna atrodas pareizajā vietā',
+                'Svars sakrīt ar pasūtījumu',
+                'Materiāls ir pareizs un kvalitatīvs',
+                'Vadītājs ir klāt un gatavs',
+              ].map((item, i) => (
+                <View key={i} style={modalStyles.checkRow}>
+                  <Square size={16} color="#9ca3af" />
+                  <Text style={modalStyles.checkText}>{item}</Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
 
         {/* Confirm button */}
         <View style={modalStyles.footer}>
           <Text style={modalStyles.footerDesc}>{t.incoming.loadingDesc}</Text>
           <TouchableOpacity
             style={[modalStyles.confirmBtn, confirming && { opacity: 0.6 }]}
-            onPress={onConfirm}
+            onPress={() => {
+              const parsed = parseFloat(weight);
+              onConfirm(isNaN(parsed) ? undefined : parsed);
+            }}
             disabled={confirming}
           >
             {confirming ? (
@@ -351,15 +381,21 @@ export default function IncomingScreen() {
     if (order) setLoadingOrder(order);
   };
 
-  const handleConfirmLoad = async () => {
+  const handleConfirmLoad = async (weightKg?: number) => {
     if (!loadingOrder || !token) return;
     setConfirmingLoad(true);
     try {
-      const updated = await api.orders.startLoading(loadingOrder.id, token);
-      setOrders((prev) => prev.map((o) => (o.id === loadingOrder.id ? mapApiOrder(updated) : o)));
+      if (loadingOrder.transportJobId) {
+        // LoadingDock: seller confirms driver loaded via transport-job endpoint
+        await api.transportJobs.loadingDock(loadingOrder.transportJobId, token, weightKg);
+      } else {
+        // Fallback: order-level start-loading (no transport job linked yet)
+        await api.orders.startLoading(loadingOrder.id, token);
+      }
+      await fetchOrders(false);
       setLoadingOrder(null);
       haptics.success();
-      toast.success('Iekraušana apstiprīnāta — transporta darbs sākts!');
+      toast.success('Iekraušana apstiprināta — transporta darbs sākts!');
     } catch (e: any) {
       haptics.error();
       toast.error(e.message ?? 'Neizdevās apstiprināt iekraušanu.');
@@ -677,6 +713,30 @@ const modalStyles = StyleSheet.create({
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between' },
   summaryLabel: { fontSize: 13, color: '#6b7280' },
   summaryValue: { fontSize: 13, fontWeight: '600', color: '#111827' },
+
+  weightCard: {
+    backgroundColor: '#fff7ed',
+    borderRadius: 14,
+    padding: 16,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+  },
+  weightLabel: { fontSize: 13, fontWeight: '600', color: '#9a3412' },
+  weightInputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  weightInput: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  weightUnit: { fontSize: 16, fontWeight: '700', color: '#9a3412', width: 30 },
 
   checklistCard: {
     backgroundColor: '#ffffff',

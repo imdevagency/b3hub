@@ -1,5 +1,15 @@
-// react-native-gesture-handler MUST be the first import in the app entry point
-import 'react-native-gesture-handler';
+// react-native-gesture-handler MUST be the first import in the app entry point.
+// Wrapped in try/catch: in Expo Go the native module is bundled at a different
+// version than what's installed, causing a JSI HostFunction exception if we
+// call install() unconditionally. The guard keeps the app alive in Expo Go
+// while still initialising RNGH in development builds where native is linked.
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  require('react-native-gesture-handler');
+} catch {
+  /* Expo Go — RNGH native module version mismatch; gestures still work via
+     Expo Go's built-in native module, no further action needed. */
+}
 // Root component used when expo is hoisted to the monorepo root.
 // expo/AppEntry.js (at b3hub/node_modules/expo/AppEntry.js) resolves
 // "../../App" to b3hub/App.tsx which is redirected here by metro.config.js.

@@ -38,6 +38,14 @@ export class ProviderApplicationsService {
     return application;
   }
 
+  /** User — get their own applications */
+  async findByUser(userId: string) {
+    return this.prisma.providerApplication.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   /** Admin — list all applications, optionally filtered by status */
   async findAll(status?: string) {
     return this.prisma.providerApplication.findMany({

@@ -34,9 +34,16 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
 
   const availableModes = useMemo<AppMode[]>(() => {
-    const modes: AppMode[] = ['buyer'];
+    const modes: AppMode[] = [];
+    // Pure carrier (approved, no sell) → skip buyer mode
+    // Pure supplier (approved, no transport) → skip buyer mode
+    // Mixed or unapproved → always include buyer
+    const isPureCarrier = !!(user?.canTransport && !user?.canSell);
+    const isPureSupplier = !!(user?.canSell && !user?.canTransport);
+    if (!isPureCarrier && !isPureSupplier) modes.push('buyer');
     if (user?.canSell) modes.push('seller');
     if (user?.canTransport) modes.push('driver');
+    if (modes.length === 0) modes.push('buyer'); // fallback
     return modes;
   }, [user?.canSell, user?.canTransport]);
 

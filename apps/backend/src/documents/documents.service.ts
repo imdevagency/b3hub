@@ -123,4 +123,38 @@ export class DocumentsService {
       },
     });
   }
+
+  /**
+   * Auto-generate a delivery note (CMR) when a transport job is delivered.
+   * Called internally by TransportJobsService.
+   */
+  async generateDeliveryNote(
+    params: {
+      orderId?: string;
+      transportJobId?: string;
+      ownerId: string;
+      jobNumber: string;
+      pickupCity: string;
+      deliveryCity: string;
+      driverName?: string;
+    },
+    pdfUrl?: string,
+  ) {
+    return this.prisma.document.create({
+      data: {
+        title: `Delivery Note — ${params.jobNumber}`,
+        type: DocumentType.DELIVERY_NOTE,
+        status: DocumentStatus.ISSUED,
+        fileUrl: pdfUrl,
+        mimeType: 'application/pdf',
+        orderId: params.orderId,
+        transportJobId: params.transportJobId,
+        ownerId: params.ownerId,
+        isGenerated: true,
+        notes: `${params.pickupCity} → ${params.deliveryCity}${
+          params.driverName ? ` · Driver: ${params.driverName}` : ''
+        }`,
+      },
+    });
+  }
 }

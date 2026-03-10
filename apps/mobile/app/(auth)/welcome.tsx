@@ -179,7 +179,9 @@ export default function WelcomeScreen() {
         <TouchableOpacity
           style={s.partnerRow}
           activeOpacity={0.7}
-          onPress={() => router.push('/(auth)/partner')}
+          onPress={() =>
+            router.push({ pathname: '/(auth)/register', params: { partner: '1' } } as any)
+          }
         >
           <Text style={s.partnerText}>Kļūt par partneri →</Text>
         </TouchableOpacity>

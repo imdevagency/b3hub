@@ -172,4 +172,18 @@ export class TransportJobsController {
   ) {
     return this.service.submitDeliveryProof(id, user.id, dto);
   }
+
+  /**
+   * POST /transport-jobs/:id/loading-dock
+   * Seller confirms driver has loaded cargo at pickup yard.
+   * Transitions AT_PICKUP → LOADED and auto-generates a WEIGHING_SLIP document.
+   * Body: { weightKg?: number }
+   */
+  @Post(':id/loading-dock')
+  loadingDock(
+    @Param('id') id: string,
+    @Body() body: { weightKg?: number },
+  ) {
+    return this.service.loadingDock(id, body.weightKg);
+  }
 }

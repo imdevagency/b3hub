@@ -24,6 +24,13 @@ export class ProviderApplicationsController {
     return this.service.create(dto);
   }
 
+  /** GET /provider-applications/mine — authenticated user's own applications */
+  @UseGuards(JwtAuthGuard)
+  @Get('mine')
+  findMine(@Request() req: any) {
+    return this.service.findByUser(req.user.userId);
+  }
+
   /** GET /provider-applications?status=PENDING — admin only */
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Get()

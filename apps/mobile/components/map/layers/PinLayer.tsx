@@ -11,14 +11,17 @@
  * Must be placed inside a <BaseMap> (or <MapboxGL.MapView>).
  */
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, NativeModules } from 'react-native';
 // Lazy-load: native module not available in Expo Go
+// Guard with NativeModules.RNMBXModule to avoid HostFunction exceptions.
 let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  MapboxGL = require('@rnmapbox/maps').default;
-} catch {
-  /* Expo Go */
+if (NativeModules.RNMBXModule) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    MapboxGL = require('@rnmapbox/maps').default;
+  } catch {
+    /* Expo Go */
+  }
 }
 
 export type PinType = 'pickup' | 'delivery' | 'return' | 'current' | 'custom';

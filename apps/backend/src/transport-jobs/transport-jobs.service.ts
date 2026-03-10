@@ -15,6 +15,7 @@ import { UpdateLocationDto } from './dto/update-location.dto';
 import { SubmitDeliveryProofDto } from './dto/submit-delivery-proof.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
+import { DocumentsService } from '../documents/documents.service';
 
 // Valid next-state transitions for a driver
 const NEXT_STATUS: Partial<Record<TransportJobStatus, TransportJobStatus>> = {
@@ -31,6 +32,7 @@ export class TransportJobsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly documents: DocumentsService,
   ) {}
 
   private jobSelect = {
@@ -361,6 +363,24 @@ export class TransportJobsService {
       select: this.jobSelect,
     });
 
+    // Auto-generate documents on key transitions
+    const orderId = (updatedJob as any).order?.id as string | undefined;
+    const createdById = (updatedJob as any).order?.createdById as string | undefined;
+
+    if (dto.status === TransportJobStatus.LOADED && orderId) {
+      // Fetch order owner (createdById = buyer user)
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        select: { createdById: true },
+      });
+      if (order?.createdById) {
+        const weight = dto.weightKg ?? updatedJob.cargoWeight;
+        this.documents
+          .generateWeighingSlip(orderId, order.createdById, weight ?? 0, 't')
+          .catch(() => {});
+      }
+    }
+
     // Notify relevant parties on key transitions
     if (dto.status === TransportJobStatus.DELIVERED) {
       const order = (updatedJob as any).order;
@@ -372,6 +392,29 @@ export class TransportJobsService {
           title: '✅ Piegāde pabeigta',
           message: `Pasūtījums ${order.orderNumber ?? updatedJob.jobNumber} ir piegādāts.`,
         }).catch(() => {});
+      }
+      // Auto-generate delivery note (CMR) for the buyer
+      if (orderId) {
+        const order2 = await this.prisma.order.findUnique({
+          where: { id: orderId },
+          select: { createdById: true },
+        });
+        if (order2?.createdById) {
+          const driver = updatedJob.driver;
+          this.documents
+            .generateDeliveryNote({
+              orderId,
+              transportJobId: updatedJob.id,
+              ownerId: order2.createdById,
+              jobNumber: updatedJob.jobNumber,
+              pickupCity: updatedJob.pickupCity,
+              deliveryCity: updatedJob.deliveryCity,
+              driverName: driver
+                ? `${driver.firstName} ${driver.lastName}`
+                : undefined,
+            })
+            .catch(() => {});
+        }
       }
     }
 
@@ -453,10 +496,95 @@ export class TransportJobsService {
       },
     });
 
-    return this.prisma.transportJob.update({
+    const delivered = await this.prisma.transportJob.update({
       where: { id },
       data: { status: TransportJobStatus.DELIVERED },
       select: this.jobSelect,
     });
+
+    // Auto-generate DELIVERY_NOTE (CMR) for the buyer
+    if (job.orderId) {
+      const order = await this.prisma.order.findUnique({
+        where: { id: job.orderId },
+        select: { createdById: true },
+      });
+      if (order?.createdById) {
+        const driver = delivered.driver;
+        this.documents
+          .generateDeliveryNote({
+            orderId: job.orderId,
+            transportJobId: id,
+            ownerId: order.createdById,
+            jobNumber: delivered.jobNumber,
+            pickupCity: delivered.pickupCity,
+            deliveryCity: delivered.deliveryCity,
+            driverName: driver
+              ? `${driver.firstName} ${driver.lastName}`
+              : undefined,
+          })
+          .catch(() => {});
+      }
+    }
+
+    return delivered;
+  }
+
+  // ── LoadingDock — seller confirms driver loaded ───────────────
+  // Called from the seller's LoadingDock screen when the driver arrives
+  // at the pickup yard. Seller enters weight and confirms loading.
+  // Transitions AT_PICKUP → LOADED and auto-generates WEIGHING_SLIP.
+  async loadingDock(
+    id: string,
+    weightKg?: number,
+  ) {
+    const job = await this.prisma.transportJob.findUnique({ where: { id } });
+    if (!job) throw new NotFoundException('Transport job not found');
+
+    if (job.status !== TransportJobStatus.AT_PICKUP) {
+      // Be lenient: if already LOADED, return current state (driver got there first)
+      if (job.status === TransportJobStatus.LOADED) {
+        return this.findOne(id);
+      }
+      throw new BadRequestException(
+        `LoadingDock requires job to be AT_PICKUP (current: ${job.status})`,
+      );
+    }
+
+    const updatedJob = await this.prisma.transportJob.update({
+      where: { id },
+      data: {
+        status: TransportJobStatus.LOADED,
+        ...(weightKg != null ? { actualWeightKg: weightKg } : {}),
+      },
+      select: this.jobSelect,
+    });
+
+    // Auto-generate WEIGHING_SLIP document for the buyer
+    if (job.orderId) {
+      const order = await this.prisma.order.findUnique({
+        where: { id: job.orderId },
+        select: { createdById: true },
+      });
+      if (order?.createdById) {
+        const weight = weightKg ?? job.cargoWeight;
+        this.documents
+          .generateWeighingSlip(job.orderId, order.createdById, weight ?? 0, 't')
+          .catch(() => {});
+      }
+    }
+
+    // Notify driver they are cleared to depart
+    if (job.driverId) {
+      this.notifications
+        .create({
+          userId: job.driverId,
+          type: NotificationType.SYSTEM_ALERT,
+          title: '✅ Iekraušana apstiprināta',
+          message: `Darbs ${updatedJob.jobNumber} — varat doties uz piegādes vietu`,
+        })
+        .catch(() => {});
+    }
+
+    return updatedJob;
   }
 }

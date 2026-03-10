@@ -32,9 +32,34 @@ export interface RegisterInput {
   password: string;
   firstName: string;
   lastName: string;
-  userType: UserType;
+  /** e.g. ['BUYER'] or ['BUYER','SUPPLIER'] or ['BUYER','CARRIER'] */
+  roles?: string[];
   isCompany?: boolean;
   phone?: string;
+  companyName?: string;
+  regNumber?: string;
+}
+
+export interface ProviderApplication {
+  id: string;
+  appliesForSell: boolean;
+  appliesForTransport: boolean;
+  companyName: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+}
+
+export interface ApplyRoleInput {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  companyName: string;
+  regNumber?: string;
+  appliesForSell: boolean;
+  appliesForTransport: boolean;
+  description?: string;
+  userId?: string;
 }
 
 export interface LoginInput {
@@ -339,6 +364,24 @@ export interface ApiNotification {
   createdAt: string;
 }
 
+// ─── Documents ─────────────────────────────────────────────────────────────
+export type DocumentType = 'INVOICE' | 'WEIGHING_SLIP' | 'DELIVERY_NOTE' | 'CMR_NOTE' | 'CONTRACT';
+export type DocumentStatus = 'DRAFT' | 'ISSUED' | 'EXPIRED' | 'ARCHIVED';
+
+export interface ApiDocument {
+  id: string;
+  title: string;
+  type: DocumentType;
+  status: DocumentStatus;
+  fileUrl: string | null;
+  mimeType: string | null;
+  orderId: string | null;
+  transportJobId: string | null;
+  isGenerated: boolean;
+  notes: string | null;
+  createdAt: string;
+}
+
 export interface CreateMaterialOrderInput {
   buyerId: string;
   materialId: string;
@@ -527,6 +570,14 @@ export const api = {
     getLocation: (id: string, token: string) =>
       apiFetch<JobLocation>(`/transport-jobs/${id}/location`, {
         headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    /** LoadingDock — seller confirms driver has loaded (AT_PICKUP → LOADED). */
+    loadingDock: (id: string, token: string, weightKg?: number) =>
+      apiFetch<ApiTransportJob>(`/transport-jobs/${id}/loading-dock`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ...(weightKg != null ? { weightKg } : {}) }),
       }),
   },
 
@@ -785,6 +836,18 @@ export const api = {
       ),
   },
 
+  documents: {
+    getByOrder: (orderId: string, token: string) =>
+      apiFetch<ApiDocument[]>(`/documents?orderId=${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    getAll: (token: string) =>
+      apiFetch<ApiDocument[]>('/documents', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+  },
+
   driverSchedule: {
     /** Returns the driver's current availability state including isOnline. */
     getStatus: (token: string) =>
@@ -798,6 +861,22 @@ export const api = {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ isOnline }),
+      }),
+  },
+
+  providerApplications: {
+    /** Get the current user's own applications */
+    mine: (token: string) =>
+      apiFetch<ProviderApplication[]>('/provider-applications/mine', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    /** Submit an application to add a new role (post-registration) */
+    apply: (data: ApplyRoleInput, token: string) =>
+      apiFetch<ProviderApplication>('/provider-applications', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
       }),
   },
 };

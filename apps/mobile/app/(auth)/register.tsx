@@ -19,7 +19,7 @@ import {
   StyleSheet,
   Animated,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { StatusBar } from 'expo-status-bar';
 import { api } from '@/lib/api';
@@ -29,12 +29,13 @@ import { ChevronLeft, Eye, EyeOff, Check } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 
 type UserType = 'BUYER' | 'SUPPLIER' | 'CARRIER';
+type RoleKey = UserType;
 
 // ── Constants ──────────────────────────────────────────────────
 const TOTAL_STEPS = 3;
 
 const ROLES: {
-  value: UserType;
+  value: RoleKey;
   emoji: string;
   title: string;
   desc: string;
@@ -43,18 +44,18 @@ const ROLES: {
 }[] = [
   {
     value: 'BUYER',
-    emoji: '🛎️',
+    emoji: '🛒',
     title: 'Pircējs',
     desc: 'Pasūti materiālus, konteinerus un transportu',
-    color: '#9ca3af',
-    bg: '#f3f4f6',
+    color: '#b91c1c',
+    bg: '#fef2f2',
   },
   {
     value: 'SUPPLIER',
     emoji: '📦',
     title: 'Piegādātājs',
     desc: 'Pārdod materiālus un atbildi uz pieprasījumiem',
-    color: '#6b7280',
+    color: '#059669',
     bg: '#d1fae5',
   },
   {
@@ -62,8 +63,8 @@ const ROLES: {
     emoji: '🚛',
     title: 'Pārvadātājs',
     desc: 'Pieņem kravas un nopelni uz katru braucienu',
-    color: '#374151',
-    bg: '#f3f4f6',
+    color: '#1d4ed8',
+    bg: '#eff6ff',
   },
 ];
 
@@ -115,22 +116,34 @@ function pwStrength(pw: string): { label: string; color: string; pct: number } {
 export default function RegisterScreen() {
   const router = useRouter();
   const { setAuth } = useAuth();
+  const { partner } = useLocalSearchParams<{ partner?: string }>();
+  const isPartnerFlow = partner === '1';
+
+  // In partner flow ("Kļūt par partneri") hide Buyer — partners are Supplier/Carrier
+  const visibleRoles = isPartnerFlow ? ROLES.filter((r) => r.value !== 'BUYER') : ROLES;
 
   const [step, setStep] = useState(1);
   const [apiError, setApiError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Form state
-  const [userType, setUserType] = useState<UserType>('BUYER');
+  // Form state — partner flow starts with nothing pre-selected
+  const [roles, setRoles] = useState<Set<RoleKey>>(
+    new Set<RoleKey>(isPartnerFlow ? [] : ['BUYER']),
+  );
   const [isCompany, setIsCompany] = useState(true);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [regNumber, setRegNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [showCpw, setShowCpw] = useState(false);
+
+  const needsCompanyInfo = roles.has('SUPPLIER') || roles.has('CARRIER');
+  const isBuyerOnly = roles.has('BUYER') && !roles.has('SUPPLIER') && !roles.has('CARRIER');
 
   // Validation errors shown after pressing Next
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -140,10 +153,15 @@ export default function RegisterScreen() {
   // ── Validate per step ──────────────────────────────────────
   const validate = (): boolean => {
     const e: Record<string, string> = {};
+    if (step === 1) {
+      if (roles.size === 0) e.roles = 'Izvēlieties vismaz vienu lomu';
+    }
     if (step === 2) {
       if (firstName.trim().length < 2) e.firstName = 'Vismaz 2 rakstzīmes';
       if (lastName.trim().length < 2) e.lastName = 'Vismaz 2 rakstzīmes';
       if (!/^\S+@\S+\.\S+$/.test(email)) e.email = 'Nederīga e-pasta adrese';
+      if (needsCompanyInfo && companyName.trim().length < 2)
+        e.companyName = 'Ievadiet uzņēmuma nosaukumu';
     }
     if (step === 3) {
       if (password.length < 8) e.password = 'Vismaz 8 rakstzīmes';
@@ -182,8 +200,10 @@ export default function RegisterScreen() {
         lastName: lastName.trim(),
         email: email.trim().toLowerCase(),
         phone: phone.trim() || undefined,
-        userType,
-        isCompany: userType === 'BUYER' ? isCompany : undefined,
+        roles: Array.from(roles),
+        isCompany: needsCompanyInfo ? true : isBuyerOnly ? isCompany : true,
+        companyName: companyName.trim() || undefined,
+        regNumber: regNumber.trim() || undefined,
         password,
       });
       await setAuth(res.user, res.token);
@@ -201,37 +221,54 @@ export default function RegisterScreen() {
   const renderStep1 = () => (
     <>
       <Text style={s.stepTitle}>Kā jūs izmantosiet B3Hub?</Text>
-      <Text style={s.stepSub}>Izvēlieties savu lomu — to var mainīt vēlāk.</Text>
+      <Text style={s.stepSub}>
+        Izvēlieties vienu vai vairākas lomas. Tās var pievienot arī vēlāk.
+      </Text>
 
       <View style={s.roleGrid}>
-        {ROLES.map((r) => {
-          const active = userType === r.value;
+        {visibleRoles.map((r) => {
+          const active = roles.has(r.value);
           return (
             <TouchableOpacity
               key={r.value}
               style={[s.roleCard, active && { borderColor: r.color, backgroundColor: r.bg }]}
               onPress={() => {
                 haptics.light();
-                setUserType(r.value);
+                setRoles((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(r.value)) next.delete(r.value);
+                  else next.add(r.value);
+                  return next;
+                });
               }}
               activeOpacity={0.8}
             >
               <View style={s.roleCardHeader}>
                 <Text style={s.roleEmoji}>{r.emoji}</Text>
-                {active && (
+                {active ? (
                   <View style={[s.checkBadge, { backgroundColor: r.color }]}>
                     <Check size={11} color="#fff" />
+                  </View>
+                ) : (
+                  <View style={s.checkBadgeEmpty}>
+                    <View style={s.checkBadgeEmptyInner} />
                   </View>
                 )}
               </View>
               <Text style={[s.roleTitle, active && { color: r.color }]}>{r.title}</Text>
               <Text style={s.roleDesc}>{r.desc}</Text>
+              {(r.value === 'SUPPLIER' || r.value === 'CARRIER') && active && (
+                <Text style={[s.pendingHint, { color: r.color }]}>
+                  ⏳ Gaida apstiprināšanu pēc reģistrācijas
+                </Text>
+              )}
             </TouchableOpacity>
           );
         })}
       </View>
+      {errors.roles && <Text style={[s.err, { marginTop: 8 }]}>{errors.roles}</Text>}
 
-      {userType === 'BUYER' && (
+      {isBuyerOnly && (
         <View style={s.sectionBlock}>
           <Text style={s.sectionLabel}>Konta veids</Text>
           <View style={s.kindRow}>
@@ -317,6 +354,43 @@ export default function RegisterScreen() {
           onChangeText={setPhone}
         />
       </View>
+
+      {needsCompanyInfo && (
+        <>
+          <View style={s.companySeparator}>
+            <View style={s.companySepLine} />
+            <Text style={s.companySepLabel}>Uzņēmuma informācija</Text>
+            <View style={s.companySepLine} />
+          </View>
+
+          <View style={s.field}>
+            <Text style={s.label}>Uzņēmuma nosaukums</Text>
+            <TextInput
+              style={[s.input, errors.companyName && s.inputErr]}
+              placeholder="SIA Jūsu Uzņēmums"
+              placeholderTextColor="#9ca3af"
+              value={companyName}
+              onChangeText={setCompanyName}
+              autoCapitalize="words"
+            />
+            {errors.companyName && <Text style={s.err}>{errors.companyName}</Text>}
+          </View>
+
+          <View style={s.field}>
+            <Text style={s.label}>
+              Reģ. numurs <Text style={s.optional}>(neobligāts)</Text>
+            </Text>
+            <TextInput
+              style={s.input}
+              placeholder="40001234567"
+              placeholderTextColor="#9ca3af"
+              keyboardType="number-pad"
+              value={regNumber}
+              onChangeText={setRegNumber}
+            />
+          </View>
+        </>
+      )}
     </>
   );
 
@@ -388,6 +462,9 @@ export default function RegisterScreen() {
       </Text>
     </>
   );
+
+  // Role count label for header
+  const roleCountLabel = roles.size > 1 ? `${roles.size} lomas` : 'Solis';
 
   return (
     <ScreenContainer standalone bg="#fff">
@@ -476,6 +553,40 @@ const s = StyleSheet.create({
 
   stepTitle: { fontSize: 26, fontWeight: '800', color: '#111827', marginBottom: 6 },
   stepSub: { fontSize: 14, color: '#6b7280', lineHeight: 20, marginBottom: 24 },
+
+  checkBadgeEmpty: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkBadgeEmptyInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#e5e7eb',
+  },
+  lockedHint: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  pendingHint: {
+    fontSize: 11,
+    marginTop: 4,
+  },
+  // Company section separator
+  companySeparator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginVertical: 8,
+  },
+  companySepLine: { flex: 1, height: 1, backgroundColor: '#e5e7eb' },
+  companySepLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
 
   // Role grid
   roleGrid: { gap: 12 },

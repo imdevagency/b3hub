@@ -3,8 +3,17 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '@/lib/auth-context';
 import { ModeProvider } from '@/lib/mode-context';
 import { ToastProvider } from '@/components/ui/Toast';
-import { useEffect, useRef } from 'react';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import React, { useEffect, useRef } from 'react';
+import { NativeModules, View } from 'react-native';
+// Guard: same JSI version-mismatch issue as in App.tsx
+let GestureHandlerRootView: React.ComponentType<{ style?: object; children?: React.ReactNode }> =
+  View;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  GestureHandlerRootView = require('react-native-gesture-handler').GestureHandlerRootView;
+} catch {
+  /* Expo Go fallback — plain View used instead */
+}
 
 // ── Push notifications: guarded — native module not present in Expo Go ────────
 let _Notifications: typeof import('expo-notifications') | null = null;
@@ -49,13 +58,16 @@ export default function RootLayout() {
   useEffect(() => {
     // Initialise Mapbox inside a hook so a missing native module doesn't
     // crash the layout (and kill AuthProvider) before the app renders.
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const MapboxGL = require('@rnmapbox/maps').default;
-      MapboxGL.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
-    } catch {
-      // Native module not available (e.g. Expo Go) — map screens will show
-      // their own error; auth and navigation are unaffected.
+    // Guard with NativeModules.RNMBXModule to avoid HostFunction exceptions
+    // in Expo Go where the native module is not linked.
+    if (NativeModules.RNMBXModule) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const MapboxGL = require('@rnmapbox/maps').default;
+        MapboxGL.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
+      } catch {
+        // Native module present but failed to init
+      }
     }
   }, []);
 

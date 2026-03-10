@@ -303,22 +303,46 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* ── Partner banner ── */}
+          {/* ── Become a partner ── */}
           {isPartnerEligible && (
-            <TouchableOpacity
-              style={s.partnerBanner}
-              activeOpacity={0.8}
-              onPress={() => router.push('/(auth)/partner' as any)}
-            >
-              <View style={s.partnerBannerIcon}>
-                <Truck size={20} color="#111827" />
+            <View style={s.partnerSection}>
+              <Text style={s.partnerSectionTitle}>Pelni ar B3Hub</Text>
+              <View style={s.partnerRow}>
+                <TouchableOpacity
+                  style={[s.partnerCard, { backgroundColor: '#d1fae5', borderColor: '#6ee7b7' }]}
+                  activeOpacity={0.82}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(auth)/apply-role',
+                      params: { type: 'supplier' },
+                    } as any)
+                  }
+                >
+                  <View style={[s.partnerCardIcon, { backgroundColor: '#a7f3d0' }]}>
+                    <Package size={18} color="#059669" />
+                  </View>
+                  <Text style={[s.partnerCardTitle, { color: '#059669' }]}>Piegādātājs</Text>
+                  <Text style={s.partnerCardDesc}>Pārdod materiālus tīklā</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[s.partnerCard, { backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }]}
+                  activeOpacity={0.82}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(auth)/apply-role',
+                      params: { type: 'carrier' },
+                    } as any)
+                  }
+                >
+                  <View style={[s.partnerCardIcon, { backgroundColor: '#bfdbfe' }]}>
+                    <Truck size={18} color="#1d4ed8" />
+                  </View>
+                  <Text style={[s.partnerCardTitle, { color: '#1d4ed8' }]}>Pārvadātājs</Text>
+                  <Text style={s.partnerCardDesc}>Nopelni uz katru kravu</Text>
+                </TouchableOpacity>
               </View>
-              <View style={s.partnerBannerText}>
-                <Text style={s.partnerBannerTitle}>{t.home.partnerBanner.title}</Text>
-                <Text style={s.partnerBannerDesc}>{t.home.partnerBanner.desc}</Text>
-              </View>
-              <Text style={s.partnerBannerCta}>{t.home.partnerBanner.cta}</Text>
-            </TouchableOpacity>
+            </View>
           )}
         </View>
       </ScrollView>
@@ -440,27 +464,32 @@ const s = StyleSheet.create({
   },
   orderStatusBadgeText: { fontSize: 11, fontWeight: '600' },
 
-  // Partner banner
-  partnerBanner: {
-    backgroundColor: '#fff7f7',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+  // Partner section
+  partnerSection: { marginBottom: 8 },
+  partnerSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 10,
   },
-  partnerBannerIcon: {
-    width: 40,
-    height: 40,
+  partnerRow: { flexDirection: 'row', gap: 10 },
+  partnerCard: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderRadius: 16,
+    padding: 14,
+    gap: 6,
+  },
+  partnerCardIcon: {
+    width: 36,
+    height: 36,
     borderRadius: 10,
-    backgroundColor: '#fee2e2',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 2,
   },
-  partnerBannerText: { flex: 1 },
-  partnerBannerTitle: { fontSize: 13, fontWeight: '700', color: '#111827' },
-  partnerBannerDesc: { fontSize: 11, color: '#6b7280', marginTop: 2 },
-  partnerBannerCta: { fontSize: 11, color: '#111827', fontWeight: '700' },
+  partnerCardTitle: { fontSize: 14, fontWeight: '700' },
+  partnerCardDesc: { fontSize: 12, color: '#6b7280', lineHeight: 16 },
 });

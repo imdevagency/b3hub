@@ -22,9 +22,12 @@ export class AuthService {
       password,
       firstName,
       lastName,
-      userType,
+      roles = ['BUYER'],
       isCompany,
       companyId,
+      phone,
+      companyName,
+      regNumber,
     } = registerDto;
 
     // Check if user already exists
@@ -39,15 +42,16 @@ export class AuthService {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user — always BUYER type; extra roles become provider applications
     const user = await this.prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         firstName,
         lastName,
-        userType,
-        isCompany: isCompany ?? false,
+        phone,
+        userType: 'BUYER',
+        isCompany: isCompany ?? roles.some((r) => r !== 'BUYER'),
         companyId,
       },
       select: {
@@ -69,6 +73,25 @@ export class AuthService {
         },
       },
     });
+
+    // Auto-create provider application if roles include SUPPLIER or CARRIER
+    const appliesForSell = roles.includes('SUPPLIER');
+    const appliesForTransport = roles.includes('CARRIER');
+    if (appliesForSell || appliesForTransport) {
+      await this.prisma.providerApplication.create({
+        data: {
+          email,
+          firstName,
+          lastName,
+          phone: phone ?? '',
+          companyName: companyName ?? `${firstName} ${lastName}`,
+          regNumber,
+          appliesForSell,
+          appliesForTransport,
+          userId: user.id,
+        },
+      });
+    }
 
     // Generate token
     const token = this.generateToken(

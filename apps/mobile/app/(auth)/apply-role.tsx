@@ -1,0 +1,336 @@
+/**
+ * apply-role.tsx — Post-registration role application
+ *
+ * Reached from profile when a user wants to add Supplier or Carrier capabilities.
+ * Submits POST /provider-applications.
+ */
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+} from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { StatusBar } from 'expo-status-bar';
+import { ChevronLeft, CheckCircle } from 'lucide-react-native';
+import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
+import { haptics } from '@/lib/haptics';
+
+type RoleType = 'supplier' | 'carrier';
+
+const ROLE_META: Record<RoleType, { emoji: string; title: string; color: string; bg: string }> = {
+  supplier: { emoji: '📦', title: 'Piegādātājs', color: '#059669', bg: '#d1fae5' },
+  carrier: { emoji: '🚛', title: 'Pārvadātājs', color: '#1d4ed8', bg: '#eff6ff' },
+};
+
+export default function ApplyRoleScreen() {
+  const router = useRouter();
+  const { user, token } = useAuth();
+  const { type } = useLocalSearchParams<{ type?: string }>();
+
+  const roleType = (type as RoleType) ?? 'supplier';
+  const meta = ROLE_META[roleType] ?? ROLE_META.supplier;
+
+  const [companyName, setCompanyName] = useState('');
+  const [phone, setPhone] = useState(user?.phone ?? '');
+  const [regNumber, setRegNumber] = useState('');
+  const [description, setDescription] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validate = (): boolean => {
+    const e: Record<string, string> = {};
+    if (companyName.trim().length < 2) e.companyName = 'Ievadiet uzņēmuma nosaukumu';
+    if (phone.trim().length < 6) e.phone = 'Ievadiet tālruņa numuru';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validate()) {
+      haptics.warning();
+      return;
+    }
+    if (!user || !token) return;
+
+    setSubmitting(true);
+    try {
+      await api.providerApplications.apply(
+        {
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phone: phone.trim(),
+          companyName: companyName.trim(),
+          regNumber: regNumber.trim() || undefined,
+          description: description.trim() || undefined,
+          appliesForSell: roleType === 'supplier',
+          appliesForTransport: roleType === 'carrier',
+          userId: user.id,
+        },
+        token,
+      );
+      haptics.success();
+      setSubmitted(true);
+    } catch (err) {
+      haptics.error();
+      const msg = err instanceof Error ? err.message : 'Neizdevās iesniegt pieteikumu';
+      setErrors({ submit: msg });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <ScreenContainer standalone bg="#fff">
+        <StatusBar style="dark" />
+        <View style={s.successScreen}>
+          <View style={[s.successCircle, { backgroundColor: meta.bg }]}>
+            <CheckCircle size={48} color={meta.color} />
+          </View>
+          <Text style={s.successTitle}>Pieteikums nosūtīts!</Text>
+          <Text style={s.successDesc}>
+            Mūsu komanda pārskatīs jūsu {meta.title.toLowerCase()} pieteikumu un sazināsies ar Jums
+            tuvākajā laikā.
+          </Text>
+          <TouchableOpacity
+            style={[s.doneBtn, { backgroundColor: meta.color }]}
+            onPress={() => router.back()}
+            activeOpacity={0.85}
+          >
+            <Text style={s.doneBtnText}>Atpakaļ uz profilu</Text>
+          </TouchableOpacity>
+        </View>
+      </ScreenContainer>
+    );
+  }
+
+  return (
+    <ScreenContainer standalone bg="#fff">
+      <StatusBar style="dark" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
+        {/* Header */}
+        <View style={s.header}>
+          <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
+            <ChevronLeft size={22} color="#374151" />
+          </TouchableOpacity>
+          <View style={[s.roleBadge, { backgroundColor: meta.bg }]}>
+            <Text style={s.roleEmoji}>{meta.emoji}</Text>
+            <Text style={[s.roleBadgeText, { color: meta.color }]}>{meta.title}</Text>
+          </View>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={s.title}>Kļūt par {meta.title.toLowerCase()}u</Text>
+          <Text style={s.subtitle}>
+            Aizpildiet veidlapu un mūsu komanda apstiprināa jūsu kontu 1–2 darba dienu laikā.
+          </Text>
+
+          {/* Company name */}
+          <View style={s.field}>
+            <Text style={s.label}>Uzņēmuma nosaukums</Text>
+            <TextInput
+              style={[s.input, errors.companyName && s.inputErr]}
+              placeholder="SIA Jūsu Uzņēmums"
+              placeholderTextColor="#9ca3af"
+              value={companyName}
+              onChangeText={setCompanyName}
+              autoCapitalize="words"
+            />
+            {errors.companyName && <Text style={s.err}>{errors.companyName}</Text>}
+          </View>
+
+          {/* Phone */}
+          <View style={s.field}>
+            <Text style={s.label}>Kontakttālrunis</Text>
+            <TextInput
+              style={[s.input, errors.phone && s.inputErr]}
+              placeholder="+371 20 000 000"
+              placeholderTextColor="#9ca3af"
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={setPhone}
+            />
+            {errors.phone && <Text style={s.err}>{errors.phone}</Text>}
+          </View>
+
+          {/* Reg number */}
+          <View style={s.field}>
+            <Text style={s.label}>
+              Reģ. numurs <Text style={s.optional}>(neobligāts)</Text>
+            </Text>
+            <TextInput
+              style={s.input}
+              placeholder="40001234567"
+              placeholderTextColor="#9ca3af"
+              keyboardType="number-pad"
+              value={regNumber}
+              onChangeText={setRegNumber}
+            />
+          </View>
+
+          {/* Description */}
+          <View style={s.field}>
+            <Text style={s.label}>
+              Aprakstiet savu darbību <Text style={s.optional}>(neobligāts)</Text>
+            </Text>
+            <TextInput
+              style={[s.input, s.textarea]}
+              placeholder={
+                roleType === 'supplier'
+                  ? 'Ko jūs pārdodat? Kādos apjomos? Kādos reģionos?'
+                  : 'Kādi transportlīdzekļi, kādos reģionos strādājat?'
+              }
+              placeholderTextColor="#9ca3af"
+              multiline
+              numberOfLines={4}
+              value={description}
+              onChangeText={setDescription}
+            />
+          </View>
+
+          {errors.submit && (
+            <View style={s.apiErrBox}>
+              <Text style={s.apiErrText}>{errors.submit}</Text>
+            </View>
+          )}
+        </ScrollView>
+
+        <View style={s.footer}>
+          <TouchableOpacity
+            style={[s.submitBtn, { backgroundColor: meta.color }, submitting && { opacity: 0.6 }]}
+            onPress={handleSubmit}
+            disabled={submitting}
+            activeOpacity={0.85}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={s.submitBtnText}>Iesniegt pieteikumu</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </ScreenContainer>
+  );
+}
+
+const s = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  roleEmoji: { fontSize: 16 },
+  roleBadgeText: { fontSize: 14, fontWeight: '700' },
+  scroll: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 16 },
+  title: { fontSize: 26, fontWeight: '800', color: '#111827', marginBottom: 6 },
+  subtitle: { fontSize: 14, color: '#6b7280', lineHeight: 20, marginBottom: 24 },
+  field: { marginBottom: 16 },
+  label: { fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 6 },
+  optional: { fontWeight: '400', color: '#9ca3af' },
+  input: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: '#111827',
+    backgroundColor: '#fff',
+  },
+  textarea: { height: 100, textAlignVertical: 'top' },
+  inputErr: { borderColor: '#f87171' },
+  err: { color: '#ef4444', fontSize: 12, marginTop: 4 },
+  apiErrBox: {
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  apiErrText: { color: '#b91c1c', fontSize: 14 },
+  footer: {
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+    backgroundColor: '#fff',
+  },
+  submitBtn: {
+    borderRadius: 999,
+    paddingVertical: 17,
+    alignItems: 'center',
+  },
+  submitBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  // Success
+  successScreen: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    gap: 16,
+  },
+  successCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  successTitle: { fontSize: 24, fontWeight: '800', color: '#111827', textAlign: 'center' },
+  successDesc: {
+    fontSize: 15,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  doneBtn: {
+    marginTop: 8,
+    borderRadius: 999,
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    alignItems: 'center',
+  },
+  doneBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+});

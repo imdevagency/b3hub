@@ -8,16 +8,19 @@
  * the layer components in components/map/layers/.
  */
 import React from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleSheet, View, ViewStyle, NativeModules } from 'react-native';
 
 // Lazy-load: @rnmapbox/maps native module is not available in Expo Go.
-// Static import would crash the entire app at startup.
+// We guard with NativeModules.RNMBXModule because the library throws a
+// HostFunction exception (not a regular JS error) which bypasses try/catch.
 let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  MapboxGL = require('@rnmapbox/maps').default;
-} catch {
-  /* Expo Go — map screens will render a placeholder */
+if (NativeModules.RNMBXModule) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    MapboxGL = require('@rnmapbox/maps').default;
+  } catch {
+    /* native module present but failed to init — map screens show placeholder */
+  }
 }
 
 /** Rīga city centre — used as a sane default centre. */

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,11 +14,22 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
-import { Pencil, X, Check, LogOut, Bell, ChevronRight } from 'lucide-react-native';
+import {
+  Pencil,
+  X,
+  Check,
+  LogOut,
+  Bell,
+  ChevronRight,
+  Package,
+  Truck,
+  ShoppingCart,
+  Clock,
+} from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
-import { api } from '@/lib/api';
+import { api, ProviderApplication } from '@/lib/api';
 import { t } from '@/lib/translations';
 
 export default function ProfileScreen() {
@@ -32,6 +43,15 @@ export default function ProfileScreen() {
     lastName: user?.lastName ?? '',
     phone: user?.phone ?? '',
   });
+  const [pendingApps, setPendingApps] = useState<ProviderApplication[]>([]);
+
+  useEffect(() => {
+    if (!token) return;
+    api.providerApplications
+      .mine(token)
+      .then(setPendingApps)
+      .catch(() => {});
+  }, [token]);
 
   const roleLabel = t.mode[mode];
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`;
@@ -129,6 +149,87 @@ export default function ProfileScreen() {
         </View>
 
         <View style={s.body}>
+          {/* Roles section */}
+          <View style={s.card}>
+            <Text style={s.cardTitle}>Manas lomas</Text>
+
+            {/* Buyer — always active */}
+            <View style={[s.roleRow, s.roleRowBorder]}>
+              <View style={[s.roleIcon, { backgroundColor: '#fef2f2' }]}>
+                <ShoppingCart size={15} color="#b91c1c" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.roleName}>Pircējs</Text>
+                <Text style={s.roleDesc}>Pasūtīšana un piegādes</Text>
+              </View>
+              <View style={s.activeChip}>
+                <Text style={s.activeChipText}>Aktīvs</Text>
+              </View>
+            </View>
+
+            {/* Supplier */}
+            <View style={[s.roleRow, s.roleRowBorder]}>
+              <View style={[s.roleIcon, { backgroundColor: '#d1fae5' }]}>
+                <Package size={15} color="#059669" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.roleName}>Piegādātājs</Text>
+                <Text style={s.roleDesc}>Pārdod materiālus</Text>
+              </View>
+              {user?.canSell ? (
+                <View style={[s.activeChip, { backgroundColor: '#d1fae5' }]}>
+                  <Text style={[s.activeChipText, { color: '#059669' }]}>Aktīvs</Text>
+                </View>
+              ) : pendingApps.some((a) => a.appliesForSell && a.status === 'PENDING') ? (
+                <View style={s.pendingChip}>
+                  <Clock size={11} color="#d97706" />
+                  <Text style={s.pendingChipText}>Gaida</Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={s.applyBtn}
+                  onPress={() =>
+                    router.push({ pathname: '/(auth)/apply-role', params: { type: 'supplier' } })
+                  }
+                  activeOpacity={0.8}
+                >
+                  <Text style={s.applyBtnText}>Pieteikt</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Carrier */}
+            <View style={s.roleRow}>
+              <View style={[s.roleIcon, { backgroundColor: '#eff6ff' }]}>
+                <Truck size={15} color="#1d4ed8" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.roleName}>Pārvadātājs</Text>
+                <Text style={s.roleDesc}>Kravas un transports</Text>
+              </View>
+              {user?.canTransport ? (
+                <View style={[s.activeChip, { backgroundColor: '#eff6ff' }]}>
+                  <Text style={[s.activeChipText, { color: '#1d4ed8' }]}>Aktīvs</Text>
+                </View>
+              ) : pendingApps.some((a) => a.appliesForTransport && a.status === 'PENDING') ? (
+                <View style={s.pendingChip}>
+                  <Clock size={11} color="#d97706" />
+                  <Text style={s.pendingChipText}>Gaida</Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={s.applyBtn}
+                  onPress={() =>
+                    router.push({ pathname: '/(auth)/apply-role', params: { type: 'carrier' } })
+                  }
+                  activeOpacity={0.8}
+                >
+                  <Text style={s.applyBtnText}>Pieteikt</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
           {/* Info card */}
           <View style={s.card}>
             <Text style={s.cardTitle}>{t.profile.account}</Text>
@@ -244,6 +345,50 @@ export default function ProfileScreen() {
 }
 
 const s = StyleSheet.create({
+  // Role rows
+  roleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 11,
+  },
+  roleRowBorder: { borderBottomWidth: 1, borderBottomColor: '#f9fafb' },
+  roleIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roleName: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  roleDesc: { fontSize: 12, color: '#9ca3af', marginTop: 1 },
+  activeChip: {
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  activeChipText: { fontSize: 12, fontWeight: '600', color: '#16a34a' },
+  pendingChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#fffbeb',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  pendingChipText: { fontSize: 12, fontWeight: '600', color: '#d97706' },
+  applyBtn: {
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  applyBtnText: { fontSize: 12, fontWeight: '600', color: '#374151' },
   safe: { flex: 1, backgroundColor: '#f9fafb' },
   avatarSection: {
     backgroundColor: '#fff',

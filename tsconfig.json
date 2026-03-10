@@ -16,5 +16,6 @@
     "composite": true,
     "incremental": true
   },
-  "extends": "expo/tsconfig.base"
+  "extends": "expo/tsconfig.base",
+  "exclude": ["apps", "ios", "android", "node_modules"]
 }

@@ -23,11 +23,12 @@ import {
   CheckCircle,
   XCircle,
   Star,
+  FileDown,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
-import type { ApiOrder, JobLocation } from '@/lib/api';
+import type { ApiOrder, JobLocation, ApiDocument } from '@/lib/api';
 import { JobRouteMap } from '@/components/ui/JobRouteMap';
 import { t } from '@/lib/translations';
 import { RatingModal } from '@/components/ui/RatingModal';
@@ -81,6 +82,7 @@ export default function OrderDetailScreen() {
   const [driverLoc, setDriverLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [jobLoc, setJobLoc] = useState<JobLocation | null>(null);
   const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
+  const [documents, setDocuments] = useState<ApiDocument[]>([]);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
@@ -97,6 +99,12 @@ export default function OrderDetailScreen() {
           setAlreadyRated(reviewed);
         } catch {
           // Non-critical — leave as false
+        }
+        try {
+          const docs = await api.documents.getByOrder(id, token);
+          setDocuments(docs);
+        } catch {
+          // Non-critical — documents may not be generated yet
         }
       }
     } catch (err) {
@@ -365,6 +373,50 @@ export default function OrderDetailScreen() {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* Documents — CMR, weighing slip (shown after delivery) */}
+        {order.status === 'DELIVERED' && documents.length > 0 && (
+          <View style={s.section}>
+            <View style={s.sectionHeader}>
+              <FileDown size={14} color="#6b7280" />
+              <Text style={s.sectionTitle}>Dokumenti</Text>
+            </View>
+            {documents.map((doc) => {
+              const docLabel =
+                doc.type === 'WEIGHING_SLIP'
+                  ? '⚖️ Svēršanas kvīts'
+                  : doc.type === 'DELIVERY_NOTE'
+                    ? '📋 Pavadzīme (CMR)'
+                    : doc.type === 'INVOICE'
+                      ? '🧾 Rēķins'
+                      : doc.title;
+              return (
+                <View key={doc.id} style={s.docRow}>
+                  <View style={s.docInfo}>
+                    <Text style={s.docTitle}>{docLabel}</Text>
+                    <Text style={s.docStatus}>
+                      {doc.fileUrl ? 'Pieejams' : 'Tiek sagatavots...'}
+                    </Text>
+                  </View>
+                  {doc.fileUrl ? (
+                    <TouchableOpacity
+                      style={s.docDownloadBtn}
+                      onPress={() => Linking.openURL(doc.fileUrl!).catch(() => null)}
+                      activeOpacity={0.8}
+                    >
+                      <FileDown size={14} color="#fff" />
+                      <Text style={s.docDownloadText}>Lejupielādēt</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={s.docPendingBadge}>
+                      <Text style={s.docPendingText}>Gaida</Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         {/* Buyer info */}
         {order.buyer && (
@@ -670,6 +722,38 @@ const s = StyleSheet.create({
     padding: 12,
   },
   alreadyRatedText: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
+
+  // Documents section
+  docRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+    gap: 12,
+  },
+  docInfo: { flex: 1 },
+  docTitle: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  docStatus: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  docDownloadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#111827',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  docDownloadText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  docPendingBadge: {
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  docPendingText: { fontSize: 12, fontWeight: '600', color: '#9ca3af' },
+
   emptyWrap: { alignItems: 'center', paddingTop: 80, gap: 12 },
   emptyText: { fontSize: 16, color: '#6b7280' },
   trackingCard: {
