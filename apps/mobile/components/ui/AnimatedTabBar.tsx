@@ -136,13 +136,6 @@ export function AnimatedTabBar({
   activeTint = '#111827',
   inactiveTint = '#9ca3af',
 }: AnimatedTabBarProps) {
-  const tabCount = state.routes.filter(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (r: any) => descriptors[r.key]?.options?.href !== null,
-  ).length;
-
-  // Visible (non-hidden) routes only
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const visibleRoutes = state.routes.filter(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (r: any) => descriptors[r.key]?.options?.href !== null,
@@ -205,7 +198,12 @@ export function AnimatedTabBar({
         {visibleRoutes.map(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (route: any) => {
-            const isFocused = state.index === state.routes.indexOf(route);
+            // Find this route's index in the full routes array to compare with state.index
+            const fullIdx = state.routes.findIndex(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (r: any) => r.key === route.key,
+            );
+            const isFocused = state.index === fullIdx;
             return (
               <TabItem
                 key={route.key}

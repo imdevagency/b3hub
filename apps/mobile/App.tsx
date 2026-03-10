@@ -1,3 +1,5 @@
+// react-native-gesture-handler MUST be the first import in the app entry point
+import 'react-native-gesture-handler';
 // Root component used when expo is hoisted to the monorepo root.
 // expo/AppEntry.js (at b3hub/node_modules/expo/AppEntry.js) resolves
 // "../../App" to b3hub/App.tsx which is redirected here by metro.config.js.
