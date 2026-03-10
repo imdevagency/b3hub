@@ -197,9 +197,7 @@ export default function CatalogScreen() {
       <View style={s.header}>
         <Text style={s.headerTitle}>Katalogs</Text>
         <View style={s.headerCountBadge}>
-          <Text style={s.headerCountText}>
-            {loading ? '…' : materials.length}
-          </Text>
+          <Text style={s.headerCountText}>{loading ? '…' : materials.length}</Text>
         </View>
       </View>
 
@@ -244,9 +242,7 @@ export default function CatalogScreen() {
               onPress={() => onCategory(cat)}
               activeOpacity={0.75}
             >
-              <Text style={[s.pillText, active && s.pillTextActive]}>
-                {CATEGORY_LABELS[cat]}
-              </Text>
+              <Text style={[s.pillText, active && s.pillTextActive]}>{CATEGORY_LABELS[cat]}</Text>
             </TouchableOpacity>
           );
         })}
@@ -290,27 +286,27 @@ export default function CatalogScreen() {
             </View>
           ) : (
             <View style={s.cardGroup}>
-            {materials.map((m, idx) => (
-              <MaterialCard
-                key={m.id}
-                material={m}
-                onOrder={(mat) => {
-                  router.push({
-                    pathname: '/order-request',
-                    params: {
-                      materialId: mat.id,
-                      materialName: mat.name,
-                      materialCategory: mat.category,
-                      basePrice: mat.basePrice.toString(),
-                      unit: mat.unit,
-                      supplier: mat.supplier?.name ?? '',
-                      supplierId: mat.supplier?.id ?? '',
-                    },
-                  });
-                }}
-                isLast={idx === materials.length - 1}
-              />
-            ))}
+              {materials.map((m, idx) => (
+                <MaterialCard
+                  key={m.id}
+                  material={m}
+                  onOrder={(mat) => {
+                    router.push({
+                      pathname: '/order-request',
+                      params: {
+                        materialId: mat.id,
+                        materialName: mat.name,
+                        materialCategory: mat.category,
+                        basePrice: mat.basePrice.toString(),
+                        unit: mat.unit,
+                        supplier: mat.supplier?.name ?? '',
+                        supplierId: mat.supplier?.id ?? '',
+                      },
+                    });
+                  }}
+                  isLast={idx === materials.length - 1}
+                />
+              ))}
             </View>
           )}
           <View style={{ height: 24 }} />

@@ -636,7 +636,16 @@ function JobMapView({
   });
 
   if (!MapboxGL) {
-    return <View style={{ flex: 1, backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center' }} />;
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: '#e5e7eb',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      />
+    );
   }
 
   return (

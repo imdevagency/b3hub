@@ -83,6 +83,7 @@ export default function BuyerLayout() {
             tabBarIcon: ({ color }) => <LayoutGrid size={22} color={color} />,
           }}
         />
+        <Tabs.Screen name="order/[id]" options={{ href: null }} />
         <Tabs.Screen name="profile" options={{ href: null }} />
         <Tabs.Screen name="invoices" options={{ href: null }} />
       </Tabs>

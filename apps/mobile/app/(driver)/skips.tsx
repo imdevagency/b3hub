@@ -358,21 +358,22 @@ function SkipsMapView({ orders, onStatusUpdate, updatingId }: MapViewProps) {
   return (
     <View style={{ flex: 1 }}>
       <BaseMap cameraRef={cameraRef} center={RIGA} zoom={9}>
-        {MapboxGL && resolved.map((order) => (
-          <MapboxGL.PointAnnotation
-            key={order.id}
-            id={order.id}
-            coordinate={coords[order.id]!}
-            onSelected={() => openSheet(order)}
-          >
-            <View collapsable={false}>
-              <View style={[s.mapPin, { backgroundColor: pinColor(order.status) }]}>
-                <Trash2 size={13} color="#fff" />
+        {MapboxGL &&
+          resolved.map((order) => (
+            <MapboxGL.PointAnnotation
+              key={order.id}
+              id={order.id}
+              coordinate={coords[order.id]!}
+              onSelected={() => openSheet(order)}
+            >
+              <View collapsable={false}>
+                <View style={[s.mapPin, { backgroundColor: pinColor(order.status) }]}>
+                  <Trash2 size={13} color="#fff" />
+                </View>
+                <View style={[s.mapPinTail, { borderTopColor: pinColor(order.status) }]} />
               </View>
-              <View style={[s.mapPinTail, { borderTopColor: pinColor(order.status) }]} />
-            </View>
-          </MapboxGL.PointAnnotation>
-        ))}
+            </MapboxGL.PointAnnotation>
+          ))}
       </BaseMap>
 
       {geocoding && (

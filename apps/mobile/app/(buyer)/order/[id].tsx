@@ -398,7 +398,7 @@ export default function OrderDetailScreen() {
               style={s.reorderBtn}
               onPress={() =>
                 router.push({
-                pathname: '/order-request',
+                  pathname: '/order-request',
                   params: {
                     prefillMaterial: order.items[0]?.material?.name ?? '',
                     prefillAddress: order.deliveryAddress ?? '',
