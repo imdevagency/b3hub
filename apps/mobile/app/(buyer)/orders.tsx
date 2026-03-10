@@ -4,14 +4,15 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   RefreshControl,
   Linking,
   Alert,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -27,25 +28,29 @@ import {
   User,
   Star,
   Plus,
+  ChevronRight,
 } from 'lucide-react-native';
 import { RatingModal } from '@/components/ui/RatingModal';
 
-// ── Helpers ───────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────
+
+type FilterKey = 'ALL' | 'ACTIVE' | 'DONE' | 'CANCELLED';
+
+type UnifiedOrder =
+  | { kind: 'skip'; data: SkipHireOrder; sortDate: number; isActive: boolean }
+  | { kind: 'material'; data: ApiOrder; sortDate: number; isActive: boolean };
+
+// ── Constants ─────────────────────────────────────────────────
+
+const SKIP_ACTIVE = new Set(['PENDING', 'CONFIRMED', 'DELIVERED']);
+const SKIP_DONE = new Set(['COLLECTED', 'COMPLETED']);
+const MAT_ACTIVE = new Set(['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED']);
 
 const SIZE_LABEL: Record<string, string> = {
   MINI: 'Mini · 2 m³',
   MIDI: 'Midi · 4 m³',
-  BUILDERS: 'Celtniecības · 6 m³',
+  BUILDERS: 'Celtniec. · 6 m³',
   LARGE: 'Liels · 8 m³',
-};
-
-const MAT_STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING: { label: 'Gaida', bg: '#f3f4f6', color: '#6b7280' },
-  CONFIRMED: { label: 'Apstiprināts', bg: '#f3f4f6', color: '#374151' },
-  PROCESSING: { label: 'Apstrādā', bg: '#f3f4f6', color: '#374151' },
-  SHIPPED: { label: 'Ceļā', bg: '#f3f4f6', color: '#374151' },
-  DELIVERED: { label: 'Piegādāts', bg: '#dcfce7', color: '#15803d' },
-  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: '#b91c1c' },
 };
 
 const UNIT_SHORT: Record<string, string> = {
@@ -55,142 +60,175 @@ const UNIT_SHORT: Record<string, string> = {
   LOAD: 'krava',
 };
 
+const MAT_STATUS: Record<string, { label: string; bg: string; color: string }> = {
+  PENDING: { label: 'Gaida', bg: '#f3f4f6', color: '#6b7280' },
+  CONFIRMED: { label: 'Apstiprināts', bg: '#f3f4f6', color: '#374151' },
+  PROCESSING: { label: 'Apstrādā', bg: '#f3f4f6', color: '#374151' },
+  SHIPPED: { label: 'Ceļā', bg: '#fef3c7', color: '#92400e' },
+  DELIVERED: { label: 'Piegādāts', bg: '#dcfce7', color: '#15803d' },
+  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: '#b91c1c' },
+};
+
+const FILTERS: { key: FilterKey; label: string }[] = [
+  { key: 'ALL', label: 'Visi' },
+  { key: 'ACTIVE', label: 'Aktīvie' },
+  { key: 'DONE', label: 'Pabeigti' },
+  { key: 'CANCELLED', label: 'Atcelti' },
+];
+
 function formatDate(iso: string): string {
-  const d = new Date(iso + 'T00:00:00');
-  return d.toLocaleDateString('lv-LV', { day: 'numeric', month: 'short', year: 'numeric' });
+  const d = new Date(iso + (iso.includes('T') ? '' : 'T00:00:00'));
+  return d.toLocaleDateString('lv-LV', { day: 'numeric', month: 'short' });
 }
 
-// ── Skip-hire card ────────────────────────────────────────────
-
-function OrderCard({ order, onRate }: { order: SkipHireOrder; onRate?: () => void }) {
-  const status = t.skipHire.status[order.status] ?? t.skipHire.status.PENDING;
-  const canRate = order.status === 'COLLECTED' || order.status === 'COMPLETED';
-  return (
-    <View style={s.orderCard}>
-      <View style={s.orderTop}>
-        <View style={s.orderTopLeft}>
-          <Text style={s.orderNum}>{order.orderNumber}</Text>
-          <Text style={s.orderSize}>{SIZE_LABEL[order.skipSize] ?? order.skipSize}</Text>
-        </View>
-        <View style={[s.badge, { backgroundColor: status.bg }]}>
-          <Text style={[s.badgeText, { color: status.color }]}>{status.label}</Text>
-        </View>
-      </View>
-      <View style={s.orderDivider} />
-      <View style={s.orderBottom}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-          <MapPin size={13} color="#374151" />
-          <Text style={s.orderMeta} numberOfLines={1}>
-            {order.location}
-          </Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-          <CalendarDays size={13} color="#374151" />
-          <Text style={s.orderMeta}>{formatDate(order.deliveryDate)}</Text>
-        </View>
-      </View>
-      <View style={s.orderFooter}>
-        <Text style={s.orderPrice}>€{order.price}</Text>
-        <Text style={s.orderCurrency}>{order.currency}</Text>
-        {canRate && onRate && (
-          <TouchableOpacity style={s.rateBtn} onPress={onRate} activeOpacity={0.8}>
-            <Star size={13} color="#9ca3af" fill="#9ca3af" />
-            <Text style={s.rateBtnText}>{t.rating.rateBtn}</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
+function skipBucket(status: string): FilterKey {
+  if (SKIP_ACTIVE.has(status)) return 'ACTIVE';
+  if (SKIP_DONE.has(status)) return 'DONE';
+  return 'CANCELLED';
 }
 
-// ── Material order card ───────────────────────────────────────
+function matBucket(status: string): FilterKey {
+  if (MAT_ACTIVE.has(status)) return 'ACTIVE';
+  if (status === 'DELIVERED') return 'DONE';
+  return 'CANCELLED';
+}
 
-function MaterialOrderCard({ order }: { order: ApiOrder }) {
+// ── Unified card ──────────────────────────────────────────────
+
+function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void }) {
   const router = useRouter();
+
+  if (item.kind === 'skip') {
+    const order = item.data;
+    const status = t.skipHire.status[order.status] ?? t.skipHire.status.PENDING;
+    const canRate = order.status === 'COLLECTED' || order.status === 'COMPLETED';
+
+    return (
+      <View style={[s.card, item.isActive && s.cardActive]}>
+        {item.isActive && <View style={s.activeStrip} />}
+        <View style={s.cardInner}>
+          <View style={s.cardTop}>
+            <View style={s.typeTag}>
+              <Trash2 size={11} color="#6b7280" />
+              <Text style={s.typeTagText}>Konteiners</Text>
+            </View>
+            <View style={[s.badge, { backgroundColor: status.bg }]}>
+              <Text style={[s.badgeText, { color: status.color }]}>{status.label}</Text>
+            </View>
+          </View>
+          <Text style={s.orderNum}>{order.orderNumber}</Text>
+          <Text style={s.orderSub}>{SIZE_LABEL[order.skipSize] ?? order.skipSize}</Text>
+          <View style={s.metaRow}>
+            <MapPin size={13} color="#6b7280" />
+            <Text style={s.metaText} numberOfLines={1}>
+              {order.location}
+            </Text>
+          </View>
+          <View style={s.metaRow}>
+            <CalendarDays size={13} color="#6b7280" />
+            <Text style={s.metaText}>{formatDate(order.deliveryDate)}</Text>
+          </View>
+          <View style={s.cardFooter}>
+            <Text style={s.price}>€{order.price}</Text>
+            {canRate && onRate ? (
+              <TouchableOpacity style={s.actionChip} onPress={onRate} activeOpacity={0.8}>
+                <Star size={12} color="#6b7280" fill="#6b7280" />
+                <Text style={s.actionChipText}>Vērtēt</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // Material order
+  const order = item.data;
   const st = MAT_STATUS[order.status] ?? MAT_STATUS.PENDING;
   const first = order.items[0];
   const extra = order.items.length - 1;
+  const activeJob = order.transportJobs?.find(
+    (j) =>
+      j.status === 'EN_ROUTE_DELIVERY' ||
+      j.status === 'AT_DELIVERY' ||
+      j.status === 'LOADED' ||
+      j.status === 'EN_ROUTE_PICKUP' ||
+      j.status === 'AT_PICKUP' ||
+      j.status === 'ACCEPTED',
+  );
+  const driver = activeJob?.driver;
+
   return (
     <TouchableOpacity
-      style={s.orderCard}
+      style={[s.card, item.isActive && s.cardActive]}
       onPress={() => router.push(`/(buyer)/order/${order.id}`)}
       activeOpacity={0.88}
     >
-      <View style={s.orderTop}>
-        <View style={s.orderTopLeft}>
-          <Text style={s.orderNum}>{order.orderNumber}</Text>
-          <Text style={s.orderSize} numberOfLines={1}>
-            {first
-              ? `${first.material.name}${extra > 0 ? ` +${extra}` : ''}`
-              : 'Materiālu pasūtījums'}
-          </Text>
+      {item.isActive && <View style={s.activeStrip} />}
+      <View style={s.cardInner}>
+        <View style={s.cardTop}>
+          <View style={s.typeTag}>
+            <Truck size={11} color="#6b7280" />
+            <Text style={s.typeTagText}>Materiāli</Text>
+          </View>
+          <View style={[s.badge, { backgroundColor: st.bg }]}>
+            <Text style={[s.badgeText, { color: st.color }]}>{st.label}</Text>
+          </View>
         </View>
-        <View style={[s.badge, { backgroundColor: st.bg }]}>
-          <Text style={[s.badgeText, { color: st.color }]}>{st.label}</Text>
-        </View>
-      </View>
-      <View style={s.orderDivider} />
-      {order.status === 'SHIPPED' &&
-        (() => {
-          const activeJob = order.transportJobs?.find(
-            (j) =>
-              j.status === 'EN_ROUTE_DELIVERY' ||
-              j.status === 'AT_DELIVERY' ||
-              j.status === 'LOADED',
-          );
-          const driver = activeJob?.driver;
-          return (
-            <View style={s.driverRow}>
-              <View style={s.driverInfo}>
-                <User size={14} color="#111827" />
-                <Text style={s.driverName}>
-                  {driver ? `${driver.firstName} ${driver.lastName}` : 'Šoferis ceļā'}
-                </Text>
-              </View>
-              {driver?.phone ? (
-                <TouchableOpacity
-                  style={s.callDriverBtn}
-                  onPress={() =>
-                    Linking.openURL(`tel:${driver.phone}`).catch(() =>
-                      Alert.alert('Kļūda', 'Neizdevās iniciēt zvanu'),
-                    )
-                  }
-                >
-                  <Phone size={14} color="#ffffff" />
-                  <Text style={s.callDriverText}>Zvanīt</Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
-          );
-        })()}
-      <View style={s.orderBottom}>
+        <Text style={s.orderNum}>{order.orderNumber}</Text>
+        <Text style={s.orderSub} numberOfLines={1}>
+          {first
+            ? `${first.material.name}${extra > 0 ? ` +${extra}` : ''}`
+            : 'Materiālu pasūtījums'}
+        </Text>
+        {driver && order.status === 'SHIPPED' && (
+          <View style={s.driverRow}>
+            <User size={13} color="#111827" />
+            <Text style={s.driverName} numberOfLines={1}>
+              {driver.firstName} {driver.lastName}
+            </Text>
+            {driver.phone ? (
+              <TouchableOpacity
+                style={s.callChip}
+                onPress={() =>
+                  Linking.openURL(`tel:${driver.phone}`).catch(() =>
+                    Alert.alert('Kļūda', 'Neizdevās iniciēt zvanu'),
+                  )
+                }
+              >
+                <Phone size={12} color="#fff" />
+                <Text style={s.callText}>Zvanīt</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        )}
         {order.deliveryAddress ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-            <MapPin size={13} color="#374151" />
-            <Text style={s.orderMeta} numberOfLines={1}>
+          <View style={s.metaRow}>
+            <MapPin size={13} color="#6b7280" />
+            <Text style={s.metaText} numberOfLines={1}>
               {order.deliveryAddress}
               {order.deliveryCity ? `, ${order.deliveryCity}` : ''}
             </Text>
           </View>
         ) : null}
         {order.deliveryDate ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-            <CalendarDays size={13} color="#374151" />
-            <Text style={s.orderMeta}>{formatDate(order.deliveryDate)}</Text>
+          <View style={s.metaRow}>
+            <CalendarDays size={13} color="#6b7280" />
+            <Text style={s.metaText}>{formatDate(order.deliveryDate)}</Text>
           </View>
         ) : null}
-      </View>
-      {first && (
-        <View style={s.matRow}>
-          <Text style={s.matDetail}>
-            {first.quantity} {UNIT_SHORT[first.unit] ?? first.unit} · {first.material.name}
-          </Text>
-          <Text style={s.matPrice}>€{first.total.toFixed(2)}</Text>
+        {first && (
+          <View style={s.matRow}>
+            <Text style={s.matDetail}>
+              {first.quantity} {UNIT_SHORT[first.unit] ?? first.unit} · {first.material.name}
+            </Text>
+            <Text style={s.matPrice}>€{first.total.toFixed(2)}</Text>
+          </View>
+        )}
+        <View style={s.cardFooter}>
+          <Text style={s.price}>€{order.total.toFixed(2)}</Text>
+          <ChevronRight size={16} color="#9ca3af" />
         </View>
-      )}
-      <View style={s.orderFooter}>
-        <Text style={s.orderPrice}>€{order.total.toFixed(2)}</Text>
-        <Text style={s.orderCurrency}>{order.currency}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -205,7 +243,9 @@ export default function OrdersScreen() {
   const [matOrders, setMatOrders] = useState<ApiOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState<FilterKey>('ALL');
   const [ratingSkipId, setRatingSkipId] = useState<string | null>(null);
+  const [showTypePicker, setShowTypePicker] = useState(false);
 
   const loadOrders = useCallback(async () => {
     if (!token) {
@@ -217,8 +257,8 @@ export default function OrdersScreen() {
         api.skipHire.myOrders(token),
         api.orders.myOrders(token),
       ]);
-      setSkipOrders(skipData);
-      setMatOrders(matData);
+      setSkipOrders(Array.isArray(skipData) ? skipData : []);
+      setMatOrders(Array.isArray(matData) ? matData : []);
     } catch {
       // show empty state on error
     } finally {
@@ -236,88 +276,139 @@ export default function OrdersScreen() {
     loadOrders();
   };
 
+  // Merge + sort: active first, then newest
+  const unified = useMemo<UnifiedOrder[]>(() => {
+    const list: UnifiedOrder[] = [];
+    skipOrders.forEach((o) => {
+      list.push({
+        kind: 'skip',
+        data: o,
+        sortDate: new Date(o.deliveryDate).getTime(),
+        isActive: skipBucket(o.status) === 'ACTIVE',
+      });
+    });
+    matOrders.forEach((o) => {
+      list.push({
+        kind: 'material',
+        data: o,
+        sortDate: new Date(o.createdAt).getTime(),
+        isActive: matBucket(o.status) === 'ACTIVE',
+      });
+    });
+    return list.sort((a, b) => {
+      if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+      return b.sortDate - a.sortDate;
+    });
+  }, [skipOrders, matOrders]);
+
+  const filtered = useMemo(() => {
+    if (filter === 'ALL') return unified;
+    return unified.filter((item) => {
+      const bucket =
+        item.kind === 'skip' ? skipBucket(item.data.status) : matBucket(item.data.status);
+      return bucket === filter;
+    });
+  }, [unified, filter]);
+
+  const counts = useMemo(() => {
+    const c: Record<FilterKey, number> = { ALL: unified.length, ACTIVE: 0, DONE: 0, CANCELLED: 0 };
+    unified.forEach((item) => {
+      const b = item.kind === 'skip' ? skipBucket(item.data.status) : matBucket(item.data.status);
+      c[b] = (c[b] ?? 0) + 1;
+    });
+    return c;
+  }, [unified]);
+
   return (
-    <ScreenContainer>
+    <ScreenContainer bg="#f2f2f7">
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
         }
       >
-        {/* Header */}
+        {/* ── Header ── */}
         <View style={s.header}>
-          <Text style={s.title}>{t.skipHire.myOrders}</Text>
+          <View>
+            <Text style={s.title}>Pasūtījumi</Text>
+            <Text style={s.subtitle}>
+              {unified.length === 0 ? 'Nav pasūtījumu' : `${unified.length} kopā`}
+            </Text>
+          </View>
           <TouchableOpacity
             style={s.newBtn}
-            onPress={() => router.push('/order')}
+            onPress={() => setShowTypePicker(true)}
             activeOpacity={0.85}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Plus size={14} color="#fff" strokeWidth={2.5} />
-              <Text style={s.newBtnText}>{t.skipHire.orderNew}</Text>
-            </View>
+            <Plus size={15} color="#fff" strokeWidth={2.5} />
+            <Text style={s.newBtnText}>Jauns</Text>
           </TouchableOpacity>
         </View>
 
-        {/* ── Skip-hire section ── */}
-        <View style={s.section}>
-          <View style={s.sectionRow}>
-            <Trash2 size={14} color="#6b7280" />
-            <Text style={s.sectionLabel}>Atkritumu konteineri</Text>
-          </View>
+        {/* ── Filter chips ── */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.filtersRow}
+        >
+          {FILTERS.map((f) => {
+            const active = filter === f.key;
+            const count = counts[f.key];
+            return (
+              <TouchableOpacity
+                key={f.key}
+                style={[s.chip, active && s.chipActive]}
+                onPress={() => setFilter(f.key)}
+                activeOpacity={0.75}
+              >
+                <Text style={[s.chipText, active && s.chipTextActive]}>{f.label}</Text>
+                {count > 0 && (
+                  <View style={[s.chipCount, active && s.chipCountActive]}>
+                    <Text style={[s.chipCountText, active && s.chipCountTextActive]}>{count}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
 
+        {/* ── List ── */}
+        <View style={s.list}>
           {loading ? (
             <SkeletonCard count={4} />
-          ) : skipOrders.length === 0 ? (
+          ) : filtered.length === 0 ? (
             <View style={s.empty}>
-              <Package size={40} color="#d1d5db" />
-              <Text style={s.emptyTitle}>{t.skipHire.noOrders}</Text>
-              <Text style={s.emptyDesc}>{t.skipHire.noOrdersDesc}</Text>
-              <TouchableOpacity
-                style={s.emptyBtn}
-                onPress={() => router.push('/order')}
-                activeOpacity={0.85}
-              >
-                <Text style={s.emptyBtnText}>{t.skipHire.orderNew}</Text>
-              </TouchableOpacity>
+              <Package size={44} color="#d1d5db" />
+              <Text style={s.emptyTitle}>
+                {filter === 'ALL' ? 'Nav pasūtījumu' : 'Šajā kategorijā nav pasūtījumu'}
+              </Text>
+              <Text style={s.emptySub}>
+                {filter === 'ALL' ? 'Veiciet savu pirmo pasūtījumu' : 'Mēģiniet mainīt filtru'}
+              </Text>
+              {filter === 'ALL' && (
+                <TouchableOpacity
+                  style={s.emptyBtn}
+                  onPress={() => setShowTypePicker(true)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={s.emptyBtnText}>Izveidot pasūtījumu</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
-            <View style={s.list}>
-              {skipOrders.map((o) => (
-                <OrderCard key={o.id} order={o} onRate={() => setRatingSkipId(o.id)} />
-              ))}
-            </View>
-          )}
-        </View>
-
-        {/* ── Material orders section ── */}
-        <View style={[s.section, { marginTop: 8 }]}>
-          <View style={s.sectionRow}>
-            <Truck size={14} color="#6b7280" />
-            <Text style={s.sectionLabel}>Materiālu piegādes</Text>
-          </View>
-
-          {loading ? (
-            <ActivityIndicator color="#111827" size="small" style={{ marginVertical: 20 }} />
-          ) : matOrders.length === 0 ? (
-            <View style={s.matEmpty}>
-              <Package size={36} color="#d1d5db" />
-              <Text style={s.matEmptyTitle}>Nav materiālu pasūtījumu</Text>
-              <Text style={s.matEmptySub}>Pasūtiet materiālus katalogā</Text>
-            </View>
-          ) : (
-            <View style={s.list}>
-              {matOrders.map((o) => (
-                <MaterialOrderCard key={o.id} order={o} />
-              ))}
-            </View>
+            filtered.map((item) => (
+              <UnifiedCard
+                key={item.kind === 'skip' ? `skip-${item.data.id}` : `mat-${item.data.id}`}
+                item={item}
+                onRate={item.kind === 'skip' ? () => setRatingSkipId(item.data.id) : undefined}
+              />
+            ))
           )}
         </View>
 
         <View style={{ height: 24 }} />
       </ScrollView>
 
-      {/* Rating modal for skip-hire orders */}
       {ratingSkipId && token && (
         <RatingModal
           visible={!!ratingSkipId}
@@ -330,6 +421,66 @@ export default function OrdersScreen() {
           skipOrderId={ratingSkipId}
         />
       )}
+
+      {/* ── Order type picker ── */}
+      <Modal
+        visible={showTypePicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowTypePicker(false)}
+      >
+        <Pressable style={s.pickerOverlay} onPress={() => setShowTypePicker(false)}>
+          <Pressable style={s.pickerSheet} onPress={() => {}}>
+            <View style={s.pickerHandle} />
+            <Text style={s.pickerTitle}>Jauns pasūtījums</Text>
+            <Text style={s.pickerSub}>Izvēlieties pasūtījuma veidu</Text>
+
+            <TouchableOpacity
+              style={s.pickerOption}
+              activeOpacity={0.8}
+              onPress={() => {
+                setShowTypePicker(false);
+                router.push('/order');
+              }}
+            >
+              <View style={[s.pickerIcon, { backgroundColor: '#fef2f2' }]}>
+                <Trash2 size={22} color="#dc2626" strokeWidth={1.8} />
+              </View>
+              <View style={s.pickerOptionText}>
+                <Text style={s.pickerOptionTitle}>Konteinera īre</Text>
+                <Text style={s.pickerOptionDesc}>Atkritumu konteinera piegāde un savākšana</Text>
+              </View>
+              <ChevronRight size={18} color="#9ca3af" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={s.pickerOption}
+              activeOpacity={0.8}
+              onPress={() => {
+                setShowTypePicker(false);
+                router.push('/order-request');
+              }}
+            >
+              <View style={[s.pickerIcon, { backgroundColor: '#eff6ff' }]}>
+                <Package size={22} color="#2563eb" strokeWidth={1.8} />
+              </View>
+              <View style={s.pickerOptionText}>
+                <Text style={s.pickerOptionTitle}>Materiālu pasūtījums</Text>
+                <Text style={s.pickerOptionDesc}>Smilts, grants, dolomīts un citi materiāli</Text>
+              </View>
+              <ChevronRight size={18} color="#9ca3af" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={s.pickerCancel}
+              onPress={() => setShowTypePicker(false)}
+              activeOpacity={0.75}
+            >
+              <Text style={s.pickerCancelText}>Atcelt</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -337,89 +488,125 @@ export default function OrdersScreen() {
 // ── Styles ────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f2f2f7' },
-
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 16,
+    paddingBottom: 12,
   },
-  title: { fontSize: 24, fontWeight: '700', color: '#111827' },
+  title: { fontSize: 26, fontWeight: '700', color: '#111827' },
+  subtitle: { fontSize: 13, color: '#9ca3af', marginTop: 2 },
   newBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: '#111827',
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 9,
   },
   newBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
 
-  section: { paddingHorizontal: 16, paddingBottom: 8 },
-  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  filtersRow: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 8,
+    flexDirection: 'row',
   },
-  list: { gap: 10 },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: '#ffffff',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+  },
+  chipActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  chipText: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  chipTextActive: { color: '#ffffff' },
+  chipCount: {
+    backgroundColor: '#f3f4f6',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
+  chipCountActive: { backgroundColor: 'rgba(255,255,255,0.2)' },
+  chipCountText: { fontSize: 11, fontWeight: '700', color: '#374151' },
+  chipCountTextActive: { color: '#ffffff' },
 
-  // ── Order card
-  orderCard: {
-    backgroundColor: '#fff',
+  list: { paddingHorizontal: 16, gap: 10 },
+
+  // ── Card
+  card: {
+    backgroundColor: '#ffffff',
     borderRadius: 16,
-    padding: 16,
+    overflow: 'hidden',
+    flexDirection: 'row',
     shadowColor: '#000',
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  orderTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  orderTopLeft: { gap: 2, flex: 1, marginRight: 8 },
-  orderNum: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  orderSize: { fontSize: 13, color: '#6b7280' },
-  badge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
-  badgeText: { fontSize: 12, fontWeight: '600' },
-  orderDivider: { height: 1, backgroundColor: '#f3f4f6', marginVertical: 12 },
-  trackRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginBottom: 10,
-  },
-  trackText: { fontSize: 12, fontWeight: '600', color: '#374151' },
-  driverRow: {
+  cardActive: { shadowOpacity: 0.09, shadowRadius: 12, elevation: 3 },
+  activeStrip: { width: 4, backgroundColor: '#111827' },
+  cardInner: { flex: 1, padding: 14 },
+
+  cardTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff7f7',
+    marginBottom: 8,
+  },
+  typeTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  typeTagText: { fontSize: 11, fontWeight: '600', color: '#6b7280' },
+  badge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
+  badgeText: { fontSize: 12, fontWeight: '600' },
+
+  orderNum: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2 },
+  orderSub: { fontSize: 13, color: '#6b7280', marginBottom: 8 },
+
+  driverRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fafafa',
     borderRadius: 8,
     paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginBottom: 10,
+    paddingVertical: 7,
+    marginBottom: 8,
   },
-  driverInfo: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
-  driverName: { fontSize: 13, fontWeight: '600', color: '#111827' },
-  callDriverBtn: {
+  driverName: { fontSize: 13, fontWeight: '600', color: '#111827', flex: 1 },
+  callChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     backgroundColor: '#111827',
-    borderRadius: 20,
+    borderRadius: 14,
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 4,
   },
-  callDriverText: { fontSize: 12, fontWeight: '700', color: '#ffffff' },
-  orderBottom: { gap: 4 },
-  orderMeta: { fontSize: 13, color: '#374151' },
+  callText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 3 },
+  metaText: { fontSize: 13, color: '#374151', flex: 1 },
+
   matRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -428,34 +615,27 @@ const s = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     marginTop: 8,
+    marginBottom: 2,
   },
   matDetail: { fontSize: 12, color: '#6b7280', flex: 1 },
-  matPrice: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  orderFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 10,
-    flexWrap: 'wrap',
-  },
-  rateBtn: {
-    marginLeft: 'auto',
+  matPrice: { fontSize: 12, fontWeight: '600', color: '#374151' },
+
+  cardFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
+  price: { fontSize: 18, fontWeight: '700', color: '#111827', flex: 1 },
+  actionChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     backgroundColor: '#f3f4f6',
-    borderRadius: 20,
+    borderRadius: 14,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  rateBtnText: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
-  orderPrice: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  orderCurrency: { fontSize: 12, color: '#9ca3af' },
+  actionChipText: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
 
-  // ── Empty states
-  empty: { alignItems: 'center', paddingVertical: 48, gap: 8 },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: '#111827' },
-  emptyDesc: { fontSize: 14, color: '#6b7280', textAlign: 'center' },
+  empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },
+  emptyTitle: { fontSize: 17, fontWeight: '600', color: '#111827', textAlign: 'center' },
+  emptySub: { fontSize: 14, color: '#9ca3af', textAlign: 'center' },
   emptyBtn: {
     marginTop: 16,
     backgroundColor: '#111827',
@@ -464,7 +644,56 @@ const s = StyleSheet.create({
     paddingVertical: 12,
   },
   emptyBtnText: { color: '#fff', fontWeight: '600', fontSize: 15 },
-  matEmpty: { alignItems: 'center', paddingVertical: 28, gap: 6 },
-  matEmptyTitle: { fontSize: 15, fontWeight: '600', color: '#374151' },
-  matEmptySub: { fontSize: 13, color: '#9ca3af' },
+
+  // ── Order type picker ──────────────────────────────────────
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  pickerSheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 36,
+    paddingTop: 12,
+  },
+  pickerHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#e5e7eb',
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  pickerTitle: { fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 4 },
+  pickerSub: { fontSize: 13, color: '#9ca3af', marginBottom: 20 },
+  pickerOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: '#f9fafb',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+  },
+  pickerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickerOptionText: { flex: 1 },
+  pickerOptionTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 3 },
+  pickerOptionDesc: { fontSize: 13, color: '#6b7280', lineHeight: 18 },
+  pickerCancel: {
+    marginTop: 4,
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: '#f3f4f6',
+  },
+  pickerCancelText: { fontSize: 15, fontWeight: '600', color: '#6b7280' },
 });

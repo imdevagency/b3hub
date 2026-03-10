@@ -51,6 +51,29 @@ const TYPE_INFO: Record<string, TypeInfo> = {
 };
 const DEFAULT_TYPE_INFO: TypeInfo = { Icon: Bell, bg: '#f3f4f6', iconColor: '#6b7280' };
 
+function deepLinkPath(notif: ApiNotification): string | null {
+  const d = (notif.data ?? {}) as Record<string, string>;
+  switch (notif.type) {
+    case 'JOB_AVAILABLE':
+    case 'JOB_ACCEPTED':
+    case 'JOB_COMPLETED':
+    case 'TRANSPORT_ASSIGNED':
+      return d.jobId ? `/(driver)/jobs` : '/(driver)/jobs';
+    case 'ORDER_PLACED':
+    case 'ORDER_CONFIRMED':
+    case 'ORDER_SHIPPED':
+    case 'ORDER_DELIVERED':
+    case 'ORDER_CANCELLED':
+      return d.orderId ? `/(buyer)/orders` : '/(buyer)/orders';
+    case 'PAYMENT_RECEIVED':
+      return '/(driver)/earnings';
+    case 'INVOICE_ISSUED':
+      return '/(seller)/orders';
+    default:
+      return null;
+  }
+}
+
 function timeAgo(iso: string): string {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
   if (diff < 60) return 'Tikko';
@@ -67,10 +90,18 @@ function NotifCard({
   onMarkRead: (id: string) => void;
 }) {
   const { Icon, bg, iconColor } = TYPE_INFO[notif.type] ?? DEFAULT_TYPE_INFO;
+  const router = useRouter();
+
+  const handlePress = () => {
+    if (!notif.isRead) onMarkRead(notif.id);
+    const path = deepLinkPath(notif);
+    if (path) router.push(path as Parameters<typeof router.push>[0]);
+  };
+
   return (
     <TouchableOpacity
       style={[s.card, !notif.isRead && s.cardUnread]}
-      onPress={() => !notif.isRead && onMarkRead(notif.id)}
+      onPress={handlePress}
       activeOpacity={0.88}
     >
       <View style={s.iconWrap}>

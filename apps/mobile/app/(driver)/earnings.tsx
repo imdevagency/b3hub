@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { t } from '@/lib/translations';
@@ -22,6 +23,16 @@ interface EarningsStats {
   completedJobs: number;
   pendingPayout: number;
 }
+
+interface DayBar {
+  label: string; // '23.2' or 'Šod'
+  shortLabel: string; // 2-char day abbreviation
+  amount: number;
+  isToday: boolean;
+}
+
+// Latvian weekday abbreviations (Sun=0)
+const LV_DAYS = ['Sv', 'Pr', 'Ot', 'Tr', 'Ce', 'Pk', 'Se'];
 
 interface HistoryEntry {
   id: string;
@@ -41,7 +52,34 @@ const ACTIVE_STATUSES = [
   'AT_DELIVERY',
 ];
 
-function computeStats(jobs: ApiTransportJob[]): { stats: EarningsStats; history: HistoryEntry[] } {
+function buildDailyChart(jobs: ApiTransportJob[]): DayBar[] {
+  const now = new Date();
+  const bars: DayBar[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    const nextD = new Date(d.getTime() + 86_400_000);
+    const amount = jobs
+      .filter((j) => {
+        if (j.status !== 'DELIVERED') return false;
+        const jd = new Date(j.deliveryDate ?? j.pickupDate);
+        return jd >= d && jd < nextD;
+      })
+      .reduce((sum, j) => sum + j.rate, 0);
+    bars.push({
+      label: `${d.getDate()}.${d.getMonth() + 1}`,
+      shortLabel: i === 0 ? 'Šod' : LV_DAYS[d.getDay()],
+      amount,
+      isToday: i === 0,
+    });
+  }
+  return bars;
+}
+
+function computeStats(jobs: ApiTransportJob[]): {
+  stats: EarningsStats;
+  history: HistoryEntry[];
+  dailyChart: DayBar[];
+} {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekStart = new Date(todayStart);
@@ -87,7 +125,56 @@ function computeStats(jobs: ApiTransportJob[]): { stats: EarningsStats; history:
   return {
     stats: { todayEarnings, weekEarnings, monthEarnings, completedJobs, pendingPayout },
     history,
+    dailyChart: buildDailyChart(jobs),
   };
+}
+
+// ── Weekly bar chart component ────────────────────────────────────────────────
+const CHART_H = 72;
+const CHART_W = Dimensions.get('window').width - 48; // 24px padding each side
+
+function WeeklyBarChart({ bars }: { bars: DayBar[] }) {
+  const maxAmt = Math.max(...bars.map((b) => b.amount), 1);
+  const barW = Math.floor((CHART_W - 6 * 4) / 7); // 4px gap between bars
+  return (
+    <View style={chartStyles.wrap}>
+      <Text style={chartStyles.title}>Izpeļņa pa dienām</Text>
+      <View style={chartStyles.chart}>
+        {bars.map((bar, i) => {
+          const fillH = Math.max(
+            Math.round((bar.amount / maxAmt) * CHART_H),
+            bar.amount > 0 ? 4 : 0,
+          );
+          return (
+            <View key={i} style={[chartStyles.col, { width: barW }]}>
+              {bar.amount > 0 && (
+                <Text style={chartStyles.barAmt} numberOfLines={1}>
+                  €{bar.amount >= 100 ? Math.round(bar.amount) : bar.amount.toFixed(0)}
+                </Text>
+              )}
+              <View style={chartStyles.barTrack}>
+                <View
+                  style={[
+                    chartStyles.barFill,
+                    { height: fillH, backgroundColor: bar.isToday ? '#111827' : '#d1d5db' },
+                    bar.amount > 0 && !bar.isToday && { backgroundColor: '#ef4444' },
+                  ]}
+                />
+              </View>
+              <Text
+                style={[
+                  chartStyles.dayLabel,
+                  bar.isToday && { color: '#111827', fontWeight: '700' },
+                ]}
+              >
+                {bar.shortLabel}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
 }
 
 type Period = 'today' | 'week' | 'month';
@@ -104,14 +191,16 @@ export default function EarningsScreen() {
     pendingPayout: 0,
   });
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [dailyChart, setDailyChart] = useState<DayBar[]>([]);
 
   const fetchEarnings = useCallback(async () => {
     if (!token) return;
     try {
       const jobs = await api.transportJobs.myJobs(token);
-      const { stats: s, history: h } = computeStats(jobs);
+      const { stats: s, history: h, dailyChart: dc } = computeStats(jobs);
       setStats(s);
       setHistory(h);
+      setDailyChart(dc);
     } catch (e) {
       console.error('Failed to load earnings', e);
     } finally {
@@ -172,6 +261,9 @@ export default function EarningsScreen() {
         </View>
 
         <View style={styles.body}>
+          {/* ── Weekly bar chart ── */}
+          {dailyChart.length > 0 && <WeeklyBarChart bars={dailyChart} />}
+
           {/* ── Summary row ── */}
           <View style={styles.summaryRow}>
             <View style={styles.summaryCard}>
@@ -382,4 +474,39 @@ const styles = StyleSheet.create({
   payStatusText: { fontSize: 10, fontWeight: '700' },
   payStatusTextPaid: { color: '#111827' },
   payStatusTextPending: { color: '#6b7280' },
+});
+
+const chartStyles = StyleSheet.create({
+  wrap: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+  },
+  title: { fontSize: 12, fontWeight: '600', color: '#6b7280', letterSpacing: 0.3 },
+  chart: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 4,
+    height: CHART_H + 36, // bars + label + amount
+  },
+  col: { alignItems: 'center', gap: 4 },
+  barAmt: { fontSize: 9, fontWeight: '700', color: '#374151' },
+  barTrack: {
+    width: '100%',
+    height: CHART_H,
+    justifyContent: 'flex-end',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  barFill: { width: '100%', borderRadius: 4 },
+  dayLabel: { fontSize: 10, color: '#9ca3af', fontWeight: '500' },
 });

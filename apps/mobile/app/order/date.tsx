@@ -173,6 +173,17 @@ export default function Step4Date() {
       </ScrollView>
 
       <View style={s.footer}>
+        {/* Price estimate callout */}
+        <View style={s.priceCallout}>
+          <View style={s.priceCalloutLeft}>
+            <Text style={s.priceCalloutLabel}>Kopējā cena (ar PVN 21%)</Text>
+            <Text style={s.priceCalloutNote}>
+              bez PVN €{(price / 1.21).toFixed(2)} · PVN €{(price - price / 1.21).toFixed(2)}
+            </Text>
+          </View>
+          <Text style={s.priceCalloutAmount}>€{price}</Text>
+        </View>
+
         <TouchableOpacity
           style={[s.submitBtn, submitting && s.submitBtnDisabled]}
           disabled={submitting}
@@ -182,7 +193,10 @@ export default function Step4Date() {
           {submitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={s.submitText}>{t.skipHire.step4.placeOrder} →</Text>
+            <>
+              <Text style={s.submitText}>{t.skipHire.step4.placeOrder}</Text>
+              <Text style={s.submitSubtext}>€{price} · tūlīt apstiprināts</Text>
+            </>
           )}
         </TouchableOpacity>
       </View>
@@ -257,13 +271,30 @@ const s = StyleSheet.create({
     maxWidth: '55%',
     textAlign: 'right',
   },
-  footer: { padding: 24 },
+  footer: { padding: 24, gap: 12 },
+  priceCallout: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f9fafb',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  priceCalloutLeft: { gap: 2 },
+  priceCalloutLabel: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  priceCalloutNote: { fontSize: 11, color: '#9ca3af' },
+  priceCalloutAmount: { fontSize: 24, fontWeight: '800', color: '#111827' },
   submitBtn: {
     backgroundColor: '#111827',
     borderRadius: 14,
-    paddingVertical: 16,
+    paddingVertical: 14,
     alignItems: 'center',
+    gap: 2,
   },
   submitBtnDisabled: { opacity: 0.7 },
   submitText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  submitSubtext: { fontSize: 12, color: '#9ca3af' },
 });

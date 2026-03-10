@@ -242,6 +242,7 @@ export default function CatalogScreen() {
               onPress={() => onCategory(cat)}
               activeOpacity={0.75}
             >
+              <Text style={[s.pillEmoji]}>{CATEGORY_ICON[cat]}</Text>
               <Text style={[s.pillText, active && s.pillTextActive]}>{CATEGORY_LABELS[cat]}</Text>
             </TouchableOpacity>
           );
@@ -366,20 +367,25 @@ const s = StyleSheet.create({
   },
 
   // Pills
-  pillsContainer: { paddingHorizontal: 16, paddingBottom: 14, gap: 6 },
+  pillsContainer: { paddingHorizontal: 16, paddingBottom: 14, gap: 8, alignItems: 'center' },
   pill: {
     backgroundColor: '#fff',
     borderRadius: 20,
-    paddingHorizontal: 14,
+    paddingHorizontal: 13,
     paddingVertical: 8,
     borderWidth: 1,
     borderColor: '#e5e7eb',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    flexShrink: 0,
   },
   pillActive: {
     backgroundColor: '#111827',
     borderColor: '#111827',
   },
-  pillText: { fontSize: 13, color: '#374151', fontWeight: '600' },
+  pillEmoji: { fontSize: 13, lineHeight: 18 },
+  pillText: { fontSize: 13, color: '#374151', fontWeight: '600', lineHeight: 20 },
   pillTextActive: { color: '#fff' },
 
   // List

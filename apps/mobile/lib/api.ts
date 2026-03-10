@@ -462,6 +462,10 @@ export const api = {
       apiFetch<ApiOrder[]>('/orders', {
         headers: { Authorization: `Bearer ${token}` },
       }),
+    getOne: (id: string, token: string) =>
+      apiFetch<ApiOrder>(`/orders/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
     confirm: (id: string, token: string) =>
       apiFetch<ApiOrder>(`/orders/${id}/confirm`, {
         method: 'POST',

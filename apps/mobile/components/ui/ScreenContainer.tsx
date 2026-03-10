@@ -16,8 +16,8 @@ interface ScreenContainerProps {
   /** Pass true for screens NOT inside a tab navigator (adds top safe area inset) */
   standalone?: boolean;
   /**
-   * Override the top safe-area inset applied by `standalone`.
-   * Pass 0 when the screen manages its own top spacing.
+   * Override the top safe-area inset.
+   * Pass 0 when the screen manages its own top spacing (e.g. auth screens with custom headers).
    */
   topInset?: number;
   style?: ViewStyle;
@@ -34,6 +34,7 @@ export function ScreenContainer({
   noAnimation = false,
 }: ScreenContainerProps) {
   const insets = useSafeAreaInsets();
+  // Tab screens sit below TopBar which owns the top inset; standalone screens own it themselves.
   const resolvedTopInset = topInset !== undefined ? topInset : standalone ? insets.top : 0;
 
   const opacity = useRef(new Animated.Value(noAnimation ? 1 : 0)).current;

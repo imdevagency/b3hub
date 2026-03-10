@@ -1,8 +1,8 @@
 import { Tabs } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
 import { Home, LayoutGrid, Package } from 'lucide-react-native';
@@ -17,6 +17,7 @@ export default function BuyerLayout() {
   const { user, isLoading } = useAuth();
   const { isMultiRole } = useMode();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -36,37 +37,39 @@ export default function BuyerLayout() {
   }
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: insets.top }}>
       <TopBar accentColor={ACCENT} onMenuPress={() => setSidebarOpen(true)} />
-      <Tabs
-        screenOptions={{ headerShown: false }}
-        tabBar={(props) => <AnimatedTabBar {...props} />}
-      >
-        <Tabs.Screen
-          name="home"
-          options={{
-            title: t.tabs.home,
-            tabBarIcon: ({ color }) => <Home size={22} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="orders"
-          options={{
-            title: t.tabs.orders,
-            tabBarIcon: ({ color }) => <Package size={22} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="catalog"
-          options={{
-            title: t.tabs.catalog,
-            tabBarIcon: ({ color }) => <LayoutGrid size={22} color={color} />,
-          }}
-        />
-        <Tabs.Screen name="order/[id]" options={{ href: null }} />
-        <Tabs.Screen name="profile" options={{ href: null }} />
-        <Tabs.Screen name="invoices" options={{ href: null }} />
-      </Tabs>
+      <View style={{ flex: 1 }}>
+        <Tabs
+          screenOptions={{ headerShown: false }}
+          tabBar={(props) => <AnimatedTabBar {...props} />}
+        >
+          <Tabs.Screen
+            name="home"
+            options={{
+              title: t.tabs.home,
+              tabBarIcon: ({ color }) => <Home size={22} color={color} />,
+            }}
+          />
+          <Tabs.Screen
+            name="orders"
+            options={{
+              title: t.tabs.orders,
+              tabBarIcon: ({ color }) => <Package size={22} color={color} />,
+            }}
+          />
+          <Tabs.Screen
+            name="catalog"
+            options={{
+              title: t.tabs.catalog,
+              tabBarIcon: ({ color }) => <LayoutGrid size={22} color={color} />,
+            }}
+          />
+          <Tabs.Screen name="order/[id]" options={{ href: null }} />
+          <Tabs.Screen name="profile" options={{ href: null }} />
+          <Tabs.Screen name="invoices" options={{ href: null }} />
+        </Tabs>
+      </View>
       <Sidebar
         visible={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -74,6 +77,6 @@ export default function BuyerLayout() {
         accentColor={ACCENT}
         isMultiRole={isMultiRole}
       />
-    </SafeAreaView>
+    </View>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
-import { Pencil, X, Check, LogOut, Bell, Truck, ChevronRight } from 'lucide-react-native';
+import { Pencil, X, Check, LogOut, Bell, Truck, ChevronRight, Power } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
@@ -27,6 +27,8 @@ export default function ProfileScreen() {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isOnline, setIsOnline] = useState<boolean | null>(null);
+  const [togglingOnline, setTogglingOnline] = useState(false);
   const [form, setForm] = useState({
     firstName: user?.firstName ?? '',
     lastName: user?.lastName ?? '',
@@ -107,9 +109,60 @@ export default function ProfileScreen() {
 
   const set = (key: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [key]: v }));
 
+  useEffect(() => {
+    if (!token) return;
+    api.driverSchedule
+      .getStatus(token)
+      .then((s) => setIsOnline(s.isOnline))
+      .catch(() => setIsOnline(false));
+  }, [token]);
+
+  const handleToggleOnline = async () => {
+    if (!token || togglingOnline || isOnline === null) return;
+    setTogglingOnline(true);
+    try {
+      const res = await api.driverSchedule.toggleOnline(!isOnline, token);
+      setIsOnline(res.isOnline);
+      haptics.success();
+    } catch {
+      haptics.error();
+    } finally {
+      setTogglingOnline(false);
+    }
+  };
+
   return (
     <ScreenContainer bg="#f9fafb">
       <ScrollView showsVerticalScrollIndicator={false}>
+        {/* ── Online status hero card ── */}
+        <View style={s.onlineCard}>
+          <View style={s.onlineCardLeft}>
+            <View style={[s.onlineDot, isOnline === true && s.onlineDotActive]} />
+            <View>
+              <Text style={s.onlineCardTitle}>
+                {isOnline === null ? 'Ielādē...' : isOnline ? 'Tiešsaistē' : 'Bezsaistē'}
+              </Text>
+              <Text style={s.onlineCardSub}>
+                {isOnline ? 'Pieejams jauniem darbiem' : 'Darbi nav redzami'}
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={[s.onlineToggleBtn, isOnline === true && s.onlineToggleBtnActive]}
+            onPress={handleToggleOnline}
+            disabled={togglingOnline || isOnline === null}
+            activeOpacity={0.8}
+          >
+            {togglingOnline ? (
+              <ActivityIndicator size="small" color={isOnline ? '#fff' : '#6b7280'} />
+            ) : (
+              <Power size={16} color={isOnline ? '#ffffff' : '#6b7280'} />
+            )}
+            <Text style={[s.onlineToggleBtnText, isOnline === true && s.onlineToggleBtnTextActive]}>
+              {isOnline ? 'Beigties' : 'Iet tiešsaistē'}
+            </Text>
+          </TouchableOpacity>
+        </View>
         {/* Avatar header */}
         <View style={s.avatarSection}>
           <View style={s.avatarCircle}>
@@ -256,6 +309,46 @@ export default function ProfileScreen() {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f9fafb' },
+
+  // ── Online status card ────────────────────────────────────────
+  onlineCard: {
+    margin: 16,
+    marginBottom: 0,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  onlineCardLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  onlineDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#d1d5db' },
+  onlineDotActive: { backgroundColor: '#34d399' },
+  onlineCardTitle: { fontSize: 15, fontWeight: '700', color: '#111827', lineHeight: 20 },
+  onlineCardSub: { fontSize: 12, color: '#6b7280', lineHeight: 16 },
+  onlineToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  onlineToggleBtnActive: {
+    backgroundColor: '#111827',
+    borderColor: '#111827',
+  },
+  onlineToggleBtnText: { fontSize: 13, fontWeight: '600', color: '#6b7280', lineHeight: 18 },
+  onlineToggleBtnTextActive: { color: '#ffffff' },
   avatarSection: {
     backgroundColor: '#fff',
     paddingVertical: 32,

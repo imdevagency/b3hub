@@ -94,12 +94,13 @@ export default function OrderDetailScreen() {
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
-    if (!token || !id) return;
+    if (!token || !id) {
+      setLoading(false);
+      return;
+    }
     try {
-      // orders.myOrders returns all, find by id
-      const all = await api.orders.myOrders(token);
-      const found = all.find((o) => o.id === id) ?? null;
-      setOrder(found);
+      const found = await api.orders.getOne(String(id), token);
+      setOrder(found ?? null);
       // Check if already rated (only for DELIVERED)
       if (found?.status === 'DELIVERED') {
         try {
@@ -126,10 +127,11 @@ export default function OrderDetailScreen() {
     load();
   }, [load]);
 
-  // Poll driver GPS while order is in transit
+  // Poll driver GPS while order is in transit (or load coords for planned route)
   useEffect(() => {
     const liveJob = order?.transportJobs?.find(
       (j) =>
+        j.status === 'ACCEPTED' ||
         j.status === 'EN_ROUTE_DELIVERY' ||
         j.status === 'AT_DELIVERY' ||
         j.status === 'LOADED' ||
@@ -238,7 +240,13 @@ export default function OrderDetailScreen() {
 
   const st = STATUS_MAP[order.status] ?? STATUS_MAP.PENDING;
   const activeJob = order.transportJobs?.find(
-    (j) => j.status === 'EN_ROUTE_DELIVERY' || j.status === 'AT_DELIVERY' || j.status === 'LOADED',
+    (j) =>
+      j.status === 'ACCEPTED' ||
+      j.status === 'EN_ROUTE_PICKUP' ||
+      j.status === 'AT_PICKUP' ||
+      j.status === 'LOADED' ||
+      j.status === 'EN_ROUTE_DELIVERY' ||
+      j.status === 'AT_DELIVERY',
   );
   const driver = activeJob?.driver;
   const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status);
@@ -259,15 +267,22 @@ export default function OrderDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        {/* Live driver tracking map */}
-        {activeJob && driverLoc && jobLoc?.pickupLat != null && jobLoc.deliveryLat != null && (
+        {/* Live driver tracking map — shows planned route even before GPS fix */}
+        {activeJob && jobLoc?.pickupLat != null && jobLoc?.deliveryLat != null && (
           <View style={s.trackingCard}>
             <View style={s.trackingHeader}>
               <Truck size={14} color="#111827" />
-              <Text style={s.trackingTitle}>Tiešraides atrašanās vieta</Text>
-              <View style={s.liveTag}>
-                <Text style={s.liveTagText}>TIEŠRAIDE</Text>
-              </View>
+              <Text style={s.trackingTitle}>Maršruts</Text>
+              {driverLoc ? (
+                <View style={s.liveTag}>
+                  <View style={s.liveDotInner} />
+                  <Text style={s.liveTagText}>TIEŠRAIDE</Text>
+                </View>
+              ) : (
+                <View style={[s.liveTag, { backgroundColor: '#f3f4f6' }]}>
+                  <Text style={[s.liveTagText, { color: '#9ca3af' }]}>GAIDA GPS</Text>
+                </View>
+              )}
             </View>
             <JobRouteMap
               pickup={{
@@ -280,8 +295,11 @@ export default function OrderDetailScreen() {
                 lng: jobLoc.deliveryLng ?? 0,
                 label: 'Piegāde',
               }}
-              current={driverLoc}
-              showToPickupLeg={false}
+              current={driverLoc ?? undefined}
+              showToPickupLeg={
+                !!driverLoc &&
+                (activeJob.status === 'EN_ROUTE_PICKUP' || activeJob.status === 'ACCEPTED')
+              }
               height={220}
             />
           </View>
@@ -819,12 +837,21 @@ const s = StyleSheet.create({
   },
   trackingTitle: { fontSize: 12, fontWeight: '700', color: '#374151', flex: 1 },
   liveTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: '#111827',
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
   liveTagText: { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
+  liveDotInner: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#4ade80',
+  },
 
   // Order timeline
   tlRow: { flexDirection: 'row', minHeight: 44 },

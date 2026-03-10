@@ -10,8 +10,6 @@ import {
   Alert,
   TextInput,
   Modal,
-  Animated,
-  Easing,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
@@ -205,33 +203,6 @@ function filterJobs(jobs: TransportJob[], filter: SearchFilter | null): Transpor
   });
 }
 
-// ── Radius chips ──────────────────────────────────────────────────────────────
-function RadiusRow({ selected, onChange }: { selected: number; onChange: (v: number) => void }) {
-  return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.radiusScroll}>
-      <View style={styles.radiusChips}>
-        <TouchableOpacity
-          style={[styles.chip, selected === 0 && styles.chipActive]}
-          onPress={() => onChange(0)}
-        >
-          <Text style={[styles.chipText, selected === 0 && styles.chipTextActive]}>
-            {t.jobSearch.any}
-          </Text>
-        </TouchableOpacity>
-        {RADIUS_OPTIONS.map((r) => (
-          <TouchableOpacity
-            key={r}
-            style={[styles.chip, selected === r && styles.chipActive]}
-            onPress={() => onChange(r)}
-          >
-            <Text style={[styles.chipText, selected === r && styles.chipTextActive]}>{r} km</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </ScrollView>
-  );
-}
-
 // ── Accept Bottom Sheet ───────────────────────────────────────────────────────
 function AcceptBottomSheet({
   job,
@@ -395,8 +366,9 @@ function SaveSearchModal({
   );
 }
 
-// ── Search panel ──────────────────────────────────────────────────────────────
-function SearchPanel({
+// ── Filter bottom sheet ───────────────────────────────────────────────────────
+function FilterSheet({
+  visible,
   draft,
   onChange,
   savedSearches,
@@ -405,7 +377,9 @@ function SearchPanel({
   onSaveSearch,
   onApplySaved,
   onDeleteSaved,
+  onClose,
 }: {
+  visible: boolean;
   draft: SearchFilter;
   onChange: (f: SearchFilter) => void;
   savedSearches: SavedSearch[];
@@ -414,90 +388,273 @@ function SearchPanel({
   onSaveSearch: () => void;
   onApplySaved: (s: SavedSearch) => void;
   onDeleteSaved: (id: string) => void;
+  onClose: () => void;
 }) {
+  const hasContent = draft.fromLocation.trim() || draft.toLocation.trim();
   return (
-    <View style={styles.panel}>
-      {/* From location */}
-      <View style={styles.panelSection}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 }}>
-          <MapPin size={13} color="#9ca3af" />
-          <Text style={styles.panelLabel}>{t.jobSearch.fromLocation}</Text>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <KeyboardAvoidingView
+        style={fs.root}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        {/* Handle */}
+        <View style={fs.handleWrap}>
+          <View style={fs.handle} />
         </View>
-        <TextInput
-          style={styles.panelInput}
-          value={draft.fromLocation}
-          onChangeText={(v) => onChange({ ...draft, fromLocation: v })}
-          placeholder={t.jobSearch.fromPlaceholder}
-          placeholderTextColor="#6b7280"
-          returnKeyType="done"
-        />
-        <RadiusRow
-          selected={draft.fromRadius}
-          onChange={(v) => onChange({ ...draft, fromRadius: v })}
-        />
-      </View>
 
-      {/* To location */}
-      <View style={[styles.panelSection, { marginTop: 14 }]}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 }}>
-          <Navigation2 size={13} color="#9ca3af" />
-          <Text style={styles.panelLabel}>{t.jobSearch.toLocation}</Text>
+        {/* Toolbar */}
+        <View style={fs.toolbar}>
+          <TouchableOpacity onPress={onClose} hitSlop={12}>
+            <Text style={fs.toolbarCancel}>Atcelt</Text>
+          </TouchableOpacity>
+          <Text style={fs.toolbarTitle}>Meklēšana</Text>
+          <TouchableOpacity onPress={onReset} hitSlop={12} disabled={!hasContent}>
+            <Text style={[fs.toolbarReset, !hasContent && { opacity: 0.3 }]}>Atiestatīt</Text>
+          </TouchableOpacity>
         </View>
-        <TextInput
-          style={styles.panelInput}
-          value={draft.toLocation}
-          onChangeText={(v) => onChange({ ...draft, toLocation: v })}
-          placeholder={t.jobSearch.toPlaceholder}
-          placeholderTextColor="#6b7280"
-          returnKeyType="done"
-        />
-        <RadiusRow
-          selected={draft.toRadius}
-          onChange={(v) => onChange({ ...draft, toRadius: v })}
-        />
-      </View>
 
-      {/* Action buttons */}
-      <View style={styles.panelActions}>
-        <TouchableOpacity style={styles.resetBtn} onPress={onReset}>
-          <Text style={styles.resetBtnText}>{t.jobSearch.resetFilter}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.applyBtn} onPress={onApply}>
-          <Text style={styles.applyBtnText}>{t.jobSearch.applyFilter}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Save search */}
-      <TouchableOpacity style={styles.saveSearchBtn} onPress={onSaveSearch}>
-        <Text style={styles.saveSearchBtnText}>{t.jobSearch.saveSearch}</Text>
-      </TouchableOpacity>
-
-      {/* Saved searches chips */}
-      {savedSearches.length > 0 && (
-        <View style={styles.savedSection}>
-          <Text style={styles.savedTitle}>{t.jobSearch.savedSearches}</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.savedChips}>
-              {savedSearches.map((s) => (
-                <View key={s.id} style={styles.savedChip}>
-                  <TouchableOpacity onPress={() => onApplySaved(s)}>
-                    <Text style={styles.savedChipText}>{s.name}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => onDeleteSaved(s.id)}
-                    style={styles.savedChipDelete}
-                  >
-                    <X size={11} color="#9ca3af" />
-                  </TouchableOpacity>
-                </View>
-              ))}
+        <ScrollView
+          style={fs.scroll}
+          contentContainerStyle={fs.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* From section */}
+          <View style={fs.sectionCard}>
+            <View style={fs.sectionHeader}>
+              <MapPin size={14} color="#6b7280" />
+              <Text style={fs.sectionLabel}>{t.jobSearch.fromLocation}</Text>
             </View>
-          </ScrollView>
+            <TextInput
+              style={fs.input}
+              value={draft.fromLocation}
+              onChangeText={(v) => onChange({ ...draft, fromLocation: v })}
+              placeholder={t.jobSearch.fromPlaceholder}
+              placeholderTextColor="#9ca3af"
+              returnKeyType="done"
+            />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={fs.radiusRow}>
+                {[0, ...RADIUS_OPTIONS].map((r) => (
+                  <TouchableOpacity
+                    key={r}
+                    style={[fs.radChip, draft.fromRadius === r && fs.radChipActive]}
+                    onPress={() => onChange({ ...draft, fromRadius: r })}
+                  >
+                    <Text style={[fs.radChipText, draft.fromRadius === r && fs.radChipTextActive]}>
+                      {r === 0 ? 'Jebkur' : `${r} km`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* To section */}
+          <View style={fs.sectionCard}>
+            <View style={fs.sectionHeader}>
+              <Navigation2 size={14} color="#6b7280" />
+              <Text style={fs.sectionLabel}>{t.jobSearch.toLocation}</Text>
+            </View>
+            <TextInput
+              style={fs.input}
+              value={draft.toLocation}
+              onChangeText={(v) => onChange({ ...draft, toLocation: v })}
+              placeholder={t.jobSearch.toPlaceholder}
+              placeholderTextColor="#9ca3af"
+              returnKeyType="done"
+            />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={fs.radiusRow}>
+                {[0, ...RADIUS_OPTIONS].map((r) => (
+                  <TouchableOpacity
+                    key={r}
+                    style={[fs.radChip, draft.toRadius === r && fs.radChipActive]}
+                    onPress={() => onChange({ ...draft, toRadius: r })}
+                  >
+                    <Text style={[fs.radChipText, draft.toRadius === r && fs.radChipTextActive]}>
+                      {r === 0 ? 'Jebkur' : `${r} km`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* Saved searches */}
+          {savedSearches.length > 0 && (
+            <View style={fs.savedSection}>
+              <Text style={fs.savedTitle}>{t.jobSearch.savedSearches}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={fs.savedChips}>
+                  {savedSearches.map((s) => (
+                    <View key={s.id} style={fs.savedChip}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          onApplySaved(s);
+                          onClose();
+                        }}
+                      >
+                        <Text style={fs.savedChipText}>{s.name}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => onDeleteSaved(s.id)} style={fs.savedChipX}>
+                        <X size={11} color="#9ca3af" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Save search link */}
+          <TouchableOpacity style={fs.saveLink} onPress={onSaveSearch} disabled={!hasContent}>
+            <Text style={[fs.saveLinkText, !hasContent && { opacity: 0.35 }]}>
+              ♡ {t.jobSearch.saveSearch}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* Apply CTA */}
+        <View style={fs.footer}>
+          <TouchableOpacity style={fs.applyBtn} onPress={onApply} activeOpacity={0.88}>
+            <Text style={fs.applyBtnText}>{t.jobSearch.applyFilter}</Text>
+          </TouchableOpacity>
         </View>
-      )}
-    </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
+
+// ── Filter sheet styles ────────────────────────────────────────────────────────
+const fs = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#f2f2f7' },
+  handleWrap: { alignItems: 'center', paddingTop: 10, paddingBottom: 2 },
+  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#d1d5db' },
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: '#f2f2f7',
+  },
+  toolbarCancel: { fontSize: 16, color: '#6b7280', fontWeight: '400', lineHeight: 22 },
+  toolbarTitle: { fontSize: 16, fontWeight: '700', color: '#111827', lineHeight: 22 },
+  toolbarReset: { fontSize: 16, color: '#ef4444', fontWeight: '600', lineHeight: 22 },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 16, paddingBottom: 24, gap: 12 },
+  sectionCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    lineHeight: 18,
+  },
+  input: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 15,
+    color: '#111827',
+    marginBottom: 12,
+  },
+  radiusRow: { flexDirection: 'row', gap: 8, paddingRight: 4 },
+  radChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  radChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  radChipText: { fontSize: 13, fontWeight: '600', color: '#374151', lineHeight: 18 },
+  radChipTextActive: { color: '#ffffff' },
+  savedSection: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  savedTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9ca3af',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 10,
+    lineHeight: 16,
+  },
+  savedChips: { flexDirection: 'row', gap: 8 },
+  savedChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 20,
+    paddingLeft: 12,
+    paddingRight: 6,
+    paddingVertical: 7,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  savedChipText: { fontSize: 13, fontWeight: '600', color: '#111827', lineHeight: 18 },
+  savedChipX: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveLink: { alignItems: 'center', paddingVertical: 4 },
+  saveLinkText: { fontSize: 14, color: '#6b7280', fontWeight: '500', lineHeight: 20 },
+  footer: {
+    paddingHorizontal: 16,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    paddingTop: 12,
+    backgroundColor: '#f2f2f7',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  applyBtn: {
+    backgroundColor: '#111827',
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  applyBtnText: { fontSize: 16, fontWeight: '700', color: '#ffffff', lineHeight: 22 },
+});
 
 // ── Job card ──────────────────────────────────────────────────────────────────
 function JobCard({
@@ -799,12 +956,12 @@ export default function JobsScreen() {
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
   const [saveModalVisible, setSaveModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [todayStats, setTodayStats] = useState<{ earnings: number; completed: number } | null>(null);
+  const [todayStats, setTodayStats] = useState<{ earnings: number; completed: number } | null>(
+    null,
+  );
 
   // ── Accept sheet ──────────────────────────────────────────────
   const [acceptSheetJob, setAcceptSheetJob] = useState<TransportJob | null>(null);
-
-  const panelAnim = useRef(new Animated.Value(0)).current;
 
   const fetchJobs = useCallback(async () => {
     if (!token) return;
@@ -849,19 +1006,25 @@ export default function JobsScreen() {
   // Today's earnings summary
   useEffect(() => {
     if (!token) return;
-    api.transportJobs.myJobs(token).then((jobs) => {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      let earnings = 0;
-      let completed = 0;
-      for (const j of jobs) {
-        if (j.status === 'DELIVERED') {
-          const d = new Date(j.deliveryDate ?? j.pickupDate);
-          if (d >= todayStart) { earnings += j.rate; completed++; }
+    api.transportJobs
+      .myJobs(token)
+      .then((jobs) => {
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        let earnings = 0;
+        let completed = 0;
+        for (const j of jobs) {
+          if (j.status === 'DELIVERED') {
+            const d = new Date(j.deliveryDate ?? j.pickupDate);
+            if (d >= todayStart) {
+              earnings += j.rate;
+              completed++;
+            }
+          }
         }
-      }
-      setTodayStats({ earnings, completed });
-    }).catch(() => {});
+        setTodayStats({ earnings, completed });
+      })
+      .catch(() => {});
   }, [token]);
   // Load saved searches on mount
   useEffect(() => {
@@ -874,16 +1037,6 @@ export default function JobsScreen() {
   useEffect(() => {
     AsyncStorage.setItem(ASYNC_KEY, JSON.stringify(savedSearches));
   }, [savedSearches]);
-
-  // Animate panel
-  useEffect(() => {
-    Animated.timing(panelAnim, {
-      toValue: panelOpen ? 1 : 0,
-      duration: 300,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [panelOpen]);
 
   // Driver GPS for map view
   useEffect(() => {
@@ -987,10 +1140,7 @@ export default function JobsScreen() {
   if (loading) {
     return (
       <ScreenContainer bg="#f3f4f6">
-        <View style={styles.topBar}>
-          <Text style={styles.screenTitle}>{t.jobs.title}</Text>
-        </View>
-        <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+        <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 12, gap: 12 }}>
           <SkeletonJobRow count={5} />
         </ScrollView>
       </ScreenContainer>
@@ -999,110 +1149,44 @@ export default function JobsScreen() {
 
   return (
     <ScreenContainer bg="#f3f4f6">
-      {/* Top bar */}
-      <View style={styles.topBar}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Text style={styles.screenTitle}>{t.jobs.title}</Text>
-          {/* Online status pill */}
+      {/* ── Minimal floating controls ── */}
+      <View style={styles.controlsRow}>
+        <View style={styles.viewToggle}>
           <TouchableOpacity
-            style={[
-              styles.onlinePill,
-              isOnline === true && styles.onlinePillActive,
-              isOnline === false && styles.onlinePillOffline,
-            ]}
-            onPress={handleToggleOnline}
-            disabled={togglingOnline || isOnline === null}
+            style={[styles.viewToggleBtn, viewMode === 'list' && styles.viewToggleBtnActive]}
+            onPress={() => setViewMode('list')}
           >
-            <View
-              style={[
-                styles.onlineDot,
-                isOnline === true && styles.onlineDotActive,
-                isOnline === false && styles.onlineDotOffline,
-              ]}
-            />
-            <Text style={[styles.onlinePillText, isOnline === true && styles.onlinePillTextActive]}>
-              {togglingOnline ? '...' : isOnline === true ? 'Tiešsaistē' : 'Bezsaistē'}
+            <List size={14} color={viewMode === 'list' ? '#111827' : '#6b7280'} />
+            <Text
+              style={[styles.viewToggleText, viewMode === 'list' && styles.viewToggleTextActive]}
+            >
+              Saraksts
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.viewToggleBtn, viewMode === 'map' && styles.viewToggleBtnActive]}
+            onPress={() => setViewMode('map')}
+          >
+            <Map size={14} color={viewMode === 'map' ? '#111827' : '#6b7280'} />
+            <Text
+              style={[styles.viewToggleText, viewMode === 'map' && styles.viewToggleTextActive]}
+            >
+              Karte
             </Text>
           </TouchableOpacity>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {/* Map / List toggle */}
-          <View style={styles.viewToggle}>
-            <TouchableOpacity
-              style={[styles.viewToggleBtn, viewMode === 'list' && styles.viewToggleBtnActive]}
-              onPress={() => setViewMode('list')}
-            >
-              <List size={14} color={viewMode === 'list' ? '#ffffff' : '#9ca3af'} />
-              <Text
-                style={[styles.viewToggleText, viewMode === 'list' && styles.viewToggleTextActive]}
-              >
-                Saraksts
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.viewToggleBtn, viewMode === 'map' && styles.viewToggleBtnActive]}
-              onPress={() => setViewMode('map')}
-            >
-              <Map size={14} color={viewMode === 'map' ? '#ffffff' : '#9ca3af'} />
-              <Text
-                style={[styles.viewToggleText, viewMode === 'map' && styles.viewToggleTextActive]}
-              >
-                Karte
-              </Text>
-            </TouchableOpacity>
-          </View>
 
-          {/* Filter button — list mode only */}
-          {viewMode === 'list' && (
-            <TouchableOpacity
-              style={[styles.filterToggle, panelOpen && styles.filterToggleActive]}
-              onPress={togglePanel}
-            >
-              <Settings2 size={14} color={panelOpen ? '#ffffff' : '#9ca3af'} />
-              <Text style={[styles.filterToggleText, panelOpen && styles.filterToggleTextActive]}>
-                {t.jobSearch.filterTitle}
-              </Text>
-              {activeFilter && <View style={styles.filterDot} />}
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-      {/* Offline banner */}
-      {isOnline === false && (
-        <TouchableOpacity
-          style={styles.offlineBanner}
-          onPress={handleToggleOnline}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.offlineBannerText}>
-            ⚫ Jūs esat bezsaistē — darbi nav redzami pieņemšanai
-          </Text>
-          <Text style={styles.offlineBannerCta}>Iet tiešsaistē →</Text>
-        </TouchableOpacity>
-      )}
-      {/* Today's earnings summary */}
-      {todayStats !== null && (
-        <View style={styles.earningsBar}>
-          <View style={styles.earningsBarItem}>
-            <Text style={styles.earningsBarValue}>
-              €{todayStats.earnings.toFixed(todayStats.earnings % 1 === 0 ? 0 : 2)}
-            </Text>
-            <Text style={styles.earningsBarLabel}>Šodien</Text>
-          </View>
-          <View style={styles.earningsBarDivider} />
-          <View style={styles.earningsBarItem}>
-            <Text style={styles.earningsBarValue}>{todayStats.completed}</Text>
-            <Text style={styles.earningsBarLabel}>Kravas šodien</Text>
-          </View>
+        {viewMode === 'list' && (
           <TouchableOpacity
-            style={styles.earningsBarCta}
-            onPress={() => router.push('/(driver)/earnings')}
+            style={[styles.filterBtn, panelOpen && styles.filterBtnActive]}
+            onPress={togglePanel}
           >
-            <Text style={styles.earningsBarCtaText}>Visi ienākumi →</Text>
+            <Settings2 size={15} color={panelOpen ? '#111827' : '#6b7280'} />
+            {activeFilter && <View style={styles.filterDot} />}
           </TouchableOpacity>
-        </View>
-      )}
-      {/* Map view */}}
+        )}
+      </View>
+      {/* Map view */}
       {viewMode === 'map' ? (
         <JobMapView
           jobs={filteredJobs}
@@ -1120,32 +1204,8 @@ export default function JobsScreen() {
           }
           keyboardShouldPersistTaps="handled"
         >
-          {/* Collapsible search panel */}
-          <Animated.View
-            style={[
-              styles.panelWrapper,
-              {
-                maxHeight: panelAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 700] }),
-                opacity: panelAnim,
-              },
-            ]}
-          >
-            <SearchPanel
-              draft={draft}
-              onChange={setDraft}
-              savedSearches={savedSearches}
-              onApply={handleApply}
-              onReset={handleReset}
-              onSaveSearch={handleSaveSearch}
-              onApplySaved={handleApplySaved}
-              onDeleteSaved={(id) => setSavedSearches((prev) => prev.filter((s) => s.id !== id))}
-            />
-          </Animated.View>
-
           {/* Active filter pill */}
-          {activeFilter && !panelOpen && (
-            <ActiveFilterPill filter={activeFilter} onClear={handleReset} />
-          )}
+          {activeFilter && <ActiveFilterPill filter={activeFilter} onClear={handleReset} />}
 
           {/* Results header */}
           <View style={styles.resultsHeader}>
@@ -1182,6 +1242,19 @@ export default function JobsScreen() {
         onSave={handleConfirmSave}
         onClose={() => setSaveModalVisible(false)}
       />
+      {/* Filter sheet */}
+      <FilterSheet
+        visible={panelOpen}
+        draft={draft}
+        onChange={setDraft}
+        savedSearches={savedSearches}
+        onApply={handleApply}
+        onReset={handleReset}
+        onSaveSearch={handleSaveSearch}
+        onApplySaved={handleApplySaved}
+        onDeleteSaved={(id) => setSavedSearches((prev) => prev.filter((s) => s.id !== id))}
+        onClose={() => setPanelOpen(false)}
+      />
       {/* Accept bottom sheet */}
       {acceptSheetJob && (
         <AcceptBottomSheet
@@ -1197,6 +1270,20 @@ export default function JobsScreen() {
         />
       )}
       {/* How It Works modal removed — tukšbrauciens lives in active.tsx */}
+      {/* ── GO ONLINE FAB ── */}
+      <View style={styles.onlineFabWrap} pointerEvents="box-none">
+        <TouchableOpacity
+          style={[styles.onlineFab, isOnline === true && styles.onlineFabOnline]}
+          onPress={handleToggleOnline}
+          disabled={togglingOnline || isOnline === null}
+          activeOpacity={0.82}
+        >
+          <View style={[styles.onlineFabDot, isOnline === true && styles.onlineFabDotActive]} />
+          <Text style={[styles.onlineFabLabel, isOnline === true && styles.onlineFabLabelOnline]}>
+            {togglingOnline ? '...' : isOnline === true ? 'Tiešsaistē' : 'IET TIEŠSAISTĒ'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </ScreenContainer>
   );
 }
@@ -1205,65 +1292,37 @@ export default function JobsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f3f4f6' },
 
-  topBar: {
+  // ── Controls row (minimal, light) ──────────────────────────────────────────
+  controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 10,
-    backgroundColor: '#1f2937',
+    paddingVertical: 8,
+    backgroundColor: '#f3f4f6',
   },
-  screenTitle: { fontSize: 20, fontWeight: '800', color: '#ffffff' },
-  filterToggle: {
-    flexDirection: 'row',
+  filterBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#e5e7eb',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#374151',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
+    justifyContent: 'center',
   },
-  filterToggleActive: { backgroundColor: '#111827' },
-  filterToggleText: { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
-  filterToggleTextActive: { color: '#ffffff' },
-  filterDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#9ca3af' },
-
-  // ── Online toggle ─────────────────────────────────────────────
-  onlinePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#374151',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#4b5563',
+  filterBtnActive: { backgroundColor: '#d1d5db' },
+  filterDot: {
+    position: 'absolute',
+    top: 7,
+    right: 7,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#ef4444',
   },
-  onlinePillActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  onlinePillOffline: { backgroundColor: '#374151', borderColor: '#4b5563' },
-  onlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#6b7280' },
-  onlineDotActive: { backgroundColor: '#9ca3af' },
-  onlineDotOffline: { backgroundColor: '#6b7280' },
-  onlinePillText: { fontSize: 12, fontWeight: '700', color: '#9ca3af' },
-  onlinePillTextActive: { color: '#d1d5db' },
-  offlineBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#1c1917',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#292524',
-  },
-  offlineBannerText: { fontSize: 13, color: '#9ca3af', fontWeight: '500' },
-  offlineBannerCta: { fontSize: 13, fontWeight: '700', color: '#9ca3af' },
 
   viewToggle: {
     flexDirection: 'row',
-    backgroundColor: '#374151',
+    backgroundColor: '#e5e7eb',
     borderRadius: 20,
     padding: 3,
   },
@@ -1271,114 +1330,67 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 11,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 18,
   },
-  viewToggleBtnActive: { backgroundColor: '#111827' },
-  viewToggleText: { fontSize: 12, fontWeight: '600', color: '#9ca3af' },
-  viewToggleTextActive: { color: '#ffffff' },
-
-  scrollContent: { paddingBottom: 32 },
-  panelWrapper: { overflow: 'hidden' },
-
-  panel: {
-    backgroundColor: '#1f2937',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 16,
+  viewToggleBtnActive: {
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOpacity: 0.07,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
   },
-  panelSection: {},
-  panelLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#9ca3af',
-    marginBottom: 6,
-    letterSpacing: 0.4,
-  },
-  panelInput: {
-    backgroundColor: '#374151',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    fontSize: 15,
-    color: '#f9fafb',
-    marginBottom: 8,
-  },
+  viewToggleText: { fontSize: 12, fontWeight: '600', color: '#6b7280', lineHeight: 18 },
+  viewToggleTextActive: { color: '#111827' },
 
-  radiusScroll: { marginBottom: 2 },
-  radiusChips: { flexDirection: 'row', gap: 6, paddingRight: 8 },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#374151',
-    borderWidth: 1,
-    borderColor: '#4b5563',
-  },
-  chipActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  chipText: { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
-  chipTextActive: { color: '#ffffff' },
-
-  panelActions: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  resetBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: '#374151',
+  // ── GO ONLINE FAB ──────────────────────────────────────────────────────────
+  onlineFabWrap: {
+    position: 'absolute',
+    bottom: 20,
+    left: 24,
+    right: 24,
     alignItems: 'center',
   },
-  resetBtnText: { fontSize: 14, fontWeight: '600', color: '#9ca3af' },
-  applyBtn: {
-    flex: 2,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-  },
-  applyBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
-
-  saveSearchBtn: {
-    marginTop: 10,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#4b5563',
-    alignItems: 'center',
-  },
-  saveSearchBtnText: { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
-
-  savedSection: { marginTop: 14 },
-  savedTitle: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6b7280',
-    marginBottom: 8,
-    letterSpacing: 0.5,
-  },
-  savedChips: { flexDirection: 'row', gap: 8, paddingRight: 8 },
-  savedChip: {
+  onlineFab: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#374151',
-    borderRadius: 16,
-    paddingLeft: 12,
-    paddingRight: 6,
-    paddingVertical: 7,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: '#4b5563',
-  },
-  savedChipText: { fontSize: 13, fontWeight: '600', color: '#e5e7eb' },
-  savedChipDelete: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#4b5563',
-    alignItems: 'center',
     justifyContent: 'center',
+    gap: 10,
+    backgroundColor: '#111827',
+    paddingVertical: 17,
+    borderRadius: 50,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 7,
   },
-  savedChipDeleteText: { fontSize: 11, color: '#9ca3af', fontWeight: '700' },
+  onlineFabOnline: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowOpacity: 0.08,
+  },
+  onlineFabDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#6b7280' },
+  onlineFabDotActive: { backgroundColor: '#34d399' },
+  onlineFabLabel: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: 0.6,
+    lineHeight: 20,
+  },
+  onlineFabLabelOnline: {
+    color: '#374151',
+    fontWeight: '600',
+    fontSize: 14,
+    letterSpacing: 0,
+  },
+
+  scrollContent: { paddingBottom: 104 },
 
   activePill: {
     flexDirection: 'row',
@@ -1786,8 +1798,20 @@ const mapStyles = StyleSheet.create({
   },
   earningsBarItem: { alignItems: 'center', paddingHorizontal: 12 },
   earningsBarValue: { fontSize: 18, fontWeight: '800', color: '#ffffff' },
-  earningsBarLabel: { fontSize: 10, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 1 },
+  earningsBarLabel: {
+    fontSize: 10,
+    color: '#9ca3af',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginTop: 1,
+  },
   earningsBarDivider: { width: 1, height: 32, backgroundColor: '#374151' },
-  earningsBarCta: { marginLeft: 'auto', paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#374151', borderRadius: 10 },
+  earningsBarCta: {
+    marginLeft: 'auto',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#374151',
+    borderRadius: 10,
+  },
   earningsBarCtaText: { fontSize: 12, fontWeight: '700', color: '#e5e7eb' },
 });

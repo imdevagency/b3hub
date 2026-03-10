@@ -239,7 +239,7 @@ export default function InvoicesScreen() {
       if (!silent) setLoading(true);
       try {
         const data = await api.invoices.getAll(token);
-        setInvoices(data);
+        setInvoices(Array.isArray(data) ? data : []);
       } catch {
         // silent fail — show empty state
       } finally {

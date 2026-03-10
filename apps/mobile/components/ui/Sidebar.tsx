@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -106,6 +106,7 @@ export function Sidebar({ visible, onClose, role, accentColor, isMultiRole }: Si
 
   const translateX = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const [modalVisible, setModalVisible] = useState(false);
 
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase();
   const fullName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
@@ -113,6 +114,10 @@ export function Sidebar({ visible, onClose, role, accentColor, isMultiRole }: Si
 
   useEffect(() => {
     if (visible) {
+      // Show modal first, then animate in
+      setModalVisible(true);
+      translateX.setValue(-SIDEBAR_WIDTH);
+      overlayOpacity.setValue(0);
       Animated.parallel([
         Animated.spring(translateX, {
           toValue: 0,
@@ -127,10 +132,11 @@ export function Sidebar({ visible, onClose, role, accentColor, isMultiRole }: Si
         }),
       ]).start();
     } else {
+      // Animate out, then hide modal
       Animated.parallel([
         Animated.timing(translateX, {
           toValue: -SIDEBAR_WIDTH,
-          duration: 220,
+          duration: 240,
           useNativeDriver: true,
         }),
         Animated.timing(overlayOpacity, {
@@ -138,7 +144,7 @@ export function Sidebar({ visible, onClose, role, accentColor, isMultiRole }: Si
           duration: 200,
           useNativeDriver: true,
         }),
-      ]).start();
+      ]).start(() => setModalVisible(false));
     }
   }, [visible]);
 
@@ -166,7 +172,7 @@ export function Sidebar({ visible, onClose, role, accentColor, isMultiRole }: Si
 
   return (
     <Modal
-      visible={visible}
+      visible={modalVisible}
       transparent
       animationType="none"
       onRequestClose={onClose}
