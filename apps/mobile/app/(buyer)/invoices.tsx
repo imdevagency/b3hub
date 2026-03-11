@@ -1,8 +1,5 @@
 /**
- * invoices.tsx — Buyer: invoice list with status badges
- *
- * Lists all invoices for the logged-in buyer, grouped by status.
- * Tapping an invoice shows totals + VAT + due date + order link.
+ * invoices.tsx — Buyer: invoice list (Uber-style clean finance UI)
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -23,10 +20,8 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
-  Package,
   CreditCard,
-  Calendar,
-  Receipt,
+  ChevronRight,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiInvoice, type InvoiceStatus } from '@/lib/api';
@@ -40,7 +35,7 @@ function fmtDate(iso: string | null): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('lv-LV', {
     day: '2-digit',
-    month: '2-digit',
+    month: 'short',
     year: 'numeric',
   });
 }
@@ -49,73 +44,39 @@ function fmtEur(n: number): string {
   return `€${n.toFixed(2)}`;
 }
 
-const STATUS_META: Record<
-  InvoiceStatus,
-  { label: string; bg: string; color: string; icon: React.ReactNode }
-> = {
-  DRAFT: {
-    label: 'Melnraksts',
-    bg: '#f3f4f6',
-    color: '#6b7280',
-    icon: <FileText size={13} color="#6b7280" />,
-  },
-  ISSUED: {
-    label: 'Izrakstīts',
-    bg: '#f3f4f6',
-    color: '#374151',
-    icon: <Clock size={13} color="#374151" />,
-  },
-  PAID: {
-    label: 'Apmaksāts',
-    bg: '#dcfce7',
-    color: '#15803d',
-    icon: <CheckCircle2 size={13} color="#15803d" />,
-  },
-  OVERDUE: {
-    label: 'Kavēts',
-    bg: '#fee2e2',
-    color: '#b91c1c',
-    icon: <AlertCircle size={13} color="#b91c1c" />,
-  },
-  CANCELLED: {
-    label: 'Atcelts',
-    bg: '#f3f4f6',
-    color: '#9ca3af',
-    icon: <X size={13} color="#9ca3af" />,
-  },
+const STATUS_META: Record<InvoiceStatus, { label: string; dot: string; color: string }> = {
+  DRAFT: { label: 'Melnraksts', dot: '#9ca3af', color: '#6b7280' },
+  ISSUED: { label: 'Gaida apmaksu', dot: '#3b82f6', color: '#1d4ed8' },
+  PAID: { label: 'Apmaksāts', dot: '#22c55e', color: '#15803d' },
+  OVERDUE: { label: 'Kavēts', dot: '#ef4444', color: '#b91c1c' },
+  CANCELLED: { label: 'Atcelts', dot: '#d1d5db', color: '#9ca3af' },
 };
 
 // ── Invoice row ────────────────────────────────────────────────
 
 function InvoiceRow({ invoice, onPress }: { invoice: ApiInvoice; onPress: () => void }) {
   const meta = STATUS_META[invoice.status];
-  const overdue =
-    invoice.status === 'OVERDUE' ||
-    (invoice.status === 'ISSUED' &&
-      invoice.dueDate != null &&
-      new Date(invoice.dueDate) < new Date());
+  const isActionable = invoice.status === 'ISSUED' || invoice.status === 'OVERDUE';
 
   return (
-    <TouchableOpacity style={s.row} onPress={onPress} activeOpacity={0.75}>
-      <View style={[s.rowIcon, { backgroundColor: overdue ? '#fee2e2' : '#f0fdf4' }]}>
-        <Receipt size={20} color={overdue ? '#ef4444' : '#111827'} />
-      </View>
-      <View style={s.rowBody}>
-        <Text style={s.rowNum}>#{invoice.invoiceNumber}</Text>
-        {invoice.order && <Text style={s.rowOrder}>Pasūt. #{invoice.order.orderNumber}</Text>}
-        <Text style={s.rowDate}>
-          {invoice.dueDate
-            ? `Termiņš: ${fmtDate(invoice.dueDate)}`
-            : `Izrakstīts: ${fmtDate(invoice.issuedAt)}`}
-        </Text>
-      </View>
-      <View style={s.rowRight}>
-        <Text style={s.rowTotal}>{fmtEur(invoice.total)}</Text>
-        <View style={[s.badge, { backgroundColor: meta.bg }]}>
-          {meta.icon}
-          <Text style={[s.badgeText, { color: meta.color }]}>{meta.label}</Text>
+    <TouchableOpacity style={s.row} onPress={onPress} activeOpacity={0.6}>
+      <View style={s.rowLeft}>
+        <View style={s.rowTopLine}>
+          <Text style={s.rowNum}>Rēķins #{invoice.invoiceNumber}</Text>
+          <Text style={[s.rowAmount, isActionable && s.rowAmountDue]}>{fmtEur(invoice.total)}</Text>
         </View>
+        <View style={s.rowBottomLine}>
+          <View style={s.statusRow}>
+            <View style={[s.dot, { backgroundColor: meta.dot }]} />
+            <Text style={[s.statusLabel, { color: meta.color }]}>{meta.label}</Text>
+          </View>
+          <Text style={s.rowDate}>
+            {invoice.dueDate ? `Termiņš ${fmtDate(invoice.dueDate)}` : fmtDate(invoice.issuedAt)}
+          </Text>
+        </View>
+        {invoice.order && <Text style={s.rowOrder}>Pasūtījums #{invoice.order.orderNumber}</Text>}
       </View>
+      <ChevronRight size={16} color="#d1d5db" />
     </TouchableOpacity>
   );
 }
@@ -134,6 +95,7 @@ function InvoiceModal({
   paying: boolean;
 }) {
   const meta = STATUS_META[invoice.status];
+  const isActionable = invoice.status === 'ISSUED' || invoice.status === 'OVERDUE';
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
@@ -141,64 +103,82 @@ function InvoiceModal({
         <View style={m.sheet}>
           <View style={m.handle} />
 
-          {/* Header */}
-          <View style={m.header}>
-            <View>
-              <Text style={m.title}>Rēķins #{invoice.invoiceNumber}</Text>
-              {invoice.order && <Text style={m.sub}>Pasūtījums #{invoice.order.orderNumber}</Text>}
+          {/* Close */}
+          <TouchableOpacity style={m.closeBtn} onPress={onClose}>
+            <X size={18} color="#6b7280" />
+          </TouchableOpacity>
+
+          {/* Amount hero */}
+          <View style={m.amountHero}>
+            <Text style={m.amountHeroLabel}>Kopā jāmaksā</Text>
+            <Text style={[m.amountHeroVal, isActionable && { color: '#111827' }]}>
+              {fmtEur(invoice.total)}
+            </Text>
+            <View style={m.statusPill}>
+              <View style={[m.statusDot, { backgroundColor: meta.dot }]} />
+              <Text style={[m.statusText, { color: meta.color }]}>{meta.label}</Text>
             </View>
-            <TouchableOpacity style={m.closeBtn} onPress={onClose}>
-              <X size={18} color="#6b7280" />
-            </TouchableOpacity>
           </View>
 
-          {/* Status pill */}
-          <View style={[m.statusPill, { backgroundColor: meta.bg }]}>
-            {meta.icon}
-            <Text style={[m.statusText, { color: meta.color }]}>{meta.label}</Text>
+          {/* Reference */}
+          <View style={m.refRow}>
+            <Text style={m.refLabel}>Rēķins</Text>
+            <Text style={m.refVal}>#{invoice.invoiceNumber}</Text>
+          </View>
+          {invoice.order && (
+            <View style={m.refRow}>
+              <Text style={m.refLabel}>Pasūtījums</Text>
+              <Text style={m.refVal}>#{invoice.order.orderNumber}</Text>
+            </View>
+          )}
+
+          <View style={m.divider} />
+
+          {/* Line items */}
+          <View style={m.lineItem}>
+            <Text style={m.lineLabel}>Summa bez PVN</Text>
+            <Text style={m.lineVal}>{fmtEur(invoice.subtotal)}</Text>
+          </View>
+          <View style={m.lineItem}>
+            <Text style={m.lineLabel}>PVN (21%)</Text>
+            <Text style={m.lineVal}>{fmtEur(invoice.vatAmount)}</Text>
+          </View>
+          <View style={[m.lineItem, m.lineItemTotal]}>
+            <Text style={m.lineTotalLabel}>Kopā</Text>
+            <Text style={m.lineTotalVal}>{fmtEur(invoice.total)}</Text>
           </View>
 
-          {/* Amounts */}
-          <View style={m.amountBlock}>
-            <View style={m.amountRow}>
-              <Text style={m.amountLabel}>Bez PVN</Text>
-              <Text style={m.amountVal}>{fmtEur(invoice.subtotal)}</Text>
-            </View>
-            <View style={m.amountRow}>
-              <Text style={m.amountLabel}>PVN (21%)</Text>
-              <Text style={m.amountVal}>{fmtEur(invoice.vatAmount)}</Text>
-            </View>
-            <View style={[m.amountRow, m.amountTotalRow]}>
-              <Text style={m.amountTotalLabel}>Kopā</Text>
-              <Text style={m.amountTotal}>{fmtEur(invoice.total)}</Text>
-            </View>
-          </View>
+          <View style={m.divider} />
 
           {/* Dates */}
-          <View style={m.datesRow}>
-            <View style={m.dateCard}>
-              <Calendar size={16} color="#6b7280" />
-              <Text style={m.dateLabel}>Izrakstīts</Text>
-              <Text style={m.dateVal}>{fmtDate(invoice.issuedAt)}</Text>
-            </View>
-            <View style={m.dateCard}>
-              <Clock size={16} color="#6b7280" />
-              <Text style={m.dateLabel}>Apmaksas termiņš</Text>
-              <Text style={m.dateVal}>{fmtDate(invoice.dueDate)}</Text>
-            </View>
-            {invoice.paidAt && (
-              <View style={m.dateCard}>
-                <CheckCircle2 size={16} color="#111827" />
-                <Text style={m.dateLabel}>Apmaksāts</Text>
-                <Text style={m.dateVal}>{fmtDate(invoice.paidAt)}</Text>
-              </View>
-            )}
+          <View style={m.lineItem}>
+            <Text style={m.lineLabel}>Izrakstīts</Text>
+            <Text style={m.lineVal}>{fmtDate(invoice.issuedAt)}</Text>
           </View>
+          {invoice.dueDate && (
+            <View style={m.lineItem}>
+              <Text style={m.lineLabel}>Apmaksas termiņš</Text>
+              <Text
+                style={[
+                  m.lineVal,
+                  invoice.status === 'OVERDUE' && { color: '#dc2626', fontWeight: '700' },
+                ]}
+              >
+                {fmtDate(invoice.dueDate)}
+              </Text>
+            </View>
+          )}
+          {invoice.paidAt && (
+            <View style={m.lineItem}>
+              <Text style={m.lineLabel}>Apmaksāts</Text>
+              <Text style={[m.lineVal, { color: '#16a34a' }]}>{fmtDate(invoice.paidAt)}</Text>
+            </View>
+          )}
 
-          {/* Pay button — shown only for ISSUED / OVERDUE */}
-          {(invoice.status === 'ISSUED' || invoice.status === 'OVERDUE') && (
+          {/* Pay CTA */}
+          {isActionable && (
             <TouchableOpacity
-              style={[m.payBtn, paying && m.payBtnDisabled]}
+              style={[m.payBtn, invoice.status === 'OVERDUE' && m.payBtnOverdue]}
               onPress={onPay}
               disabled={paying}
               activeOpacity={0.85}
@@ -208,7 +188,7 @@ function InvoiceModal({
               ) : (
                 <>
                   <CreditCard size={18} color="#fff" />
-                  <Text style={m.payBtnText}>Apstiprināt apmaksu — {fmtEur(invoice.total)}</Text>
+                  <Text style={m.payBtnText}>Apmaksāt {fmtEur(invoice.total)}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -221,6 +201,13 @@ function InvoiceModal({
 
 // ── Main screen ────────────────────────────────────────────────
 
+const FILTERS: { key: InvoiceStatus | 'ALL'; label: string }[] = [
+  { key: 'ALL', label: 'Visi' },
+  { key: 'ISSUED', label: 'Gaida' },
+  { key: 'OVERDUE', label: 'Kavēti' },
+  { key: 'PAID', label: 'Apmaksāti' },
+];
+
 export default function InvoicesScreen() {
   const { token } = useAuth();
   const toast = useToast();
@@ -229,8 +216,6 @@ export default function InvoicesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selected, setSelected] = useState<ApiInvoice | null>(null);
   const [paying, setPaying] = useState(false);
-
-  // Filter
   const [filter, setFilter] = useState<InvoiceStatus | 'ALL'>('ALL');
 
   const load = useCallback(
@@ -276,66 +261,67 @@ export default function InvoicesScreen() {
     }
   };
 
-  const FILTERS: { key: InvoiceStatus | 'ALL'; label: string }[] = [
-    { key: 'ALL', label: 'Visi' },
-    { key: 'ISSUED', label: 'Gaida' },
-    { key: 'OVERDUE', label: 'Kavēti' },
-    { key: 'PAID', label: 'Apmaksāti' },
-  ];
-
   const visible = filter === 'ALL' ? invoices : invoices.filter((i) => i.status === filter);
-
-  // Stats
   const totalOwed = invoices
     .filter((i) => i.status === 'ISSUED' || i.status === 'OVERDUE')
     .reduce((s, i) => s + i.total, 0);
   const overdueCount = invoices.filter((i) => i.status === 'OVERDUE').length;
+  const paidCount = invoices.filter((i) => i.status === 'PAID').length;
 
   if (loading) {
     return (
-      <ScreenContainer>
+      <ScreenContainer bg="#fff">
         <SkeletonCard count={4} />
       </ScreenContainer>
     );
   }
 
   return (
-    <ScreenContainer>
-      {/* ── Hero header ── */}
-      <View style={s.hero}>
-        <Text style={s.heroSuper}>Rēķini</Text>
-        <Text style={s.heroAmount}>{fmtEur(totalOwed)}</Text>
-        <Text style={s.heroSub}>
-          {overdueCount > 0
-            ? `${overdueCount} kavēts rēķins — ${fmtEur(totalOwed)} jāsamaksā`
-            : invoices.length > 0
-              ? 'Visi rēķini kārtībā'
-              : 'Nav rēķinu'}
-        </Text>
+    <ScreenContainer bg="#fff">
+      {/* ── Summary ── */}
+      <View style={s.summary}>
+        <View style={s.summaryMain}>
+          <Text style={s.summaryLabel}>Apmaksājams</Text>
+          <Text style={s.summaryAmount}>{fmtEur(totalOwed)}</Text>
+        </View>
+        <View style={s.summaryCaps}>
+          {overdueCount > 0 && (
+            <View style={[s.summaryChip, s.summaryChipRed]}>
+              <AlertCircle size={12} color="#dc2626" />
+              <Text style={[s.summaryChipText, { color: '#dc2626' }]}>{overdueCount} kavēts</Text>
+            </View>
+          )}
+          {paidCount > 0 && (
+            <View style={[s.summaryChip, s.summaryChipGreen]}>
+              <CheckCircle2 size={12} color="#16a34a" />
+              <Text style={[s.summaryChipText, { color: '#16a34a' }]}>{paidCount} apmaksāts</Text>
+            </View>
+          )}
+          {invoices.length === 0 && <Text style={s.summaryEmpty}>Nav rēķinu</Text>}
+        </View>
       </View>
 
-      {/* ── Filter chips ── */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.filtersRow}
-      >
+      {/* ── Segmented filter ── */}
+      <View style={s.segmentWrap}>
         {FILTERS.map((f) => (
           <TouchableOpacity
             key={f.key}
-            style={[s.chip, filter === f.key && s.chipActive]}
-            onPress={() => setFilter(f.key)}
-            activeOpacity={0.75}
+            style={[s.segment, filter === f.key && s.segmentActive]}
+            onPress={() => {
+              haptics.light();
+              setFilter(f.key);
+            }}
+            activeOpacity={0.7}
           >
-            <Text style={[s.chipText, filter === f.key && s.chipTextActive]}>{f.label}</Text>
+            <Text style={[s.segmentText, filter === f.key && s.segmentTextActive]}>{f.label}</Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
 
       {/* ── List ── */}
       <ScrollView
         style={s.list}
-        contentContainerStyle={s.listContent}
+        contentContainerStyle={visible.length === 0 ? s.listEmpty : s.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
@@ -343,23 +329,34 @@ export default function InvoicesScreen() {
       >
         {visible.length === 0 ? (
           <View style={s.empty}>
-            <FileText size={40} color="#d1d5db" />
+            <View style={s.emptyIcon}>
+              <FileText size={28} color="#9ca3af" />
+            </View>
             <Text style={s.emptyTitle}>Nav rēķinu</Text>
-            <Text style={s.emptySub}>Rēķini parādīsies, kad pasūtījumi tiks apstiprināti.</Text>
+            <Text style={s.emptySub}>
+              {filter === 'ALL'
+                ? 'Rēķini parādīsies, kad pasūtījumi tiks apstiprināti.'
+                : 'Nav rēķinu šajā kategorijā.'}
+            </Text>
           </View>
         ) : (
-          <View style={s.card}>
+          <>
             {visible.map((inv, idx) => (
               <View key={inv.id}>
-                <InvoiceRow invoice={inv} onPress={() => setSelected(inv)} />
+                <InvoiceRow
+                  invoice={inv}
+                  onPress={() => {
+                    haptics.light();
+                    setSelected(inv);
+                  }}
+                />
                 {idx < visible.length - 1 && <View style={s.divider} />}
               </View>
             ))}
-          </View>
+          </>
         )}
       </ScrollView>
 
-      {/* ── Detail modal ── */}
       {selected && (
         <InvoiceModal
           invoice={selected}
@@ -375,122 +372,133 @@ export default function InvoicesScreen() {
 // ── Styles ─────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f2f2f7' },
-
-  hero: {
-    backgroundColor: '#111827',
-    paddingHorizontal: 24,
+  // Summary header
+  summary: {
+    paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 28,
+    paddingBottom: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#f3f4f6',
   },
-  heroSuper: { fontSize: 13, color: '#fca5a5', fontWeight: '500' },
-  heroAmount: { fontSize: 40, fontWeight: '800', color: '#fff', marginTop: 4, letterSpacing: -1 },
-  heroSub: { fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 4 },
-
-  filtersRow: { paddingHorizontal: 16, paddingVertical: 14, gap: 8 },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+  summaryMain: { marginBottom: 10 },
+  summaryLabel: {
+    fontSize: 12,
+    color: '#9ca3af',
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
-  chipActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  chipText: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  chipTextActive: { color: '#fff' },
+  summaryAmount: {
+    fontSize: 40,
+    fontWeight: '800',
+    color: '#111827',
+    letterSpacing: -1.5,
+    marginTop: 2,
+  },
+  summaryCaps: { flexDirection: 'row', gap: 8 },
+  summaryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  summaryChipRed: { backgroundColor: '#fef2f2' },
+  summaryChipGreen: { backgroundColor: '#f0fdf4' },
+  summaryChipText: { fontSize: 12, fontWeight: '600' },
+  summaryEmpty: { fontSize: 13, color: '#9ca3af' },
 
+  // Segmented control
+  segmentWrap: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#f3f4f6',
+  },
+  segment: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 7,
+    borderRadius: 8,
+  },
+  segmentActive: { backgroundColor: '#f3f4f6' },
+  segmentText: { fontSize: 13, fontWeight: '500', color: '#6b7280' },
+  segmentTextActive: { color: '#111827', fontWeight: '700' },
+
+  // List
   list: { flex: 1 },
-  listContent: { paddingHorizontal: 16, paddingBottom: 40, gap: 12 },
+  listContent: { paddingBottom: 40 },
+  listEmpty: { flex: 1 },
 
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-  },
-
+  // Row
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 8,
   },
-  rowIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+  rowLeft: { flex: 1, gap: 5 },
+  rowTopLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  rowNum: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  rowAmount: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  rowAmountDue: { color: '#111827' },
+  rowBottomLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  dot: { width: 7, height: 7, borderRadius: 4 },
+  statusLabel: { fontSize: 12, fontWeight: '500' },
+  rowDate: { fontSize: 12, color: '#9ca3af' },
+  rowOrder: { fontSize: 12, color: '#9ca3af' },
+
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#f3f4f6', marginLeft: 20 },
+
+  // Empty
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80, gap: 12 },
+  emptyIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#f9fafb',
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
   },
-  rowBody: { flex: 1, gap: 2 },
-  rowNum: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  rowOrder: { fontSize: 12, color: '#6b7280' },
-  rowDate: { fontSize: 11, color: '#9ca3af', marginTop: 1 },
-  rowRight: { alignItems: 'flex-end', gap: 4 },
-  rowTotal: { fontSize: 15, fontWeight: '800', color: '#111827' },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: '#374151' },
+  emptySub: {
+    fontSize: 13,
+    color: '#9ca3af',
+    textAlign: 'center',
+    paddingHorizontal: 32,
+    lineHeight: 20,
   },
-  badgeText: { fontSize: 10, fontWeight: '700' },
-
-  divider: { height: 1, backgroundColor: '#f3f4f6', marginHorizontal: 16 },
-
-  empty: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    alignItems: 'center',
-    paddingVertical: 48,
-    gap: 10,
-  },
-  emptyTitle: { fontSize: 15, fontWeight: '700', color: '#374151' },
-  emptySub: { fontSize: 13, color: '#9ca3af', textAlign: 'center', paddingHorizontal: 24 },
 });
 
 // ── Modal styles ───────────────────────────────────────────────
 
 const m = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingBottom: 44,
     paddingTop: 12,
-    gap: 16,
   },
   handle: {
     width: 36,
     height: 4,
     backgroundColor: '#e5e7eb',
-    borderRadius: 999,
+    borderRadius: 99,
     alignSelf: 'center',
-    marginBottom: 4,
+    marginBottom: 16,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  title: { fontSize: 20, fontWeight: '800', color: '#111827' },
-  sub: { fontSize: 13, color: '#6b7280', marginTop: 2 },
   closeBtn: {
+    position: 'absolute',
+    top: 20,
+    right: 24,
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -498,53 +506,71 @@ const m = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+  // Amount hero at top of sheet
+  amountHero: { alignItems: 'center', paddingVertical: 20 },
+  amountHeroLabel: {
+    fontSize: 12,
+    color: '#9ca3af',
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  amountHeroVal: {
+    fontSize: 42,
+    fontWeight: '800',
+    color: '#111827',
+    letterSpacing: -1.5,
+    marginTop: 4,
+  },
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    alignSelf: 'flex-start',
+    marginTop: 10,
     paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    backgroundColor: '#f9fafb',
+  },
+  statusDot: { width: 7, height: 7, borderRadius: 4 },
+  statusText: { fontSize: 12, fontWeight: '600' },
+
+  // Reference rows
+  refRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     paddingVertical: 6,
-    borderRadius: 999,
   },
-  statusText: { fontSize: 12, fontWeight: '700' },
-  amountBlock: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 14,
-    padding: 16,
-    gap: 8,
-  },
-  amountRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  amountLabel: { fontSize: 14, color: '#6b7280' },
-  amountVal: { fontSize: 14, color: '#374151', fontWeight: '500' },
-  amountTotalRow: {
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    paddingTop: 10,
-    marginTop: 2,
-  },
-  amountTotalLabel: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  amountTotal: { fontSize: 18, fontWeight: '800', color: '#111827' },
-  datesRow: { flexDirection: 'row', gap: 10 },
-  dateCard: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    padding: 12,
+  refLabel: { fontSize: 13, color: '#9ca3af' },
+  refVal: { fontSize: 13, fontWeight: '600', color: '#374151' },
+
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#f3f4f6', marginVertical: 12 },
+
+  // Line items
+  lineItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 4,
+    paddingVertical: 8,
   },
-  dateLabel: { fontSize: 10, color: '#9ca3af', fontWeight: '500', textAlign: 'center' },
-  dateVal: { fontSize: 13, fontWeight: '700', color: '#374151', textAlign: 'center' },
+  lineItemTotal: { paddingTop: 12, marginTop: 4 },
+  lineLabel: { fontSize: 14, color: '#6b7280' },
+  lineVal: { fontSize: 14, color: '#374151', fontWeight: '500' },
+  lineTotalLabel: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  lineTotalVal: { fontSize: 18, fontWeight: '800', color: '#111827' },
+
+  // CTA
   payBtn: {
+    marginTop: 20,
     backgroundColor: '#111827',
-    borderRadius: 999,
+    borderRadius: 14,
     paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  payBtnDisabled: { backgroundColor: '#f87171' },
+  payBtnOverdue: { backgroundColor: '#dc2626' },
   payBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

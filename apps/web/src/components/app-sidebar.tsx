@@ -63,6 +63,7 @@ const ROLE_NAV: Record<Mode, NavItem[]> = {
     { label: 'Rēķini', href: '/dashboard/invoices', icon: Receipt },
     { label: 'Pasūtīt', href: '/dashboard/order', icon: LayoutGrid },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
+    { label: 'Čats', href: '/dashboard/chat', icon: MessageSquare },
   ],
   SUPPLIER: [
     { label: 'Informācijas Panelis', href: '/dashboard/supplier', icon: LayoutDashboard },
@@ -77,6 +78,8 @@ const ROLE_NAV: Record<Mode, NavItem[]> = {
     { label: 'Job Board', href: '/dashboard/jobs', icon: MapPin },
     { label: 'Mani Darbi', href: '/dashboard/orders', icon: ClipboardList },
     { label: 'Darba Grafiks', href: '/dashboard/schedule', icon: CalendarClock },
+    { label: 'Utilizācijas Centri', href: '/dashboard/recycling-centers', icon: MapPin },
+    { label: 'Čats', href: '/dashboard/chat', icon: MessageSquare },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
 };

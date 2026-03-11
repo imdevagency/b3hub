@@ -91,6 +91,7 @@ export const lv = {
       materials: 'Pasūtīt materiālus',
       container: 'Nomāt konteineru',
       freight: 'Kravu pārvadāšana',
+      disposal: 'Nodot atkritumus',
     },
     activeOrder: 'Aktīvais pasūtījums',
     trackOrder: 'Izsekot →',

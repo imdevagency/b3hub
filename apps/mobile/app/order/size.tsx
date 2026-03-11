@@ -153,7 +153,7 @@ const s = StyleSheet.create({
   progressFill: { height: '100%', backgroundColor: '#111827', borderRadius: 2 },
   progressLabel: { marginTop: 6, fontSize: 12, color: '#9ca3af', textAlign: 'right' },
   body: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 8 },
-  stepNum: { fontSize: 64, fontWeight: '800', color: '#fef2f2', lineHeight: 68, marginBottom: 8 },
+  stepNum: { fontSize: 64, fontWeight: '800', color: '#f3f4f6', lineHeight: 68, marginBottom: 8 },
   stepTitle: { fontSize: 26, fontWeight: '700', color: '#111827', marginBottom: 8 },
   stepSubtitle: { fontSize: 15, color: '#6b7280', marginBottom: 24 },
   card: {

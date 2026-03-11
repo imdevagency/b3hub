@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Image,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -16,7 +17,6 @@ import {
   MapPin,
   CalendarDays,
   Phone,
-  User,
   Package,
   Truck,
   FileText,
@@ -25,9 +25,11 @@ import {
   Star,
   FileDown,
   MessageCircle,
+  User,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { haptics } from '@/lib/haptics';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
 import type { ApiOrder, JobLocation, ApiDocument } from '@/lib/api';
 import { JobRouteMap } from '@/components/ui/JobRouteMap';
@@ -154,22 +156,27 @@ export default function OrderDetailScreen() {
         if (data.currentLocation) {
           const loc = { lat: data.currentLocation.lat, lng: data.currentLocation.lng };
           setDriverLoc(loc);
-          // ETA — only when en-route to delivery
-          if (
-            (liveJob.status === 'EN_ROUTE_DELIVERY' || liveJob.status === 'AT_DELIVERY') &&
-            data.deliveryLat != null &&
-            data.deliveryLng != null
-          ) {
+          // ETA to pickup when heading there; ETA to delivery when cargo loaded
+          const toPickup = liveJob.status === 'ACCEPTED' || liveJob.status === 'EN_ROUTE_PICKUP';
+          const toDelivery =
+            liveJob.status === 'LOADED' ||
+            liveJob.status === 'EN_ROUTE_DELIVERY' ||
+            liveJob.status === 'AT_DELIVERY';
+          const targetLat = toPickup ? data.pickupLat : toDelivery ? data.deliveryLat : null;
+          const targetLng = toPickup ? data.pickupLng : toDelivery ? data.deliveryLng : null;
+          if (targetLat != null && targetLng != null) {
             const R = 6371;
-            const dLat = ((data.deliveryLat - loc.lat) * Math.PI) / 180;
-            const dLng = ((data.deliveryLng - loc.lng) * Math.PI) / 180;
+            const dLat = ((targetLat - loc.lat) * Math.PI) / 180;
+            const dLng = ((targetLng - loc.lng) * Math.PI) / 180;
             const a =
               Math.sin(dLat / 2) ** 2 +
               Math.cos((loc.lat * Math.PI) / 180) *
-                Math.cos((data.deliveryLat * Math.PI) / 180) *
+                Math.cos((targetLat * Math.PI) / 180) *
                 Math.sin(dLng / 2) ** 2;
             const distKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             setEtaMinutes(Math.max(1, Math.round(distKm / 0.6)));
+          } else {
+            setEtaMinutes(null);
           }
         }
       } catch {
@@ -185,6 +192,7 @@ export default function OrderDetailScreen() {
   }, [order, token]);
 
   const handleCancel = () => {
+    haptics.heavy();
     Alert.alert('Atcelt pasūtījumu?', 'Šo darbību nevar atsaukt.', [
       { text: 'Nē', style: 'cancel' },
       {
@@ -196,7 +204,9 @@ export default function OrderDetailScreen() {
           try {
             const updated = await api.orders.cancel(order.id, token);
             setOrder(updated);
+            haptics.success();
           } catch (err: unknown) {
+            haptics.error();
             Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās atcelt');
           } finally {
             setActionLoading(false);
@@ -274,16 +284,6 @@ export default function OrderDetailScreen() {
             <View style={s.trackingHeader}>
               <Truck size={14} color="#111827" />
               <Text style={s.trackingTitle}>Maršruts</Text>
-              {driverLoc ? (
-                <View style={s.liveTag}>
-                  <View style={s.liveDotInner} />
-                  <Text style={s.liveTagText}>TIEŠRAIDE</Text>
-                </View>
-              ) : (
-                <View style={[s.liveTag, { backgroundColor: '#f3f4f6' }]}>
-                  <Text style={[s.liveTagText, { color: '#9ca3af' }]}>GAIDA GPS</Text>
-                </View>
-              )}
             </View>
             <JobRouteMap
               pickup={{
@@ -306,19 +306,27 @@ export default function OrderDetailScreen() {
           </View>
         )}
 
-        {/* ETA card — shown when driver is en-route to delivery */}
-        {etaMinutes != null && activeJob?.status === 'EN_ROUTE_DELIVERY' && (
+        {/* ETA card — shown whenever we have a live ETA */}
+        {etaMinutes != null && activeJob && (
           <View style={s.etaCard}>
             <View style={s.etaLeft}>
-              <Text style={s.etaEmoji}>🚚</Text>
+              <Text style={s.etaEmoji}>
+                {activeJob.status === 'ACCEPTED' || activeJob.status === 'EN_ROUTE_PICKUP'
+                  ? '📍'
+                  : '🚚'}
+              </Text>
               <View>
-                <Text style={s.etaLabel}>Piegāde paredzama</Text>
-                <Text style={s.etaValue}>pēc ~{etaMinutes} min</Text>
+                <Text style={s.etaLabel}>
+                  {activeJob.status === 'ACCEPTED' || activeJob.status === 'EN_ROUTE_PICKUP'
+                    ? 'Šoferis ieradīsies iekraušanā'
+                    : 'Piegāde paredzama'}
+                </Text>
+                <Text style={s.etaValue}>
+                  {'pēc ~'}
+                  {etaMinutes}
+                  {' min'}
+                </Text>
               </View>
-            </View>
-            <View style={s.etaLive}>
-              <View style={s.etaDot} />
-              <Text style={s.etaLiveText}>TIEŠRAIDE</Text>
             </View>
           </View>
         )}
@@ -327,14 +335,26 @@ export default function OrderDetailScreen() {
         {driver && (
           <View style={s.driverCard}>
             <View style={s.driverCardRow}>
-              <Truck size={18} color="#111827" />
-              <Text style={s.driverTitle}>Šoferis ceļā</Text>
+              <Truck size={16} color="#6b7280" />
+              <Text style={s.driverTitle}>Šoferis</Text>
             </View>
             <View style={s.driverInfo}>
-              <User size={14} color="#111827" />
-              <Text style={s.driverName}>
-                {driver.firstName} {driver.lastName}
-              </Text>
+              {driver.avatar ? (
+                <Image source={{ uri: driver.avatar }} style={s.driverAvatar} />
+              ) : (
+                <View style={s.driverAvatarFallback}>
+                  <Text style={s.driverAvatarInitials}>
+                    {driver.firstName[0]}
+                    {driver.lastName[0]}
+                  </Text>
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={s.driverName}>
+                  {driver.firstName} {driver.lastName}
+                </Text>
+                {driver.phone ? <Text style={s.driverPhone}>{driver.phone}</Text> : null}
+              </View>
               {driver.phone ? (
                 <TouchableOpacity
                   style={s.callBtn}
@@ -344,7 +364,7 @@ export default function OrderDetailScreen() {
                     )
                   }
                 >
-                  <Phone size={13} color="#fff" />
+                  <Phone size={14} color="#fff" />
                   <Text style={s.callBtnText}>Zvanīt</Text>
                 </TouchableOpacity>
               ) : null}
@@ -501,9 +521,7 @@ export default function OrderDetailScreen() {
                   pathname: '/chat/[jobId]',
                   params: {
                     jobId: activeJob.id,
-                    title: driver
-                      ? `${driver.firstName} ${driver.lastName}`
-                      : 'Šoferis',
+                    title: driver ? `${driver.firstName} ${driver.lastName}` : 'Šoferis',
                   },
                 })
               }
@@ -628,9 +646,27 @@ const s = StyleSheet.create({
     borderLeftColor: '#111827',
   },
   driverCardRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  driverTitle: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  driverInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  driverName: { fontSize: 14, fontWeight: '600', color: '#111827', flex: 1 },
+  driverTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    flex: 1,
+  },
+  driverInfo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  driverAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#e5e7eb' },
+  driverAvatarFallback: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  driverAvatarInitials: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  driverName: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  driverPhone: { fontSize: 12, color: '#6b7280', marginTop: 1 },
   callBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -783,9 +819,6 @@ const s = StyleSheet.create({
   etaEmoji: { fontSize: 28 },
   etaLabel: { fontSize: 11, color: '#6b7280', fontWeight: '500' },
   etaValue: { fontSize: 20, fontWeight: '800', color: '#111827', marginTop: 2 },
-  etaLive: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  etaDot: { width: 7, height: 7, borderRadius: 999, backgroundColor: '#111827' },
-  etaLiveText: { fontSize: 10, fontWeight: '800', color: '#111827', letterSpacing: 0.5 },
 
   // Re-order button
   reorderBtn: {
@@ -860,22 +893,6 @@ const s = StyleSheet.create({
     borderBottomColor: '#fee2e2',
   },
   trackingTitle: { fontSize: 12, fontWeight: '700', color: '#374151', flex: 1 },
-  liveTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#111827',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  liveTagText: { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
-  liveDotInner: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: '#4ade80',
-  },
 
   // Order timeline
   tlRow: { flexDirection: 'row', minHeight: 44 },

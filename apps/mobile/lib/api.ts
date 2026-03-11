@@ -15,6 +15,10 @@ export interface User {
   phone?: string;
   avatar?: string;
   emailVerified: boolean;
+  notifPush?: boolean;
+  notifOrderUpdates?: boolean;
+  notifJobAlerts?: boolean;
+  notifMarketing?: boolean;
   company?: {
     id: string;
     name: string;
@@ -68,6 +72,98 @@ export interface LoginInput {
 }
 
 // ─── Skip Hire ─────────────────────────────────────────────────────────────
+
+// ── Container types ──────────────────────────────────────────
+export type ContainerType = 'SKIP' | 'ROLL_OFF' | 'COMPACTOR' | 'HOOKLOADER' | 'FLATBED';
+export type ContainerSize = 'SMALL' | 'MEDIUM' | 'LARGE' | 'EXTRA_LARGE';
+export type ContainerStatus = 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'RETIRED';
+export type ContainerOrderStatus = 'PENDING' | 'CONFIRMED' | 'DELIVERED' | 'AWAITING_PICKUP' | 'COLLECTED' | 'COMPLETED' | 'CANCELLED';
+
+export interface ApiContainer {
+  id: string;
+  containerType: ContainerType;
+  size: ContainerSize;
+  volume: number; // m³
+  maxWeight: number; // kg
+  rentalPrice: number;
+  deliveryFee: number;
+  pickupFee: number;
+  location: string;
+  currency: string;
+  status: ContainerStatus;
+  owner: { id: string; name: string; logo?: string | null; city: string };
+}
+
+export interface ApiContainerOrder {
+  id: string;
+  container: ApiContainer;
+  deliveryAddress: string;
+  deliveryCity: string;
+  rentalDays: number;
+  totalPrice: number;
+  currency: string;
+  status: ContainerOrderStatus;
+  deliveryDate?: string | null;
+  pickupDate?: string | null;
+  notes?: string | null;
+  createdAt: string;
+}
+
+// ── Waste / certificate types ──────────────────────────────────
+export type WasteType = 'CONCRETE' | 'BRICK' | 'WOOD' | 'METAL' | 'PLASTIC' | 'SOIL' | 'MIXED' | 'HAZARDOUS';
+export type DisposalTruckType = 'TIPPER_SMALL' | 'TIPPER_LARGE' | 'ARTICULATED_TIPPER';
+export type TransportVehicleType = 'TIPPER_SMALL' | 'TIPPER_LARGE' | 'ARTICULATED_TIPPER';
+
+export interface CreateDisposalOrderInput {
+  pickupAddress: string;
+  pickupCity: string;
+  pickupState?: string;
+  pickupPostal?: string;
+  pickupLat?: number;
+  pickupLng?: number;
+  wasteType: WasteType;
+  truckType: DisposalTruckType;
+  truckCount: number;
+  estimatedWeight: number;
+  description?: string;
+  requestedDate: string;
+}
+
+export interface CreateTransportOrderInput {
+  pickupAddress: string;
+  pickupCity: string;
+  pickupState?: string;
+  pickupPostal?: string;
+  pickupLat?: number;
+  pickupLng?: number;
+  dropoffAddress: string;
+  dropoffCity: string;
+  dropoffState?: string;
+  dropoffPostal?: string;
+  dropoffLat?: number;
+  dropoffLng?: number;
+  vehicleType: TransportVehicleType;
+  loadDescription: string;
+  estimatedWeight?: number;
+  requestedDate: string;
+}
+
+export interface ApiWasteRecord {
+  id: string;
+  wasteType: WasteType;
+  weight: number;
+  volume?: number | null;
+  processedDate?: string | null;
+  recyclableWeight?: number | null;
+  recyclingRate?: number | null;
+  certificateUrl?: string | null;
+  recyclingCenter: { id: string; name: string; address: string; city: string };
+  containerOrder?: {
+    id: string;
+    order: { id: string; createdAt: string };
+  } | null;
+  createdAt: string;
+}
 
 export type SkipWasteCategory =
   | 'MIXED'
@@ -153,7 +249,7 @@ export interface ApiOrder {
   transportJobs?: {
     id: string;
     status: string;
-    driver: { id: string; firstName: string; lastName: string; phone: string | null } | null;
+    driver: { id: string; firstName: string; lastName: string; phone: string | null; avatar: string | null } | null;
   }[];
   createdAt: string;
 }
@@ -183,7 +279,7 @@ export interface ApiTransportJob {
   currency: string;
   status: TransportJobStatus;
   driverId: string | null;
-  driver: { id: string; firstName: string; lastName: string; phone: string | null } | null;
+  driver: { id: string; firstName: string; lastName: string; phone: string | null; avatar: string | null } | null;
   vehicle: { id: string; licensePlate: string; vehicleType: string } | null;
   order: {
     id: string;
@@ -444,6 +540,18 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  forgotPassword: (email: string) =>
+    apiFetch<{ ok: boolean; _devResetUrl?: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  resetPassword: (token: string, newPassword: string) =>
+    apiFetch<{ ok: boolean }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    }),
+
   getMe: (token: string) =>
     apiFetch<User>('/auth/me', {
       headers: { Authorization: `Bearer ${token}` },
@@ -462,6 +570,38 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify({ pushToken }),
     }),
+
+  changePassword: (currentPassword: string, newPassword: string, token: string) =>
+    apiFetch<{ ok: boolean }>('/auth/change-password', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+
+  updateNotificationPrefs: (prefs: { notifPush?: boolean; notifOrderUpdates?: boolean; notifJobAlerts?: boolean; notifMarketing?: boolean }, token: string) =>
+    apiFetch<{ notifPush: boolean; notifOrderUpdates: boolean; notifJobAlerts: boolean; notifMarketing: boolean }>('/auth/notifications', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(prefs),
+    }),
+
+  disposal: {
+    create: (input: CreateDisposalOrderInput, token: string) =>
+      apiFetch<any>('/orders/disposal', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      }),
+  },
+
+  transport: {
+    create: (input: CreateTransportOrderInput, token: string) =>
+      apiFetch<any>('/orders/freight', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      }),
+  },
 
   orders: {
     stats: (token: string) =>
@@ -891,6 +1031,46 @@ export const api = {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify(data),
+      }),
+  },
+
+  containers: {
+    /** Browse available containers (public) */
+    list: (params: { containerType?: string; size?: string; page?: number }, token: string) => {
+      const q = new URLSearchParams();
+      if (params.containerType) q.set('containerType', params.containerType);
+      if (params.size) q.set('size', params.size);
+      if (params.page) q.set('page', String(params.page));
+      return apiFetch<{ data: ApiContainer[]; meta: { total: number; page: number; limit: number } }>(
+        `/containers?${q.toString()}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+    },
+
+    /** Rent a container */
+    rent: (
+      containerId: string,
+      body: { deliveryAddress: string; deliveryCity: string; deliveryLat?: number; deliveryLng?: number; rentalDays: number; notes?: string },
+      token: string,
+    ) =>
+      apiFetch<ApiContainerOrder>(`/containers/${containerId}/rent`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      }),
+
+    /** Buyer's rental history */
+    myOrders: (token: string) =>
+      apiFetch<ApiContainerOrder[]>('/containers/orders', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+  },
+
+  recyclingCenters: {
+    /** Buyer: get their disposal compliance records */
+    myDisposalRecords: (token: string) =>
+      apiFetch<ApiWasteRecord[]>('/recycling-centers/disposal/mine', {
+        headers: { Authorization: `Bearer ${token}` },
       }),
   },
 

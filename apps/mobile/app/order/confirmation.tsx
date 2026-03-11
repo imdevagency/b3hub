@@ -20,7 +20,7 @@ export default function OrderConfirmation() {
       <ScreenContainer standalone bg="#fff">
         <View style={s.center}>
           <Text style={s.centerText}>Nav pasūtījuma.</Text>
-          <TouchableOpacity onPress={() => router.replace('/')} style={s.centerLink}>
+          <TouchableOpacity onPress={() => router.replace('/(buyer)/home')} style={s.centerLink}>
             <Text style={s.centerLinkText}>Atpakaļ uz sākumu</Text>
           </TouchableOpacity>
         </View>

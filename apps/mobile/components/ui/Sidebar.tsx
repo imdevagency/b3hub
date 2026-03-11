@@ -14,17 +14,19 @@ import {
 import { useRouter } from 'expo-router';
 import {
   Bell,
+  Box,
   ChevronRight,
+  FileText,
   LogOut,
   Receipt,
   Settings,
+  ShieldCheck,
+  Trash2,
   Truck,
   User,
-  Wallet,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { haptics } from '@/lib/haptics';
-import { ModeSwitcher } from '@/components/ui/ModeSwitcher';
 
 const SIDEBAR_WIDTH = 300;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -36,7 +38,6 @@ interface SidebarProps {
   onClose: () => void;
   role: Role;
   accentColor: string;
-  isMultiRole?: boolean;
 }
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -56,16 +57,16 @@ function buildItems(role: Role): MenuItem[] {
 
   if (role === 'seller') {
     items.push({
-      icon: (c) => <Wallet size={20} color={c} />,
-      label: 'Ieņēmumi',
-      route: '/(seller)/earnings',
+      icon: (c) => <FileText size={20} color={c} />,
+      label: 'Pieprasījumi',
+      route: '/(seller)/quotes',
     });
   }
   if (role === 'driver') {
     items.push({
-      icon: (c) => <Wallet size={20} color={c} />,
-      label: 'Ieņēmumi',
-      route: '/(driver)/earnings',
+      icon: (c) => <Trash2 size={20} color={c} />,
+      label: 'Konteineri',
+      route: '/(driver)/skips',
     });
     items.push({
       icon: (c) => <Truck size={20} color={c} />,
@@ -78,6 +79,16 @@ function buildItems(role: Role): MenuItem[] {
       icon: (c) => <Receipt size={20} color={c} />,
       label: 'Rēķini',
       route: '/(buyer)/invoices',
+    });
+    items.push({
+      icon: (c) => <Box size={20} color={c} />,
+      label: 'Konteineri',
+      route: '/(buyer)/containers',
+    });
+    items.push({
+      icon: (c) => <ShieldCheck size={20} color={c} />,
+      label: 'Sertifikāti',
+      route: '/(buyer)/certificates',
     });
   }
 
@@ -94,13 +105,13 @@ function buildItems(role: Role): MenuItem[] {
   items.push({
     icon: (c) => <Settings size={20} color={c} />,
     label: 'Iestatījumi',
-    route: `/(${role})/profile` as string,
+    route: '/settings',
   });
 
   return items;
 }
 
-export function Sidebar({ visible, onClose, role, accentColor, isMultiRole }: SidebarProps) {
+export function Sidebar({ visible, onClose, role, accentColor }: SidebarProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
 
@@ -198,13 +209,6 @@ export function Sidebar({ visible, onClose, role, accentColor, isMultiRole }: Si
 
         {/* Menu */}
         <ScrollView style={styles.menu} showsVerticalScrollIndicator={false}>
-          {/* Mode switcher section for multi-role users */}
-          {isMultiRole && (
-            <View style={styles.modeSwitcherSection}>
-              <Text style={styles.sectionLabel}>LOMA</Text>
-              <ModeSwitcher />
-            </View>
-          )}
           {items.map((item, idx) => (
             <TouchableOpacity
               key={idx}
@@ -318,20 +322,6 @@ const styles = StyleSheet.create({
   },
   logoutLabel: {
     color: '#ef4444',
-  },
-  modeSwitcherSection: {
-    paddingTop: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f3f4f6',
-    marginBottom: 4,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#9ca3af',
-    letterSpacing: 0.8,
-    paddingHorizontal: 20,
-    paddingBottom: 4,
   },
   divider: {
     height: 1,

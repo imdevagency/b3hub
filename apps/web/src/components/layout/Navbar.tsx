@@ -85,27 +85,27 @@ export function Navbar() {
                 </NavigationMenuItem>
 
                 <NavigationMenuItem>
-                  <Link href="#stats" legacyBehavior passHref>
+                  <Link href="#how-it-works" legacyBehavior passHref>
                     <NavigationMenuLink
                       className={cn(
                         navigationMenuTriggerStyle(),
                         'text-sm font-medium text-gray-700 hover:text-red-600',
                       )}
                     >
-                      Cenas
+                      Kā tas darbojas
                     </NavigationMenuLink>
                   </Link>
                 </NavigationMenuItem>
 
                 <NavigationMenuItem>
-                  <Link href="/order" legacyBehavior passHref>
+                  <Link href="/apply" legacyBehavior passHref>
                     <NavigationMenuLink
                       className={cn(
                         navigationMenuTriggerStyle(),
                         'text-sm font-semibold text-red-600 hover:text-red-700',
                       )}
                     >
-                      Pasūtīt Konteineru
+                      Kļūt par partneri
                     </NavigationMenuLink>
                   </Link>
                 </NavigationMenuItem>
@@ -145,18 +145,18 @@ export function Navbar() {
                 Funkcijas
               </Link>
               <Link
-                href="#stats"
+                href="#how-it-works"
                 className="px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-red-600"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Cenas
+                Kā tas darbojas
               </Link>
               <Link
-                href="/order"
+                href="/apply"
                 className="px-3 py-2 text-sm font-semibold text-red-600 rounded-md hover:bg-red-50"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Pasūtīt Konteineru →
+                Kļūt par partneri →
               </Link>
             </nav>
             <div className="mt-4 flex flex-col gap-2 px-3">

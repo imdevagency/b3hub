@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,60 +14,40 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Send, ArrowLeft, MessageCircle } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
-import { api, ApiChatMessage } from '@/lib/api';
+import { ApiChatMessage } from '@/lib/api';
+import { useChat } from '@/lib/use-chat';
+import { useState } from 'react';
 
 export default function ChatScreen() {
   const { jobId, title } = useLocalSearchParams<{ jobId: string; title?: string }>();
   const { token, user } = useAuth();
   const router = useRouter();
 
-  const [messages, setMessages] = useState<ApiChatMessage[]>([]);
   const [input, setInput] = useState('');
-  const [sending, setSending] = useState(false);
-  const [loading, setLoading] = useState(true);
+
+  const { messages, loading, sending, sendMessage } = useChat({
+    jobId: String(jobId),
+    token,
+    currentUser: user ? { id: user.id, firstName: user.firstName, lastName: user.lastName } : null,
+  });
 
   const flatListRef = useRef<FlatList>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchMessages = useCallback(
-    async (initial = false) => {
-      if (!token || !jobId) return;
-      try {
-        const data = await api.chat.getMessages(String(jobId), token);
-        setMessages(data);
-        if (initial) setLoading(false);
-        setTimeout(
-          () => flatListRef.current?.scrollToEnd({ animated: !initial }),
-          100,
-        );
-      } catch {
-        if (initial) setLoading(false);
-      }
-    },
-    [token, jobId],
-  );
-
+  // Scroll to bottom when new messages arrive
   useEffect(() => {
-    fetchMessages(true);
-    pollRef.current = setInterval(() => fetchMessages(false), 3000);
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [fetchMessages]);
+    if (messages.length > 0) {
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    }
+  }, [messages.length]);
 
   const handleSend = async () => {
-    if (!input.trim() || !token || !jobId || sending) return;
-    setSending(true);
+    if (!input.trim() || sending) return;
     const text = input.trim();
     setInput('');
     try {
-      const msg = await api.chat.sendMessage(String(jobId), text, token);
-      setMessages((prev) => [...prev, msg]);
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      await sendMessage(text);
     } catch {
       setInput(text); // restore on error
-    } finally {
-      setSending(false);
     }
   };
 
@@ -103,15 +83,18 @@ export default function ChatScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.headerBack} activeOpacity={0.7}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.headerBack}
+            activeOpacity={0.7}
+          >
             <ArrowLeft size={22} color="#111827" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle} numberOfLines={1}>{title ?? 'Čats'}</Text>
+            <Text style={styles.headerTitle} numberOfLines={1}>
+              {title ?? 'Čats'}
+            </Text>
             <Text style={styles.headerSub}>Darba čats</Text>
-          </View>
-          <View style={styles.headerRight}>
-            <View style={styles.onlineDot} />
           </View>
         </View>
 
@@ -124,9 +107,7 @@ export default function ChatScreen() {
           <View style={styles.centerBox}>
             <MessageCircle size={44} color="#d1d5db" />
             <Text style={styles.emptyTitle}>Sāciet sarunu</Text>
-            <Text style={styles.emptyHint}>
-              Ziņas ir redzamas tikai jums un otrai pusei
-            </Text>
+            <Text style={styles.emptyHint}>Ziņas ir redzamas tikai jums un otrai pusei</Text>
           </View>
         ) : (
           <FlatList
@@ -135,9 +116,7 @@ export default function ChatScreen() {
             renderItem={renderMessage}
             keyExtractor={(m) => m.id}
             contentContainerStyle={styles.list}
-            onContentSizeChange={() =>
-              flatListRef.current?.scrollToEnd({ animated: false })
-            }
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
           />
         )}
 
@@ -154,10 +133,7 @@ export default function ChatScreen() {
             returnKeyType="default"
           />
           <TouchableOpacity
-            style={[
-              styles.sendBtn,
-              (!input.trim() || sending) && styles.sendBtnDisabled,
-            ]}
+            style={[styles.sendBtn, (!input.trim() || sending) && styles.sendBtnDisabled]}
             onPress={handleSend}
             disabled={!input.trim() || sending}
             activeOpacity={0.8}
@@ -206,17 +182,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#9ca3af',
     marginTop: 1,
-  },
-  headerRight: {
-    width: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  onlineDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#22c55e',
   },
 
   // Center empty/loading states

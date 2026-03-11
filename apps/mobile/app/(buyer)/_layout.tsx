@@ -1,24 +1,26 @@
 import { Tabs } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
-import { useMode } from '@/lib/mode-context';
-import { Home, LayoutGrid, Package } from 'lucide-react-native';
+import { Home, LayoutGrid, Package, User } from 'lucide-react-native';
 import { TopBar } from '@/components/ui/TopBar';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { t } from '@/lib/translations';
+import { useUnreadCount } from '@/lib/use-unread-count';
 
 const ACCENT = '#111827';
 
 export default function BuyerLayout() {
   const { user, isLoading } = useAuth();
-  const { isMultiRole } = useMode();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const unreadCount = useUnreadCount();
+  // eslint-disable-next-line react/display-name
+  const renderTabBar = useCallback((props: any) => <AnimatedTabBar {...props} />, []);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -38,12 +40,13 @@ export default function BuyerLayout() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: insets.top }}>
-      <TopBar accentColor={ACCENT} onMenuPress={() => setSidebarOpen(true)} />
+      <TopBar
+        accentColor={ACCENT}
+        onMenuPress={() => setSidebarOpen(true)}
+        unreadCount={unreadCount}
+      />
       <View style={{ flex: 1 }}>
-        <Tabs
-          screenOptions={{ headerShown: false }}
-          tabBar={(props) => <AnimatedTabBar {...props} />}
-        >
+        <Tabs screenOptions={{ headerShown: false }} tabBar={renderTabBar}>
           <Tabs.Screen
             name="home"
             options={{
@@ -65,9 +68,17 @@ export default function BuyerLayout() {
               tabBarIcon: ({ color }) => <LayoutGrid size={22} color={color} />,
             }}
           />
+          <Tabs.Screen
+            name="profile"
+            options={{
+              title: t.tabs.profile,
+              tabBarIcon: ({ color }) => <User size={22} color={color} />,
+            }}
+          />
           <Tabs.Screen name="order/[id]" options={{ href: null }} />
-          <Tabs.Screen name="profile" options={{ href: null }} />
           <Tabs.Screen name="invoices" options={{ href: null }} />
+          <Tabs.Screen name="containers" options={{ href: null }} />
+          <Tabs.Screen name="certificates" options={{ href: null }} />
         </Tabs>
       </View>
       <Sidebar
@@ -75,7 +86,6 @@ export default function BuyerLayout() {
         onClose={() => setSidebarOpen(false)}
         role="buyer"
         accentColor={ACCENT}
-        isMultiRole={isMultiRole}
       />
     </View>
   );

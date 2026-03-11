@@ -73,28 +73,37 @@ const SERVICE_TILES: ServiceTile[] = [
     id: 'materials',
     icon: HardHat,
     label: t.home.services.materials,
-    bg: '#f3f4f6',
+    bg: '#fff',
     iconBg: '#f3f4f6',
-    iconColor: '#374151',
+    iconColor: '#111827',
     route: '/order-request',
   },
   {
     id: 'container',
     icon: Trash2,
     label: t.home.services.container,
-    bg: '#f0fdf4',
-    iconBg: '#bbf7d0',
-    iconColor: '#15803d',
+    bg: '#fff',
+    iconBg: '#f3f4f6',
+    iconColor: '#111827',
     route: '/order',
+  },
+  {
+    id: 'disposal',
+    icon: Trash2,
+    label: t.home.services.disposal,
+    bg: '#fff',
+    iconBg: '#f3f4f6',
+    iconColor: '#111827',
+    route: '/disposal',
   },
   {
     id: 'freight',
     icon: Truck,
     label: t.home.services.freight,
-    bg: '#f3f4f6',
+    bg: '#fff',
     iconBg: '#f3f4f6',
-    iconColor: '#374151',
-    route: '/order-request',
+    iconColor: '#111827',
+    route: '/transport',
   },
 ];
 
@@ -339,7 +348,7 @@ export default function HomeScreen() {
               <Text style={s.partnerSectionTitle}>Pelni ar B3Hub</Text>
               <View style={s.partnerRow}>
                 <TouchableOpacity
-                  style={[s.partnerCard, { backgroundColor: '#d1fae5', borderColor: '#6ee7b7' }]}
+                  style={[s.partnerCard, { backgroundColor: '#f9fafb', borderColor: '#e5e7eb' }]}
                   activeOpacity={0.82}
                   onPress={() =>
                     router.push({
@@ -348,15 +357,15 @@ export default function HomeScreen() {
                     } as any)
                   }
                 >
-                  <View style={[s.partnerCardIcon, { backgroundColor: '#a7f3d0' }]}>
-                    <Package size={18} color="#059669" />
+                  <View style={[s.partnerCardIcon, { backgroundColor: '#f3f4f6' }]}>
+                    <Package size={18} color="#374151" />
                   </View>
-                  <Text style={[s.partnerCardTitle, { color: '#059669' }]}>Piegādātājs</Text>
+                  <Text style={[s.partnerCardTitle, { color: '#111827' }]}>Piegādātājs</Text>
                   <Text style={s.partnerCardDesc}>Pārdod materiālus tīklā</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[s.partnerCard, { backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }]}
+                  style={[s.partnerCard, { backgroundColor: '#f9fafb', borderColor: '#e5e7eb' }]}
                   activeOpacity={0.82}
                   onPress={() =>
                     router.push({
@@ -365,10 +374,10 @@ export default function HomeScreen() {
                     } as any)
                   }
                 >
-                  <View style={[s.partnerCardIcon, { backgroundColor: '#bfdbfe' }]}>
-                    <Truck size={18} color="#1d4ed8" />
+                  <View style={[s.partnerCardIcon, { backgroundColor: '#f3f4f6' }]}>
+                    <Truck size={18} color="#374151" />
                   </View>
-                  <Text style={[s.partnerCardTitle, { color: '#1d4ed8' }]}>Pārvadātājs</Text>
+                  <Text style={[s.partnerCardTitle, { color: '#111827' }]}>Pārvadātājs</Text>
                   <Text style={s.partnerCardDesc}>Nopelni uz katru kravu</Text>
                 </TouchableOpacity>
               </View>
@@ -384,7 +393,7 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f9fafb' },
 
   header: {
-    backgroundColor: '#111827',
+    backgroundColor: '#000000',
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 36,
@@ -392,7 +401,7 @@ const s = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
-  headerGreeting: { color: '#fca5a5', fontSize: 13 },
+  headerGreeting: { color: 'rgba(255,255,255,0.5)', fontSize: 13 },
   headerName: { color: '#fff', fontSize: 20, fontWeight: '700', marginTop: 2 },
   bellBtn: {
     width: 40,

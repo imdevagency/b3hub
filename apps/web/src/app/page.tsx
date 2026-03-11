@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { Hero } from '@/components/landing/Hero';
+import { HowItWorks } from '@/components/landing/HowItWorks';
 import { Features } from '@/components/landing/Features';
 import { Stats } from '@/components/landing/Stats';
 import { CTA } from '@/components/landing/CTA';
@@ -11,6 +12,7 @@ export default function Home() {
       <Navbar />
       <main className="min-h-screen">
         <Hero />
+        <HowItWorks />
         <Features />
         <Stats />
         <CTA />

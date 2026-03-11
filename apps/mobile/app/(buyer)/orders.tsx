@@ -18,6 +18,7 @@ import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { t } from '@/lib/translations';
 import type { SkipHireOrder, ApiOrder } from '@/lib/api';
+import { haptics } from '@/lib/haptics';
 import {
   MapPin,
   CalendarDays,
@@ -161,7 +162,10 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
   return (
     <TouchableOpacity
       style={[s.card, item.isActive && s.cardActive]}
-      onPress={() => router.push(`/(buyer)/order/${order.id}`)}
+      onPress={() => {
+        haptics.light();
+        router.push(`/(buyer)/order/${order.id}`);
+      }}
       activeOpacity={0.88}
     >
       {item.isActive && <View style={s.activeStrip} />}
@@ -337,7 +341,10 @@ export default function OrdersScreen() {
           </View>
           <TouchableOpacity
             style={s.newBtn}
-            onPress={() => setShowTypePicker(true)}
+            onPress={() => {
+              haptics.medium();
+              setShowTypePicker(true);
+            }}
             activeOpacity={0.85}
           >
             <Plus size={15} color="#fff" strokeWidth={2.5} />
@@ -358,7 +365,10 @@ export default function OrdersScreen() {
               <TouchableOpacity
                 key={f.key}
                 style={[s.chip, active && s.chipActive]}
-                onPress={() => setFilter(f.key)}
+                onPress={() => {
+                  haptics.light();
+                  setFilter(f.key);
+                }}
                 activeOpacity={0.75}
               >
                 <Text style={[s.chipText, active && s.chipTextActive]}>{f.label}</Text>

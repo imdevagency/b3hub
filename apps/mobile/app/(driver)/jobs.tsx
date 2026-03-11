@@ -16,23 +16,13 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
-import { Swipeable } from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
-// Lazy-load: native module not available in Expo Go
-let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  MapboxGL = require('@rnmapbox/maps').default;
-} catch {
-  /* Expo Go */
-}
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { api, ApiTransportJob } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { SkeletonJobRow } from '@/components/ui/Skeleton';
-
 import {
   MapPin,
   Navigation2,
@@ -48,6 +38,23 @@ import {
   Map,
   List,
 } from 'lucide-react-native';
+// Lazy-load: react-native-gesture-handler native module not available in Expo Go
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let Swipeable: any = ({ children }: { children?: React.ReactNode }) => <View>{children}</View>;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  Swipeable = require('react-native-gesture-handler').Swipeable;
+} catch {
+  /* Expo Go fallback — renders children without swipe gesture */
+}
+// Lazy-load: native module not available in Expo Go
+let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  MapboxGL = require('@rnmapbox/maps').default;
+} catch {
+  /* Expo Go */
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface TransportJob {
@@ -670,11 +677,12 @@ function JobCard({
   selected?: boolean;
   onToggleSelect?: (id: string) => void;
 }) {
-  const swipeRef = useRef<Swipeable | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const swipeRef = useRef<any>(null);
 
   const renderRightActions = () => (
     <TouchableOpacity
-      style={styles.swipeAccept}
+      style={mapStyles.swipeAccept}
       onPress={() => {
         swipeRef.current?.close();
         onAccept(job.id);
@@ -682,7 +690,7 @@ function JobCard({
       activeOpacity={0.85}
     >
       <CheckCircle2 size={22} color="#fff" />
-      <Text style={styles.swipeAcceptText}>Piemēņem</Text>
+      <Text style={mapStyles.swipeAcceptText}>Piemēņem</Text>
     </TouchableOpacity>
   );
 
@@ -1233,7 +1241,7 @@ export default function JobsScreen() {
             </View>
           )}
         </ScrollView>
-      )}{' '}
+      )}
       {/* end map/list conditional */}
       {/* Save-search modal */}
       <SaveSearchModal

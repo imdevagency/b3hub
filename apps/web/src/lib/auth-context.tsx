@@ -25,9 +25,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .then((u) => {
           setUser(u);
           setToken(storedToken);
+          // Ensure cookie is synced for middleware on every page load
+          document.cookie = `b3hub_token=${storedToken}; path=/; max-age=604800; samesite=lax`;
         })
         .catch(() => {
           localStorage.removeItem('b3hub_token');
+          document.cookie = 'b3hub_token=; path=/; max-age=0';
         })
         .finally(() => setIsLoading(false));
     } else {
@@ -39,12 +42,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(user);
     setToken(token);
     localStorage.setItem('b3hub_token', token);
+    // Mirror to a cookie so Next.js middleware can gate dashboard routes
+    document.cookie = `b3hub_token=${token}; path=/; max-age=604800; samesite=lax`;
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('b3hub_token');
+    document.cookie = 'b3hub_token=; path=/; max-age=0';
   };
 
   return (

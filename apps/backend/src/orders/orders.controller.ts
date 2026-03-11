@@ -11,6 +11,8 @@ import {
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { CreateDisposalOrderDto } from './dto/create-disposal-order.dto';
+import { CreateFreightOrderDto } from './dto/create-freight-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { OrderStatus } from '@prisma/client';
@@ -30,6 +32,18 @@ export class OrdersController {
       canTransport: user.canTransport ?? false,
       companyId: user.companyId,
     });
+  }
+
+  /** POST /orders/disposal — buyer requests waste collection (creates WASTE_COLLECTION transport job) */
+  @Post('disposal')
+  createDisposal(@Body() dto: CreateDisposalOrderDto, @CurrentUser() user: any) {
+    return this.ordersService.createDisposalOrder(dto, user.userId);
+  }
+
+  /** POST /orders/freight — buyer requests point-to-point freight transport (creates TRANSPORT job) */
+  @Post('freight')
+  createFreight(@Body() dto: CreateFreightOrderDto, @CurrentUser() user: any) {
+    return this.ordersService.createFreightOrder(dto, user.userId);
   }
 
   @Get('stats')

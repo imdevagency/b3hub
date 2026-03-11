@@ -62,7 +62,7 @@ export class TransportJobsService {
     status: true,
     driverId: true,
     driver: {
-      select: { id: true, firstName: true, lastName: true, phone: true },
+      select: { id: true, firstName: true, lastName: true, phone: true, avatar: true },
     },
     vehicle: {
       select: { id: true, licensePlate: true, vehicleType: true },
@@ -382,39 +382,77 @@ export class TransportJobsService {
     }
 
     // Notify relevant parties on key transitions
-    if (dto.status === TransportJobStatus.DELIVERED) {
-      const order = (updatedJob as any).order;
-      if (order?.buyerId || order?.buyer?.id) {
-        const buyerId = order.buyerId ?? order.buyer.id;
-        this.notifications.create({
-          userId: buyerId,
-          type: NotificationType.ORDER_DELIVERED,
-          title: '✅ Piegāde pabeigta',
-          message: `Pasūtījums ${order.orderNumber ?? updatedJob.jobNumber} ir piegādāts.`,
-        }).catch(() => {});
-      }
-      // Auto-generate delivery note (CMR) for the buyer
-      if (orderId) {
-        const order2 = await this.prisma.order.findUnique({
-          where: { id: orderId },
-          select: { createdById: true },
-        });
-        if (order2?.createdById) {
-          const driver = updatedJob.driver;
-          this.documents
-            .generateDeliveryNote({
-              orderId,
-              transportJobId: updatedJob.id,
-              ownerId: order2.createdById,
-              jobNumber: updatedJob.jobNumber,
-              pickupCity: updatedJob.pickupCity,
-              deliveryCity: updatedJob.deliveryCity,
-              driverName: driver
-                ? `${driver.firstName} ${driver.lastName}`
-                : undefined,
-            })
-            .catch(() => {});
+    if (orderId) {
+      const orderForNotify = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        select: { createdById: true, orderNumber: true },
+      });
+      const buyerId = orderForNotify?.createdById;
+      if (buyerId) {
+        const orderNum = orderForNotify?.orderNumber ?? updatedJob.jobNumber;
+        const driverName = updatedJob.driver
+          ? `${updatedJob.driver.firstName} ${updatedJob.driver.lastName}`
+          : 'Šoferis';
+
+        if (dto.status === TransportJobStatus.EN_ROUTE_PICKUP) {
+          this.notifications.create({
+            userId: buyerId,
+            type: NotificationType.SYSTEM_ALERT,
+            title: '🚚 Šoferis dodas uz iekraušanu',
+            message: `${driverName} dodas uz iekraušanas vietu • ${orderNum}`,
+          }).catch(() => {});
+        } else if (dto.status === TransportJobStatus.LOADED) {
+          this.notifications.create({
+            userId: buyerId,
+            type: NotificationType.SYSTEM_ALERT,
+            title: '📦 Krava iekrauta',
+            message: `Krava iekrauta, šoferis dodas uz Jums • ${orderNum}`,
+          }).catch(() => {});
+        } else if (dto.status === TransportJobStatus.EN_ROUTE_DELIVERY) {
+          this.notifications.create({
+            userId: buyerId,
+            type: NotificationType.SYSTEM_ALERT,
+            title: '🚛 Piegāde ceļā',
+            message: `${driverName} dodas uz piegādes vietu • ${orderNum}`,
+          }).catch(() => {});
+        } else if (dto.status === TransportJobStatus.AT_DELIVERY) {
+          this.notifications.create({
+            userId: buyerId,
+            type: NotificationType.SYSTEM_ALERT,
+            title: '📍 Šoferis ieradies',
+            message: `${driverName} ir ieradies piegādes vietā • ${orderNum}`,
+          }).catch(() => {});
+        } else if (dto.status === TransportJobStatus.DELIVERED) {
+          this.notifications.create({
+            userId: buyerId,
+            type: NotificationType.ORDER_DELIVERED,
+            title: '✅ Piegāde pabeigta',
+            message: `Pasūtījums ${orderNum} ir veiksmīgi piegādāts.`,
+          }).catch(() => {});
         }
+      }
+    }
+
+    if (dto.status === TransportJobStatus.DELIVERED && orderId) {
+      const order2 = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        select: { createdById: true },
+      });
+      if (order2?.createdById) {
+        const driver = updatedJob.driver;
+        this.documents
+          .generateDeliveryNote({
+            orderId,
+            transportJobId: updatedJob.id,
+            ownerId: order2.createdById,
+            jobNumber: updatedJob.jobNumber,
+            pickupCity: updatedJob.pickupCity,
+            deliveryCity: updatedJob.deliveryCity,
+            driverName: driver
+              ? `${driver.firstName} ${driver.lastName}`
+              : undefined,
+          })
+          .catch(() => {});
       }
     }
 

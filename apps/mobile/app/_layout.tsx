@@ -7,7 +7,7 @@ import React, { useEffect, useRef } from 'react';
 import { NativeModules, View } from 'react-native';
 // Guard: same JSI version-mismatch issue as in App.tsx
 let GestureHandlerRootView: React.ComponentType<{ style?: object; children?: React.ReactNode }> =
-  View;
+  View as unknown as React.ComponentType<{ style?: object; children?: React.ReactNode }>;
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
   GestureHandlerRootView = require('react-native-gesture-handler').GestureHandlerRootView;

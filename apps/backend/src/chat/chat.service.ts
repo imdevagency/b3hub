@@ -1,10 +1,14 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SendMessageDto } from './dto/send-message.dto';
+import { ChatGateway } from './chat.gateway';
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly gateway: ChatGateway,
+  ) {}
 
   /** Verify the requesting user is the driver or the order creator. */
   private async assertAccess(jobId: string, userId: string) {
@@ -49,7 +53,7 @@ export class ChatService {
     });
     if (!user) throw new NotFoundException('User not found');
 
-    return this.prisma.chatMessage.create({
+    const message = await this.prisma.chatMessage.create({
       data: {
         transportJobId: jobId,
         senderId: userId,
@@ -64,5 +68,10 @@ export class ChatService {
         createdAt: true,
       },
     });
+
+    // Broadcast to all connected clients in this job's room
+    this.gateway?.broadcastMessage(jobId, message);
+
+    return message;
   }
 }

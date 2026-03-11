@@ -137,7 +137,7 @@ export default function NotificationsScreen() {
       try {
         refresh ? setRefreshing(true) : setLoading(true);
         const data = await api.notifications.getAll(token);
-        setNotifs(data);
+        setNotifs(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error(err);
       } finally {

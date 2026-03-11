@@ -178,6 +178,7 @@ enum TransportJobType {
   CONTAINER_PICKUP
   WASTE_COLLECTION
   EQUIPMENT_TRANSPORT
+  TRANSPORT          // General point-to-point freight transport
 }
 
 enum TransportJobStatus {
@@ -258,6 +259,14 @@ model User {
   emailVerified Boolean      @default(false)
   phoneVerified Boolean      @default(false)
   pushToken     String?      // Expo push token for native notifications
+  resetToken        String?   // password-reset token (hashed)
+  resetTokenExpiry  DateTime? // token expiry (1h window)
+
+  // Notification preferences
+  notifPush         Boolean  @default(true)
+  notifOrderUpdates Boolean  @default(true)
+  notifJobAlerts    Boolean  @default(true)
+  notifMarketing    Boolean  @default(false)
 
   // Relations
   company   Company? @relation(fields: [companyId], references: [id])

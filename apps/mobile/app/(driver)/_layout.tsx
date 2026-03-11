@@ -1,24 +1,26 @@
 import { Tabs } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
-import { useMode } from '@/lib/mode-context';
-import { ClipboardList, Map, Trash2, User } from 'lucide-react-native';
+import { ClipboardList, Map, User, Wallet } from 'lucide-react-native';
 import { TopBar } from '@/components/ui/TopBar';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { t } from '@/lib/translations';
+import { useUnreadCount } from '@/lib/use-unread-count';
 
 const ACCENT = '#111827';
 
 export default function DriverLayout() {
   const { user, isLoading } = useAuth();
-  const { isMultiRole } = useMode();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const unreadCount = useUnreadCount();
+  // eslint-disable-next-line react/display-name
+  const renderTabBar = useCallback((props: any) => <AnimatedTabBar {...props} />, []);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -38,12 +40,13 @@ export default function DriverLayout() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: insets.top }}>
-      <TopBar accentColor={ACCENT} onMenuPress={() => setSidebarOpen(true)} />
+      <TopBar
+        accentColor={ACCENT}
+        onMenuPress={() => setSidebarOpen(true)}
+        unreadCount={unreadCount}
+      />
       <View style={{ flex: 1 }}>
-        <Tabs
-          screenOptions={{ headerShown: false }}
-          tabBar={(props) => <AnimatedTabBar {...props} />}
-        >
+        <Tabs screenOptions={{ headerShown: false }} tabBar={renderTabBar}>
           <Tabs.Screen
             name="jobs"
             options={{
@@ -59,20 +62,20 @@ export default function DriverLayout() {
             }}
           />
           <Tabs.Screen
-            name="skips"
+            name="earnings"
             options={{
-              title: t.tabs.skips,
-              tabBarIcon: ({ color }) => <Trash2 size={22} color={color} />,
+              title: t.tabs.earnings,
+              tabBarIcon: ({ color }) => <Wallet size={22} color={color} />,
             }}
           />
-          <Tabs.Screen name="earnings" options={{ href: null }} />
           <Tabs.Screen
             name="profile"
             options={{
-              title: 'Profils',
+              title: t.tabs.profile,
               tabBarIcon: ({ color }) => <User size={22} color={color} />,
             }}
           />
+          <Tabs.Screen name="skips" options={{ href: null }} />
           <Tabs.Screen name="vehicles" options={{ href: null }} />
         </Tabs>
       </View>
@@ -81,7 +84,6 @@ export default function DriverLayout() {
         onClose={() => setSidebarOpen(false)}
         role="driver"
         accentColor={ACCENT}
-        isMultiRole={isMultiRole}
       />
     </View>
   );

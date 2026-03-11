@@ -14,22 +14,22 @@ export function Hero() {
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link
-              href="/order"
+              href="/register"
               className="rounded-md bg-red-600 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-red-500 transition-colors"
             >
-              Pasūtīt Konteineru →
+              Sākt bez maksas →
             </Link>
             <Link
-              href="/register"
+              href="/apply"
               className="rounded-md border-2 border-gray-300 px-6 py-3 text-base font-semibold text-gray-900 hover:border-red-500 hover:text-red-600 transition-colors"
             >
-              Sākt
+              Kļūt par piegādātāju
             </Link>
             <Link
-              href="#features"
+              href="#how-it-works"
               className="text-base font-semibold leading-7 text-gray-900 hover:text-red-600 transition-colors"
             >
-              Uzzināt vairāk <span aria-hidden="true">→</span>
+              Kā tas darbojas <span aria-hidden="true">↓</span>
             </Link>
           </div>
         </div>

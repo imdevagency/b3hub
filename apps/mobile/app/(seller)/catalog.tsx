@@ -15,7 +15,7 @@ import {
   Switch,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { Plus, Pencil, Trash2, Leaf, PackageSearch } from 'lucide-react-native';
+import { Plus, Pencil, Trash2, Leaf, PackageSearch, ChevronDown, Check } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -177,6 +177,7 @@ function ListingModal({
   saving: boolean;
 }) {
   const [form, setForm] = useState<ListingForm>(BLANK_FORM);
+  const [catSheetOpen, setCatSheetOpen] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -250,19 +251,14 @@ function ListingModal({
           />
 
           <Text style={s.formLabel}>Kategorija *</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipRow}>
-            {CATEGORIES.map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                style={[s.chip, form.category === cat && s.chipActive]}
-                onPress={() => set('category')(cat)}
-              >
-                <Text style={[s.chipText, form.category === cat && s.chipTextActive]}>
-                  {CATEGORY_LABELS[cat]}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <TouchableOpacity
+            style={s.pickerRow}
+            onPress={() => setCatSheetOpen(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={s.pickerValue}>{CATEGORY_LABELS[form.category]}</Text>
+            <ChevronDown size={16} color="#6b7280" />
+          </TouchableOpacity>
 
           <Text style={s.formLabel}>Mērvienība *</Text>
           <View style={s.row}>
@@ -307,7 +303,10 @@ function ListingModal({
             />
           </View>
           <View style={s.toggleRow}>
-            <Text style={s.toggleLabel}>Pārstrādāts materiāls ♻️</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Leaf size={15} color="#15803d" />
+              <Text style={s.toggleLabel}>Pārstrādāts materiāls</Text>
+            </View>
             <Switch
               value={form.isRecycled}
               onValueChange={(v) => set('isRecycled')(v)}
@@ -316,6 +315,39 @@ function ListingModal({
             />
           </View>
         </ScrollView>
+
+        {/* Category picker overlay */}
+        {catSheetOpen && (
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 }}>
+            <TouchableOpacity
+              style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}
+              activeOpacity={1}
+              onPress={() => setCatSheetOpen(false)}
+            />
+            <View style={s.catSheet}>
+              <View style={s.modalHandle}>
+                <View style={s.handleBar} />
+              </View>
+              <Text style={s.catSheetTitle}>Izvēlieties kategoriju</Text>
+              <ScrollView bounces={false}>
+                {CATEGORIES.map((cat) => (
+                  <TouchableOpacity
+                    key={cat}
+                    style={s.catRow}
+                    onPress={() => {
+                      set('category')(cat);
+                      setCatSheetOpen(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={s.catRowText}>{CATEGORY_LABELS[cat]}</Text>
+                    {form.category === cat && <Check size={16} color="#111827" />}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        )}
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -600,6 +632,45 @@ const s = StyleSheet.create({
   },
   inputMulti: { minHeight: 80, textAlignVertical: 'top' },
   chipRow: { marginBottom: 4 },
+  pickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginBottom: 4,
+  },
+  pickerValue: { fontSize: 15, color: '#111827' },
+  catSheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: 34,
+    maxHeight: 420,
+  },
+  catSheetTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  catRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  catRowText: { fontSize: 15, color: '#111827' },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     paddingHorizontal: 14,

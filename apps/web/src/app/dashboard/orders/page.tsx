@@ -1022,7 +1022,7 @@ function SupplierView({ token }: { token: string }) {
             </p>
           </div>
           <Link
-            href="/dashboard/listings"
+            href="/dashboard/materials"
             className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl px-5 py-2.5 text-sm transition-colors"
           >
             <Package className="h-4 w-4" />

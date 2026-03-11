@@ -21,6 +21,9 @@ import { AdminModule } from './admin/admin.module';
 import { QuoteRequestsModule } from './quote-requests/quote-requests.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { ChatModule } from './chat/chat.module';
+import { ContainersModule } from './containers/containers.module';
+import { RecyclingCentersModule } from './recycling-centers/recycling-centers.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -46,6 +49,9 @@ import { ChatModule } from './chat/chat.module';
     QuoteRequestsModule,
     ReviewsModule,
     ChatModule,
+    ContainersModule,
+    RecyclingCentersModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

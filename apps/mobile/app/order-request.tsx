@@ -357,8 +357,8 @@ function SearchingAnimation() {
   }, []);
 
   const ringStyle = (anim: Animated.Value) => ({
-    transform: [{ scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.5, 2.8] }) }],
-    opacity: anim.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0.7, 0.3, 0] }),
+    transform: [{ scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 2.2] }) }],
+    opacity: anim.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0.5, 0.25, 0] }),
   });
 
   return (
@@ -367,7 +367,7 @@ function SearchingAnimation() {
       <Animated.View style={[sa.ring, ringStyle(ring2)]} />
       <Animated.View style={[sa.ring, ringStyle(ring3)]} />
       <View style={sa.ringCenter}>
-        <Text style={{ fontSize: 30 }}>📦</Text>
+        <CheckCircle size={28} color="#4ade80" strokeWidth={1.8} />
       </View>
     </View>
   );
@@ -1115,19 +1115,83 @@ export default function OrderRequestScreen() {
   }, [token, matCategoryValue, matName, matUnit, quantity, address, city, pin]);
 
   // ── STEP — Searching / RFQ polling ──────────────────────────
+  const responseCount = quoteRequest?.responses?.length ?? 0;
   const renderSearching = () => (
     <View style={[sa.searchingScreen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <SearchingAnimation />
-      <Text style={sa.searchingTitle}>Meklējam labāko cenu...</Text>
+
+      <Text style={sa.searchingTitle}>Pieprasījums iesniegts!</Text>
       <Text style={sa.searchingDesc}>
-        Pieprasījums nosūtīts piegādātājiem{'\n'}Gaidām piedāvājumus...
+        Piegādātāji izskata Jūsu pieprasījumu{'\n'}un atbildēs tuvākajā laikā
       </Text>
+
+      {/* Request summary */}
+      <View style={sa.searchingSummary}>
+        <View style={sa.searchingSummaryRow}>
+          <Text style={sa.searchingSummaryLabel}>Materiāls</Text>
+          <Text style={sa.searchingSummaryValue} numberOfLines={1}>
+            {matName}
+          </Text>
+        </View>
+        <View style={sa.searchingSummaryDivider} />
+        <View style={sa.searchingSummaryRow}>
+          <Text style={sa.searchingSummaryLabel}>Daudzums</Text>
+          <Text style={sa.searchingSummaryValue}>
+            {quantity} {UNIT_SHORT[matUnit]}
+          </Text>
+        </View>
+        <View style={sa.searchingSummaryDivider} />
+        <View style={sa.searchingSummaryRow}>
+          <Text style={sa.searchingSummaryLabel}>Piegāde</Text>
+          <Text style={sa.searchingSummaryValue} numberOfLines={1}>
+            {city || address}
+          </Text>
+        </View>
+      </View>
+
+      {/* Live status pill */}
       <View style={sa.searchingPill}>
-        <View style={sa.searchingDot} />
+        <View style={[sa.searchingDot, responseCount > 0 && sa.searchingDotActive]} />
         <Text style={sa.searchingPillText}>
-          {quantity} {UNIT_SHORT[matUnit]} · {matName}
+          {responseCount === 0
+            ? 'Gaidam piegādātāju atbildes...'
+            : `${responseCount} piedāvājum${responseCount === 1 ? 's' : 'i'} saņemts`}
         </Text>
       </View>
+
+      {/* Primary CTA — lights up when responses arrive */}
+      <TouchableOpacity
+        style={[
+          sa.ctaBtn,
+          { marginTop: 8, minWidth: 260 },
+          responseCount === 0 && { opacity: 0.42 },
+        ]}
+        onPress={() => {
+          if (responseCount > 0) {
+            setSelectedQuoteResponse(quoteRequest!.responses[0]);
+            setStep('quotes');
+          }
+        }}
+        disabled={responseCount === 0}
+        activeOpacity={0.85}
+      >
+        <Text style={sa.ctaBtnText}>
+          {responseCount === 0
+            ? 'Gaidam piedāvājumus...'
+            : `Skatīt ${responseCount} piedāvājum${responseCount === 1 ? 'u' : 'us'} →`}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Escape — navigate away without losing the request */}
+      <TouchableOpacity
+        style={{ marginTop: 16 }}
+        onPress={() => {
+          if (pollTimer.current) clearInterval(pollTimer.current);
+          router.replace('/(buyer)/orders');
+        }}
+      >
+        <Text style={sa.dimText}>Doties uz pasūtījumiem</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -1838,6 +1902,40 @@ const sa = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: '#374151',
+  },
+  searchingDotActive: {
+    backgroundColor: '#4ade80',
+  },
+  searchingSummary: {
+    width: '100%',
+    backgroundColor: '#1e293b',
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 6,
+    marginTop: 4,
+  },
+  searchingSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    gap: 12,
+  },
+  searchingSummaryDivider: {
+    height: 1,
+    backgroundColor: '#334155',
+  },
+  searchingSummaryLabel: {
+    fontSize: 12,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  searchingSummaryValue: {
+    fontSize: 13,
+    color: '#e2e8f0',
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'right',
   },
   searchingPillText: { fontSize: 13, color: '#94a3b8', fontWeight: '600' },
 

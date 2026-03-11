@@ -123,7 +123,9 @@ export default function LoginScreen() {
           <View style={s.fieldWrap}>
             <View style={s.labelRow}>
               <Text style={s.label}>{t.login.password}</Text>
-              <Text style={s.link}>{t.login.forgotPassword}</Text>
+              <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')} hitSlop={8}>
+                <Text style={[s.link, { color: '#dc2626' }]}>{t.login.forgotPassword}</Text>
+              </TouchableOpacity>
             </View>
             <Controller
               control={control}

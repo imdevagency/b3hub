@@ -82,7 +82,10 @@ function TabItem({
       accessibilityLabel={options.tabBarAccessibilityLabel}
     >
       <Animated.View style={{ transform: [{ scale }] }}>
-        {options.tabBarIcon?.({ focused: isFocused, color, size: 22 })}
+        <View>
+          {options.tabBarIcon?.({ focused: isFocused, color, size: 22 })}
+          {!!options.tabBarBadge && <View style={styles.badge} />}
+        </View>
       </Animated.View>
       <Animated.Text style={[styles.label, { color, opacity: labelOpacity }]} numberOfLines={1}>
         {label}
@@ -100,6 +103,9 @@ export function AnimatedTabBar({
 }: AnimatedTabBarProps) {
   const insets = useSafeAreaInsets();
   const bottomInset = insets.bottom;
+
+  // Guard: bail out safely if the navigator hasn't fully initialised yet
+  if (!state || !navigation || !descriptors) return null;
 
   const visibleRoutes = state.routes.filter(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -140,7 +146,7 @@ export function AnimatedTabBar({
         canPreventDefault: true,
       });
       if (!isFocused && !event.defaultPrevented) {
-        navigation.navigate({ name: route.name, merge: true });
+        navigation.navigate(route.name);
       }
     },
     [navigation],
@@ -224,5 +230,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0.1,
+  },
+  badge: {
+    position: 'absolute',
+    top: -1,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#dc2626',
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
   },
 });

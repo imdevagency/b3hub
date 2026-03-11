@@ -89,6 +89,10 @@ export interface User {
   emailVerified: boolean;
   companyRole?: CompanyRole;
   availableModes: Mode[];
+  notifPush?: boolean;
+  notifOrderUpdates?: boolean;
+  notifJobAlerts?: boolean;
+  notifMarketing?: boolean;
   company?: {
     id: string;
     name: string;
@@ -279,6 +283,25 @@ export async function loginUser(data: LoginInput): Promise<AuthResponse> {
   });
 }
 
+export async function forgotPassword(
+  email: string,
+): Promise<{ ok: boolean; _devResetUrl?: string }> {
+  return apiFetch<{ ok: boolean; _devResetUrl?: string }>('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<{ ok: boolean }> {
+  return apiFetch<{ ok: boolean }>('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, newPassword }),
+  });
+}
+
 export async function getMe(token: string): Promise<User> {
   return apiFetch<User>('/auth/me', {
     headers: { Authorization: `Bearer ${token}` },
@@ -293,6 +316,18 @@ export async function updateProfile(
     method: 'PATCH',
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(data),
+  });
+}
+
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+  token: string,
+): Promise<{ ok: boolean }> {
+  return apiFetch<{ ok: boolean }>('/auth/change-password', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ currentPassword, newPassword }),
   });
 }
 
@@ -1492,6 +1527,95 @@ export async function acceptQuoteResponse(
 ): Promise<QuoteRequest> {
   return apiFetch<QuoteRequest>(`/quote-requests/${requestId}/accept/${responseId}`, {
     method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Notification Preferences ──────────────────────────────────────────────────
+
+export async function updateNotificationPrefs(
+  prefs: { notifPush?: boolean; notifOrderUpdates?: boolean; notifJobAlerts?: boolean; notifMarketing?: boolean },
+  token: string,
+): Promise<{ notifPush: boolean; notifOrderUpdates: boolean; notifJobAlerts: boolean; notifMarketing: boolean }> {
+  return apiFetch('/auth/notifications', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(prefs),
+  });
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+
+export interface ChatMessage {
+  id: string;
+  jobId: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar?: string;
+  body: string;
+  createdAt: string;
+}
+
+export async function getChatMessages(jobId: string, token: string): Promise<ChatMessage[]> {
+  return apiFetch<ChatMessage[]>(`/chat/${jobId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function sendChatMessage(jobId: string, body: string, token: string): Promise<ChatMessage> {
+  return apiFetch<ChatMessage>(`/chat/${jobId}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ body }),
+  });
+}
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+
+export interface Review {
+  id: string;
+  orderId: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+  reviewer: { id: string; firstName: string; lastName: string; avatar?: string };
+  company?: { id: string; name: string };
+}
+
+export async function getMyReviews(token: string): Promise<Review[]> {
+  return apiFetch<Review[]>('/reviews/mine', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function getCompanyReviews(companyId: string, token: string): Promise<Review[]> {
+  return apiFetch<Review[]>(`/reviews/company/${companyId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Recycling Centers ─────────────────────────────────────────────────────────
+
+export interface RecyclingCenter {
+  id: string;
+  name: string;
+  address: string;
+  lat?: number;
+  lng?: number;
+  phone?: string;
+  openingHours?: string;
+  materials: string[];
+  company?: { id: string; name: string };
+}
+
+export async function getRecyclingCenters(token: string): Promise<RecyclingCenter[]> {
+  return apiFetch<RecyclingCenter[]>('/recycling-centers', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function getMyRecyclingCenters(token: string): Promise<RecyclingCenter[]> {
+  return apiFetch<RecyclingCenter[]>('/recycling-centers/mine', {
     headers: { Authorization: `Bearer ${token}` },
   });
 }

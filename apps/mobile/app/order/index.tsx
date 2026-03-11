@@ -138,7 +138,7 @@ const s = StyleSheet.create({
   stepNum: {
     fontSize: 64,
     fontWeight: '800',
-    color: '#fef2f2',
+    color: '#f3f4f6',
     lineHeight: 68,
     marginBottom: 8,
   },

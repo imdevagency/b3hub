@@ -3,20 +3,40 @@ import {
   View,
   Text,
   ScrollView,
+  FlatList,
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
   TextInput,
+  Dimensions,
+  ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { Search, X, Leaf, ChevronRight } from 'lucide-react-native';
+import {
+  Search,
+  X,
+  PackageSearch,
+  Layers,
+  Leaf,
+  Mountain,
+  Recycle,
+  Waves,
+  Zap,
+  MoreHorizontal,
+  Box,
+  SlidersHorizontal,
+} from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import type { ApiMaterial, MaterialCategory, MaterialUnit } from '@/lib/api';
 
-// ── Constants ──────────────────────────────────────────────────
+const { width: SCREEN_W } = Dimensions.get('window');
+const CARD_W = (SCREEN_W - 16 * 2 - 12) / 2;
+
+// ── Category meta ──────────────────────────────────────────────
 
 const CATEGORY_LABELS: Record<MaterialCategory | 'ALL', string> = {
   ALL: 'Visi',
@@ -32,132 +52,131 @@ const CATEGORY_LABELS: Record<MaterialCategory | 'ALL', string> = {
   OTHER: 'Cits',
 };
 
-const CATEGORIES = Object.keys(CATEGORY_LABELS) as Array<MaterialCategory | 'ALL'>;
+type CatMeta = { bg: string; accent: string; pillBg: string; icon: React.ElementType };
+
+const CATEGORY_META: Record<MaterialCategory | 'ALL', CatMeta> = {
+  ALL: { bg: '#fef2f2', accent: '#dc2626', pillBg: '#dc2626', icon: Layers },
+  SAND: { bg: '#fef3c7', accent: '#d97706', pillBg: '#d97706', icon: Waves },
+  GRAVEL: { bg: '#e2e8f0', accent: '#475569', pillBg: '#475569', icon: Mountain },
+  STONE: { bg: '#dde1e8', accent: '#334155', pillBg: '#334155', icon: Mountain },
+  CONCRETE: { bg: '#f0f0f0', accent: '#6b7280', pillBg: '#6b7280', icon: Box },
+  SOIL: { bg: '#fefce8', accent: '#92400e', pillBg: '#92400e', icon: Layers },
+  RECYCLED_CONCRETE: { bg: '#dcfce7', accent: '#16a34a', pillBg: '#16a34a', icon: Recycle },
+  RECYCLED_SOIL: { bg: '#d1fae5', accent: '#059669', pillBg: '#059669', icon: Recycle },
+  ASPHALT: { bg: '#e5e5e5', accent: '#44403c', pillBg: '#44403c', icon: Zap },
+  CLAY: { bg: '#ffedd5', accent: '#c2410c', pillBg: '#c2410c', icon: Layers },
+  OTHER: { bg: '#f3f4f6', accent: '#6b7280', pillBg: '#6b7280', icon: MoreHorizontal },
+};
 
 const UNIT_SHORT: Record<MaterialUnit, string> = {
   TONNE: 't',
-  M3: 'm³',
+  M3: 'm\u00b3',
   PIECE: 'gab.',
   LOAD: 'krava',
 };
 
-const CATEGORY_ICON: Record<MaterialCategory | 'ALL', string> = {
-  ALL: '📦',
-  SAND: '🏜️',
-  GRAVEL: '🪨',
-  STONE: '🗿',
-  CONCRETE: '🧱',
-  SOIL: '🌱',
-  RECYCLED_CONCRETE: '♻️',
-  RECYCLED_SOIL: '🌿',
-  ASPHALT: '🛣️',
-  CLAY: '🟤',
-  OTHER: '📦',
-};
+const CATEGORIES = Object.keys(CATEGORY_LABELS) as Array<MaterialCategory | 'ALL'>;
 
-const CATEGORY_COLOR: Record<MaterialCategory | 'ALL', string> = {
-  ALL: '#111827',
-  SAND: '#111827',
-  GRAVEL: '#111827',
-  STONE: '#111827',
-  CONCRETE: '#111827',
-  SOIL: '#111827',
-  RECYCLED_CONCRETE: '#111827',
-  RECYCLED_SOIL: '#111827',
-  ASPHALT: '#111827',
-  CLAY: '#111827',
-  OTHER: '#111827',
-};
+// ── Category Pill ───────────────────────────────────────────────
 
-const CATEGORY_BG: Record<MaterialCategory | 'ALL', string> = {
-  ALL: '#f3f4f6',
-  SAND: '#f3f4f6',
-  GRAVEL: '#f3f4f6',
-  STONE: '#f3f4f6',
-  CONCRETE: '#f3f4f6',
-  SOIL: '#f3f4f6',
-  RECYCLED_CONCRETE: '#f0fdf4',
-  RECYCLED_SOIL: '#f0fdf4',
-  ASPHALT: '#f3f4f6',
-  CLAY: '#f3f4f6',
-  OTHER: '#f3f4f6',
-};
-
-// ── Material Card ───────────────────────────────────────────
-
-function MaterialCard({
-  material,
-  onOrder,
-  isLast = false,
+function CategoryPill({
+  cat,
+  selected,
+  onPress,
 }: {
-  material: ApiMaterial;
-  onOrder: (m: ApiMaterial) => void;
-  isLast?: boolean;
+  cat: MaterialCategory | 'ALL';
+  selected: boolean;
+  onPress: () => void;
 }) {
-  const iconBg = material.isRecycled ? '#f0fdf4' : '#f3f4f6';
+  const meta = CATEGORY_META[cat];
+  const Icon = meta.icon;
   return (
     <TouchableOpacity
-      style={[s.card, isLast && s.cardLast]}
-      onPress={() => onOrder(material)}
-      activeOpacity={0.92}
+      style={[s.pill, selected && { backgroundColor: meta.pillBg, borderColor: meta.pillBg }]}
+      onPress={onPress}
+      activeOpacity={0.75}
     >
-      {/* Left: icon */}
-      <View style={[s.cardIconWrap, { backgroundColor: iconBg }]}>
-        <Text style={s.cardIcon}>{CATEGORY_ICON[material.category]}</Text>
-      </View>
+      <Icon size={13} color={selected ? '#fff' : '#6b7280'} strokeWidth={2} />
+      <Text style={[s.pillLabel, selected && s.pillLabelSelected]}>{CATEGORY_LABELS[cat]}</Text>
+    </TouchableOpacity>
+  );
+}
 
-      {/* Middle: info */}
-      <View style={s.cardBody}>
-        <View style={s.cardTopRow}>
-          <Text style={s.cardName} numberOfLines={1}>
-            {material.name}
-          </Text>
-          {material.isRecycled && (
-            <View style={s.recycledBadge}>
-              <Leaf size={9} color="#15803d" />
-              <Text style={s.recycledText}>Eco</Text>
-            </View>
-          )}
-        </View>
-        <Text style={s.cardSupplier} numberOfLines={1}>
-          {material.supplier?.name ?? 'Nezināms piegādātājs'}
-        </Text>
-        <View style={s.cardMeta}>
-          <View style={s.categoryPill}>
-            <Text style={s.categoryPillText}>{CATEGORY_LABELS[material.category]}</Text>
+// ── Product Card ────────────────────────────────────────────────
+
+function ProductCard({ material, onPress }: { material: ApiMaterial; onPress: () => void }) {
+  const meta = CATEGORY_META[material.category] ?? CATEGORY_META.OTHER;
+  const Icon = meta.icon;
+  const imageH = Math.round(CARD_W * 0.72);
+
+  return (
+    <TouchableOpacity
+      style={[s.productCard, { width: CARD_W }]}
+      onPress={onPress}
+      activeOpacity={0.88}
+    >
+      {/* Photo / illustration area */}
+      <View style={[s.productImg, { height: imageH, backgroundColor: meta.bg }]}>
+        <Icon size={44} color={meta.accent} strokeWidth={1.2} />
+
+        {material.isRecycled && (
+          <View style={s.ecoBadge}>
+            <Leaf size={9} color="#16a34a" strokeWidth={2.5} />
+            <Text style={s.ecoBadgeText}>Eco</Text>
           </View>
+        )}
+
+        {/* Price chip */}
+        <View style={s.priceBadge}>
+          <Text style={s.priceBadgeAmount}>
+            {'ex \u20ac' + material.basePrice.toFixed(2) + '/' + UNIT_SHORT[material.unit]}
+          </Text>
+          <Text style={s.priceBadgeSub}>{'Franco b\u016bvlaukums'}</Text>
         </View>
       </View>
 
-      {/* Right: price + arrow */}
-      <View style={s.cardRight}>
-        <Text style={s.cardPrice}>€{material.basePrice.toFixed(2)}</Text>
-        <Text style={s.cardUnit}>/ {UNIT_SHORT[material.unit]}</Text>
-        <View style={s.cardArrow}>
-          <ChevronRight size={14} color="#fff" strokeWidth={2.5} />
-        </View>
+      {/* Name row */}
+      <View style={s.productBody}>
+        <Text style={s.productName} numberOfLines={2}>
+          {material.name}
+        </Text>
+        {material.supplier?.name ? (
+          <Text style={s.productSupplier} numberOfLines={1}>
+            {material.supplier.name}
+          </Text>
+        ) : null}
       </View>
     </TouchableOpacity>
   );
 }
 
-// ── Screen ─────────────────────────────────────────────────────
+// ── Screen ──────────────────────────────────────────────────────
 
 export default function CatalogScreen() {
   const { token } = useAuth();
   const router = useRouter();
   const [materials, setMaterials] = useState<ApiMaterial[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filtering, setFiltering] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<MaterialCategory | 'ALL'>('ALL');
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const filterOpacity = useRef(new Animated.Value(1)).current;
 
   const loadMaterials = useCallback(
-    async (q?: string, cat?: MaterialCategory | 'ALL') => {
+    async (q?: string, cat?: MaterialCategory | 'ALL', isFilter = false) => {
       if (!token) {
         setLoading(false);
         return;
+      }
+      if (isFilter) {
+        setFiltering(true);
+        Animated.timing(filterOpacity, {
+          toValue: 0.45,
+          duration: 120,
+          useNativeDriver: true,
+        }).start();
       }
       const params: Record<string, string> = {};
       if (q?.trim()) params.search = q.trim();
@@ -166,13 +185,19 @@ export default function CatalogScreen() {
         const data = await api.materials.getAll(token, params);
         setMaterials(data);
       } catch {
-        // keep previous list visible
+        /* keep previous */
       } finally {
         setLoading(false);
         setRefreshing(false);
+        setFiltering(false);
+        Animated.timing(filterOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
       }
     },
-    [token],
+    [token, filterOpacity],
   );
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -183,518 +208,399 @@ export default function CatalogScreen() {
   const onSearchChange = (text: string) => {
     setSearch(text);
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => loadMaterials(text, category), 350);
+    searchTimer.current = setTimeout(() => loadMaterials(text, category, true), 400);
   };
 
-  const onCategory = (cat: MaterialCategory | 'ALL') => {
+  const selectCategory = (cat: MaterialCategory | 'ALL') => {
     setCategory(cat);
-    loadMaterials(search, cat);
+    loadMaterials(search, cat, true);
   };
+
+  const handleOrder = (mat: ApiMaterial) => {
+    router.push({
+      pathname: '/order-request',
+      params: {
+        materialId: mat.id,
+        materialName: mat.name,
+        materialCategory: mat.category,
+        basePrice: mat.basePrice.toString(),
+        unit: mat.unit,
+        supplier: mat.supplier?.name ?? '',
+        supplierId: mat.supplier?.id ?? '',
+      },
+    });
+  };
+
+  const categoryLabel = category === 'ALL' ? 'Visi materi\u0101li' : CATEGORY_LABELS[category];
 
   return (
-    <ScreenContainer bg="#f8f8f8">
-      {/* Header */}
+    <ScreenContainer bg="#f8f9fa">
+      {/* ── Header ─────────────────────────────────────────── */}
       <View style={s.header}>
-        <Text style={s.headerTitle}>Katalogs</Text>
-        <View style={s.headerCountBadge}>
-          <Text style={s.headerCountText}>{loading ? '…' : materials.length}</Text>
+        <View>
+          <Text style={s.headerEyebrow}>{'Materi\u0101lu katalogs'}</Text>
+          <Text style={s.headerTitle}>{'Izv\u0113lieties produktu'}</Text>
+        </View>
+        {filtering && <ActivityIndicator size="small" color="#dc2626" />}
+      </View>
+
+      {/* ── Search bar ─────────────────────────────────────── */}
+      <View style={s.searchWrap}>
+        <View style={s.searchBar}>
+          <Search size={16} color="#9ca3af" strokeWidth={2} />
+          <TextInput
+            style={s.searchInput}
+            placeholder={'Mekl\u0113t materi\u0101lus...'}
+            placeholderTextColor="#9ca3af"
+            value={search}
+            onChangeText={onSearchChange}
+            returnKeyType="search"
+            autoCorrect={false}
+          />
+          {search.length > 0 && (
+            <TouchableOpacity
+              onPress={() => {
+                setSearch('');
+                loadMaterials('', category, true);
+              }}
+              hitSlop={12}
+            >
+              <View style={s.clearBtn}>
+                <X size={10} color="#fff" strokeWidth={3} />
+              </View>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      {/* Search bar */}
-      <View style={s.searchBar}>
-        <Search size={15} color="#9ca3af" strokeWidth={2} />
-        <TextInput
-          style={s.searchInput}
-          placeholder="Meklēt materiālus…"
-          placeholderTextColor="#9ca3af"
-          value={search}
-          onChangeText={onSearchChange}
-          returnKeyType="search"
-        />
-        {search.length > 0 && (
-          <TouchableOpacity
-            onPress={() => {
-              setSearch('');
-              loadMaterials('', category);
-            }}
-            hitSlop={10}
-          >
-            <View style={s.searchClearBtn}>
-              <X size={9} color="#fff" strokeWidth={3} />
-            </View>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Category chips */}
+      {/* ── Category pills ──────────────────────────────────── */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.pillsContainer}
+        contentContainerStyle={s.pillsRow}
+        style={s.pillsScroll}
       >
-        {CATEGORIES.map((cat) => {
-          const active = category === cat;
-          return (
-            <TouchableOpacity
-              key={cat}
-              style={[s.pill, active && s.pillActive]}
-              onPress={() => onCategory(cat)}
-              activeOpacity={0.75}
-            >
-              <Text style={[s.pillEmoji]}>{CATEGORY_ICON[cat]}</Text>
-              <Text style={[s.pillText, active && s.pillTextActive]}>{CATEGORY_LABELS[cat]}</Text>
-            </TouchableOpacity>
-          );
-        })}
+        {CATEGORIES.map((cat) => (
+          <CategoryPill
+            key={cat}
+            cat={cat}
+            selected={category === cat}
+            onPress={() => selectCategory(cat)}
+          />
+        ))}
       </ScrollView>
 
-      {/* Materials list */}
+      {/* ── Product grid ─────────────────────────────────────── */}
       {loading ? (
-        <SkeletonCard count={5} />
+        <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+          <SkeletonCard count={4} />
+        </View>
       ) : (
-        <ScrollView
-          contentContainerStyle={s.list}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => {
-                setRefreshing(true);
-                loadMaterials(search, category);
-              }}
-              tintColor="#111827"
-            />
-          }
-        >
-          {materials.length === 0 ? (
-            <View style={s.empty}>
-              <Text style={s.emptyEmoji}>🔍</Text>
-              <Text style={s.emptyTitle}>Nav atrasts neviens materiāls</Text>
-              <Text style={s.emptyDesc}>Mēģiniet mainīt meklēšanas vai kategorijas filtru</Text>
-              {(search.length > 0 || category !== 'ALL') && (
-                <TouchableOpacity
-                  style={s.emptyReset}
-                  onPress={() => {
-                    setSearch('');
-                    setCategory('ALL');
-                    loadMaterials('', 'ALL');
-                  }}
-                >
-                  <Text style={s.emptyResetText}>Notīrīt filtrus</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          ) : (
-            <View style={s.cardGroup}>
-              {materials.map((m, idx) => (
-                <MaterialCard
-                  key={m.id}
-                  material={m}
-                  onOrder={(mat) => {
-                    router.push({
-                      pathname: '/order-request',
-                      params: {
-                        materialId: mat.id,
-                        materialName: mat.name,
-                        materialCategory: mat.category,
-                        basePrice: mat.basePrice.toString(),
-                        unit: mat.unit,
-                        supplier: mat.supplier?.name ?? '',
-                        supplierId: mat.supplier?.id ?? '',
-                      },
-                    });
-                  }}
-                  isLast={idx === materials.length - 1}
-                />
-              ))}
-            </View>
-          )}
-          <View style={{ height: 24 }} />
-        </ScrollView>
+        <Animated.View style={{ flex: 1, opacity: filterOpacity }}>
+          <FlatList
+            key="grid"
+            data={materials}
+            numColumns={2}
+            keyExtractor={(m) => m.id}
+            columnWrapperStyle={s.gridRow}
+            contentContainerStyle={s.gridContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => {
+                  setRefreshing(true);
+                  loadMaterials(search, category);
+                }}
+                tintColor="#dc2626"
+              />
+            }
+            ListHeaderComponent={
+              <View style={s.listHeader}>
+                <Text style={s.sectionTitle}>{categoryLabel}</Text>
+                {materials.length > 0 && (
+                  <Text style={s.sectionCount}>{materials.length + ' produkti'}</Text>
+                )}
+              </View>
+            }
+            ListEmptyComponent={
+              <View style={s.empty}>
+                <View style={s.emptyIconWrap}>
+                  <PackageSearch size={36} color="#d1d5db" strokeWidth={1.3} />
+                </View>
+                <Text style={s.emptyTitle}>{'Nav atrasts neviens materi\u0101ls'}</Text>
+                <Text style={s.emptyDesc}>
+                  {'M\u0113\u0123iniet main\u012bt mekl\u0113\u0161anas vai kategorijas filtru'}
+                </Text>
+                {(search.length > 0 || category !== 'ALL') && (
+                  <TouchableOpacity
+                    style={s.emptyReset}
+                    onPress={() => {
+                      setSearch('');
+                      selectCategory('ALL');
+                    }}
+                  >
+                    <Text style={s.emptyResetText}>{'Not\u012br\u012bt filtrus'}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            }
+            ListFooterComponent={
+              materials.length > 0 ? (
+                <View style={s.note}>
+                  <SlidersHorizontal size={13} color="#dc2626" strokeWidth={2} />
+                  <Text style={s.noteTitle}>{'Nor\u0101d\u012bt\u0101 cena'}</Text>
+                  <Text style={s.noteText}>
+                    {
+                      'Cena "franco b\u016bvlaukums" pas\u016bt\u012bjumam ar vienu pilnu kravas auto (Sattelkipper).'
+                    }
+                  </Text>
+                </View>
+              ) : null
+            }
+            renderItem={({ item }) => (
+              <ProductCard material={item} onPress={() => handleOrder(item)} />
+            )}
+          />
+        </Animated.View>
       )}
     </ScreenContainer>
   );
 }
 
-// ── Styles ─────────────────────────────────────────────────────
+// ── Styles ──────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f8f8f8' },
-
-  // Header
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
     paddingHorizontal: 20,
     paddingTop: 10,
-    paddingBottom: 16,
-  },
-  headerTitle: { fontSize: 28, fontWeight: '800', color: '#111827', letterSpacing: -0.8, flex: 1 },
-  headerCountBadge: {
-    backgroundColor: '#111827',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    minWidth: 32,
+    paddingBottom: 14,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  headerCountText: { fontSize: 13, fontWeight: '700', color: '#fff' },
+  headerEyebrow: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#dc2626',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#111827',
+    letterSpacing: -0.5,
+  },
 
-  // Search
+  searchWrap: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 13,
-    borderWidth: 1,
-    borderColor: '#ebebeb',
-  },
-  searchInput: { flex: 1, fontSize: 15, color: '#111827', fontWeight: '400' },
-  searchClearBtn: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#c4c4c4',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // Pills
-  pillsContainer: { paddingHorizontal: 16, paddingBottom: 14, gap: 8, alignItems: 'center' },
-  pill: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    paddingHorizontal: 13,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    flexShrink: 0,
-  },
-  pillActive: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
-  },
-  pillEmoji: { fontSize: 13, lineHeight: 18 },
-  pillText: { fontSize: 13, color: '#374151', fontWeight: '600', lineHeight: 20 },
-  pillTextActive: { color: '#fff' },
-
-  // List
-  list: { paddingHorizontal: 16, paddingTop: 2, gap: 12 },
-
-  // Card group — single grouped container
-  cardGroup: {
-    marginHorizontal: 16,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-
-  // Card — row layout, no individual shadow — sits inside group
-  card: {
-    backgroundColor: '#fff',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    gap: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ebebeb',
-  },
-  cardLast: { borderBottomWidth: 0 },
-  cardIconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  cardIcon: { fontSize: 26 },
-  cardBody: { flex: 1, gap: 3 },
-  cardTopRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  cardName: { fontSize: 15, fontWeight: '700', color: '#111827', flex: 1 },
-  cardSupplier: { fontSize: 12, color: '#9ca3af', fontWeight: '400' },
-  cardMeta: { flexDirection: 'row', marginTop: 2 },
-  categoryPill: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 6,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-  },
-  categoryPillText: { fontSize: 11, fontWeight: '600', color: '#6b7280' },
-  recycledBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#dcfce7',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    flexShrink: 0,
-  },
-  recycledText: { fontSize: 10, fontWeight: '700', color: '#15803d' },
-  cardRight: { alignItems: 'flex-end', gap: 2, flexShrink: 0 },
-  cardPrice: { fontSize: 18, fontWeight: '800', color: '#111827', letterSpacing: -0.5 },
-  cardUnit: { fontSize: 11, color: '#9ca3af', fontWeight: '400' },
-  cardArrow: {
-    marginTop: 6,
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // Empty
-  empty: { alignItems: 'center', paddingVertical: 64, gap: 10 },
-  emptyEmoji: { fontSize: 44 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', color: '#374151', marginTop: 4 },
-  emptyDesc: { fontSize: 13, color: '#9ca3af', textAlign: 'center', maxWidth: 240, lineHeight: 19 },
-  emptyReset: {
-    marginTop: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: '#111827',
-  },
-  emptyResetText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-
-  // ── Order modal ─────────────────────────────────────────────
-  orderSafe: { flex: 1, backgroundColor: '#fff' },
-
-  orderHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  orderHeaderBtn: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  orderHeaderTitle: { fontSize: 17, fontWeight: '700', color: '#111827' },
-  orderHeaderPhoneBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  orderScroll: { paddingBottom: 24 },
-
-  orderSection: { paddingHorizontal: 20, paddingVertical: 16 },
-  orderDivider: { height: 1, backgroundColor: '#f3f4f6' },
-  orderSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-
-  // Dropdown
-  dropRow: { flexDirection: 'row', gap: 16 },
-  dropLabel: {
-    fontSize: 12,
-    color: '#9ca3af',
-    fontWeight: '500',
-    marginBottom: 6,
-    letterSpacing: 0.1,
-  },
-  dropBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1.5,
-    borderBottomColor: '#d1d5db',
-    paddingBottom: 8,
-    gap: 6,
-  },
-  dropBtnText: { fontSize: 17, fontWeight: '600', color: '#111827', flex: 1 },
-  dropOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  dropSheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 40,
-    gap: 2,
-  },
-  dropSheetTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#9ca3af',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  dropOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  dropOptionText: { fontSize: 16, color: '#374151' },
-  dropOptionActive: { fontWeight: '700', color: '#111827' },
-
-  // Vehicle picker
-  vehicleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  vehicleCard: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderRadius: 16,
     borderWidth: 1.5,
     borderColor: '#e5e7eb',
-    backgroundColor: '#fff',
-    gap: 8,
-    position: 'relative',
     shadowColor: '#000',
     shadowOpacity: 0.04,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
-  vehicleCardSelected: {
-    borderColor: '#111827',
-    backgroundColor: '#f0fdf4',
-  },
-  vehicleCheck: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
+  searchInput: { flex: 1, fontSize: 15, color: '#111827', padding: 0 },
+  clearBtn: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#111827',
+    backgroundColor: '#d1d5db',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  vehicleEmoji: { fontSize: 36 },
-  vehicleLabel: { fontSize: 14, fontWeight: '700', color: '#111827', textAlign: 'center' },
-  vehicleLabelDim: { color: '#9ca3af' },
-  vehicleSublabel: { fontSize: 11, fontWeight: '400', color: '#9ca3af' },
 
-  // Stepper
-  stepperRow: {
+  pillsScroll: { flexGrow: 0 },
+  pillsRow: {
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    gap: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 20,
-    marginTop: 4,
   },
-  stepperBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#111827',
+  pill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#111827',
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  stepperBtnText: { fontSize: 28, fontWeight: '300', color: '#fff', lineHeight: 32 },
-  stepperDisplay: {
-    width: 130,
-    height: 80,
-    borderRadius: 16,
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
     borderWidth: 1.5,
     borderColor: '#e5e7eb',
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#fff',
   },
-  stepperValue: { fontSize: 42, fontWeight: '600', color: '#111827' },
-
-  // Details step
-  summaryPill: {
-    margin: 16,
-    backgroundColor: '#f0fdf4',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
+  pillLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6b7280',
   },
-  summaryPillText: { fontSize: 13, color: '#15803d', fontWeight: '600', textAlign: 'center' },
-  detailInput: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#111827',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+  pillLabelSelected: {
+    color: '#fff',
   },
 
-  // Bottom bar
-  orderBottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+  gridContent: {
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 40,
+    gap: 12,
+  },
+  gridRow: {
+    gap: 12,
+    justifyContent: 'flex-start',
+  },
+  listHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 20,
+    marginBottom: 14,
+    marginTop: 4,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#111827',
+    letterSpacing: -0.3,
+  },
+  sectionCount: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#9ca3af',
+  },
+
+  productCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
     shadowColor: '#000',
     shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: -4 },
-    elevation: 8,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  orderBottomLabel: { fontSize: 12, color: '#9ca3af', fontWeight: '500' },
-  orderBottomValue: { fontSize: 16, fontWeight: '700', color: '#111827', marginTop: 2 },
-  orderCta: {
-    backgroundColor: '#111827',
-    borderRadius: 14,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
+  productImg: {
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#111827',
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
+    position: 'relative',
   },
-  orderCtaText: { color: '#fff', fontSize: 15, fontWeight: '800', letterSpacing: 0.5 },
+  ecoBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#dcfce7',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  ecoBadgeText: { fontSize: 10, fontWeight: '700', color: '#16a34a' },
+  priceBadge: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    right: 8,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 10,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    alignItems: 'flex-start',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  priceBadgeAmount: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#111827',
+    letterSpacing: -0.3,
+  },
+  priceBadgeSub: {
+    fontSize: 10,
+    color: '#9ca3af',
+    fontWeight: '400',
+    marginTop: 1,
+  },
+  productBody: {
+    padding: 11,
+    gap: 3,
+  },
+  productName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#111827',
+    lineHeight: 18,
+  },
+  productSupplier: {
+    fontSize: 11,
+    color: '#9ca3af',
+    fontWeight: '400',
+  },
+
+  empty: {
+    alignItems: 'center',
+    paddingTop: 56,
+    paddingHorizontal: 32,
+    gap: 8,
+  },
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#f9fafb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: '#374151', textAlign: 'center' },
+  emptyDesc: { fontSize: 13, color: '#9ca3af', textAlign: 'center', lineHeight: 20 },
+  emptyReset: {
+    marginTop: 10,
+    backgroundColor: '#dc2626',
+    borderRadius: 22,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  emptyResetText: { fontSize: 13, fontWeight: '700', color: '#fff' },
+
+  note: {
+    marginTop: 4,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    gap: 4,
+  },
+  noteTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#dc2626',
+  },
+  noteText: {
+    fontSize: 12,
+    color: '#6b7280',
+    lineHeight: 18,
+  },
 });

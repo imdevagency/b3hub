@@ -4,11 +4,15 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import { CreateProviderApplicationDto } from './dto/create-provider-application.dto';
 
 @Injectable()
 export class ProviderApplicationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private email: EmailService,
+  ) {}
 
   /** Public — submit a provider application */
   async create(dto: CreateProviderApplicationDto) {
@@ -34,6 +38,11 @@ export class ProviderApplicationsService {
         userId: dto.userId,
       },
     });
+
+    // Notify applicant their submission was received (non-blocking)
+    this.email
+      .sendApplicationReceived(application.email, application.firstName ?? '')
+      .catch(() => null);
 
     return application;
   }
@@ -94,6 +103,14 @@ export class ProviderApplicationsService {
       });
     }
 
+    // Notify applicant of approval (non-blocking)
+    this.email
+      .sendApplicationApproved(app.email, app.firstName ?? '', {
+        canSell: app.appliesForSell,
+        canTransport: app.appliesForTransport,
+      })
+      .catch(() => null);
+
     return updated;
   }
 
@@ -105,7 +122,7 @@ export class ProviderApplicationsService {
       throw new BadRequestException('Application is not in PENDING state');
     }
 
-    return this.prisma.providerApplication.update({
+    const rejected = await this.prisma.providerApplication.update({
       where: { id },
       data: {
         status: 'REJECTED',
@@ -113,5 +130,12 @@ export class ProviderApplicationsService {
         reviewNote,
       },
     });
+
+    // Notify applicant of rejection (non-blocking)
+    this.email
+      .sendApplicationRejected(app.email, app.firstName ?? '', reviewNote)
+      .catch(() => null);
+
+    return rejected;
   }
 }
