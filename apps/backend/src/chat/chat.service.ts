@@ -14,18 +14,61 @@ export class ChatService {
   private async assertAccess(jobId: string, userId: string) {
     const job = await this.prisma.transportJob.findUnique({
       where: { id: jobId },
-      include: { order: { select: { createdById: true } } },
+      select: {
+        driverId: true,
+        requestedById: true,
+        order: { select: { createdById: true } },
+      },
     });
     if (!job) throw new NotFoundException('Transport job not found');
 
     const isDriver = job.driverId === userId;
-    const isBuyer = job.order?.createdById === userId;
+    const isBuyer = job.order?.createdById === userId || job.requestedById === userId;
 
     if (!isDriver && !isBuyer) {
       throw new ForbiddenException('You are not a participant in this job');
     }
 
     return job;
+  }
+
+  async getMyRooms(userId: string) {
+    const jobs = await this.prisma.transportJob.findMany({
+      where: {
+        chatMessages: { some: {} },
+        OR: [
+          { driverId: userId },
+          { requestedById: userId },
+          { order: { createdById: userId } },
+        ],
+      },
+      select: {
+        id: true,
+        jobNumber: true,
+        jobType: true,
+        cargoType: true,
+        pickupCity: true,
+        deliveryCity: true,
+        status: true,
+        chatMessages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { body: true, senderName: true, createdAt: true },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    return jobs.map((j) => ({
+      jobId: j.id,
+      jobNumber: j.jobNumber,
+      jobType: j.jobType,
+      cargoType: j.cargoType,
+      pickupCity: j.pickupCity,
+      deliveryCity: j.deliveryCity,
+      status: j.status,
+      lastMessage: j.chatMessages[0] ?? null,
+    }));
   }
 
   async getMessages(jobId: string, userId: string) {

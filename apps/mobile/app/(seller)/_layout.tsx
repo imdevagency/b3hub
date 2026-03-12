@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
-import { Inbox, LayoutGrid, User, Wallet } from 'lucide-react-native';
+import { Inbox, LayoutGrid, User, Wallet, FileText } from 'lucide-react-native';
 import { TopBar } from '@/components/ui/TopBar';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
@@ -75,7 +75,13 @@ export default function SellerLayout() {
               tabBarIcon: ({ color }) => <User size={22} color={color} />,
             }}
           />
-          <Tabs.Screen name="quotes" options={{ href: null }} />
+          <Tabs.Screen
+            name="quotes"
+            options={{
+              title: t.tabs.quotes,
+              tabBarIcon: ({ color }) => <FileText size={22} color={color} />,
+            }}
+          />
         </Tabs>
       </View>
       <Sidebar

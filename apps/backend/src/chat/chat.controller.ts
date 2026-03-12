@@ -9,6 +9,12 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 export class ChatController {
   constructor(private readonly service: ChatService) {}
 
+  /** GET /chat/my-rooms — list all chat rooms the user participates in */
+  @Get('my-rooms')
+  getMyRooms(@CurrentUser() user: any) {
+    return this.service.getMyRooms(user.userId);
+  }
+
   /** GET /chat/:jobId — fetch all messages for a transport job */
   @Get(':jobId')
   getMessages(

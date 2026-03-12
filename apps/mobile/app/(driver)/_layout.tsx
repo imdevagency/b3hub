@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
-import { ClipboardList, Map, User, Wallet } from 'lucide-react-native';
+import { ClipboardList, Map, User, Wallet, Trash2 } from 'lucide-react-native';
 import { TopBar } from '@/components/ui/TopBar';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
@@ -75,7 +75,13 @@ export default function DriverLayout() {
               tabBarIcon: ({ color }) => <User size={22} color={color} />,
             }}
           />
-          <Tabs.Screen name="skips" options={{ href: null }} />
+          <Tabs.Screen
+            name="skips"
+            options={{
+              title: t.tabs.skips,
+              tabBarIcon: ({ color }) => <Trash2 size={22} color={color} />,
+            }}
+          />
           <Tabs.Screen name="vehicles" options={{ href: null }} />
         </Tabs>
       </View>

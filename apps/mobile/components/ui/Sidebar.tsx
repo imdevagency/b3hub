@@ -18,6 +18,7 @@ import {
   ChevronRight,
   FileText,
   LogOut,
+  MessageCircle,
   Receipt,
   Settings,
   ShieldCheck,
@@ -92,6 +93,11 @@ function buildItems(role: Role): MenuItem[] {
     });
   }
 
+  items.push({
+    icon: (c) => <MessageCircle size={20} color={c} />,
+    label: 'Ziņojumi',
+    route: '/messages',
+  });
   items.push({
     icon: (c) => <Bell size={20} color={c} />,
     label: 'Paziņojumi',
