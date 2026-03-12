@@ -20,9 +20,13 @@ Complete schema with 15+ models covering:
 - JWT-based authentication
 - User registration and login
 - Password hashing with bcrypt
+- **Forgot password** — `POST /auth/forgot-password` generates 1-hour token, sends reset email
+- **Reset password** — `POST /auth/reset-password` validates hashed token, clears it after use (single-use)
+- Change password (authenticated)
 - Role-based access control (RBAC)
 - Guards and strategies (JWT, Local)
 - Protected routes
+- Push token registration for mobile push notifications
 
 ### 3. **Materials Module**
 
@@ -189,8 +193,10 @@ curl http://localhost:3000/api/v1/auth/me \
 ### Additional Features:
 
 - [ ] File upload (Supabase Storage integration)
-- [ ] Email notifications (SendGrid/AWS SES)
-- [ ] WebSocket for real-time updates
+- [x] Email notifications (Nodemailer — welcome, password reset, order confirmation, provider application)
+- [x] WebSocket for real-time chat (Socket.IO — per-job chat rooms)
+- [x] Push notifications (Expo Push API — order updates, job alerts)
+- [x] Forgot / reset password (token-based, 1h expiry, single-use) ✅ *Mar 12 2026*
 - [ ] Payment processing (Stripe)
 - [ ] API documentation (Swagger)
 - [ ] Rate limiting
@@ -208,6 +214,12 @@ Once running, the following endpoints are available:
 - `POST /auth/register` - Register new user
 - `POST /auth/login` - Login
 - `GET /auth/me` - Get current user (protected)
+- `PATCH /auth/me` - Update profile (protected)
+- `POST /auth/forgot-password` - Request password reset email
+- `POST /auth/reset-password` - Reset password with token (single-use, 1h expiry)
+- `PATCH /auth/change-password` - Change password while logged in (protected)
+- `PATCH /auth/push-token` - Register Expo push token (protected)
+- `PATCH /auth/notifications` - Update notification preferences (protected)
 
 ### Materials Endpoints (protected):
 
