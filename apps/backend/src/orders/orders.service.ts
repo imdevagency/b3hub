@@ -679,7 +679,7 @@ export class OrdersService {
       data: {
         jobNumber,
         jobType:              TransportJobType.WASTE_COLLECTION,
-        driverId:             userId,   // requesting user becomes the "customer" contact
+        requestedById:        userId,   // buyer who requested the disposal
         pickupAddress:        dto.pickupAddress,
         pickupCity:           dto.pickupCity,
         pickupState:          dto.pickupState  ?? '',
@@ -722,7 +722,7 @@ export class OrdersService {
       data: {
         jobNumber,
         jobType:              TransportJobType.TRANSPORT,
-        driverId:             userId,
+        requestedById:        userId,   // buyer who requested the freight
         pickupAddress:        dto.pickupAddress,
         pickupCity:           dto.pickupCity,
         pickupState:          dto.pickupState  ?? '',

@@ -277,9 +277,10 @@ model User {
   buyerProfile  BuyerProfile?
 
   // Activity
-  ordersCreated  Order[]
-  transportJobs  TransportJob[]
-  notifications  Notification[]
+  ordersCreated            Order[]
+  driverJobs               TransportJob[] @relation("DriverJobs")
+  requestedTransportJobs   TransportJob[] @relation("RequestedJobs")
+  notifications            Notification[]
   vehicles       Vehicle[]
   quoteRequests  QuoteRequest[]
   reviews        Review[]
@@ -570,10 +571,14 @@ model TransportJob {
   // Assignment
   carrier   Company? @relation(fields: [carrierId], references: [id])
   carrierId String?
-  driver    User?    @relation(fields: [driverId], references: [id])
+  driver    User?    @relation("DriverJobs", fields: [driverId], references: [id])
   driverId  String?
   vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
   vehicleId String?
+
+  // The buyer/user who originally requested this disposal or freight job
+  requester   User?   @relation("RequestedJobs", fields: [requestedById], references: [id])
+  requestedById String?
 
   // Status
   status TransportJobStatus

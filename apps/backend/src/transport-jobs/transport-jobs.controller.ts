@@ -59,6 +59,15 @@ export class TransportJobsController {
   }
 
   /**
+   * GET /transport-jobs/my-requests
+   * Returns all disposal / freight jobs requested by the current user (buyer role).
+   */
+  @Get('my-requests')
+  findMyRequests(@CurrentUser() user: any) {
+    return this.service.findMyRequests(user.userId);
+  }
+
+  /**
    * GET /transport-jobs/return-trips?lat=&lng=&radiusKm=
    * Avoid Empty Runs — returns AVAILABLE jobs whose pickup is near the given coords.
    * Typically called with the driver's current delivery destination coordinates.

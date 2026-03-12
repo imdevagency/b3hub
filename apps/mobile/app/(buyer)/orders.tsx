@@ -17,7 +17,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { t } from '@/lib/translations';
-import type { SkipHireOrder, ApiOrder } from '@/lib/api';
+import type { SkipHireOrder, ApiOrder, ApiTransportJob } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import {
   MapPin,
@@ -25,6 +25,7 @@ import {
   Trash2,
   Package,
   Truck,
+  Recycle,
   Phone,
   User,
   Star,
@@ -39,7 +40,8 @@ type FilterKey = 'ALL' | 'ACTIVE' | 'DONE' | 'CANCELLED';
 
 type UnifiedOrder =
   | { kind: 'skip'; data: SkipHireOrder; sortDate: number; isActive: boolean }
-  | { kind: 'material'; data: ApiOrder; sortDate: number; isActive: boolean };
+  | { kind: 'material'; data: ApiOrder; sortDate: number; isActive: boolean }
+  | { kind: 'transport'; data: ApiTransportJob; sortDate: number; isActive: boolean };
 
 // ── Constants ─────────────────────────────────────────────────
 
@@ -70,6 +72,19 @@ const MAT_STATUS: Record<string, { label: string; bg: string; color: string }> =
   CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: '#b91c1c' },
 };
 
+const TJB_STATUS: Record<string, { label: string; bg: string; color: string }> = {
+  AVAILABLE:           { label: 'Gaida pārvadātāju', bg: '#f3f4f6', color: '#6b7280' },
+  ASSIGNED:            { label: 'Pārvadātājs atrasts', bg: '#f3f4f6', color: '#374151' },
+  ACCEPTED:            { label: 'Apstiprināts', bg: '#f3f4f6', color: '#374151' },
+  EN_ROUTE_PICKUP:     { label: 'Brauc uz iekraušanu', bg: '#fef3c7', color: '#92400e' },
+  AT_PICKUP:           { label: 'Iekraujas', bg: '#fef3c7', color: '#92400e' },
+  LOADED:              { label: 'Iekrauts', bg: '#fef3c7', color: '#92400e' },
+  EN_ROUTE_DELIVERY:   { label: 'Ceļā', bg: '#dcfce7', color: '#15803d' },
+  AT_DELIVERY:         { label: 'Piegādā', bg: '#dcfce7', color: '#15803d' },
+  DELIVERED:           { label: 'Pabeigts', bg: '#f0fdf4', color: '#15803d' },
+  CANCELLED:           { label: 'Atcelts', bg: '#fee2e2', color: '#b91c1c' },
+};
+
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: 'ALL', label: 'Visi' },
   { key: 'ACTIVE', label: 'Aktīvie' },
@@ -90,6 +105,17 @@ function skipBucket(status: string): FilterKey {
 
 function matBucket(status: string): FilterKey {
   if (MAT_ACTIVE.has(status)) return 'ACTIVE';
+  if (status === 'DELIVERED') return 'DONE';
+  return 'CANCELLED';
+}
+
+const TJB_ACTIVE = new Set([
+  'AVAILABLE', 'ASSIGNED', 'ACCEPTED',
+  'EN_ROUTE_PICKUP', 'AT_PICKUP', 'LOADED',
+  'EN_ROUTE_DELIVERY', 'AT_DELIVERY',
+]);
+function reqBucket(status: string): FilterKey {
+  if (TJB_ACTIVE.has(status)) return 'ACTIVE';
   if (status === 'DELIVERED') return 'DONE';
   return 'CANCELLED';
 }
@@ -141,6 +167,11 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
         </View>
       </View>
     );
+  }
+
+  // Transport request (disposal / freight)
+  if (item.kind === 'transport') {
+    return <TransportRequestCard item={item} />;
   }
 
   // Material order
@@ -238,13 +269,64 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
   );
 }
 
-// ── Screen ────────────────────────────────────────────────────
+// ── Transport request card (disposal / freight) ───────────────
+
+function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transport' } }) {
+  const job = item.data;
+  const st = TJB_STATUS[job.status] ?? TJB_STATUS.AVAILABLE;
+  const isDisposal = job.jobType === 'WASTE_COLLECTION';
+  const Icon = isDisposal ? Recycle : Truck;
+  const typeLabel = isDisposal ? 'Atkritumu izvešana' : 'Kravas pārvadāšana';
+
+  return (
+    <View style={[s.card, item.isActive && s.cardActive]}>
+      {item.isActive && <View style={s.activeStrip} />}
+      <View style={s.cardInner}>
+        <View style={s.cardTop}>
+          <View style={s.typeTag}>
+            <Icon size={11} color="#6b7280" />
+            <Text style={s.typeTagText}>{typeLabel}</Text>
+          </View>
+          <View style={[s.badge, { backgroundColor: st.bg }]}>
+            <Text style={[s.badgeText, { color: st.color }]}>{st.label}</Text>
+          </View>
+        </View>
+        <Text style={s.orderNum}>{job.jobNumber}</Text>
+        {!isDisposal && (
+          <Text style={s.orderSub} numberOfLines={1}>
+            {job.pickupCity} → {job.deliveryCity}
+          </Text>
+        )}
+        {isDisposal && (
+          <Text style={s.orderSub} numberOfLines={1}>
+            {job.cargoType} · {job.pickupCity}
+          </Text>
+        )}
+        <View style={s.metaRow}>
+          <MapPin size={13} color="#6b7280" />
+          <Text style={s.metaText} numberOfLines={1}>{job.pickupAddress}, {job.pickupCity}</Text>
+        </View>
+        <View style={s.metaRow}>
+          <CalendarDays size={13} color="#6b7280" />
+          <Text style={s.metaText}>{formatDate(job.pickupDate)}</Text>
+        </View>
+        {job.requiredVehicleType && (
+          <View style={s.metaRow}>
+            <Truck size={13} color="#6b7280" />
+            <Text style={s.metaText} numberOfLines={1}>{job.requiredVehicleType}</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
 
 export default function OrdersScreen() {
   const { token } = useAuth();
   const router = useRouter();
   const [skipOrders, setSkipOrders] = useState<SkipHireOrder[]>([]);
   const [matOrders, setMatOrders] = useState<ApiOrder[]>([]);
+  const [reqOrders, setReqOrders] = useState<ApiTransportJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterKey>('ALL');
@@ -257,12 +339,14 @@ export default function OrdersScreen() {
       return;
     }
     try {
-      const [skipData, matData] = await Promise.all([
+      const [skipData, matData, reqData] = await Promise.all([
         api.skipHire.myOrders(token),
         api.orders.myOrders(token),
+        api.transportJobs.myRequests(token),
       ]);
       setSkipOrders(Array.isArray(skipData) ? skipData : []);
       setMatOrders(Array.isArray(matData) ? matData : []);
+      setReqOrders(Array.isArray(reqData) ? reqData : []);
     } catch {
       // show empty state on error
     } finally {
@@ -299,17 +383,27 @@ export default function OrdersScreen() {
         isActive: matBucket(o.status) === 'ACTIVE',
       });
     });
+    reqOrders.forEach((o) => {
+      list.push({
+        kind: 'transport',
+        data: o,
+        sortDate: new Date(o.pickupDate).getTime(),
+        isActive: reqBucket(o.status) === 'ACTIVE',
+      });
+    });
     return list.sort((a, b) => {
       if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
       return b.sortDate - a.sortDate;
     });
-  }, [skipOrders, matOrders]);
+  }, [skipOrders, matOrders, reqOrders]);
 
   const filtered = useMemo(() => {
     if (filter === 'ALL') return unified;
     return unified.filter((item) => {
       const bucket =
-        item.kind === 'skip' ? skipBucket(item.data.status) : matBucket(item.data.status);
+        item.kind === 'skip' ? skipBucket(item.data.status)
+        : item.kind === 'transport' ? reqBucket(item.data.status)
+        : matBucket(item.data.status);
       return bucket === filter;
     });
   }, [unified, filter]);
@@ -317,7 +411,10 @@ export default function OrdersScreen() {
   const counts = useMemo(() => {
     const c: Record<FilterKey, number> = { ALL: unified.length, ACTIVE: 0, DONE: 0, CANCELLED: 0 };
     unified.forEach((item) => {
-      const b = item.kind === 'skip' ? skipBucket(item.data.status) : matBucket(item.data.status);
+      const b =
+        item.kind === 'skip' ? skipBucket(item.data.status)
+        : item.kind === 'transport' ? reqBucket(item.data.status)
+        : matBucket(item.data.status);
       c[b] = (c[b] ?? 0) + 1;
     });
     return c;
@@ -477,6 +574,42 @@ export default function OrdersScreen() {
               <View style={s.pickerOptionText}>
                 <Text style={s.pickerOptionTitle}>Materiālu pasūtījums</Text>
                 <Text style={s.pickerOptionDesc}>Smilts, grants, dolomīts un citi materiāli</Text>
+              </View>
+              <ChevronRight size={18} color="#9ca3af" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={s.pickerOption}
+              activeOpacity={0.8}
+              onPress={() => {
+                setShowTypePicker(false);
+                router.push('/disposal');
+              }}
+            >
+              <View style={[s.pickerIcon, { backgroundColor: '#f0fdf4' }]}>
+                <Trash2 size={22} color="#16a34a" strokeWidth={1.8} />
+              </View>
+              <View style={s.pickerOptionText}>
+                <Text style={s.pickerOptionTitle}>Atkritumu izvešana</Text>
+                <Text style={s.pickerOptionDesc}>Celtniecības atkritumu savākšana un utilizācija</Text>
+              </View>
+              <ChevronRight size={18} color="#9ca3af" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={s.pickerOption}
+              activeOpacity={0.8}
+              onPress={() => {
+                setShowTypePicker(false);
+                router.push('/transport');
+              }}
+            >
+              <View style={[s.pickerIcon, { backgroundColor: '#faf5ff' }]}>
+                <Truck size={22} color="#7c3aed" strokeWidth={1.8} />
+              </View>
+              <View style={s.pickerOptionText}>
+                <Text style={s.pickerOptionTitle}>Kravas pārvadāšana</Text>
+                <Text style={s.pickerOptionDesc}>Materiālu vai kravu pārvadāšana uz galamērķi</Text>
               </View>
               <ChevronRight size={18} color="#9ca3af" />
             </TouchableOpacity>

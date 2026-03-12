@@ -189,6 +189,21 @@ export class TransportJobsService {
     });
   }
 
+  /**
+   * Returns all WASTE_COLLECTION and TRANSPORT jobs that the given user
+   * originally requested (via the disposal or freight booking wizard).
+   */
+  async findMyRequests(userId: string) {
+    return this.prisma.transportJob.findMany({
+      where: {
+        requestedById: userId,
+        jobType: { in: ['WASTE_COLLECTION', 'TRANSPORT'] },
+      },
+      select: this.jobSelect,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   // ── Single job ────────────────────────────────────────────────
   async findOne(id: string) {
     const job = await this.prisma.transportJob.findUnique({

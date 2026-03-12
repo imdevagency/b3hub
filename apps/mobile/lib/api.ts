@@ -677,6 +677,12 @@ export const api = {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
+    /** Buyer: returns all disposal & freight jobs the current user requested. */
+    myRequests: (token: string) =>
+      apiFetch<ApiTransportJob[]>('/transport-jobs/my-requests', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
     accept: (id: string, token: string) =>
       apiFetch<ApiTransportJob>(`/transport-jobs/${id}/accept`, {
         method: 'POST',
