@@ -320,7 +320,7 @@ function RequestCard({ request, onAccept }: RequestCardProps) {
             {request.quantity} {UNIT_LV[request.unit]} · {request.deliveryCity}
           </p>
         </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
           {request.responses.length > 0 && (
             <span className="text-xs font-semibold text-blue-600 bg-blue-50 rounded-full px-2 py-0.5 border border-blue-100">
               {request.responses.length} atbild{request.responses.length === 1 ? 'e' : 'es'}
@@ -395,7 +395,7 @@ function ResponseRow({ response, canAccept, accepting, onAccept }: ResponseRowPr
           <p className="text-xs text-slate-500 mt-0.5 italic">"{response.notes}"</p>
         )}
       </div>
-      <div className="flex-shrink-0">
+      <div className="shrink-0">
         {isAccepted ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-700 border border-green-200 px-2.5 py-0.5 text-xs font-semibold">
             <CheckCircle2 className="h-3 w-3" /> Pieņemts

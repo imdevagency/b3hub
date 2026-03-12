@@ -248,8 +248,8 @@ export default function TransporterDashboardPage() {
       <div
         className={`rounded-2xl p-6 text-white shadow-sm ${
           isDispatcher
-            ? 'bg-gradient-to-br from-gray-800 to-gray-900'
-            : 'bg-gradient-to-br from-red-600 to-red-700'
+            ? 'bg-linear-to-br from-gray-800 to-gray-900'
+            : 'bg-linear-to-br from-red-600 to-red-700'
         }`}
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

@@ -184,7 +184,7 @@ export default function SupplierDashboardPage() {
       </div>
 
       {/* Hero */}
-      <div className="rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 p-6 text-white shadow-sm">
+      <div className="rounded-2xl bg-linear-to-br from-emerald-600 to-teal-700 p-6 text-white shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <p className="text-lg font-bold">Jūsu produkti tirgo B3Hub</p>

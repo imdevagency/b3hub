@@ -119,7 +119,7 @@ function CreateModal({
   const [endDate, setEndDate] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
-  const { show: showToast } = useToast();
+  const { showToast } = useToast();
 
   function reset() {
     setTitle('');
@@ -219,7 +219,7 @@ function CreateModal({
 export default function ProjectsScreen() {
   const { token } = useAuth();
   const router = useRouter();
-  const { show: showToast } = useToast();
+  const { showToast } = useToast();
 
   const [contracts, setContracts] = useState<ApiFrameworkContract[]>([]);
   const [loading, setLoading] = useState(true);
@@ -248,7 +248,7 @@ export default function ProjectsScreen() {
   }
 
   return (
-    <ScreenContainer standalone topInset={false}>
+    <ScreenContainer standalone topInset={0}>
       {/* header */}
       <View style={styles.pageHeader}>
         <View style={styles.pageHeaderLeft}>

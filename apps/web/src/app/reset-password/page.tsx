@@ -155,7 +155,7 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-red-50 to-white px-4 py-12">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-linear-to-b from-red-50 to-white px-4 py-12">
       <Link href="/" className="flex items-center gap-2 mb-8">
         <Building2 className="h-8 w-8 text-red-600" />
         <span className="text-2xl font-bold text-gray-900">B3Hub</span>

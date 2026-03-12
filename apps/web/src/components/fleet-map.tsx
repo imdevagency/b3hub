@@ -169,7 +169,7 @@ export function FleetMap({ jobs }: FleetMapProps) {
                 <div className="p-1 space-y-1.5">
                   <div className="flex items-center gap-2">
                     <span
-                      className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
                       style={{ backgroundColor: STATUS_PIN[selected.status] ?? '#64748b' }}
                     />
                     <p className="text-xs font-bold text-slate-800 leading-tight">
@@ -212,7 +212,7 @@ export function FleetMap({ jobs }: FleetMapProps) {
             (s) => (
               <div key={s} className="flex items-center gap-1.5">
                 <span
-                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
                   style={{ backgroundColor: STATUS_PIN[s] }}
                 />
                 <span className="text-[10px] text-slate-600">{STATUS_LV[s]}</span>

@@ -149,15 +149,15 @@ export class CompanyMembersService {
       throw new BadRequestException('Cannot change permissions for the company owner');
     }
 
+    const updateData: Record<string, boolean> = {};
+    if (dto.permCreateContracts !== undefined) updateData.permCreateContracts = dto.permCreateContracts;
+    if (dto.permReleaseCallOffs !== undefined) updateData.permReleaseCallOffs = dto.permReleaseCallOffs;
+    if (dto.permManageOrders !== undefined) updateData.permManageOrders = dto.permManageOrders;
+    if (dto.permViewFinancials !== undefined) updateData.permViewFinancials = dto.permViewFinancials;
+    if (dto.permManageTeam !== undefined) updateData.permManageTeam = dto.permManageTeam;
     return this.prisma.user.update({
       where: { id: targetUserId },
-      data: {
-        ...(dto.permCreateContracts !== undefined && { permCreateContracts: dto.permCreateContracts }),
-        ...(dto.permReleaseCallOffs !== undefined && { permReleaseCallOffs: dto.permReleaseCallOffs }),
-        ...(dto.permManageOrders !== undefined && { permManageOrders: dto.permManageOrders }),
-        ...(dto.permViewFinancials !== undefined && { permViewFinancials: dto.permViewFinancials }),
-        ...(dto.permManageTeam !== undefined && { permManageTeam: dto.permManageTeam }),
-      },
+      data: updateData,
       select: MEMBER_SELECT,
     });
   }

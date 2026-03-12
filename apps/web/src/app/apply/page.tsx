@@ -99,7 +99,7 @@ export default function ApplyPage() {
 
   // ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex flex-col">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-white flex flex-col">
       {/* Nav */}
       <header className="border-b bg-white/80 backdrop-blur px-6 py-4 flex items-center justify-between">
         <Link

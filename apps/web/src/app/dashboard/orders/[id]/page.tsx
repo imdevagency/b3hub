@@ -237,7 +237,7 @@ export default function OrderDetailPage() {
                 <div className="flex flex-col items-center">
                   <div
                     className={[
-                      'flex items-center justify-center w-7 h-7 rounded-full flex-shrink-0',
+                      'flex items-center justify-center w-7 h-7 rounded-full shrink-0',
                       done ? 'bg-green-100 text-green-600' : '',
                       active ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-300' : '',
                       upcoming ? 'bg-slate-100 text-slate-400' : '',
@@ -290,7 +290,7 @@ export default function OrderDetailPage() {
         <div className="space-y-3">
           <div className="flex gap-3">
             <div className="flex flex-col items-center gap-0.5 pt-1">
-              <div className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
+              <div className="w-3 h-3 rounded-full bg-green-500 shrink-0" />
               <div className="w-0.5 flex-1 bg-slate-200" style={{ minHeight: 24 }} />
             </div>
             <div className="flex-1 pb-3">
@@ -309,7 +309,7 @@ export default function OrderDetailPage() {
 
           <div className="flex gap-3">
             <div className="pt-1">
-              <div className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
+              <div className="w-3 h-3 rounded-full bg-red-500 shrink-0" />
             </div>
             <div className="flex-1">
               <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Piegāde</p>

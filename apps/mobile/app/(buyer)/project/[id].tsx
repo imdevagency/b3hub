@@ -104,7 +104,7 @@ function CallOffModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const { show: showToast } = useToast();
+  const { showToast } = useToast();
   const [qty, setQty] = useState('');
   const [pickupDate, setPickupDate] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
@@ -312,7 +312,7 @@ export default function ProjectDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
   const router = useRouter();
-  const { show: showToast } = useToast();
+  const { showToast } = useToast();
 
   const [contract, setContract] = useState<ApiFrameworkContract | null>(null);
   const [loading, setLoading] = useState(true);
@@ -339,7 +339,7 @@ export default function ProjectDetailScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer standalone topInset={false}>
+      <ScreenContainer standalone topInset={0}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#111827" />
         </View>
@@ -349,7 +349,7 @@ export default function ProjectDetailScreen() {
 
   if (!contract) {
     return (
-      <ScreenContainer standalone topInset={false}>
+      <ScreenContainer standalone topInset={0}>
         <View style={styles.center}>
           <Text style={{ color: '#6b7280' }}>Projekts nav atrasts</Text>
         </View>
@@ -362,7 +362,7 @@ export default function ProjectDetailScreen() {
   const fillColor = pct >= 90 ? '#ef4444' : pct >= 60 ? '#f59e0b' : '#22c55e';
 
   return (
-    <ScreenContainer standalone topInset={false}>
+    <ScreenContainer standalone topInset={0}>
       {/* back header */}
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>

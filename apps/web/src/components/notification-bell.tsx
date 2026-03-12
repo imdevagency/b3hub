@@ -184,7 +184,7 @@ export function NotificationBell() {
                   {!n.isRead && (
                     <button
                       onClick={() => handleMarkOne(n.id)}
-                      className="flex-shrink-0 mt-0.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                      className="shrink-0 mt-0.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
                       aria-label="Atzīmēt lasītu"
                     >
                       <X className="h-3.5 w-3.5" />

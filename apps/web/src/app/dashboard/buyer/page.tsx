@@ -178,7 +178,7 @@ export default function BuyerDashboardPage() {
       </div>
 
       {/* Hero */}
-      <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 p-6 text-white shadow-sm">
+      <div className="rounded-2xl bg-linear-to-br from-blue-600 to-blue-700 p-6 text-white shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <p className="text-lg font-bold">Kas jums vajadzīgs šodien?</p>

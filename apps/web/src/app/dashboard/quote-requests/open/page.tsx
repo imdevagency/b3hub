@@ -251,7 +251,7 @@ function OpenRequestCard({ request, onRespond }: OpenRequestCardProps) {
           </p>
 
           <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
-            <MapPin className="h-3 w-3 flex-shrink-0" />
+            <MapPin className="h-3 w-3 shrink-0" />
             {request.deliveryAddress}, {request.deliveryCity}
           </div>
 
@@ -262,7 +262,7 @@ function OpenRequestCard({ request, onRespond }: OpenRequestCardProps) {
           </p>
         </div>
 
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           <Button size="sm" onClick={() => onRespond(request)}>
             <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
             Piedāvāt Cenu

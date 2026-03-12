@@ -68,7 +68,7 @@ function PermissionsSheet({
   onSaved: (updated: ApiCompanyMember) => void;
   token: string;
 }) {
-  const { show: showToast } = useToast();
+  const { showToast } = useToast();
   const [perms, setPerms] = useState<MemberPermissions>({
     permCreateContracts: false,
     permReleaseCallOffs: false,
@@ -168,7 +168,7 @@ function InviteModal({
   onInvited: (member: ApiCompanyMember) => void;
   token: string;
 }) {
-  const { show: showToast } = useToast();
+  const { showToast } = useToast();
   const [form, setForm] = useState<InviteMemberInput>({
     email: '',
     firstName: '',
@@ -336,7 +336,7 @@ function MemberCard({
 
 export default function TeamScreen() {
   const { token, user } = useAuth();
-  const { show: showToast } = useToast();
+  const { showToast } = useToast();
 
   const [members, setMembers] = useState<ApiCompanyMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -391,7 +391,7 @@ export default function TeamScreen() {
   }
 
   return (
-    <ScreenContainer standalone topInset={false}>
+    <ScreenContainer standalone topInset={0}>
       {/* header */}
       <View style={styles.pageHeader}>
         <View style={styles.pageHeaderLeft}>

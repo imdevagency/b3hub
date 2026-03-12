@@ -4,14 +4,14 @@ import { FrameworkPositionType } from '@prisma/client';
 
 export class CreatePositionDto {
   @IsEnum(FrameworkPositionType)
-  positionType: FrameworkPositionType;
+  positionType!: FrameworkPositionType;
 
   @IsString()
-  description: string;
+  description!: string;
 
   @IsNumber()
   @Min(0.01)
-  agreedQty: number;
+  agreedQty!: number;
 
   @IsString()
   @IsOptional()
@@ -40,10 +40,10 @@ export class CreatePositionDto {
 
 export class CreateFrameworkContractDto {
   @IsString()
-  title: string;
+  title!: string;
 
   @IsDateString()
-  startDate: string;
+  startDate!: string;
 
   @IsDateString()
   @IsOptional()

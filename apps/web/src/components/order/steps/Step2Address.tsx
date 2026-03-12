@@ -280,7 +280,7 @@ export function Step2Address({ value, onAddressChange, onNext, onBack }: Props) 
         <button
           onClick={onNext}
           disabled={!isValid}
-          className="flex-[2] rounded-2xl bg-red-600 py-3.5 text-base font-bold text-white shadow-md transition-all hover:bg-red-700 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
+          className="flex-2 rounded-2xl bg-red-600 py-3.5 text-base font-bold text-white shadow-md transition-all hover:bg-red-700 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
         >
           Rādīt piedāvājumus
         </button>
