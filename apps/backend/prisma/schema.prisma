@@ -578,7 +578,7 @@ model TransportJob {
 
   // The buyer/user who originally requested this disposal or freight job
   requester   User?   @relation("RequestedJobs", fields: [requestedById], references: [id])
-  requestedById String?
+  requestedById String? @map("requested_by_id")
 
   // Status
   status TransportJobStatus

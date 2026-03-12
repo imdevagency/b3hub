@@ -109,7 +109,7 @@ export default function MessagesScreen() {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenContainer standalone>
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
