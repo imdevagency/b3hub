@@ -8,6 +8,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -31,6 +32,7 @@ function formatRelative(iso: string): string {
 export default function MessagesScreen() {
   const { token } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [rooms, setRooms] = useState<ApiChatRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -109,9 +111,9 @@ export default function MessagesScreen() {
   };
 
   return (
-    <ScreenContainer standalone>
+    <ScreenContainer standalone topInset={0}>
       {/* Header */}
-      <View style={s.header}>
+      <View style={[s.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
           <ArrowLeft size={22} color="#111827" />
         </TouchableOpacity>
