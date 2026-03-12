@@ -161,6 +161,13 @@ export class AuthService {
       user.canTransport,
       user.company?.id,
       user.companyRole ?? undefined,
+      {
+        permCreateContracts: (user as any).permCreateContracts ?? false,
+        permReleaseCallOffs: (user as any).permReleaseCallOffs ?? false,
+        permManageOrders: (user as any).permManageOrders ?? false,
+        permViewFinancials: (user as any).permViewFinancials ?? false,
+        permManageTeam: (user as any).permManageTeam ?? false,
+      },
     );
 
     // Remove password from response
@@ -208,6 +215,11 @@ export class AuthService {
         notifOrderUpdates: true,
         notifJobAlerts: true,
         notifMarketing: true,
+        permCreateContracts: true,
+        permReleaseCallOffs: true,
+        permManageOrders: true,
+        permViewFinancials: true,
+        permManageTeam: true,
         company: {
           select: {
             id: true,
@@ -358,6 +370,13 @@ export class AuthService {
     canTransport: boolean,
     companyId?: string,
     companyRole?: string,
+    permissions?: {
+      permCreateContracts: boolean;
+      permReleaseCallOffs: boolean;
+      permManageOrders: boolean;
+      permViewFinancials: boolean;
+      permManageTeam: boolean;
+    },
   ): string {
     const payload = {
       sub: userId,
@@ -368,6 +387,11 @@ export class AuthService {
       canTransport,
       companyId,
       companyRole,
+      permCreateContracts: permissions?.permCreateContracts ?? false,
+      permReleaseCallOffs: permissions?.permReleaseCallOffs ?? false,
+      permManageOrders: permissions?.permManageOrders ?? false,
+      permViewFinancials: permissions?.permViewFinancials ?? false,
+      permManageTeam: permissions?.permManageTeam ?? false,
     };
     return this.jwtService.sign(payload);
   }

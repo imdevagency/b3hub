@@ -25,6 +25,7 @@ import { ContainersModule } from './containers/containers.module';
 import { RecyclingCentersModule } from './recycling-centers/recycling-centers.module';
 import { EmailModule } from './email/email.module';
 import { FrameworkContractsModule } from './framework-contracts/framework-contracts.module';
+import { CompanyMembersModule } from './company-members/company-members.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { FrameworkContractsModule } from './framework-contracts/framework-contra
     RecyclingCentersModule,
     EmailModule,
     FrameworkContractsModule,
+    CompanyMembersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

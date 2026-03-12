@@ -24,6 +24,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       canTransport: payload.canTransport ?? false,
       companyId: payload.companyId,
       companyRole: payload.companyRole,
+      permCreateContracts: payload.permCreateContracts ?? false,
+      permReleaseCallOffs: payload.permReleaseCallOffs ?? false,
+      permManageOrders: payload.permManageOrders ?? false,
+      permViewFinancials: payload.permViewFinancials ?? false,
+      permManageTeam: payload.permManageTeam ?? false,
     };
   }
 }

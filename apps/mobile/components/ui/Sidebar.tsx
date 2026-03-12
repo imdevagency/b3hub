@@ -26,6 +26,7 @@ import {
   Trash2,
   Truck,
   User,
+  Users,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { haptics } from '@/lib/haptics';
@@ -81,6 +82,11 @@ function buildItems(role: Role): MenuItem[] {
       icon: (c) => <FolderOpen size={20} color={c} />,
       label: 'Projekti',
       route: '/(buyer)/projects',
+    });
+    items.push({
+      icon: (c) => <Users size={20} color={c} />,
+      label: 'Komanda',
+      route: '/(buyer)/team',
     });
     items.push({
       icon: (c) => <Receipt size={20} color={c} />,

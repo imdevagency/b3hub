@@ -281,6 +281,13 @@ model User {
   notifJobAlerts    Boolean  @default(true)
   notifMarketing    Boolean  @default(false)
 
+  // Company sub-user permissions (ignored for OWNER — they always have full access)
+  permCreateContracts Boolean @default(false) // create & manage framework contracts
+  permReleaseCallOffs Boolean @default(false) // release call-offs against contract positions
+  permManageOrders    Boolean @default(false) // place, approve, cancel spot orders
+  permViewFinancials  Boolean @default(false) // view invoices, prices, turnover
+  permManageTeam      Boolean @default(false) // invite / remove / edit team members
+
   // Relations
   company   Company? @relation(fields: [companyId], references: [id])
   companyId String?

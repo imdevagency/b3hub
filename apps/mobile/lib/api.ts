@@ -15,10 +15,16 @@ export interface User {
   phone?: string;
   avatar?: string;
   emailVerified: boolean;
+  companyRole?: string | null;
   notifPush?: boolean;
   notifOrderUpdates?: boolean;
   notifJobAlerts?: boolean;
   notifMarketing?: boolean;
+  permCreateContracts?: boolean;
+  permReleaseCallOffs?: boolean;
+  permManageOrders?: boolean;
+  permViewFinancials?: boolean;
+  permManageTeam?: boolean;
   company?: {
     id: string;
     name: string;
@@ -477,6 +483,45 @@ export interface ApiDocument {
   notes: string | null;
   createdAt: string;
 }
+
+// ─── Company Members / Permissions ──────────────────────────────────────────
+export interface ApiCompanyMember {
+  id: string;
+  email: string | null;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  avatar: string | null;
+  companyRole: string | null;
+  status: string;
+  permCreateContracts: boolean;
+  permReleaseCallOffs: boolean;
+  permManageOrders: boolean;
+  permViewFinancials: boolean;
+  permManageTeam: boolean;
+  createdAt: string;
+}
+
+export interface InviteMemberInput {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  permCreateContracts?: boolean;
+  permReleaseCallOffs?: boolean;
+  permManageOrders?: boolean;
+  permViewFinancials?: boolean;
+  permManageTeam?: boolean;
+}
+
+export type MemberPermissions = Pick<
+  ApiCompanyMember,
+  | 'permCreateContracts'
+  | 'permReleaseCallOffs'
+  | 'permManageOrders'
+  | 'permViewFinancials'
+  | 'permManageTeam'
+>;
 
 // ─── Framework Contracts ────────────────────────────────────────────────────
 export type FrameworkContractStatus = 'ACTIVE' | 'COMPLETED' | 'EXPIRED' | 'CANCELLED';
@@ -1242,6 +1287,36 @@ export const api = {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify(data),
+      }),
+  },
+
+  companyMembers: {
+    list: (token: string) =>
+      apiFetch<ApiCompanyMember[]>('/company-members', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    invite: (data: InviteMemberInput, token: string) =>
+      apiFetch<{ member: ApiCompanyMember; isNew: boolean; tempPassword?: string }>(
+        '/company-members/invite',
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: JSON.stringify(data),
+        },
+      ),
+
+    updatePermissions: (userId: string, perms: Partial<MemberPermissions>, token: string) =>
+      apiFetch<ApiCompanyMember>(`/company-members/${userId}/permissions`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(perms),
+      }),
+
+    remove: (userId: string, token: string) =>
+      apiFetch<{ ok: boolean }>(`/company-members/${userId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
       }),
   },
 };
