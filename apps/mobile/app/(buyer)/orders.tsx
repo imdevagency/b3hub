@@ -73,16 +73,16 @@ const MAT_STATUS: Record<string, { label: string; bg: string; color: string }> =
 };
 
 const TJB_STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  AVAILABLE:           { label: 'Gaida pārvadātāju', bg: '#f3f4f6', color: '#6b7280' },
-  ASSIGNED:            { label: 'Pārvadātājs atrasts', bg: '#f3f4f6', color: '#374151' },
-  ACCEPTED:            { label: 'Apstiprināts', bg: '#f3f4f6', color: '#374151' },
-  EN_ROUTE_PICKUP:     { label: 'Brauc uz iekraušanu', bg: '#fef3c7', color: '#92400e' },
-  AT_PICKUP:           { label: 'Iekraujas', bg: '#fef3c7', color: '#92400e' },
-  LOADED:              { label: 'Iekrauts', bg: '#fef3c7', color: '#92400e' },
-  EN_ROUTE_DELIVERY:   { label: 'Ceļā', bg: '#dcfce7', color: '#15803d' },
-  AT_DELIVERY:         { label: 'Piegādā', bg: '#dcfce7', color: '#15803d' },
-  DELIVERED:           { label: 'Pabeigts', bg: '#f0fdf4', color: '#15803d' },
-  CANCELLED:           { label: 'Atcelts', bg: '#fee2e2', color: '#b91c1c' },
+  AVAILABLE: { label: 'Gaida pārvadātāju', bg: '#f3f4f6', color: '#6b7280' },
+  ASSIGNED: { label: 'Pārvadātājs atrasts', bg: '#f3f4f6', color: '#374151' },
+  ACCEPTED: { label: 'Apstiprināts', bg: '#f3f4f6', color: '#374151' },
+  EN_ROUTE_PICKUP: { label: 'Brauc uz iekraušanu', bg: '#fef3c7', color: '#92400e' },
+  AT_PICKUP: { label: 'Iekraujas', bg: '#fef3c7', color: '#92400e' },
+  LOADED: { label: 'Iekrauts', bg: '#fef3c7', color: '#92400e' },
+  EN_ROUTE_DELIVERY: { label: 'Ceļā', bg: '#dcfce7', color: '#15803d' },
+  AT_DELIVERY: { label: 'Piegādā', bg: '#dcfce7', color: '#15803d' },
+  DELIVERED: { label: 'Pabeigts', bg: '#f0fdf4', color: '#15803d' },
+  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: '#b91c1c' },
 };
 
 const FILTERS: { key: FilterKey; label: string }[] = [
@@ -110,9 +110,14 @@ function matBucket(status: string): FilterKey {
 }
 
 const TJB_ACTIVE = new Set([
-  'AVAILABLE', 'ASSIGNED', 'ACCEPTED',
-  'EN_ROUTE_PICKUP', 'AT_PICKUP', 'LOADED',
-  'EN_ROUTE_DELIVERY', 'AT_DELIVERY',
+  'AVAILABLE',
+  'ASSIGNED',
+  'ACCEPTED',
+  'EN_ROUTE_PICKUP',
+  'AT_PICKUP',
+  'LOADED',
+  'EN_ROUTE_DELIVERY',
+  'AT_DELIVERY',
 ]);
 function reqBucket(status: string): FilterKey {
   if (TJB_ACTIVE.has(status)) return 'ACTIVE';
@@ -304,7 +309,9 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
         )}
         <View style={s.metaRow}>
           <MapPin size={13} color="#6b7280" />
-          <Text style={s.metaText} numberOfLines={1}>{job.pickupAddress}, {job.pickupCity}</Text>
+          <Text style={s.metaText} numberOfLines={1}>
+            {job.pickupAddress}, {job.pickupCity}
+          </Text>
         </View>
         <View style={s.metaRow}>
           <CalendarDays size={13} color="#6b7280" />
@@ -313,7 +320,9 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
         {job.requiredVehicleType && (
           <View style={s.metaRow}>
             <Truck size={13} color="#6b7280" />
-            <Text style={s.metaText} numberOfLines={1}>{job.requiredVehicleType}</Text>
+            <Text style={s.metaText} numberOfLines={1}>
+              {job.requiredVehicleType}
+            </Text>
           </View>
         )}
       </View>
@@ -401,9 +410,11 @@ export default function OrdersScreen() {
     if (filter === 'ALL') return unified;
     return unified.filter((item) => {
       const bucket =
-        item.kind === 'skip' ? skipBucket(item.data.status)
-        : item.kind === 'transport' ? reqBucket(item.data.status)
-        : matBucket(item.data.status);
+        item.kind === 'skip'
+          ? skipBucket(item.data.status)
+          : item.kind === 'transport'
+            ? reqBucket(item.data.status)
+            : matBucket(item.data.status);
       return bucket === filter;
     });
   }, [unified, filter]);
@@ -412,9 +423,11 @@ export default function OrdersScreen() {
     const c: Record<FilterKey, number> = { ALL: unified.length, ACTIVE: 0, DONE: 0, CANCELLED: 0 };
     unified.forEach((item) => {
       const b =
-        item.kind === 'skip' ? skipBucket(item.data.status)
-        : item.kind === 'transport' ? reqBucket(item.data.status)
-        : matBucket(item.data.status);
+        item.kind === 'skip'
+          ? skipBucket(item.data.status)
+          : item.kind === 'transport'
+            ? reqBucket(item.data.status)
+            : matBucket(item.data.status);
       c[b] = (c[b] ?? 0) + 1;
     });
     return c;
@@ -591,7 +604,9 @@ export default function OrdersScreen() {
               </View>
               <View style={s.pickerOptionText}>
                 <Text style={s.pickerOptionTitle}>Atkritumu izvešana</Text>
-                <Text style={s.pickerOptionDesc}>Celtniecības atkritumu savākšana un utilizācija</Text>
+                <Text style={s.pickerOptionDesc}>
+                  Celtniecības atkritumu savākšana un utilizācija
+                </Text>
               </View>
               <ChevronRight size={18} color="#9ca3af" />
             </TouchableOpacity>

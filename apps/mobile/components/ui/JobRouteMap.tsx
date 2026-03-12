@@ -68,7 +68,11 @@ function bboxCenter(points: { lat: number; lng: number }[]): [number, number] {
   const lngs = points.map((p) => p.lng);
   return [(Math.min(...lngs) + Math.max(...lngs)) / 2, (Math.min(...lats) + Math.max(...lats)) / 2];
 }
-
+/** Returns true if coords look like a real on-device GPS fix in/near Europe.
+ *  Filters out simulator defaults (Apple HQ ~37°N 122°W, SF ~37.8°N 122.4°W). */
+function isEuropeanCoord(lat: number, lng: number): boolean {
+  return lat >= 34 && lat <= 72 && lng >= -25 && lng <= 50;
+}
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function JobRouteMap({
@@ -84,13 +88,22 @@ export function JobRouteMap({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cameraRef = useRef<any>(null);
 
+  // Only use current position if it looks like a real European GPS fix.
+  // Simulator defaults (Apple HQ / SF) are in California and would push the
+  // initial camera centre into the Atlantic Ocean.
+  const currentIsValid =
+    current != null && isEuropeanCoord(current.lat, current.lng);
+  const validCurrent = currentIsValid ? current : null;
+
   // Route hooks — always called, pass null to disable a leg
   const { route: mainRoute, loading: routeLoading } = useRoute(pickup, delivery);
-  const toPickupOrigin = current && showToPickupLeg ? current : null;
+  const toPickupOrigin = validCurrent && showToPickupLeg ? validCurrent : null;
   const { route: toPickupRoute } = useRoute(toPickupOrigin, toPickupOrigin ? pickup : null);
 
-  const allPoints = [pickup, delivery, ...(current ? [current] : []), ...extras];
-  const center = bboxCenter(allPoints);
+  // Initial camera centre — exclude current to avoid being dragged to SF
+  const jobPoints = [pickup, delivery, ...extras];
+  const allPoints = [...jobPoints, ...(validCurrent ? [validCurrent] : [])];
+  const center = bboxCenter(jobPoints);
 
   // Fit camera to show all pins once the map is ready
   useEffect(() => {
@@ -122,9 +135,9 @@ export function JobRouteMap({
     { latitude: pickup.lat, longitude: pickup.lng },
     { latitude: delivery.lat, longitude: delivery.lng },
   ];
-  const toPickupCoords = current
+  const toPickupCoords = validCurrent
     ? (toPickupRoute?.coords ?? [
-        { latitude: current.lat, longitude: current.lng },
+        { latitude: validCurrent.lat, longitude: validCurrent.lng },
         { latitude: pickup.lat, longitude: pickup.lng },
       ])
     : [];
@@ -148,7 +161,7 @@ export function JobRouteMap({
       )}
 
       <BaseMap cameraRef={cameraRef} center={center} zoom={10}>
-        {current && <PinLayer id="current" coordinate={current} type="current" />}
+        {validCurrent && <PinLayer id="current" coordinate={validCurrent} type="current" />}
         <PinLayer id="pickup" coordinate={pickup} type="pickup" label={pickup.label} />
         <PinLayer id="delivery" coordinate={delivery} type="delivery" label={delivery.label} />
         {extras.map((pin, i) => (
@@ -160,7 +173,7 @@ export function JobRouteMap({
             label={pin.label}
           />
         ))}
-        {current && showToPickupLeg && toPickupCoords.length >= 2 && (
+        {validCurrent && showToPickupLeg && toPickupCoords.length >= 2 && (
           <RouteLayer id="toPickup" coordinates={toPickupCoords} color="#111827" dashed />
         )}
         <RouteLayer id="main" coordinates={mainCoords} color="#111827" />

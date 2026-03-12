@@ -36,21 +36,24 @@ export default function MessagesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (isRefresh = false) => {
-    if (!token) return;
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-    setError(null);
-    try {
-      const data = await api.chat.myRooms(token);
-      setRooms(data);
-    } catch {
-      setError('Neizdevās ielādēt sarakstes');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [token]);
+  const load = useCallback(
+    async (isRefresh = false) => {
+      if (!token) return;
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+      setError(null);
+      try {
+        const data = await api.chat.myRooms(token);
+        setRooms(data);
+      } catch {
+        setError('Neizdevās ielādēt sarakstes');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [token],
+  );
 
   useEffect(() => {
     load();
@@ -62,9 +65,10 @@ export default function MessagesScreen() {
     const iconBg = isDisposal ? '#f0fdf4' : '#eff6ff';
     const iconColor = isDisposal ? '#16a34a' : '#2563eb';
     const title = item.cargoType ?? (isDisposal ? 'Atkritumu izvešana' : 'Kravas pārvadāšana');
-    const subtitle = item.pickupCity && item.deliveryCity
-      ? `${item.pickupCity} → ${item.deliveryCity}`
-      : item.jobNumber;
+    const subtitle =
+      item.pickupCity && item.deliveryCity
+        ? `${item.pickupCity} → ${item.deliveryCity}`
+        : item.jobNumber;
 
     return (
       <TouchableOpacity
@@ -82,12 +86,16 @@ export default function MessagesScreen() {
         </View>
         <View style={s.roomBody}>
           <View style={s.roomTop}>
-            <Text style={s.roomTitle} numberOfLines={1}>{title}</Text>
+            <Text style={s.roomTitle} numberOfLines={1}>
+              {title}
+            </Text>
             {item.lastMessage && (
               <Text style={s.roomTime}>{formatRelative(item.lastMessage.createdAt)}</Text>
             )}
           </View>
-          <Text style={s.roomSub} numberOfLines={1}>{subtitle}</Text>
+          <Text style={s.roomSub} numberOfLines={1}>
+            {subtitle}
+          </Text>
           {item.lastMessage && (
             <Text style={s.lastMsg} numberOfLines={1}>
               <Text style={s.lastMsgName}>{item.lastMessage.senderName}: </Text>
@@ -169,7 +177,12 @@ const s = StyleSheet.create({
     gap: 12,
   },
   errorText: { fontSize: 15, color: '#6b7280', textAlign: 'center' },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#111827', borderRadius: 8 },
+  retryBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#111827',
+    borderRadius: 8,
+  },
   retryText: { color: '#fff', fontWeight: '600', fontSize: 14 },
   emptyTitle: { fontSize: 17, fontWeight: '600', color: '#374151', marginTop: 8 },
   emptySub: { fontSize: 14, color: '#9ca3af', textAlign: 'center', lineHeight: 20 },
