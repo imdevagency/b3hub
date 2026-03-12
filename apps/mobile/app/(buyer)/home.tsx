@@ -247,11 +247,11 @@ export default function HomeScreen() {
               );
             })}
           </View>
-          {(() => {
-            const tile = SERVICE_TILES[2];
+          {SERVICE_TILES.slice(2).map((tile) => {
             const Icon = tile.icon;
             return (
               <TouchableOpacity
+                key={tile.id}
                 style={[s.tileFull, { backgroundColor: tile.bg }]}
                 activeOpacity={0.75}
                 onPress={() => {
@@ -266,7 +266,7 @@ export default function HomeScreen() {
                 <ChevronRight size={16} color="#9ca3af" />
               </TouchableOpacity>
             );
-          })()}
+          })}
 
           {/* ── Active order ── */}
           {loading ? (
