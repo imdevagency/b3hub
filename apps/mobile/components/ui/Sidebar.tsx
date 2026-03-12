@@ -17,6 +17,7 @@ import {
   Box,
   ChevronRight,
   FileText,
+  FolderOpen,
   LogOut,
   MessageCircle,
   Receipt,
@@ -76,6 +77,11 @@ function buildItems(role: Role): MenuItem[] {
     });
   }
   if (role === 'buyer') {
+    items.push({
+      icon: (c) => <FolderOpen size={20} color={c} />,
+      label: 'Projekti',
+      route: '/(buyer)/projects',
+    });
     items.push({
       icon: (c) => <Receipt size={20} color={c} />,
       label: 'Rēķini',

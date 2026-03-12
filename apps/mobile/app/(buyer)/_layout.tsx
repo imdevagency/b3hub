@@ -79,6 +79,8 @@ export default function BuyerLayout() {
           <Tabs.Screen name="invoices" options={{ href: null }} />
           <Tabs.Screen name="containers" options={{ href: null }} />
           <Tabs.Screen name="certificates" options={{ href: null }} />
+          <Tabs.Screen name="projects" options={{ href: null }} />
+          <Tabs.Screen name="project/[id]" options={{ href: null }} />
         </Tabs>
       </View>
       <Sidebar

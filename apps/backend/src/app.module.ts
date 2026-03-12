@@ -24,6 +24,7 @@ import { ChatModule } from './chat/chat.module';
 import { ContainersModule } from './containers/containers.module';
 import { RecyclingCentersModule } from './recycling-centers/recycling-centers.module';
 import { EmailModule } from './email/email.module';
+import { FrameworkContractsModule } from './framework-contracts/framework-contracts.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { EmailModule } from './email/email.module';
     ContainersModule,
     RecyclingCentersModule,
     EmailModule,
+    FrameworkContractsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

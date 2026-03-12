@@ -478,6 +478,84 @@ export interface ApiDocument {
   createdAt: string;
 }
 
+// ─── Framework Contracts ────────────────────────────────────────────────────
+export type FrameworkContractStatus = 'ACTIVE' | 'COMPLETED' | 'EXPIRED' | 'CANCELLED';
+export type FrameworkPositionType = 'MATERIAL_DELIVERY' | 'WASTE_DISPOSAL' | 'FREIGHT_TRANSPORT';
+
+export interface ApiFrameworkCallOff {
+  id: string;
+  jobNumber: string;
+  cargoWeight: number | null;
+  status: string;
+  pickupDate: string;
+  deliveryCity: string | null;
+}
+
+export interface ApiFrameworkPosition {
+  id: string;
+  positionType: FrameworkPositionType;
+  description: string;
+  agreedQty: number;
+  unit: string;
+  unitPrice: number | null;
+  pickupAddress: string | null;
+  pickupCity: string | null;
+  deliveryAddress: string | null;
+  deliveryCity: string | null;
+  consumedQty: number;
+  remainingQty: number;
+  progressPct: number;
+  callOffs: ApiFrameworkCallOff[];
+}
+
+export interface ApiFrameworkContract {
+  id: string;
+  contractNumber: string;
+  title: string;
+  status: FrameworkContractStatus;
+  startDate: string;
+  endDate: string | null;
+  notes: string | null;
+  buyer: { id: string; name: string } | null;
+  totalCallOffs: number;
+  totalAgreedQty: number;
+  totalConsumedQty: number;
+  totalProgressPct: number;
+  positions: ApiFrameworkPosition[];
+  recentCallOffs: ApiFrameworkCallOff[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateFrameworkContractInput {
+  title: string;
+  startDate: string;
+  endDate?: string;
+  notes?: string;
+  positions?: {
+    positionType: FrameworkPositionType;
+    description: string;
+    agreedQty: number;
+    unit: string;
+    unitPrice?: number;
+    pickupAddress?: string;
+    pickupCity?: string;
+    deliveryAddress?: string;
+    deliveryCity?: string;
+  }[];
+}
+
+export interface CreateCallOffInput {
+  quantity: number;
+  pickupDate: string;
+  deliveryDate?: string;
+  pickupAddress?: string;
+  pickupCity?: string;
+  deliveryAddress?: string;
+  deliveryCity?: string;
+  notes?: string;
+}
+
 export interface CreateMaterialOrderInput {
   buyerId: string;
   materialId: string;
@@ -1110,6 +1188,60 @@ export const api = {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ body }),
+      }),
+  },
+
+  frameworkContracts: {
+    list: (token: string) =>
+      apiFetch<ApiFrameworkContract[]>('/framework-contracts', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    get: (id: string, token: string) =>
+      apiFetch<ApiFrameworkContract>(`/framework-contracts/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    create: (data: CreateFrameworkContractInput, token: string) =>
+      apiFetch<ApiFrameworkContract>('/framework-contracts', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+      }),
+
+    update: (
+      id: string,
+      data: { title?: string; endDate?: string; notes?: string; status?: FrameworkContractStatus },
+      token: string,
+    ) =>
+      apiFetch<ApiFrameworkContract>(`/framework-contracts/${id}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+      }),
+
+    addPosition: (
+      contractId: string,
+      data: CreateFrameworkContractInput['positions'] extends (infer U)[] ? U : never,
+      token: string,
+    ) =>
+      apiFetch<ApiFrameworkContract>(`/framework-contracts/${contractId}/positions`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+      }),
+
+    removePosition: (contractId: string, posId: string, token: string) =>
+      apiFetch<void>(`/framework-contracts/${contractId}/positions/${posId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    createCallOff: (contractId: string, posId: string, data: CreateCallOffInput, token: string) =>
+      apiFetch<{ id: string; jobNumber: string }>(`/framework-contracts/${contractId}/positions/${posId}/call-off`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
       }),
   },
 };

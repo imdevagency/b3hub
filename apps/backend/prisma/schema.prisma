@@ -230,6 +230,19 @@ enum QuoteRequestStatus {
   EXPIRED
 }
 
+enum FrameworkContractStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+enum FrameworkPositionType {
+  MATERIAL_DELIVERY
+  WASTE_DISPOSAL
+  FREIGHT_TRANSPORT
+}
+
 enum QuoteResponseStatus {
   PENDING
   ACCEPTED
@@ -285,6 +298,7 @@ model User {
   quoteRequests  QuoteRequest[]
   reviews        Review[]
   sentMessages   ChatMessage[]
+  frameworkContracts       FrameworkContract[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -334,6 +348,7 @@ model Company {
   availabilityBlocks CarrierAvailability[] @relation("CarrierAvailability")
   assignedSkipOrders SkipHireOrder[]      @relation("AssignedSkipCarrier")
   reviews            Review[]
+  frameworkContracts FrameworkContract[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -575,6 +590,12 @@ model TransportJob {
   driverId  String?
   vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
   vehicleId String?
+
+  // Framework contract call-off
+  frameworkContract    FrameworkContract?  @relation(fields: [frameworkContractId], references: [id])
+  frameworkContractId  String?
+  frameworkPosition    FrameworkPosition?  @relation("PositionCallOffs", fields: [frameworkPositionId], references: [id])
+  frameworkPositionId  String?
 
   // The buyer/user who originally requested this disposal or freight job
   requester   User?   @relation("RequestedJobs", fields: [requestedById], references: [id])
@@ -1157,4 +1178,55 @@ model ChatMessage {
 
   @@index([transportJobId, createdAt])
   @@map("chat_messages")
+}
+
+// ── Framework Contracts (blanket agreements / call-off orders) ────────────────
+
+model FrameworkContract {
+  id             String                  @id @default(cuid())
+  contractNumber String                  @unique
+  title          String
+
+  buyer          Company                 @relation(fields: [buyerId], references: [id])
+  buyerId        String
+  createdBy      User                    @relation(fields: [createdById], references: [id])
+  createdById    String
+
+  status         FrameworkContractStatus @default(ACTIVE)
+  startDate      DateTime
+  endDate        DateTime?
+  notes          String?
+
+  positions      FrameworkPosition[]
+  callOffJobs    TransportJob[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("framework_contracts")
+}
+
+model FrameworkPosition {
+  id           String                @id @default(cuid())
+
+  contract     FrameworkContract     @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  contractId   String
+
+  positionType FrameworkPositionType
+  description  String
+  agreedQty    Float                 // total agreed quantity
+  unit         String                @default("t") // t, m3, loads
+  unitPrice    Float?
+
+  pickupAddress   String?
+  pickupCity      String?
+  deliveryAddress String?
+  deliveryCity    String?
+
+  callOffs     TransportJob[]        @relation("PositionCallOffs")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("framework_positions")
 }
