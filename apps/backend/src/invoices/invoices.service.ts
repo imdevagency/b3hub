@@ -2,6 +2,27 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentStatus } from '@prisma/client';
 
+type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+
+function mapPaymentStatus(ps: PaymentStatus): InvoiceStatus {
+  switch (ps) {
+    case PaymentStatus.PAID: return 'PAID';
+    case PaymentStatus.FAILED: return 'OVERDUE';
+    case PaymentStatus.REFUNDED: return 'CANCELLED';
+    default: return 'ISSUED'; // PENDING, PARTIALLY_PAID
+  }
+}
+
+function mapInvoice(inv: any) {
+  return {
+    ...inv,
+    status: mapPaymentStatus(inv.paymentStatus),
+    vatAmount: inv.tax,
+    issuedAt: inv.createdAt?.toISOString?.() ?? inv.createdAt ?? null,
+    paidAt: inv.paidDate?.toISOString?.() ?? inv.paidDate ?? null,
+  };
+}
+
 @Injectable()
 export class InvoicesService {
   constructor(private prisma: PrismaService) {}
@@ -36,7 +57,7 @@ export class InvoicesService {
       }),
       this.prisma.invoice.count({ where }),
     ]);
-    return { data: invoices, meta: { page, limit, total } };
+    return { data: invoices.map(mapInvoice), meta: { page, limit, total } };
   }
 
   async getById(invoiceId: string, userId: string) {
@@ -59,7 +80,7 @@ export class InvoicesService {
       },
     });
     if (!invoice) throw new NotFoundException('Invoice not found');
-    return invoice;
+    return mapInvoice(invoice);
   }
 
   async getByOrder(orderId: string, userId: string) {
@@ -70,7 +91,7 @@ export class InvoicesService {
       },
       orderBy: { createdAt: 'desc' },
     });
-    return invoices;
+    return invoices.map(mapInvoice);
   }
 
   async markAsPaid(invoiceId: string, userId: string) {

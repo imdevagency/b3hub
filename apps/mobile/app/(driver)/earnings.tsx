@@ -104,7 +104,7 @@ function computeStats(jobs: ApiTransportJob[]): {
         date: d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' }),
         route: `${job.pickupCity} → ${job.deliveryCity}`,
         amount: job.rate,
-        paid: true,
+        paid: false, // no real payout mechanism yet — always show as pending
       });
     } else if (ACTIVE_STATUSES.includes(job.status)) {
       pendingPayout += job.rate;
@@ -340,7 +340,7 @@ export default function EarningsScreen() {
                             job.paid ? styles.payStatusTextPaid : styles.payStatusTextPending,
                           ]}
                         >
-                          {job.paid ? 'Izmaksāts' : 'Gaida'}
+                          {job.paid ? 'Izmaksāts' : 'Gaida izmaksu'}
                         </Text>
                       </View>
                     </View>

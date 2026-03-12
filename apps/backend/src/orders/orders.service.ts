@@ -376,8 +376,11 @@ export class OrdersService {
       data: { status },
     });
 
-    // Auto-create an invoice when a seller confirms the order, unless one already exists
-    if (status === OrderStatus.CONFIRMED && order.invoices.length === 0) {
+    // Auto-create an invoice on CONFIRMED (or DELIVERED as fallback), unless one already exists
+    if (
+      (status === OrderStatus.CONFIRMED || status === OrderStatus.DELIVERED) &&
+      order.invoices.length === 0
+    ) {
       try {
         await this.spawnInvoice(order);
       } catch (err) {

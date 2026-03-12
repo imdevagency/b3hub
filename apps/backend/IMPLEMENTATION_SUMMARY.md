@@ -196,7 +196,7 @@ curl http://localhost:3000/api/v1/auth/me \
 - [x] Email notifications (Nodemailer — welcome, password reset, order confirmation, provider application)
 - [x] WebSocket for real-time chat (Socket.IO — per-job chat rooms)
 - [x] Push notifications (Expo Push API — order updates, job alerts)
-- [x] Forgot / reset password (token-based, 1h expiry, single-use) ✅ *Mar 12 2026*
+- [x] Forgot / reset password (token-based, 1h expiry, single-use) ✅ _Mar 12 2026_
 - [ ] Payment processing (Stripe)
 - [ ] API documentation (Swagger)
 - [ ] Rate limiting

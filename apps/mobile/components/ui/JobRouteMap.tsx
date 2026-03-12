@@ -91,8 +91,7 @@ export function JobRouteMap({
   // Only use current position if it looks like a real European GPS fix.
   // Simulator defaults (Apple HQ / SF) are in California and would push the
   // initial camera centre into the Atlantic Ocean.
-  const currentIsValid =
-    current != null && isEuropeanCoord(current.lat, current.lng);
+  const currentIsValid = current != null && isEuropeanCoord(current.lat, current.lng);
   const validCurrent = currentIsValid ? current : null;
 
   // Route hooks — always called, pass null to disable a leg

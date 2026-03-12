@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { TransportJobStatus } from '@prisma/client';
+import { TransportJobStatus, OrderStatus } from '@prisma/client';
 import {
   UpdateStatusDto,
   ALLOWED_DRIVER_STATUSES,
@@ -555,11 +555,11 @@ export class TransportJobsService {
       select: this.jobSelect,
     });
 
-    // Auto-generate DELIVERY_NOTE (CMR) for the buyer
+    // Auto-generate DELIVERY_NOTE (CMR) for the buyer and mark the linked order as DELIVERED
     if (job.orderId) {
       const order = await this.prisma.order.findUnique({
         where: { id: job.orderId },
-        select: { createdById: true },
+        select: { createdById: true, status: true },
       });
       if (order?.createdById) {
         const driver = delivered.driver;
@@ -576,6 +576,18 @@ export class TransportJobsService {
               : undefined,
           })
           .catch(() => {});
+
+        // Advance the linked order to DELIVERED if it's not already in a terminal state
+        if (
+          order.status !== OrderStatus.DELIVERED &&
+          order.status !== OrderStatus.COMPLETED &&
+          order.status !== OrderStatus.CANCELLED
+        ) {
+          await this.prisma.order.update({
+            where: { id: job.orderId },
+            data: { status: OrderStatus.DELIVERED },
+          }).catch(() => {});
+        }
       }
     }
 
