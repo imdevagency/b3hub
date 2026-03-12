@@ -67,6 +67,7 @@ export function BaseMap({
   return (
     <MapboxGL.MapView
       style={[StyleSheet.absoluteFillObject, style]}
+      styleURL={MapboxGL.StyleURL.Light}
       compassEnabled={compassEnabled}
       scaleBarEnabled={false}
       rotateEnabled={rotateEnabled}
