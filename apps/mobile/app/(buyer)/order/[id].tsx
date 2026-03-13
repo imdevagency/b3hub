@@ -26,6 +26,7 @@ import {
   FileDown,
   MessageCircle,
   User,
+  Camera,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -496,6 +497,55 @@ export default function OrderDetailScreen() {
           </View>
         )}
 
+        {/* Delivery proof — photos + notes submitted by driver */}
+        {order.status === 'DELIVERED' &&
+          (() => {
+            const proof = order.transportJobs?.find((j) => j.deliveryProof)?.deliveryProof;
+            if (!proof) return null;
+            return (
+              <View style={s.section}>
+                <View style={s.sectionHeader}>
+                  <Camera size={14} color="#6b7280" />
+                  <Text style={s.sectionTitle}>Piegādes pierādījums</Text>
+                  <Text style={s.proofTime}>
+                    {new Date(proof.createdAt).toLocaleDateString('lv-LV', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </Text>
+                </View>
+                {proof.recipientName ? (
+                  <Row label="Pieņēma" value={proof.recipientName} />
+                ) : null}
+                {proof.notes ? <Row label="Piezīmes" value={proof.notes} /> : null}
+                {proof.photos.length > 0 && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={s.proofPhotoRow}
+                  >
+                    {proof.photos.map((uri, i) => (
+                      <Image
+                        key={i}
+                        source={{ uri }}
+                        style={s.proofPhoto}
+                        resizeMode="cover"
+                      />
+                    ))}
+                  </ScrollView>
+                )}
+                {proof.photos.length === 0 && (
+                  <View style={s.proofNoPhoto}>
+                    <CheckCircle size={14} color="#15803d" />
+                    <Text style={s.proofNoPhotoText}>Piegāde apstiprināta bez fotogrāfijas</Text>
+                  </View>
+                )}
+              </View>
+            );
+          })()}
+
         {/* Buyer info */}
         {order.buyer && (
           <View style={s.section}>
@@ -938,4 +988,22 @@ const s = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
   },
+
+  // Delivery proof section
+  proofTime: { fontSize: 11, color: '#9ca3af', marginLeft: 'auto' },
+  proofPhotoRow: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 10, gap: 10 },
+  proofPhoto: {
+    width: 140,
+    height: 140,
+    borderRadius: 10,
+    backgroundColor: '#e5e7eb',
+  },
+  proofNoPhoto: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  proofNoPhotoText: { fontSize: 13, color: '#6b7280' },
 });

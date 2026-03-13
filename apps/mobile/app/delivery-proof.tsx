@@ -119,10 +119,6 @@ export default function DeliveryProofScreen() {
 
   // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (strokes.length === 0) {
-      Alert.alert('', t.deliveryProof.signatureRequired);
-      return;
-    }
     if (!token || !jobId) return;
 
     setSubmitting(true);
@@ -180,6 +176,7 @@ export default function DeliveryProofScreen() {
           <View style={styles.labelRow}>
             <PenLine size={15} color="#374151" />
             <Text style={styles.label}>{t.deliveryProof.signatureLabel}</Text>
+            <Text style={{ fontSize: 11, color: '#9ca3af', marginLeft: 4 }}>(neobligāts)</Text>
             {strokes.length > 0 && (
               <TouchableOpacity onPress={clearSignature} style={styles.clearBtn}>
                 <Trash2 size={13} color="#ef4444" />

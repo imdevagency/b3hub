@@ -303,6 +303,7 @@ export class OrdersService {
             vehicle: {
               select: { id: true, licensePlate: true, vehicleType: true },
             },
+            deliveryProof: true,
           },
         },
         invoices: true,

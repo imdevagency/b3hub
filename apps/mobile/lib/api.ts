@@ -262,6 +262,13 @@ export interface ApiOrder {
     id: string;
     status: string;
     driver: { id: string; firstName: string; lastName: string; phone: string | null; avatar: string | null } | null;
+    deliveryProof?: {
+      id: string;
+      photos: string[];
+      notes: string | null;
+      recipientName: string | null;
+      createdAt: string;
+    } | null;
   }[];
   createdAt: string;
 }
