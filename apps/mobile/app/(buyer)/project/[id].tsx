@@ -12,7 +12,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  Modal,
   TextInput,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -22,7 +21,6 @@ import {
   ChevronDown,
   ChevronUp,
   Plus,
-  X,
   Truck,
   CheckCircle2,
   Clock,
@@ -38,6 +36,7 @@ import {
 } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 
 // ── helpers ────────────────────────────────────────────────────
 
@@ -160,16 +159,14 @@ function CallOffModal({
   if (!position) return null;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <ScrollView contentContainerStyle={styles.modalSheet} keyboardShouldPersistTaps="handled">
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Izsaukt pasūtījumu</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <X size={20} color="#6b7280" />
-            </TouchableOpacity>
-          </View>
-
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      title="Izsaukt pasūtījumu"
+      subtitle={position.description}
+      scrollable
+    >
+      <View style={{ gap: 2 }}>
           <View style={styles.positionChip}>
             <Truck size={13} color="#6b7280" />
             <Text style={styles.positionChipText} numberOfLines={1}>
@@ -246,9 +243,8 @@ function CallOffModal({
               <Text style={styles.submitBtnText}>Izveidot pasūtījumu</Text>
             )}
           </TouchableOpacity>
-        </ScrollView>
       </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
@@ -586,22 +582,6 @@ const styles = StyleSheet.create({
   callOffSub: { fontSize: 11, color: '#9ca3af' },
   callOffDate: { fontSize: 12, color: '#9ca3af' },
   // modal
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  modalSheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
-    paddingBottom: 50,
-    gap: 2,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  modalTitle: { fontSize: 17, fontWeight: '700', color: '#111827' },
   positionChip: {
     flexDirection: 'row',
     alignItems: 'center',

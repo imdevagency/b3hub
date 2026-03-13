@@ -2,7 +2,7 @@
  * invoices.tsx — Buyer: invoice list (Uber-style clean finance UI)
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,12 +11,10 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  Modal,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import {
   FileText,
-  X,
   CheckCircle2,
   Clock,
   AlertCircle,
@@ -28,6 +26,7 @@ import { api, type ApiInvoice, type InvoiceStatus } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { haptics } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 
 // ── Helpers ────────────────────────────────────────────────────
 
@@ -85,117 +84,115 @@ function InvoiceRow({ invoice, onPress }: { invoice: ApiInvoice; onPress: () => 
 
 function InvoiceModal({
   invoice,
+  visible,
   onClose,
   onPay,
   paying,
 }: {
-  invoice: ApiInvoice;
+  invoice: ApiInvoice | null;
+  visible: boolean;
   onClose: () => void;
   onPay: () => void;
   paying: boolean;
 }) {
-  const meta = STATUS_META[invoice.status];
-  const isActionable = invoice.status === 'ISSUED' || invoice.status === 'OVERDUE';
+  const lastRef = useRef<ApiInvoice | null>(invoice);
+  if (invoice) lastRef.current = invoice;
+  const inv = invoice ?? lastRef.current;
+  if (!inv) return null;
+
+  const meta = STATUS_META[inv.status];
+  const isActionable = inv.status === 'ISSUED' || inv.status === 'OVERDUE';
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <View style={m.backdrop}>
-        <View style={m.sheet}>
-          <View style={m.handle} />
-
-          {/* Close */}
-          <TouchableOpacity style={m.closeBtn} onPress={onClose}>
-            <X size={18} color="#6b7280" />
-          </TouchableOpacity>
-
-          {/* Amount hero */}
-          <View style={m.amountHero}>
-            <Text style={m.amountHeroLabel}>Kopā jāmaksā</Text>
-            <Text style={[m.amountHeroVal, isActionable && { color: '#111827' }]}>
-              {fmtEur(invoice.total)}
-            </Text>
-            <View style={m.statusPill}>
-              <View style={[m.statusDot, { backgroundColor: meta.dot }]} />
-              <Text style={[m.statusText, { color: meta.color }]}>{meta.label}</Text>
-            </View>
+    <BottomSheet visible={visible} onClose={onClose} scrollable>
+      <View style={{ gap: 0, paddingBottom: 8 }}>
+        {/* Amount hero */}
+        <View style={m.amountHero}>
+          <Text style={m.amountHeroLabel}>Kopā jāmaksā</Text>
+          <Text style={[m.amountHeroVal, isActionable && { color: '#111827' }]}>
+            {fmtEur(inv.total)}
+          </Text>
+          <View style={m.statusPill}>
+            <View style={[m.statusDot, { backgroundColor: meta.dot }]} />
+            <Text style={[m.statusText, { color: meta.color }]}>{meta.label}</Text>
           </View>
-
-          {/* Reference */}
-          <View style={m.refRow}>
-            <Text style={m.refLabel}>Rēķins</Text>
-            <Text style={m.refVal}>#{invoice.invoiceNumber}</Text>
-          </View>
-          {invoice.order && (
-            <View style={m.refRow}>
-              <Text style={m.refLabel}>Pasūtījums</Text>
-              <Text style={m.refVal}>#{invoice.order.orderNumber}</Text>
-            </View>
-          )}
-
-          <View style={m.divider} />
-
-          {/* Line items */}
-          <View style={m.lineItem}>
-            <Text style={m.lineLabel}>Summa bez PVN</Text>
-            <Text style={m.lineVal}>{fmtEur(invoice.subtotal)}</Text>
-          </View>
-          <View style={m.lineItem}>
-            <Text style={m.lineLabel}>PVN (21%)</Text>
-            <Text style={m.lineVal}>{fmtEur(invoice.vatAmount)}</Text>
-          </View>
-          <View style={[m.lineItem, m.lineItemTotal]}>
-            <Text style={m.lineTotalLabel}>Kopā</Text>
-            <Text style={m.lineTotalVal}>{fmtEur(invoice.total)}</Text>
-          </View>
-
-          <View style={m.divider} />
-
-          {/* Dates */}
-          <View style={m.lineItem}>
-            <Text style={m.lineLabel}>Izrakstīts</Text>
-            <Text style={m.lineVal}>{fmtDate(invoice.issuedAt)}</Text>
-          </View>
-          {invoice.dueDate && (
-            <View style={m.lineItem}>
-              <Text style={m.lineLabel}>Apmaksas termiņš</Text>
-              <Text
-                style={[
-                  m.lineVal,
-                  invoice.status === 'OVERDUE' && { color: '#dc2626', fontWeight: '700' },
-                ]}
-              >
-                {fmtDate(invoice.dueDate)}
-              </Text>
-            </View>
-          )}
-          {invoice.paidAt && (
-            <View style={m.lineItem}>
-              <Text style={m.lineLabel}>Apmaksāts</Text>
-              <Text style={[m.lineVal, { color: '#16a34a' }]}>{fmtDate(invoice.paidAt)}</Text>
-            </View>
-          )}
-
-          {/* Pay CTA */}
-          {isActionable && (
-            <TouchableOpacity
-              style={[m.payBtn, invoice.status === 'OVERDUE' && m.payBtnOverdue]}
-              onPress={onPay}
-              disabled={paying}
-              activeOpacity={0.85}
-            >
-              {paying ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <CreditCard size={18} color="#fff" />
-                  <Text style={m.payBtnText}>Apmaksāt {fmtEur(invoice.total)}</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          )}
         </View>
+
+        {/* Reference */}
+        <View style={m.refRow}>
+          <Text style={m.refLabel}>Rēķins</Text>
+          <Text style={m.refVal}>#{inv.invoiceNumber}</Text>
+        </View>
+        {inv.order && (
+          <View style={m.refRow}>
+            <Text style={m.refLabel}>Pasūtījums</Text>
+            <Text style={m.refVal}>#{inv.order.orderNumber}</Text>
+          </View>
+        )}
+
+        <View style={m.divider} />
+
+        {/* Line items */}
+        <View style={m.lineItem}>
+          <Text style={m.lineLabel}>Summa bez PVN</Text>
+          <Text style={m.lineVal}>{fmtEur(inv.subtotal)}</Text>
+        </View>
+        <View style={m.lineItem}>
+          <Text style={m.lineLabel}>PVN (21%)</Text>
+          <Text style={m.lineVal}>{fmtEur(inv.vatAmount)}</Text>
+        </View>
+        <View style={[m.lineItem, m.lineItemTotal]}>
+          <Text style={m.lineTotalLabel}>Kopā</Text>
+          <Text style={m.lineTotalVal}>{fmtEur(inv.total)}</Text>
+        </View>
+
+        <View style={m.divider} />
+
+        {/* Dates */}
+        <View style={m.lineItem}>
+          <Text style={m.lineLabel}>Izrakstīts</Text>
+          <Text style={m.lineVal}>{fmtDate(inv.issuedAt)}</Text>
+        </View>
+        {inv.dueDate && (
+          <View style={m.lineItem}>
+            <Text style={m.lineLabel}>Apmaksas termiņš</Text>
+            <Text
+              style={[
+                m.lineVal,
+                inv.status === 'OVERDUE' && { color: '#dc2626', fontWeight: '700' },
+              ]}
+            >
+              {fmtDate(inv.dueDate)}
+            </Text>
+          </View>
+        )}
+        {inv.paidAt && (
+          <View style={m.lineItem}>
+            <Text style={m.lineLabel}>Apmaksāts</Text>
+            <Text style={[m.lineVal, { color: '#16a34a' }]}>{fmtDate(inv.paidAt)}</Text>
+          </View>
+        )}
+
+        {/* Pay CTA */}
+        {isActionable && (
+          <TouchableOpacity
+            style={[m.payBtn, inv.status === 'OVERDUE' && m.payBtnOverdue]}
+            onPress={onPay}
+            disabled={paying}
+            activeOpacity={0.85}
+          >
+            {paying ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <CreditCard size={18} color="#fff" />
+                <Text style={m.payBtnText}>Apmaksāt {fmtEur(inv.total)}</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
@@ -357,14 +354,13 @@ export default function InvoicesScreen() {
         )}
       </ScrollView>
 
-      {selected && (
-        <InvoiceModal
+      <InvoiceModal
           invoice={selected}
+          visible={!!selected}
           onClose={() => setSelected(null)}
           onPay={handlePay}
           paying={paying}
         />
-      )}
     </ScreenContainer>
   );
 }
@@ -478,35 +474,6 @@ const s = StyleSheet.create({
 // ── Modal styles ───────────────────────────────────────────────
 
 const m = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 24,
-    paddingBottom: 44,
-    paddingTop: 12,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 99,
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  closeBtn: {
-    position: 'absolute',
-    top: 20,
-    right: 24,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
   // Amount hero at top of sheet
   amountHero: { alignItems: 'center', paddingVertical: 20 },
   amountHeroLabel: {
