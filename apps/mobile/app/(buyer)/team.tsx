@@ -11,13 +11,13 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  Modal,
   TextInput,
   Switch,
   Alert,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { Users, UserPlus, X, Trash2, Shield, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { BottomSheet } from '@/components/ui/BottomSheet';
+import { Users, UserPlus, Trash2, Shield, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import {
   api,
@@ -112,52 +112,43 @@ function PermissionsSheet({
   if (!member) return null;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.sheet}>
-          <View style={styles.sheetHeader}>
-            <View>
-              <Text style={styles.sheetTitle}>
-                {member.firstName} {member.lastName}
-              </Text>
-              <Text style={styles.sheetSub}>{member.email}</Text>
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      title={`${member.firstName} ${member.lastName}`}
+      subtitle={member.email}
+    >
+      <View style={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 24 }}>
+        <Text style={styles.permSection}>Tiesības</Text>
+
+        {PERM_META.map(({ key, label, sub }) => (
+          <View key={key} style={styles.permRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.permLabel}>{label}</Text>
+              <Text style={styles.permSub}>{sub}</Text>
             </View>
-            <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <X size={20} color="#6b7280" />
-            </TouchableOpacity>
+            <Switch
+              value={perms[key]}
+              onValueChange={(v) => setPerms((prev) => ({ ...prev, [key]: v }))}
+              trackColor={{ false: '#e5e7eb', true: '#111827' }}
+              thumbColor="#fff"
+            />
           </View>
+        ))}
 
-          <Text style={styles.permSection}>Berechtigungen (Tiesības)</Text>
-
-          {PERM_META.map(({ key, label, sub }) => (
-            <View key={key} style={styles.permRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.permLabel}>{label}</Text>
-                <Text style={styles.permSub}>{sub}</Text>
-              </View>
-              <Switch
-                value={perms[key]}
-                onValueChange={(v) => setPerms((prev) => ({ ...prev, [key]: v }))}
-                trackColor={{ false: '#e5e7eb', true: '#111827' }}
-                thumbColor="#fff"
-              />
-            </View>
-          ))}
-
-          <TouchableOpacity
-            style={[styles.saveBtn, saving && { opacity: 0.6 }]}
-            onPress={handleSave}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.saveBtnText}>Saglabāt tiesības</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={[styles.saveBtn, saving && { opacity: 0.6 }]}
+          onPress={handleSave}
+          disabled={saving}
+        >
+          {saving ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.saveBtnText}>Saglabāt tiesības</Text>
+          )}
+        </TouchableOpacity>
       </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
@@ -233,87 +224,74 @@ function InviteModal({
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.sheetWrap}>
-        <ScrollView contentContainerStyle={styles.sheet} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>Uzaicināt dalībnieku</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <X size={20} color="#6b7280" />
-            </TouchableOpacity>
+    <BottomSheet visible={visible} onClose={onClose} title="Uzaicināt dalībnieku" scrollable>
+      <Text style={styles.fieldLabel}>E-pasts *</Text>
+      <TextInput
+        style={styles.input}
+        value={form.email}
+        onChangeText={(v) => setForm((p) => ({ ...p, email: v }))}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        placeholder="dalibnieks@uznemums.lv"
+        placeholderTextColor="#9ca3af"
+      />
+
+      <Text style={styles.fieldLabel}>Vārds *</Text>
+      <TextInput
+        style={styles.input}
+        value={form.firstName}
+        onChangeText={(v) => setForm((p) => ({ ...p, firstName: v }))}
+        placeholder="Jānis"
+        placeholderTextColor="#9ca3af"
+      />
+
+      <Text style={styles.fieldLabel}>Uzvārds *</Text>
+      <TextInput
+        style={styles.input}
+        value={form.lastName}
+        onChangeText={(v) => setForm((p) => ({ ...p, lastName: v }))}
+        placeholder="Bērziņš"
+        placeholderTextColor="#9ca3af"
+      />
+
+      <Text style={styles.fieldLabel}>Telefons</Text>
+      <TextInput
+        style={styles.input}
+        value={form.phone ?? ''}
+        onChangeText={(v) => setForm((p) => ({ ...p, phone: v }))}
+        keyboardType="phone-pad"
+        placeholder="+371 xxxxxxxx"
+        placeholderTextColor="#9ca3af"
+      />
+
+      <Text style={[styles.permSection, { marginTop: 16 }]}>Sākotnējās tiesības</Text>
+      {PERM_META.map(({ key, label, sub }) => (
+        <View key={key} style={styles.permRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.permLabel}>{label}</Text>
+            <Text style={styles.permSub}>{sub}</Text>
           </View>
-
-          <Text style={styles.fieldLabel}>E-pasts *</Text>
-          <TextInput
-            style={styles.input}
-            value={form.email}
-            onChangeText={(v) => setForm((p) => ({ ...p, email: v }))}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            placeholder="dalibnieks@uznemums.lv"
-            placeholderTextColor="#9ca3af"
+          <Switch
+            value={(form as any)[key] ?? false}
+            onValueChange={(v) => setForm((p) => ({ ...p, [key]: v }))}
+            trackColor={{ false: '#e5e7eb', true: '#111827' }}
+            thumbColor="#fff"
           />
-
-          <Text style={styles.fieldLabel}>Vārds *</Text>
-          <TextInput
-            style={styles.input}
-            value={form.firstName}
-            onChangeText={(v) => setForm((p) => ({ ...p, firstName: v }))}
-            placeholder="Jānis"
-            placeholderTextColor="#9ca3af"
-          />
-
-          <Text style={styles.fieldLabel}>Uzvārds *</Text>
-          <TextInput
-            style={styles.input}
-            value={form.lastName}
-            onChangeText={(v) => setForm((p) => ({ ...p, lastName: v }))}
-            placeholder="Bērziņš"
-            placeholderTextColor="#9ca3af"
-          />
-
-          <Text style={styles.fieldLabel}>Telefons</Text>
-          <TextInput
-            style={styles.input}
-            value={form.phone ?? ''}
-            onChangeText={(v) => setForm((p) => ({ ...p, phone: v }))}
-            keyboardType="phone-pad"
-            placeholder="+371 xxxxxxxx"
-            placeholderTextColor="#9ca3af"
-          />
-
-          <Text style={[styles.permSection, { marginTop: 16 }]}>Sākotnējās tiesības</Text>
-          {PERM_META.map(({ key, label, sub }) => (
-            <View key={key} style={styles.permRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.permLabel}>{label}</Text>
-                <Text style={styles.permSub}>{sub}</Text>
-              </View>
-              <Switch
-                value={(form as any)[key] ?? false}
-                onValueChange={(v) => setForm((p) => ({ ...p, [key]: v }))}
-                trackColor={{ false: '#e5e7eb', true: '#111827' }}
-                thumbColor="#fff"
-              />
-            </View>
-          ))}
-
-          <TouchableOpacity
-            style={[styles.saveBtn, saving && { opacity: 0.6 }]}
-            onPress={handleInvite}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.saveBtnText}>Uzaicināt</Text>
-            )}
-          </TouchableOpacity>
-        </ScrollView>
         </View>
-      </View>
-    </Modal>
+      ))}
+
+      <TouchableOpacity
+        style={[styles.saveBtn, saving && { opacity: 0.6 }]}
+        onPress={handleInvite}
+        disabled={saving}
+      >
+        {saving ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.saveBtnText}>Uzaicināt</Text>
+        )}
+      </TouchableOpacity>
+    </BottomSheet>
   );
 }
 
@@ -418,9 +396,7 @@ export default function TeamScreen() {
   // Owners or users with team-manage permission can invite / edit members.
   // If user has no company yet they are treated as prospective owner.
   const canManage =
-    !user?.companyRole ||
-    user?.companyRole === 'OWNER' ||
-    user?.permManageTeam === true;
+    !user?.companyRole || user?.companyRole === 'OWNER' || user?.permManageTeam === true;
 
   const load = useCallback(
     async (quiet = false) => {
@@ -684,25 +660,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   chipText: { fontSize: 11, fontWeight: '600', color: '#15803d' },
-  // overlay / sheet
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheetWrap: { width: '100%', maxHeight: '92%' },
-  sheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
-    paddingBottom: 50,
-    gap: 2,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  sheetTitle: { fontSize: 17, fontWeight: '700', color: '#111827' },
-  sheetSub: { fontSize: 13, color: '#9ca3af', marginTop: 2 },
   permSection: {
     fontSize: 12,
     fontWeight: '700',
