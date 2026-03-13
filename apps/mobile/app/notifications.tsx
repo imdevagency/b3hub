@@ -27,6 +27,7 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import type { ApiNotification } from '@/lib/api';
 
 type LucideIcon = React.ComponentType<{ size?: number; color?: string }>;
@@ -212,11 +213,11 @@ export default function NotificationsScreen() {
           }
         >
           {notifs.length === 0 ? (
-            <View style={s.emptyWrap}>
-              <BellOff size={48} color="#9ca3af" />
-              <Text style={s.emptyTitle}>Nav paziņojumu</Text>
-              <Text style={s.emptyDesc}>Šeit parādīsies jūsu paziņojumi</Text>
-            </View>
+            <EmptyState
+              icon={<BellOff size={32} color="#9ca3af" />}
+              title="Nav paziņojumu"
+              subtitle="Šeit parādīsies jūsu paziņojumi"
+            />
           ) : (
             notifs.map((n) => <NotifCard key={n.id} notif={n} onMarkRead={markRead} />)
           )}
@@ -242,7 +243,7 @@ const s = StyleSheet.create({
     elevation: 3,
   },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
-  list: { padding: 16, gap: 10 },
+  list: { padding: 16, gap: 10, flexGrow: 1 },
   card: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -283,7 +284,5 @@ const s = StyleSheet.create({
   cardTitle: { fontSize: 14, fontWeight: '700', color: '#111827' },
   cardMsg: { fontSize: 13, color: '#374151', lineHeight: 18 },
   cardTime: { fontSize: 11, color: '#9ca3af', marginTop: 2 },
-  emptyWrap: { alignItems: 'center', paddingTop: 80, gap: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#374151' },
-  emptyDesc: { fontSize: 14, color: '#9ca3af' },
+
 });

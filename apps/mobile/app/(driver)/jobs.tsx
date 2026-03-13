@@ -24,6 +24,7 @@ import { api, ApiTransportJob } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { SkeletonJobRow } from '@/components/ui/Skeleton';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { EmptyState } from '@/components/ui/EmptyState';
 import {
   MapPin,
   Navigation2,
@@ -1220,14 +1221,16 @@ export default function JobsScreen() {
 
           {/* Job list */}
           {filteredJobs.length === 0 ? (
-            <View style={styles.empty}>
-              <Search size={44} color="#d1d5db" />
-              <Text style={styles.emptyTitle}>{t.jobs.empty}</Text>
-              <Text style={styles.emptyDesc}>{t.jobs.emptyDesc}</Text>
-              <TouchableOpacity style={styles.emptyResetBtn} onPress={handleReset}>
-                <Text style={styles.emptyResetBtnText}>{t.jobSearch.resetFilter}</Text>
-              </TouchableOpacity>
-            </View>
+            <EmptyState
+              icon={<Search size={32} color="#9ca3af" />}
+              title={t.jobs.empty}
+              subtitle={t.jobs.emptyDesc}
+              action={
+                <TouchableOpacity style={styles.emptyResetBtn} onPress={handleReset}>
+                  <Text style={styles.emptyResetBtnText}>{t.jobSearch.resetFilter}</Text>
+                </TouchableOpacity>
+              }
+            />
           ) : (
             <View style={styles.list}>
               {filteredJobs.map((job) => (
@@ -1396,7 +1399,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
   },
 
-  scrollContent: { paddingBottom: 104 },
+  scrollContent: { paddingBottom: 104, flexGrow: 1 },
 
   activePill: {
     flexDirection: 'row',
@@ -1547,10 +1550,6 @@ const styles = StyleSheet.create({
   },
   acceptBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
 
-  empty: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 32, gap: 10 },
-  emptyEmoji: { fontSize: 44 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', color: '#374151' },
-  emptyDesc: { fontSize: 13, color: '#9ca3af', textAlign: 'center' },
   emptyResetBtn: {
     marginTop: 8,
     paddingHorizontal: 24,

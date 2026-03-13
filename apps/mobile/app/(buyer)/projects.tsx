@@ -21,6 +21,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api, type ApiFrameworkContract, type FrameworkContractStatus } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 // ── helpers ────────────────────────────────────────────────────
 
@@ -292,13 +293,11 @@ export default function ProjectsScreen() {
           <ActivityIndicator size="large" color="#111827" />
         </View>
       ) : contracts.length === 0 ? (
-        <View style={styles.empty}>
-          <Layers size={40} color="#d1d5db" />
-          <Text style={styles.emptyTitle}>Nav projektu</Text>
-          <Text style={styles.emptyBody}>
-            Izveidojiet pirmo ietvarlīgumu, lai sāktu izsekot piegādes.
-          </Text>
-        </View>
+        <EmptyState
+          icon={<Layers size={32} color="#9ca3af" />}
+          title="Nav projektu"
+          subtitle="Izveidojiet pirmo ietvarlīgumu, lai sāktu izsekot piegādes."
+        />
       ) : (
         <ScrollView
           contentContainerStyle={styles.list}
@@ -356,9 +355,6 @@ const styles = StyleSheet.create({
   },
   newBtnText: { fontSize: 13, fontWeight: '600', color: '#fff' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 10 },
-  emptyTitle: { fontSize: 16, fontWeight: '600', color: '#374151' },
-  emptyBody: { fontSize: 13, color: '#9ca3af', textAlign: 'center', lineHeight: 20 },
   list: { padding: 16, gap: 12 },
   // card
   card: {

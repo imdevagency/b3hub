@@ -27,6 +27,7 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import { haptics } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 // ── Helpers ────────────────────────────────────────────────────
 
@@ -325,17 +326,15 @@ export default function InvoicesScreen() {
         }
       >
         {visible.length === 0 ? (
-          <View style={s.empty}>
-            <View style={s.emptyIcon}>
-              <FileText size={28} color="#9ca3af" />
-            </View>
-            <Text style={s.emptyTitle}>Nav rēķinu</Text>
-            <Text style={s.emptySub}>
-              {filter === 'ALL'
-                ? 'Rēķini parādīsies, kad pasūtījumi tiks apstiprināti.'
-                : 'Nav rēķinu šajā kategorijā.'}
-            </Text>
-          </View>
+          <EmptyState
+            icon={<FileText size={32} color="#9ca3af" />}
+            title="Nav rēķinu"
+            subtitle={
+              filter === 'ALL'
+                ? 'Rēķini parādīsīsies, kad pasūtījumi tiks apstiprrināti.'
+                : 'Nav rēķinu šajā kategorijā.'
+            }
+          />
         ) : (
           <>
             {visible.map((inv, idx) => (
@@ -450,25 +449,6 @@ const s = StyleSheet.create({
   rowOrder: { fontSize: 12, color: '#9ca3af' },
 
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#f3f4f6', marginLeft: 20 },
-
-  // Empty
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80, gap: 12 },
-  emptyIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#f9fafb',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: '#374151' },
-  emptySub: {
-    fontSize: 13,
-    color: '#9ca3af',
-    textAlign: 'center',
-    paddingHorizontal: 32,
-    lineHeight: 20,
-  },
 });
 
 // ── Modal styles ───────────────────────────────────────────────

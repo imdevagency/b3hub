@@ -51,6 +51,7 @@ import {
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { api, SkipHireOrder, SkipHireStatus } from '@/lib/api';
 import { BaseMap } from '@/components/map';
 import { t } from '@/lib/translations';
@@ -541,15 +542,17 @@ export default function CarrierSkipsScreen() {
       {loading ? (
         <SkeletonCard count={4} />
       ) : orders.length === 0 ? (
-        <View style={s.center}>
-          <Trash2 size={52} color="#d1d5db" />
-          <Text style={s.emptyTitle}>{cs.empty}</Text>
-          <Text style={s.emptyDesc}>{cs.emptyDesc}</Text>
-          <TouchableOpacity style={s.retryBtn} onPress={() => load()}>
-            <RefreshCw size={15} color={ACCENT} />
-            <Text style={s.retryText}>{cs.refresh}</Text>
-          </TouchableOpacity>
-        </View>
+        <EmptyState
+          icon={<Trash2 size={32} color="#9ca3af" />}
+          title={cs.empty}
+          subtitle={cs.emptyDesc}
+          action={
+            <TouchableOpacity style={s.retryBtn} onPress={() => load()}>
+              <RefreshCw size={15} color={ACCENT} />
+              <Text style={s.retryText}>{cs.refresh}</Text>
+            </TouchableOpacity>
+          }
+        />
       ) : viewMode === 'map' ? (
         <SkipsMapView orders={orders} onStatusUpdate={handleStatusUpdate} updatingId={updatingId} />
       ) : (
@@ -641,9 +644,6 @@ const s = StyleSheet.create({
   chip: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 },
   chipText: { fontSize: 12, fontWeight: '600' },
 
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  emptyTitle: { fontSize: 17, fontWeight: '600', color: '#374151', marginTop: 10 },
-  emptyDesc: { fontSize: 14, color: '#9ca3af', textAlign: 'center', lineHeight: 20, marginTop: 4 },
   retryBtn: {
     flexDirection: 'row',
     alignItems: 'center',

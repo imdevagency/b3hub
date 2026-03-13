@@ -35,6 +35,7 @@ import type { ApiOrder, JobLocation, ApiDocument } from '@/lib/api';
 import { JobRouteMap } from '@/components/ui/JobRouteMap';
 import { t } from '@/lib/translations';
 import { RatingModal } from '@/components/ui/RatingModal';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -241,10 +242,10 @@ export default function OrderDetailScreen() {
           <Text style={s.headerTitle}>Pasūtījums</Text>
           <View style={{ width: 22 }} />
         </View>
-        <View style={s.emptyWrap}>
-          <Package size={48} color="#9ca3af" />
-          <Text style={s.emptyText}>Pasūtījums nav atrasts</Text>
-        </View>
+        <EmptyState
+          icon={<Package size={32} color="#9ca3af" />}
+          title="Pasūtījums nav atrasts"
+        />
       </ScreenContainer>
     );
   }
@@ -870,8 +871,6 @@ const s = StyleSheet.create({
   },
   docPendingText: { fontSize: 12, fontWeight: '600', color: '#9ca3af' },
 
-  emptyWrap: { alignItems: 'center', paddingTop: 80, gap: 12 },
-  emptyText: { fontSize: 16, color: '#6b7280' },
   trackingCard: {
     backgroundColor: '#fff',
     borderRadius: 14,

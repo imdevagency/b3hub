@@ -31,6 +31,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import type { ApiMaterial, MaterialCategory, MaterialUnit } from '@/lib/api';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -324,26 +325,24 @@ export default function CatalogScreen() {
               </View>
             }
             ListEmptyComponent={
-              <View style={s.empty}>
-                <View style={s.emptyIconWrap}>
-                  <PackageSearch size={36} color="#d1d5db" strokeWidth={1.3} />
-                </View>
-                <Text style={s.emptyTitle}>{'Nav atrasts neviens materi\u0101ls'}</Text>
-                <Text style={s.emptyDesc}>
-                  {'M\u0113\u0123iniet main\u012bt mekl\u0113\u0161anas vai kategorijas filtru'}
-                </Text>
-                {(search.length > 0 || category !== 'ALL') && (
-                  <TouchableOpacity
-                    style={s.emptyReset}
-                    onPress={() => {
-                      setSearch('');
-                      selectCategory('ALL');
-                    }}
-                  >
-                    <Text style={s.emptyResetText}>{'Not\u012br\u012bt filtrus'}</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+              <EmptyState
+                icon={<PackageSearch size={32} color="#9ca3af" strokeWidth={1.3} />}
+                title={'Nav atrasts neviens materi\u0101ls'}
+                subtitle={'M\u0113\u0123iniet main\u012bt mekl\u0113\u0161anas vai kategorijas filtru'}
+                action={
+                  search.length > 0 || category !== 'ALL' ? (
+                    <TouchableOpacity
+                      style={s.emptyReset}
+                      onPress={() => {
+                        setSearch('');
+                        selectCategory('ALL');
+                      }}
+                    >
+                      <Text style={s.emptyResetText}>{'Not\u012br\u012bt filtrus'}</Text>
+                    </TouchableOpacity>
+                  ) : undefined
+                }
+              />
             }
             ListFooterComponent={
               materials.length > 0 ? (
@@ -457,6 +456,7 @@ const s = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 40,
     gap: 12,
+    flexGrow: 1,
   },
   gridRow: {
     gap: 12,
@@ -555,25 +555,6 @@ const s = StyleSheet.create({
     fontWeight: '400',
   },
 
-  empty: {
-    alignItems: 'center',
-    paddingTop: 56,
-    paddingHorizontal: 32,
-    gap: 8,
-  },
-  emptyIconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#f9fafb',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-  },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: '#374151', textAlign: 'center' },
-  emptyDesc: { fontSize: 13, color: '#9ca3af', textAlign: 'center', lineHeight: 20 },
   emptyReset: {
     marginTop: 10,
     backgroundColor: '#dc2626',

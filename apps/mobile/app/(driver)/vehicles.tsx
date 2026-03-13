@@ -20,6 +20,7 @@ import { ArrowLeft, Plus, Pencil, Trash2, Truck } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import type { ApiVehicle, VehicleType } from '@/lib/api';
 
 // ── Constants ──────────────────────────────────────────────────
@@ -371,22 +372,24 @@ export default function VehiclesScreen() {
           }
         >
           {vehicles.length === 0 ? (
-            <View style={s.emptyWrap}>
-              <Truck size={48} color="#9ca3af" />
-              <Text style={s.emptyTitle}>Nav transportlīdzekļu</Text>
-              <Text style={s.emptyDesc}>Pievienojiet savu pirmo transportlīdzekli!</Text>
-              <TouchableOpacity
-                style={s.emptyAddBtn}
-                onPress={() => {
-                  setEditing(null);
-                  setModalVisible(true);
-                }}
-                activeOpacity={0.8}
-              >
-                <Plus size={16} color="#fff" />
-                <Text style={s.emptyAddText}>Pievienot</Text>
-              </TouchableOpacity>
-            </View>
+            <EmptyState
+              icon={<Truck size={32} color="#9ca3af" />}
+              title="Nav transportlīdzekļu"
+              subtitle="Pievienojiet savu pirmo transportlīdzekli!"
+              action={
+                <TouchableOpacity
+                  style={s.emptyAddBtn}
+                  onPress={() => {
+                    setEditing(null);
+                    setModalVisible(true);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Plus size={16} color="#fff" />
+                  <Text style={s.emptyAddText}>Pievienot</Text>
+                </TouchableOpacity>
+              }
+            />
           ) : (
             vehicles.map((v) => (
               <VehicleCard
@@ -435,7 +438,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  list: { padding: 16, gap: 12 },
+  list: { padding: 16, gap: 12, flexGrow: 1 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 14,
@@ -486,9 +489,6 @@ const s = StyleSheet.create({
     borderColor: '#111827',
   },
   deleteBtnText: { fontSize: 13, fontWeight: '600', color: '#111827' },
-  emptyWrap: { alignItems: 'center', paddingTop: 80, gap: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#374151' },
-  emptyDesc: { fontSize: 14, color: '#6b7280', textAlign: 'center' },
   emptyAddBtn: {
     flexDirection: 'row',
     alignItems: 'center',

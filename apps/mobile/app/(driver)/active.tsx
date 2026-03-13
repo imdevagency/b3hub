@@ -24,6 +24,7 @@ import { JobRouteMap } from '@/components/ui/JobRouteMap';
 import { haptics } from '@/lib/haptics';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { EmptyState } from '@/components/ui/EmptyState';
 import {
   Map,
   Phone,
@@ -209,14 +210,16 @@ export default function ActiveJobScreen() {
   if (!job) {
     return (
       <ScreenContainer bg="#f9fafb">
-        <View style={styles.empty}>
-          <Map size={48} color="#d1d5db" />
-          <Text style={styles.emptyTitle}>{t.activeJob.noJob}</Text>
-          <Text style={styles.emptyDesc}>{t.activeJob.noJobDesc}</Text>
-          <TouchableOpacity style={styles.goBtn} onPress={() => router.push('/(driver)/jobs')}>
-            <Text style={styles.goBtnText}>{t.activeJob.goToJobs}</Text>
-          </TouchableOpacity>
-        </View>
+        <EmptyState
+          icon={<Map size={32} color="#9ca3af" />}
+          title={t.activeJob.noJob}
+          subtitle={t.activeJob.noJobDesc}
+          action={
+            <TouchableOpacity style={styles.goBtn} onPress={() => router.push('/(driver)/jobs')}>
+              <Text style={styles.goBtnText}>{t.activeJob.goToJobs}</Text>
+            </TouchableOpacity>
+          }
+        />
       </ScreenContainer>
     );
   }
@@ -916,10 +919,6 @@ const styles = StyleSheet.create({
   returnStripCtaText: { fontSize: 13, color: '#059669', fontWeight: '600' },
 
   // Empty state
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
-  emptyEmoji: { fontSize: 48 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#374151' },
-  emptyDesc: { fontSize: 14, color: '#9ca3af', textAlign: 'center' },
   goBtn: {
     marginTop: 8,
     paddingHorizontal: 24,

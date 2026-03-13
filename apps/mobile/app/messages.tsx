@@ -14,6 +14,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiChatRoom } from '@/lib/api';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { MessageCircle, Truck, Trash2, ChevronRight, ArrowLeft } from 'lucide-react-native';
 
 function formatRelative(iso: string): string {
@@ -133,13 +134,11 @@ export default function MessagesScreen() {
           </TouchableOpacity>
         </View>
       ) : rooms.length === 0 ? (
-        <View style={s.center}>
-          <MessageCircle size={48} color="#d1d5db" strokeWidth={1.5} />
-          <Text style={s.emptyTitle}>Nav aktīvu sarunu</Text>
-          <Text style={s.emptySub}>
-            Sarakstes tiks parādītas, kad būsit piešķirts transporta darbam.
-          </Text>
-        </View>
+        <EmptyState
+          icon={<MessageCircle size={32} color="#9ca3af" strokeWidth={1.5} />}
+          title="Nav aktīvu sarunas"
+          subtitle="Sarakstes tiks parādītas, kad būsāt piešķirts transporta darbam."
+        />
       ) : (
         <FlatList
           data={rooms}
@@ -186,8 +185,6 @@ const s = StyleSheet.create({
     borderRadius: 8,
   },
   retryText: { color: '#fff', fontWeight: '600', fontSize: 14 },
-  emptyTitle: { fontSize: 17, fontWeight: '600', color: '#374151', marginTop: 8 },
-  emptySub: { fontSize: 14, color: '#9ca3af', textAlign: 'center', lineHeight: 20 },
   roomRow: {
     flexDirection: 'row',
     alignItems: 'center',

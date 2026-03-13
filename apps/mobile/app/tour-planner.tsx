@@ -21,6 +21,7 @@ import { X, Route, MapPin, Truck, Calendar, Ruler, ChevronRight, Zap } from 'luc
 import { t } from '@/lib/translations';
 import { optimizeRoute, type Stop } from '@/lib/maps';
 import { JobRouteMap } from '@/components/ui/JobRouteMap';
+import { EmptyState } from '@/components/ui/EmptyState';
 import type { ExtraPin } from '@/components/ui/JobRouteMap';
 
 // ── Types (mirrors jobs.tsx TransportJob) ──────────────────────────────────────
@@ -156,8 +157,10 @@ export default function TourPlannerScreen() {
           <View style={{ width: 36 }} />
         </View>
         <View style={s.empty}>
-          <Route size={48} color="#d1d5db" />
-          <Text style={s.emptyText}>{t.tourPlanner.noJobs}</Text>
+          <EmptyState
+            icon={<Route size={32} color="#9ca3af" />}
+            title={t.tourPlanner.noJobs}
+          />
         </View>
       </ScreenContainer>
     );
@@ -295,8 +298,7 @@ const s = StyleSheet.create({
   },
   headerTitle: { fontSize: 17, fontWeight: '700', color: '#111827' },
   body: { paddingBottom: 40 },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  emptyText: { fontSize: 15, color: '#9ca3af' },
+  empty: { flex: 1 },
 
   summaryBar: {
     flexDirection: 'row',

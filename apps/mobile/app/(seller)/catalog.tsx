@@ -19,6 +19,7 @@ import { Plus, Pencil, Trash2, Leaf, PackageSearch, ChevronDown, Check } from 'l
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import type { ApiMaterial, MaterialCategory, MaterialUnit } from '@/lib/api';
 
 // ── Constants ──────────────────────────────────────────────────
@@ -466,15 +467,17 @@ export default function SellerCatalog() {
           }
         >
           {materials.length === 0 ? (
-            <View style={s.emptyWrap}>
-              <PackageSearch size={48} color="#9ca3af" />
-              <Text style={s.emptyTitle}>Nav sludinājumu</Text>
-              <Text style={s.emptyDesc}>Pievienojiet savu pirmo materiālu!</Text>
-              <TouchableOpacity style={s.emptyAddBtn} onPress={openNew} activeOpacity={0.8}>
-                <Plus size={16} color="#fff" />
-                <Text style={s.addBtnText}>Pievienot materiālu</Text>
-              </TouchableOpacity>
-            </View>
+            <EmptyState
+              icon={<PackageSearch size={32} color="#9ca3af" />}
+              title="Nav sludinājumu"
+              subtitle="Pievienojiet savu pirmo materiālu!"
+              action={
+                <TouchableOpacity style={s.emptyAddBtn} onPress={openNew} activeOpacity={0.8}>
+                  <Plus size={16} color="#fff" />
+                  <Text style={s.addBtnText}>Pievienot materiālu</Text>
+                </TouchableOpacity>
+              }
+            />
           ) : (
             materials.map((m) => (
               <ListingCard key={m.id} material={m} onEdit={openEdit} onDelete={handleDelete} />
@@ -519,7 +522,7 @@ const s = StyleSheet.create({
     borderRadius: 20,
   },
   addBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
-  list: { padding: 16, gap: 12 },
+  list: { padding: 16, gap: 12, flexGrow: 1 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 14,
@@ -589,9 +592,6 @@ const s = StyleSheet.create({
     borderColor: '#111827',
   },
   deleteBtnText: { fontSize: 13, fontWeight: '600', color: '#111827' },
-  emptyWrap: { alignItems: 'center', paddingTop: 80, gap: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#374151' },
-  emptyDesc: { fontSize: 14, color: '#6b7280', textAlign: 'center' },
   emptyAddBtn: {
     flexDirection: 'row',
     alignItems: 'center',

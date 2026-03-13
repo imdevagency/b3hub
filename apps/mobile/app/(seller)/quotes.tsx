@@ -38,6 +38,7 @@ import { api, type OpenQuoteRequest, type MaterialUnit } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { t } from '@/lib/translations';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -468,15 +469,17 @@ export default function SellerQuotesScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {requests.length === 0 ? (
-            <View style={styles.emptyBox}>
-              <FileText size={52} color="#d1d5db" />
-              <Text style={styles.emptyTitle}>{sq.empty}</Text>
-              <Text style={styles.emptyDesc}>{sq.emptyDesc}</Text>
-              <TouchableOpacity style={styles.refreshBtn} onPress={() => load()}>
-                <RefreshCw size={15} color={ACCENT} />
-                <Text style={styles.refreshBtnText}>{sq.refresh}</Text>
-              </TouchableOpacity>
-            </View>
+            <EmptyState
+              icon={<FileText size={32} color="#9ca3af" />}
+              title={sq.empty}
+              subtitle={sq.emptyDesc}
+              action={
+                <TouchableOpacity style={styles.refreshBtn} onPress={() => load()}>
+                  <RefreshCw size={15} color={ACCENT} />
+                  <Text style={styles.refreshBtnText}>{sq.refresh}</Text>
+                </TouchableOpacity>
+              }
+            />
           ) : (
             requests.map((req) => (
               <RequestCard
@@ -571,23 +574,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
-  },
-  emptyBox: {
-    alignItems: 'center',
-    gap: 8,
-    paddingBottom: 40,
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#374151',
-    marginTop: 8,
-  },
-  emptyDesc: {
-    fontSize: 14,
-    color: '#9ca3af',
-    textAlign: 'center',
-    lineHeight: 20,
   },
   refreshBtn: {
     flexDirection: 'row',
