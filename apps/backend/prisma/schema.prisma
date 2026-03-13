@@ -274,6 +274,8 @@ model User {
   pushToken     String?      // Expo push token for native notifications
   resetToken        String?   // password-reset token (hashed)
   resetTokenExpiry  DateTime? // token expiry (1h window)
+  refreshToken      String?   // hashed refresh token (30-day sliding window)
+  refreshTokenExpiry DateTime? // refresh token expiry
 
   // Notification preferences
   notifPush         Boolean  @default(true)

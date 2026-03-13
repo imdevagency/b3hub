@@ -13,6 +13,9 @@ import * as crypto from 'crypto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
+const REFRESH_TOKEN_BYTES = 48; // 384 bits — opaque, URL-safe
+const REFRESH_TOKEN_TTL_DAYS = 30;
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -113,9 +116,12 @@ export class AuthService {
     // Send welcome email (non-blocking)
     this.email.sendWelcome(email, firstName ?? email).catch(() => null);
 
+    const { rawToken: refreshToken } = await this.issueRefreshToken(user.id);
+
     return {
       user,
       token,
+      refreshToken,
     };
   }
 
@@ -173,9 +179,12 @@ export class AuthService {
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
 
+    const { rawToken: refreshToken } = await this.issueRefreshToken(user.id);
+
     return {
       user: userWithoutPassword,
       token,
+      refreshToken,
     };
   }
 
@@ -359,6 +368,90 @@ export class AuthService {
       },
       select: { notifPush: true, notifOrderUpdates: true, notifJobAlerts: true, notifMarketing: true },
     });
+  }
+
+  // ── Refresh token helpers ───────────────────────────────────────────────────
+
+  /** Issue a new opaque refresh token, persist its hash, return the raw value. */
+  private async issueRefreshToken(userId: string): Promise<{ rawToken: string }> {
+    const rawToken = crypto.randomBytes(REFRESH_TOKEN_BYTES).toString('base64url');
+    const hashed = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiry = new Date(Date.now() + REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000);
+
+    await this.prisma.$executeRaw`
+      UPDATE users
+      SET "refreshToken" = ${hashed}, "refreshTokenExpiry" = ${expiry}
+      WHERE id = ${userId}
+    `;
+
+    return { rawToken };
+  }
+
+  /** Validate a raw refresh token and return a new access token + rolling refresh token. */
+  async refreshAccessToken(rawRefreshToken: string) {
+    const hashed = crypto.createHash('sha256').update(rawRefreshToken).digest('hex');
+
+    const rows = await this.prisma.$queryRaw<{
+      id: string;
+      email: string | null;
+      userType: string;
+      isCompany: boolean;
+      canSell: boolean;
+      canTransport: boolean;
+      companyId: string | null;
+      companyRole: string | null;
+      permCreateContracts: boolean;
+      permReleaseCallOffs: boolean;
+      permManageOrders: boolean;
+      permViewFinancials: boolean;
+      permManageTeam: boolean;
+      refreshTokenExpiry: Date | null;
+    }[]>`
+      SELECT id, email, "userType", "isCompany", "canSell", "canTransport",
+             "companyId", "companyRole",
+             "permCreateContracts", "permReleaseCallOffs", "permManageOrders",
+             "permViewFinancials", "permManageTeam", "refreshTokenExpiry"
+      FROM users
+      WHERE "refreshToken" = ${hashed}
+      LIMIT 1
+    `;
+
+    const user = rows[0];
+    if (!user) throw new UnauthorizedException('Invalid refresh token');
+    if (!user.refreshTokenExpiry || user.refreshTokenExpiry < new Date()) {
+      throw new UnauthorizedException('Refresh token expired');
+    }
+
+    // Rolling window — issue a new refresh token on each use
+    const { rawToken: newRefreshToken } = await this.issueRefreshToken(user.id);
+
+    const token = this.generateToken(
+      user.id,
+      user.email ?? '',
+      user.userType,
+      user.isCompany,
+      user.canSell,
+      user.canTransport,
+      user.companyId ?? undefined,
+      user.companyRole ?? undefined,
+      {
+        permCreateContracts: user.permCreateContracts,
+        permReleaseCallOffs: user.permReleaseCallOffs,
+        permManageOrders: user.permManageOrders,
+        permViewFinancials: user.permViewFinancials,
+        permManageTeam: user.permManageTeam,
+      },
+    );
+
+    return { token, refreshToken: newRefreshToken };
+  }
+
+  /** Revoke a user's refresh token (logout). */
+  async revokeRefreshToken(userId: string) {
+    await this.prisma.$executeRaw`
+      UPDATE users SET "refreshToken" = NULL, "refreshTokenExpiry" = NULL
+      WHERE id = ${userId}
+    `;
   }
 
   private generateToken(

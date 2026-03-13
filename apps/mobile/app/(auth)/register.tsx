@@ -208,7 +208,7 @@ export default function RegisterScreen() {
         regNumber: regNumber.trim() || undefined,
         password,
       });
-      await setAuth(res.user, res.token);
+      await setAuth(res.user, res.token, res.refreshToken);
       haptics.success();
       router.replace('/');
     } catch (err) {

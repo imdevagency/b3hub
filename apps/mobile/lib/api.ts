@@ -1,4 +1,9 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? (() => {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('EXPO_PUBLIC_API_URL must be set in production');
+  }
+  return 'http://localhost:3000/api/v1';
+})();
 
 export type UserType = 'BUYER' | 'SUPPLIER' | 'CARRIER' | 'ADMIN';
 
@@ -35,6 +40,7 @@ export interface User {
 export interface AuthResponse {
   user: User;
   token: string;
+  refreshToken: string;
 }
 
 export interface RegisterInput {
@@ -704,6 +710,20 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify({ pushToken }),
     }),
+
+  /** Exchange a refresh token for a new access + refresh token pair. */
+  refreshToken: (refreshToken: string) =>
+    apiFetch<{ token: string; refreshToken: string }>('/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken }),
+    }),
+
+  /** Server-side logout — revokes the refresh token. */
+  logoutServer: (token: string) =>
+    apiFetch<{ ok: boolean }>('/auth/logout', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => ({ ok: false })),
 
   changePassword: (currentPassword: string, newPassword: string, token: string) =>
     apiFetch<{ ok: boolean }>('/auth/change-password', {

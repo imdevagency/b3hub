@@ -242,10 +242,7 @@ export default function OrderDetailScreen() {
           <Text style={s.headerTitle}>Pasūtījums</Text>
           <View style={{ width: 22 }} />
         </View>
-        <EmptyState
-          icon={<Package size={32} color="#9ca3af" />}
-          title="Pasūtījums nav atrasts"
-        />
+        <EmptyState icon={<Package size={32} color="#9ca3af" />} title="Pasūtījums nav atrasts" />
       </ScreenContainer>
     );
   }

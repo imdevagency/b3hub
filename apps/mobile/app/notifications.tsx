@@ -284,5 +284,4 @@ const s = StyleSheet.create({
   cardTitle: { fontSize: 14, fontWeight: '700', color: '#111827' },
   cardMsg: { fontSize: 13, color: '#374151', lineHeight: 18 },
   cardTime: { fontSize: 11, color: '#9ca3af', marginTop: 2 },
-
 });

@@ -20,6 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { api, ApiTransportJob, ApiReturnTripJob } from '@/lib/api';
+import { startLocationTracking, stopLocationTracking } from '@/lib/location-task';
 import { JobRouteMap } from '@/components/ui/JobRouteMap';
 import { haptics } from '@/lib/haptics';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
@@ -154,28 +155,30 @@ export default function ActiveJobScreen() {
     fetchActiveJob();
   }, [fetchActiveJob]);
 
-  // ── Live GPS tracking ──────────────────────────────────────────
+  // ── Background + foreground GPS tracking ──────────────────────
   useEffect(() => {
     let active = true;
+
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted' || !active) return;
 
+      // Start background task (handles backend updates in both foreground + background)
+      if (jobRef.current?.id) {
+        startLocationTracking(jobRef.current.id).catch(() => {});
+      }
+
+      // Also watch position for live map dot updates in the UI only
       locationSub.current = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.Balanced,
-          distanceInterval: 30, // update every 30 m
-          timeInterval: 10_000, // or every 10 s
+          distanceInterval: 30,
+          timeInterval: 10_000,
         },
         (loc) => {
-          const { latitude, longitude } = loc.coords;
-          setCurrentLat(latitude);
-          setCurrentLng(longitude);
-          // Push GPS to backend — silent fail so driver UX is never blocked
-          const activeId = jobRef.current?.id;
-          if (activeId && token) {
-            api.transportJobs.updateLocation(activeId, latitude, longitude, token).catch(() => {});
-          }
+          if (!active) return;
+          setCurrentLat(loc.coords.latitude);
+          setCurrentLng(loc.coords.longitude);
         },
       );
     })();
@@ -183,6 +186,7 @@ export default function ActiveJobScreen() {
     return () => {
       active = false;
       locationSub.current?.remove();
+      stopLocationTracking().catch(() => {});
     };
   }, []);
 

@@ -328,7 +328,9 @@ export default function CatalogScreen() {
               <EmptyState
                 icon={<PackageSearch size={32} color="#9ca3af" strokeWidth={1.3} />}
                 title={'Nav atrasts neviens materi\u0101ls'}
-                subtitle={'M\u0113\u0123iniet main\u012bt mekl\u0113\u0161anas vai kategorijas filtru'}
+                subtitle={
+                  'M\u0113\u0123iniet main\u012bt mekl\u0113\u0161anas vai kategorijas filtru'
+                }
                 action={
                   search.length > 0 || category !== 'ALL' ? (
                     <TouchableOpacity

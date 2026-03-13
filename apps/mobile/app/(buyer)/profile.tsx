@@ -33,7 +33,7 @@ import { api, ProviderApplication } from '@/lib/api';
 import { t } from '@/lib/translations';
 
 export default function ProfileScreen() {
-  const { user, token, setAuth, logout } = useAuth();
+  const { user, token, updateUser, logout } = useAuth();
   const { mode } = useMode();
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
@@ -104,7 +104,7 @@ export default function ProfileScreen() {
         },
         token,
       );
-      await setAuth(updated, token);
+      await updateUser(updated);
       haptics.success();
       setEditOpen(false);
     } catch {

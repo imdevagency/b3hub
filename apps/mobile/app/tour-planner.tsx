@@ -157,10 +157,7 @@ export default function TourPlannerScreen() {
           <View style={{ width: 36 }} />
         </View>
         <View style={s.empty}>
-          <EmptyState
-            icon={<Route size={32} color="#9ca3af" />}
-            title={t.tourPlanner.noJobs}
-          />
+          <EmptyState icon={<Route size={32} color="#9ca3af" />} title={t.tourPlanner.noJobs} />
         </View>
       </ScreenContainer>
     );

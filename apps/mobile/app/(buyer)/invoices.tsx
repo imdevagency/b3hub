@@ -354,12 +354,12 @@ export default function InvoicesScreen() {
       </ScrollView>
 
       <InvoiceModal
-          invoice={selected}
-          visible={!!selected}
-          onClose={() => setSelected(null)}
-          onPay={handlePay}
-          paying={paying}
-        />
+        invoice={selected}
+        visible={!!selected}
+        onClose={() => setSelected(null)}
+        onPay={handlePay}
+        paying={paying}
+      />
     </ScreenContainer>
   );
 }

@@ -50,7 +50,7 @@ export default function LoginScreen() {
     setApiError(null);
     try {
       const res = await api.login(data);
-      await setAuth(res.user, res.token);
+      await setAuth(res.user, res.token, res.refreshToken);
       haptics.success();
       router.replace('/');
     } catch (err) {

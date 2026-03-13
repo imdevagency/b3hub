@@ -167,82 +167,82 @@ function CallOffModal({
       scrollable
     >
       <View style={{ gap: 2 }}>
-          <View style={styles.positionChip}>
-            <Truck size={13} color="#6b7280" />
-            <Text style={styles.positionChipText} numberOfLines={1}>
-              {position.description}
-            </Text>
-          </View>
+        <View style={styles.positionChip}>
+          <Truck size={13} color="#6b7280" />
+          <Text style={styles.positionChipText} numberOfLines={1}>
+            {position.description}
+          </Text>
+        </View>
 
-          <Text style={styles.fieldLabel}>Daudzums * ({position.unit})</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={`Atlikums: ${position.remainingQty.toFixed(1)} ${position.unit}`}
-            value={qty}
-            onChangeText={setQty}
-            keyboardType="decimal-pad"
-            placeholderTextColor="#9ca3af"
-          />
+        <Text style={styles.fieldLabel}>Daudzums * ({position.unit})</Text>
+        <TextInput
+          style={styles.input}
+          placeholder={`Atlikums: ${position.remainingQty.toFixed(1)} ${position.unit}`}
+          value={qty}
+          onChangeText={setQty}
+          keyboardType="decimal-pad"
+          placeholderTextColor="#9ca3af"
+        />
 
-          <Text style={styles.fieldLabel}>Izbraukšanas datums * (YYYY-MM-DD)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="2025-01-15"
-            value={pickupDate}
-            onChangeText={setPickupDate}
-            keyboardType="numbers-and-punctuation"
-            placeholderTextColor="#9ca3af"
-          />
+        <Text style={styles.fieldLabel}>Izbraukšanas datums * (YYYY-MM-DD)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="2025-01-15"
+          value={pickupDate}
+          onChangeText={setPickupDate}
+          keyboardType="numbers-and-punctuation"
+          placeholderTextColor="#9ca3af"
+        />
 
-          <Text style={styles.fieldLabel}>Piegādes datums (YYYY-MM-DD)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="2025-01-15"
-            value={deliveryDate}
-            onChangeText={setDeliveryDate}
-            keyboardType="numbers-and-punctuation"
-            placeholderTextColor="#9ca3af"
-          />
+        <Text style={styles.fieldLabel}>Piegādes datums (YYYY-MM-DD)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="2025-01-15"
+          value={deliveryDate}
+          onChangeText={setDeliveryDate}
+          keyboardType="numbers-and-punctuation"
+          placeholderTextColor="#9ca3af"
+        />
 
-          <Text style={styles.fieldLabel}>Iekraušanas pilsēta</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={position.pickupCity ?? 'piem. Rīga'}
-            value={pickupCity}
-            onChangeText={setPickupCity}
-            placeholderTextColor="#9ca3af"
-          />
+        <Text style={styles.fieldLabel}>Iekraušanas pilsēta</Text>
+        <TextInput
+          style={styles.input}
+          placeholder={position.pickupCity ?? 'piem. Rīga'}
+          value={pickupCity}
+          onChangeText={setPickupCity}
+          placeholderTextColor="#9ca3af"
+        />
 
-          <Text style={styles.fieldLabel}>Izkraušanas pilsēta</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={position.deliveryCity ?? 'piem. Jūrmala'}
-            value={deliveryCity}
-            onChangeText={setDeliveryCity}
-            placeholderTextColor="#9ca3af"
-          />
+        <Text style={styles.fieldLabel}>Izkraušanas pilsēta</Text>
+        <TextInput
+          style={styles.input}
+          placeholder={position.deliveryCity ?? 'piem. Jūrmala'}
+          value={deliveryCity}
+          onChangeText={setDeliveryCity}
+          placeholderTextColor="#9ca3af"
+        />
 
-          <Text style={styles.fieldLabel}>Piezīmes</Text>
-          <TextInput
-            style={[styles.input, { height: 64, textAlignVertical: 'top' }]}
-            placeholder="Papildu instrukcijas…"
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            placeholderTextColor="#9ca3af"
-          />
+        <Text style={styles.fieldLabel}>Piezīmes</Text>
+        <TextInput
+          style={[styles.input, { height: 64, textAlignVertical: 'top' }]}
+          placeholder="Papildu instrukcijas…"
+          value={notes}
+          onChangeText={setNotes}
+          multiline
+          placeholderTextColor="#9ca3af"
+        />
 
-          <TouchableOpacity
-            style={[styles.submitBtn, saving && { opacity: 0.6 }]}
-            onPress={handleSubmit}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.submitBtnText}>Izveidot pasūtījumu</Text>
-            )}
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.submitBtn, saving && { opacity: 0.6 }]}
+          onPress={handleSubmit}
+          disabled={saving}
+        >
+          {saving ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.submitBtnText}>Izveidot pasūtījumu</Text>
+          )}
+        </TouchableOpacity>
       </View>
     </BottomSheet>
   );

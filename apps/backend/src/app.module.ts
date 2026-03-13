@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -32,6 +34,13 @@ import { CompanyMembersModule } from './company-members/company-members.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    // Global rate limits: 120 requests per minute per IP (generous default)
+    // Individual routes can override with @Throttle()
+    ThrottlerModule.forRoot([{
+      name: 'default',
+      ttl: 60_000,
+      limit: 120,
+    }]),
     PrismaModule,
     SupabaseModule,
     AuthModule,
@@ -58,6 +67,10 @@ import { CompanyMembersModule } from './company-members/company-members.module';
     CompanyMembersModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Apply throttle guard globally — individual endpoints can override with @Throttle()
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}

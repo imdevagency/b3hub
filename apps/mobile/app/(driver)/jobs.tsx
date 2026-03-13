@@ -262,9 +262,7 @@ function AcceptBottomSheet({
         {/* Return suggestions */}
         {nearby.length > 0 && (
           <View style={styles.sheetReturnSection}>
-            <View
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}
-            >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
               <Route size={14} color="#059669" />
               <Text style={styles.sheetReturnTitle}>{t.jobs.acceptSheetReturnTitle}</Text>
             </View>
@@ -341,7 +339,12 @@ function SaveSearchModal({
     }
   }, [visible]);
   return (
-    <BottomSheet visible={visible} onClose={onClose} title={t.jobSearch.savedSearchTitle} scrollable>
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      title={t.jobSearch.savedSearchTitle}
+      scrollable
+    >
       <View style={{ gap: 16, paddingBottom: 8 }}>
         <TextInput
           style={styles.modalInput}
@@ -1267,12 +1270,7 @@ export default function JobsScreen() {
         job={acceptSheetJob}
         nearby={
           acceptSheetJob
-            ? nearbyJobs(
-                acceptSheetJob.toLat,
-                acceptSheetJob.toLng,
-                allJobs,
-                acceptSheetJob.id,
-              )
+            ? nearbyJobs(acceptSheetJob.toLat, acceptSheetJob.toLng, allJobs, acceptSheetJob.id)
             : []
         }
         onConfirm={handleConfirmAccept}

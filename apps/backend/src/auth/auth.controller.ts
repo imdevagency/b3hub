@@ -1,4 +1,5 @@
-import { Controller, Post, Body, Get, Patch, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, UseGuards, UnauthorizedException } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -14,11 +15,15 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  /** Strict rate limit: 10 login attempts per minute per IP */
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
 
+  /** Strict rate limit: 10 login attempts per minute per IP */
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
@@ -32,6 +37,21 @@ export class AuthController {
   @Post('reset-password')
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.newPassword);
+  }
+
+  /** Exchange a valid refresh token for a new access + refresh token pair. */
+  @Post('refresh')
+  async refresh(@Body('refreshToken') refreshToken: string) {
+    if (!refreshToken) throw new UnauthorizedException('refreshToken required');
+    return this.authService.refreshAccessToken(refreshToken);
+  }
+
+  /** Revoke the current refresh token (server-side logout). */
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  async logout(@CurrentUser() user: any) {
+    await this.authService.revokeRefreshToken(user.userId);
+    return { ok: true };
   }
 
   @Get('me')

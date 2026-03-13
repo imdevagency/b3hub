@@ -17,7 +17,10 @@
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        }
+        },
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "B3Hub nepārtraukti izseko jūsu atrašanās vietu aktīvu piegāžu laikā, arī fonā.",
+        "NSLocationAlwaysUsageDescription": "B3Hub nepārtraukti izseko jūsu atrašanās vietu aktīvu piegāžu laikā, arī fonā.",
+        "UIBackgroundModes": ["location", "fetch"]
       },
       "bundleIdentifier": "com.anonymous.b3hub"
     },
@@ -32,6 +35,9 @@
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
         "android.permission.POST_NOTIFICATIONS"
       ]
     },
@@ -59,9 +65,13 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow B3Hub to access your location for real-time navigation and delivery tracking."
+          "locationWhenInUsePermission": "Allow B3Hub to access your location for real-time navigation and delivery tracking.",
+          "locationAlwaysAndWhenInUsePermission": "Allow B3Hub to access your location in the background to track active deliveries.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
         }
-      ]
+      ],
+      "expo-task-manager"
     ]
   }
 }

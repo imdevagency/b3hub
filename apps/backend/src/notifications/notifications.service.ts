@@ -46,7 +46,27 @@ export class NotificationsService {
     });
 
     if (!res.ok) {
-      this.logger.warn(`Expo push failed for user ${userId}: ${await res.text()}`);
+      this.logger.warn(`Expo push HTTP error for user ${userId}: ${res.status}`);
+      return;
+    }
+
+    // Parse the ticket to detect stale tokens and clean up the DB
+    try {
+      const json = await res.json() as { data?: { status?: string; details?: { error?: string } } };
+      const ticket = json?.data;
+      if (ticket?.status === 'error') {
+        const errCode = ticket?.details?.error;
+        this.logger.warn(`Expo push error for user ${userId}: ${errCode}`);
+        if (errCode === 'DeviceNotRegistered') {
+          // Token is stale — clear it so we stop wasting push calls
+          await this.prisma.$executeRaw`
+            UPDATE users SET "pushToken" = NULL WHERE id = ${userId}
+          `;
+          this.logger.log(`Cleared stale push token for user ${userId}`);
+        }
+      }
+    } catch {
+      // Non-JSON response — ignore
     }
   }
 

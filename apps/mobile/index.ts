@@ -7,5 +7,15 @@ try {
 } catch {
   /* Expo Go — version mismatch; built-in RNGH still works */
 }
+
+// Register background location task at the entry-point level (required by expo-task-manager).
+// Guarded so Expo Go builds don't crash on the missing native module.
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require('./lib/location-task');
+} catch {
+  /* Expo Go — task manager unavailable */
+}
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 require('expo-router/entry');
