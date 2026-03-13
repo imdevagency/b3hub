@@ -52,7 +52,11 @@ import {
   Search,
   X,
   Leaf,
+  Layers,
+  Navigation2,
+  RotateCcw,
 } from 'lucide-react-native';
+import * as Location from 'expo-location';
 const { width: SW } = Dimensions.get('window');
 const ONBOARDING_KEY = '@b3hub:material_order_onboarding_v1';
 
@@ -435,6 +439,7 @@ export default function OrderRequestScreen() {
   const [pin, setPin] = useState<LatLng | null>(null);
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
+  const [satellite, setSatellite] = useState(false);
   // ── Geo-search (address autocomplete) ───────────────────────────────
   const [geoSearchText, setGeoSearchText] = useState('');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -562,6 +567,44 @@ export default function OrderRequestScreen() {
     },
     [reverseGeocodeWithCity],
   );
+
+  // ── Draggable pin drag-end handler ────────────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onPinDragEnd = useCallback(
+    async (e: any) => {
+      const coords = e?.geometry?.coordinates as number[] | undefined;
+      if (!Array.isArray(coords) || coords.length < 2) return;
+      const [longitude, latitude] = coords;
+      setPin({ latitude, longitude });
+      setAddress('Nosakām adresi...');
+      const { address: addr, city: c } = await reverseGeocodeWithCity(latitude, longitude);
+      setAddress(addr);
+      setCity(c);
+    },
+    [reverseGeocodeWithCity],
+  );
+
+  // ── Locate-me: jump camera + drop pin at GPS position ─────────
+  const locateMe = useCallback(async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const { latitude, longitude } = loc.coords;
+      setPin({ latitude, longitude });
+      setAddress('Nosakām adresi...');
+      cameraRef.current?.setCamera({
+        centerCoordinate: [longitude, latitude],
+        zoomLevel: 16,
+        animationDuration: 700,
+      });
+      const { address: addr, city: c } = await reverseGeocodeWithCity(latitude, longitude);
+      setAddress(addr);
+      setCity(c);
+    } catch {
+      // permission denied or GPS unavailable — fail silently
+    }
+  }, [reverseGeocodeWithCity]);
 
   const onGeoSearchChange = useCallback(
     (text: string) => {
@@ -730,10 +773,27 @@ export default function OrderRequestScreen() {
   const renderMap = () => (
     <View style={{ flex: 1 }}>
       {/* Map fills screen */}
-      <BaseMap cameraRef={cameraRef} center={RIGA_CENTER} zoom={10} onPress={onMapPress}>
+      <BaseMap
+        cameraRef={cameraRef}
+        center={RIGA_CENTER}
+        zoom={10}
+        onPress={onMapPress}
+        styleURL={
+          MapboxGL
+            ? satellite
+              ? MapboxGL.StyleURL.SatelliteStreet
+              : MapboxGL.StyleURL.Light
+            : undefined
+        }
+      >
         <UserLayer />
         {pin && MapboxGL && (
-          <MapboxGL.PointAnnotation id="deliveryPin" coordinate={[pin.longitude, pin.latitude]}>
+          <MapboxGL.PointAnnotation
+            id="deliveryPin"
+            coordinate={[pin.longitude, pin.latitude]}
+            draggable
+            onDragEnd={onPinDragEnd}
+          >
             <View style={sa.markerWrap}>
               <View style={sa.markerOuter}>
                 <View style={sa.markerInner} />
@@ -783,6 +843,23 @@ export default function OrderRequestScreen() {
         </View>
       </View>
 
+      {/* Right-side FAB column: satellite toggle + locate-me */}
+      <View style={sa.mapFabColumn}>
+        {/* Satellite / Street toggle */}
+        <TouchableOpacity
+          style={[sa.mapFab, satellite && sa.mapFabActive]}
+          onPress={() => setSatellite((s) => !s)}
+          activeOpacity={0.85}
+        >
+          <Layers size={18} color={satellite ? '#fff' : '#111827'} />
+        </TouchableOpacity>
+
+        {/* Locate-me */}
+        <TouchableOpacity style={sa.mapFab} onPress={locateMe} activeOpacity={0.85}>
+          <Navigation2 size={18} color="#111827" />
+        </TouchableOpacity>
+      </View>
+
       {/* Top title strip (when no pin yet) */}
       {!pin && (
         <View style={sa.mapHintStrip}>
@@ -800,6 +877,20 @@ export default function OrderRequestScreen() {
               <Text style={sa.addressText} numberOfLines={2}>
                 {address || 'Nosakām adresi...'}
               </Text>
+              {/* Reset / clear pin */}
+              <TouchableOpacity
+                style={sa.resetBtn}
+                onPress={() => {
+                  setPin(null);
+                  setAddress('');
+                  setCity('');
+                  setGeoSearchText('');
+                  setGeoSuggestions([]);
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <RotateCcw size={16} color="#6b7280" />
+              </TouchableOpacity>
             </View>
             <TouchableOpacity
               style={[
@@ -1722,6 +1813,42 @@ const sa = StyleSheet.create({
     elevation: 3,
   },
   mapHintText: { fontSize: 13, color: '#374151', fontWeight: '500' },
+
+  // ── Map FAB buttons (satellite toggle + locate-me) ──────────
+  mapFabColumn: {
+    position: 'absolute',
+    right: 14,
+    bottom: 210,
+    gap: 10,
+    alignItems: 'center',
+  },
+  mapFab: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 6,
+  },
+  mapFabActive: {
+    backgroundColor: '#111827',
+  },
+
+  // ── Reset pin button in bottom sheet ─────────────────────────
+  resetBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
 
   markerWrap: { alignItems: 'center' },
   markerOuter: {

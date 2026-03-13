@@ -45,6 +45,11 @@ export interface BaseMapProps {
   compassEnabled?: boolean;
   /** Show Mapbox attribution. Default false (keep UI clean). */
   showAttribution?: boolean;
+  /**
+   * Mapbox style URL. Defaults to StyleURL.Light (street map).
+   * Pass MapboxGL.StyleURL.SatelliteStreet for aerial/satellite view.
+   */
+  styleURL?: string;
 }
 
 export function BaseMap({
@@ -58,6 +63,7 @@ export function BaseMap({
   pitchEnabled = false,
   compassEnabled = false,
   showAttribution = false,
+  styleURL,
 }: BaseMapProps) {
   // Native module unavailable in Expo Go — render empty placeholder
   if (!MapboxGL) {
@@ -67,7 +73,7 @@ export function BaseMap({
   return (
     <MapboxGL.MapView
       style={[StyleSheet.absoluteFillObject, style]}
-      styleURL={MapboxGL.StyleURL.Light}
+      styleURL={styleURL ?? MapboxGL.StyleURL.Light}
       compassEnabled={compassEnabled}
       scaleBarEnabled={false}
       rotateEnabled={rotateEnabled}
