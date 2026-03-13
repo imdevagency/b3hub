@@ -235,7 +235,8 @@ function InviteModal({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <ScrollView contentContainerStyle={styles.sheet} keyboardShouldPersistTaps="handled">
+        <View style={styles.sheetWrap}>
+        <ScrollView contentContainerStyle={styles.sheet} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>Uzaicināt dalībnieku</Text>
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -310,6 +311,7 @@ function InviteModal({
             )}
           </TouchableOpacity>
         </ScrollView>
+        </View>
       </View>
     </Modal>
   );
@@ -684,6 +686,7 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 11, fontWeight: '600', color: '#15803d' },
   // overlay / sheet
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  sheetWrap: { width: '100%', maxHeight: '92%' },
   sheet: {
     backgroundColor: '#fff',
     borderTopLeftRadius: 20,
