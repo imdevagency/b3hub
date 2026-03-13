@@ -25,14 +25,6 @@ import {
   Dimensions,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-// Lazy-load: native module not available in Expo Go
-let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  MapboxGL = require('@rnmapbox/maps').default;
-} catch {
-  /* Expo Go */
-}
 import {
   Trash2,
   MapPin,
@@ -54,6 +46,7 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { api, SkipHireOrder, SkipHireStatus } from '@/lib/api';
 import { BaseMap } from '@/components/map';
+import { Marker } from 'react-native-maps';
 import { t } from '@/lib/translations';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -61,8 +54,7 @@ import { t } from '@/lib/translations';
 const ACCENT = '#111827';
 const RIGA: [number, number] = [24.1052, 56.9496];
 const SCREEN_H = Dimensions.get('window').height;
-const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '';
-const GEOCODE_BASE = 'https://api.mapbox.com/geocoding/v5/mapbox.places';
+const GOOGLE_KEY = 'AIzaSyBNIZk1VBorD3kU02BNjz_2m4Dlek_gsx8';
 
 const cs = t.carrierSkips;
 
@@ -83,15 +75,15 @@ function openMaps(address: string) {
 }
 
 async function geocodeAddress(address: string): Promise<[number, number] | null> {
-  if (!MAPBOX_TOKEN) return null;
   try {
     const url =
-      `${GEOCODE_BASE}/${encodeURIComponent(address)}.json` +
-      `?country=lv,lt,ee&limit=1&access_token=${MAPBOX_TOKEN}`;
+      `https://maps.googleapis.com/maps/api/geocode/json` +
+      `?address=${encodeURIComponent(address)}&region=lv&key=${GOOGLE_KEY}`;
     const res = await fetch(url);
     const json = await res.json();
-    const c = json.features?.[0]?.center as [number, number] | undefined;
-    return c ?? null;
+    if (json.status !== 'OK' || !json.results?.[0]) return null;
+    const loc = json.results[0].geometry.location;
+    return [loc.lng as number, loc.lat as number]; // [longitude, latitude]
   } catch {
     return null;
   }
@@ -359,22 +351,20 @@ function SkipsMapView({ orders, onStatusUpdate, updatingId }: MapViewProps) {
   return (
     <View style={{ flex: 1 }}>
       <BaseMap cameraRef={cameraRef} center={RIGA} zoom={9}>
-        {MapboxGL &&
-          resolved.map((order) => (
-            <MapboxGL.PointAnnotation
-              key={order.id}
-              id={order.id}
-              coordinate={coords[order.id]!}
-              onSelected={() => openSheet(order)}
-            >
-              <View collapsable={false}>
-                <View style={[s.mapPin, { backgroundColor: pinColor(order.status) }]}>
-                  <Trash2 size={13} color="#fff" />
-                </View>
-                <View style={[s.mapPinTail, { borderTopColor: pinColor(order.status) }]} />
+        {resolved.map((order) => (
+          <Marker
+            key={order.id}
+            coordinate={{ latitude: coords[order.id]![1], longitude: coords[order.id]![0] }}
+            onPress={() => openSheet(order)}
+          >
+            <View collapsable={false}>
+              <View style={[s.mapPin, { backgroundColor: pinColor(order.status) }]}>
+                <Trash2 size={13} color="#fff" />
               </View>
-            </MapboxGL.PointAnnotation>
-          ))}
+              <View style={[s.mapPinTail, { borderTopColor: pinColor(order.status) }]} />
+            </View>
+          </Marker>
+        ))}
       </BaseMap>
 
       {geocoding && (

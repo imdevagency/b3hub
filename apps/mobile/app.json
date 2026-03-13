@@ -14,6 +14,9 @@
     },
     "ios": {
       "supportsTablet": true,
+      "config": {
+        "googleMapsApiKey": "AIzaSyBNIZk1VBorD3kU02BNjz_2m4Dlek_gsx8"
+      },
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
@@ -25,6 +28,11 @@
       "bundleIdentifier": "com.anonymous.b3hub"
     },
     "android": {
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBNIZk1VBorD3kU02BNjz_2m4Dlek_gsx8"
+        }
+      },
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -54,12 +62,6 @@
         {
           "color": "#dc2626",
           "defaultChannel": "default"
-        }
-      ],
-      [
-        "@rnmapbox/maps",
-        {
-          "RNMapboxMapsImpl": "mapbox"
         }
       ],
       [

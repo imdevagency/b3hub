@@ -1,30 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  PanResponder,
+  Dimensions,
+  ScrollView,
+} from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiOrder } from '@/lib/api';
-import { t } from '@/lib/translations';
-import { HardHat, Trash2, Truck, ChevronRight, Package, Bell } from 'lucide-react-native';
+import { BaseMap } from '@/components/map';
+import * as Location from 'expo-location';
+import { HardHat, Trash2, Truck, Package, ChevronRight, Bell, Search } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
-import { Skeleton, SkeletonHome } from '@/components/ui/Skeleton';
-
-// ── Types ───────────────────────────────────────────────────────────────────────────────────
-
-type LucideIcon = React.ComponentType<{ size?: number; color?: string }>;
-
-interface ServiceTile {
-  id: string;
-  icon: LucideIcon;
-  label: string;
-  bg: string;
-  iconBg: string;
-  iconColor: string;
-  route: string;
-}
-
-// ── Constants ───────────────────────────────────────────────────────────────────────
 
 const ACTIVE_STATUSES = new Set([
   'PENDING',
@@ -36,517 +29,383 @@ const ACTIVE_STATUSES = new Set([
 ]);
 
 const STATUS_LABEL: Record<string, string> = {
-  PENDING: 'Gaida apstiprīnāšanu',
+  PENDING: 'Gaida apstiprinājumu',
   CONFIRMED: 'Apstiprināts',
   PROCESSING: 'Apstrādē',
   LOADING: 'Iekraušana',
   DISPATCHED: 'Nosūtīts',
   DELIVERING: 'Piegādē',
   DELIVERED: 'Piegādāts',
-  COMPLETED: 'Pabeigts',
   CANCELLED: 'Atcelts',
 };
 
 const STATUS_DOT: Record<string, string> = {
-  PENDING: '#6b7280',
+  PENDING: '#9ca3af',
   CONFIRMED: '#111827',
-  PROCESSING: '#111827',
+  PROCESSING: '#374151',
   LOADING: '#374151',
-  DISPATCHED: '#111827',
-  DELIVERING: '#111827',
+  DISPATCHED: '#059669',
+  DELIVERING: '#059669',
 };
 
-const STATUS_BADGE: Record<string, { bg: string; color: string }> = {
-  PENDING: { bg: '#f3f4f6', color: '#6b7280' },
-  CONFIRMED: { bg: '#f3f4f6', color: '#374151' },
-  PROCESSING: { bg: '#f3f4f6', color: '#374151' },
-  LOADING: { bg: '#f3f4f6', color: '#374151' },
-  DISPATCHED: { bg: '#dcfce7', color: '#15803d' },
-  DELIVERING: { bg: '#dcfce7', color: '#15803d' },
-  DELIVERED: { bg: '#f0fdf4', color: '#15803d' },
-  COMPLETED: { bg: '#f0fdf4', color: '#15803d' },
-  CANCELLED: { bg: '#fee2e2', color: '#b91c1c' },
-};
-
-const SERVICE_TILES: ServiceTile[] = [
+const SERVICES = [
   {
     id: 'materials',
     icon: HardHat,
-    label: t.home.services.materials,
-    bg: '#fff',
-    iconBg: '#f3f4f6',
-    iconColor: '#111827',
+    label: 'Materiāli',
+    sub: 'Pasūtīt materiālus',
     route: '/order-request',
   },
   {
     id: 'container',
-    icon: Trash2,
-    label: t.home.services.container,
-    bg: '#fff',
-    iconBg: '#f3f4f6',
-    iconColor: '#111827',
+    icon: Package,
+    label: 'Konteineri',
+    sub: 'Iznomāt konteineru',
     route: '/order',
   },
   {
     id: 'disposal',
     icon: Trash2,
-    label: t.home.services.disposal,
-    bg: '#fff',
-    iconBg: '#f3f4f6',
-    iconColor: '#111827',
+    label: 'Utilizācija',
+    sub: 'Nodot atkritumus',
     route: '/disposal',
   },
   {
     id: 'freight',
     icon: Truck,
-    label: t.home.services.freight,
-    bg: '#fff',
-    iconBg: '#f3f4f6',
-    iconColor: '#111827',
+    label: 'Transports',
+    sub: 'Pierasīt pārvadājumu',
     route: '/transport',
   },
 ];
 
-// ── Time-based greeting ──────────────────────────────────────────────────────────────────────
-
-function timeGreeting(): string {
+function greeting(): string {
   const h = new Date().getHours();
   if (h < 12) return 'Labrīt';
   if (h < 17) return 'Labdien';
   return 'Labvakar';
 }
 
-// ── Skeleton pulse ──────────────────────────────────────────────────────────────────
-
-function SkeletonBox({
-  width,
-  height = 16,
-  style,
-}: {
-  width: number | string;
-  height?: number;
-  style?: object;
-}) {
-  const anim = React.useRef(new Animated.Value(0.4)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(anim, { toValue: 1, duration: 600, useNativeDriver: true }),
-        Animated.timing(anim, { toValue: 0.4, duration: 600, useNativeDriver: true }),
-      ]),
-    ).start();
-  }, [anim]);
-  return (
-    <Animated.View
-      style={[
-        {
-          width,
-          height,
-          backgroundColor: '#e5e7eb',
-          borderRadius: 6,
-          opacity: anim,
-        },
-        style,
-      ]}
-    />
-  );
-}
-
-// ── Screen ───────────────────────────────────────────────────────────────────────────────
-
-// ── Market demand strip ───────────────────────────────────────────────────────────────
-// Time-of-day demand indicator so buyers feel marketplace urgency.
-function DemandStrip() {
-  const h = new Date().getHours();
-  const isHighDemand = (h >= 7 && h < 10) || (h >= 14 && h < 18);
-  const isMediumDemand = !isHighDemand && h >= 10 && h < 20;
-  const activeDrivers = isHighDemand ? 10 + (h % 5) : isMediumDemand ? 5 + (h % 4) : 3;
-
-  const dotColor = isHighDemand ? '#059669' : isMediumDemand ? '#d97706' : '#9ca3af';
-  const bg = isHighDemand ? '#f0fdf4' : isMediumDemand ? '#fffbeb' : '#f9fafb';
-  const borderColor = isHighDemand ? '#bbf7d0' : isMediumDemand ? '#fde68a' : '#f3f4f6';
-  const textColor = isHighDemand ? '#065f46' : isMediumDemand ? '#92400e' : '#6b7280';
-  const label = isHighDemand
-    ? 'Augsts pieprasījums'
-    : isMediumDemand
-      ? 'Vidējs pieprasījums'
-      : 'Mierīgs tirgus';
-
-  return (
-    <View style={[s.demandStrip, { backgroundColor: bg, borderColor }]}>
-      <View style={[s.demandDot, { backgroundColor: dotColor }]} />
-      <Text style={[s.demandLabel, { color: textColor }]}>{label}</Text>
-      <Text style={s.demandSub}>· {activeDrivers} šoferī aktīvi</Text>
-    </View>
-  );
-}
+const TAB_H = 52;
+const WIN_H = Dimensions.get('window').height;
+const PEEK_H = 76; // only search bar stays visible when expanded
 
 export default function HomeScreen() {
   const { user, token } = useAuth();
   const router = useRouter();
-  const greeting = timeGreeting();
+  const insets = useSafeAreaInsets();
+  const cameraRef = useRef<any>(null);
+  const panelH = useRef(0);
+  const dragY = useRef(new Animated.Value(0)).current;
+  const lastY = useRef(0);
+  const pan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 5,
+      onPanResponderMove: (_, g) => {
+        const next = lastY.current + g.dy;
+        dragY.setValue(Math.max(0, Math.min(panelH.current - PEEK_H, next)));
+      },
+      onPanResponderRelease: (_, g) => {
+        const next = lastY.current + g.dy;
+        const limit = panelH.current - PEEK_H;
+        const snapTo = next > limit / 2 ? limit : 0;
+        lastY.current = snapTo;
+        Animated.spring(dragY, {
+          toValue: snapTo,
+          useNativeDriver: true,
+          tension: 48,
+          friction: 14,
+        }).start();
+      },
+    }),
+  ).current;
   const [orders, setOrders] = useState<ApiOrder[] | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  // Fly camera to user's current location once on mount
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+      const loc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      cameraRef.current?.setCamera({
+        centerCoordinate: [loc.coords.longitude, loc.coords.latitude],
+        zoomLevel: 13,
+        animationDuration: 900,
+      });
+    })();
+  }, []);
 
   useEffect(() => {
     if (!token) return;
     api.orders
       .myOrders(token)
-      .then((data) => setOrders(data))
-      .catch(() => setOrders([]))
-      .finally(() => setLoading(false));
+      .then(setOrders)
+      .catch(() => setOrders([]));
   }, [token]);
 
   const activeOrder = orders?.find((o) => ACTIVE_STATUSES.has(o.status)) ?? null;
   const recentOrders = orders?.filter((o) => !ACTIVE_STATUSES.has(o.status)).slice(0, 3) ?? [];
-  const isPartnerEligible = !user?.canSell && !user?.canTransport;
 
   return (
-    <ScreenContainer bg="#f9fafb">
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* ── Header ── */}
-        <View style={s.header}>
-          <View>
-            <Text style={s.headerGreeting}>{greeting}</Text>
-            <Text style={s.headerName}>
-              {user?.firstName} {user?.lastName}
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={s.bellBtn}
-            onPress={() => router.push('/notifications' as any)}
-            activeOpacity={0.7}
-          >
-            <Bell size={22} color="#fff" />
+    <View style={s.root}>
+      {/* ── Full-screen map behind the panel ── */}
+      <BaseMap cameraRef={cameraRef} zoom={12} showsUserLocation showsMyLocationButton />
+
+      {/* ── Notification bell floating over map ── */}
+      <TouchableOpacity
+        style={s.bellFab}
+        onPress={() => router.push('/notifications' as any)}
+        activeOpacity={0.8}
+      >
+        <Bell size={20} color="#111827" />
+      </TouchableOpacity>
+
+      {/* ── Bottom sheet panel ── */}
+      <Animated.View
+        style={[s.panel, { transform: [{ translateY: dragY }] }]}
+        onLayout={(e) => {
+          panelH.current = e.nativeEvent.layout.height;
+        }}
+      >
+        {/* Draggable header — search bar stays visible when map expanded */}
+        <View style={s.dragHeader} {...pan.panHandlers}>
+          <View style={s.handle} />
+          <TouchableOpacity style={s.searchBar} activeOpacity={0.7} onPress={() => haptics.light()}>
+            <Search size={18} color="#9ca3af" />
+            <Text style={s.searchText}>Ko pasūtīt šodien?</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={s.body}>
-          {/* ── Market demand strip ── */}
-          <DemandStrip />
-
-          {/* ── Service tiles ── */}
-          <View style={s.tilesRow}>
-            {SERVICE_TILES.slice(0, 2).map((tile) => {
-              const Icon = tile.icon;
+        {/* Scrollable content */}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[s.panelScroll, { paddingBottom: TAB_H + insets.bottom }]}
+          bounces={false}
+        >
+          {/* 2 × 2 service grid */}
+          <View style={s.grid}>
+            {SERVICES.map((svc) => {
+              const Icon = svc.icon;
               return (
                 <TouchableOpacity
-                  key={tile.id}
-                  style={[s.tile, { backgroundColor: tile.bg }]}
-                  activeOpacity={0.75}
+                  key={svc.id}
+                  style={s.gridTile}
                   onPress={() => {
                     haptics.light();
-                    router.push(tile.route as any);
+                    router.push(svc.route as any);
                   }}
+                  activeOpacity={0.75}
                 >
-                  <View style={[s.tileIcon, { backgroundColor: tile.iconBg }]}>
-                    <Icon size={22} color={tile.iconColor} />
+                  <View style={s.gridIcon}>
+                    <Icon size={22} color="#111827" />
                   </View>
-                  <Text style={s.tileLabel}>{tile.label}</Text>
+                  <Text style={s.gridLabel}>{svc.label}</Text>
+                  <Text style={s.gridSub} numberOfLines={1}>
+                    {svc.sub}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
-          {SERVICE_TILES.slice(2).map((tile) => {
-            const Icon = tile.icon;
-            return (
-              <TouchableOpacity
-                key={tile.id}
-                style={[s.tileFull, { backgroundColor: tile.bg }]}
-                activeOpacity={0.75}
-                onPress={() => {
-                  haptics.light();
-                  router.push(tile.route as any);
-                }}
-              >
-                <View style={[s.tileIcon, { backgroundColor: tile.iconBg }]}>
-                  <Icon size={22} color={tile.iconColor} />
-                </View>
-                <Text style={[s.tileLabel, s.tileFullLabel]}>{tile.label}</Text>
-                <ChevronRight size={16} color="#9ca3af" />
-              </TouchableOpacity>
-            );
-          })}
 
-          {/* ── Active order ── */}
-          {loading ? (
-            <View style={s.card}>
-              <Skeleton width={140} height={12} style={{ marginBottom: 14 }} />
-              <Skeleton width="100%" height={22} style={{ marginBottom: 8 }} />
-              <Skeleton width="55%" height={12} />
-            </View>
-          ) : activeOrder ? (
+          {/* Active order banner */}
+          {activeOrder && (
             <TouchableOpacity
-              style={[s.card, s.activeOrderCard]}
-              activeOpacity={0.8}
+              style={s.activeCard}
               onPress={() => router.push(`/(buyer)/order/${activeOrder.id}` as any)}
+              activeOpacity={0.8}
             >
-              <View style={s.activeOrderHeader}>
-                <View
-                  style={[
-                    s.statusDot,
-                    { backgroundColor: STATUS_DOT[activeOrder.status] ?? '#6b7280' },
-                  ]}
-                />
-                <Text style={s.activeOrderStatus}>
+              <View
+                style={[
+                  s.activeDot,
+                  { backgroundColor: STATUS_DOT[activeOrder.status] ?? '#9ca3af' },
+                ]}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={s.activeLabel}>Aktīvs pasūtījums</Text>
+                <Text style={s.activeNum}>#{activeOrder.orderNumber}</Text>
+                <Text style={s.activeStatus}>
                   {STATUS_LABEL[activeOrder.status] ?? activeOrder.status}
                 </Text>
-                <Text style={s.activeOrderTrack}>{t.home.trackOrder}</Text>
               </View>
-              <Text style={s.activeOrderNum}>#{activeOrder.orderNumber}</Text>
-              <Text style={s.activeOrderAddr} numberOfLines={1}>
-                {activeOrder.deliveryAddress}
-              </Text>
+              <ChevronRight size={18} color="#6b7280" />
             </TouchableOpacity>
-          ) : null}
+          )}
 
-          {/* ── Recent orders ── */}
-          {!loading && recentOrders.length > 0 && (
-            <View style={s.card}>
-              <View style={s.cardHeader}>
-                <Text style={s.cardTitle}>{t.home.recentOrders}</Text>
+          {/* Recent orders */}
+          {recentOrders.length > 0 && (
+            <View style={s.recentCard}>
+              <View style={s.recentHeader}>
+                <Text style={s.recentTitle}>Nesenie pasūtījumi</Text>
                 <TouchableOpacity onPress={() => router.push('/(buyer)/orders' as any)}>
-                  <Text style={s.cardCta}>{t.home.allOrders}</Text>
+                  <Text style={s.recentCta}>Visi →</Text>
                 </TouchableOpacity>
               </View>
               {recentOrders.map((o, i) => (
                 <TouchableOpacity
                   key={o.id}
-                  style={[s.orderRow, i < recentOrders.length - 1 && s.orderRowBorder]}
+                  style={[s.recentRow, i < recentOrders.length - 1 && s.recentRowBorder]}
                   activeOpacity={0.7}
                   onPress={() => router.push(`/(buyer)/order/${o.id}` as any)}
                 >
-                  <View style={s.orderRowIcon}>
-                    <Package size={14} color="#6b7280" />
+                  <View style={s.recentIcon}>
+                    <Package size={13} color="#6b7280" />
                   </View>
-                  <View style={s.orderRowBody}>
-                    <Text style={s.orderRowNum}>#{o.orderNumber}</Text>
-                    <Text style={s.orderRowAddr} numberOfLines={1}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.recentNum}>#{o.orderNumber}</Text>
+                    <Text style={s.recentCity} numberOfLines={1}>
                       {o.deliveryCity}
                     </Text>
                   </View>
-                  {(() => {
-                    const badge = STATUS_BADGE[o.status];
-                    return badge ? (
-                      <View style={[s.orderStatusBadge, { backgroundColor: badge.bg }]}>
-                        <Text style={[s.orderStatusBadgeText, { color: badge.color }]}>
-                          {STATUS_LABEL[o.status] ?? o.status}
-                        </Text>
-                      </View>
-                    ) : (
-                      <Text style={s.orderRowStatus}>{STATUS_LABEL[o.status] ?? o.status}</Text>
-                    );
-                  })()}
+                  <Text style={s.recentStatus}>{STATUS_LABEL[o.status] ?? o.status}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           )}
-
-          {/* ── Become a partner ── */}
-          {isPartnerEligible && (
-            <View style={s.partnerSection}>
-              <Text style={s.partnerSectionTitle}>Pelni ar B3Hub</Text>
-              <View style={s.partnerRow}>
-                <TouchableOpacity
-                  style={[s.partnerCard, { backgroundColor: '#f9fafb', borderColor: '#e5e7eb' }]}
-                  activeOpacity={0.82}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/(auth)/apply-role',
-                      params: { type: 'supplier' },
-                    } as any)
-                  }
-                >
-                  <View style={[s.partnerCardIcon, { backgroundColor: '#f3f4f6' }]}>
-                    <Package size={18} color="#374151" />
-                  </View>
-                  <Text style={[s.partnerCardTitle, { color: '#111827' }]}>Piegādātājs</Text>
-                  <Text style={s.partnerCardDesc}>Pārdod materiālus tīklā</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[s.partnerCard, { backgroundColor: '#f9fafb', borderColor: '#e5e7eb' }]}
-                  activeOpacity={0.82}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/(auth)/apply-role',
-                      params: { type: 'carrier' },
-                    } as any)
-                  }
-                >
-                  <View style={[s.partnerCardIcon, { backgroundColor: '#f3f4f6' }]}>
-                    <Truck size={18} color="#374151" />
-                  </View>
-                  <Text style={[s.partnerCardTitle, { color: '#111827' }]}>Pārvadātājs</Text>
-                  <Text style={s.partnerCardDesc}>Nopelni uz katru kravu</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-        </View>
-      </ScrollView>
-    </ScreenContainer>
+        </ScrollView>
+      </Animated.View>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f9fafb' },
+  root: { flex: 1 },
 
-  header: {
-    backgroundColor: '#000000',
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 36,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  },
-  headerGreeting: { color: 'rgba(255,255,255,0.5)', fontSize: 13 },
-  headerName: { color: '#fff', fontSize: 20, fontWeight: '700', marginTop: 2 },
-  bellBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  bellFab: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+
+  // Panel
+  panel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 12,
+  },
+  handle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#e5e7eb',
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  dragHeader: {
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    gap: 10,
+    marginTop: 6,
+  },
+  searchText: { fontSize: 15, color: '#9ca3af', fontWeight: '500', flex: 1 },
+  panelScroll: {
+    paddingHorizontal: 20,
+    paddingTop: 4,
+    gap: 14,
+  },
+
+  // 2×2 service grid
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
     marginTop: 4,
   },
-
-  body: { paddingHorizontal: 16, marginTop: -20, gap: 12, paddingBottom: 32 },
-
-  // Demand strip
-  demandStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  gridTile: {
+    width: '48%',
+    backgroundColor: '#f9fafb',
+    borderRadius: 18,
+    padding: 16,
     gap: 6,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
     borderWidth: 1,
+    borderColor: '#f3f4f6',
   },
-  demandDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  demandLabel: { fontSize: 13, fontWeight: '700' },
-  demandSub: { fontSize: 12, color: '#9ca3af' },
-
-  // Tiles
-  tilesRow: { flexDirection: 'row', gap: 10 },
-  tile: {
-    flex: 1,
-    borderRadius: 16,
-    padding: 16,
-    gap: 10,
-    minHeight: 100,
+  gridIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 2,
   },
-  tileFull: {
-    borderRadius: 16,
-    padding: 16,
+  gridLabel: { fontSize: 14, fontWeight: '700', color: '#111827' },
+  gridSub: { fontSize: 11, color: '#9ca3af', lineHeight: 15 },
+
+  // Active order
+  activeCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-  },
-  tileIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tileLabel: { fontSize: 13, fontWeight: '700', color: '#111827', lineHeight: 17 },
-  tileFullLabel: { flex: 1 },
-
-  // Card base
-  card: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: '#111827',
   },
-  cardHeader: {
+  activeDot: { width: 10, height: 10, borderRadius: 5 },
+  activeLabel: { fontSize: 11, color: '#6b7280', fontWeight: '500', marginBottom: 1 },
+  activeNum: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  activeStatus: { fontSize: 12, color: '#374151', marginTop: 1 },
+
+  // Recent
+  recentCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+  },
+  recentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  cardTitle: { fontSize: 13, fontWeight: '700', color: '#111827' },
-  cardCta: { fontSize: 12, color: '#111827', fontWeight: '600' },
-
-  // Active order
-  activeOrderCard: { borderLeftWidth: 3, borderLeftColor: '#111827' },
-  activeOrderHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
-  },
-  statusDot: { width: 8, height: 8, borderRadius: 4 },
-  activeOrderStatus: { fontSize: 12, fontWeight: '600', color: '#374151', flex: 1 },
-  activeOrderTrack: { fontSize: 12, color: '#111827', fontWeight: '600' },
-  activeOrderNum: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  activeOrderAddr: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-
-  // Recent orders
-  orderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    gap: 10,
-  },
-  orderRowBorder: { borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  orderRowIcon: {
-    width: 30,
-    height: 30,
+  recentTitle: { fontSize: 13, fontWeight: '700', color: '#111827' },
+  recentCta: { fontSize: 12, color: '#111827', fontWeight: '600' },
+  recentRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 9, gap: 10 },
+  recentRowBorder: { borderBottomWidth: 1, borderBottomColor: '#f9fafb' },
+  recentIcon: {
+    width: 28,
+    height: 28,
     borderRadius: 8,
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  orderRowBody: { flex: 1 },
-  orderRowNum: { fontSize: 13, fontWeight: '600', color: '#111827' },
-  orderRowAddr: { fontSize: 11, color: '#9ca3af' },
-  orderRowStatus: { fontSize: 11, color: '#6b7280' },
-  orderStatusBadge: {
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  orderStatusBadgeText: { fontSize: 11, fontWeight: '600' },
-
-  // Partner section
-  partnerSection: { marginBottom: 8 },
-  partnerSectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 10,
-  },
-  partnerRow: { flexDirection: 'row', gap: 10 },
-  partnerCard: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderRadius: 16,
-    padding: 14,
-    gap: 6,
-  },
-  partnerCardIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 2,
-  },
-  partnerCardTitle: { fontSize: 14, fontWeight: '700' },
-  partnerCardDesc: { fontSize: 12, color: '#6b7280', lineHeight: 16 },
+  recentNum: { fontSize: 13, fontWeight: '600', color: '#111827' },
+  recentCity: { fontSize: 11, color: '#9ca3af' },
+  recentStatus: { fontSize: 11, color: '#6b7280' },
 });

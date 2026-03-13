@@ -1,9 +1,50 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Bell, Check, ArrowUpDown, Menu, ShoppingCart, Store, Truck } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 import { useMode, AppMode, MODE_HOME } from '@/lib/mode-context';
 import { haptics } from '@/lib/haptics';
+import { t } from '@/lib/translations';
+
+// Maps the last URL segment → display title
+const SEGMENT_TITLE: Record<string, string> = {
+  home: t.tabs.home,
+  orders: t.tabs.orders,
+  profile: t.tabs.profile,
+  jobs: t.tabs.jobs,
+  active: t.tabs.active,
+  earnings: t.tabs.earnings,
+  incoming: t.tabs.incoming,
+  catalog: t.tabs.catalog,
+  quotes: t.tabs.quotes,
+  skips: t.tabs.skips,
+  invoices: 'Rēķini',
+  containers: 'Konteineri',
+  certificates: 'Sertifikāti',
+  projects: 'Projekti',
+  team: 'Komanda',
+  vehicles: 'Transportlīdzekļi',
+  notifications: 'Paziņojumi',
+  messages: 'Ziņojumi',
+  settings: 'Iestatījumi',
+  order: 'Pasūtījums',
+  project: 'Projekts',
+  disposal: 'Utilizācija',
+  transport: 'Transports',
+  chat: 'Čats',
+};
+
+function titleFromPath(pathname: string): string {
+  const segments = pathname.split('/').filter(Boolean);
+  // Walk from the end, skip dynamic segments like [id]
+  for (let i = segments.length - 1; i >= 0; i--) {
+    const seg = segments[i];
+    if (seg.startsWith('[') && seg.endsWith(']')) continue;
+    const found = SEGMENT_TITLE[seg];
+    if (found) return found;
+  }
+  return 'B3Hub';
+}
 
 // ── Role config ───────────────────────────────────────────────────────────────
 
@@ -140,15 +181,13 @@ interface TopBarProps {
   unreadCount?: number;
 }
 
-export function TopBar({
-  title = 'B3Hub',
-  accentColor,
-  onMenuPress,
-  unreadCount = 0,
-}: TopBarProps) {
+export function TopBar({ title, accentColor, onMenuPress, unreadCount = 0 }: TopBarProps) {
   const { isMultiRole } = useMode();
   const router = useRouter();
+  const pathname = usePathname();
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  const displayTitle = title ?? titleFromPath(pathname);
 
   return (
     <>
@@ -163,9 +202,9 @@ export function TopBar({
           <Menu size={24} color="#374151" />
         </TouchableOpacity>
 
-        {/* Center — logo */}
+        {/* Center — page title */}
         <View style={styles.center}>
-          <Text style={[styles.logo, { color: accentColor }]}>{title}</Text>
+          <Text style={[styles.logo, { color: accentColor }]}>{displayTitle}</Text>
         </View>
 
         {/* Right — role switcher + bell */}
@@ -232,9 +271,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: {
-    fontSize: 20,
-    fontWeight: '800',
-    letterSpacing: -0.3,
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.1,
   },
   rightGroup: {
     flexDirection: 'row',

@@ -22,15 +22,8 @@ import {
   TextInput,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-// Lazy-load: native module crashes Expo Go when statically imported
-let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  MapboxGL = require('@rnmapbox/maps').default;
-} catch {
-  /* Expo Go */
-}
 import { BaseMap, UserLayer, useGeocode, RIGA_CENTER } from '@/components/map';
+import { Marker } from 'react-native-maps';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/lib/auth-context';
@@ -572,9 +565,8 @@ export default function OrderRequestScreen() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onPinDragEnd = useCallback(
     async (e: any) => {
-      const coords = e?.geometry?.coordinates as number[] | undefined;
-      if (!Array.isArray(coords) || coords.length < 2) return;
-      const [longitude, latitude] = coords;
+      const { latitude, longitude } = e?.nativeEvent?.coordinate ?? {};
+      if (latitude == null || longitude == null) return;
       setPin({ latitude, longitude });
       setAddress('Nosakām adresi...');
       const { address: addr, city: c } = await reverseGeocodeWithCity(latitude, longitude);
@@ -778,29 +770,18 @@ export default function OrderRequestScreen() {
         center={RIGA_CENTER}
         zoom={10}
         onPress={onMapPress}
-        styleURL={
-          MapboxGL
-            ? satellite
-              ? MapboxGL.StyleURL.SatelliteStreet
-              : MapboxGL.StyleURL.Light
-            : undefined
-        }
+        mapType={satellite ? 'hybrid' : 'standard'}
       >
         <UserLayer />
-        {pin && MapboxGL && (
-          <MapboxGL.PointAnnotation
-            id="deliveryPin"
-            coordinate={[pin.longitude, pin.latitude]}
-            draggable
-            onDragEnd={onPinDragEnd}
-          >
+        {pin && (
+          <Marker coordinate={pin} draggable onDragEnd={onPinDragEnd}>
             <View style={sa.markerWrap}>
               <View style={sa.markerOuter}>
                 <View style={sa.markerInner} />
               </View>
               <View style={sa.markerStem} />
             </View>
-          </MapboxGL.PointAnnotation>
+          </Marker>
         )}
       </BaseMap>
 

@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsNumber, Min } from 'class-validator';
+import { IsEnum, IsOptional, IsNumber, IsString, Min } from 'class-validator';
 import { TransportJobStatus } from '@prisma/client';
 
 const ALLOWED_DRIVER_STATUSES: TransportJobStatus[] = [
@@ -19,6 +19,11 @@ export class UpdateStatusDto {
   @IsNumber()
   @Min(1)
   weightKg?: number;
+
+  /** Weighing slip photo (base64 data URI or public URL) — optional, captured by driver at pickup */
+  @IsOptional()
+  @IsString()
+  pickupPhotoUrl?: string;
 }
 
 export { ALLOWED_DRIVER_STATUSES };

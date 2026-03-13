@@ -1,55 +1,41 @@
 /**
- * BaseMap — thin wrapper around MapboxGL.MapView.
+ * BaseMap — Google Maps wrapper using react-native-maps.
  *
- * Owns nothing about the business domain. Just gives you a map with a Camera
- * and forwards a ref so callers can drive pan/zoom/fitBounds imperatively.
- *
- * All map features (routes, pins, user location) are added as children via
- * the layer components in components/map/layers/.
+ * Drop-in replacement for the old Mapbox BaseMap. Exposes the same
+ * `cameraRef` API (setCamera / fitBounds) so all callers work unchanged.
  */
-import React from 'react';
-import { StyleSheet, View, ViewStyle, NativeModules } from 'react-native';
+import React, { useRef, useEffect, useCallback } from 'react';
+import { StyleSheet, ViewStyle } from 'react-native';
+import MapView, { PROVIDER_GOOGLE, MapPressEvent } from 'react-native-maps';
 
-// Lazy-load: @rnmapbox/maps native module is not available in Expo Go.
-// We guard with NativeModules.RNMBXModule because the library throws a
-// HostFunction exception (not a regular JS error) which bypasses try/catch.
-let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
-if (NativeModules.RNMBXModule) {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    MapboxGL = require('@rnmapbox/maps').default;
-  } catch {
-    /* native module present but failed to init — map screens show placeholder */
-  }
-}
-
-/** Rīga city centre — used as a sane default centre. */
-export const RIGA_CENTER: [number, number] = [24.1052, 56.9496]; // [lng, lat]
+/** Rīga city centre — [longitude, latitude] (Mapbox convention kept for compat). */
+export const RIGA_CENTER: [number, number] = [24.1052, 56.9496];
 
 export interface BaseMapProps {
-  /** Pass a ref to drive the camera imperatively (fitBounds, setCamera, etc.) */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   cameraRef?: React.RefObject<any>;
-  /** Initial map centre as [longitude, latitude]. Defaults to Rīga. */
+  /** [longitude, latitude]. Defaults to Rīga. */
   center?: [number, number];
-  /** Initial zoom level. Default 10. */
   zoom?: number;
-  /** Called when user taps the map (GeoJSON feature passed as argument). */
   onPress?: (feature: unknown) => void;
-  /** Override the outer container style. */
   style?: ViewStyle;
-  /** Layers and annotations to render inside the map. */
   children?: React.ReactNode;
   rotateEnabled?: boolean;
   pitchEnabled?: boolean;
   compassEnabled?: boolean;
-  /** Show Mapbox attribution. Default false (keep UI clean). */
   showAttribution?: boolean;
-  /**
-   * Mapbox style URL. Defaults to StyleURL.Light (street map).
-   * Pass MapboxGL.StyleURL.SatelliteStreet for aerial/satellite view.
-   */
   styleURL?: string;
+  /** Show the blue GPS dot. Pass true when you'd previously use <UserLayer />. */
+  showsUserLocation?: boolean;
+  /** Show the "my location" center button. */
+  showsMyLocationButton?: boolean;
+  /** Map display type. Default 'standard'. */
+  mapType?: 'standard' | 'satellite' | 'hybrid';
+}
+
+/** Approximate lat/lng delta from a Mapbox-style zoom level. */
+function zoomToDelta(zoom: number): number {
+  return 360 / Math.pow(2, zoom);
 }
 
 export function BaseMap({
@@ -62,33 +48,122 @@ export function BaseMap({
   rotateEnabled = false,
   pitchEnabled = false,
   compassEnabled = false,
-  showAttribution = false,
-  styleURL,
+  showsUserLocation = false,
+  showsMyLocationButton = false,
+  mapType = 'standard',
 }: BaseMapProps) {
-  // Native module unavailable in Expo Go — render empty placeholder
-  if (!MapboxGL) {
-    return <View style={[StyleSheet.absoluteFillObject, style, { backgroundColor: '#e5e7eb' }]} />;
-  }
+  const mapRef = useRef<MapView>(null);
+  // Track whether Google Maps has fully initialised and is ready to receive commands.
+  const mapReady = useRef(false);
+  // Queue of camera actions that arrived before the map was ready.
+  const pendingCamera = useRef<(() => void) | null>(null);
+
+  const onMapReady = useCallback(() => {
+    mapReady.current = true;
+    // Flush any queued camera action.
+    if (pendingCamera.current) {
+      pendingCamera.current();
+      pendingCamera.current = null;
+    }
+  }, []);
+
+  // Populate cameraRef with a Mapbox-compat shim so all callers work unchanged
+  useEffect(() => {
+    if (!cameraRef) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (cameraRef as any).current = {
+      setCamera({
+        centerCoordinate,
+        zoomLevel,
+        animationDuration,
+      }: {
+        centerCoordinate: [number, number];
+        zoomLevel: number;
+        animationDuration?: number;
+      }) {
+        const delta = zoomToDelta(zoomLevel);
+        const action = () =>
+          mapRef.current?.animateToRegion(
+            {
+              latitude: centerCoordinate[1],
+              longitude: centerCoordinate[0],
+              latitudeDelta: delta,
+              longitudeDelta: delta,
+            },
+            animationDuration ?? 500,
+          );
+        if (mapReady.current) {
+          action();
+        } else {
+          pendingCamera.current = action;
+        }
+      },
+      fitBounds(
+        ne: [number, number],
+        sw: [number, number],
+        padding: number | number[],
+        _duration: number,
+      ) {
+        const pad = Array.isArray(padding)
+          ? { top: padding[0], right: padding[1], bottom: padding[2], left: padding[3] }
+          : {
+              top: padding as number,
+              right: padding as number,
+              bottom: padding as number,
+              left: padding as number,
+            };
+        const action = () =>
+          mapRef.current?.fitToCoordinates(
+            [
+              { latitude: ne[1], longitude: ne[0] },
+              { latitude: sw[1], longitude: sw[0] },
+            ],
+            { edgePadding: pad, animated: true },
+          );
+        if (mapReady.current) {
+          action();
+        } else {
+          pendingCamera.current = action;
+        }
+      },
+    };
+  }, [cameraRef]);
+
+  // Normalize onPress to a Mapbox-style feature so AddressPicker works unchanged
+  const handlePress = (e: MapPressEvent) => {
+    const { latitude, longitude } = e.nativeEvent.coordinate;
+    onPress?.({ geometry: { coordinates: [longitude, latitude] } });
+  };
+
+  const [lng, lat] = center;
+  const delta = zoomToDelta(zoom);
 
   return (
-    <MapboxGL.MapView
+    <MapView
+      ref={mapRef}
+      provider={PROVIDER_GOOGLE}
       style={[StyleSheet.absoluteFillObject, style]}
-      styleURL={styleURL ?? MapboxGL.StyleURL.Light}
-      compassEnabled={compassEnabled}
-      scaleBarEnabled={false}
+      initialRegion={{
+        latitude: lat,
+        longitude: lng,
+        latitudeDelta: delta,
+        longitudeDelta: delta,
+      }}
+      showsUserLocation={showsUserLocation}
+      followsUserLocation={false}
+      showsMyLocationButton={showsMyLocationButton}
+      mapType={mapType}
+      showsCompass={compassEnabled}
+      showsScale={false}
+      showsBuildings={true}
+      showsTraffic={false}
       rotateEnabled={rotateEnabled}
       pitchEnabled={pitchEnabled}
-      attributionEnabled={showAttribution}
-      logoEnabled={false}
-      onPress={onPress}
+      moveOnMarkerPress={false}
+      onMapReady={onMapReady}
+      onPress={onPress ? handlePress : undefined}
     >
-      <MapboxGL.Camera
-        ref={cameraRef}
-        centerCoordinate={center}
-        zoomLevel={zoom}
-        animationDuration={0}
-      />
       {children}
-    </MapboxGL.MapView>
+    </MapView>
   );
 }

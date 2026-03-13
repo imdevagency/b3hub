@@ -1,15 +1,16 @@
 /**
- * maps.ts — Mapbox utilities for B3Hub
+ * maps.ts — Google Maps utilities for B3Hub
  *
  * Wraps:
- *  • Directions API v5        — real road polylines + distance/duration
- *  • Optimization API v1      — multi-stop delivery ordering (≤12 stops)
+ *  • Directions API        — real road polylines + distance/duration
+ *  • Directions API (optimized waypoints) — multi-stop delivery ordering
  *
  * All calls are fire-and-forget safe: every async function has a graceful
  * fallback (straight-line or original order) so the map never hard-crashes.
  */
 
-const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '';
+const GOOGLE_KEY = 'AIzaSyBNIZk1VBorD3kU02BNjz_2m4Dlek_gsx8';
+const DIRECTIONS_BASE = 'https://maps.googleapis.com/maps/api/directions/json';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -55,11 +56,41 @@ function formatDuration(seconds: number): string {
   return m === 0 ? `${h} h` : `${h} h ${m} min`;
 }
 
-// ── Directions API v5 ─────────────────────────────────────────────────────────
+// ── Google encoded polyline decoder ──────────────────────────────────────────
+
+function decodePolyline(encoded: string): LatLng[] {
+  const coords: LatLng[] = [];
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+  while (index < encoded.length) {
+    let b: number;
+    let shift = 0;
+    let result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    lat += result & 1 ? ~(result >> 1) : result >> 1;
+    shift = 0;
+    result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    lng += result & 1 ? ~(result >> 1) : result >> 1;
+    coords.push({ latitude: lat / 1e5, longitude: lng / 1e5 });
+  }
+  return coords;
+}
+
+// ── Directions API ────────────────────────────────────────────────────────────
 
 /**
- * Fetch a real driving route between two points using the Mapbox Directions API.
- * Returns decoded GeoJSON coords + distance/duration metadata.
+ * Fetch a real driving route between two points using the Google Maps Directions API.
+ * Returns decoded polyline coords + distance/duration metadata.
  *
  * Falls back to a straight two-point line on any error.
  */
@@ -74,36 +105,35 @@ export async function fetchRoute(origin: Stop, destination: Stop): Promise<Route
     durationSec: 0,
   };
 
-  if (!MAPBOX_TOKEN) return fallback;
-
   try {
     const url =
-      `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/` +
-      `${origin.lng},${origin.lat};${destination.lng},${destination.lat}` +
-      `?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`;
+      `${DIRECTIONS_BASE}?origin=${origin.lat},${origin.lng}` +
+      `&destination=${destination.lat},${destination.lng}` +
+      `&mode=driving&language=lv&key=${GOOGLE_KEY}`;
 
     const res = await fetch(url);
     if (!res.ok) return fallback;
 
     const data = (await res.json()) as {
+      status?: string;
       routes?: Array<{
-        geometry?: { coordinates?: number[][] };
-        distance?: number;
-        duration?: number;
+        overview_polyline?: { points?: string };
+        legs?: Array<{ distance?: { value?: number }; duration?: { value?: number } }>;
       }>;
     };
 
-    const route = data?.routes?.[0];
-    if (!route?.geometry?.coordinates?.length) return fallback;
+    if (data.status !== 'OK' || !data.routes?.[0]) return fallback;
 
-    // Mapbox returns [longitude, latitude]; convert to {latitude, longitude}
-    const coords: LatLng[] = route.geometry.coordinates.map(([lng, lat]) => ({
-      latitude: lat,
-      longitude: lng,
-    }));
+    const route = data.routes[0];
+    const leg = route.legs?.[0];
+    const encoded = route.overview_polyline?.points;
+    if (!encoded) return fallback;
 
-    const distanceKm = route.distance ? Math.round((route.distance / 1000) * 10) / 10 : 0;
-    const durationSec = route.duration ? Math.round(route.duration) : 0;
+    const coords = decodePolyline(encoded);
+    const distanceKm = leg?.distance?.value
+      ? Math.round((leg.distance.value / 1000) * 10) / 10
+      : 0;
+    const durationSec = leg?.duration?.value ? Math.round(leg.duration.value) : 0;
 
     return {
       coords,
@@ -116,11 +146,12 @@ export async function fetchRoute(origin: Stop, destination: Stop): Promise<Route
   }
 }
 
-// ── Optimization API v1 ───────────────────────────────────────────────────────
+// ── Directions API with optimized waypoints ───────────────────────────────────
 
 /**
- * Given a list of stops, ask the Mapbox Optimization API to reorder them for
- * minimum travel time. Supports up to 12 waypoints.
+ * Given a list of stops, use the Google Maps Directions API to reorder the
+ * intermediate stops for minimum travel time. Origin (first) and destination
+ * (last) stay fixed.
  *
  * Falls back to the original order on any error.
  */
@@ -131,37 +162,55 @@ export async function optimizeRoute(stops: Stop[]): Promise<OptimizedRoute> {
     totalDistanceKm: 0,
   };
 
-  if (!MAPBOX_TOKEN || stops.length < 2) return fallback;
+  if (stops.length < 2) return fallback;
+  if (stops.length === 2) {
+    const info = await fetchRoute(stops[0], stops[1]);
+    return { orderedStops: stops, visitOrder: [0, 1], totalDistanceKm: info.distanceKm };
+  }
 
   try {
-    const coordStr = stops.map((s) => `${s.lng},${s.lat}`).join(';');
+    const origin = stops[0];
+    const dest = stops[stops.length - 1];
+    const intermediates = stops.slice(1, -1);
+    const waypointStr = `optimize:true|${intermediates.map((s) => `${s.lat},${s.lng}`).join('|')}`;
+
     const url =
-      `https://api.mapbox.com/optimized-trips/v1/mapbox/driving/${coordStr}` +
-      `?geometries=geojson&roundtrip=false&source=first&destination=last` +
-      `&access_token=${MAPBOX_TOKEN}`;
+      `${DIRECTIONS_BASE}?origin=${origin.lat},${origin.lng}` +
+      `&destination=${dest.lat},${dest.lng}` +
+      `&waypoints=${encodeURIComponent(waypointStr)}` +
+      `&mode=driving&key=${GOOGLE_KEY}`;
 
     const res = await fetch(url);
     if (!res.ok) return fallback;
 
     const data = (await res.json()) as {
-      code?: string;
-      waypoints?: Array<{ waypoint_index: number }>;
-      trips?: Array<{ distance?: number }>;
+      status?: string;
+      routes?: Array<{
+        waypoint_order?: number[];
+        legs?: Array<{ distance?: { value?: number } }>;
+      }>;
     };
 
-    if (data.code !== 'Ok' || !data.waypoints?.length) return fallback;
+    if (data.status !== 'OK' || !data.routes?.[0]?.waypoint_order) return fallback;
 
-    // waypoints[i].waypoint_index = optimized visit position of input stop i
-    const orderedStops = new Array<Stop>(stops.length);
-    const visitOrder = new Array<number>(stops.length);
-    for (let i = 0; i < stops.length; i++) {
-      const pos = data.waypoints[i].waypoint_index;
-      orderedStops[pos] = stops[i];
-      visitOrder[pos] = i;
-    }
+    const waypointOrder = data.routes[0].waypoint_order; // indices into intermediates[]
+    // Build final ordered stops: origin → reordered intermediates → destination
+    const orderedStops: Stop[] = [
+      origin,
+      ...waypointOrder.map((i) => intermediates[i]),
+      dest,
+    ];
+    // visitOrder[newPos] = originalIndex
+    const visitOrder: number[] = [
+      0,
+      ...waypointOrder.map((i) => i + 1), // +1 because intermediate[i] is stops[i+1]
+      stops.length - 1,
+    ];
 
-    const totalDistanceKm = data.trips?.[0]?.distance
-      ? Math.round((data.trips[0].distance / 1000) * 10) / 10
+    const totalDistanceKm = data.routes[0].legs
+      ? Math.round(
+          (data.routes[0].legs.reduce((sum, l) => sum + (l.distance?.value ?? 0), 0) / 1000) * 10,
+        ) / 10
       : 0;
 
     return { orderedStops, visitOrder, totalDistanceKm };

@@ -96,9 +96,12 @@ export default function ActiveJobScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.7,
       allowsEditing: false,
+      base64: true,
     });
     if (!result.canceled && result.assets[0]) {
-      setPickupPhotoUri(result.assets[0].uri);
+      const asset = result.assets[0];
+      const uri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+      setPickupPhotoUri(uri);
     }
   };
 
@@ -353,9 +356,16 @@ export default function ActiveJobScreen() {
     }
     setWeightSubmitting(true);
     try {
-      const updated = await api.transportJobs.updateStatus(job.id, 'LOADED', token, kg);
+      const updated = await api.transportJobs.updateStatus(
+        job.id,
+        'LOADED',
+        token,
+        kg,
+        pickupPhotoUri ?? undefined,
+      );
       setJob(updated);
       setWeightModalVisible(false);
+      setPickupPhotoUri(null);
       haptics.success();
     } catch (err: any) {
       haptics.error();

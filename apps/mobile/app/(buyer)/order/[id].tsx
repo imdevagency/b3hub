@@ -404,6 +404,30 @@ export default function OrderDetailScreen() {
           </View>
         )}
 
+        {/* Weighing slip photo — shown as soon as driver marks job LOADED */}
+        {(() => {
+          const jobWithPhoto = order.transportJobs?.find((j) => j.pickupPhotoUrl);
+          if (!jobWithPhoto?.pickupPhotoUrl) return null;
+          return (
+            <View style={s.section}>
+              <View style={s.sectionHeader}>
+                <Camera size={14} color="#6b7280" />
+                <Text style={s.sectionTitle}>Svēršanas biļete</Text>
+                {jobWithPhoto.actualWeightKg != null && (
+                  <Text style={s.weighingWeight}>
+                    ⚖️ {jobWithPhoto.actualWeightKg.toFixed(0)} kg
+                  </Text>
+                )}
+              </View>
+              <Image
+                source={{ uri: jobWithPhoto.pickupPhotoUrl }}
+                style={s.weighingSlipPhoto}
+                resizeMode="contain"
+              />
+            </View>
+          );
+        })()}
+
         {/* Order items */}
         <View style={s.section}>
           <View style={s.sectionHeader}>
@@ -516,9 +540,7 @@ export default function OrderDetailScreen() {
                     })}
                   </Text>
                 </View>
-                {proof.recipientName ? (
-                  <Row label="Pieņēma" value={proof.recipientName} />
-                ) : null}
+                {proof.recipientName ? <Row label="Pieņēma" value={proof.recipientName} /> : null}
                 {proof.notes ? <Row label="Piezīmes" value={proof.notes} /> : null}
                 {proof.photos.length > 0 && (
                   <ScrollView
@@ -527,12 +549,7 @@ export default function OrderDetailScreen() {
                     contentContainerStyle={s.proofPhotoRow}
                   >
                     {proof.photos.map((uri, i) => (
-                      <Image
-                        key={i}
-                        source={{ uri }}
-                        style={s.proofPhoto}
-                        resizeMode="cover"
-                      />
+                      <Image key={i} source={{ uri }} style={s.proofPhoto} resizeMode="cover" />
                     ))}
                   </ScrollView>
                 )}
@@ -1006,4 +1023,19 @@ const s = StyleSheet.create({
     paddingVertical: 12,
   },
   proofNoPhotoText: { fontSize: 13, color: '#6b7280' },
+
+  // Weighing slip photo
+  weighingSlipPhoto: {
+    width: '100%',
+    height: 220,
+    borderRadius: 10,
+    backgroundColor: '#f3f4f6',
+    marginTop: 10,
+  },
+  weighingWeight: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#374151',
+    marginLeft: 'auto',
+  },
 });

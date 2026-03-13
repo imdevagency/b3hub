@@ -8,7 +8,7 @@
  * Build new map views by composing these primitives:
  *
  *   function MyOrderTrackingMap({ pickup, delivery, driverPos }) {
- *     const cameraRef = useRef<MapboxGL.Camera>(null);
+ *     const cameraRef = useRef<any>(null);
  *     const { route } = useRoute(pickup, delivery);
  *     return (
  *       <BaseMap cameraRef={cameraRef}>

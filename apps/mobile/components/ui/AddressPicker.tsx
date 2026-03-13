@@ -1,5 +1,5 @@
 /**
- * AddressPicker — full-screen Mapbox address picker with tap-to-place pin.
+ * AddressPicker — full-screen address picker with tap-to-place pin.
  *
  * Usage:
  *   <AddressPicker
@@ -13,12 +13,10 @@
  *   />
  *
  * The user can:
- *   1. Type an address → Mapbox Geocoding autocomplete
+ *   1. Type an address → Google Maps Geocoding autocomplete
  *   2. Tap a suggestion → map flies to that location
  *   3. Tap the map to fine-tune the exact gate/bay/entrance
  *   4. Press Confirm → returns address + precise coords
- *
- * Token is read from EXPO_PUBLIC_MAPBOX_TOKEN env var.
  */
 import React, { useRef, useState, useCallback } from 'react';
 import {
@@ -33,14 +31,7 @@ import {
   TextInput,
   FlatList,
 } from 'react-native';
-// Lazy-load: native module not available in Expo Go
-let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  MapboxGL = require('@rnmapbox/maps').default;
-} catch {
-  /* Expo Go */
-}
+import { Marker } from 'react-native-maps';
 import { MapPin, X, Check, Search } from 'lucide-react-native';
 import { BaseMap, useGeocode, GeocodeSuggestion } from '@/components/map';
 
@@ -195,13 +186,13 @@ export function AddressPicker({
         {/* ── Map ── */}
         <View style={styles.mapWrapper}>
           <BaseMap cameraRef={cameraRef} center={[lng, lat]} zoom={13} onPress={handleMapPress}>
-            {MapboxGL && (
-              <MapboxGL.PointAnnotation id="pin" coordinate={[lng, lat]}>
-                <View collapsable={false}>
-                  <PinMarker color={pinColor} />
-                </View>
-              </MapboxGL.PointAnnotation>
-            )}
+            <Marker
+              identifier="pin"
+              coordinate={{ latitude: lat, longitude: lng }}
+              tracksViewChanges={false}
+            >
+              <PinMarker color={pinColor} />
+            </Marker>
           </BaseMap>
 
           {/* Hint overlay */}

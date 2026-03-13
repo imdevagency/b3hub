@@ -4,7 +4,7 @@ import { AuthProvider } from '@/lib/auth-context';
 import { ModeProvider } from '@/lib/mode-context';
 import { ToastProvider } from '@/components/ui/Toast';
 import React, { useEffect, useRef } from 'react';
-import { NativeModules, View } from 'react-native';
+import { View } from 'react-native';
 // Guard: same JSI version-mismatch issue as in App.tsx
 let GestureHandlerRootView: React.ComponentType<{ style?: object; children?: React.ReactNode }> =
   View as unknown as React.ComponentType<{ style?: object; children?: React.ReactNode }>;
@@ -53,22 +53,6 @@ export default function RootLayout() {
       /* Expo Go */
     }
     return () => notifListener.current?.remove();
-  }, []);
-
-  useEffect(() => {
-    // Initialise Mapbox inside a hook so a missing native module doesn't
-    // crash the layout (and kill AuthProvider) before the app renders.
-    // Guard with NativeModules.RNMBXModule to avoid HostFunction exceptions
-    // in Expo Go where the native module is not linked.
-    if (NativeModules.RNMBXModule) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const MapboxGL = require('@rnmapbox/maps').default;
-        MapboxGL.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
-      } catch {
-        // Native module present but failed to init
-      }
-    }
   }, []);
 
   return (

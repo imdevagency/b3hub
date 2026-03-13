@@ -60,6 +60,8 @@ export class TransportJobsService {
     pricePerTonne: true,
     currency: true,
     status: true,
+    actualWeightKg: true,
+    pickupPhotoUrl: true,
     driverId: true,
     driver: {
       select: { id: true, firstName: true, lastName: true, phone: true, avatar: true },
@@ -373,6 +375,9 @@ export class TransportJobsService {
         status: dto.status,
         ...(dto.status === TransportJobStatus.LOADED && dto.weightKg
           ? { actualWeightKg: dto.weightKg }
+          : {}),
+        ...(dto.status === TransportJobStatus.LOADED && dto.pickupPhotoUrl
+          ? { pickupPhotoUrl: dto.pickupPhotoUrl }
           : {}),
       },
       select: this.jobSelect,

@@ -8,7 +8,7 @@ import { Animated, Dimensions, StyleSheet, TouchableOpacity, View } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const TAB_HEIGHT = 62;
+const TAB_HEIGHT = 52;
 const INDICATOR_W = 32;
 
 const SPRING_BASE = {
@@ -223,8 +223,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
-    paddingTop: 8,
-    paddingBottom: 4,
+    paddingTop: 6,
+    paddingBottom: 2,
   },
   label: {
     fontSize: 11,

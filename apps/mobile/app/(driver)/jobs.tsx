@@ -25,6 +25,8 @@ import { haptics } from '@/lib/haptics';
 import { SkeletonJobRow } from '@/components/ui/Skeleton';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { BaseMap } from '@/components/map';
+import { Marker } from 'react-native-maps';
 import {
   MapPin,
   Navigation2,
@@ -49,15 +51,6 @@ try {
 } catch {
   /* Expo Go fallback — renders children without swipe gesture */
 }
-// Lazy-load: native module not available in Expo Go
-let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  MapboxGL = require('@rnmapbox/maps').default;
-} catch {
-  /* Expo Go */
-}
-
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface TransportJob {
   id: string;
@@ -822,6 +815,7 @@ function JobMapView({
   onRadiusChange,
   onJobSelect,
 }: JobMapViewProps) {
+  const cameraRef = useRef<any>(null);
   const centerLat = driverLat ?? 56.946;
   const centerLng = driverLng ?? 24.105; // Riga default
 
@@ -830,38 +824,25 @@ function JobMapView({
     return haversineKm(driverLat, driverLng, j.fromLat, j.fromLng) <= mapRadius;
   });
 
-  if (!MapboxGL) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: '#e5e7eb',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      />
-    );
-  }
+  // Fly camera to driver position when it becomes available
+  useEffect(() => {
+    if (driverLat == null || driverLng == null) return;
+    cameraRef.current?.setCamera({
+      centerCoordinate: [driverLng, driverLat],
+      zoomLevel: 7,
+      animationDuration: 500,
+    });
+  }, [driverLat, driverLng]);
 
   return (
     <View style={{ flex: 1 }}>
-      <MapboxGL.MapView
-        style={{ flex: 1 }}
-        styleURL={MapboxGL.StyleURL.Dark}
-        logoEnabled={false}
-        attributionEnabled={false}
+      <BaseMap
+        cameraRef={cameraRef}
+        center={[centerLng, centerLat]}
+        zoom={driverLat ? 7 : 6}
+        showsUserLocation={driverLat !== null && driverLng !== null}
+        showsMyLocationButton
       >
-        <MapboxGL.Camera
-          centerCoordinate={[centerLng, centerLat]}
-          zoomLevel={driverLat ? 7 : 6}
-          animationDuration={500}
-        />
-
-        {/* Driver location dot */}
-        {driverLat !== null && driverLng !== null && (
-          <MapboxGL.UserLocation visible androidRenderMode="gps" />
-        )}
-
         {/* Job pickup pins */}
         {visibleJobs.map((job) => {
           const distKm =
@@ -870,20 +851,18 @@ function JobMapView({
               : null;
           const color = pinColor(distKm);
           return (
-            <MapboxGL.PointAnnotation
+            <Marker
               key={job.id}
-              id={`pin-${job.id}`}
-              coordinate={[job.fromLng, job.fromLat]}
-              onSelected={() => onJobSelect(job)}
+              coordinate={{ latitude: job.fromLat, longitude: job.fromLng }}
+              onPress={() => onJobSelect(job)}
             >
               <View style={[mapStyles.pin, { backgroundColor: color }]}>
                 <Text style={mapStyles.pinPrice}>{job.priceTotal.toFixed(0)}€</Text>
               </View>
-              <MapboxGL.Callout title="" />
-            </MapboxGL.PointAnnotation>
+            </Marker>
           );
         })}
-      </MapboxGL.MapView>
+      </BaseMap>
 
       {/* Radius chips overlay */}
       <View style={mapStyles.radiusOverlay}>

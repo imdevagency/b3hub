@@ -11,18 +11,7 @@
  *  - Buyer order tracking: driver dot moving toward delivery pin
  */
 import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ViewStyle, ActivityIndicator, NativeModules } from 'react-native';
-// Lazy-load: native module not available in Expo Go
-// Guard with NativeModules.RNMBXModule to avoid HostFunction exceptions.
-let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
-if (NativeModules.RNMBXModule) {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    MapboxGL = require('@rnmapbox/maps').default;
-  } catch {
-    /* Expo Go */
-  }
-}
+import { View, Text, StyleSheet, ViewStyle, ActivityIndicator } from 'react-native';
 import { BaseMap, RouteLayer, PinLayer, useRoute } from '@/components/map';
 
 // ── Types ─────────────────────────────────────────────────────────────────────

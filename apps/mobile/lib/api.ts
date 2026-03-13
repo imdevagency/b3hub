@@ -261,6 +261,8 @@ export interface ApiOrder {
   transportJobs?: {
     id: string;
     status: string;
+    actualWeightKg: number | null;
+    pickupPhotoUrl: string | null;
     driver: { id: string; firstName: string; lastName: string; phone: string | null; avatar: string | null } | null;
     deliveryProof?: {
       id: string;
@@ -297,6 +299,8 @@ export interface ApiTransportJob {
   pricePerTonne: number | null;
   currency: string;
   status: TransportJobStatus;
+  actualWeightKg: number | null;
+  pickupPhotoUrl: string | null;
   driverId: string | null;
   driver: { id: string; firstName: string; lastName: string; phone: string | null; avatar: string | null } | null;
   vehicle: { id: string; licensePlate: string; vehicleType: string } | null;
@@ -628,14 +632,25 @@ export interface CreateMaterialOrderInput {
   siteContactPhone?: string;
 }
 
-async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
+async function apiFetch<T>(endpoint: string, options?: RequestInit, timeoutMs = 10_000): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+    });
+  } catch (err: any) {
+    if (err?.name === 'AbortError') throw new Error('Request timed out');
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (!res.ok) {
     const errText = await res.text().catch(() => '');
@@ -850,11 +865,11 @@ export const api = {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
-    updateStatus: (id: string, status: TransportJobStatus, token: string, weightKg?: number) =>
+    updateStatus: (id: string, status: TransportJobStatus, token: string, weightKg?: number, pickupPhotoUrl?: string) =>
       apiFetch<ApiTransportJob>(`/transport-jobs/${id}/status`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status, ...(weightKg != null ? { weightKg } : {}) }),
+        body: JSON.stringify({ status, ...(weightKg != null ? { weightKg } : {}), ...(pickupPhotoUrl ? { pickupPhotoUrl } : {}) }),
       }),
 
     /** Submit delivery proof — transitions job AT_DELIVERY → DELIVERED. */

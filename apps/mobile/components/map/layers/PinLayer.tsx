@@ -1,54 +1,39 @@
 /**
- * PinLayer — renders a single PointAnnotation on a Mapbox map.
+ * PinLayer — renders a single Marker on a Google Maps (react-native-maps) map.
  *
- * Provides pre-styled marker types that match the B3Hub design language:
- *   pickup   — green "P" bubble
- *   delivery — red "D" bubble
- *   return   — small green "R" bubble
- *   current  — blue pulsing GPS dot
- *   custom   — pass any `color` and optional `label`
+ * Provides pre-styled marker types matching the B3Hub design language:
+ *   pickup   — dark "P" bubble
+ *   delivery — dark "D" bubble
+ *   return   — green "R" bubble
+ *   current  — blue GPS dot
+ *   custom   — any colour + optional label
  *
- * Must be placed inside a <BaseMap> (or <MapboxGL.MapView>).
+ * Must be placed inside a <BaseMap>.
  */
 import React from 'react';
-import { View, Text, StyleSheet, NativeModules } from 'react-native';
-// Lazy-load: native module not available in Expo Go
-// Guard with NativeModules.RNMBXModule to avoid HostFunction exceptions.
-let MapboxGL: typeof import('@rnmapbox/maps').default | null = null;
-if (NativeModules.RNMBXModule) {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    MapboxGL = require('@rnmapbox/maps').default;
-  } catch {
-    /* Expo Go */
-  }
-}
+import { View, Text, StyleSheet } from 'react-native';
+import { Marker } from 'react-native-maps';
 
 export type PinType = 'pickup' | 'delivery' | 'return' | 'current' | 'custom';
 
 interface Props {
-  /** Unique annotation id — must be unique per map instance. */
   id: string;
-  /** Pin position as { lat, lng }. */
   coordinate: { lat: number; lng: number };
-  /** Visual style preset. Default 'custom'. */
   type?: PinType;
-  /** Short text shown below the bubble. */
   label?: string;
-  /** Bubble fill colour — used when type === 'custom'. */
   color?: string;
 }
 
 export function PinLayer({ id, coordinate, type = 'custom', label, color = '#6b7280' }: Props) {
-  if (!MapboxGL) return null;
-  const coord: [number, number] = [coordinate.lng, coordinate.lat];
-
   return (
-    <MapboxGL.PointAnnotation id={id} coordinate={coord}>
-      <View collapsable={false}>
-        <MarkerForType type={type} label={label} color={color} />
-      </View>
-    </MapboxGL.PointAnnotation>
+    <Marker
+      key={id}
+      identifier={id}
+      coordinate={{ latitude: coordinate.lat, longitude: coordinate.lng }}
+      tracksViewChanges={false}
+    >
+      <MarkerForType type={type} label={label} color={color} />
+    </Marker>
   );
 }
 
