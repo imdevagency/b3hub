@@ -17,15 +17,7 @@ import {
   Alert,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import {
-  Users,
-  UserPlus,
-  X,
-  Trash2,
-  Shield,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react-native';
+import { Users, UserPlus, X, Trash2, Shield, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import {
   api,
@@ -39,18 +31,30 @@ import { useToast } from '@/components/ui/Toast';
 // ── helpers ────────────────────────────────────────────────────
 
 const ROLE_LABEL: Record<string, string> = {
-  OWNER:   'Īpašnieks',
+  OWNER: 'Īpašnieks',
   MANAGER: 'Vadītājs',
-  MEMBER:  'Dalībnieks',
-  DRIVER:  'Šoferis',
+  MEMBER: 'Dalībnieks',
+  DRIVER: 'Šoferis',
 };
 
 const PERM_META: Array<{ key: keyof MemberPermissions; label: string; sub: string }> = [
-  { key: 'permCreateContracts', label: 'Ietvarlīgumi',      sub: 'Izveidot un pārvaldīt projektu līgumus' },
-  { key: 'permReleaseCallOffs', label: 'Izsaukt pasūtījumus', sub: 'Izsaukt darbus no projektu pozīcijām' },
-  { key: 'permManageOrders',    label: 'Pasūtījumi',        sub: 'Izveidot, apstiprināt, atcelt pasūtījumus' },
-  { key: 'permViewFinancials',  label: 'Finanses',          sub: 'Skatīt rēķinus, cenas un apgrozījumu' },
-  { key: 'permManageTeam',      label: 'Komanda',           sub: 'Uzaicināt un pārvaldīt komandas locekļus' },
+  {
+    key: 'permCreateContracts',
+    label: 'Ietvarlīgumi',
+    sub: 'Izveidot un pārvaldīt projektu līgumus',
+  },
+  {
+    key: 'permReleaseCallOffs',
+    label: 'Izsaukt pasūtījumus',
+    sub: 'Izsaukt darbus no projektu pozīcijām',
+  },
+  {
+    key: 'permManageOrders',
+    label: 'Pasūtījumi',
+    sub: 'Izveidot, apstiprināt, atcelt pasūtījumus',
+  },
+  { key: 'permViewFinancials', label: 'Finanses', sub: 'Skatīt rēķinus, cenas un apgrozījumu' },
+  { key: 'permManageTeam', label: 'Komanda', sub: 'Uzaicināt un pārvaldīt komandas locekļus' },
 ];
 
 // ── Permission toggles sheet ────────────────────────────────────
@@ -145,9 +149,11 @@ function PermissionsSheet({
             onPress={handleSave}
             disabled={saving}
           >
-            {saving
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Text style={styles.saveBtnText}>Saglabāt tiesības</Text>}
+            {saving ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.saveBtnText}>Saglabāt tiesības</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -183,13 +189,32 @@ function InviteModal({
   const [saving, setSaving] = useState(false);
 
   function reset() {
-    setForm({ email: '', firstName: '', lastName: '', phone: '', permCreateContracts: false, permReleaseCallOffs: false, permManageOrders: false, permViewFinancials: false, permManageTeam: false });
+    setForm({
+      email: '',
+      firstName: '',
+      lastName: '',
+      phone: '',
+      permCreateContracts: false,
+      permReleaseCallOffs: false,
+      permManageOrders: false,
+      permViewFinancials: false,
+      permManageTeam: false,
+    });
   }
 
   async function handleInvite() {
-    if (!form.email.trim()) { showToast('Ievadiet e-pasta adresi', 'error'); return; }
-    if (!form.firstName.trim()) { showToast('Ievadiet vārdu', 'error'); return; }
-    if (!form.lastName.trim()) { showToast('Ievadiet uzvārdu', 'error'); return; }
+    if (!form.email.trim()) {
+      showToast('Ievadiet e-pasta adresi', 'error');
+      return;
+    }
+    if (!form.firstName.trim()) {
+      showToast('Ievadiet vārdu', 'error');
+      return;
+    }
+    if (!form.lastName.trim()) {
+      showToast('Ievadiet uzvārdu', 'error');
+      return;
+    }
     setSaving(true);
     try {
       const res = await api.companyMembers.invite(form, token);
@@ -219,16 +244,43 @@ function InviteModal({
           </View>
 
           <Text style={styles.fieldLabel}>E-pasts *</Text>
-          <TextInput style={styles.input} value={form.email} onChangeText={(v) => setForm((p) => ({ ...p, email: v }))} keyboardType="email-address" autoCapitalize="none" placeholder="dalibnieks@uznemums.lv" placeholderTextColor="#9ca3af" />
+          <TextInput
+            style={styles.input}
+            value={form.email}
+            onChangeText={(v) => setForm((p) => ({ ...p, email: v }))}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            placeholder="dalibnieks@uznemums.lv"
+            placeholderTextColor="#9ca3af"
+          />
 
           <Text style={styles.fieldLabel}>Vārds *</Text>
-          <TextInput style={styles.input} value={form.firstName} onChangeText={(v) => setForm((p) => ({ ...p, firstName: v }))} placeholder="Jānis" placeholderTextColor="#9ca3af" />
+          <TextInput
+            style={styles.input}
+            value={form.firstName}
+            onChangeText={(v) => setForm((p) => ({ ...p, firstName: v }))}
+            placeholder="Jānis"
+            placeholderTextColor="#9ca3af"
+          />
 
           <Text style={styles.fieldLabel}>Uzvārds *</Text>
-          <TextInput style={styles.input} value={form.lastName} onChangeText={(v) => setForm((p) => ({ ...p, lastName: v }))} placeholder="Bērziņš" placeholderTextColor="#9ca3af" />
+          <TextInput
+            style={styles.input}
+            value={form.lastName}
+            onChangeText={(v) => setForm((p) => ({ ...p, lastName: v }))}
+            placeholder="Bērziņš"
+            placeholderTextColor="#9ca3af"
+          />
 
           <Text style={styles.fieldLabel}>Telefons</Text>
-          <TextInput style={styles.input} value={form.phone ?? ''} onChangeText={(v) => setForm((p) => ({ ...p, phone: v }))} keyboardType="phone-pad" placeholder="+371 xxxxxxxx" placeholderTextColor="#9ca3af" />
+          <TextInput
+            style={styles.input}
+            value={form.phone ?? ''}
+            onChangeText={(v) => setForm((p) => ({ ...p, phone: v }))}
+            keyboardType="phone-pad"
+            placeholder="+371 xxxxxxxx"
+            placeholderTextColor="#9ca3af"
+          />
 
           <Text style={[styles.permSection, { marginTop: 16 }]}>Sākotnējās tiesības</Text>
           {PERM_META.map(({ key, label, sub }) => (
@@ -251,9 +303,11 @@ function InviteModal({
             onPress={handleInvite}
             disabled={saving}
           >
-            {saving
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Text style={styles.saveBtnText}>Uzaicināt</Text>}
+            {saving ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.saveBtnText}>Uzaicināt</Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -283,12 +337,17 @@ function MemberCard({
       <View style={styles.cardTop}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
-            {member.firstName.charAt(0)}{member.lastName.charAt(0)}
+            {member.firstName.charAt(0)}
+            {member.lastName.charAt(0)}
           </Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.memberName}>{member.firstName} {member.lastName}</Text>
-          <Text style={styles.memberEmail} numberOfLines={1}>{member.email}</Text>
+          <Text style={styles.memberName}>
+            {member.firstName} {member.lastName}
+          </Text>
+          <Text style={styles.memberEmail} numberOfLines={1}>
+            {member.email}
+          </Text>
         </View>
         <View style={styles.cardActions}>
           <View style={[styles.roleBadge, isOwner && { backgroundColor: '#1f2937' }]}>
@@ -301,7 +360,10 @@ function MemberCard({
               <TouchableOpacity onPress={onEdit} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Shield size={18} color="#6b7280" />
               </TouchableOpacity>
-              <TouchableOpacity onPress={onRemove} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity
+                onPress={onRemove}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
                 <Trash2 size={16} color="#ef4444" />
               </TouchableOpacity>
             </>
@@ -312,10 +374,17 @@ function MemberCard({
       {activePerms.length > 0 && (
         <TouchableOpacity
           style={styles.permToggle}
-          onPress={() => { haptics.light(); setExpanded((v) => !v); }}
+          onPress={() => {
+            haptics.light();
+            setExpanded((v) => !v);
+          }}
         >
           <Text style={styles.permToggleText}>{activePerms.length} tiesības</Text>
-          {expanded ? <ChevronUp size={13} color="#6b7280" /> : <ChevronDown size={13} color="#6b7280" />}
+          {expanded ? (
+            <ChevronUp size={13} color="#6b7280" />
+          ) : (
+            <ChevronDown size={13} color="#6b7280" />
+          )}
         </TouchableOpacity>
       )}
 
@@ -344,27 +413,38 @@ export default function TeamScreen() {
   const [showInvite, setShowInvite] = useState(false);
   const [editMember, setEditMember] = useState<ApiCompanyMember | null>(null);
 
-  // Determine if the current user can manage the team
+  // Owners or users with team-manage permission can invite / edit members.
+  // If user has no company yet they are treated as prospective owner.
   const canManage =
-    user?.companyRole === 'OWNER' || user?.permManageTeam === true;
+    !user?.companyRole ||
+    user?.companyRole === 'OWNER' ||
+    user?.permManageTeam === true;
 
-  const load = useCallback(async (quiet = false) => {
-    if (!token) return;
-    if (!quiet) setLoading(true);
-    try {
-      const data = await api.companyMembers.list(token);
-      setMembers(data);
-    } catch (e: any) {
-      showToast(e.message ?? 'Kļūda ielādējot komandu', 'error');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [token]);
+  const load = useCallback(
+    async (quiet = false) => {
+      if (!token) return;
+      if (!quiet) setLoading(true);
+      try {
+        const data = await api.companyMembers.list(token);
+        setMembers(data);
+      } catch (e: any) {
+        showToast(e.message ?? 'Kļūda ielādējot komandu', 'error');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [token],
+  );
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  function onRefresh() { setRefreshing(true); load(true); }
+  function onRefresh() {
+    setRefreshing(true);
+    load(true);
+  }
 
   function confirmRemove(member: ApiCompanyMember) {
     haptics.medium();
@@ -401,7 +481,10 @@ export default function TeamScreen() {
         {canManage && (
           <TouchableOpacity
             style={styles.inviteBtn}
-            onPress={() => { haptics.light(); setShowInvite(true); }}
+            onPress={() => {
+              haptics.light();
+              setShowInvite(true);
+            }}
           >
             <UserPlus size={15} color="#fff" />
             <Text style={styles.inviteBtnText}>Uzaicināt</Text>
@@ -423,7 +506,21 @@ export default function TeamScreen() {
             <View style={styles.empty}>
               <Users size={38} color="#d1d5db" />
               <Text style={styles.emptyTitle}>Nav komandas locekļu</Text>
-              <Text style={styles.emptyBody}>Uzaiciniet kolēģus, lai piešķirtu tiem tiesības.</Text>
+              <Text style={styles.emptyBody}>
+                Uzaiciniet kolēģus un iestatiet tiem tiesības — tāpat kā Schüttflix.
+              </Text>
+              {canManage && (
+                <TouchableOpacity
+                  style={styles.emptyInviteBtn}
+                  onPress={() => {
+                    haptics.light();
+                    setShowInvite(true);
+                  }}
+                >
+                  <UserPlus size={16} color="#fff" />
+                  <Text style={styles.emptyInviteBtnText}>Pievienot pirmo dalībnieku</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             members.map((m) => (
@@ -431,12 +528,29 @@ export default function TeamScreen() {
                 key={m.id}
                 member={m}
                 canManage={canManage}
-                onEdit={() => { haptics.light(); setEditMember(m); }}
+                onEdit={() => {
+                  haptics.light();
+                  setEditMember(m);
+                }}
                 onRemove={() => confirmRemove(m)}
               />
             ))
           )}
         </ScrollView>
+      )}
+
+      {/* FAB — always visible to managers when list has items */}
+      {canManage && members.length > 0 && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => {
+            haptics.medium();
+            setShowInvite(true);
+          }}
+          activeOpacity={0.85}
+        >
+          <UserPlus size={20} color="#fff" />
+        </TouchableOpacity>
       )}
 
       <InviteModal
@@ -484,10 +598,37 @@ const styles = StyleSheet.create({
   },
   inviteBtnText: { fontSize: 13, fontWeight: '600', color: '#fff' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list: { padding: 16, gap: 10, paddingBottom: 40 },
-  empty: { padding: 40, alignItems: 'center', gap: 10 },
+  list: { padding: 16, gap: 10, paddingBottom: 100 },
+  empty: { padding: 40, alignItems: 'center', gap: 12 },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: '#374151' },
-  emptyBody: { fontSize: 13, color: '#9ca3af', textAlign: 'center' },
+  emptyBody: { fontSize: 13, color: '#9ca3af', textAlign: 'center', lineHeight: 19 },
+  emptyInviteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#111827',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginTop: 6,
+  },
+  emptyInviteBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  fab: {
+    position: 'absolute',
+    bottom: 28,
+    right: 20,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
+  },
   // card
   card: {
     backgroundColor: '#fff',
@@ -559,7 +700,14 @@ const styles = StyleSheet.create({
   },
   sheetTitle: { fontSize: 17, fontWeight: '700', color: '#111827' },
   sheetSub: { fontSize: 13, color: '#9ca3af', marginTop: 2 },
-  permSection: { fontSize: 12, fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  permSection: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#374151',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
   permRow: {
     flexDirection: 'row',
     alignItems: 'center',

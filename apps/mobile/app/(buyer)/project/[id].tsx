@@ -43,19 +43,23 @@ import { useToast } from '@/components/ui/Toast';
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('lv-LV', { day: '2-digit', month: 'short', year: 'numeric' });
+  return new Date(iso).toLocaleDateString('lv-LV', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 const STATUS_META: Record<FrameworkContractStatus, { label: string; dot: string; bg: string }> = {
-  ACTIVE:    { label: 'Aktīvs',   dot: '#22c55e', bg: '#dcfce7' },
+  ACTIVE: { label: 'Aktīvs', dot: '#22c55e', bg: '#dcfce7' },
   COMPLETED: { label: 'Pabeigts', dot: '#3b82f6', bg: '#dbeafe' },
-  EXPIRED:   { label: 'Beidzies', dot: '#f59e0b', bg: '#fef9c3' },
-  CANCELLED: { label: 'Atcelts',  dot: '#9ca3af', bg: '#f3f4f6' },
+  EXPIRED: { label: 'Beidzies', dot: '#f59e0b', bg: '#fef9c3' },
+  CANCELLED: { label: 'Atcelts', dot: '#9ca3af', bg: '#f3f4f6' },
 };
 
 const POS_TYPE_LABEL: Record<string, string> = {
   MATERIAL_DELIVERY: 'Materiālu piegāde',
-  WASTE_DISPOSAL:    'Atkritumu izvešana',
+  WASTE_DISPOSAL: 'Atkritumu izvešana',
   FREIGHT_TRANSPORT: 'Kravas transports',
 };
 
@@ -75,9 +79,7 @@ function CallOffRow({ item }: { item: ApiFrameworkCallOff }) {
   const isDone = ['DELIVERED', 'COMPLETED'].includes(item.status.toUpperCase());
   return (
     <View style={styles.callOffRow}>
-      {isDone
-        ? <CheckCircle2 size={14} color="#22c55e" />
-        : <Clock size={14} color="#f59e0b" />}
+      {isDone ? <CheckCircle2 size={14} color="#22c55e" /> : <Clock size={14} color="#f59e0b" />}
       <View style={{ flex: 1 }}>
         <Text style={styles.callOffJob}>{item.jobNumber}</Text>
         {item.deliveryCity ? <Text style={styles.callOffSub}>{item.deliveryCity}</Text> : null}
@@ -114,15 +116,25 @@ function CallOffModal({
   const [saving, setSaving] = useState(false);
 
   function reset() {
-    setQty(''); setPickupDate(''); setDeliveryDate('');
-    setPickupCity(''); setDeliveryCity(''); setNotes('');
+    setQty('');
+    setPickupDate('');
+    setDeliveryDate('');
+    setPickupCity('');
+    setDeliveryCity('');
+    setNotes('');
   }
 
   async function handleSubmit() {
     if (!position) return;
     const quantity = parseFloat(qty);
-    if (!qty || isNaN(quantity) || quantity <= 0) { showToast('Ievadiet derīgu daudzumu', 'error'); return; }
-    if (!pickupDate.trim()) { showToast('Ievadiet izbraukšanas datumu (YYYY-MM-DD)', 'error'); return; }
+    if (!qty || isNaN(quantity) || quantity <= 0) {
+      showToast('Ievadiet derīgu daudzumu', 'error');
+      return;
+    }
+    if (!pickupDate.trim()) {
+      showToast('Ievadiet izbraukšanas datumu (YYYY-MM-DD)', 'error');
+      return;
+    }
     setSaving(true);
     try {
       const body: CreateCallOffInput = {
@@ -150,10 +162,7 @@ function CallOffModal({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <ScrollView
-          contentContainerStyle={styles.modalSheet}
-          keyboardShouldPersistTaps="handled"
-        >
+        <ScrollView contentContainerStyle={styles.modalSheet} keyboardShouldPersistTaps="handled">
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Izsaukt pasūtījumu</Text>
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -163,7 +172,9 @@ function CallOffModal({
 
           <View style={styles.positionChip}>
             <Truck size={13} color="#6b7280" />
-            <Text style={styles.positionChipText} numberOfLines={1}>{position.description}</Text>
+            <Text style={styles.positionChipText} numberOfLines={1}>
+              {position.description}
+            </Text>
           </View>
 
           <Text style={styles.fieldLabel}>Daudzums * ({position.unit})</Text>
@@ -229,9 +240,11 @@ function CallOffModal({
             onPress={handleSubmit}
             disabled={saving}
           >
-            {saving
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Text style={styles.submitBtnText}>Izveidot pasūtījumu</Text>}
+            {saving ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.submitBtnText}>Izveidot pasūtījumu</Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -256,11 +269,16 @@ function PositionCard({
       <View style={styles.posHeader}>
         <View style={{ flex: 1 }}>
           <Text style={styles.posType}>{POS_TYPE_LABEL[pos.positionType] ?? pos.positionType}</Text>
-          <Text style={styles.posDesc} numberOfLines={2}>{pos.description}</Text>
+          <Text style={styles.posDesc} numberOfLines={2}>
+            {pos.description}
+          </Text>
         </View>
         <TouchableOpacity
           style={styles.callOffBtn}
-          onPress={() => { haptics.light(); onCallOff(pos); }}
+          onPress={() => {
+            haptics.light();
+            onCallOff(pos);
+          }}
         >
           <Plus size={13} color="#111827" />
           <Text style={styles.callOffBtnText}>Izsaukt</Text>
@@ -280,18 +298,24 @@ function PositionCard({
       {pos.unitPrice != null && (
         <Text style={styles.posPrice}>
           €{pos.unitPrice.toFixed(2)} / {pos.unit}
-          &nbsp;&nbsp;·&nbsp;&nbsp;
-          Kopā: €{(pos.unitPrice * pos.agreedQty).toFixed(2)}
+          &nbsp;&nbsp;·&nbsp;&nbsp; Kopā: €{(pos.unitPrice * pos.agreedQty).toFixed(2)}
         </Text>
       )}
 
       {pos.callOffs.length > 0 && (
         <TouchableOpacity
           style={styles.expandToggle}
-          onPress={() => { haptics.light(); setExpanded((v) => !v); }}
+          onPress={() => {
+            haptics.light();
+            setExpanded((v) => !v);
+          }}
         >
           <Text style={styles.expandLabel}>{pos.callOffs.length} pasūtījumi</Text>
-          {expanded ? <ChevronUp size={14} color="#6b7280" /> : <ChevronDown size={14} color="#6b7280" />}
+          {expanded ? (
+            <ChevronUp size={14} color="#6b7280" />
+          ) : (
+            <ChevronDown size={14} color="#6b7280" />
+          )}
         </TouchableOpacity>
       )}
 
@@ -319,23 +343,31 @@ export default function ProjectDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [callOffPos, setCallOffPos] = useState<ApiFrameworkPosition | null>(null);
 
-  const load = useCallback(async (quiet = false) => {
-    if (!token || !id) return;
-    if (!quiet) setLoading(true);
-    try {
-      const data = await api.frameworkContracts.get(id, token);
-      setContract(data);
-    } catch (e: any) {
-      showToast(e.message ?? 'Kļūda', 'error');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [token, id]);
+  const load = useCallback(
+    async (quiet = false) => {
+      if (!token || !id) return;
+      if (!quiet) setLoading(true);
+      try {
+        const data = await api.frameworkContracts.get(id, token);
+        setContract(data);
+      } catch (e: any) {
+        showToast(e.message ?? 'Kļūda', 'error');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [token, id],
+  );
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  function onRefresh() { setRefreshing(true); load(true); }
+  function onRefresh() {
+    setRefreshing(true);
+    load(true);
+  }
 
   if (loading) {
     return (
@@ -365,10 +397,15 @@ export default function ProjectDetailScreen() {
     <ScreenContainer standalone topInset={0}>
       {/* back header */}
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
           <ArrowLeft size={22} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.topBarTitle} numberOfLines={1}>{contract.title}</Text>
+        <Text style={styles.topBarTitle} numberOfLines={1}>
+          {contract.title}
+        </Text>
         <View style={[styles.statusBadge, { backgroundColor: meta.bg }]}>
           <View style={[styles.statusDot, { backgroundColor: meta.dot }]} />
           <Text style={[styles.statusLabel, { color: meta.dot }]}>{meta.label}</Text>
@@ -417,15 +454,13 @@ export default function ProjectDetailScreen() {
         <Text style={styles.sectionTitle}>Pozīcijas ({contract.positions.length})</Text>
         {contract.positions.length === 0 ? (
           <View style={styles.noPosCard}>
-            <Text style={styles.noPosText}>Nav pozīciju. Pievienojiet pozīciju, lai izsauktu pasūtījumus.</Text>
+            <Text style={styles.noPosText}>
+              Nav pozīciju. Pievienojiet pozīciju, lai izsauktu pasūtījumus.
+            </Text>
           </View>
         ) : (
           contract.positions.map((pos) => (
-            <PositionCard
-              key={pos.id}
-              pos={pos}
-              onCallOff={(p) => setCallOffPos(p)}
-            />
+            <PositionCard key={pos.id} pos={pos} onCallOff={(p) => setCallOffPos(p)} />
           ))
         )}
       </ScrollView>
@@ -456,7 +491,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   topBarTitle: { flex: 1, fontSize: 16, fontWeight: '600', color: '#111827' },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+  },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusLabel: { fontSize: 11, fontWeight: '600' },
   scroll: { padding: 16, gap: 12, paddingBottom: 40 },
@@ -529,7 +571,14 @@ const styles = StyleSheet.create({
   posProgress: { gap: 4 },
   progressSub2: { fontSize: 11, color: '#9ca3af' },
   posPrice: { fontSize: 12, color: '#6b7280' },
-  expandToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
+  expandToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+  },
   expandLabel: { fontSize: 12, color: '#6b7280', fontWeight: '500' },
   callOffList: { gap: 6 },
   callOffRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -546,7 +595,12 @@ const styles = StyleSheet.create({
     paddingBottom: 50,
     gap: 2,
   },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
   modalTitle: { fontSize: 17, fontWeight: '700', color: '#111827' },
   positionChip: {
     flexDirection: 'row',

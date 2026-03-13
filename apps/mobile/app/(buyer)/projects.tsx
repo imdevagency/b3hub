@@ -18,11 +18,7 @@ import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { FolderOpen, Plus, X, ChevronRight, Layers } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
-import {
-  api,
-  type ApiFrameworkContract,
-  type FrameworkContractStatus,
-} from '@/lib/api';
+import { api, type ApiFrameworkContract, type FrameworkContractStatus } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
 
@@ -30,14 +26,18 @@ import { useToast } from '@/components/ui/Toast';
 
 function fmtDate(iso: string | null): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('lv-LV', { day: '2-digit', month: 'short', year: 'numeric' });
+  return new Date(iso).toLocaleDateString('lv-LV', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 const STATUS_META: Record<FrameworkContractStatus, { label: string; dot: string; bg: string }> = {
-  ACTIVE:    { label: 'Aktīvs',   dot: '#22c55e', bg: '#dcfce7' },
+  ACTIVE: { label: 'Aktīvs', dot: '#22c55e', bg: '#dcfce7' },
   COMPLETED: { label: 'Pabeigts', dot: '#3b82f6', bg: '#dbeafe' },
-  EXPIRED:   { label: 'Beidzies', dot: '#f59e0b', bg: '#fef9c3' },
-  CANCELLED: { label: 'Atcelts',  dot: '#9ca3af', bg: '#f3f4f6' },
+  EXPIRED: { label: 'Beidzies', dot: '#f59e0b', bg: '#fef9c3' },
+  CANCELLED: { label: 'Atcelts', dot: '#9ca3af', bg: '#f3f4f6' },
 };
 
 // ── Progress bar ───────────────────────────────────────────────
@@ -46,7 +46,9 @@ function ProgressBar({ pct, color = '#111827' }: { pct: number; color?: string }
   const clamped = Math.min(100, Math.max(0, pct));
   return (
     <View style={styles.progressTrack}>
-      <View style={[styles.progressFill, { width: `${clamped}%` as any, backgroundColor: color }]} />
+      <View
+        style={[styles.progressFill, { width: `${clamped}%` as any, backgroundColor: color }]}
+      />
     </View>
   );
 }
@@ -69,7 +71,9 @@ function ContractCard({
       <View style={styles.cardHeader}>
         <View style={{ flex: 1 }}>
           <Text style={styles.contractNumber}>{contract.contractNumber}</Text>
-          <Text style={styles.contractTitle} numberOfLines={1}>{contract.title}</Text>
+          <Text style={styles.contractTitle} numberOfLines={1}>
+            {contract.title}
+          </Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: meta.bg }]}>
           <View style={[styles.statusDot, { backgroundColor: meta.dot }]} />
@@ -129,12 +133,23 @@ function CreateModal({
   }
 
   async function handleCreate() {
-    if (!title.trim()) { showToast('Ievadiet projekta nosaukumu', 'error'); return; }
-    if (!startDate.trim()) { showToast('Ievadiet sākuma datumu (YYYY-MM-DD)', 'error'); return; }
+    if (!title.trim()) {
+      showToast('Ievadiet projekta nosaukumu', 'error');
+      return;
+    }
+    if (!startDate.trim()) {
+      showToast('Ievadiet sākuma datumu (YYYY-MM-DD)', 'error');
+      return;
+    }
     setSaving(true);
     try {
       const result = await api.frameworkContracts.create(
-        { title: title.trim(), startDate, endDate: endDate || undefined, notes: notes || undefined },
+        {
+          title: title.trim(),
+          startDate,
+          endDate: endDate || undefined,
+          notes: notes || undefined,
+        },
         token,
       );
       onCreated(result);
@@ -226,21 +241,26 @@ export default function ProjectsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
 
-  const load = useCallback(async (quiet = false) => {
-    if (!token) return;
-    if (!quiet) setLoading(true);
-    try {
-      const data = await api.frameworkContracts.list(token);
-      setContracts(data);
-    } catch (e: any) {
-      showToast(e.message ?? 'Kļūda ielādējot projektus', 'error');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [token]);
+  const load = useCallback(
+    async (quiet = false) => {
+      if (!token) return;
+      if (!quiet) setLoading(true);
+      try {
+        const data = await api.frameworkContracts.list(token);
+        setContracts(data);
+      } catch (e: any) {
+        showToast(e.message ?? 'Kļūda ielādējot projektus', 'error');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [token],
+  );
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   function onRefresh() {
     setRefreshing(true);
@@ -257,7 +277,10 @@ export default function ProjectsScreen() {
         </View>
         <TouchableOpacity
           style={styles.newBtn}
-          onPress={() => { haptics.light(); setShowCreate(true); }}
+          onPress={() => {
+            haptics.light();
+            setShowCreate(true);
+          }}
         >
           <Plus size={16} color="#fff" />
           <Text style={styles.newBtnText}>Jauns</Text>
@@ -272,7 +295,9 @@ export default function ProjectsScreen() {
         <View style={styles.empty}>
           <Layers size={40} color="#d1d5db" />
           <Text style={styles.emptyTitle}>Nav projektu</Text>
-          <Text style={styles.emptyBody}>Izveidojiet pirmo ietvarlīgumu, lai sāktu izsekot piegādes.</Text>
+          <Text style={styles.emptyBody}>
+            Izveidojiet pirmo ietvarlīgumu, lai sāktu izsekot piegādes.
+          </Text>
         </View>
       ) : (
         <ScrollView
@@ -284,7 +309,10 @@ export default function ProjectsScreen() {
             <ContractCard
               key={c.id}
               contract={c}
-              onPress={() => { haptics.light(); router.push(`/(buyer)/project/${c.id}` as any); }}
+              onPress={() => {
+                haptics.light();
+                router.push(`/(buyer)/project/${c.id}` as any);
+              }}
             />
           ))}
         </ScrollView>
@@ -293,7 +321,10 @@ export default function ProjectsScreen() {
       <CreateModal
         visible={showCreate}
         onClose={() => setShowCreate(false)}
-        onCreated={(c) => { setContracts((prev) => [c, ...prev]); showToast('Projekts izveidots', 'success'); }}
+        onCreated={(c) => {
+          setContracts((prev) => [c, ...prev]);
+          showToast('Projekts izveidots', 'success');
+        }}
         token={token ?? ''}
       />
     </ScreenContainer>
@@ -346,7 +377,14 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   contractNumber: { fontSize: 11, color: '#9ca3af', fontWeight: '500', marginBottom: 2 },
   contractTitle: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+  },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusLabel: { fontSize: 11, fontWeight: '600' },
   // progress
@@ -359,7 +397,14 @@ const styles = StyleSheet.create({
   progressStats: { flexDirection: 'row', justifyContent: 'space-between' },
   statText: { fontSize: 11, color: '#9ca3af' },
   // footer
-  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#f9fafb', paddingTop: 8 },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: '#f9fafb',
+    paddingTop: 8,
+  },
   footerDate: { fontSize: 12, color: '#9ca3af' },
   // modal
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
@@ -371,7 +416,12 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     gap: 4,
   },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
   modalTitle: { fontSize: 17, fontWeight: '700', color: '#111827' },
   fieldLabel: { fontSize: 12, fontWeight: '600', color: '#374151', marginTop: 8, marginBottom: 2 },
   input: {
