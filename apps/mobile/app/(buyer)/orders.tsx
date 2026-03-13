@@ -7,8 +7,6 @@ import {
   RefreshControl,
   Linking,
   Alert,
-  Modal,
-  Pressable,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
@@ -33,6 +31,7 @@ import {
   ChevronRight,
 } from 'lucide-react-native';
 import { RatingModal } from '@/components/ui/RatingModal';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -543,102 +542,96 @@ export default function OrdersScreen() {
       )}
 
       {/* ── Order type picker ── */}
-      <Modal
+      <BottomSheet
         visible={showTypePicker}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowTypePicker(false)}
+        onClose={() => setShowTypePicker(false)}
+        title="Jauns pasūtījums"
+        subtitle="Izvēlieties pasūtījuma veidu"
       >
-        <Pressable style={s.pickerOverlay} onPress={() => setShowTypePicker(false)}>
-          <Pressable style={s.pickerSheet} onPress={() => {}}>
-            <View style={s.pickerHandle} />
-            <Text style={s.pickerTitle}>Jauns pasūtījums</Text>
-            <Text style={s.pickerSub}>Izvēlieties pasūtījuma veidu</Text>
+        <View style={{ paddingHorizontal: 20, paddingBottom: 8, gap: 12 }}>
+          <TouchableOpacity
+            style={s.pickerOption}
+            activeOpacity={0.8}
+            onPress={() => {
+              setShowTypePicker(false);
+              router.push('/order');
+            }}
+          >
+            <View style={[s.pickerIcon, { backgroundColor: '#fef2f2' }]}>
+              <Trash2 size={22} color="#dc2626" strokeWidth={1.8} />
+            </View>
+            <View style={s.pickerOptionText}>
+              <Text style={s.pickerOptionTitle}>Konteinera īre</Text>
+              <Text style={s.pickerOptionDesc}>Atkritumu konteinera piegāde un savākšana</Text>
+            </View>
+            <ChevronRight size={18} color="#9ca3af" />
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={s.pickerOption}
-              activeOpacity={0.8}
-              onPress={() => {
-                setShowTypePicker(false);
-                router.push('/order');
-              }}
-            >
-              <View style={[s.pickerIcon, { backgroundColor: '#fef2f2' }]}>
-                <Trash2 size={22} color="#dc2626" strokeWidth={1.8} />
-              </View>
-              <View style={s.pickerOptionText}>
-                <Text style={s.pickerOptionTitle}>Konteinera īre</Text>
-                <Text style={s.pickerOptionDesc}>Atkritumu konteinera piegāde un savākšana</Text>
-              </View>
-              <ChevronRight size={18} color="#9ca3af" />
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={s.pickerOption}
+            activeOpacity={0.8}
+            onPress={() => {
+              setShowTypePicker(false);
+              router.push('/order-request');
+            }}
+          >
+            <View style={[s.pickerIcon, { backgroundColor: '#eff6ff' }]}>
+              <Package size={22} color="#2563eb" strokeWidth={1.8} />
+            </View>
+            <View style={s.pickerOptionText}>
+              <Text style={s.pickerOptionTitle}>Materiālu pasūtījums</Text>
+              <Text style={s.pickerOptionDesc}>Smilts, grants, dolomīts un citi materiāli</Text>
+            </View>
+            <ChevronRight size={18} color="#9ca3af" />
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={s.pickerOption}
-              activeOpacity={0.8}
-              onPress={() => {
-                setShowTypePicker(false);
-                router.push('/order-request');
-              }}
-            >
-              <View style={[s.pickerIcon, { backgroundColor: '#eff6ff' }]}>
-                <Package size={22} color="#2563eb" strokeWidth={1.8} />
-              </View>
-              <View style={s.pickerOptionText}>
-                <Text style={s.pickerOptionTitle}>Materiālu pasūtījums</Text>
-                <Text style={s.pickerOptionDesc}>Smilts, grants, dolomīts un citi materiāli</Text>
-              </View>
-              <ChevronRight size={18} color="#9ca3af" />
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={s.pickerOption}
+            activeOpacity={0.8}
+            onPress={() => {
+              setShowTypePicker(false);
+              router.push('/disposal');
+            }}
+          >
+            <View style={[s.pickerIcon, { backgroundColor: '#f0fdf4' }]}>
+              <Trash2 size={22} color="#16a34a" strokeWidth={1.8} />
+            </View>
+            <View style={s.pickerOptionText}>
+              <Text style={s.pickerOptionTitle}>Atkritumu izvešana</Text>
+              <Text style={s.pickerOptionDesc}>
+                Celtniecības atkritumu savākšana un utilizācija
+              </Text>
+            </View>
+            <ChevronRight size={18} color="#9ca3af" />
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={s.pickerOption}
-              activeOpacity={0.8}
-              onPress={() => {
-                setShowTypePicker(false);
-                router.push('/disposal');
-              }}
-            >
-              <View style={[s.pickerIcon, { backgroundColor: '#f0fdf4' }]}>
-                <Trash2 size={22} color="#16a34a" strokeWidth={1.8} />
-              </View>
-              <View style={s.pickerOptionText}>
-                <Text style={s.pickerOptionTitle}>Atkritumu izvešana</Text>
-                <Text style={s.pickerOptionDesc}>
-                  Celtniecības atkritumu savākšana un utilizācija
-                </Text>
-              </View>
-              <ChevronRight size={18} color="#9ca3af" />
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={s.pickerOption}
+            activeOpacity={0.8}
+            onPress={() => {
+              setShowTypePicker(false);
+              router.push('/transport');
+            }}
+          >
+            <View style={[s.pickerIcon, { backgroundColor: '#faf5ff' }]}>
+              <Truck size={22} color="#7c3aed" strokeWidth={1.8} />
+            </View>
+            <View style={s.pickerOptionText}>
+              <Text style={s.pickerOptionTitle}>Kravas pārvadāšana</Text>
+              <Text style={s.pickerOptionDesc}>Materiālu vai kravu pārvadāšana uz galamērķi</Text>
+            </View>
+            <ChevronRight size={18} color="#9ca3af" />
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={s.pickerOption}
-              activeOpacity={0.8}
-              onPress={() => {
-                setShowTypePicker(false);
-                router.push('/transport');
-              }}
-            >
-              <View style={[s.pickerIcon, { backgroundColor: '#faf5ff' }]}>
-                <Truck size={22} color="#7c3aed" strokeWidth={1.8} />
-              </View>
-              <View style={s.pickerOptionText}>
-                <Text style={s.pickerOptionTitle}>Kravas pārvadāšana</Text>
-                <Text style={s.pickerOptionDesc}>Materiālu vai kravu pārvadāšana uz galamērķi</Text>
-              </View>
-              <ChevronRight size={18} color="#9ca3af" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={s.pickerCancel}
-              onPress={() => setShowTypePicker(false)}
-              activeOpacity={0.75}
-            >
-              <Text style={s.pickerCancelText}>Atcelt</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
+          <TouchableOpacity
+            style={s.pickerCancel}
+            onPress={() => setShowTypePicker(false)}
+            activeOpacity={0.75}
+          >
+            <Text style={s.pickerCancelText}>Atcelt</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
     </ScreenContainer>
   );
 }
@@ -804,29 +797,6 @@ const s = StyleSheet.create({
   emptyBtnText: { color: '#fff', fontWeight: '600', fontSize: 15 },
 
   // ── Order type picker ──────────────────────────────────────
-  pickerOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  pickerSheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingBottom: 36,
-    paddingTop: 12,
-  },
-  pickerHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#e5e7eb',
-    alignSelf: 'center',
-    marginBottom: 20,
-  },
-  pickerTitle: { fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 4 },
-  pickerSub: { fontSize: 13, color: '#9ca3af', marginBottom: 20 },
   pickerOption: {
     flexDirection: 'row',
     alignItems: 'center',

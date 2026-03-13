@@ -9,9 +9,7 @@ import {
   ActivityIndicator,
   Linking,
   Platform,
-  Modal,
   TextInput,
-  KeyboardAvoidingView,
   Image,
   Animated,
 } from 'react-native';
@@ -25,6 +23,7 @@ import { api, ApiTransportJob, ApiReturnTripJob } from '@/lib/api';
 import { JobRouteMap } from '@/components/ui/JobRouteMap';
 import { haptics } from '@/lib/haptics';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import {
   Map,
   Phone,
@@ -642,87 +641,77 @@ export default function ActiveJobScreen() {
       </ScrollView>
 
       {/* ── Weight Ticket Modal ── */}
-      <Modal
+      <BottomSheet
         visible={weightModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setWeightModalVisible(false)}
+        onClose={() => setWeightModalVisible(false)}
+        title="⚖️ Svēršanas biļete"
+        subtitle="Ievadiet faktisko svēršanas rādījumu (kg), pirms atzīmēt kravu kā iekrauta."
+        scrollable
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.weightOverlay}
-        >
-          <View style={styles.weightSheet}>
-            <View style={styles.weightHandle} />
-            <Text style={styles.weightTitle}>⚖️ Svēršanas biļete</Text>
-            <Text style={styles.weightSubtitle}>
-              Ievadiet faktisko svēršanas rādījumu (kg), pirms atzīmēt kravu kā iekrauta.
-            </Text>
-
-            {/* Photo capture */}
-            <TouchableOpacity
-              style={[styles.photoCapture, pickupPhotoUri ? styles.photoCaptured : null]}
-              onPress={handleTakePickupPhoto}
-              activeOpacity={0.8}
-            >
-              {pickupPhotoUri ? (
-                <View style={styles.photoPreview}>
-                  <Image
-                    source={{ uri: pickupPhotoUri }}
-                    style={styles.photoThumb}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.photoCheck}>
-                    <CheckCircle size={14} color="#111827" />
-                    <Text style={styles.photoCheckText}>Foto uzņemts</Text>
-                  </View>
+        <View style={{ gap: 14, paddingBottom: 8 }}>
+          {/* Photo capture */}
+          <TouchableOpacity
+            style={[styles.photoCapture, pickupPhotoUri ? styles.photoCaptured : null]}
+            onPress={handleTakePickupPhoto}
+            activeOpacity={0.8}
+          >
+            {pickupPhotoUri ? (
+              <View style={styles.photoPreview}>
+                <Image
+                  source={{ uri: pickupPhotoUri }}
+                  style={styles.photoThumb}
+                  resizeMode="cover"
+                />
+                <View style={styles.photoCheck}>
+                  <CheckCircle size={14} color="#111827" />
+                  <Text style={styles.photoCheckText}>Foto uzņemts</Text>
                 </View>
-              ) : (
-                <View style={styles.photoPicker}>
-                  <Camera size={22} color="#6b7280" />
-                  <Text style={styles.photoPickerText}>Fotografēt svēršanas biļeti</Text>
-                  <Text style={styles.photoPickerHint}>Ieteicams, bet neobligāts</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.weightInputRow}>
-              <TextInput
-                style={styles.weightInput}
-                keyboardType="decimal-pad"
-                placeholder="piem. 18500"
-                placeholderTextColor="#9ca3af"
-                value={weightInput}
-                onChangeText={setWeightInput}
-                autoFocus
-              />
-              <Text style={styles.weightUnit}>kg</Text>
-            </View>
-            {job?.cargoWeight != null && (
-              <Text style={styles.weightHint}>
-                Paredzētais svars: {(job.cargoWeight * 1000).toFixed(0)} kg ({job.cargoWeight} t)
-              </Text>
+              </View>
+            ) : (
+              <View style={styles.photoPicker}>
+                <Camera size={22} color="#6b7280" />
+                <Text style={styles.photoPickerText}>Fotografēt svēršanas biļeti</Text>
+                <Text style={styles.photoPickerHint}>Ieteicams, bet neobligāts</Text>
+              </View>
             )}
-            <View style={styles.weightActions}>
-              <TouchableOpacity
-                style={styles.weightCancel}
-                onPress={() => setWeightModalVisible(false)}
-              >
-                <Text style={styles.weightCancelText}>Atcelt</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.weightConfirm, weightSubmitting && { opacity: 0.6 }]}
-                onPress={handleWeightConfirm}
-                disabled={weightSubmitting}
-              >
-                <Text style={styles.weightConfirmText}>
-                  {weightSubmitting ? 'Saglabā...' : 'Apstiprināt iekraušanu'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+          </TouchableOpacity>
+
+          <View style={styles.weightInputRow}>
+            <TextInput
+              style={styles.weightInput}
+              keyboardType="decimal-pad"
+              placeholder="piem. 18500"
+              placeholderTextColor="#9ca3af"
+              value={weightInput}
+              onChangeText={setWeightInput}
+              autoFocus
+            />
+            <Text style={styles.weightUnit}>kg</Text>
           </View>
-        </KeyboardAvoidingView>
-      </Modal>
+          {job?.cargoWeight != null && (
+            <Text style={styles.weightHint}>
+              Paredzētais svars: {(job.cargoWeight * 1000).toFixed(0)} kg ({job.cargoWeight} t)
+            </Text>
+          )}
+          <View style={styles.weightActions}>
+            <TouchableOpacity
+              style={styles.weightCancel}
+              onPress={() => setWeightModalVisible(false)}
+            >
+              <Text style={styles.weightCancelText}>Atcelt</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.weightConfirm, weightSubmitting && { opacity: 0.6 }]}
+              onPress={handleWeightConfirm}
+              disabled={weightSubmitting}
+            >
+              <Text style={styles.weightConfirmText}>
+                {weightSubmitting ? 'Saglabā...' : 'Apstiprināt iekraušanu'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </BottomSheet>
     </ScreenContainer>
   );
 }
@@ -941,29 +930,6 @@ const styles = StyleSheet.create({
   goBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   // ── Weight Ticket Modal ────────────────────────────────────────
-  weightOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  weightSheet: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
-    gap: 14,
-  },
-  weightHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#e5e7eb',
-    alignSelf: 'center',
-    marginBottom: 4,
-  },
-  weightTitle: { fontSize: 20, fontWeight: '800', color: '#111827' },
-  weightSubtitle: { fontSize: 14, color: '#6b7280', lineHeight: 20 },
   weightInputRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Modal,
   View,
   Text,
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
   Alert,
 } from 'react-native';
-import { Star, CheckCircle, X } from 'lucide-react-native';
+import { Star, CheckCircle } from 'lucide-react-native';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 
@@ -70,111 +68,68 @@ export function RatingModal({ visible, onClose, onSuccess, token, orderId, skipO
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        style={s.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={s.sheet}>
-          {/* Handle */}
-          <View style={s.handle} />
-
-          {/* Close button */}
-          <TouchableOpacity style={s.closeBtn} onPress={onClose} hitSlop={12}>
-            <X size={20} color="#9ca3af" />
-          </TouchableOpacity>
-
-          {done ? (
-            /* ── Success state ── */
-            <View style={s.successWrap}>
-              <CheckCircle size={52} color="#111827" />
-              <Text style={s.successTitle}>{t.rating.successTitle}</Text>
-              <Text style={s.successSub}>{t.rating.successMessage}</Text>
-            </View>
-          ) : (
-            /* ── Input state ── */
-            <>
-              <Text style={s.title}>{t.rating.title}</Text>
-              <Text style={s.subtitle}>{t.rating.subtitle}</Text>
-
-              {/* Star row */}
-              <View style={s.starsRow}>
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <TouchableOpacity key={n} onPress={() => setStars(n)} activeOpacity={0.7}>
-                    <Star
-                      size={38}
-                      color={n <= stars ? '#9ca3af' : '#d1d5db'}
-                      fill={n <= stars ? '#9ca3af' : 'none'}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {stars > 0 && <Text style={s.starLabel}>{t.rating.stars[stars - 1]}</Text>}
-
-              {/* Comment */}
-              <TextInput
-                style={s.input}
-                placeholder={t.rating.commentPlaceholder}
-                placeholderTextColor="#9ca3af"
-                value={comment}
-                onChangeText={setComment}
-                multiline
-                numberOfLines={3}
-                maxLength={500}
-                textAlignVertical="top"
-              />
-
-              {/* Submit */}
-              <TouchableOpacity
-                style={[s.submitBtn, (loading || stars === 0) && { opacity: 0.5 }]}
-                onPress={handleSubmit}
-                disabled={loading || stars === 0}
-                activeOpacity={0.85}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={s.submitBtnText}>{t.rating.submit}</Text>
-                )}
-              </TouchableOpacity>
-            </>
-          )}
+    <BottomSheet visible={visible} onClose={onClose} scrollable>
+      {done ? (
+        /* ── Success state ── */
+        <View style={s.successWrap}>
+          <CheckCircle size={52} color="#111827" />
+          <Text style={s.successTitle}>{t.rating.successTitle}</Text>
+          <Text style={s.successSub}>{t.rating.successMessage}</Text>
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+      ) : (
+        /* ── Input state ── */
+        <>
+          <Text style={s.title}>{t.rating.title}</Text>
+          <Text style={s.subtitle}>{t.rating.subtitle}</Text>
+
+          {/* Star row */}
+          <View style={s.starsRow}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <TouchableOpacity key={n} onPress={() => setStars(n)} activeOpacity={0.7}>
+                <Star
+                  size={38}
+                  color={n <= stars ? '#9ca3af' : '#d1d5db'}
+                  fill={n <= stars ? '#9ca3af' : 'none'}
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {stars > 0 && <Text style={s.starLabel}>{t.rating.stars[stars - 1]}</Text>}
+
+          {/* Comment */}
+          <TextInput
+            style={s.input}
+            placeholder={t.rating.commentPlaceholder}
+            placeholderTextColor="#9ca3af"
+            value={comment}
+            onChangeText={setComment}
+            multiline
+            numberOfLines={3}
+            maxLength={500}
+            textAlignVertical="top"
+          />
+
+          {/* Submit */}
+          <TouchableOpacity
+            style={[s.submitBtn, (loading || stars === 0) && { opacity: 0.5 }]}
+            onPress={handleSubmit}
+            disabled={loading || stars === 0}
+            activeOpacity={0.85}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={s.submitBtnText}>{t.rating.submit}</Text>
+            )}
+          </TouchableOpacity>
+        </>
+      )}
+    </BottomSheet>
   );
 }
 
 const s = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: 40,
-    minHeight: 360,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#e5e7eb',
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  closeBtn: {
-    position: 'absolute',
-    top: 18,
-    right: 20,
-    zIndex: 10,
-  },
   title: {
     fontSize: 22,
     fontWeight: '700',

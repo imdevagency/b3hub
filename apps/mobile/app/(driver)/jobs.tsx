@@ -23,6 +23,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api, ApiTransportJob } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { SkeletonJobRow } from '@/components/ui/Skeleton';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import {
   MapPin,
   Navigation2,
@@ -212,88 +213,88 @@ function filterJobs(jobs: TransportJob[], filter: SearchFilter | null): Transpor
 
 // ── Accept Bottom Sheet ───────────────────────────────────────────────────────
 function AcceptBottomSheet({
+  visible,
   job,
   nearby,
   onConfirm,
   onClose,
 }: {
-  job: TransportJob;
+  visible: boolean;
+  job: TransportJob | null;
   nearby: { job: TransportJob; gapKm: number }[];
   onConfirm: () => void;
   onClose: () => void;
 }) {
+  // Preserve last job so exit animation shows content
+  const lastJobRef = useRef<TransportJob | null>(job);
+  if (job) lastJobRef.current = job;
+  const j = job ?? lastJobRef.current;
+  if (!j) return null;
+
   return (
-    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.sheetOverlay}>
-        <TouchableOpacity style={styles.sheetOverlayTouch} onPress={onClose} activeOpacity={1} />
-        <View style={styles.sheetContainer}>
-          {/* Handle */}
-          <View style={styles.sheetHandle} />
-
-          <Text style={styles.sheetTitle}>{t.jobs.acceptSheetTitle}</Text>
-
-          {/* Job summary */}
-          <View style={styles.sheetJobCard}>
-            <View style={styles.sheetJobHeader}>
-              <Text style={styles.sheetJobNum}>{job.jobNumber}</Text>
-              <Text style={styles.sheetJobPrice}>€{job.priceTotal.toFixed(0)}</Text>
-            </View>
-            <View style={styles.sheetRouteRow}>
-              <View style={[styles.sheetRouteDot, { backgroundColor: '#111827' }]} />
-              <Text style={styles.sheetRouteCity}>{job.fromCity}</Text>
-              <ChevronRight size={14} color="#9ca3af" />
-              <View style={[styles.sheetRouteDot, { backgroundColor: '#111827' }]} />
-              <Text style={styles.sheetRouteCity}>{job.toCity}</Text>
-            </View>
-            <View style={styles.sheetJobMeta}>
-              <Truck size={12} color="#9ca3af" />
-              <Text style={styles.sheetMetaText}>{job.vehicleType}</Text>
-              <Text style={styles.sheetMetaDot}>·</Text>
-              <Ruler size={12} color="#9ca3af" />
-              <Text style={styles.sheetMetaText}>{job.distanceKm} km</Text>
-              <Text style={styles.sheetMetaDot}>·</Text>
-              <Text style={styles.sheetMetaText}>{job.weightTonnes} t</Text>
-            </View>
+    <BottomSheet visible={visible} onClose={onClose} title={t.jobs.acceptSheetTitle} scrollable>
+      <View style={{ gap: 14, paddingBottom: 8 }}>
+        {/* Job summary */}
+        <View style={styles.sheetJobCard}>
+          <View style={styles.sheetJobHeader}>
+            <Text style={styles.sheetJobNum}>{j.jobNumber}</Text>
+            <Text style={styles.sheetJobPrice}>€{j.priceTotal.toFixed(0)}</Text>
           </View>
-
-          {/* Return suggestions */}
-          {nearby.length > 0 && (
-            <View style={styles.sheetReturnSection}>
-              <View
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}
-              >
-                <Route size={14} color="#059669" />
-                <Text style={styles.sheetReturnTitle}>{t.jobs.acceptSheetReturnTitle}</Text>
-              </View>
-              {nearby.map(({ job: nj, gapKm }) => (
-                <View key={nj.id} style={styles.sheetReturnCard}>
-                  <View style={styles.sheetReturnLeft}>
-                    <View style={styles.sheetReturnKmBadge}>
-                      <Text style={styles.sheetReturnKmText}>{t.jobs.acceptSheetGapKm(gapKm)}</Text>
-                    </View>
-                    <View style={styles.sheetRouteRow}>
-                      <Text style={styles.sheetReturnCity}>{nj.fromCity}</Text>
-                      <ChevronRight size={11} color="#9ca3af" />
-                      <Text style={styles.sheetReturnCity}>{nj.toCity}</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.sheetReturnPrice}>€{nj.priceTotal.toFixed(0)}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {nearby.length === 0 && (
-            <Text style={styles.sheetReturnNone}>{t.jobs.acceptSheetReturnNone}</Text>
-          )}
-
-          {/* CTA */}
-          <TouchableOpacity style={styles.sheetAcceptBtn} onPress={onConfirm}>
-            <Text style={styles.sheetAcceptBtnText}>{t.jobs.acceptAndGo}</Text>
-          </TouchableOpacity>
+          <View style={styles.sheetRouteRow}>
+            <View style={[styles.sheetRouteDot, { backgroundColor: '#111827' }]} />
+            <Text style={styles.sheetRouteCity}>{j.fromCity}</Text>
+            <ChevronRight size={14} color="#9ca3af" />
+            <View style={[styles.sheetRouteDot, { backgroundColor: '#111827' }]} />
+            <Text style={styles.sheetRouteCity}>{j.toCity}</Text>
+          </View>
+          <View style={styles.sheetJobMeta}>
+            <Truck size={12} color="#9ca3af" />
+            <Text style={styles.sheetMetaText}>{j.vehicleType}</Text>
+            <Text style={styles.sheetMetaDot}>·</Text>
+            <Ruler size={12} color="#9ca3af" />
+            <Text style={styles.sheetMetaText}>{j.distanceKm} km</Text>
+            <Text style={styles.sheetMetaDot}>·</Text>
+            <Text style={styles.sheetMetaText}>{j.weightTonnes} t</Text>
+          </View>
         </View>
+
+        {/* Return suggestions */}
+        {nearby.length > 0 && (
+          <View style={styles.sheetReturnSection}>
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}
+            >
+              <Route size={14} color="#059669" />
+              <Text style={styles.sheetReturnTitle}>{t.jobs.acceptSheetReturnTitle}</Text>
+            </View>
+            {nearby.map(({ job: nj, gapKm }) => (
+              <View key={nj.id} style={styles.sheetReturnCard}>
+                <View style={styles.sheetReturnLeft}>
+                  <View style={styles.sheetReturnKmBadge}>
+                    <Text style={styles.sheetReturnKmText}>{t.jobs.acceptSheetGapKm(gapKm)}</Text>
+                  </View>
+                  <View style={styles.sheetRouteRow}>
+                    <Text style={styles.sheetReturnCity}>{nj.fromCity}</Text>
+                    <ChevronRight size={11} color="#9ca3af" />
+                    <Text style={styles.sheetReturnCity}>{nj.toCity}</Text>
+                  </View>
+                </View>
+                <Text style={styles.sheetReturnPrice}>€{nj.priceTotal.toFixed(0)}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {nearby.length === 0 && (
+          <Text style={styles.sheetReturnNone}>{t.jobs.acceptSheetReturnNone}</Text>
+        )}
+
+        {/* CTA */}
+        <TouchableOpacity style={styles.sheetAcceptBtn} onPress={onConfirm}>
+          <Text style={styles.sheetAcceptBtnText}>{t.jobs.acceptAndGo}</Text>
+        </TouchableOpacity>
       </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
@@ -339,37 +340,31 @@ function SaveSearchModal({
     }
   }, [visible]);
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        style={styles.modalOverlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <View style={styles.modalBox}>
-          <Text style={styles.modalTitle}>{t.jobSearch.savedSearchTitle}</Text>
-          <TextInput
-            style={styles.modalInput}
-            value={name}
-            onChangeText={setName}
-            placeholder={t.jobSearch.savedSearchNamePlaceholder}
-            placeholderTextColor="#9ca3af"
-            autoFocus
-          />
-          <View style={styles.modalActions}>
-            <TouchableOpacity style={styles.modalCancel} onPress={onClose}>
-              <Text style={styles.modalCancelText}>{t.jobSearch.cancel}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modalSave, !name.trim() && styles.modalSaveDisabled]}
-              onPress={() => {
-                if (name.trim()) onSave(name.trim());
-              }}
-            >
-              <Text style={styles.modalSaveText}>{t.jobSearch.save}</Text>
-            </TouchableOpacity>
-          </View>
+    <BottomSheet visible={visible} onClose={onClose} title={t.jobSearch.savedSearchTitle} scrollable>
+      <View style={{ gap: 16, paddingBottom: 8 }}>
+        <TextInput
+          style={styles.modalInput}
+          value={name}
+          onChangeText={setName}
+          placeholder={t.jobSearch.savedSearchNamePlaceholder}
+          placeholderTextColor="#9ca3af"
+          autoFocus
+        />
+        <View style={styles.modalActions}>
+          <TouchableOpacity style={styles.modalCancel} onPress={onClose}>
+            <Text style={styles.modalCancelText}>{t.jobSearch.cancel}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modalSave, !name.trim() && styles.modalSaveDisabled]}
+            onPress={() => {
+              if (name.trim()) onSave(name.trim());
+            }}
+          >
+            <Text style={styles.modalSaveText}>{t.jobSearch.save}</Text>
+          </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+      </View>
+    </BottomSheet>
   );
 }
 
@@ -1264,19 +1259,22 @@ export default function JobsScreen() {
         onClose={() => setPanelOpen(false)}
       />
       {/* Accept bottom sheet */}
-      {acceptSheetJob && (
-        <AcceptBottomSheet
-          job={acceptSheetJob}
-          nearby={nearbyJobs(
-            acceptSheetJob.toLat,
-            acceptSheetJob.toLng,
-            allJobs,
-            acceptSheetJob.id,
-          )}
-          onConfirm={handleConfirmAccept}
-          onClose={() => setAcceptSheetJob(null)}
-        />
-      )}
+      <AcceptBottomSheet
+        visible={!!acceptSheetJob}
+        job={acceptSheetJob}
+        nearby={
+          acceptSheetJob
+            ? nearbyJobs(
+                acceptSheetJob.toLat,
+                acceptSheetJob.toLng,
+                allJobs,
+                acceptSheetJob.id,
+              )
+            : []
+        }
+        onConfirm={handleConfirmAccept}
+        onClose={() => setAcceptSheetJob(null)}
+      />
       {/* How It Works modal removed — tukšbrauciens lives in active.tsx */}
       {/* ── GO ONLINE FAB ── */}
       <View style={styles.onlineFabWrap} pointerEvents="box-none">
@@ -1562,24 +1560,6 @@ const styles = StyleSheet.create({
   },
   emptyResetBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  modalBox: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 24,
-    gap: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 10,
-  },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
   modalInput: {
     borderWidth: 1.5,
     borderColor: '#e5e7eb',
@@ -1609,34 +1589,6 @@ const styles = StyleSheet.create({
   modalSaveText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
 
   // ── Accept Bottom Sheet ────────────────────────────────────────
-  sheetOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  sheetOverlayTouch: { flex: 1 },
-  sheetContainer: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    paddingBottom: 36,
-    gap: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    elevation: 12,
-  },
-  sheetHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#e5e7eb',
-    alignSelf: 'center',
-    marginBottom: 6,
-  },
-  sheetTitle: { fontSize: 18, fontWeight: '800', color: '#111827' },
   sheetJobCard: {
     backgroundColor: '#f9fafb',
     borderRadius: 14,

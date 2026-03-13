@@ -14,12 +14,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  Modal,
   TextInput,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Animated,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import {
@@ -34,7 +30,6 @@ import {
   Send,
   SlidersHorizontal,
   RefreshCw,
-  X,
   Minus,
   Plus,
 } from 'lucide-react-native';
@@ -42,6 +37,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api, type OpenQuoteRequest, type MaterialUnit } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { t } from '@/lib/translations';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -97,7 +93,6 @@ function ProposalModal({ request, visible, onClose, onSuccess, token }: Proposal
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
-  const scaleAnim = React.useRef(new Animated.Value(0.85)).current;
 
   useEffect(() => {
     if (visible) {
@@ -105,12 +100,6 @@ function ProposalModal({ request, visible, onClose, onSuccess, token }: Proposal
       setEtaDays(2);
       setNotes('');
       setDone(false);
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 120,
-        friction: 8,
-      }).start();
     }
   }, [visible]);
 
@@ -149,113 +138,99 @@ function ProposalModal({ request, visible, onClose, onSuccess, token }: Proposal
   const emoji = CATEGORY_EMOJI[request.materialCategory] ?? '📦';
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.modalOverlay}
-      >
-        <Animated.View style={[styles.modalCard, { transform: [{ scale: scaleAnim }] }]}>
-          {/* Header */}
-          <View style={styles.modalHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.modalTitle}>{sq.modalTitle}</Text>
-              <Text style={styles.modalSubtitle}>
-                {emoji} {categoryLabel} · {request.quantity} {unitLabel} · {request.deliveryCity}
-              </Text>
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      title={sq.modalTitle}
+      subtitle={`${emoji} ${categoryLabel} · ${request.quantity} ${unitLabel} · ${request.deliveryCity}`}
+      scrollable
+    >
+      {done ? (
+        /* Success state */
+        <View style={styles.successBox}>
+          <CheckCircle2 size={48} color={ACCENT} />
+          <Text style={styles.successTitle}>{sq.successTitle}</Text>
+          <Text style={styles.successMsg}>{sq.successMsg}</Text>
+        </View>
+      ) : (
+        <>
+          {/* Price */}
+          <Text style={styles.fieldLabel}>{sq.priceLabel}</Text>
+          <View style={styles.priceRow}>
+            <TextInput
+              style={styles.priceInput}
+              placeholder={sq.pricePlaceholder}
+              placeholderTextColor="#9ca3af"
+              keyboardType="decimal-pad"
+              value={priceText}
+              onChangeText={setPriceText}
+            />
+            <View style={styles.priceUnit}>
+              <Text style={styles.priceUnitText}>EUR / {unitLabel}</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.modalClose} hitSlop={12}>
-              <X size={20} color="#6b7280" />
+          </View>
+
+          {/* ETA days */}
+          <Text style={[styles.fieldLabel, { marginTop: 16 }]}>{sq.etaLabel}</Text>
+          <View style={styles.stepper}>
+            <TouchableOpacity
+              style={styles.stepBtn}
+              onPress={() => setEtaDays((d) => Math.max(1, d - 1))}
+              hitSlop={8}
+            >
+              <Minus size={18} color={ACCENT} />
+            </TouchableOpacity>
+            <Text style={styles.stepValue}>{etaDays}</Text>
+            <TouchableOpacity
+              style={styles.stepBtn}
+              onPress={() => setEtaDays((d) => Math.min(30, d + 1))}
+              hitSlop={8}
+            >
+              <Plus size={18} color={ACCENT} />
             </TouchableOpacity>
           </View>
 
-          {done ? (
-            /* Success state */
-            <View style={styles.successBox}>
-              <CheckCircle2 size={48} color={ACCENT} />
-              <Text style={styles.successTitle}>{sq.successTitle}</Text>
-              <Text style={styles.successMsg}>{sq.successMsg}</Text>
+          {/* Notes */}
+          <Text style={[styles.fieldLabel, { marginTop: 16 }]}>{sq.notesLabel}</Text>
+          <TextInput
+            style={styles.notesInput}
+            placeholder={sq.notesPlaceholder}
+            placeholderTextColor="#9ca3af"
+            multiline
+            numberOfLines={3}
+            value={notes}
+            onChangeText={setNotes}
+          />
+
+          {/* Total preview */}
+          {priceText.length > 0 && !isNaN(parseFloat(priceText)) && (
+            <View style={styles.totalPreview}>
+              <Text style={styles.totalPreviewLabel}>Kopējā cena (aprēķins)</Text>
+              <Text style={styles.totalPreviewValue}>
+                {(parseFloat(priceText.replace(',', '.')) * request.quantity).toFixed(2)} EUR
+              </Text>
             </View>
-          ) : (
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Price */}
-              <Text style={styles.fieldLabel}>{sq.priceLabel}</Text>
-              <View style={styles.priceRow}>
-                <TextInput
-                  style={styles.priceInput}
-                  placeholder={sq.pricePlaceholder}
-                  placeholderTextColor="#9ca3af"
-                  keyboardType="decimal-pad"
-                  value={priceText}
-                  onChangeText={setPriceText}
-                />
-                <View style={styles.priceUnit}>
-                  <Text style={styles.priceUnitText}>EUR / {unitLabel}</Text>
-                </View>
-              </View>
-
-              {/* ETA days */}
-              <Text style={[styles.fieldLabel, { marginTop: 16 }]}>{sq.etaLabel}</Text>
-              <View style={styles.stepper}>
-                <TouchableOpacity
-                  style={styles.stepBtn}
-                  onPress={() => setEtaDays((d) => Math.max(1, d - 1))}
-                  hitSlop={8}
-                >
-                  <Minus size={18} color={ACCENT} />
-                </TouchableOpacity>
-                <Text style={styles.stepValue}>{etaDays}</Text>
-                <TouchableOpacity
-                  style={styles.stepBtn}
-                  onPress={() => setEtaDays((d) => Math.min(30, d + 1))}
-                  hitSlop={8}
-                >
-                  <Plus size={18} color={ACCENT} />
-                </TouchableOpacity>
-              </View>
-
-              {/* Notes */}
-              <Text style={[styles.fieldLabel, { marginTop: 16 }]}>{sq.notesLabel}</Text>
-              <TextInput
-                style={styles.notesInput}
-                placeholder={sq.notesPlaceholder}
-                placeholderTextColor="#9ca3af"
-                multiline
-                numberOfLines={3}
-                value={notes}
-                onChangeText={setNotes}
-              />
-
-              {/* Total preview */}
-              {priceText.length > 0 && !isNaN(parseFloat(priceText)) && (
-                <View style={styles.totalPreview}>
-                  <Text style={styles.totalPreviewLabel}>Kopējā cena (aprēķins)</Text>
-                  <Text style={styles.totalPreviewValue}>
-                    {(parseFloat(priceText.replace(',', '.')) * request.quantity).toFixed(2)} EUR
-                  </Text>
-                </View>
-              )}
-
-              {/* Submit */}
-              <TouchableOpacity
-                style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
-                onPress={handleSubmit}
-                disabled={submitting}
-                activeOpacity={0.8}
-              >
-                {submitting ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <>
-                    <Send size={18} color="#fff" />
-                    <Text style={styles.submitBtnText}>{sq.submit}</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </ScrollView>
           )}
-        </Animated.View>
-      </KeyboardAvoidingView>
-    </Modal>
+
+          {/* Submit */}
+          <TouchableOpacity
+            style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
+            onPress={handleSubmit}
+            disabled={submitting}
+            activeOpacity={0.8}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <>
+                <Send size={18} color="#fff" />
+                <Text style={styles.submitBtnText}>{sq.submit}</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </>
+      )}
+    </BottomSheet>
   );
 }
 
@@ -771,39 +746,6 @@ const styles = StyleSheet.create({
   },
 
   // ── Modal ─────────────────────────────────────────────────────
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 36,
-    maxHeight: '90%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  modalSubtitle: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginTop: 4,
-  },
-  modalClose: {
-    padding: 4,
-    marginLeft: 8,
-  },
   fieldLabel: {
     fontSize: 13,
     fontWeight: '600',
