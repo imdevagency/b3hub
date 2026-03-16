@@ -24,6 +24,7 @@ import {
   HardHat,
   Package,
   Trash2,
+  Truck,
   Recycle,
   ArrowRight,
   Layers,
@@ -62,6 +63,15 @@ const SERVICES = [
     color: '#059669',
     bg: '#ecfdf5',
     route: '/disposal',
+  },
+  {
+    id: 'freight',
+    icon: Truck,
+    label: 'Transports',
+    sub: 'Kravu pārvadāšana A → B',
+    color: '#7c3aed',
+    bg: '#f5f3ff',
+    route: '/transport',
   },
 ] as const;
 

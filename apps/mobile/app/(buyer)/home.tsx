@@ -15,6 +15,7 @@ import type { ApiOrder } from '@/lib/api';
 import {
   HardHat,
   Trash2,
+  Truck,
   Package,
   ChevronRight,
   Bell,
@@ -73,6 +74,13 @@ const SERVICES = [
     label: 'Utilizācija',
     sub: 'Atkritumu izvešana',
     route: '/disposal',
+  },
+  {
+    id: 'freight',
+    icon: Truck,
+    label: 'Transports',
+    sub: 'Kravu pārvadāšana',
+    route: '/transport',
   },
 ];
 
