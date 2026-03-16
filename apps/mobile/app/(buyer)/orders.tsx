@@ -627,24 +627,6 @@ export default function OrdersScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={s.pickerOption}
-            activeOpacity={0.8}
-            onPress={() => {
-              setShowTypePicker(false);
-              router.push('/transport');
-            }}
-          >
-            <View style={[s.pickerIcon, { backgroundColor: '#faf5ff' }]}>
-              <Truck size={22} color="#7c3aed" strokeWidth={1.8} />
-            </View>
-            <View style={s.pickerOptionText}>
-              <Text style={s.pickerOptionTitle}>Kravas pārvadāšana</Text>
-              <Text style={s.pickerOptionDesc}>Materiālu vai kravu pārvadāšana uz galamērķi</Text>
-            </View>
-            <ChevronRight size={18} color="#9ca3af" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
             style={s.pickerCancel}
             onPress={() => setShowTypePicker(false)}
             activeOpacity={0.75}
