@@ -20,9 +20,9 @@ import {
   ChevronRight,
   Bell,
   ClipboardList,
-  ArrowRight,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { Sidebar } from '@/components/ui/Sidebar';
 
 const ACTIVE_STATUSES = new Set([
   'PENDING',
@@ -100,6 +100,7 @@ export default function HomeScreen() {
 
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Service tile entrance animations
   const tileAnims = useRef(SERVICES.map(() => new Animated.Value(0))).current;
@@ -171,14 +172,19 @@ export default function HomeScreen() {
     <View style={s.root}>
       {/* ── Top bar ── */}
       <View style={[s.topBar, { paddingTop: insets.top + 12 }]}>
-        <View style={s.avatar}>
-          <Text style={s.avatarText}>{user?.firstName?.[0]?.toUpperCase() ?? '?'}</Text>
-          {unreadCount > 0 && (
-            <View style={s.notifBadge}>
-              <Text style={s.notifBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
-            </View>
-          )}
-        </View>
+        <TouchableOpacity
+          onPress={() => { haptics.light(); setSidebarOpen(true); }}
+          activeOpacity={0.8}
+        >
+          <View style={s.avatar}>
+            <Text style={s.avatarText}>{user?.firstName?.[0]?.toUpperCase() ?? '?'}</Text>
+            {unreadCount > 0 && (
+              <View style={s.notifBadge}>
+                <Text style={s.notifBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={s.greetingLabel}>{greeting()},</Text>
           <Text style={s.greetingName} numberOfLines={1}>
@@ -257,22 +263,22 @@ export default function HomeScreen() {
           </Animated.View>
         )}
 
-        {/* Services section */}
+        {/* Quick services row — compact shortcuts, full detail lives on Services tab */}
         <Text style={s.sectionTitle}>Pakalpojumi</Text>
-        <View style={s.serviceGrid}>
+        <View style={s.quickRow}>
           {SERVICES.map((svc, idx) => {
             const Icon = svc.icon;
             return (
               <Animated.View
                 key={svc.id}
                 style={{
+                  flex: 1,
                   opacity: tileAnims[idx],
                   transform: [{ scale: tileScales[idx] }],
-                  width: '48%',
                 }}
               >
                 <TouchableOpacity
-                  style={s.serviceTile}
+                  style={s.quickTile}
                   onPress={() => {
                     haptics.light();
                     pressTile(idx);
@@ -280,16 +286,10 @@ export default function HomeScreen() {
                   }}
                   activeOpacity={1}
                 >
-                  <View style={s.serviceTileIcon}>
-                    <Icon size={26} color="#111827" />
+                  <View style={s.quickTileIcon}>
+                    <Icon size={22} color="#111827" />
                   </View>
-                  <Text style={s.serviceTileLabel}>{svc.label}</Text>
-                  <Text style={s.serviceTileSub} numberOfLines={1}>
-                    {svc.sub}
-                  </Text>
-                  <View style={s.serviceTileArrow}>
-                    <ArrowRight size={14} color="#9ca3af" />
-                  </View>
+                  <Text style={s.quickTileLabel} numberOfLines={1}>{svc.label}</Text>
                 </TouchableOpacity>
               </Animated.View>
             );
@@ -355,6 +355,13 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      <Sidebar
+        visible={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        role="buyer"
+        accentColor="#111827"
+      />
     </View>
   );
 }
@@ -486,38 +493,39 @@ const s = StyleSheet.create({
   activeNum: { fontSize: 15, fontWeight: '700', fontFamily: 'Inter_700Bold', color: '#111827', lineHeight: 20 },
   activeStatus: { fontSize: 12, color: '#374151', marginTop: 2, lineHeight: 17 },
 
-  // 2×2 service grid
-  serviceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  serviceTile: {
+  // Quick services horizontal row
+  quickRow: { flexDirection: 'row', gap: 8 },
+  quickTile: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 7,
     backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 18,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 4,
     shadowColor: '#000',
     shadowOpacity: 0.04,
-    shadowRadius: 8,
+    shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
     borderWidth: 1,
     borderColor: '#f3f4f6',
   },
-  serviceTileIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 15,
+  quickTileIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
   },
-  serviceTileLabel: {
-    fontSize: 15,
+  quickTileLabel: {
+    fontSize: 11,
     fontWeight: '700',
     fontFamily: 'Inter_700Bold',
     color: '#111827',
-    lineHeight: 20,
+    textAlign: 'center',
   },
-  serviceTileSub: { fontSize: 12, color: '#9ca3af', lineHeight: 17, marginTop: 2 },
-  serviceTileArrow: { marginTop: 10 },
 
   // Recent orders
   recentCard: {
