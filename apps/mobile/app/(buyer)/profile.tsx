@@ -27,6 +27,8 @@ import {
   ShoppingCart,
   Clock,
   MessageCircle,
+  Phone,
+  AlertCircle,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -157,6 +159,20 @@ export default function ProfileScreen() {
             <Text style={s.editBtnText}>Rediģēt profilu</Text>
           </TouchableOpacity>
         </View>
+
+        {/* ── Phone completeness nudge ── */}
+        {!user?.phone && (
+          <TouchableOpacity style={s.nudgeBanner} onPress={openEdit} activeOpacity={0.85}>
+            <View style={s.nudgeIconWrap}>
+              <AlertCircle size={18} color="#d97706" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.nudgeTitle}>Pievienojiet telefona numuru</Text>
+              <Text style={s.nudgeSub}>Nepieciešams, lai pārvadātāji varētu sazināties</Text>
+            </View>
+            <Phone size={15} color="#d97706" />
+          </TouchableOpacity>
+        )}
 
         <View style={s.body}>
           {/* Roles section */}
@@ -453,6 +469,31 @@ const s = StyleSheet.create({
     backgroundColor: '#fef2f2',
   },
   editBtnText: { color: '#111827', fontSize: 13, fontWeight: '600' },
+
+  nudgeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 20,
+    marginBottom: 4,
+    backgroundColor: '#fffbeb',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#fcd34d',
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+  },
+  nudgeIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#fef3c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nudgeTitle: { fontSize: 13, fontWeight: '700', color: '#92400e', marginBottom: 2 },
+  nudgeSub: { fontSize: 12, color: '#b45309', lineHeight: 16 },
+
   body: { padding: 20 },
   card: {
     backgroundColor: '#fff',
