@@ -4,7 +4,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
-import { Home, LayoutGrid, Package, User } from 'lucide-react-native';
+import { Home, LayoutGrid, ClipboardList, User } from 'lucide-react-native';
 import { TopBar } from '@/components/ui/TopBar';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
@@ -61,26 +61,27 @@ export default function BuyerLayout() {
             }}
           />
           <Tabs.Screen
-            name="orders"
+            name="services"
             options={{
-              title: t.tabs.orders,
-              tabBarIcon: ({ color }) => <Package size={22} color={color} />,
+              title: t.tabs.services,
+              tabBarIcon: ({ color }) => <LayoutGrid size={22} color={color} />,
             }}
           />
           <Tabs.Screen
-            name="catalog"
+            name="orders"
             options={{
-              title: t.tabs.catalog,
-              tabBarIcon: ({ color }) => <LayoutGrid size={22} color={color} />,
+              title: t.tabs.activity,
+              tabBarIcon: ({ color }) => <ClipboardList size={22} color={color} />,
             }}
           />
           <Tabs.Screen
             name="profile"
             options={{
-              title: t.tabs.profile,
+              title: t.tabs.account,
               tabBarIcon: ({ color }) => <User size={22} color={color} />,
             }}
           />
+          <Tabs.Screen name="catalog" options={{ href: null }} />
           <Tabs.Screen name="order/[id]" options={{ href: null }} />
           <Tabs.Screen name="skip-order/[id]" options={{ href: null }} />
           <Tabs.Screen name="invoices" options={{ href: null }} />

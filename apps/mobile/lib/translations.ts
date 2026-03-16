@@ -193,6 +193,9 @@ export const lv = {
 
   tabs: {
     home: 'Sākums',
+    services: 'Pakalpojumi',
+    activity: 'Aktivitāte',
+    account: 'Konts',
     orders: 'Pasūtījumi',
     profile: 'Profils',
     jobs: 'Darbi',
