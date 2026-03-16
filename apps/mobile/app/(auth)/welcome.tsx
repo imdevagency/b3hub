@@ -46,13 +46,13 @@ const SLIDES: Slide[] = [
     subtitle: 'Atkritumi, drupatas, gružu izvešana — piegāde un savākšana iekļauta cenā.',
   },
   {
-    key: 'freight',
-    emoji: '🚚',
-    circleBg: '#f3f4f6',
-    tag: 'PĀRVADĀJUMI',
-    title: 'Uzticami kravas\npārvadājumi ar GPS',
+    key: 'disposal',
+    emoji: '🛻',
+    circleBg: '#bbf7d0',
+    tag: 'UTILIZĀCIJA',
+    title: 'Atkritumu izvešana\nvienkārši un ātri',
     subtitle:
-      'Reāllaika izsekošana, automātisks svara protokols un atgriešanās braucienu plānošana.',
+      'Celtniecības atkritumi, gružu savākšana — iesniedz pieprasījumu un mēs atrisināsim pārējo.',
   },
 ];
 

@@ -60,7 +60,7 @@ const ORDER_STEPS = [
   { key: 'PENDING', label: 'Pasūtīts', hint: 'Gaida apstiprināšanu' },
   { key: 'CONFIRMED', label: 'Apstiprināts', hint: 'Pasūtījums apstiprināts' },
   { key: 'PROCESSING', label: 'Sagatavo', hint: 'Kravu sagatavo' },
-  { key: 'SHIPPED', label: 'Ceļā', hint: 'Šoferis izkraujā va' },
+  { key: 'SHIPPED', label: 'Ceļā', hint: 'Šoferis dodas uz jums' },
   { key: 'DELIVERED', label: 'Piegādāts', hint: 'Piegāde pabeigta' },
 ];
 

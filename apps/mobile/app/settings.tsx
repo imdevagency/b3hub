@@ -183,8 +183,8 @@ export default function SettingsScreen() {
           <View style={styles.divider} />
           <ToggleRow
             icon={<Bell size={18} color="#6b7280" />}
-            label="Darbu brīdinājumi"
-            description="Jaunu transporta darbu paziņojumi"
+            label="Jaunumi un paziņojumi"
+            description="Informācija par jaunumiem un piedāvājumiem"
             value={jobAlerts}
             onToggle={(v) => {
               setJobAlerts(v);

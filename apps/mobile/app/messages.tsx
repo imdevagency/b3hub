@@ -129,8 +129,8 @@ export default function MessagesScreen() {
       ) : rooms.length === 0 ? (
         <EmptyState
           icon={<MessageCircle size={32} color="#9ca3af" strokeWidth={1.5} />}
-          title="Nav aktīvu sarunas"
-          subtitle="Sarakstes tiks parādītas, kad būsāt piešķirts transporta darbam."
+          title="Nav aktīvu sarunu"
+          subtitle="Sarakste ar piegādātājiem un šoferiem parādīsies šeit, tiklīdz tiks veikts pasūtījums."
         />
       ) : (
         <FlatList
