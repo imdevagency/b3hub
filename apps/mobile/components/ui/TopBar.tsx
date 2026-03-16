@@ -1,37 +1,37 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Bell, Check, ArrowUpDown, Menu, ShoppingCart, Store, Truck } from 'lucide-react-native';
-import { useRouter, usePathname } from 'expo-router';
+import { useRouter, usePathname, type Href } from 'expo-router';
 import { useMode, AppMode, MODE_HOME } from '@/lib/mode-context';
 import { haptics } from '@/lib/haptics';
 import { t } from '@/lib/translations';
 
-// Maps the last URL segment → display title
+// Maps the last URL segment → display title using t.nav as the single source of truth
 const SEGMENT_TITLE: Record<string, string> = {
-  home: t.tabs.home,
-  orders: t.tabs.orders,
-  profile: t.tabs.profile,
-  jobs: t.tabs.jobs,
-  active: t.tabs.active,
-  earnings: t.tabs.earnings,
-  incoming: t.tabs.incoming,
-  catalog: t.tabs.catalog,
-  quotes: t.tabs.quotes,
-  skips: t.tabs.skips,
-  invoices: 'Rēķini',
-  containers: 'Konteineri',
-  certificates: 'Sertifikāti',
-  projects: 'Projekti',
-  team: 'Komanda',
-  vehicles: 'Transportlīdzekļi',
-  notifications: 'Paziņojumi',
-  messages: 'Ziņojumi',
-  settings: 'Iestatījumi',
-  order: 'Pasūtījums',
-  project: 'Projekts',
-  disposal: 'Utilizācija',
-  transport: 'Transports',
-  chat: 'Čats',
+  home: t.nav.home,
+  orders: t.nav.orders,
+  profile: t.nav.profile,
+  jobs: t.nav.jobs,
+  active: t.nav.active,
+  earnings: t.nav.earnings,
+  incoming: t.nav.incoming,
+  catalog: t.nav.catalog,
+  quotes: t.nav.quotes,
+  skips: t.nav.skips,
+  invoices: t.nav.invoices,
+  containers: t.nav.containers,
+  certificates: t.nav.certificates,
+  projects: t.nav.projects,
+  team: t.nav.team,
+  vehicles: t.nav.vehicles,
+  notifications: t.nav.notifications,
+  messages: t.nav.messages,
+  settings: t.nav.settings,
+  order: t.nav.order,
+  project: t.nav.project,
+  disposal: t.nav.disposal,
+  transport: t.nav.transport,
+  chat: t.nav.chat,
 };
 
 function titleFromPath(pathname: string): string {
@@ -43,7 +43,7 @@ function titleFromPath(pathname: string): string {
     const found = SEGMENT_TITLE[seg];
     if (found) return found;
   }
-  return 'B3Hub';
+  return t.nav.fallback;
 }
 
 // ── Role config ───────────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ function RoleSheet({ visible, onClose }: { visible: boolean; onClose: () => void
     haptics.light();
     setMode(m);
     onClose();
-    setTimeout(() => router.replace(MODE_HOME[m] as any), 220);
+    setTimeout(() => router.replace(MODE_HOME[m] as Href), 220);
   };
 
   return (

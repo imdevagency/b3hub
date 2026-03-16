@@ -16,7 +16,10 @@ import {
   Alert,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter } from 'expo-router';
+import { useToast } from '@/components/ui/Toast';
+import { t } from '@/lib/translations';
 import {
   ArrowLeft,
   Bell,
@@ -102,6 +105,7 @@ function LinkRow({
 export default function SettingsScreen() {
   const router = useRouter();
   const { logout, user, token } = useAuth();
+  const toast = useToast();
 
   // Notification toggles — initialised from backend user prefs
   const [pushEnabled, setPushEnabled] = useState(user?.notifPush ?? true);
@@ -127,8 +131,8 @@ export default function SettingsScreen() {
     if (!token) return;
     try {
       await api.updateNotificationPrefs(patch, token);
-    } catch {
-      /* silent */
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Neizdevās saglabāt iestatījumus');
     }
   };
 
@@ -141,7 +145,7 @@ export default function SettingsScreen() {
         style: 'destructive',
         onPress: async () => {
           await logout();
-          router.replace('/(auth)/welcome' as any);
+          router.replace('/(auth)/welcome' as import('expo-router').Href);
         },
       },
     ]);
@@ -149,18 +153,7 @@ export default function SettingsScreen() {
 
   return (
     <ScreenContainer standalone>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          hitSlop={10}
-          style={styles.backBtn}
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={18} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Iestatījumi</Text>
-      </View>
+      <ScreenHeader title={t.nav.settings} />
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* ── Notifications ─────────────────────────────── */}

@@ -17,6 +17,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
+import { useToast } from '@/components/ui/Toast';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { api, ApiTransportJob, ApiReturnTripJob } from '@/lib/api';
@@ -67,6 +68,7 @@ const RETURN_TRIP_STATUSES: JobStatus[] = ['EN_ROUTE_DELIVERY', 'AT_DELIVERY'];
 export default function ActiveJobScreen() {
   const router = useRouter();
   const { token } = useAuth();
+  const toast = useToast();
   const [job, setJob] = React.useState<ApiTransportJob | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [currentLat, setCurrentLat] = React.useState<number | null>(null);
@@ -115,7 +117,10 @@ export default function ActiveJobScreen() {
     api.transportJobs
       .returnTrips(job.deliveryLat, job.deliveryLng, 75, token)
       .then((trips) => setReturnTrips(trips))
-      .catch(() => setReturnTrips([]))
+      .catch((err) => {
+        toast.error(err instanceof Error ? err.message : 'Neizdevās ielādēt atgriešanās darbus');
+        setReturnTrips([]);
+      })
       .finally(() => setReturnTripsLoading(false));
   }, [token, job?.status, job?.deliveryLat, job?.deliveryLng]);
 
@@ -148,7 +153,7 @@ export default function ActiveJobScreen() {
       setJob(data);
       jobRef.current = data;
     } catch (e) {
-      console.error('Failed to fetch active job', e);
+      toast.error(e instanceof Error ? e.message : 'Neizdevās ielādēt darbu');
     } finally {
       setLoading(false);
     }

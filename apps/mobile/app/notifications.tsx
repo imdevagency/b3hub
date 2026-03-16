@@ -11,6 +11,9 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
+import { useToast } from '@/components/ui/Toast';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { t } from '@/lib/translations';
 import {
   ArrowLeft,
   BellOff,
@@ -164,6 +167,7 @@ function NotifCard({
 export default function NotificationsScreen() {
   const { token } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const [notifs, setNotifs] = useState<ApiNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -177,7 +181,7 @@ export default function NotificationsScreen() {
         const data = await api.notifications.getAll(token);
         setNotifs(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.error(err);
+        toast.error(err instanceof Error ? err.message : 'Neizdevās ielādēt paziņojumus');
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -207,7 +211,7 @@ export default function NotificationsScreen() {
       await api.notifications.markAllRead(token);
       setNotifs((prev) => prev.map((n) => ({ ...n, isRead: true })));
     } catch (err) {
-      console.error(err);
+      toast.error(err instanceof Error ? err.message : 'Neizdevās atzīmēt kā lasītu');
     } finally {
       setMarkingAll(false);
     }
@@ -217,24 +221,20 @@ export default function NotificationsScreen() {
 
   return (
     <ScreenContainer standalone>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={() => router.back()} hitSlop={8}>
-          <ArrowLeft size={20} color="#374151" />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Paziņojumi {unreadCount > 0 ? `(${unreadCount})` : ''}</Text>
-        {unreadCount > 0 ? (
-          <TouchableOpacity onPress={markAllRead} disabled={markingAll} hitSlop={12}>
-            {markingAll ? (
-              <ActivityIndicator size="small" color="#111827" />
-            ) : (
-              <CheckCheck size={20} color="#111827" />
-            )}
-          </TouchableOpacity>
-        ) : (
-          <View style={{ width: 22 }} />
-        )}
-      </View>
+      <ScreenHeader
+        title={unreadCount > 0 ? `${t.nav.notifications} (${unreadCount})` : t.nav.notifications}
+        rightSlot={
+          unreadCount > 0 ? (
+            <TouchableOpacity onPress={markAllRead} disabled={markingAll} hitSlop={12}>
+              {markingAll ? (
+                <ActivityIndicator size="small" color="#111827" />
+              ) : (
+                <CheckCheck size={20} color="#111827" />
+              )}
+            </TouchableOpacity>
+          ) : undefined
+        }
+      />
 
       {loading ? (
         <SkeletonCard count={5} />

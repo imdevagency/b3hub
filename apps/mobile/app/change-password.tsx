@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
@@ -96,18 +97,7 @@ export default function ChangePasswordScreen() {
 
   return (
     <ScreenContainer standalone>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          hitSlop={10}
-          style={s.backBtn}
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={22} color={ACCENT} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Nomainīt paroli</Text>
-      </View>
+      <ScreenHeader title="Nomainiēt paroli" />
 
       <ScrollView
         style={s.scroll}

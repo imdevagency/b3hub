@@ -8,13 +8,14 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiChatRoom } from '@/lib/api';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { t } from '@/lib/translations';
 import { MessageCircle, Truck, Trash2, ChevronRight, ArrowLeft } from 'lucide-react-native';
 
 function formatRelative(iso: string): string {
@@ -33,7 +34,6 @@ function formatRelative(iso: string): string {
 export default function MessagesScreen() {
   const { token } = useAuth();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const [rooms, setRooms] = useState<ApiChatRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -113,14 +113,7 @@ export default function MessagesScreen() {
 
   return (
     <ScreenContainer standalone topInset={0}>
-      {/* Header */}
-      <View style={[s.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-          <ArrowLeft size={22} color="#111827" />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Ziņojumi</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader title={t.nav.messages} withTopInset />
 
       {loading ? (
         <View style={s.center}>
