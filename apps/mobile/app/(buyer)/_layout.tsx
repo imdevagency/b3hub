@@ -90,6 +90,7 @@ export default function BuyerLayout() {
           <Tabs.Screen name="projects" options={{ href: null }} />
           <Tabs.Screen name="project/[id]" options={{ href: null }} />
           <Tabs.Screen name="team" options={{ href: null }} />
+          <Tabs.Screen name="transport-job/[id]" options={{ href: null }} />
         </Tabs>
       </View>
       <Sidebar
