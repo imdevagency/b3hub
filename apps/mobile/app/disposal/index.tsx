@@ -94,11 +94,12 @@ const VOLUME_PRESETS: Array<{
   emoji: string;
   truckType: DisposalTruckType;
   truckCount: number;
+  fromPrice: number;
 }> = [
-  { key: 'xs', label: 'Neliela', sublabel: '~5 m³ / ~4 t', emoji: '🧺', truckType: 'TIPPER_SMALL', truckCount: 1 },
-  { key: 'sm', label: 'Vidēja', sublabel: '~10 m³ / ~8 t', emoji: '🏗️', truckType: 'TIPPER_SMALL', truckCount: 1 },
-  { key: 'md', label: 'Liela', sublabel: '~18 m³ / ~14 t', emoji: '🚛', truckType: 'TIPPER_LARGE', truckCount: 1 },
-  { key: 'lg', label: 'Ļoti liela', sublabel: '~36 m³ / ~26 t', emoji: '🏭', truckType: 'ARTICULATED_TIPPER', truckCount: 2 },
+  { key: 'xs', label: 'Neliela', sublabel: '~5 m³ / ~4 t', emoji: '🧺', truckType: 'TIPPER_SMALL', truckCount: 1, fromPrice: 89 },
+  { key: 'sm', label: 'Vidēja', sublabel: '~10 m³ / ~8 t', emoji: '🏗️', truckType: 'TIPPER_SMALL', truckCount: 1, fromPrice: 89 },
+  { key: 'md', label: 'Liela', sublabel: '~18 m³ / ~14 t', emoji: '🚛', truckType: 'TIPPER_LARGE', truckCount: 1, fromPrice: 149 },
+  { key: 'lg', label: 'Ļoti liela', sublabel: '~36 m³ / ~26 t', emoji: '🏭', truckType: 'ARTICULATED_TIPPER', truckCount: 2, fromPrice: 219 },
 ];
 
 const TRUCK_CONFIG: Record<string, { label: string; capacity: number; volume: number }> = {
@@ -479,6 +480,7 @@ export default function DisposalWizard() {
                       <Text style={s.volEmoji}>{p.emoji}</Text>
                       <Text style={[s.volLabel, isSel && s.volLabelSel]}>{p.label}</Text>
                       <Text style={s.volSub}>{p.sublabel}</Text>
+                      <Text style={[s.volPrice, isSel && s.volPriceSel]}>no €{p.fromPrice * p.truckCount}</Text>
                       {isSel && <View style={s.checkBadge}><Check size={11} color="#fff" /></View>}
                     </TouchableOpacity>
                   );
@@ -590,6 +592,16 @@ export default function DisposalWizard() {
                   <View style={s.sumContent}>
                     <Text style={s.sumLabel}>Apjoms</Text>
                     <Text style={s.sumValue}>{truck.capacity * preset.truckCount} t ≈ {truck.volume * preset.truckCount} m³</Text>
+                  </View>
+                </View>
+                <View style={s.sumDivider} />
+                <View style={s.sumPriceRow}>
+                  <View style={s.sumContent}>
+                    <Text style={s.sumLabel}>Orientējošā cena</Text>
+                    <Text style={s.sumValue}>no €{preset.fromPrice * preset.truckCount} + PVN 21%</Text>
+                  </View>
+                  <View style={s.sumPriceBadge}>
+                    <Text style={s.sumPriceBadgeText}>Aptuveni</Text>
                   </View>
                 </View>
               </View>
@@ -767,6 +779,8 @@ const s = StyleSheet.create({
   volLabel: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 2 },
   volLabelSel: { color: '#fff' },
   volSub: { fontSize: 12, color: '#9ca3af' },
+  volPrice: { fontSize: 13, fontWeight: '700', color: '#9ca3af', marginTop: 4 },
+  volPriceSel: { color: 'rgba(255,255,255,0.85)' },
   sectionLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 },
   descCard: {
     borderWidth: 1.5,
@@ -812,6 +826,20 @@ const s = StyleSheet.create({
   sumLabel: { fontSize: 12, color: '#9ca3af', marginBottom: 2 },
   sumValue: { fontSize: 14, fontWeight: '500', color: '#111827' },
   sumDivider: { height: 1, backgroundColor: '#e5e7eb' },
+  sumPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    gap: 12,
+    backgroundColor: '#f9fafb',
+  },
+  sumPriceBadge: {
+    backgroundColor: '#e5e7eb',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  sumPriceBadgeText: { fontSize: 11, color: '#6b7280', fontWeight: '500' },
 
   // ── Footer / buttons ───────────────────────────────────────────
   footer: { paddingHorizontal: 20, paddingVertical: 16 },

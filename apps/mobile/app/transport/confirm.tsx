@@ -22,6 +22,12 @@ const VEHICLE_CONFIG: Record<string, { label: string; capacity: number }> = {
   ARTICULATED_TIPPER: { label: 'Sattelkipper (26 t)', capacity: 26 },
 };
 
+const VEHICLE_PRICES: Record<string, number> = {
+  TIPPER_SMALL: 89,
+  TIPPER_LARGE: 149,
+  ARTICULATED_TIPPER: 219,
+};
+
 function tomorrow(): Date {
   const d = new Date();
   d.setDate(d.getDate() + 1);
@@ -233,6 +239,20 @@ export default function TransportStep4Confirm() {
               </Text>
             </View>
           </View>
+          <View style={s.divider} />
+
+          {/* Price estimate */}
+          <View style={s.priceRow}>
+            <View style={s.rowContent}>
+              <Text style={s.rowLabel}>Orientējošā cena</Text>
+              <Text style={s.rowValue}>
+                no €{state.vehicleType ? (VEHICLE_PRICES[state.vehicleType] ?? 149) : 149} + PVN 21%
+              </Text>
+            </View>
+            <View style={s.priceBadge}>
+              <Text style={s.priceBadgeText}>Aptuveni</Text>
+            </View>
+          </View>
         </View>
 
         <View style={{ height: 24 }} />
@@ -324,6 +344,21 @@ const s = StyleSheet.create({
   rowLabel: { fontSize: 12, color: '#9ca3af', marginBottom: 2 },
   rowValue: { fontSize: 14, fontWeight: '500', color: '#111827', lineHeight: 20 },
   divider: { height: 1, backgroundColor: '#f3f4f6', marginHorizontal: 14 },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+    backgroundColor: '#f9fafb',
+  },
+  priceBadge: {
+    backgroundColor: '#e5e7eb',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  priceBadgeText: { fontSize: 11, color: '#6b7280', fontWeight: '500' },
   routeArrow: { alignItems: 'center', paddingVertical: 2 },
   footer: { padding: 24 },
   submitBtn: {

@@ -36,6 +36,7 @@ interface VehicleOption {
   label: string;
   capacity: string;
   desc: string;
+  fromPrice: number;
 }
 
 const VEHICLE_OPTIONS: VehicleOption[] = [
@@ -44,18 +45,21 @@ const VEHICLE_OPTIONS: VehicleOption[] = [
     label: 'Pašizgāzējs',
     capacity: '10 t / 8 m³',
     desc: 'Piemērots nelieliem transporta darbiem',
+    fromPrice: 89,
   },
   {
     id: 'TIPPER_LARGE',
     label: 'Pašizgāzējs lielais',
     capacity: '18 t / 12 m³',
     desc: 'Standarta kravas transportam',
+    fromPrice: 149,
   },
   {
     id: 'ARTICULATED_TIPPER',
     label: 'Sattelkipper',
     capacity: '26 t / 18 m³',
     desc: 'Lielu apjomu kravas pārvadāšanai',
+    fromPrice: 219,
   },
 ];
 
@@ -145,6 +149,7 @@ export default function TransportStep3Vehicle() {
                   <Text style={s.vehicleCapacity}>{opt.capacity}</Text>
                   <Text style={s.vehicleDesc}>{opt.desc}</Text>
                 </View>
+                <Text style={[s.vehiclePrice, isSelected && s.vehiclePriceSelected]}>no €{opt.fromPrice}</Text>
                 {isSelected && (
                   <View style={s.checkBadge}>
                     <Check size={14} color="#fff" />
@@ -280,6 +285,8 @@ const s = StyleSheet.create({
   vehicleLabelSelected: { color: '#111827' },
   vehicleCapacity: { fontSize: 13, fontWeight: '600', color: '#6b7280', marginBottom: 2 },
   vehicleDesc: { fontSize: 12, color: '#9ca3af' },
+  vehiclePrice: { fontSize: 13, fontWeight: '700', color: '#9ca3af', alignSelf: 'center' },
+  vehiclePriceSelected: { color: '#374151' },
   checkBadge: {
     width: 24,
     height: 24,
