@@ -359,6 +359,11 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
             </Text>
           </View>
         )}
+        <View style={s.metaRow}>
+          <Text style={job.rate > 0 ? s.priceChip : s.pricePending}>
+            {job.rate > 0 ? `€${job.rate.toFixed(2)}` : 'Cena tiks noteikta'}
+          </Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -405,6 +410,9 @@ export default function OrdersScreen() {
   useFocusEffect(
     useCallback(() => {
       loadOrders();
+      // Poll every 30 s while the tab is focused
+      const timer = setInterval(() => loadOrders(false), 30_000);
+      return () => clearInterval(timer);
     }, [loadOrders]),
   );
 
@@ -799,6 +807,8 @@ const s = StyleSheet.create({
 
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 3 },
   metaText: { fontSize: 13, color: '#374151', flex: 1 },
+  priceChip: { fontSize: 13, fontWeight: '700', color: '#15803d' },
+  pricePending: { fontSize: 12, color: '#9ca3af', fontStyle: 'italic' },
 
   matRow: {
     flexDirection: 'row',

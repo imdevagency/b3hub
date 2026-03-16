@@ -294,14 +294,14 @@ const ONBOARDING_SLIDES = [
 // UNIT_SHORT — imported from @/lib/materials
 
 const FRACTIONS: Record<string, string[]> = {
-  DEFAULT: ['0/4', '0/8', '0/16', '0/32', '0/45', '4/16', '8/32', '16/45'],
-  SAND: ['0/4', '0/8', '0.1/0.3', '0.5/1', 'Smalkas', 'Rupjas'],
-  GRAVEL: ['0/8', '0/16', '0/32', '4/8', '8/16', '16/32', '16/45', '32/63'],
-  STONE: ['0/32', '0/45', '16/45', '32/63', '45/90'],
-  CONCRETE: ['B20', 'B25', 'B30', 'B35', 'B40'],
-  ASPHALT: ['0/8', '0/11', '0/16', 'SMA-11', 'SMA-16'],
-  RECYCLED_CONCRETE: ['0/32', '0/45', '16/45', '32/63'],
-  RECYCLED_SOIL: ['0/45', '0/63', 'Jaukta'],
+  DEFAULT: ['Standarts', '0/4', '0/8', '0/16', '0/32', '0/45', '4/16', '8/32', '16/45'],
+  SAND: ['Standarts', '0/4', '0/8', '0.1/0.3', '0.5/1', 'Smalkas', 'Rupjas'],
+  GRAVEL: ['Standarts', '0/8', '0/16', '0/32', '4/8', '8/16', '16/32', '16/45', '32/63'],
+  STONE: ['Standarts', '0/32', '0/45', '16/45', '32/63', '45/90'],
+  CONCRETE: ['B25 (Standarts)', 'B20', 'B25', 'B30', 'B35', 'B40'],
+  ASPHALT: ['Standarts', '0/8', '0/11', '0/16', 'SMA-11', 'SMA-16'],
+  RECYCLED_CONCRETE: ['Standarts', '0/32', '0/45', '16/45', '32/63'],
+  RECYCLED_SOIL: ['Standarts', '0/45', '0/63', 'Jaukta'],
 };
 
 const VEHICLES = [
