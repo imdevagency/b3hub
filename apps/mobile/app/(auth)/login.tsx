@@ -215,7 +215,7 @@ const s = StyleSheet.create({
     marginBottom: 16,
   },
   logoText: { color: '#fff', fontSize: 24, fontWeight: '800' },
-  title: { fontSize: 24, fontWeight: '700', color: '#111827' },
+  title: { fontSize: 24, fontWeight: '700', fontFamily: 'Inter_700Bold', color: '#111827' },
   subtitle: { fontSize: 14, color: '#6b7280', marginTop: 6 },
   link: { color: '#111827', fontWeight: '600' },
   errorBox: {
@@ -237,9 +237,9 @@ const s = StyleSheet.create({
     marginBottom: 6,
   },
   input: {
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#e5e7eb',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
@@ -250,11 +250,11 @@ const s = StyleSheet.create({
   fieldError: { color: '#ef4444', fontSize: 12, marginTop: 4 },
   primaryBtn: {
     backgroundColor: '#111827',
-    borderRadius: 14,
+    borderRadius: 100,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
   },
-  primaryBtnDisabled: { backgroundColor: '#f87171' },
-  primaryBtnText: { color: '#fff', fontWeight: '600', fontSize: 16 },
+  primaryBtnDisabled: { backgroundColor: '#9ca3af' },
+  primaryBtnText: { color: '#fff', fontWeight: '700', fontFamily: 'Inter_700Bold', fontSize: 16 },
 });

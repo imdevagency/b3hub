@@ -27,6 +27,7 @@ import {
   LogOut,
   Shield,
   KeyRound,
+  ChevronRight,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -90,7 +91,8 @@ function LinkRow({
   return (
     <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.rowIcon}>{icon}</View>
-      <Text style={[styles.rowLabel, danger && styles.dangerLabel]}>{label}</Text>
+      <Text style={[styles.rowLabel, { flex: 1 }, danger && styles.dangerLabel]}>{label}</Text>
+      <ChevronRight size={16} color="#d1d5db" />
     </TouchableOpacity>
   );
 }
@@ -155,7 +157,7 @@ export default function SettingsScreen() {
           style={styles.backBtn}
           activeOpacity={0.7}
         >
-          <ArrowLeft size={22} color={ACCENT} />
+          <ArrowLeft size={18} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Iestatījumi</Text>
       </View>
@@ -300,7 +302,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backBtn: {
-    padding: 4,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     flex: 1,
@@ -337,8 +344,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   rowIcon: {
-    width: 28,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   rowBody: {
     flex: 1,

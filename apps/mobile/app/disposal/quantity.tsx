@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useDisposal } from '@/lib/disposal-context';
 import type { DisposalTruckType } from '@/lib/api';
-import { Minus, Plus, Truck, AlertTriangle } from 'lucide-react-native';
+import { Minus, Plus, Truck, AlertTriangle, ArrowLeft } from 'lucide-react-native';
 
 // ── Truck configs (mirrors backend TRUCK_LABELS) ──────────────────────────────
 const TRUCKS: Array<{
@@ -84,7 +84,7 @@ export default function DisposalStep2Quantity() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Text style={s.backIcon}>←</Text>
+          <ArrowLeft size={20} color="#374151" />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Nodot atkritumus</Text>
         <View style={{ width: 36 }} />
@@ -359,7 +359,7 @@ const s = StyleSheet.create({
   footer: { padding: 20 },
   nextBtn: {
     backgroundColor: '#111827',
-    borderRadius: 14,
+    borderRadius: 100,
     paddingVertical: 16,
     alignItems: 'center',
   },

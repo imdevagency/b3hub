@@ -1,9 +1,11 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import { useOrder } from '@/lib/order-context';
 import { t } from '@/lib/translations';
 import { CheckCircle2 } from 'lucide-react-native';
+import { haptics } from '@/lib/haptics';
 
 function formatDisplay(iso: string): string {
   const d = new Date(iso + 'T00:00:00');
@@ -14,6 +16,54 @@ export default function OrderConfirmation() {
   const router = useRouter();
   const { state, reset } = useOrder();
   const order = state.confirmedOrder;
+
+  // ── Entrance animations ──────────────────────────────────────────────
+  const iconScale = useRef(new Animated.Value(0)).current;
+  const iconOpacity = useRef(new Animated.Value(0)).current;
+  const headerY = useRef(new Animated.Value(24)).current;
+  const headerOpacity = useRef(new Animated.Value(0)).current;
+  const cardY = useRef(new Animated.Value(32)).current;
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+  const btnsY = useRef(new Animated.Value(20)).current;
+  const btnsOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    haptics.success();
+    Animated.sequence([
+      Animated.delay(80),
+      Animated.parallel([
+        Animated.spring(iconScale, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 120,
+          friction: 7,
+        }),
+        Animated.timing(iconOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      ]),
+    ]).start();
+    Animated.sequence([
+      Animated.delay(240),
+      Animated.parallel([
+        Animated.spring(headerY, { toValue: 0, useNativeDriver: true, tension: 80, friction: 10 }),
+        Animated.timing(headerOpacity, { toValue: 1, duration: 240, useNativeDriver: true }),
+      ]),
+    ]).start();
+    Animated.sequence([
+      Animated.delay(400),
+      Animated.parallel([
+        Animated.spring(cardY, { toValue: 0, useNativeDriver: true, tension: 70, friction: 10 }),
+        Animated.timing(cardOpacity, { toValue: 1, duration: 280, useNativeDriver: true }),
+      ]),
+    ]).start();
+    Animated.sequence([
+      Animated.delay(560),
+      Animated.parallel([
+        Animated.spring(btnsY, { toValue: 0, useNativeDriver: true, tension: 70, friction: 10 }),
+        Animated.timing(btnsOpacity, { toValue: 1, duration: 240, useNativeDriver: true }),
+      ]),
+    ]).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!order) {
     return (
@@ -44,58 +94,67 @@ export default function OrderConfirmation() {
   return (
     <ScreenContainer standalone bg="#fff">
       <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
-        {/* Success icon */}
-        <View style={s.iconWrap}>
+        <Animated.View
+          style={[s.iconWrap, { opacity: iconOpacity, transform: [{ scale: iconScale }] }]}
+        >
           <CheckCircle2 size={72} color="#111827" />
-        </View>
+        </Animated.View>
 
-        <Text style={s.title}>{t.skipHire.confirmation.title}</Text>
-        <Text style={s.subtitle}>{t.skipHire.confirmation.subtitle}</Text>
+        <Animated.View style={{ opacity: headerOpacity, transform: [{ translateY: headerY }] }}>
+          <Text style={s.title}>{t.skipHire.confirmation.title}</Text>
+          <Text style={s.subtitle}>{t.skipHire.confirmation.subtitle}</Text>
+        </Animated.View>
 
-        {/* Order number highlight card */}
-        <View style={s.orderNumCard}>
-          <Text style={s.orderNumLabel}>{t.skipHire.confirmation.orderNumber}</Text>
-          <Text style={s.orderNum}>{order.orderNumber}</Text>
-        </View>
+        <Animated.View style={{ opacity: cardOpacity, transform: [{ translateY: cardY }] }}>
+          {/* Order number highlight card */}
+          <View style={s.orderNumCard}>
+            <Text style={s.orderNumLabel}>{t.skipHire.confirmation.orderNumber}</Text>
+            <Text style={s.orderNum}>{order.orderNumber}</Text>
+          </View>
 
-        {/* Order details */}
-        <View style={s.detailsCard}>
-          {details.map((row, i) => (
-            <View key={i} style={[s.detailRow, i < details.length - 1 && s.detailRowBorder]}>
-              <Text style={s.detailLabel}>{row.label}</Text>
-              <Text style={s.detailValue}>{row.value}</Text>
-            </View>
-          ))}
-        </View>
+          {/* Order details */}
+          <View style={s.detailsCard}>
+            {details.map((row, i) => (
+              <View key={i} style={[s.detailRow, i < details.length - 1 && s.detailRowBorder]}>
+                <Text style={s.detailLabel}>{row.label}</Text>
+                <Text style={s.detailValue}>{row.value}</Text>
+              </View>
+            ))}
+          </View>
 
-        {/* Status badge */}
-        <View style={s.statusBadge}>
-          <View style={s.statusDot} />
-          <Text style={s.statusText}>{order.status}</Text>
-        </View>
+          {/* Status badge */}
+          <View style={s.statusBadge}>
+            <View style={s.statusDot} />
+            <Text style={s.statusText}>{order.status}</Text>
+          </View>
+        </Animated.View>
 
         {/* CTA buttons */}
-        <TouchableOpacity
-          style={s.primaryBtn}
-          onPress={() => {
-            reset();
-            router.replace('/(buyer)/orders');
-          }}
-          activeOpacity={0.8}
-        >
-          <Text style={s.primaryBtnText}>{t.skipHire.confirmation.viewMyOrders}</Text>
-        </TouchableOpacity>
+        <Animated.View style={{ opacity: btnsOpacity, transform: [{ translateY: btnsY }] }}>
+          <TouchableOpacity
+            style={s.primaryBtn}
+            onPress={() => {
+              haptics.medium();
+              reset();
+              router.replace('/(buyer)/orders');
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={s.primaryBtnText}>{t.skipHire.confirmation.viewMyOrders}</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={s.secondaryBtn}
-          onPress={() => {
-            reset();
-            router.replace('/order');
-          }}
-          activeOpacity={0.8}
-        >
-          <Text style={s.secondaryBtnText}>{t.skipHire.confirmation.newOrder}</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={s.secondaryBtn}
+            onPress={() => {
+              haptics.light();
+              reset();
+              router.replace('/order');
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={s.secondaryBtnText}>{t.skipHire.confirmation.newOrder}</Text>
+          </TouchableOpacity>
+        </Animated.View>
       </ScrollView>
     </ScreenContainer>
   );
@@ -122,6 +181,7 @@ const s = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     color: '#111827',
     textAlign: 'center',
     marginBottom: 8,
@@ -143,11 +203,18 @@ const s = StyleSheet.create({
     color: '#fca5a5',
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginBottom: 8,
   },
-  orderNum: { color: '#fff', fontSize: 26, fontWeight: '800', letterSpacing: 1.5 },
+  orderNum: {
+    color: '#fff',
+    fontSize: 26,
+    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
+    letterSpacing: 1.5,
+  },
   detailsCard: {
     backgroundColor: '#f9fafb',
     borderRadius: 16,
@@ -160,6 +227,7 @@ const s = StyleSheet.create({
   detailValue: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: '#111827',
     maxWidth: '55%',
     textAlign: 'right',
@@ -175,23 +243,33 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     marginBottom: 32,
   },
-  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#374151' },
-  statusText: { color: '#374151', fontWeight: '600', fontSize: 13 },
+  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#059669' },
+  statusText: { color: '#059669', fontWeight: '600', fontSize: 13 },
   primaryBtn: {
     backgroundColor: '#111827',
-    borderRadius: 14,
+    borderRadius: 100,
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 12,
   },
-  primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  primaryBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
+  },
   secondaryBtn: {
     backgroundColor: '#f9fafb',
-    borderRadius: 14,
+    borderRadius: 100,
     paddingVertical: 16,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
-  secondaryBtnText: { color: '#374151', fontSize: 16, fontWeight: '600' },
+  secondaryBtnText: {
+    color: '#374151',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
+  },
 });

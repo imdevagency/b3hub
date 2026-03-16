@@ -6,7 +6,7 @@
  */
 import React, { useRef, useEffect, useCallback } from 'react';
 import { StyleSheet, ViewStyle } from 'react-native';
-import MapView, { PROVIDER_GOOGLE, MapPressEvent } from 'react-native-maps';
+import MapView, { PROVIDER_GOOGLE, MapPressEvent, EdgePadding } from 'react-native-maps';
 
 /** Rīga city centre — [longitude, latitude] (Mapbox convention kept for compat). */
 export const RIGA_CENTER: [number, number] = [24.1052, 56.9496];
@@ -31,6 +31,12 @@ export interface BaseMapProps {
   showsMyLocationButton?: boolean;
   /** Map display type. Default 'standard'. */
   mapType?: 'standard' | 'satellite' | 'hybrid';
+  /**
+   * Insets the map camera viewport so that camera operations (setCamera,
+   * fitBounds) centre content in the VISIBLE area (e.g. above a bottom sheet).
+   * Mirrors react-native-maps MapView's mapPadding prop.
+   */
+  mapPadding?: EdgePadding;
 }
 
 /** Approximate lat/lng delta from a Mapbox-style zoom level. */
@@ -51,6 +57,7 @@ export function BaseMap({
   showsUserLocation = false,
   showsMyLocationButton = false,
   mapType = 'standard',
+  mapPadding,
 }: BaseMapProps) {
   const mapRef = useRef<MapView>(null);
   // Track whether Google Maps has fully initialised and is ready to receive commands.
@@ -162,6 +169,7 @@ export function BaseMap({
       moveOnMarkerPress={false}
       onMapReady={onMapReady}
       onPress={onPress ? handlePress : undefined}
+      mapPadding={mapPadding}
     >
       {children}
     </MapView>

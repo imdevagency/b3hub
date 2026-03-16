@@ -101,6 +101,33 @@ export default function DriverHomeScreen() {
   const [availableCount, setAvailableCount] = useState<number | null>(null);
   const [hasActiveJob, setHasActiveJob] = useState(false);
 
+  // Tile stagger
+  const tileAnims = useRef(
+    QUICK_ACTIONS.map(() => ({ opacity: new Animated.Value(0), y: new Animated.Value(20) })),
+  ).current;
+  useEffect(() => {
+    QUICK_ACTIONS.forEach((_, i) => {
+      const delay = Animated.delay(i * 70);
+      Animated.sequence([
+        delay,
+        Animated.parallel([
+          Animated.spring(tileAnims[i].opacity, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 72,
+            friction: 11,
+          }),
+          Animated.spring(tileAnims[i].y, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 72,
+            friction: 11,
+          }),
+        ]),
+      ]).start();
+    });
+  }, []);
+
   // Fly camera to driver's current location
   useEffect(() => {
     (async () => {
@@ -135,6 +162,22 @@ export default function DriverHomeScreen() {
       {/* Full-screen map */}
       <BaseMap cameraRef={cameraRef} zoom={12} showsUserLocation showsMyLocationButton />
 
+      {/* Avatar FAB */}
+      {user && (
+        <TouchableOpacity
+          style={[s.avatarFab, { top: insets.top + 12 }]}
+          activeOpacity={0.8}
+          onPress={() => {
+            haptics.light();
+            router.push('/(driver)/profile' as any);
+          }}
+        >
+          <Text style={s.avatarFabText}>
+            {(user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '')}
+          </Text>
+        </TouchableOpacity>
+      )}
+
       {/* Bottom panel */}
       <Animated.View
         style={[s.panel, { transform: [{ translateY: dragY }] }]}
@@ -160,6 +203,14 @@ export default function DriverHomeScreen() {
           contentContainerStyle={[s.panelScroll, { paddingBottom: TAB_H + insets.bottom }]}
           bounces={false}
         >
+          {/* Greeting */}
+          <View>
+            <Text style={s.greetingText}>
+              {greeting()}, {user?.firstName ?? ''}!
+            </Text>
+            <Text style={s.headline}>Kā iet?</Text>
+          </View>
+
           {/* Status row */}
           <View style={s.statusRow}>
             <View style={[s.statusChip, hasActiveJob ? s.statusChipActive : s.statusChipIdle]}>
@@ -199,26 +250,34 @@ export default function DriverHomeScreen() {
 
           {/* Quick action tiles 2×2 */}
           <View style={s.grid}>
-            {QUICK_ACTIONS.map((a) => {
+            {QUICK_ACTIONS.map((a, idx) => {
               const Icon = a.icon;
               return (
-                <TouchableOpacity
+                <Animated.View
                   key={a.id}
-                  style={s.gridTile}
-                  onPress={() => {
-                    haptics.light();
-                    router.push(a.route as any);
+                  style={{
+                    opacity: tileAnims[idx].opacity,
+                    transform: [{ translateY: tileAnims[idx].y }],
+                    width: '48%',
                   }}
-                  activeOpacity={0.75}
                 >
-                  <View style={s.gridIcon}>
-                    <Icon size={20} color="#111827" />
-                  </View>
-                  <Text style={s.gridLabel}>{a.label}</Text>
-                  <Text style={s.gridSub} numberOfLines={1}>
-                    {a.sub}
-                  </Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[s.gridTile, { width: '100%' }]}
+                    onPress={() => {
+                      haptics.light();
+                      router.push(a.route as any);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={s.gridIcon}>
+                      <Icon size={20} color="#111827" />
+                    </View>
+                    <Text style={s.gridLabel}>{a.label}</Text>
+                    <Text style={s.gridSub} numberOfLines={1}>
+                      {a.sub}
+                    </Text>
+                  </TouchableOpacity>
+                </Animated.View>
               );
             })}
           </View>
@@ -300,7 +359,7 @@ const s = StyleSheet.create({
   // Primary button
   primaryBtn: {
     backgroundColor: '#111827',
-    borderRadius: 16,
+    borderRadius: 100,
     paddingVertical: 15,
     alignItems: 'center',
   },
@@ -313,7 +372,6 @@ const s = StyleSheet.create({
     gap: 10,
   },
   gridTile: {
-    width: '48%',
     backgroundColor: '#f9fafb',
     borderRadius: 18,
     padding: 16,
@@ -332,4 +390,27 @@ const s = StyleSheet.create({
   },
   gridLabel: { fontSize: 13, fontWeight: '700', color: '#111827' },
   gridSub: { fontSize: 11, color: '#9ca3af', lineHeight: 15 },
+
+  // Avatar FAB
+  avatarFab: {
+    position: 'absolute',
+    left: 16,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 6,
+  },
+  avatarFabText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
 });

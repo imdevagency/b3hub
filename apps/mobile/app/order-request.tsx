@@ -17,12 +17,14 @@ import {
   Alert,
   ActivityIndicator,
   Dimensions,
+  Platform,
   StatusBar,
   Easing,
   TextInput,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BaseMap, UserLayer, useGeocode, RIGA_CENTER } from '@/components/map';
+import type { GeocodeSuggestion } from '@/components/map';
 import { Marker } from 'react-native-maps';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -50,8 +52,13 @@ import {
   RotateCcw,
 } from 'lucide-react-native';
 import * as Location from 'expo-location';
-const { width: SW } = Dimensions.get('window');
+const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
+const SW = SCREEN_W; // kept for layout refs inside this file
 const ONBOARDING_KEY = '@b3hub:material_order_onboarding_v1';
+/** Map height when the location step is active (big map, ~46% of screen) */
+const MAP_FULL = Math.round(SCREEN_H * 0.46);
+/** Map height for all non-location steps (small strip, ~22% of screen) */
+const MAP_SMALL = Math.round(SCREEN_H * 0.22);
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -422,7 +429,30 @@ export default function OrderRequestScreen() {
   const insets = useSafeAreaInsets();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cameraRef = useRef<any>(null);
-  const { forwardGeocode, reverseGeocodeWithCity, loading: geoLoading } = useGeocode();
+
+  // ── Animation refs ─────────────────────────────────────────────
+  const mapHeight = useRef(new Animated.Value(MAP_FULL)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  // Sheet transparency: 0 = transparent (map step), 1 = white (all other steps)
+  const sheetBgAnim = useRef(new Animated.Value(0)).current;
+  const sheetBg = sheetBgAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(255,255,255,0)', 'rgba(255,255,255,1)'],
+  });
+  const floatingCtaOpacity = sheetBgAnim.interpolate({
+    inputRange: [0, 0.6],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+  const ctaScale = useRef(new Animated.Value(1)).current;
+
+  const {
+    forwardGeocode,
+    resolvePlace,
+    reverseGeocodeWithCity,
+    loading: geoLoading,
+  } = useGeocode();
 
   // ── Step & onboarding ─────────────────────────────────────────
   const [step, setStep] = useState<Step>('map');
@@ -542,7 +572,7 @@ export default function OrderRequestScreen() {
     setSelectedMaterial(mat);
     const fl = FRACTIONS[mat.category?.toUpperCase() ?? 'DEFAULT'] ?? FRACTIONS.DEFAULT;
     setFraction(fl[0] ?? '0/45');
-    setStep('configure');
+    transitionTo('configure', 'forward');
   };
 
   // ── Step 1: tap map to drop pin ──────────────────────────────
@@ -610,23 +640,27 @@ export default function OrderRequestScreen() {
     [forwardGeocode],
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const onPlaceSelected = useCallback((feature: any) => {
-    const [pLng, pLat] = feature.geometry.coordinates as [number, number];
-    const coords: LatLng = { latitude: pLat, longitude: pLng };
-    setPin(coords);
-    setAddress(feature.place_name);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const cityCtx = feature.context?.find((c: any) => c.id?.startsWith('place'));
-    setCity(cityCtx?.text ?? '');
-    setGeoSearchText(feature.place_name);
-    setGeoSuggestions([]);
-    cameraRef.current?.setCamera({
-      centerCoordinate: [pLng, pLat],
-      zoomLevel: 14,
-      animationDuration: 600,
-    });
-  }, []);
+  const onPlaceSelected = useCallback(
+    async (feature: GeocodeSuggestion) => {
+      setAddress(feature.place_name);
+      setGeoSearchText(feature.place_name);
+      setGeoSuggestions([]);
+      const coords = await resolvePlace(feature.id);
+      if (coords) {
+        const [pLng, pLat] = coords;
+        const latLng: LatLng = { latitude: pLat, longitude: pLng };
+        setPin(latLng);
+        cameraRef.current?.setCamera({
+          centerCoordinate: [pLng, pLat],
+          zoomLevel: 14,
+          animationDuration: 600,
+        });
+        const { city: c } = await reverseGeocodeWithCity(pLat, pLng);
+        setCity(c);
+      }
+    },
+    [resolvePlace, reverseGeocodeWithCity],
+  );
 
   // ── Step 2: quantity stepper ─────────────────────────────────
   const stepQty = (delta: number) =>
@@ -639,6 +673,59 @@ export default function OrderRequestScreen() {
     },
     [],
   );
+
+  // ── Map height animation ──────────────────────────────────────
+  const animateMap = useCallback(
+    (toStep: Step) => {
+      Animated.spring(mapHeight, {
+        toValue: toStep === 'map' ? MAP_FULL : MAP_SMALL,
+        useNativeDriver: false,
+        tension: 60,
+        friction: 14,
+      }).start();
+    },
+    [mapHeight],
+  );
+
+  // ── Step transition with slide + fade ─────────────────────────
+  const transitionTo = useCallback(
+    (nextStep: Step, direction: 'forward' | 'back') => {
+      const fromX = direction === 'forward' ? SCREEN_W : -SCREEN_W;
+      slideAnim.setValue(fromX);
+      fadeAnim.setValue(0.6);
+      setStep(nextStep);
+      animateMap(nextStep);
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 68,
+          friction: 14,
+        }),
+        Animated.timing(fadeAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
+        Animated.timing(sheetBgAnim, {
+          toValue: nextStep === 'map' ? 0 : 1,
+          duration: 280,
+          useNativeDriver: false,
+        }),
+      ]).start();
+    },
+    [slideAnim, fadeAnim, animateMap, sheetBgAnim],
+  );
+
+  // ── Back navigation ───────────────────────────────────────────
+  const goBack = useCallback(() => {
+    const backMap: Partial<Record<Step, Step>> = {
+      material: 'map',
+      configure: 'material',
+      offers: 'configure',
+      quotes: 'configure',
+      confirm: selectedOffer ? 'offers' : 'quotes',
+    };
+    const target = backMap[step];
+    if (target) transitionTo(target, 'back');
+    else router.back();
+  }, [step, selectedOffer, transitionTo, router]);
 
   // ── Step 3: fetch instant offers or fall back to RFQ ─────────
   const requestQuotes = useCallback(async () => {
@@ -664,7 +751,7 @@ export default function OrderRequestScreen() {
         const sorted = [...offers].sort((a, b) => a.totalPrice - b.totalPrice);
         setInstantOffers(sorted);
         setSelectedOffer(sorted[0]);
-        setStep('offers');
+        transitionTo('offers', 'forward');
         return;
       }
     } catch {
@@ -672,7 +759,7 @@ export default function OrderRequestScreen() {
     }
 
     // No instant offers — start RFQ flow
-    setStep('searching');
+    transitionTo('searching', 'forward');
     try {
       const req = await api.quoteRequests.create(
         {
@@ -699,7 +786,7 @@ export default function OrderRequestScreen() {
             clearInterval(pollTimer.current!);
             pollTimer.current = null;
             setSelectedQuoteResponse(updated.responses[0]);
-            setStep('quotes');
+            transitionTo('quotes', 'forward');
           }
         } catch {
           /* keep polling */
@@ -708,7 +795,7 @@ export default function OrderRequestScreen() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Neizdevās nosūtīt pieprasījumu';
       Alert.alert('Kļūda', msg);
-      setStep('configure');
+      transitionTo('configure', 'back');
     }
   }, [token, matCategoryValue, matName, matUnit, quantity, address, city, pin]);
 
@@ -748,7 +835,7 @@ export default function OrderRequestScreen() {
         setSubmitting(false);
         return;
       }
-      setStep('success');
+      transitionTo('success', 'forward');
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Neizdevās izveidot pasūtījumu';
       Alert.alert('Kļūda', msg);
@@ -761,393 +848,222 @@ export default function OrderRequestScreen() {
   // Step renders
   // ════════════════════════════════════════════════════════════
 
-  // ── STEP 1 — Map ─────────────────────────────────────────────
-  const renderMap = () => (
-    <View style={{ flex: 1 }}>
-      {/* Map fills screen */}
-      <BaseMap
-        cameraRef={cameraRef}
-        center={RIGA_CENTER}
-        zoom={10}
-        onPress={onMapPress}
-        mapType={satellite ? 'hybrid' : 'standard'}
-      >
-        <UserLayer />
-        {pin && (
-          <Marker coordinate={pin} draggable onDragEnd={onPinDragEnd}>
-            <View style={sa.markerWrap}>
-              <View style={sa.markerOuter}>
-                <View style={sa.markerInner} />
-              </View>
-              <View style={sa.markerStem} />
-            </View>
-          </Marker>
-        )}
-      </BaseMap>
-
-      {/* Top: back + address search */}
-      <View style={[sa.mapTopBar, { paddingTop: insets.top }]}>
-        <TouchableOpacity style={sa.backBtn} onPress={() => router.back()}>
-          <ChevronLeft size={20} color="#111827" />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <View style={sa.placesInputContainer}>
-            <Search size={15} color="#9ca3af" style={{ marginLeft: 10 }} />
-            <TextInput
-              style={sa.placesTextInput}
-              placeholder="Meklēt piegādes adresi..."
-              placeholderTextColor="#9ca3af"
-              value={geoSearchText}
-              onChangeText={onGeoSearchChange}
-              autoCorrect={false}
-            />
-            {geoLoading && (
-              <ActivityIndicator size="small" color="#6b7280" style={{ marginRight: 10 }} />
-            )}
-          </View>
-          {geoSuggestions.length > 0 && (
-            <FlatList
-              style={sa.placesList}
-              keyboardShouldPersistTaps="handled"
-              data={geoSuggestions}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity style={sa.placesRow} onPress={() => onPlaceSelected(item)}>
-                  <MapPin size={13} color="#9ca3af" style={{ marginRight: 6 }} />
-                  <Text style={sa.placesDesc} numberOfLines={2}>
-                    {item.place_name}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
-          )}
-        </View>
-      </View>
-
-      {/* Right-side FAB column: satellite toggle + locate-me */}
-      <View style={sa.mapFabColumn}>
-        {/* Satellite / Street toggle */}
-        <TouchableOpacity
-          style={[sa.mapFab, satellite && sa.mapFabActive]}
-          onPress={() => setSatellite((s) => !s)}
-          activeOpacity={0.85}
-        >
-          <Layers size={18} color={satellite ? '#fff' : '#111827'} />
-        </TouchableOpacity>
-
-        {/* Locate-me */}
-        <TouchableOpacity style={sa.mapFab} onPress={locateMe} activeOpacity={0.85}>
-          <Navigation2 size={18} color="#111827" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Top title strip (when no pin yet) */}
-      {!pin && (
-        <View style={sa.mapHintStrip}>
-          <MapPin size={14} color="#111827" />
-          <Text style={sa.mapHintText}>Pieskarieties kartei, lai izvēlētos piegādes vietu</Text>
-        </View>
-      )}
-
-      {/* Bottom sheet */}
-      <View style={[sa.mapBottomSheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-        {pin ? (
-          <>
-            <View style={sa.addressRow}>
-              <View style={sa.addressDot} />
-              <Text style={sa.addressText} numberOfLines={2}>
-                {address || 'Nosakām adresi...'}
-              </Text>
-              {/* Reset / clear pin */}
-              <TouchableOpacity
-                style={sa.resetBtn}
-                onPress={() => {
-                  setPin(null);
-                  setAddress('');
-                  setCity('');
-                  setGeoSearchText('');
-                  setGeoSuggestions([]);
-                }}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <RotateCcw size={16} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity
-              style={[
-                sa.ctaBtn,
-                !address || address === 'Nosakām adresi...' ? { opacity: 0.5 } : {},
-              ]}
-              onPress={() => {
-                if (!address || address === 'Nosakām adresi...') return;
-                setStep(params.materialId ? 'configure' : 'material');
-              }}
-              activeOpacity={0.85}
-            >
-              <Text style={sa.ctaBtnText}>Tālāk — izvēlēties materiālu →</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <Text style={sa.mapEmptyHint}>Pieskarieties kartei vai meklējiet adresi augšā</Text>
-        )}
-      </View>
-    </View>
-  );
+  // ── STEP: Location — search card is now an absolute overlay at top of map (Uber-style)
+  //    Rendered separately in the main JSX, NOT inside the sheet.
+  const renderMapContent = () => null;
 
   // ── STEP 2 — Configure ───────────────────────────────────────
   const renderConfigure = () => (
-    <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
-      <View style={[sa.header, { paddingTop: insets.top + 6 }]}>
-        <TouchableOpacity style={sa.backBtn} onPress={() => setStep('map')}>
-          <ChevronLeft size={20} color="#111827" />
-        </TouchableOpacity>
-        <Text style={sa.headerTitle}>Konfigurēt pasūtījumu</Text>
-        <View style={{ width: 36 }} />
+    <ScrollView
+      contentContainerStyle={sa.configScroll}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      {/* Material preview */}
+      <View style={sa.materialCard}>
+        <Text style={sa.materialIcon}>
+          {CATEGORY_ICON[matCategoryValue?.toUpperCase() ?? 'OTHER'] ?? '📦'}
+        </Text>
+        <View style={{ flex: 1 }}>
+          <Text style={sa.materialName}>{matName}</Text>
+          <Text style={sa.materialSup}>{matDescription}</Text>
+        </View>
+        <Text style={sa.materialPrice}>
+          €{matBasePrice.toFixed(2)}/{UNIT_SHORT[matUnit]}
+        </Text>
       </View>
 
-      <ScrollView
-        contentContainerStyle={sa.configScroll}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Material preview */}
-        <View style={sa.materialCard}>
-          <Text style={sa.materialIcon}>
-            {CATEGORY_ICON[matCategoryValue?.toUpperCase() ?? 'OTHER'] ?? '📦'}
-          </Text>
-          <View style={{ flex: 1 }}>
-            <Text style={sa.materialName}>{matName}</Text>
-            <Text style={sa.materialSup}>{matDescription}</Text>
-          </View>
-          <Text style={sa.materialPrice}>
-            €{matBasePrice.toFixed(2)}/{UNIT_SHORT[matUnit]}
-          </Text>
-        </View>
+      {/* Delivery location */}
+      <View style={sa.locationCard}>
+        <MapPin size={15} color="#111827" />
+        <Text style={sa.locationCardText} numberOfLines={2}>
+          {address}
+        </Text>
+        <TouchableOpacity onPress={() => transitionTo('map', 'back')}>
+          <Text style={sa.locationChange}>Mainīt</Text>
+        </TouchableOpacity>
+      </View>
 
-        {/* Delivery location */}
-        <View style={sa.locationCard}>
-          <MapPin size={15} color="#111827" />
-          <Text style={sa.locationCardText} numberOfLines={2}>
-            {address}
-          </Text>
-          <TouchableOpacity onPress={() => setStep('map')}>
-            <Text style={sa.locationChange}>Mainīt</Text>
+      {/* Fraction */}
+      <View style={sa.section}>
+        <Text style={sa.sectionLabel}>Frakcija</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
+        >
+          {fractionList.map((f) => (
+            <TouchableOpacity
+              key={f}
+              style={[sa.fractionChip, fraction === f && sa.fractionChipActive]}
+              onPress={() => setFraction(f)}
+              activeOpacity={0.75}
+            >
+              <Text style={[sa.fractionChipText, fraction === f && sa.fractionChipTextActive]}>
+                {f}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Quantity stepper */}
+      <View style={sa.section}>
+        <Text style={sa.sectionLabel}>Apjoms</Text>
+        <View style={sa.stepper}>
+          <TouchableOpacity style={sa.stepperBtn} onPress={() => stepQty(-5)} activeOpacity={0.7}>
+            <Text style={sa.stepperBtnText}>−</Text>
+          </TouchableOpacity>
+          <View style={sa.stepperDisplay}>
+            <Text style={sa.stepperValue}>{quantity}</Text>
+            <Text style={sa.stepperUnit}>{UNIT_SHORT[matUnit]}</Text>
+          </View>
+          <TouchableOpacity style={sa.stepperBtn} onPress={() => stepQty(5)} activeOpacity={0.7}>
+            <Text style={sa.stepperBtnText}>+</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Fraction */}
-        <View style={sa.section}>
-          <Text style={sa.sectionLabel}>Frakcija</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
-          >
-            {fractionList.map((f) => (
-              <TouchableOpacity
-                key={f}
-                style={[sa.fractionChip, fraction === f && sa.fractionChipActive]}
-                onPress={() => setFraction(f)}
-                activeOpacity={0.75}
-              >
-                <Text style={[sa.fractionChipText, fraction === f && sa.fractionChipTextActive]}>
-                  {f}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Quantity stepper */}
-        <View style={sa.section}>
-          <Text style={sa.sectionLabel}>Apjoms</Text>
-          <View style={sa.stepper}>
-            <TouchableOpacity style={sa.stepperBtn} onPress={() => stepQty(-5)} activeOpacity={0.7}>
-              <Text style={sa.stepperBtnText}>−</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginTop: 4 }}>
+          {[5, 10, 20, 26].map((n) => (
+            <TouchableOpacity
+              key={n}
+              style={[sa.qtyQuick, quantity === n && sa.qtyQuickActive]}
+              onPress={() => setQuantity(Math.min(n, maxTonnes))}
+            >
+              <Text style={[sa.qtyQuickText, quantity === n && sa.qtyQuickTextActive]}>
+                {n} {UNIT_SHORT[matUnit]}
+              </Text>
             </TouchableOpacity>
-            <View style={sa.stepperDisplay}>
-              <Text style={sa.stepperValue}>{quantity}</Text>
-              <Text style={sa.stepperUnit}>{UNIT_SHORT[matUnit]}</Text>
-            </View>
-            <TouchableOpacity style={sa.stepperBtn} onPress={() => stepQty(5)} activeOpacity={0.7}>
-              <Text style={sa.stepperBtnText}>+</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginTop: 4 }}>
-            {[5, 10, 20, 26].map((n) => (
-              <TouchableOpacity
-                key={n}
-                style={[sa.qtyQuick, quantity === n && sa.qtyQuickActive]}
-                onPress={() => setQuantity(Math.min(n, maxTonnes))}
-              >
-                <Text style={[sa.qtyQuickText, quantity === n && sa.qtyQuickTextActive]}>
-                  {n} {UNIT_SHORT[matUnit]}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          ))}
         </View>
-
-        {/* Vehicle type */}
-        <View style={sa.section}>
-          <Text style={sa.sectionLabel}>Transportlīdzeklis</Text>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            {VEHICLES.map((v) => (
-              <TouchableOpacity
-                key={v.id}
-                style={[sa.vehicleCard, vehicleId === v.id && sa.vehicleCardActive]}
-                onPress={() => {
-                  setVehicleId(v.id);
-                  setQuantity((q) => Math.min(q, parseInt(v.label, 10)));
-                }}
-                activeOpacity={0.75}
-              >
-                <Text style={sa.vehicleEmoji}>{v.emoji}</Text>
-                <Text style={[sa.vehicleLabel, vehicleId === v.id && sa.vehicleLabelActive]}>
-                  {v.label}
-                </Text>
-                <Text style={sa.vehicleSub}>{v.sub}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Estimate */}
-        <View style={sa.estimateRow}>
-          <Text style={sa.estimateLabel}>Orientējoša summa:</Text>
-          <Text style={sa.estimateValue}>€{(matBasePrice * quantity).toFixed(2)}</Text>
-        </View>
-      </ScrollView>
-
-      <View style={[sa.floatingCta, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-        <TouchableOpacity style={sa.ctaBtn} onPress={requestQuotes} activeOpacity={0.85}>
-          <Text style={sa.ctaBtnText}>Pieprasīt piedāvājumus →</Text>
-        </TouchableOpacity>
       </View>
-    </View>
+
+      {/* Vehicle type */}
+      <View style={sa.section}>
+        <Text style={sa.sectionLabel}>Transportlīdzeklis</Text>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          {VEHICLES.map((v) => (
+            <TouchableOpacity
+              key={v.id}
+              style={[sa.vehicleCard, vehicleId === v.id && sa.vehicleCardActive]}
+              onPress={() => {
+                setVehicleId(v.id);
+                setQuantity((q) => Math.min(q, parseInt(v.label, 10)));
+              }}
+              activeOpacity={0.75}
+            >
+              <Text style={sa.vehicleEmoji}>{v.emoji}</Text>
+              <Text style={[sa.vehicleLabel, vehicleId === v.id && sa.vehicleLabelActive]}>
+                {v.label}
+              </Text>
+              <Text style={sa.vehicleSub}>{v.sub}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Estimate */}
+      <View style={sa.estimateRow}>
+        <Text style={sa.estimateLabel}>Orientējoša summa:</Text>
+        <Text style={sa.estimateValue}>€{(matBasePrice * quantity).toFixed(2)}</Text>
+      </View>
+    </ScrollView>
   );
 
   // ── STEP — Instant Offers (marketplace) ─────────────────────
   const renderOffers = () => (
-    <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
-      <View style={[sa.header, { paddingTop: insets.top + 6 }]}>
-        <TouchableOpacity style={sa.backBtn} onPress={() => setStep('configure')}>
-          <ChevronLeft size={20} color="#111827" />
-        </TouchableOpacity>
-        <View style={{ alignItems: 'center' }}>
-          <Text style={sa.headerTitle}>{instantOffers.length} piedāvājumi</Text>
-          <Text style={sa.headerSub}>
-            {matName} · {quantity} {UNIT_SHORT[matUnit]}
-          </Text>
-        </View>
-        <View style={{ width: 36 }} />
+    <ScrollView
+      contentContainerStyle={{
+        paddingHorizontal: 16,
+        paddingBottom: 24,
+        paddingTop: 12,
+        gap: 12,
+      }}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={sa.locationCard}>
+        <MapPin size={14} color="#111827" />
+        <Text style={sa.locationCardText} numberOfLines={1}>
+          {address}
+        </Text>
       </View>
 
-      <ScrollView
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingBottom: 140,
-          paddingTop: 12,
-          gap: 12,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={sa.locationCard}>
-          <MapPin size={14} color="#111827" />
-          <Text style={sa.locationCardText} numberOfLines={1}>
-            {address}
-          </Text>
-        </View>
-
-        {instantOffers.map((offer, idx) => (
-          <TouchableOpacity
-            key={offer.id}
-            style={[sa.quoteCard, selectedOffer?.id === offer.id && sa.quoteCardSelected]}
-            onPress={() => setSelectedOffer(offer)}
-            activeOpacity={0.85}
-          >
-            {idx === 0 && (
-              <View style={sa.recommendedBadge}>
-                <Star size={10} color="#fff" fill="#fff" />
-                <Text style={sa.recommendedText}>Labākā cena</Text>
-              </View>
-            )}
-            <View style={sa.quoteTop}>
-              <View style={sa.supplierIcon}>
-                <Text style={{ fontSize: 22 }}>🏭</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={sa.supplierName}>{offer.supplier.name}</Text>
-                <Text style={sa.supplierCity}>{offer.supplier.city ?? ''}</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={sa.quotePrice}>
-                  €{offer.basePrice.toFixed(2)}
-                  <Text style={sa.quoteUnit}>/{UNIT_SHORT[offer.unit]}</Text>
-                </Text>
-                <Text style={sa.quoteTotal}>Kopā: €{offer.totalPrice.toFixed(2)}</Text>
-              </View>
-            </View>
-            <View style={sa.quoteMeta}>
-              <View style={sa.quoteMetaChip}>
-                <Clock size={11} color="#6b7280" />
-                <Text style={sa.quoteMetaText}>{offer.etaDays} d.d.</Text>
-              </View>
-              {offer.distanceKm != null && (
-                <View style={sa.quoteMetaChip}>
-                  <Truck size={11} color="#6b7280" />
-                  <Text style={sa.quoteMetaText}>{offer.distanceKm.toFixed(0)} km</Text>
-                </View>
-              )}
-              {offer.supplier.rating != null && (
-                <View style={sa.quoteMetaChip}>
-                  <Star size={11} color="#9ca3af" fill="#9ca3af" />
-                  <Text style={sa.quoteMetaText}>{offer.supplier.rating.toFixed(1)}</Text>
-                </View>
-              )}
-              {selectedOffer?.id === offer.id && (
-                <View style={[sa.quoteMetaChip, sa.selectedChip]}>
-                  <CheckCircle size={11} color="#111827" />
-                  <Text style={[sa.quoteMetaText, { color: '#111827' }]}>Izvēlēts</Text>
-                </View>
-              )}
-            </View>
-          </TouchableOpacity>
-        ))}
-
-        {/* Fallback: request custom quote */}
+      {instantOffers.map((offer, idx) => (
         <TouchableOpacity
-          style={sa.rfqFallbackCard}
-          onPress={() => {
-            setSelectedOffer(null);
-            requestQuotesFallback();
-          }}
-          activeOpacity={0.8}
-        >
-          <Text style={sa.rfqFallbackTitle}>Nav piemērota cena?</Text>
-          <Text style={sa.rfqFallbackDesc}>
-            Pieprasīt individuālu piedāvājumu no visiem piegādātājiem
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-
-      <View style={[sa.floatingCta, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-        <TouchableOpacity
-          style={[sa.ctaBtn, !selectedOffer && { opacity: 0.45 }]}
-          onPress={() => selectedOffer && setStep('confirm')}
-          disabled={!selectedOffer}
+          key={offer.id}
+          style={[sa.quoteCard, selectedOffer?.id === offer.id && sa.quoteCardSelected]}
+          onPress={() => setSelectedOffer(offer)}
           activeOpacity={0.85}
         >
-          <Text style={sa.ctaBtnText}>Turpināt →</Text>
+          {idx === 0 && (
+            <View style={sa.recommendedBadge}>
+              <Star size={10} color="#fff" fill="#fff" />
+              <Text style={sa.recommendedText}>Labākā cena</Text>
+            </View>
+          )}
+          <View style={sa.quoteTop}>
+            <View style={sa.supplierIcon}>
+              <Text style={{ fontSize: 22 }}>🏭</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={sa.supplierName}>{offer.supplier.name}</Text>
+              <Text style={sa.supplierCity}>{offer.supplier.city ?? ''}</Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={sa.quotePrice}>
+                €{offer.basePrice.toFixed(2)}
+                <Text style={sa.quoteUnit}>/{UNIT_SHORT[offer.unit]}</Text>
+              </Text>
+              <Text style={sa.quoteTotal}>Kopā: €{offer.totalPrice.toFixed(2)}</Text>
+            </View>
+          </View>
+          <View style={sa.quoteMeta}>
+            <View style={sa.quoteMetaChip}>
+              <Clock size={11} color="#6b7280" />
+              <Text style={sa.quoteMetaText}>{offer.etaDays} d.d.</Text>
+            </View>
+            {offer.distanceKm != null && (
+              <View style={sa.quoteMetaChip}>
+                <Truck size={11} color="#6b7280" />
+                <Text style={sa.quoteMetaText}>{offer.distanceKm.toFixed(0)} km</Text>
+              </View>
+            )}
+            {offer.supplier.rating != null && (
+              <View style={sa.quoteMetaChip}>
+                <Star size={11} color="#9ca3af" fill="#9ca3af" />
+                <Text style={sa.quoteMetaText}>{offer.supplier.rating.toFixed(1)}</Text>
+              </View>
+            )}
+            {selectedOffer?.id === offer.id && (
+              <View style={[sa.quoteMetaChip, sa.selectedChip]}>
+                <CheckCircle size={11} color="#111827" />
+                <Text style={[sa.quoteMetaText, { color: '#111827' }]}>Izvēlēts</Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
-      </View>
-    </View>
+      ))}
+
+      {/* Fallback: request custom quote */}
+      <TouchableOpacity
+        style={sa.rfqFallbackCard}
+        onPress={() => {
+          setSelectedOffer(null);
+          requestQuotesFallback();
+        }}
+        activeOpacity={0.8}
+      >
+        <Text style={sa.rfqFallbackTitle}>Nav piemērota cena?</Text>
+        <Text style={sa.rfqFallbackDesc}>
+          Pieprasīt individuālu piedāvājumu no visiem piegādātājiem
+        </Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 
   // ── RFQ fallback (bypass instant offers) ────────────────────
   const requestQuotesFallback = useCallback(async () => {
     if (!token) return;
-    setStep('searching');
+    transitionTo('searching', 'forward');
     try {
       const req = await api.quoteRequests.create(
         {
@@ -1172,7 +1088,7 @@ export default function OrderRequestScreen() {
             clearInterval(pollTimer.current!);
             pollTimer.current = null;
             setSelectedQuoteResponse(updated.responses[0]);
-            setStep('quotes');
+            transitionTo('quotes', 'forward');
           }
         } catch {
           /* keep polling */
@@ -1181,7 +1097,7 @@ export default function OrderRequestScreen() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Neizdevās nosūtīt pieprasījumu';
       Alert.alert('Kļūda', msg);
-      setStep('offers');
+      transitionTo('offers', 'back');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, matCategoryValue, matName, matUnit, quantity, address, city, pin]);
@@ -1241,7 +1157,7 @@ export default function OrderRequestScreen() {
         onPress={() => {
           if (responseCount > 0) {
             setSelectedQuoteResponse(quoteRequest!.responses[0]);
-            setStep('quotes');
+            transitionTo('quotes', 'forward');
           }
         }}
         disabled={responseCount === 0}
@@ -1270,98 +1186,72 @@ export default function OrderRequestScreen() {
   // ── STEP — RFQ Quotes (responses from suppliers) ────────────
   const rfqResponses = quoteRequest?.responses ?? [];
   const renderQuotes = () => (
-    <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
-      <View style={[sa.header, { paddingTop: insets.top + 6 }]}>
-        <TouchableOpacity style={sa.backBtn} onPress={() => setStep('searching')}>
-          <ChevronLeft size={20} color="#111827" />
-        </TouchableOpacity>
-        <View style={{ alignItems: 'center' }}>
-          <Text style={sa.headerTitle}>{rfqResponses.length} piedāvājumi saņemti</Text>
-          <Text style={sa.headerSub}>
-            {matName} · {quantity} {UNIT_SHORT[matUnit]}
-          </Text>
-        </View>
-        <View style={{ width: 36 }} />
+    <ScrollView
+      contentContainerStyle={{
+        paddingHorizontal: 16,
+        paddingBottom: 24,
+        paddingTop: 12,
+        gap: 12,
+      }}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={sa.locationCard}>
+        <MapPin size={14} color="#111827" />
+        <Text style={sa.locationCardText} numberOfLines={1}>
+          {address}
+        </Text>
       </View>
 
-      <ScrollView
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingBottom: 120,
-          paddingTop: 12,
-          gap: 12,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={sa.locationCard}>
-          <MapPin size={14} color="#111827" />
-          <Text style={sa.locationCardText} numberOfLines={1}>
-            {address}
-          </Text>
-        </View>
-
-        {rfqResponses.map((resp, idx) => (
-          <TouchableOpacity
-            key={resp.id}
-            style={[sa.quoteCard, selectedQuoteResponse?.id === resp.id && sa.quoteCardSelected]}
-            onPress={() => setSelectedQuoteResponse(resp)}
-            activeOpacity={0.85}
-          >
-            {idx === 0 && (
-              <View style={sa.recommendedBadge}>
-                <Star size={10} color="#fff" fill="#fff" />
-                <Text style={sa.recommendedText}>Labākā cena</Text>
-              </View>
-            )}
-            <View style={sa.quoteTop}>
-              <View style={sa.supplierIcon}>
-                <Text style={{ fontSize: 22 }}>🏭</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={sa.supplierName}>{resp.supplier.name}</Text>
-                <Text style={sa.supplierCity}>{resp.supplier.city ?? ''}</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={sa.quotePrice}>
-                  €{resp.pricePerUnit.toFixed(2)}
-                  <Text style={sa.quoteUnit}>/{UNIT_SHORT[resp.unit]}</Text>
-                </Text>
-                <Text style={sa.quoteTotal}>Kopā: €{resp.totalPrice.toFixed(2)}</Text>
-              </View>
-            </View>
-            <View style={sa.quoteMeta}>
-              <View style={sa.quoteMetaChip}>
-                <Clock size={11} color="#6b7280" />
-                <Text style={sa.quoteMetaText}>{resp.etaDays} d.d.</Text>
-              </View>
-              {resp.supplier.rating != null && (
-                <View style={sa.quoteMetaChip}>
-                  <Star size={11} color="#9ca3af" fill="#9ca3af" />
-                  <Text style={sa.quoteMetaText}>{resp.supplier.rating.toFixed(1)}</Text>
-                </View>
-              )}
-              {selectedQuoteResponse?.id === resp.id && (
-                <View style={[sa.quoteMetaChip, sa.selectedChip]}>
-                  <CheckCircle size={11} color="#111827" />
-                  <Text style={[sa.quoteMetaText, { color: '#111827' }]}>Izvēlēts</Text>
-                </View>
-              )}
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      <View style={[sa.floatingCta, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+      {rfqResponses.map((resp, idx) => (
         <TouchableOpacity
-          style={[sa.ctaBtn, !selectedQuoteResponse && { opacity: 0.45 }]}
-          onPress={() => selectedQuoteResponse && setStep('confirm')}
-          disabled={!selectedQuoteResponse}
+          key={resp.id}
+          style={[sa.quoteCard, selectedQuoteResponse?.id === resp.id && sa.quoteCardSelected]}
+          onPress={() => setSelectedQuoteResponse(resp)}
           activeOpacity={0.85}
         >
-          <Text style={sa.ctaBtnText}>Turpināt →</Text>
+          {idx === 0 && (
+            <View style={sa.recommendedBadge}>
+              <Star size={10} color="#fff" fill="#fff" />
+              <Text style={sa.recommendedText}>Labākā cena</Text>
+            </View>
+          )}
+          <View style={sa.quoteTop}>
+            <View style={sa.supplierIcon}>
+              <Text style={{ fontSize: 22 }}>🏭</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={sa.supplierName}>{resp.supplier.name}</Text>
+              <Text style={sa.supplierCity}>{resp.supplier.city ?? ''}</Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={sa.quotePrice}>
+                €{resp.pricePerUnit.toFixed(2)}
+                <Text style={sa.quoteUnit}>/{UNIT_SHORT[resp.unit]}</Text>
+              </Text>
+              <Text style={sa.quoteTotal}>Kopā: €{resp.totalPrice.toFixed(2)}</Text>
+            </View>
+          </View>
+          <View style={sa.quoteMeta}>
+            <View style={sa.quoteMetaChip}>
+              <Clock size={11} color="#6b7280" />
+              <Text style={sa.quoteMetaText}>{resp.etaDays} d.d.</Text>
+            </View>
+            {resp.supplier.rating != null && (
+              <View style={sa.quoteMetaChip}>
+                <Star size={11} color="#9ca3af" fill="#9ca3af" />
+                <Text style={sa.quoteMetaText}>{resp.supplier.rating.toFixed(1)}</Text>
+              </View>
+            )}
+            {selectedQuoteResponse?.id === resp.id && (
+              <View style={[sa.quoteMetaChip, sa.selectedChip]}>
+                <CheckCircle size={11} color="#111827" />
+                <Text style={[sa.quoteMetaText, { color: '#111827' }]}>Izvēlēts</Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
-      </View>
-    </View>
+      ))}
+    </ScrollView>
   );
 
   // ── STEP — Confirm ────────────────────────────────────────────
@@ -1382,95 +1272,69 @@ export default function OrderRequestScreen() {
       : '';
 
   const renderConfirm = () => (
-    <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
-      <View style={[sa.header, { paddingTop: insets.top + 6 }]}>
-        <TouchableOpacity
-          style={sa.backBtn}
-          onPress={() => setStep(selectedOffer ? 'offers' : 'quotes')}
-        >
-          <ChevronLeft size={20} color="#111827" />
-        </TouchableOpacity>
-        <Text style={sa.headerTitle}>Apstiprināt pasūtījumu</Text>
-        <View style={{ width: 36 }} />
-      </View>
-
-      <ScrollView
-        contentContainerStyle={{
-          paddingHorizontal: 20,
-          paddingBottom: 120,
-          paddingTop: 16,
-          gap: 16,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Summary */}
-        <View style={sa.summaryCard}>
-          <Text style={sa.summaryTitle}>Pasūtījuma kopsavilkums</Text>
-          <View style={sa.summaryRow}>
-            <Text style={sa.summaryLabel}>Materiāls</Text>
-            <Text style={sa.summaryValue}>{matName}</Text>
-          </View>
-          <View style={sa.summaryRow}>
-            <Text style={sa.summaryLabel}>Frakcija</Text>
-            <Text style={sa.summaryValue}>{fraction}</Text>
-          </View>
-          <View style={sa.summaryRow}>
-            <Text style={sa.summaryLabel}>Apjoms</Text>
-            <Text style={sa.summaryValue}>
-              {quantity} {UNIT_SHORT[matUnit]}
-            </Text>
-          </View>
-          <View style={sa.summaryRow}>
-            <Text style={sa.summaryLabel}>Transportlīdzeklis</Text>
-            <Text style={sa.summaryValue}>
-              {selectedVehicle.emoji} {selectedVehicle.label}
-            </Text>
-          </View>
-          <View style={sa.summaryDivider} />
-          <View style={sa.summaryRow}>
-            <Text style={sa.summaryLabel}>Piegādātājs</Text>
-            <Text style={sa.summaryValue}>{activeSupplierName}</Text>
-          </View>
-          <View style={sa.summaryRow}>
-            <Text style={sa.summaryLabel}>Cena</Text>
-            <Text style={sa.summaryValue}>
-              €{activePricePerUnit.toFixed(2)}/{UNIT_SHORT[matUnit]}
-            </Text>
-          </View>
-          <View style={sa.summaryRow}>
-            <Text style={sa.summaryLabel}>Piegāde</Text>
-            <Text style={sa.summaryValue}>{activeEta}</Text>
-          </View>
-          <View style={sa.summaryDivider} />
-          <View style={sa.summaryRow}>
-            <Text style={sa.summaryLabel}>Piegādes adrese</Text>
-            <Text style={[sa.summaryValue, { flex: 1, textAlign: 'right' }]} numberOfLines={3}>
-              {address}
-            </Text>
-          </View>
+    <ScrollView
+      contentContainerStyle={{
+        paddingHorizontal: 20,
+        paddingBottom: 24,
+        paddingTop: 16,
+        gap: 16,
+      }}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Summary */}
+      <View style={sa.summaryCard}>
+        <Text style={sa.summaryTitle}>Pasūtījuma kopsavilkums</Text>
+        <View style={sa.summaryRow}>
+          <Text style={sa.summaryLabel}>Materiāls</Text>
+          <Text style={sa.summaryValue}>{matName}</Text>
         </View>
-
-        {/* Total */}
-        <View style={sa.totalCard}>
-          <Text style={sa.totalLabel}>Kopā jāmaksā</Text>
-          <Text style={sa.totalValue}>€{activeTotalPrice.toFixed(2)}</Text>
-          <Text style={sa.totalNote}>* Cena var mainīties atkarībā no faktiskā svara</Text>
+        <View style={sa.summaryRow}>
+          <Text style={sa.summaryLabel}>Frakcija</Text>
+          <Text style={sa.summaryValue}>{fraction}</Text>
         </View>
-      </ScrollView>
-
-      <View style={[sa.floatingCta, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-        <TouchableOpacity
-          style={[sa.ctaBtn, sa.ctaBtnGreen, submitting && { opacity: 0.55 }]}
-          onPress={confirmOrder}
-          disabled={submitting}
-          activeOpacity={0.85}
-        >
-          <Text style={sa.ctaBtnText}>
-            {submitting ? 'Apstrādājam...' : 'Apstiprināt pasūtījumu ✓'}
+        <View style={sa.summaryRow}>
+          <Text style={sa.summaryLabel}>Apjoms</Text>
+          <Text style={sa.summaryValue}>
+            {quantity} {UNIT_SHORT[matUnit]}
           </Text>
-        </TouchableOpacity>
+        </View>
+        <View style={sa.summaryRow}>
+          <Text style={sa.summaryLabel}>Transportlīdzeklis</Text>
+          <Text style={sa.summaryValue}>
+            {selectedVehicle.emoji} {selectedVehicle.label}
+          </Text>
+        </View>
+        <View style={sa.summaryDivider} />
+        <View style={sa.summaryRow}>
+          <Text style={sa.summaryLabel}>Piegādātājs</Text>
+          <Text style={sa.summaryValue}>{activeSupplierName}</Text>
+        </View>
+        <View style={sa.summaryRow}>
+          <Text style={sa.summaryLabel}>Cena</Text>
+          <Text style={sa.summaryValue}>
+            €{activePricePerUnit.toFixed(2)}/{UNIT_SHORT[matUnit]}
+          </Text>
+        </View>
+        <View style={sa.summaryRow}>
+          <Text style={sa.summaryLabel}>Piegāde</Text>
+          <Text style={sa.summaryValue}>{activeEta}</Text>
+        </View>
+        <View style={sa.summaryDivider} />
+        <View style={sa.summaryRow}>
+          <Text style={sa.summaryLabel}>Piegādes adrese</Text>
+          <Text style={[sa.summaryValue, { flex: 1, textAlign: 'right' }]} numberOfLines={3}>
+            {address}
+          </Text>
+        </View>
       </View>
-    </View>
+
+      {/* Total */}
+      <View style={sa.totalCard}>
+        <Text style={sa.totalLabel}>Kopā jāmaksā</Text>
+        <Text style={sa.totalValue}>€{activeTotalPrice.toFixed(2)}</Text>
+        <Text style={sa.totalNote}>* Cena var mainīties atkarībā no faktiskā svara</Text>
+      </View>
+    </ScrollView>
   );
 
   // ── SUCCESS ──────────────────────────────────────────────────
@@ -1559,24 +1423,7 @@ export default function OrderRequestScreen() {
 
   // ── MATERIAL SELECTION ───────────────────────────────────────
   const renderMaterial = () => (
-    <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
-      {/* Header */}
-      <View style={[sa.header, { paddingTop: insets.top + 2 }]}>
-        <TouchableOpacity style={sa.backBtn} onPress={() => setStep('map')}>
-          <ChevronLeft size={20} color="#111827" />
-        </TouchableOpacity>
-        <View style={{ alignItems: 'center', flex: 1, paddingHorizontal: 8 }}>
-          <Text style={sa.headerTitle}>Izvēlieties materiālu</Text>
-          <View style={sa.headerAddressRow}>
-            <MapPin size={11} color="#111827" />
-            <Text style={sa.headerAddress} numberOfLines={1}>
-              {address}
-            </Text>
-          </View>
-        </View>
-        <View style={{ width: 36 }} />
-      </View>
-
+    <View style={{ flex: 1 }}>
       {/* Search */}
       <View style={sa.matSearchBar}>
         <Search size={15} color="#9ca3af" />
@@ -1602,6 +1449,26 @@ export default function OrderRequestScreen() {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Category filter chips */}
+      <FlatList
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        data={CATEGORIES}
+        keyExtractor={(c) => c}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, gap: 8 }}
+        renderItem={({ item: cat }) => (
+          <TouchableOpacity
+            style={[sa.fractionChip, matCat === cat && sa.fractionChipActive]}
+            onPress={() => onMatCategory(cat)}
+            activeOpacity={0.75}
+          >
+            <Text style={[sa.fractionChipText, matCat === cat && sa.fractionChipTextActive]}>
+              {CATEGORY_LABELS[cat]}
+            </Text>
+          </TouchableOpacity>
+        )}
+      />
 
       {/* Material list */}
       <FlatList
@@ -1657,19 +1524,315 @@ export default function OrderRequestScreen() {
   );
 
   // ── Root render ──────────────────────────────────────────────
-  const dark = step === 'searching' || step === 'success';
+  const canCTA =
+    step === 'map'
+      ? !!(pin && address && address !== 'Nosakām adresi...')
+      : step === 'configure'
+        ? true
+        : step === 'offers'
+          ? !!selectedOffer
+          : step === 'quotes'
+            ? !!selectedQuoteResponse
+            : step === 'confirm'
+              ? !submitting
+              : false;
+
+  const CTA_LABEL: Partial<Record<Step, string>> = {
+    map: 'Izvēlēties materiālu →',
+    configure: 'Pieprasīt piedāvājumus →',
+    offers: 'Turpināt →',
+    quotes: 'Turpināt →',
+    confirm: submitting ? 'Apstrādājam...' : 'Apstiprināt pasūtījumu ✓',
+  };
+
+  const SHEET_TITLE: Partial<Record<Step, string>> = {
+    map: 'Piegādes vieta',
+    material: 'Izvēlieties materiālu',
+    configure: 'Konfigurēt pasūtījumu',
+    offers: `${instantOffers.length} piedāvājumi`,
+    quotes: `${rfqResponses.length} piedāvājumi saņemti`,
+    confirm: 'Apstiprināt pasūtījumu',
+  };
+
+  const SHEET_SUB: Partial<Record<Step, string>> = {
+    material: city || address,
+    configure: matName,
+    offers: `${matName} · ${quantity} ${UNIT_SHORT[matUnit]}`,
+    quotes: `${matName} · ${quantity} ${UNIT_SHORT[matUnit]}`,
+    confirm: activeSupplierName,
+  };
+
+  const onSheetCTA = () => {
+    if (step === 'map') transitionTo(params.materialId ? 'configure' : 'material', 'forward');
+    else if (step === 'configure') requestQuotes();
+    else if (step === 'offers' && selectedOffer) transitionTo('confirm', 'forward');
+    else if (step === 'quotes' && selectedQuoteResponse) transitionTo('confirm', 'forward');
+    else if (step === 'confirm') confirmOrder();
+  };
+
+  const isSheetStep = !['onboarding', 'searching', 'success'].includes(step);
+
   return (
-    <View style={{ flex: 1, backgroundColor: dark ? '#0f172a' : '#fff' }}>
-      <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
+    <View style={{ flex: 1 }}>
+      <StatusBar barStyle="dark-content" />
       {step === 'onboarding' && renderOnboarding()}
-      {step === 'map' && renderMap()}
-      {step === 'material' && renderMaterial()}
-      {step === 'configure' && renderConfigure()}
-      {step === 'offers' && renderOffers()}
-      {step === 'searching' && renderSearching()}
-      {step === 'quotes' && renderQuotes()}
-      {step === 'confirm' && renderConfirm()}
-      {step === 'success' && renderSuccess()}
+      {step !== 'onboarding' && (
+        <View style={{ flex: 1 }}>
+          {/* Always-on background map — true 100vh, camera inset via mapPadding */}
+          <View style={StyleSheet.absoluteFillObject}>
+            <BaseMap
+              cameraRef={cameraRef}
+              center={pin ? [pin.longitude, pin.latitude] : RIGA_CENTER}
+              zoom={pin ? 14 : 10}
+              onPress={step === 'map' ? onMapPress : undefined}
+              mapType={satellite ? 'hybrid' : 'standard'}
+              mapPadding={{ bottom: step === 'map' ? SCREEN_H - MAP_FULL : SCREEN_H - MAP_SMALL }}
+            >
+              <UserLayer />
+              {pin && (
+                <Marker
+                  coordinate={pin}
+                  draggable={step === 'map'}
+                  onDragEnd={step === 'map' ? onPinDragEnd : undefined}
+                >
+                  <View style={sa.markerWrap}>
+                    <View style={sa.markerOuter}>
+                      <View style={sa.markerInner} />
+                    </View>
+                    <View style={sa.markerStem} />
+                  </View>
+                </Marker>
+              )}
+            </BaseMap>
+          </View>
+
+          {/* Floating back button — always top-left, visible on map step, fades as sheet appears */}
+          <Animated.View
+            style={[sa.mapBackBtn, { top: insets.top + 12, opacity: floatingCtaOpacity }]}
+            pointerEvents={step === 'map' ? 'box-none' : 'none'}
+          >
+            <TouchableOpacity style={sa.mapFab} onPress={() => router.back()} activeOpacity={0.8}>
+              <ChevronLeft size={20} color="#111827" />
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* Search card — floats at top of map, only on map step */}
+          {step === 'map' && (
+            <View style={[sa.mapSearchCard, { top: insets.top + 66 }]}>
+              <View style={sa.mapCardShadow}>
+                <View style={sa.mapCard}>
+                  <View style={sa.mapCardSearchRow}>
+                    <Search size={15} color="#9ca3af" />
+                    <TextInput
+                      style={sa.mapSearchInput}
+                      placeholder="Meklēt piegādes adresi..."
+                      placeholderTextColor="#9ca3af"
+                      value={geoSearchText}
+                      onChangeText={onGeoSearchChange}
+                      autoCorrect={false}
+                      returnKeyType="search"
+                      autoFocus
+                    />
+                    {geoLoading ? (
+                      <ActivityIndicator size="small" color="#6b7280" />
+                    ) : geoSearchText.length > 0 ? (
+                      <TouchableOpacity
+                        onPress={() => {
+                          setGeoSearchText('');
+                          setGeoSuggestions([]);
+                        }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <X size={15} color="#9ca3af" />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                  <View style={sa.mapCardDivider} />
+                  <TouchableOpacity style={sa.mapSuggRow} onPress={locateMe} activeOpacity={0.75}>
+                    <View style={[sa.mapMyLocIcon, { marginLeft: 2 }]}>
+                      <Navigation2 size={14} color="#2563eb" />
+                    </View>
+                    <Text style={[sa.mapSuggText, { fontWeight: '600', color: '#2563eb' }]}>
+                      Izmantot manu atrašanās vietu
+                    </Text>
+                  </TouchableOpacity>
+                  {geoSuggestions.map((item) => (
+                    <React.Fragment key={item.id}>
+                      <View style={sa.mapCardDivider} />
+                      <TouchableOpacity style={sa.mapSuggRow} onPress={() => onPlaceSelected(item)}>
+                        <View style={sa.mapSuggDotCol}>
+                          <View style={sa.mapSuggDot} />
+                        </View>
+                        <Text style={sa.mapSuggText} numberOfLines={2}>
+                          {item.place_name}
+                        </Text>
+                      </TouchableOpacity>
+                    </React.Fragment>
+                  ))}
+                </View>
+              </View>
+              {pin && (
+                <View style={[sa.mapConfirmedRow, { marginTop: 8 }]}>
+                  <MapPin size={14} color="#059669" />
+                  <Text style={sa.mapConfirmedText} numberOfLines={2}>
+                    {address || 'Nosakām adresi...'}
+                  </Text>
+                  <TouchableOpacity
+                    style={sa.resetBtn}
+                    onPress={() => {
+                      setPin(null);
+                      setAddress('');
+                      setCity('');
+                      setGeoSearchText('');
+                      setGeoSuggestions([]);
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <RotateCcw size={14} color="#6b7280" />
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* FABs floating over map (satellite toggle only on map step; GPS is inline in card) */}
+          {step === 'map' && (
+            <View style={[sa.mapFabColumn, { top: insets.top + 12, bottom: undefined }]}>
+              <TouchableOpacity
+                style={[sa.mapFab, satellite && sa.mapFabActive]}
+                onPress={() => setSatellite((s) => !s)}
+                activeOpacity={0.85}
+              >
+                <Layers size={18} color={satellite ? '#fff' : '#111827'} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Sheet — transparent on map step, white on all other steps */}
+          {isSheetStep && (
+            <Animated.View style={[sa.sheet, { top: mapHeight, backgroundColor: sheetBg }]}>
+              {/* Handle — fades out on map step */}
+              <Animated.View style={[sa.sheetHandleWrap, { opacity: sheetBgAnim }]}>
+                <View style={sa.sheetHandle} />
+              </Animated.View>
+
+              {/* Title row — fades out on map step */}
+              <Animated.View style={{ opacity: sheetBgAnim }}>
+                <View style={sa.sheetTitleRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={sa.sheetTitle} numberOfLines={1}>
+                      {SHEET_TITLE[step] ?? ''}
+                    </Text>
+                    {SHEET_SUB[step] ? (
+                      <Text style={sa.sheetSub} numberOfLines={1}>
+                        {SHEET_SUB[step]}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <TouchableOpacity
+                    style={sa.sheetCloseBtn}
+                    onPress={() => router.back()}
+                    activeOpacity={0.8}
+                  >
+                    <X size={18} color="#6b7280" />
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+
+              <View style={sa.sheetSlideClip}>
+                <Animated.View
+                  style={[
+                    sa.sheetSlideWrapper,
+                    { transform: [{ translateX: slideAnim }], opacity: fadeAnim },
+                  ]}
+                >
+                  {step === 'material' && renderMaterial()}
+                  {step === 'configure' && renderConfigure()}
+                  {step === 'offers' && renderOffers()}
+                  {step === 'quotes' && renderQuotes()}
+                  {step === 'confirm' && renderConfirm()}
+                </Animated.View>
+              </View>
+
+              {/* Footer CTA — fades out on map step; floating CTA takes over */}
+              <Animated.View
+                style={{ opacity: sheetBgAnim }}
+                pointerEvents={step === 'map' ? 'none' : 'box-none'}
+              >
+                <View style={[sa.sheetFooter, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+                  {step !== 'map' && (
+                    <TouchableOpacity style={sa.backFooterBtn} onPress={goBack} activeOpacity={0.8}>
+                      <ChevronLeft size={20} color="#374151" />
+                    </TouchableOpacity>
+                  )}
+                  {CTA_LABEL[step] && (
+                    <TouchableOpacity
+                      style={[sa.ctaBtn, { flex: 1 }, !canCTA && sa.ctaBtnDisabled]}
+                      onPress={onSheetCTA}
+                      disabled={!canCTA && step !== 'configure'}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={[sa.ctaBtnText, !canCTA && sa.ctaBtnTextDisabled]}>
+                        {CTA_LABEL[step]}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </Animated.View>
+            </Animated.View>
+          )}
+
+          {/* Floating CTA — visible only on map step, fades when navigating forward */}
+          {isSheetStep && (
+            <Animated.View
+              style={[
+                sa.mapFloatingCta,
+                { bottom: insets.bottom + 20, opacity: floatingCtaOpacity },
+              ]}
+              pointerEvents={step === 'map' ? 'box-none' : 'none'}
+            >
+              {CTA_LABEL['map'] && (
+                <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
+                  <TouchableOpacity
+                    style={[sa.ctaBtn, !canCTA && sa.ctaBtnDisabled]}
+                    onPress={onSheetCTA}
+                    disabled={!canCTA}
+                    activeOpacity={0.85}
+                    onPressIn={() =>
+                      Animated.spring(ctaScale, {
+                        toValue: 0.96,
+                        useNativeDriver: true,
+                        tension: 300,
+                        friction: 8,
+                      }).start()
+                    }
+                    onPressOut={() =>
+                      Animated.spring(ctaScale, {
+                        toValue: 1,
+                        useNativeDriver: true,
+                        tension: 120,
+                        friction: 6,
+                      }).start()
+                    }
+                  >
+                    <Text style={[sa.ctaBtnText, !canCTA && sa.ctaBtnTextDisabled]}>
+                      {CTA_LABEL['map']}
+                    </Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              )}
+            </Animated.View>
+          )}
+
+          {/* Full-screen overlays */}
+          {step === 'searching' && (
+            <View style={StyleSheet.absoluteFillObject}>{renderSearching()}</View>
+          )}
+          {step === 'success' && (
+            <View style={StyleSheet.absoluteFillObject}>{renderSuccess()}</View>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -1700,12 +1863,19 @@ const sa = StyleSheet.create({
   },
   ctaBtn: {
     backgroundColor: '#111827',
-    borderRadius: 14,
+    borderRadius: 100,
     paddingVertical: 16,
     alignItems: 'center',
   },
-  ctaBtnGreen: { backgroundColor: '#111827' },
-  ctaBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  ctaBtnDisabled: { backgroundColor: '#e5e7eb' },
+  ctaBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 0.3,
+  },
+  ctaBtnTextDisabled: { color: '#9ca3af' },
   floatingCta: {
     position: 'absolute',
     bottom: 0,
@@ -1721,6 +1891,111 @@ const sa = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
+  // Floating CTA for map step (shown over transparent sheet)
+  mapFloatingCta: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+  },
+
+  // ── Map search card — absolute positioned at top, separate from sheet ──────
+  mapSearchCard: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 30,
+  },
+  // ── Single unified floating card (search + GPS + suggestions) ──────────────
+  mapCardShadow: {
+    marginHorizontal: 16,
+    marginTop: 6,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.14,
+        shadowRadius: 14,
+      },
+      android: { elevation: 6 },
+    }),
+  },
+  mapCard: {
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+  },
+  mapCardSearchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  mapCardDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#f3f4f6',
+  },
+  mapSearchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#111827',
+    padding: 0,
+  },
+  mapMyLocIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#eff6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  mapSuggRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 12,
+  },
+  mapSuggDotCol: {
+    width: 20,
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+  },
+  mapSuggDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#111827',
+  },
+  mapSuggLineTop: {
+    width: 1,
+    flex: 1,
+    backgroundColor: '#e5e7eb',
+    marginBottom: 2,
+  },
+  mapSuggLineBottom: {
+    width: 1,
+    flex: 1,
+    backgroundColor: '#e5e7eb',
+    marginTop: 2,
+  },
+  mapSuggText: { flex: 1, fontSize: 14, color: '#111827', lineHeight: 20 },
+  mapConfirmedRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginHorizontal: 16,
+    marginTop: 4,
+  },
+  mapConfirmedText: { flex: 1, fontSize: 13, color: '#059669', lineHeight: 18 },
 
   // ── Map step
   mapTopBar: {
@@ -1795,11 +2070,17 @@ const sa = StyleSheet.create({
   },
   mapHintText: { fontSize: 13, color: '#374151', fontWeight: '500' },
 
+  // ── Floating back button (top-left, always over map) ────────
+  mapBackBtn: {
+    position: 'absolute',
+    left: 16,
+    zIndex: 50,
+  },
+
   // ── Map FAB buttons (satellite toggle + locate-me) ──────────
   mapFabColumn: {
     position: 'absolute',
     right: 14,
-    bottom: 210,
     gap: 10,
     alignItems: 'center',
   },
@@ -1877,7 +2158,7 @@ const sa = StyleSheet.create({
   mapEmptyHint: { textAlign: 'center', fontSize: 14, color: '#9ca3af', paddingVertical: 10 },
 
   // ── Configure step
-  configScroll: { paddingHorizontal: 20, paddingBottom: 120, paddingTop: 16, gap: 18 },
+  configScroll: { paddingHorizontal: 20, paddingBottom: 24, paddingTop: 16, gap: 18 },
 
   materialCard: {
     flexDirection: 'row',
@@ -2101,7 +2382,7 @@ const sa = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     alignSelf: 'flex-start',
-    backgroundColor: '#9ca3af',
+    backgroundColor: '#111827',
     borderRadius: 8,
     paddingHorizontal: 9,
     paddingVertical: 4,
@@ -2349,4 +2630,59 @@ const sa = StyleSheet.create({
   matEmptyEmoji: { fontSize: 40 },
   matEmptyTitle: { fontSize: 16, fontWeight: '700', color: '#374151' },
   matEmptyDesc: { fontSize: 14, color: '#9ca3af', textAlign: 'center', paddingHorizontal: 20 },
+
+  // ── Uber-style sheet ─────────────────────────────────────────
+  sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    // top set dynamically via mapHeight; backgroundColor animated via sheetBg (transparent on map step)
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 12,
+  },
+  sheetHandleWrap: { alignItems: 'center', paddingTop: 10, paddingBottom: 4 },
+  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#e5e7eb' },
+  sheetTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    gap: 8,
+  },
+  sheetTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
+  sheetSub: { fontSize: 13, color: '#9ca3af', marginTop: 2 },
+  sheetCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetSlideClip: { flex: 1, overflow: 'hidden' },
+  sheetSlideWrapper: { flex: 1 },
+  sheetFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#e5e7eb',
+    backgroundColor: '#fff',
+  },
+  backFooterBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

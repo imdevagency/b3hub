@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
@@ -16,11 +16,15 @@ const ACCENT = '#111827';
 export default function BuyerLayout() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const unreadCount = useUnreadCount();
   // eslint-disable-next-line react/display-name
   const renderTabBar = useCallback((props: any) => <AnimatedTabBar {...props} />, []);
+
+  // Home tab is full-screen map — no TopBar or status-bar padding
+  const isHome = pathname === '/(buyer)/home' || pathname === '/home';
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -39,12 +43,14 @@ export default function BuyerLayout() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: insets.top }}>
-      <TopBar
-        accentColor={ACCENT}
-        onMenuPress={() => setSidebarOpen(true)}
-        unreadCount={unreadCount}
-      />
+    <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: isHome ? 0 : insets.top }}>
+      {!isHome && (
+        <TopBar
+          accentColor={ACCENT}
+          onMenuPress={() => setSidebarOpen(true)}
+          unreadCount={unreadCount}
+        />
+      )}
       <View style={{ flex: 1 }}>
         <Tabs screenOptions={{ headerShown: false }} tabBar={renderTabBar}>
           <Tabs.Screen
@@ -76,6 +82,7 @@ export default function BuyerLayout() {
             }}
           />
           <Tabs.Screen name="order/[id]" options={{ href: null }} />
+          <Tabs.Screen name="skip-order/[id]" options={{ href: null }} />
           <Tabs.Screen name="invoices" options={{ href: null }} />
           <Tabs.Screen name="containers" options={{ href: null }} />
           <Tabs.Screen name="certificates" options={{ href: null }} />

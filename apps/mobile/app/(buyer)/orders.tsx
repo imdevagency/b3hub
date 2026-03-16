@@ -7,10 +7,12 @@ import {
   RefreshControl,
   Linking,
   Alert,
+  Animated,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -126,6 +128,29 @@ function reqBucket(status: string): FilterKey {
 
 // ── Unified card ──────────────────────────────────────────────
 
+function AnimatedCardWrapper({ children, index }: { children: React.ReactNode; index: number }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(18)).current;
+
+  useEffect(() => {
+    const delay = Animated.delay(Math.min(index, 6) * 55);
+    Animated.sequence([
+      delay,
+      Animated.parallel([
+        Animated.spring(opacity, { toValue: 1, useNativeDriver: true, tension: 72, friction: 11 }),
+        Animated.spring(translateY, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 72,
+          friction: 11,
+        }),
+      ]),
+    ]).start();
+  }, []);
+
+  return <Animated.View style={{ opacity, transform: [{ translateY }] }}>{children}</Animated.View>;
+}
+
 function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void }) {
   const router = useRouter();
 
@@ -135,7 +160,14 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
     const canRate = order.status === 'COLLECTED' || order.status === 'COMPLETED';
 
     return (
-      <View style={[s.card, item.isActive && s.cardActive]}>
+      <TouchableOpacity
+        style={[s.card, item.isActive && s.cardActive]}
+        onPress={() => {
+          haptics.light();
+          router.push(`/(buyer)/skip-order/${order.id}` as any);
+        }}
+        activeOpacity={0.88}
+      >
         {item.isActive && <View style={s.activeStrip} />}
         <View style={s.cardInner}>
           <View style={s.cardTop}>
@@ -169,7 +201,7 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
             ) : null}
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   }
 
@@ -341,35 +373,41 @@ export default function OrdersScreen() {
   const [ratingSkipId, setRatingSkipId] = useState<string | null>(null);
   const [showTypePicker, setShowTypePicker] = useState(false);
 
-  const loadOrders = useCallback(async () => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    try {
-      const [skipData, matData, reqData] = await Promise.all([
-        api.skipHire.myOrders(token),
-        api.orders.myOrders(token),
-        api.transportJobs.myRequests(token),
-      ]);
-      setSkipOrders(Array.isArray(skipData) ? skipData : []);
-      setMatOrders(Array.isArray(matData) ? matData : []);
-      setReqOrders(Array.isArray(reqData) ? reqData : []);
-    } catch {
-      // show empty state on error
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [token]);
+  const loadOrders = useCallback(
+    async (showSkeleton = true) => {
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      if (showSkeleton) setLoading(true);
+      try {
+        const [skipData, matData, reqData] = await Promise.all([
+          api.skipHire.myOrders(token),
+          api.orders.myOrders(token),
+          api.transportJobs.myRequests(token),
+        ]);
+        setSkipOrders(Array.isArray(skipData) ? skipData : []);
+        setMatOrders(Array.isArray(matData) ? matData : []);
+        setReqOrders(Array.isArray(reqData) ? reqData : []);
+      } catch {
+        // show empty state on error
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [token],
+  );
 
-  useEffect(() => {
-    loadOrders();
-  }, [loadOrders]);
+  useFocusEffect(
+    useCallback(() => {
+      loadOrders();
+    }, [loadOrders]),
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
-    loadOrders();
+    loadOrders(false);
   };
 
   // Merge + sort: active first, then newest
@@ -515,12 +553,13 @@ export default function OrdersScreen() {
               )}
             </View>
           ) : (
-            filtered.map((item) => (
-              <UnifiedCard
-                key={item.kind === 'skip' ? `skip-${item.data.id}` : `mat-${item.data.id}`}
-                item={item}
-                onRate={item.kind === 'skip' ? () => setRatingSkipId(item.data.id) : undefined}
-              />
+            filtered.map((item, idx) => (
+              <AnimatedCardWrapper key={`${item.kind}-${item.data.id}`} index={idx}>
+                <UnifiedCard
+                  item={item}
+                  onRate={item.kind === 'skip' ? () => setRatingSkipId(item.data.id) : undefined}
+                />
+              </AnimatedCardWrapper>
             ))
           )}
         </View>

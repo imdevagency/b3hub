@@ -93,11 +93,11 @@ export default function DisposalStep1WasteType() {
                 )}
                 <WasteIcon
                   size={28}
-                  color={isSelected ? '#111827' : '#6b7280'}
+                  color={isSelected ? '#fff' : '#6b7280'}
                   style={{ marginBottom: 8 }}
                 />
                 <Text style={[s.cardLabel, isSelected && s.cardLabelSelected]}>{opt.label}</Text>
-                <Text style={s.cardDesc}>{opt.desc}</Text>
+                <Text style={[s.cardDesc, isSelected && s.cardDescSelected]}>{opt.desc}</Text>
               </TouchableOpacity>
             );
           })}
@@ -156,7 +156,7 @@ const s = StyleSheet.create({
     position: 'relative',
     minHeight: 110,
   },
-  cardSelected: { borderColor: '#111827', backgroundColor: '#fff7f7' },
+  cardSelected: { borderColor: '#111827', backgroundColor: '#111827' },
   checkBadge: {
     position: 'absolute',
     top: 10,
@@ -164,17 +164,18 @@ const s = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#111827',
+    backgroundColor: 'rgba(255,255,255,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardLabel: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 2 },
-  cardLabelSelected: { color: '#111827' },
+  cardLabelSelected: { color: '#fff' },
   cardDesc: { fontSize: 12, color: '#9ca3af' },
+  cardDescSelected: { color: 'rgba(255,255,255,0.6)' },
   footer: { padding: 24 },
   nextBtn: {
     backgroundColor: '#111827',
-    borderRadius: 14,
+    borderRadius: 100,
     paddingVertical: 16,
     alignItems: 'center',
   },

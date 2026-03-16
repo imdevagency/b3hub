@@ -4,12 +4,11 @@
  * to avoid JSI HostFunction crashes in Expo Go.
  */
 import React, { useCallback, useRef, useEffect } from 'react';
-import { Animated, Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { haptics } from '@/lib/haptics';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const TAB_HEIGHT = 52;
-const INDICATOR_W = 32;
+const TAB_HEIGHT = 56;
 
 const SPRING_BASE = {
   damping: 22,
@@ -51,13 +50,13 @@ function TabItem({
   activeTint: string;
   inactiveTint: string;
 }) {
-  const scale = useRef(new Animated.Value(isFocused ? 1.1 : 0.96)).current;
-  const labelOpacity = useRef(new Animated.Value(isFocused ? 1 : 0.55)).current;
+  const scale = useRef(new Animated.Value(isFocused ? 1.08 : 0.96)).current;
+  const labelOpacity = useRef(new Animated.Value(isFocused ? 1 : 0.5)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.spring(scale, { toValue: isFocused ? 1.1 : 0.96, ...SPRING_BASE }),
-      Animated.spring(labelOpacity, { toValue: isFocused ? 1 : 0.55, ...SPRING_BASE }),
+      Animated.spring(scale, { toValue: isFocused ? 1.08 : 0.96, ...SPRING_BASE }),
+      Animated.spring(labelOpacity, { toValue: isFocused ? 1 : 0.5, ...SPRING_BASE }),
     ]).start();
   }, [isFocused]);
 
@@ -76,7 +75,7 @@ function TabItem({
       style={styles.tab}
       onPress={onPress}
       onLongPress={onLongPress}
-      activeOpacity={0.7}
+      activeOpacity={1}
       accessibilityRole="button"
       accessibilityState={isFocused ? { selected: true } : {}}
       accessibilityLabel={options.tabBarAccessibilityLabel}
@@ -90,6 +89,7 @@ function TabItem({
       <Animated.Text style={[styles.label, { color, opacity: labelOpacity }]} numberOfLines={1}>
         {label}
       </Animated.Text>
+      {/* Dot removed — activePill is the sole active indicator */}
     </TouchableOpacity>
   );
 }
@@ -117,29 +117,10 @@ export function AnimatedTabBar({
     },
   );
 
-  const effectiveCount = visibleRoutes.length;
-  const tabWidth = effectiveCount > 0 ? SCREEN_WIDTH / effectiveCount : SCREEN_WIDTH;
-
-  const activeVisibleIdx = visibleRoutes.findIndex(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (r: any) => r.key === state.routes[state.index]?.key,
-  );
-
-  const indicatorX = useRef(
-    new Animated.Value(Math.max(0, activeVisibleIdx) * tabWidth + (tabWidth - INDICATOR_W) / 2),
-  ).current;
-
-  useEffect(() => {
-    const idx = Math.max(0, activeVisibleIdx);
-    Animated.spring(indicatorX, {
-      toValue: idx * tabWidth + (tabWidth - INDICATOR_W) / 2,
-      ...SPRING_BASE,
-    }).start();
-  }, [activeVisibleIdx, tabWidth]);
-
   const handlePress = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (route: any, isFocused: boolean) => {
+      haptics.selection();
       const event = navigation.emit({
         type: 'tabPress',
         target: route.key,
@@ -162,10 +143,7 @@ export function AnimatedTabBar({
 
   return (
     <View style={[styles.container, { paddingBottom: bottomInset }]}>
-      {/* Sliding top indicator */}
-      <Animated.View style={[styles.indicator, { transform: [{ translateX: indicatorX }] }]} />
-
-      {/* Tab items */}
+      {/* Tab items — dot indicator is per-item, no sliding bar */}
       <View style={styles.row}>
         {visibleRoutes.map(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -200,19 +178,10 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#e5e7eb',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 20,
-  },
-  indicator: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: INDICATOR_W,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: '#111827',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 16,
   },
   row: {
     height: TAB_HEIGHT,
@@ -223,12 +192,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
-    paddingTop: 6,
-    paddingBottom: 2,
+    paddingTop: 8,
+    paddingBottom: 6,
   },
   label: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     letterSpacing: 0.1,
   },
   badge: {

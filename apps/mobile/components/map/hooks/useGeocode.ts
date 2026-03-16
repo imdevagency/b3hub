@@ -17,11 +17,13 @@ import { useState, useCallback } from 'react';
 
 const GOOGLE_KEY = 'AIzaSyBNIZk1VBorD3kU02BNjz_2m4Dlek_gsx8';
 const GEOCODE_BASE = 'https://maps.googleapis.com/maps/api/geocode/json';
+const AUTOCOMPLETE_BASE = 'https://maps.googleapis.com/maps/api/place/autocomplete/json';
+const PLACE_DETAILS_BASE = 'https://maps.googleapis.com/maps/api/place/details/json';
 
 export interface GeocodeSuggestion {
-  id: string;
+  id: string; // Google place_id
   place_name: string;
-  /** [longitude, latitude] */
+  /** [longitude, latitude] — populated after resolvePlace(); starts as [0, 0] */
   center: [number, number];
 }
 
@@ -31,7 +33,10 @@ export interface AddressWithCity {
 }
 
 interface UseGeocodeResult {
+  /** Autocomplete suggestions from the Places API — fast, works on partial input. */
   forwardGeocode: (query: string) => Promise<GeocodeSuggestion[]>;
+  /** Fetch [lng, lat] for a place_id returned by forwardGeocode. */
+  resolvePlace: (placeId: string) => Promise<[number, number] | null>;
   reverseGeocode: (lat: number, lng: number) => Promise<string>;
   /** Same as reverseGeocode but also extracts city from address components. */
   reverseGeocodeWithCity: (lat: number, lng: number) => Promise<AddressWithCity>;
@@ -45,18 +50,19 @@ export function useGeocode(): UseGeocodeResult {
     if (!query.trim()) return [];
     setLoading(true);
     try {
+      // Places Autocomplete — works on partial text like "gulbe" or "brīvī"
       const url =
-        `${GEOCODE_BASE}?address=${encodeURIComponent(query)}` +
-        `&language=lv&region=lv&components=country:LV|country:LT|country:EE` +
+        `${AUTOCOMPLETE_BASE}?input=${encodeURIComponent(query)}` +
+        `&language=lv&components=country:lv|country:lt|country:ee` +
         `&key=${GOOGLE_KEY}`;
       const res = await fetch(url);
       const json = await res.json();
       if (json.status !== 'OK' && json.status !== 'ZERO_RESULTS') return [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (json.results ?? []).slice(0, 5).map((r: any) => ({
-        id: r.place_id as string,
-        place_name: r.formatted_address as string,
-        center: [r.geometry.location.lng, r.geometry.location.lat] as [number, number],
+      return (json.predictions ?? []).slice(0, 6).map((p: any) => ({
+        id: p.place_id as string,
+        place_name: p.description as string,
+        center: [0, 0] as [number, number], // resolved lazily via resolvePlace()
       }));
     } catch {
       return [];
@@ -64,6 +70,25 @@ export function useGeocode(): UseGeocodeResult {
       setLoading(false);
     }
   }, []);
+
+  /** Resolve a place_id → [lng, lat] using Place Details API. */
+  const resolvePlace = useCallback(
+    async (placeId: string): Promise<[number, number] | null> => {
+      try {
+        const url =
+          `${PLACE_DETAILS_BASE}?place_id=${encodeURIComponent(placeId)}` +
+          `&fields=geometry&key=${GOOGLE_KEY}`;
+        const res = await fetch(url);
+        const json = await res.json();
+        const loc = json.result?.geometry?.location;
+        if (!loc) return null;
+        return [loc.lng as number, loc.lat as number];
+      } catch {
+        return null;
+      }
+    },
+    [],
+  );
 
   const reverseGeocode = useCallback(async (lat: number, lng: number): Promise<string> => {
     setLoading(true);
@@ -107,5 +132,5 @@ export function useGeocode(): UseGeocodeResult {
     [],
   );
 
-  return { forwardGeocode, reverseGeocode, reverseGeocodeWithCity, loading };
+  return { forwardGeocode, resolvePlace, reverseGeocode, reverseGeocodeWithCity, loading };
 }

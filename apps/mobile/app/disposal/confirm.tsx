@@ -351,7 +351,7 @@ const s = StyleSheet.create({
   footer: { padding: 20 },
   submitBtn: {
     backgroundColor: '#111827',
-    borderRadius: 14,
+    borderRadius: 100,
     paddingVertical: 16,
     alignItems: 'center',
   },

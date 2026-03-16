@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  Animated,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
@@ -86,12 +87,28 @@ function timeAgo(iso: string): string {
 function NotifCard({
   notif,
   onMarkRead,
+  index = 0,
 }: {
   notif: ApiNotification;
   onMarkRead: (id: string) => void;
+  index?: number;
 }) {
   const { Icon, bg, iconColor } = TYPE_INFO[notif.type] ?? DEFAULT_TYPE_INFO;
   const router = useRouter();
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(anim, {
+      toValue: 1,
+      delay: index * 55,
+      useNativeDriver: true,
+      tension: 72,
+      friction: 11,
+    }).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] });
 
   const handlePress = () => {
     if (!notif.isRead) onMarkRead(notif.id);
@@ -99,28 +116,48 @@ function NotifCard({
     if (path) router.push(path as Parameters<typeof router.push>[0]);
   };
 
+  const pressScale = useRef(new Animated.Value(1)).current;
+
   return (
-    <TouchableOpacity
-      style={[s.card, !notif.isRead && s.cardUnread]}
-      onPress={handlePress}
-      activeOpacity={0.88}
-    >
-      <View style={s.iconWrap}>
-        <View style={[s.iconCircle, { backgroundColor: bg }]}>
-          <Icon size={20} color={iconColor} />
+    <Animated.View style={{ opacity: anim, transform: [{ translateY }, { scale: pressScale }] }}>
+      <TouchableOpacity
+        style={[s.card, !notif.isRead && s.cardUnread]}
+        onPress={handlePress}
+        onPressIn={() =>
+          Animated.spring(pressScale, {
+            toValue: 0.97,
+            useNativeDriver: true,
+            tension: 300,
+            friction: 8,
+          }).start()
+        }
+        onPressOut={() =>
+          Animated.spring(pressScale, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 200,
+            friction: 8,
+          }).start()
+        }
+        activeOpacity={1}
+      >
+        <View style={s.iconWrap}>
+          <View style={[s.iconCircle, { backgroundColor: bg }]}>
+            <Icon size={20} color={iconColor} />
+          </View>
+          {!notif.isRead && <View style={s.unreadDot} />}
         </View>
-        {!notif.isRead && <View style={s.unreadDot} />}
-      </View>
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text style={s.cardTitle} numberOfLines={1}>
-          {notif.title}
-        </Text>
-        <Text style={s.cardMsg} numberOfLines={2}>
-          {notif.message}
-        </Text>
-        <Text style={s.cardTime}>{timeAgo(notif.createdAt)}</Text>
-      </View>
-    </TouchableOpacity>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={s.cardTitle} numberOfLines={1}>
+            {notif.title}
+          </Text>
+          <Text style={s.cardMsg} numberOfLines={2}>
+            {notif.message}
+          </Text>
+          <Text style={s.cardTime}>{timeAgo(notif.createdAt)}</Text>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 
@@ -182,8 +219,8 @@ export default function NotificationsScreen() {
     <ScreenContainer standalone>
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-          <ArrowLeft size={22} color="#111827" />
+        <TouchableOpacity style={s.backBtn} onPress={() => router.back()} hitSlop={8}>
+          <ArrowLeft size={20} color="#374151" />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Paziņojumi {unreadCount > 0 ? `(${unreadCount})` : ''}</Text>
         {unreadCount > 0 ? (
@@ -219,7 +256,7 @@ export default function NotificationsScreen() {
               subtitle="Šeit parādīsies jūsu paziņojumi"
             />
           ) : (
-            notifs.map((n) => <NotifCard key={n.id} notif={n} onMarkRead={markRead} />)
+            notifs.map((n, i) => <NotifCard key={n.id} notif={n} index={i} onMarkRead={markRead} />)
           )}
         </ScrollView>
       )}
@@ -234,31 +271,35 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e5e7eb',
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: { fontSize: 17, fontWeight: '700', fontFamily: 'Inter_700Bold', color: '#111827' },
   list: { padding: 16, gap: 10, flexGrow: 1 },
   card: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
     backgroundColor: '#fff',
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
     elevation: 2,
   },
   cardUnread: {
-    backgroundColor: '#fef9f9',
     borderLeftWidth: 3,
     borderLeftColor: '#111827',
   },
@@ -281,7 +322,7 @@ const s = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#fff',
   },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: '#111827' },
+  cardTitle: { fontSize: 14, fontWeight: '700', fontFamily: 'Inter_700Bold', color: '#111827' },
   cardMsg: { fontSize: 13, color: '#374151', lineHeight: 18 },
   cardTime: { fontSize: 11, color: '#9ca3af', marginTop: 2 },
 });

@@ -38,13 +38,14 @@ export function ScreenContainer({
   const resolvedTopInset = topInset !== undefined ? topInset : standalone ? insets.top : 0;
 
   const opacity = useRef(new Animated.Value(noAnimation ? 1 : 0)).current;
-  const translateY = useRef(new Animated.Value(noAnimation ? 0 : 10)).current;
+  const translateY = useRef(new Animated.Value(noAnimation ? 0 : 18)).current;
 
   useEffect(() => {
     if (noAnimation) return;
     Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 220, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 220, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      // Spring gives a lively overshoot-free slide-up (Uber content reveal)
+      Animated.spring(translateY, { toValue: 0, tension: 80, friction: 14, useNativeDriver: true }),
     ]).start();
   }, []);
 

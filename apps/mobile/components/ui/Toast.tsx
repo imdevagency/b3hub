@@ -31,49 +31,64 @@ export function useToast() {
 // ── Provider ─────────────────────────────────────────────────────────────────
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [config, setConfig] = useState<ToastConfig | null>(null);
-  const slideY = useRef(new Animated.Value(-100)).current;
+  const slideY = useRef(new Animated.Value(-90)).current;
   const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.9)).current;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dismiss = useCallback(() => {
     Animated.parallel([
       Animated.timing(slideY, {
-        toValue: -100,
-        duration: 250,
+        toValue: -90,
+        duration: 220,
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 250,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 0.92,
+        duration: 200,
         useNativeDriver: true,
       }),
     ]).start(() => setConfig(null));
-  }, [slideY, opacity]);
+  }, [slideY, opacity, scale]);
 
   const showToast = useCallback(
     (message: string, variant: ToastVariant = 'info', duration = 3000) => {
       if (timerRef.current) clearTimeout(timerRef.current);
 
+      // Reset before re-animating (handles rapid re-triggers)
+      scale.setValue(0.9);
+      slideY.setValue(-90);
       setConfig({ message, variant, duration });
 
-      // Slide in
+      // Slide + scale pop-in
       Animated.parallel([
         Animated.spring(slideY, {
           toValue: 0,
-          tension: 80,
-          friction: 10,
+          tension: 100,
+          friction: 14,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 1,
-          duration: 200,
+          duration: 160,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scale, {
+          toValue: 1,
+          tension: 100,
+          friction: 14,
           useNativeDriver: true,
         }),
       ]).start();
 
       timerRef.current = setTimeout(dismiss, duration);
     },
-    [slideY, opacity, dismiss],
+    [slideY, scale, opacity, dismiss],
   );
 
   const value: ToastContextValue = {
@@ -86,7 +101,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      {config && <ToastBanner config={config} translateY={slideY} opacity={opacity} />}
+      {config && (
+        <ToastBanner config={config} translateY={slideY} opacity={opacity} scale={scale} />
+      )}
     </ToastContext.Provider>
   );
 }
@@ -108,10 +125,12 @@ function ToastBanner({
   config,
   translateY,
   opacity,
+  scale,
 }: {
   config: ToastConfig;
   translateY: Animated.Value;
   opacity: Animated.Value;
+  scale: Animated.Value;
 }) {
   const insets = useSafeAreaInsets();
   const variant = config.variant ?? 'info';
@@ -126,7 +145,7 @@ function ToastBanner({
           top: insets.top + (Platform.OS === 'android' ? 8 : 4),
           backgroundColor: style.bg,
           borderColor: style.border,
-          transform: [{ translateY }],
+          transform: [{ translateY }, { scale }],
           opacity,
         },
       ]}
@@ -151,7 +170,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     zIndex: 9999,
     elevation: 20,

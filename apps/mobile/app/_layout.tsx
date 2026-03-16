@@ -4,7 +4,16 @@ import { AuthProvider } from '@/lib/auth-context';
 import { ModeProvider } from '@/lib/mode-context';
 import { ToastProvider } from '@/components/ui/Toast';
 import React, { useEffect, useRef } from 'react';
-import { View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
+import { useFonts } from 'expo-font';
+import {
+  Inter_300Light,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from '@expo-google-fonts/inter';
 // Guard: same JSI version-mismatch issue as in App.tsx
 let GestureHandlerRootView: React.ComponentType<{ style?: object; children?: React.ReactNode }> =
   View as unknown as React.ComponentType<{ style?: object; children?: React.ReactNode }>;
@@ -42,6 +51,25 @@ try {
 export default function RootLayout() {
   const notifListener = useRef<{ remove(): void } | null>(null);
 
+  const [fontsLoaded] = useFonts({
+    Inter_300Light,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+  });
+
+  // Apply Inter globally as soon as fonts are ready
+  useEffect(() => {
+    if (!fontsLoaded) return;
+    // Set default fontFamily on all Text / TextInput elements
+    (Text as any).defaultProps = (Text as any).defaultProps ?? {};
+    (Text as any).defaultProps.style = { fontFamily: 'Inter_400Regular' };
+    (TextInput as any).defaultProps = (TextInput as any).defaultProps ?? {};
+    (TextInput as any).defaultProps.style = { fontFamily: 'Inter_400Regular' };
+  }, [fontsLoaded]);
+
   useEffect(() => {
     // Foreground notification received listener
     try {
@@ -55,6 +83,8 @@ export default function RootLayout() {
     return () => notifListener.current?.remove();
   }, []);
 
+  if (!fontsLoaded) return null;
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -65,9 +95,23 @@ export default function RootLayout() {
                 screenOptions={{
                   headerShown: false,
                   animation: 'slide_from_right',
-                  animationDuration: 280,
+                  animationDuration: 200,
                 }}
-              />
+              >
+                {/* Booking wizard flows enter from the bottom — Uber-style */}
+                <Stack.Screen
+                  name="order-request"
+                  options={{ animation: 'fade_from_bottom', animationDuration: 320 }}
+                />
+                <Stack.Screen
+                  name="disposal"
+                  options={{ animation: 'fade_from_bottom', animationDuration: 320 }}
+                />
+                <Stack.Screen
+                  name="transport"
+                  options={{ animation: 'fade_from_bottom', animationDuration: 320 }}
+                />
+              </Stack>
             </ToastProvider>
           </ModeProvider>
         </AuthProvider>

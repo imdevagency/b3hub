@@ -16,6 +16,7 @@ import { CreateSkipHireDto } from './dto/create-skip-hire.dto';
 import { GetQuotesQueryDto } from './dto/get-quotes-query.dto';
 import { UpdateSkipHireStatusDto } from './dto/update-skip-hire-status.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
 import { SkipHireStatus } from '@prisma/client';
 
@@ -42,6 +43,7 @@ export class SkipHireController {
    * If the request carries a valid JWT the order will be linked to that user.
    */
   @Post()
+  @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   create(@Body() dto: CreateSkipHireDto, @Request() req: any) {
     // Attach user id if logged in (optional JWT)

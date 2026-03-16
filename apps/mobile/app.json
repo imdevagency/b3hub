@@ -23,7 +23,10 @@
         },
         "NSLocationAlwaysAndWhenInUseUsageDescription": "B3Hub nepārtraukti izseko jūsu atrašanās vietu aktīvu piegāžu laikā, arī fonā.",
         "NSLocationAlwaysUsageDescription": "B3Hub nepārtraukti izseko jūsu atrašanās vietu aktīvu piegāžu laikā, arī fonā.",
-        "UIBackgroundModes": ["location", "fetch"]
+        "UIBackgroundModes": [
+          "location",
+          "fetch"
+        ]
       },
       "bundleIdentifier": "com.anonymous.b3hub"
     },
@@ -73,7 +76,8 @@
           "isAndroidBackgroundLocationEnabled": true
         }
       ],
-      "expo-task-manager"
+      "expo-task-manager",
+      "expo-font"
     ]
   }
 }

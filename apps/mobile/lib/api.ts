@@ -817,6 +817,11 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
+    getById: (id: string, token: string) =>
+      apiFetch<SkipHireOrder>(`/skip-hire/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
     myOrders: (token: string) =>
       apiFetch<SkipHireOrder[]>('/skip-hire/my', {
         headers: { Authorization: `Bearer ${token}` },

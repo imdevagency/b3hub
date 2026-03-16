@@ -222,11 +222,11 @@ export default function OrderDetailScreen() {
     return (
       <ScreenContainer bg="#f2f2f7">
         <View style={s.header}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-            <ArrowLeft size={22} color="#111827" />
+          <TouchableOpacity style={s.backBtn} onPress={() => router.back()} hitSlop={8}>
+            <ArrowLeft size={18} color="#111827" />
           </TouchableOpacity>
           <Text style={s.headerTitle}>Pasūtījums</Text>
-          <View style={{ width: 22 }} />
+          <View style={{ width: 36 }} />
         </View>
         <SkeletonDetail />
       </ScreenContainer>
@@ -237,11 +237,11 @@ export default function OrderDetailScreen() {
     return (
       <ScreenContainer bg="#f2f2f7">
         <View style={s.header}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-            <ArrowLeft size={22} color="#111827" />
+          <TouchableOpacity style={s.backBtn} onPress={() => router.back()} hitSlop={8}>
+            <ArrowLeft size={18} color="#111827" />
           </TouchableOpacity>
           <Text style={s.headerTitle}>Pasūtījums</Text>
-          <View style={{ width: 22 }} />
+          <View style={{ width: 36 }} />
         </View>
         <EmptyState icon={<Package size={32} color="#9ca3af" />} title="Pasūtījums nav atrasts" />
       </ScreenContainer>
@@ -265,8 +265,8 @@ export default function OrderDetailScreen() {
     <ScreenContainer bg="#f2f2f7">
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-          <ArrowLeft size={22} color="#111827" />
+        <TouchableOpacity style={s.backBtn} onPress={() => router.back()} hitSlop={8}>
+          <ArrowLeft size={18} color="#111827" />
         </TouchableOpacity>
         <Text style={s.headerTitle} numberOfLines={1}>
           {order.orderNumber}
@@ -698,6 +698,14 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: { fontSize: 17, fontWeight: '700', color: '#111827', flex: 1, marginHorizontal: 10 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
   statusBadgeText: { fontSize: 12, fontWeight: '700' },
@@ -858,8 +866,8 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#9ca3af',
-    borderRadius: 12,
+    backgroundColor: '#111827',
+    borderRadius: 100,
     padding: 14,
     justifyContent: 'center',
   },
