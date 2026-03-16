@@ -58,6 +58,27 @@ const SIZE_LABEL: Record<string, string> = {
   LARGE: 'Liels · 8 m³',
 };
 
+const VEHICLE_LABEL: Record<string, string> = {
+  TIPPER_SMALL: 'Pašizgāzējs 10 t',
+  TIPPER_LARGE: 'Pašizgāzējs 18 t',
+  ARTICULATED_TIPPER: 'Sattelkipper 26 t',
+};
+
+const CARGO_LABEL: Record<string, string> = {
+  CONCRETE: 'Betons / Bruģis',
+  SOIL: 'Augsne / Grunts',
+  BRICK: 'Ķieģeļi / Mūris',
+  WOOD: 'Koks',
+  METAL: 'Metāls',
+  PLASTIC: 'Plastmasa',
+  MIXED: 'Jaukti atkritumi',
+  HAZARDOUS: 'Bīstami atkritumi',
+  SAND: 'Smiltis',
+  GRAVEL: 'Grants / Šķembas',
+  STONE: 'Akmens',
+  MATERIALS: 'Celtniecības materiāli',
+};
+
 // UNIT_SHORT, MAT_STATUS, TJB_STATUS — imported from @/lib/materials
 
 const FILTERS: { key: FilterKey; label: string }[] = [
@@ -317,7 +338,7 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
         )}
         {isDisposal && (
           <Text style={s.orderSub} numberOfLines={1}>
-            {job.cargoType} · {job.pickupCity}
+            {CARGO_LABEL[job.cargoType] ?? job.cargoType} · {job.pickupCity}
           </Text>
         )}
         <View style={s.metaRow}>
@@ -334,7 +355,7 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
           <View style={s.metaRow}>
             <Truck size={13} color="#6b7280" />
             <Text style={s.metaText} numberOfLines={1}>
-              {job.requiredVehicleType}
+              {VEHICLE_LABEL[job.requiredVehicleType] ?? job.requiredVehicleType}
             </Text>
           </View>
         )}

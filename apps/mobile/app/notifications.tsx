@@ -62,14 +62,23 @@ function deepLinkPath(notif: ApiNotification): string | null {
     case 'JOB_AVAILABLE':
     case 'JOB_ACCEPTED':
     case 'JOB_COMPLETED':
+      return '/(driver)/jobs';
     case 'TRANSPORT_ASSIGNED':
-      return d.jobId ? `/(driver)/jobs` : '/(driver)/jobs';
+      return d.jobId ? `/(buyer)/transport-job/${d.jobId}` : '/(buyer)/orders';
     case 'ORDER_PLACED':
     case 'ORDER_CONFIRMED':
     case 'ORDER_SHIPPED':
     case 'ORDER_DELIVERED':
     case 'ORDER_CANCELLED':
-      return d.orderId ? `/(buyer)/orders` : '/(buyer)/orders';
+      return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/orders';
+    case 'SKIP_HIRE_UPDATED':
+    case 'SKIP_HIRE_CONFIRMED':
+    case 'SKIP_HIRE_DELIVERED':
+    case 'SKIP_HIRE_COLLECTED':
+      return d.orderId ? `/(buyer)/skip-order/${d.orderId}` : '/(buyer)/orders';
+    case 'DISPOSAL_UPDATED':
+    case 'TRANSPORT_UPDATED':
+      return d.jobId ? `/(buyer)/transport-job/${d.jobId}` : '/(buyer)/orders';
     case 'PAYMENT_RECEIVED':
       return '/(driver)/earnings';
     case 'INVOICE_ISSUED':
