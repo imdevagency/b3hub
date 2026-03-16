@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useToast } from '@/components/ui/Toast';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import {
@@ -44,6 +45,7 @@ export default function ProfileScreen() {
     phone: user?.phone ?? '',
   });
   const [pendingApps, setPendingApps] = useState<ProviderApplication[]>([]);
+  const toast = useToast();
 
   useEffect(() => {
     if (!token) return;
@@ -55,6 +57,13 @@ export default function ProfileScreen() {
 
   const roleLabel = t.mode[mode];
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`;
+
+  const ROLE_THEME: Record<string, { avatarBg: string; badgeBg: string; badgeText: string }> = {
+    buyer:  { avatarBg: '#fee2e2', badgeBg: '#fef2f2', badgeText: '#b91c1c' },
+    seller: { avatarBg: '#d1fae5', badgeBg: '#f0fdf4', badgeText: '#15803d' },
+    driver: { avatarBg: '#dbeafe', badgeBg: '#eff6ff', badgeText: '#1d4ed8' },
+  };
+  const roleTheme = ROLE_THEME[mode] ?? ROLE_THEME.buyer;
 
   const USER_TYPE_LABEL: Record<string, string> = {
     BUYER: 'Pircējs',
@@ -109,7 +118,7 @@ export default function ProfileScreen() {
       setEditOpen(false);
     } catch {
       haptics.error();
-      Alert.alert('Kļūda', 'Neizdevās saglabāt izmaiņas. Lūdzu, mēģiniet vēlreiz.');
+      toast.error('Neizdevās saglabāt izmaiņas. Lūdzu, mēģiniet vēlreiz.');
     } finally {
       setSaving(false);
     }
@@ -132,15 +141,15 @@ export default function ProfileScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Avatar header */}
         <View style={s.avatarSection}>
-          <View style={s.avatarCircle}>
+          <View style={[s.avatarCircle, { backgroundColor: roleTheme.avatarBg }]}>
             <Text style={s.avatarText}>{initials}</Text>
           </View>
           <Text style={s.fullName}>
             {user?.firstName} {user?.lastName}
           </Text>
           <Text style={s.email}>{user?.email}</Text>
-          <View style={s.roleBadge}>
-            <Text style={s.roleBadgeText}>{roleLabel}</Text>
+          <View style={[s.roleBadge, { backgroundColor: roleTheme.badgeBg }]}>
+            <Text style={[s.roleBadgeText, { color: roleTheme.badgeText }]}>{roleLabel}</Text>
           </View>
           <TouchableOpacity style={s.editBtn} onPress={openEdit} activeOpacity={0.8}>
             <Pencil size={13} color="#111827" />

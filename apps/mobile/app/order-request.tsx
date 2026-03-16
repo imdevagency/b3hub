@@ -30,6 +30,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { UNIT_SHORT, CATEGORY_ICON } from '@/lib/materials';
 import type {
   MaterialCategory,
   MaterialUnit,
@@ -290,12 +291,7 @@ const ONBOARDING_SLIDES = [
   },
 ];
 
-const UNIT_SHORT: Record<MaterialUnit, string> = {
-  TONNE: 't',
-  M3: 'm³',
-  PIECE: 'gab.',
-  LOAD: 'krava',
-};
+// UNIT_SHORT — imported from @/lib/materials
 
 const FRACTIONS: Record<string, string[]> = {
   DEFAULT: ['0/4', '0/8', '0/16', '0/32', '0/45', '4/16', '8/32', '16/45'],
@@ -314,19 +310,7 @@ const VEHICLES = [
   { id: 'TIPPER_15T', label: '15 t', emoji: '🚜', sub: '4×4' },
 ];
 
-const CATEGORY_ICON: Record<string, string> = {
-  ALL: '📦',
-  SAND: '🏜️',
-  GRAVEL: '🪨',
-  STONE: '🗿',
-  CONCRETE: '🧱',
-  SOIL: '🌱',
-  RECYCLED_CONCRETE: '♻️',
-  RECYCLED_SOIL: '🌿',
-  ASPHALT: '🛣️',
-  CLAY: '🟤',
-  OTHER: '📦',
-};
+// CATEGORY_ICON — imported from @/lib/materials
 
 // ── Pulsing animation ────────────────────────────────────────────
 

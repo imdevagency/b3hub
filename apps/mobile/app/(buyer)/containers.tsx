@@ -9,9 +9,9 @@ import {
   TextInput,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   RefreshControl,
 } from 'react-native';
+import { useToast } from '@/components/ui/Toast';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Box, Package, ChevronRight, X, CheckCircle } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
@@ -123,6 +123,7 @@ export default function ContainersScreen() {
     notes: '',
   });
   const [renting, setRenting] = useState(false);
+  const toast = useToast();
 
   const loadContainers = useCallback(async () => {
     if (!token) return;
@@ -162,11 +163,11 @@ export default function ContainersScreen() {
     if (!token || !selected) return;
     const days = parseInt(rentForm.rentalDays, 10);
     if (!rentForm.deliveryAddress.trim() || !rentForm.deliveryCity.trim()) {
-      Alert.alert('Kļūda', 'Lūdzu ievadiet piegādes adresi un pilsētu.');
+      toast.error('Lūdzu ievadiet piegādes adresi un pilsētu.');
       return;
     }
     if (!days || days < 1) {
-      Alert.alert('Kļūda', 'Ievadiet derīgu īres dienu skaitu.');
+      toast.error('Ievadiet derīgu īres dienu skaitu.');
       return;
     }
     setRenting(true);
@@ -186,10 +187,10 @@ export default function ContainersScreen() {
       setRentForm({ deliveryAddress: '', deliveryCity: '', rentalDays: '7', notes: '' });
       setTab('mine');
       loadOrders();
-      Alert.alert('✓ Pasūtījums nosūtīts', 'Konteinera nomas pieprasījums pieņemts.');
+      toast.success('Konteinera nomas pieprasījums pieņemts.');
     } catch (err: any) {
       haptics.error();
-      Alert.alert('Kļūda', err?.message ?? 'Neizdevās pasūtīt konteineru.');
+      toast.error(err?.message ?? 'Neizdevās pasūtīt konteineru.');
     } finally {
       setRenting(false);
     }
@@ -225,7 +226,7 @@ export default function ContainersScreen() {
       {tab === 'browse' && (
         <>
           {loadingBrowse ? (
-            <ActivityIndicator color="#dc2626" style={{ marginTop: 40 }} />
+            <ActivityIndicator color="#111827" style={{ marginTop: 40 }} />
           ) : containers.length === 0 ? (
             <View style={s.empty}>
               <Box size={48} color="#d1d5db" />
@@ -246,7 +247,7 @@ export default function ContainersScreen() {
                     setRefreshing(true);
                     loadContainers();
                   }}
-                  tintColor="#dc2626"
+                  tintColor="#111827"
                 />
               }
             />
@@ -258,7 +259,7 @@ export default function ContainersScreen() {
       {tab === 'mine' && (
         <>
           {loadingOrders ? (
-            <ActivityIndicator color="#dc2626" style={{ marginTop: 40 }} />
+            <ActivityIndicator color="#111827" style={{ marginTop: 40 }} />
           ) : orders.length === 0 ? (
             <View style={s.empty}>
               <Package size={48} color="#d1d5db" />
@@ -444,7 +445,7 @@ const s = StyleSheet.create({
   cardSub: { fontSize: 13, color: '#6b7280', marginTop: 2 },
   cardLocation: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
   cardRight: { alignItems: 'flex-end' },
-  cardPrice: { fontSize: 18, fontWeight: '700', color: '#dc2626' },
+  cardPrice: { fontSize: 18, fontWeight: '700', color: '#111827' },
   cardPriceSub: { fontSize: 11, color: '#9ca3af' },
 
   orderCard: {
@@ -509,7 +510,7 @@ const s = StyleSheet.create({
   },
 
   totalBox: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: '#f9fafb',
     borderRadius: 12,
     padding: 14,
     flexDirection: 'row',
@@ -517,10 +518,10 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   totalLabel: { fontSize: 14, color: '#374151' },
-  totalValue: { fontSize: 20, fontWeight: '700', color: '#dc2626' },
+  totalValue: { fontSize: 20, fontWeight: '700', color: '#111827' },
 
   rentBtn: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 12,
     paddingVertical: 14,
     flexDirection: 'row',

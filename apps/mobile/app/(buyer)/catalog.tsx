@@ -33,30 +33,17 @@ import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import type { ApiMaterial, MaterialCategory, MaterialUnit } from '@/lib/api';
+import { CATEGORY_LABELS, UNIT_SHORT } from '@/lib/materials';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const CARD_W = (SCREEN_W - 16 * 2 - 12) / 2;
 
-// ── Category meta ──────────────────────────────────────────────
-
-const CATEGORY_LABELS: Record<MaterialCategory | 'ALL', string> = {
-  ALL: 'Visi',
-  SAND: 'Smiltis',
-  GRAVEL: 'Šķembas',
-  STONE: 'Akmens',
-  CONCRETE: 'Betons',
-  SOIL: 'Zeme',
-  RECYCLED_CONCRETE: 'Rec. betons',
-  RECYCLED_SOIL: 'Rec. zeme',
-  ASPHALT: 'Asfalta gran.',
-  CLAY: 'Māls',
-  OTHER: 'Cits',
-};
+// CATEGORY_LABELS — imported from @/lib/materials
 
 type CatMeta = { bg: string; accent: string; pillBg: string; icon: React.ElementType };
 
 const CATEGORY_META: Record<MaterialCategory | 'ALL', CatMeta> = {
-  ALL: { bg: '#fef2f2', accent: '#dc2626', pillBg: '#dc2626', icon: Layers },
+  ALL: { bg: '#f3f4f6', accent: '#111827', pillBg: '#111827', icon: Layers },
   SAND: { bg: '#fef3c7', accent: '#d97706', pillBg: '#d97706', icon: Waves },
   GRAVEL: { bg: '#e2e8f0', accent: '#475569', pillBg: '#475569', icon: Mountain },
   STONE: { bg: '#dde1e8', accent: '#334155', pillBg: '#334155', icon: Mountain },
@@ -69,12 +56,7 @@ const CATEGORY_META: Record<MaterialCategory | 'ALL', CatMeta> = {
   OTHER: { bg: '#f3f4f6', accent: '#6b7280', pillBg: '#6b7280', icon: MoreHorizontal },
 };
 
-const UNIT_SHORT: Record<MaterialUnit, string> = {
-  TONNE: 't',
-  M3: 'm\u00b3',
-  PIECE: 'gab.',
-  LOAD: 'krava',
-};
+// UNIT_SHORT — imported from @/lib/materials
 
 const CATEGORIES = Object.keys(CATEGORY_LABELS) as Array<MaterialCategory | 'ALL'>;
 
@@ -242,7 +224,7 @@ export default function CatalogScreen() {
           <Text style={s.headerEyebrow}>{'Materi\u0101lu katalogs'}</Text>
           <Text style={s.headerTitle}>{'Izv\u0113lieties produktu'}</Text>
         </View>
-        {filtering && <ActivityIndicator size="small" color="#dc2626" />}
+        {filtering && <ActivityIndicator size="small" color="#111827" />}
       </View>
 
       {/* ── Search bar ─────────────────────────────────────── */}
@@ -313,7 +295,7 @@ export default function CatalogScreen() {
                   setRefreshing(true);
                   loadMaterials(search, category);
                 }}
-                tintColor="#dc2626"
+                tintColor="#111827"
               />
             }
             ListHeaderComponent={
@@ -339,6 +321,7 @@ export default function CatalogScreen() {
                         setSearch('');
                         selectCategory('ALL');
                       }}
+                      activeOpacity={0.85}
                     >
                       <Text style={s.emptyResetText}>{'Not\u012br\u012bt filtrus'}</Text>
                     </TouchableOpacity>
@@ -349,7 +332,7 @@ export default function CatalogScreen() {
             ListFooterComponent={
               materials.length > 0 ? (
                 <View style={s.note}>
-                  <SlidersHorizontal size={13} color="#dc2626" strokeWidth={2} />
+                  <SlidersHorizontal size={13} color="#6b7280" strokeWidth={2} />
                   <Text style={s.noteTitle}>{'Nor\u0101d\u012bt\u0101 cena'}</Text>
                   <Text style={s.noteText}>
                     {
@@ -383,7 +366,7 @@ const s = StyleSheet.create({
   headerEyebrow: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#dc2626',
+    color: '#9ca3af',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     marginBottom: 2,
@@ -559,7 +542,7 @@ const s = StyleSheet.create({
 
   emptyReset: {
     marginTop: 10,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#111827',
     borderRadius: 22,
     paddingHorizontal: 20,
     paddingVertical: 10,
@@ -573,13 +556,13 @@ const s = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: '#e5e7eb',
     gap: 4,
   },
   noteTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#dc2626',
+    color: '#374151',
   },
   noteText: {
     fontSize: 12,

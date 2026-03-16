@@ -34,6 +34,7 @@ import {
 } from 'lucide-react-native';
 import { RatingModal } from '@/components/ui/RatingModal';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { UNIT_SHORT, MAT_STATUS, TJB_STATUS } from '@/lib/materials';
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -57,34 +58,7 @@ const SIZE_LABEL: Record<string, string> = {
   LARGE: 'Liels · 8 m³',
 };
 
-const UNIT_SHORT: Record<string, string> = {
-  TONNE: 't',
-  M3: 'm³',
-  PIECE: 'gab.',
-  LOAD: 'krava',
-};
-
-const MAT_STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING: { label: 'Gaida', bg: '#f3f4f6', color: '#6b7280' },
-  CONFIRMED: { label: 'Apstiprināts', bg: '#f3f4f6', color: '#374151' },
-  PROCESSING: { label: 'Apstrādā', bg: '#f3f4f6', color: '#374151' },
-  SHIPPED: { label: 'Ceļā', bg: '#fef3c7', color: '#92400e' },
-  DELIVERED: { label: 'Piegādāts', bg: '#dcfce7', color: '#15803d' },
-  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: '#b91c1c' },
-};
-
-const TJB_STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  AVAILABLE: { label: 'Gaida pārvadātāju', bg: '#f3f4f6', color: '#6b7280' },
-  ASSIGNED: { label: 'Pārvadātājs atrasts', bg: '#f3f4f6', color: '#374151' },
-  ACCEPTED: { label: 'Apstiprināts', bg: '#f3f4f6', color: '#374151' },
-  EN_ROUTE_PICKUP: { label: 'Brauc uz iekraušanu', bg: '#fef3c7', color: '#92400e' },
-  AT_PICKUP: { label: 'Iekraujas', bg: '#fef3c7', color: '#92400e' },
-  LOADED: { label: 'Iekrauts', bg: '#fef3c7', color: '#92400e' },
-  EN_ROUTE_DELIVERY: { label: 'Ceļā', bg: '#dcfce7', color: '#15803d' },
-  AT_DELIVERY: { label: 'Piegādā', bg: '#dcfce7', color: '#15803d' },
-  DELIVERED: { label: 'Pabeigts', bg: '#f0fdf4', color: '#15803d' },
-  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: '#b91c1c' },
-};
+// UNIT_SHORT, MAT_STATUS, TJB_STATUS — imported from @/lib/materials
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: 'ALL', label: 'Visi' },
@@ -308,6 +282,7 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
 // ── Transport request card (disposal / freight) ───────────────
 
 function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transport' } }) {
+  const router = useRouter();
   const job = item.data;
   const st = TJB_STATUS[job.status] ?? TJB_STATUS.AVAILABLE;
   const isDisposal = job.jobType === 'WASTE_COLLECTION';
@@ -315,7 +290,14 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
   const typeLabel = isDisposal ? 'Atkritumu izvešana' : 'Kravas pārvadāšana';
 
   return (
-    <View style={[s.card, item.isActive && s.cardActive]}>
+    <TouchableOpacity
+      style={[s.card, item.isActive && s.cardActive]}
+      onPress={() => {
+        haptics.light();
+        router.push({ pathname: '/(buyer)/transport-job/[id]', params: { id: job.id } } as any);
+      }}
+      activeOpacity={0.88}
+    >
       {item.isActive && <View style={s.activeStrip} />}
       <View style={s.cardInner}>
         <View style={s.cardTop}>
@@ -357,7 +339,7 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
           </View>
         )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 

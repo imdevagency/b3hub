@@ -171,7 +171,8 @@ export default function HomeScreen() {
       },
     }),
   ).current;
-  const [orders, setOrders] = useState<ApiOrder[] | null>(null);
+  const [orders, setOrders] = useState<ApiOrder[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [searching, setSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [addrSuggestions, setAddrSuggestions] = useState<GeocodeSuggestion[]>([]);
@@ -306,6 +307,10 @@ export default function HomeScreen() {
         .myOrders(token)
         .then(setOrders)
         .catch(() => setOrders([]));
+      api.notifications
+        .unreadCount(token)
+        .then((res) => setUnreadCount(res.count))
+        .catch(() => {});
     }, [token]),
   );
 
@@ -317,13 +322,18 @@ export default function HomeScreen() {
       {/* ── Full-screen map behind the panel ── */}
       <BaseMap cameraRef={cameraRef} zoom={12} showsUserLocation showsMyLocationButton />
 
-      {/* ── Notification bell floating over map ── */}
+      {/* ── Avatar FAB with unread notification badge ── */}
       <TouchableOpacity
         style={[s.avatarFab, { top: insets.top + 12 }]}
         onPress={() => router.push('/notifications' as any)}
         activeOpacity={0.85}
       >
         <Text style={s.avatarText}>{user?.firstName?.[0]?.toUpperCase() ?? '?'}</Text>
+        {unreadCount > 0 && (
+          <View style={s.notifBadge}>
+            <Text style={s.notifBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+          </View>
+        )}
       </TouchableOpacity>
 
       {/* ── Map dim overlay ── */}
@@ -685,6 +695,26 @@ const s = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     fontFamily: 'Inter_700Bold',
+  },
+  notifBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  notifBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '800',
+    lineHeight: 12,
   },
 
   // Panel
