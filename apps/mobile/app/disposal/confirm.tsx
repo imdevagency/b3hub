@@ -14,7 +14,7 @@ import { useState } from 'react';
 import { useDisposal } from '@/lib/disposal-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import { MapPin, Truck, Trash2, Calendar, Weight } from 'lucide-react-native';
+import { MapPin, Truck, Trash2, Calendar, Weight, CheckCircle } from 'lucide-react-native';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const TRUCK_CONFIG: Record<string, { label: string; capacity: number; volume: number }> = {
@@ -62,6 +62,8 @@ export default function DisposalStep4Confirm() {
   const minDate = tomorrow();
   const [date, setDate] = useState<Date>(minDate);
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [jobNumber, setJobNumber] = useState<string>('');
 
   const truck = TRUCK_CONFIG[state.truckType] ?? TRUCK_CONFIG.TIPPER_LARGE;
   const totalTonnes = truck.capacity * state.truckCount;
@@ -101,17 +103,47 @@ export default function DisposalStep4Confirm() {
         token!,
       );
       reset();
-      Alert.alert(
-        'Pieprasījums nosūtīts! ✓',
-        `Jūsu atkritumu savākšanas pieprasījums ir reģistrēts.\nNumurs: ${result?.jobNumber ?? '—'}`,
-        [{ text: 'Labi', onPress: () => router.replace('/(buyer)/orders') }],
-      );
+      setJobNumber(result?.jobNumber ?? '—');
+      setSubmitted(true);
     } catch (err: any) {
       Alert.alert('Kļūda', err?.message ?? 'Neizdevās nosūtīt pieprasījumu. Mēģiniet vēlreiz.');
     } finally {
       setLoading(false);
     }
   };
+
+  // ── Success screen ──────────────────────────────────────────────────────
+  if (submitted) {
+    return (
+      <ScreenContainer standalone bg="#111827">
+        <View style={s.successScreen}>
+          <View style={s.successCircle}>
+            <CheckCircle size={56} color="#fff" strokeWidth={1.5} />
+          </View>
+          <Text style={s.successTitle}>Pieprasījums nosūtīts!</Text>
+          <Text style={s.successDesc}>
+            Jūsu atkritumu savākšanas pieprasījums{`\n`}ir reģistrēts.
+          </Text>
+          {!!jobNumber && (
+            <View style={s.jobNumBadge}>
+              <Text style={s.jobNumLabel}>Numurs</Text>
+              <Text style={s.jobNumValue}>{jobNumber}</Text>
+            </View>
+          )}
+          <Text style={s.successHint}>
+            Tuvākajā laikā tiks piešķirts pārvadātājs{`\n`}un Jūs saņemsiet paziņojumu.
+          </Text>
+          <TouchableOpacity
+            style={s.successBtn}
+            onPress={() => router.replace('/(buyer)/orders')}
+            activeOpacity={0.85}
+          >
+            <Text style={s.successBtnText}>Skatīt pasūtījumus →</Text>
+          </TouchableOpacity>
+        </View>
+      </ScreenContainer>
+    );
+  }
 
   // ── UI ────────────────────────────────────────────────────────────────────
   return (
@@ -357,4 +389,60 @@ const s = StyleSheet.create({
   },
   submitBtnDisabled: { opacity: 0.6 },
   submitText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+
+  // Success screen
+  successScreen: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  successCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 28,
+  },
+  successTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  successDesc: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.7)',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  jobNumBadge: {
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  jobNumLabel: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 4, letterSpacing: 0.8 },
+  jobNumValue: { fontSize: 20, fontWeight: '700', color: '#fff' },
+  successHint: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.5)',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 36,
+  },
+  successBtn: {
+    backgroundColor: '#fff',
+    borderRadius: 100,
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+  },
+  successBtnText: { fontSize: 16, fontWeight: '700', color: '#111827' },
 });

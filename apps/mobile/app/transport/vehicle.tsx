@@ -15,6 +15,22 @@ import { useTransport } from '@/lib/transport-context';
 import type { TransportVehicleType } from '@/lib/api';
 import { Truck, Check, ArrowLeft } from 'lucide-react-native';
 
+const CARGO_PRESETS = [
+  { key: 'smiltis', label: 'Smiltis', emoji: '🏜️' },
+  { key: 'skembas', label: 'Šķembas / Grants', emoji: '🪨' },
+  { key: 'betons', label: 'Betons', emoji: '🏗️' },
+  { key: 'koks', label: 'Koks', emoji: '🪵' },
+  { key: 'metals', label: 'Metāls', emoji: '⚙️' },
+  { key: 'gruzi', label: 'Būvgruži', emoji: '🧱' },
+  { key: 'cits', label: 'Cits', emoji: '…' },
+];
+
+function resolveCargoKey(desc: string): string {
+  if (!desc) return '';
+  const match = CARGO_PRESETS.find((p) => p.label === desc);
+  return match ? match.key : 'cits';
+}
+
 interface VehicleOption {
   id: TransportVehicleType;
   label: string;
@@ -50,18 +66,29 @@ export default function TransportStep3Vehicle() {
   const [selectedVehicle, setSelectedVehicle] = useState<TransportVehicleType | null>(
     state.vehicleType,
   );
-  const [desc, setDesc] = useState(state.loadDescription);
-  const [weight, setWeight] = useState(
-    state.estimatedWeight != null ? String(state.estimatedWeight) : '',
+
+  // Cargo preset selection — replaces free-text
+  const initialKey = resolveCargoKey(state.loadDescription);
+  const [cargoKey, setCargoKey] = useState<string>(initialKey);
+  const [customDesc, setCustomDesc] = useState<string>(
+    initialKey === 'cits' ? state.loadDescription : '',
   );
 
-  const isValid = selectedVehicle !== null && desc.trim().length >= 3;
+  const activeDesc =
+    cargoKey === 'cits'
+      ? customDesc.trim()
+      : (CARGO_PRESETS.find((p) => p.key === cargoKey)?.label ?? '');
+
+  const weight = state.estimatedWeight != null ? String(state.estimatedWeight) : '';
+  const [localWeight, setLocalWeight] = useState(weight);
+
+  const isValid = selectedVehicle !== null && activeDesc.length >= 2;
 
   const handleNext = () => {
     if (!selectedVehicle) return;
     setVehicleType(selectedVehicle);
-    setLoadDescription(desc.trim());
-    const w = parseFloat(weight);
+    setLoadDescription(activeDesc);
+    const w = parseFloat(localWeight);
     setEstimatedWeight(isNaN(w) || w <= 0 ? null : w);
     router.push('/transport/confirm');
   };
@@ -127,18 +154,46 @@ export default function TransportStep3Vehicle() {
             );
           })}
 
-          {/* Load description */}
-          <Text style={s.fieldLabel}>Kravas apraksts *</Text>
-          <TextInput
-            style={[s.textArea, desc.trim().length >= 3 && s.textAreaFilled]}
-            placeholder="Piemēram: smiltis, granti, būvmateriāli, aprīkojums..."
-            placeholderTextColor="#9ca3af"
-            multiline
-            numberOfLines={3}
-            value={desc}
-            onChangeText={setDesc}
-            textAlignVertical="top"
-          />
+          {/* Cargo presets */}
+          <Text style={s.fieldLabel}>Krava *</Text>
+          <View style={s.cargoGrid}>
+            {CARGO_PRESETS.map((p) => {
+              const isSelected = cargoKey === p.key;
+              return (
+                <TouchableOpacity
+                  key={p.key}
+                  style={[s.cargoChip, isSelected && s.cargoChipSelected]}
+                  onPress={() => setCargoKey(p.key)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.cargoEmoji}>{p.emoji}</Text>
+                  <Text style={[s.cargoLabel, isSelected && s.cargoLabelSelected]}>
+                    {p.label}
+                  </Text>
+                  {isSelected && (
+                    <View style={s.cargoCheck}>
+                      <Check size={10} color="#fff" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Free-text only shown for 'Cits' */}
+          {cargoKey === 'cits' && (
+            <TextInput
+              style={[s.textArea, customDesc.trim().length >= 2 && s.textAreaFilled]}
+              placeholder="Aprakstiet kravu..."
+              placeholderTextColor="#9ca3af"
+              multiline
+              numberOfLines={3}
+              value={customDesc}
+              onChangeText={setCustomDesc}
+              textAlignVertical="top"
+              autoFocus
+            />
+          )}
 
           {/* Estimated weight (optional) */}
           <Text style={s.fieldLabel}>
@@ -149,8 +204,8 @@ export default function TransportStep3Vehicle() {
             placeholder="Piemēram: 12"
             placeholderTextColor="#9ca3af"
             keyboardType="decimal-pad"
-            value={weight}
-            onChangeText={setWeight}
+            value={localWeight}
+            onChangeText={setLocalWeight}
           />
 
           <View style={{ height: 24 }} />
@@ -232,6 +287,38 @@ const s = StyleSheet.create({
     backgroundColor: '#111827',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Cargo presets
+  cargoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  cargoChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 2,
+    borderColor: '#f3f4f6',
+    borderRadius: 100,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    backgroundColor: '#f9fafb',
+    position: 'relative',
+  },
+  cargoChipSelected: { borderColor: '#111827', backgroundColor: '#fff' },
+  cargoEmoji: { fontSize: 14 },
+  cargoLabel: { fontSize: 14, fontWeight: '500', color: '#6b7280' },
+  cargoLabelSelected: { color: '#111827', fontWeight: '600' },
+  cargoCheck: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 2,
   },
   // Fields
   fieldLabel: { fontSize: 14, fontWeight: '600', color: '#374151', marginTop: 20, marginBottom: 8 },
