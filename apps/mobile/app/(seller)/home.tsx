@@ -1,21 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Animated,
-  PanResponder,
-  Dimensions,
   ScrollView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import { BaseMap } from '@/components/map';
-import * as Location from 'expo-location';
-import { Inbox, LayoutGrid, FileText, Wallet, Search } from 'lucide-react-native';
+import {
+  Inbox,
+  LayoutGrid,
+  FileText,
+  Wallet,
+  Bell,
+  ChevronRight,
+  ArrowRight,
+} from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 
 function greeting(): string {
@@ -57,267 +61,304 @@ const QUICK_ACTIONS = [
 ];
 
 const TAB_H = 52;
-const WIN_H = Dimensions.get('window').height;
-const PEEK_H = 76;
 
 export default function SellerHomeScreen() {
   const { user, token } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const cameraRef = useRef<any>(null);
-  const panelH = useRef(0);
-  const dragY = useRef(new Animated.Value(0)).current;
-  const lastY = useRef(0);
-  const pan = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 5,
-      onPanResponderMove: (_, g) => {
-        const next = lastY.current + g.dy;
-        dragY.setValue(Math.max(0, Math.min(panelH.current - PEEK_H, next)));
-      },
-      onPanResponderRelease: (_, g) => {
-        const next = lastY.current + g.dy;
-        const limit = panelH.current - PEEK_H;
-        const snapTo = next > limit / 2 ? limit : 0;
-        lastY.current = snapTo;
-        Animated.spring(dragY, {
-          toValue: snapTo,
-          useNativeDriver: true,
-          tension: 48,
-          friction: 14,
-        }).start();
-      },
-    }),
-  ).current;
   const [pendingCount, setPendingCount] = useState<number | null>(null);
 
-  // Fly camera to seller's location
+  // Tile entrance animations
+  const tileAnims = useRef(QUICK_ACTIONS.map(() => new Animated.Value(0))).current;
+  const tileScales = useRef(QUICK_ACTIONS.map(() => new Animated.Value(1))).current;
+
   useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      cameraRef.current?.setCamera({
-        centerCoordinate: [loc.coords.longitude, loc.coords.latitude],
-        zoomLevel: 13,
-        animationDuration: 900,
-      });
-    })();
+    tileAnims.forEach((anim, i) => {
+      Animated.spring(anim, {
+        toValue: 1,
+        delay: 80 + i * 70,
+        useNativeDriver: true,
+        tension: 75,
+        friction: 10,
+      }).start();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Count pending/confirmed orders visible to seller
-  useEffect(() => {
-    if (!token) return;
-    api.orders
-      .myOrders(token)
-      .then((orders) => {
-        const pending = orders.filter(
-          (o) => o.status === 'PENDING' || o.status === 'CONFIRMED',
-        ).length;
-        setPendingCount(pending);
-      })
-      .catch(() => {});
-  }, [token]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!token) return;
+      api.orders
+        .myOrders(token)
+        .then((orders) => {
+          const pending = orders.filter(
+            (o) => o.status === 'PENDING' || o.status === 'CONFIRMED',
+          ).length;
+          setPendingCount(pending);
+        })
+        .catch(() => {});
+    }, [token]),
+  );
+
+  const pressTile = (idx: number) => {
+    Animated.sequence([
+      Animated.spring(tileScales[idx], {
+        toValue: 0.93,
+        useNativeDriver: true,
+        tension: 300,
+        friction: 8,
+      }),
+      Animated.spring(tileScales[idx], {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 100,
+        friction: 7,
+      }),
+    ]).start();
+  };
 
   return (
     <View style={s.root}>
-      {/* Full-screen map */}
-      <BaseMap cameraRef={cameraRef} zoom={12} showsUserLocation showsMyLocationButton />
-
-      {/* Bottom panel */}
-      <Animated.View
-        style={[s.panel, { transform: [{ translateY: dragY }] }]}
-        onLayout={(e) => {
-          panelH.current = e.nativeEvent.layout.height;
-        }}
-      >
-        {/* Draggable header */}
-        <View style={s.dragHeader} {...pan.panHandlers}>
-          <View style={s.handle} />
-          <TouchableOpacity style={s.searchBar} activeOpacity={0.7} onPress={() => haptics.light()}>
-            <Search size={18} color="#9ca3af" />
-            <Text style={s.searchText}>Ienākošie pasūtījumi...</Text>
-          </TouchableOpacity>
+      {/* ── Top bar ── */}
+      <View style={[s.topBar, { paddingTop: insets.top + 12 }]}>
+        <View style={s.avatar}>
+          <Text style={s.avatarText}>{user?.firstName?.[0]?.toUpperCase() ?? '?'}</Text>
         </View>
-
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={[s.panelScroll, { paddingBottom: TAB_H + insets.bottom }]}
-          bounces={false}
+        <View style={{ flex: 1 }}>
+          <Text style={s.greetingLabel}>{greeting()},</Text>
+          <Text style={s.greetingName} numberOfLines={1}>
+            {user?.firstName ?? 'Pārdevējs'}
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={s.bellBtn}
+          onPress={() => {
+            haptics.light();
+            router.push('/notifications' as any);
+          }}
+          activeOpacity={0.75}
         >
-          {/* Pending orders badge */}
-          {pendingCount != null && pendingCount > 0 && (
-            <TouchableOpacity
-              style={s.alertCard}
-              onPress={() => {
-                haptics.light();
-                router.push('/(seller)/incoming' as any);
-              }}
-              activeOpacity={0.8}
-            >
-              <View style={s.alertBadge}>
-                <Text style={s.alertBadgeNum}>{pendingCount}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.alertTitle}>Jauni pasūtījumi gaida</Text>
-                <Text style={s.alertSub}>Apstipriniet vai noraidiet</Text>
-              </View>
-              <Text style={s.alertCta}>Skatīt →</Text>
-            </TouchableOpacity>
-          )}
+          <Bell size={22} color="#111827" />
+        </TouchableOpacity>
+      </View>
 
-          {/* Primary CTA */}
+      {/* ── Scrollable content ── */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[s.scroll, { paddingBottom: TAB_H + insets.bottom + 32 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Pending orders alert */}
+        {pendingCount != null && pendingCount > 0 && (
           <TouchableOpacity
-            style={s.primaryBtn}
+            style={s.alertCard}
             onPress={() => {
-              haptics.medium();
+              haptics.light();
               router.push('/(seller)/incoming' as any);
             }}
             activeOpacity={0.85}
           >
-            <Text style={s.primaryBtnText}>Ienākošie pasūtījumi →</Text>
+            <View style={s.alertBadge}>
+              <Text style={s.alertBadgeNum}>{pendingCount}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.alertTitle}>Jauni pasūtījumi gaida</Text>
+              <Text style={s.alertSub}>Apstipriniet vai noraidiet</Text>
+            </View>
+            <ChevronRight size={18} color="#92400e" />
           </TouchableOpacity>
+        )}
 
-          {/* Quick action tiles 2×2 */}
-          <View style={s.grid}>
-            {QUICK_ACTIONS.map((a) => {
-              const Icon = a.icon;
-              return (
+        {/* Primary CTA */}
+        <TouchableOpacity
+          style={s.primaryBtn}
+          onPress={() => {
+            haptics.medium();
+            router.push('/(seller)/incoming' as any);
+          }}
+          activeOpacity={0.85}
+        >
+          <Text style={s.primaryBtnText}>Ienākošie pasūtījumi →</Text>
+        </TouchableOpacity>
+
+        {/* Section label */}
+        <Text style={s.sectionTitle}>Ātrās darbības</Text>
+
+        {/* 2×2 quick action grid */}
+        <View style={s.grid}>
+          {QUICK_ACTIONS.map((a, idx) => {
+            const Icon = a.icon;
+            return (
+              <Animated.View
+                key={a.id}
+                style={{
+                  opacity: tileAnims[idx],
+                  transform: [{ scale: tileScales[idx] }],
+                  width: '48%',
+                }}
+              >
                 <TouchableOpacity
-                  key={a.id}
                   style={s.gridTile}
                   onPress={() => {
                     haptics.light();
-                    router.push(a.route as any);
+                    pressTile(idx);
+                    setTimeout(() => router.push(a.route as any), 70);
                   }}
-                  activeOpacity={0.75}
+                  activeOpacity={1}
                 >
                   <View style={s.gridIcon}>
-                    <Icon size={20} color="#111827" />
+                    <Icon size={24} color="#111827" />
                   </View>
                   <Text style={s.gridLabel}>{a.label}</Text>
                   <Text style={s.gridSub} numberOfLines={1}>
                     {a.sub}
                   </Text>
+                  <View style={{ marginTop: 8 }}>
+                    <ArrowRight size={14} color="#9ca3af" />
+                  </View>
                 </TouchableOpacity>
-              );
-            })}
-          </View>
-        </ScrollView>
-      </Animated.View>
+              </Animated.View>
+            );
+          })}
+        </View>
+      </ScrollView>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1 },
+  root: { flex: 1, backgroundColor: '#f2f2f7' },
 
-  panel: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: -4 },
-    elevation: 12,
-  },
-  handle: {
-    alignSelf: 'center',
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#e5e7eb',
-    marginTop: 10,
-    marginBottom: 4,
-  },
-  dragHeader: {
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-  },
-  searchBar: {
+  // Top bar
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    gap: 10,
-    marginTop: 6,
-  },
-  searchText: { fontSize: 15, color: '#9ca3af', fontWeight: '500', flex: 1 },
-  panelScroll: {
     paddingHorizontal: 20,
-    paddingTop: 4,
-    gap: 14,
+    paddingBottom: 16,
+    backgroundColor: '#f2f2f7',
+    gap: 12,
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#059669',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: 'Inter_700Bold' },
+  greetingLabel: {
+    fontSize: 13,
+    color: '#9ca3af',
+    fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
+    lineHeight: 18,
+  },
+  greetingName: {
+    fontSize: 18,
+    fontWeight: '800',
+    fontFamily: 'Inter_700Bold',
+    color: '#111827',
+    lineHeight: 24,
+  },
+  bellBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
 
-  greetingText: { fontSize: 13, color: '#9ca3af', fontWeight: '500' },
-  headline: { fontSize: 24, fontWeight: '800', color: '#111827', marginTop: -6 },
+  scroll: { paddingHorizontal: 16, gap: 12 },
 
-  // Alert card for pending orders
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    color: '#6b7280',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+    marginTop: 8,
+  },
+
+  // Alert card
   alertCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     backgroundColor: '#fefce8',
-    borderRadius: 16,
-    padding: 14,
+    borderRadius: 18,
+    padding: 16,
     borderWidth: 1.5,
     borderColor: '#fde68a',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   alertBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#f59e0b',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  alertBadgeNum: { color: '#fff', fontWeight: '800', fontSize: 15 },
-  alertTitle: { fontSize: 14, fontWeight: '700', color: '#92400e' },
-  alertSub: { fontSize: 12, color: '#a16207', marginTop: 1 },
-  alertCta: { fontSize: 13, fontWeight: '700', color: '#92400e' },
+  alertBadgeNum: { color: '#fff', fontWeight: '800', fontSize: 16, lineHeight: 20 },
+  alertTitle: { fontSize: 15, fontWeight: '700', fontFamily: 'Inter_700Bold', color: '#92400e', lineHeight: 20 },
+  alertSub: { fontSize: 12, color: '#a16207', marginTop: 2, lineHeight: 17 },
 
-  // Primary button
+  // Primary CTA button
   primaryBtn: {
     backgroundColor: '#111827',
-    borderRadius: 16,
-    paddingVertical: 15,
+    borderRadius: 18,
+    paddingVertical: 16,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.2 },
+  primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: 'Inter_700Bold', letterSpacing: 0.2 },
 
   // 2×2 grid
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   gridTile: {
-    width: '48%',
-    backgroundColor: '#f9fafb',
-    borderRadius: 18,
-    padding: 16,
-    gap: 5,
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
     borderWidth: 1,
     borderColor: '#f3f4f6',
   },
   gridIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 11,
+    width: 50,
+    height: 50,
+    borderRadius: 15,
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: 10,
   },
-  gridLabel: { fontSize: 13, fontWeight: '700', color: '#111827' },
-  gridSub: { fontSize: 11, color: '#9ca3af', lineHeight: 15 },
+  gridLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    color: '#111827',
+    lineHeight: 20,
+  },
+  gridSub: { fontSize: 12, color: '#9ca3af', lineHeight: 17, marginTop: 2 },
 });
