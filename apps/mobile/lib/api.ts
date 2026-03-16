@@ -840,6 +840,13 @@ export const api = {
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
       }),
+
+    /** Buyer: cancel a PENDING skip-hire order. */
+    cancel: (id: string, token: string) =>
+      apiFetch<SkipHireOrder>(`/skip-hire/${id}/cancel`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
   },
 
   transportJobs: {

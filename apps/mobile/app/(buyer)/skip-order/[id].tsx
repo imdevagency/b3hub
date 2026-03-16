@@ -140,6 +140,7 @@ export default function SkipOrderDetailScreen() {
   const [order, setOrder] = useState<SkipHireOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [showRating, setShowRating] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (!id || !token) return;
@@ -170,6 +171,34 @@ export default function SkipOrderDetailScreen() {
 
   const status = t.skipHire.status[order.status] ?? t.skipHire.status.PENDING;
   const canRate = order.status === 'COLLECTED' || order.status === 'COMPLETED';
+  const canCancel = order.status === 'PENDING';
+
+  const handleCancel = () => {
+    Alert.alert(
+      'Atcelt pasūtījumu',
+      'Vai tiešām vēlaties atcelt šo konteinera pasūtījumu?',
+      [
+        { text: 'Nē', style: 'cancel' },
+        {
+          text: 'Jā, atcelt',
+          style: 'destructive',
+          onPress: async () => {
+            if (!token || !id) return;
+            try {
+              setActionLoading(true);
+              haptics.medium();
+              const updated = await api.skipHire.cancel(id, token);
+              setOrder(updated as unknown as SkipHireOrder);
+            } catch {
+              Alert.alert('Kļūda', 'Neizdevās atcelt pasūtījumu.');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <ScreenContainer bg="#f2f2f7">
@@ -256,6 +285,22 @@ export default function SkipOrderDetailScreen() {
               ) : null}
             </View>
           </View>
+        )}
+
+        {/* ── Cancel button ── */}
+        {canCancel && (
+          <TouchableOpacity
+            style={[s.cancelBtn, actionLoading && { opacity: 0.5 }]}
+            onPress={handleCancel}
+            disabled={actionLoading}
+            activeOpacity={0.8}
+          >
+            {actionLoading ? (
+              <ActivityIndicator size="small" color="#b91c1c" />
+            ) : (
+              <Text style={s.cancelBtnText}>Atcelt pasūtījumu</Text>
+            )}
+          </TouchableOpacity>
         )}
 
         {/* ── Rate button ── */}
@@ -383,6 +428,17 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
   rateBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+
+  cancelBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 100,
+    paddingVertical: 14,
+    marginTop: 4,
+  },
+  cancelBtnText: { fontSize: 15, fontWeight: '600', color: '#b91c1c' },
 
   // ── Timeline ──
   timeline: { paddingLeft: 4, paddingVertical: 4 },

@@ -65,6 +65,27 @@ const STATUS_LABEL: Record<string, { label: string; bg: string; color: string }>
   CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: '#b91c1c' },
 };
 
+const CARGO_LABEL: Record<string, string> = {
+  CONCRETE: 'Betons / Bruģis',
+  SOIL: 'Augsne / Grunts',
+  BRICK: 'Kēģeļi / Mūris',
+  WOOD: 'Koks',
+  METAL: 'Metāls',
+  PLASTIC: 'Plastmasa',
+  MIXED: 'Jaukti atkritumi',
+  HAZARDOUS: 'Bīstami atkritumi',
+  SAND: 'Smiltis',
+  GRAVEL: 'Grants / Šķembas',
+  STONE: 'Akmens',
+  MATERIALS: 'Celtniecības materiāli',
+};
+
+const VEHICLE_LABEL: Record<string, string> = {
+  TIPPER_SMALL: 'Pašizgāzējs 10 t',
+  TIPPER_LARGE: 'Pašizgāzējs 18 t',
+  ARTICULATED_TIPPER: 'Sattelkipper 26 t',
+};
+
 function formatDate(iso: string): string {
   const d = new Date(iso + (iso.includes('T') ? '' : 'T00:00:00'));
   return d.toLocaleDateString('lv-LV', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -266,7 +287,7 @@ export default function TransportJobDetailScreen() {
           {/* Details card */}
           <View style={s.card}>
             <Text style={s.cardTitle}>Detaļas</Text>
-            <InfoRow icon={Package} label="Krava" value={job.cargoType} />
+            <InfoRow icon={Package} label="Krava" value={CARGO_LABEL[job.cargoType] ?? job.cargoType} />
             {job.cargoWeight != null && (
               <InfoRow
                 icon={Package}
@@ -274,7 +295,7 @@ export default function TransportJobDetailScreen() {
                 value={`${(job.cargoWeight / 1000).toFixed(1)} t`}
               />
             )}
-            <InfoRow icon={Truck} label="Transportlīdzeklis" value={job.requiredVehicleType} />
+            <InfoRow icon={Truck} label="Transportlīdzeklis" value={VEHICLE_LABEL[job.requiredVehicleType] ?? job.requiredVehicleType} />
             <InfoRow icon={CalendarDays} label="Izbraukšanas datums" value={formatDate(job.pickupDate)} />
             <InfoRow icon={Clock} label="Piegādes datums" value={formatDate(job.deliveryDate)} />
             {job.pickupWindow && (
