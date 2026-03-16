@@ -42,43 +42,50 @@ interface TypeInfo {
 }
 
 const TYPE_INFO: Record<string, TypeInfo> = {
-  ORDER_PLACED: { Icon: Package, bg: '#f3f4f6', iconColor: '#374151' },
-  ORDER_CONFIRMED: { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#111827' },
-  ORDER_SHIPPED: { Icon: Truck, bg: '#f3f4f6', iconColor: '#374151' },
-  ORDER_DELIVERED: { Icon: CheckCircle2, bg: '#dcfce7', iconColor: '#15803d' },
-  ORDER_CANCELLED: { Icon: XCircle, bg: '#fef2f2', iconColor: '#111827' },
-  JOB_AVAILABLE: { Icon: Briefcase, bg: '#f3f4f6', iconColor: '#374151' },
-  JOB_ACCEPTED: { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#059669' },
-  JOB_COMPLETED: { Icon: Award, bg: '#f3f4f6', iconColor: '#6b7280' },
-  PAYMENT_RECEIVED: { Icon: Banknote, bg: '#f0fdf4', iconColor: '#111827' },
-  INVOICE_ISSUED: { Icon: FileText, bg: '#f9fafb', iconColor: '#6b7280' },
-  SYSTEM: { Icon: Bell, bg: '#f3f4f6', iconColor: '#6b7280' },
+  // Backend types
+  ORDER_CREATED:         { Icon: Package,      bg: '#f3f4f6', iconColor: '#374151' },
+  ORDER_CONFIRMED:       { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#111827' },
+  ORDER_DELIVERED:       { Icon: CheckCircle2, bg: '#dcfce7', iconColor: '#15803d' },
+  TRANSPORT_ASSIGNED:    { Icon: Truck,        bg: '#eff6ff', iconColor: '#2563eb' },
+  TRANSPORT_STARTED:     { Icon: Truck,        bg: '#f3f4f6', iconColor: '#374151' },
+  TRANSPORT_COMPLETED:   { Icon: Award,        bg: '#f0fdf4', iconColor: '#059669' },
+  PAYMENT_RECEIVED:      { Icon: Banknote,     bg: '#f0fdf4', iconColor: '#111827' },
+  SYSTEM_ALERT:          { Icon: Bell,         bg: '#fefce8', iconColor: '#ca8a04' },
+  // Legacy / future
+  ORDER_PLACED:          { Icon: Package,      bg: '#f3f4f6', iconColor: '#374151' },
+  ORDER_SHIPPED:         { Icon: Truck,        bg: '#f3f4f6', iconColor: '#374151' },
+  ORDER_CANCELLED:       { Icon: XCircle,      bg: '#fef2f2', iconColor: '#111827' },
+  JOB_AVAILABLE:         { Icon: Briefcase,    bg: '#f3f4f6', iconColor: '#374151' },
+  JOB_ACCEPTED:          { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#059669' },
+  JOB_COMPLETED:         { Icon: Award,        bg: '#f3f4f6', iconColor: '#6b7280' },
+  INVOICE_ISSUED:        { Icon: FileText,     bg: '#f9fafb', iconColor: '#6b7280' },
+  SYSTEM:                { Icon: Bell,         bg: '#f3f4f6', iconColor: '#6b7280' },
 };
 const DEFAULT_TYPE_INFO: TypeInfo = { Icon: Bell, bg: '#f3f4f6', iconColor: '#6b7280' };
 
 function deepLinkPath(notif: ApiNotification): string | null {
   const d = (notif.data ?? {}) as Record<string, string>;
   switch (notif.type) {
+    // ── Buyer: transport / disposal job notifications ──────────
+    case 'TRANSPORT_ASSIGNED':
+    case 'ORDER_DELIVERED':
+    case 'SYSTEM_ALERT':
+      return d.jobId ? `/(buyer)/transport-job/${d.jobId}` : '/(buyer)/orders';
+    // ── Buyer: material / skip-hire order notifications ────────
+    case 'ORDER_CREATED':
+    case 'ORDER_CONFIRMED':
+    case 'ORDER_PLACED':
+    case 'ORDER_SHIPPED':
+    case 'ORDER_CANCELLED':
+      return '/(buyer)/orders';
+    // ── Driver ────────────────────────────────────────────────
     case 'JOB_AVAILABLE':
     case 'JOB_ACCEPTED':
     case 'JOB_COMPLETED':
-      return '/(driver)/jobs';
-    case 'TRANSPORT_ASSIGNED':
-      return d.jobId ? `/(buyer)/transport-job/${d.jobId}` : '/(buyer)/orders';
-    case 'ORDER_PLACED':
-    case 'ORDER_CONFIRMED':
-    case 'ORDER_SHIPPED':
-    case 'ORDER_DELIVERED':
-    case 'ORDER_CANCELLED':
-      return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/orders';
-    case 'SKIP_HIRE_UPDATED':
-    case 'SKIP_HIRE_CONFIRMED':
-    case 'SKIP_HIRE_DELIVERED':
-    case 'SKIP_HIRE_COLLECTED':
-      return d.orderId ? `/(buyer)/skip-order/${d.orderId}` : '/(buyer)/orders';
-    case 'DISPOSAL_UPDATED':
-    case 'TRANSPORT_UPDATED':
-      return d.jobId ? `/(buyer)/transport-job/${d.jobId}` : '/(buyer)/orders';
+    case 'TRANSPORT_STARTED':
+    case 'TRANSPORT_COMPLETED':
+      return d.jobId ? `/(driver)/job/${d.jobId}` : '/(driver)/jobs';
+    // ── Finance / docs ─────────────────────────────────────────
     case 'PAYMENT_RECEIVED':
       return '/(driver)/earnings';
     case 'INVOICE_ISSUED':

@@ -250,6 +250,7 @@ export class TransportJobsService {
         type: NotificationType.TRANSPORT_ASSIGNED,
         title: '🚚 Šoferis pieņēmis darbu',
         message: `${updatedJob.jobNumber} • ${updatedJob.pickupCity} → ${updatedJob.deliveryCity}`,
+        data: { jobId: updatedJob.id },
       }).catch(() => {});
     }
 
@@ -420,6 +421,7 @@ export class TransportJobsService {
             type: NotificationType.SYSTEM_ALERT,
             title: '🚚 Šoferis dodas uz iekraušanu',
             message: `${driverName} dodas uz iekraušanas vietu • ${orderNum}`,
+            data: { jobId: updatedJob.id },
           }).catch(() => {});
         } else if (dto.status === TransportJobStatus.LOADED) {
           this.notifications.create({
@@ -427,6 +429,7 @@ export class TransportJobsService {
             type: NotificationType.SYSTEM_ALERT,
             title: '📦 Krava iekrauta',
             message: `Krava iekrauta, šoferis dodas uz Jums • ${orderNum}`,
+            data: { jobId: updatedJob.id },
           }).catch(() => {});
         } else if (dto.status === TransportJobStatus.EN_ROUTE_DELIVERY) {
           this.notifications.create({
@@ -434,6 +437,7 @@ export class TransportJobsService {
             type: NotificationType.SYSTEM_ALERT,
             title: '🚛 Piegāde ceļā',
             message: `${driverName} dodas uz piegādes vietu • ${orderNum}`,
+            data: { jobId: updatedJob.id },
           }).catch(() => {});
         } else if (dto.status === TransportJobStatus.AT_DELIVERY) {
           this.notifications.create({
@@ -441,6 +445,7 @@ export class TransportJobsService {
             type: NotificationType.SYSTEM_ALERT,
             title: '📍 Šoferis ieradies',
             message: `${driverName} ir ieradies piegādes vietā • ${orderNum}`,
+            data: { jobId: updatedJob.id },
           }).catch(() => {});
         } else if (dto.status === TransportJobStatus.DELIVERED) {
           this.notifications.create({
@@ -448,6 +453,7 @@ export class TransportJobsService {
             type: NotificationType.ORDER_DELIVERED,
             title: '✅ Piegāde pabeigta',
             message: `Pasūtījums ${orderNum} ir veiksmīgi piegādāts.`,
+            data: { jobId: updatedJob.id },
           }).catch(() => {});
         }
       }
