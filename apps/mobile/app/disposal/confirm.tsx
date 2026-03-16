@@ -6,7 +6,6 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Platform,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
@@ -14,7 +13,7 @@ import { useState } from 'react';
 import { useDisposal } from '@/lib/disposal-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import { MapPin, Truck, Trash2, Calendar, Weight, CheckCircle } from 'lucide-react-native';
+import { MapPin, Truck, Trash2, Weight, CheckCircle } from 'lucide-react-native';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const TRUCK_CONFIG: Record<string, { label: string; capacity: number; volume: number }> = {
@@ -68,15 +67,6 @@ export default function DisposalStep4Confirm() {
   const truck = TRUCK_CONFIG[state.truckType] ?? TRUCK_CONFIG.TIPPER_LARGE;
   const totalTonnes = truck.capacity * state.truckCount;
   const totalVolume = truck.volume * state.truckCount;
-
-  // ── Simple date stepper (no native picker needed) ─────────────────────────
-  const addDays = (n: number) => {
-    setDate((prev) => {
-      const next = new Date(prev);
-      next.setDate(next.getDate() + n);
-      return next < minDate ? minDate : next;
-    });
-  };
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
@@ -172,26 +162,35 @@ export default function DisposalStep4Confirm() {
           Izvēlieties vēlamo savākšanas datumu un pārbaudiet kopsavilkumu.
         </Text>
 
-        {/* ── Date picker card ── */}
+        {/* ── Date picker strip ── */}
         <Text style={s.sectionTitle}>Vēlamais datums</Text>
-        <View style={s.card}>
-          <View style={s.dateRow}>
-            <TouchableOpacity
-              style={[s.dateStepBtn, date <= minDate && s.dateStepDisabled]}
-              onPress={() => addDays(-1)}
-              disabled={date <= minDate}
-            >
-              <Text style={[s.dateStepIcon, date <= minDate && { color: '#d1d5db' }]}>‹</Text>
-            </TouchableOpacity>
-            <View style={s.dateCenter}>
-              <Calendar size={16} color="#6b7280" />
-              <Text style={s.dateText}>{formatDate(date)}</Text>
-            </View>
-            <TouchableOpacity style={s.dateStepBtn} onPress={() => addDays(1)}>
-              <Text style={s.dateStepIcon}>›</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.datePicker}
+          style={{ marginBottom: 16 }}
+        >
+          {Array.from({ length: 14 }, (_, i) => {
+            const d = new Date(minDate);
+            d.setDate(minDate.getDate() + i);
+            const isSelected = toIso(d) === toIso(date);
+            const dayName = d.toLocaleDateString('lv-LV', { weekday: 'short' });
+            const dayNum = d.getDate();
+            const mon = d.toLocaleDateString('lv-LV', { month: 'short' });
+            return (
+              <TouchableOpacity
+                key={i}
+                style={[s.dayChip, isSelected && s.dayChipActive]}
+                onPress={() => setDate(d)}
+                activeOpacity={0.75}
+              >
+                <Text style={[s.dayChipName, isSelected && s.dayChipNameActive]}>{dayName}</Text>
+                <Text style={[s.dayChipNum, isSelected && s.dayChipNumActive]}>{dayNum}</Text>
+                <Text style={[s.dayChipMon, isSelected && s.dayChipMonActive]}>{mon}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
 
         {/* ── Summary card ── */}
         <Text style={s.sectionTitle}>Kopsavilkums</Text>
@@ -320,30 +319,23 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
 
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-  },
-  dateRow: { flexDirection: 'row', alignItems: 'center', padding: 12 },
-  dateStepBtn: {
-    width: 40,
-    height: 40,
+  datePicker: { paddingRight: 8, gap: 8, flexDirection: 'row', paddingBottom: 4 },
+  dayChip: {
+    width: 58,
+    paddingVertical: 12,
     alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 14,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
   },
-  dateStepDisabled: { opacity: 0.3 },
-  dateStepIcon: { fontSize: 28, color: '#111827', lineHeight: 36 },
-  dateCenter: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    justifyContent: 'center',
-  },
-  dateText: { fontSize: 15, fontWeight: '600', color: '#111827', textAlign: 'center' },
+  dayChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  dayChipName: { fontSize: 11, fontWeight: '600', color: '#9ca3af', marginBottom: 4 },
+  dayChipNameActive: { color: 'rgba(255,255,255,0.7)' },
+  dayChipNum: { fontSize: 20, fontWeight: '800', color: '#111827', lineHeight: 24 },
+  dayChipNumActive: { color: '#fff' },
+  dayChipMon: { fontSize: 11, color: '#9ca3af', marginTop: 2 },
+  dayChipMonActive: { color: 'rgba(255,255,255,0.6)' },
 
   summaryCard: {
     backgroundColor: '#fff',

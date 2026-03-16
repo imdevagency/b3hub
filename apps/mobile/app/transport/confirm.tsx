@@ -13,7 +13,7 @@ import { useState } from 'react';
 import { useTransport } from '@/lib/transport-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import { MapPin, Truck, Calendar, Weight, ArrowRight, CheckCircle } from 'lucide-react-native';
+import { MapPin, Truck, Weight, ArrowRight, CheckCircle } from 'lucide-react-native';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const VEHICLE_CONFIG: Record<string, { label: string; capacity: number }> = {
@@ -56,14 +56,6 @@ export default function TransportStep4Confirm() {
   const vehicle = state.vehicleType
     ? (VEHICLE_CONFIG[state.vehicleType] ?? VEHICLE_CONFIG.TIPPER_LARGE)
     : VEHICLE_CONFIG.TIPPER_LARGE;
-
-  const addDays = (n: number) => {
-    setDate((prev) => {
-      const next = new Date(prev);
-      next.setDate(next.getDate() + n);
-      return next < minDate ? minDate : next;
-    });
-  };
 
   const handleSubmit = async () => {
     if (!state.vehicleType) {
@@ -162,26 +154,35 @@ export default function TransportStep4Confirm() {
           Izvēlieties vēlamo transporta datumu un pārbaudiet kopsavilkumu.
         </Text>
 
-        {/* ── Date stepper ── */}
+        {/* ── Date picker strip ── */}
         <Text style={s.sectionTitle}>Vēlamais datums</Text>
-        <View style={s.card}>
-          <View style={s.dateRow}>
-            <TouchableOpacity
-              style={[s.dateStepBtn, date <= minDate && s.dateStepDisabled]}
-              onPress={() => addDays(-1)}
-              disabled={date <= minDate}
-            >
-              <Text style={[s.dateStepIcon, date <= minDate && { color: '#d1d5db' }]}>‹</Text>
-            </TouchableOpacity>
-            <View style={s.dateCenter}>
-              <Calendar size={16} color="#6b7280" />
-              <Text style={s.dateText}>{formatDate(date)}</Text>
-            </View>
-            <TouchableOpacity style={s.dateStepBtn} onPress={() => addDays(1)}>
-              <Text style={s.dateStepIcon}>›</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.datePicker}
+          style={{ marginBottom: 20 }}
+        >
+          {Array.from({ length: 14 }, (_, i) => {
+            const d = new Date(minDate);
+            d.setDate(minDate.getDate() + i);
+            const isSelected = toIso(d) === toIso(date);
+            const dayName = d.toLocaleDateString('lv-LV', { weekday: 'short' });
+            const dayNum = d.getDate();
+            const mon = d.toLocaleDateString('lv-LV', { month: 'short' });
+            return (
+              <TouchableOpacity
+                key={i}
+                style={[s.dayChip, isSelected && s.dayChipActive]}
+                onPress={() => setDate(d)}
+                activeOpacity={0.75}
+              >
+                <Text style={[s.dayChipName, isSelected && s.dayChipNameActive]}>{dayName}</Text>
+                <Text style={[s.dayChipNum, isSelected && s.dayChipNumActive]}>{dayNum}</Text>
+                <Text style={[s.dayChipMon, isSelected && s.dayChipMonActive]}>{mon}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
 
         {/* ── Summary card ── */}
         <Text style={s.sectionTitle}>Kopsavilkums</Text>
@@ -292,36 +293,23 @@ const s = StyleSheet.create({
     marginBottom: 10,
     marginTop: 4,
   },
-  // Date stepper
-  card: {
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
+  datePicker: { paddingRight: 8, gap: 8, flexDirection: 'row', paddingBottom: 4 },
+  dayChip: {
+    width: 58,
+    paddingVertical: 12,
+    alignItems: 'center',
     borderRadius: 14,
-    padding: 16,
-    backgroundColor: '#f9fafb',
-    marginBottom: 20,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
   },
-  dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  dateStepBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dateStepDisabled: { borderColor: '#f3f4f6', backgroundColor: '#f9fafb' },
-  dateStepIcon: { fontSize: 22, color: '#374151', lineHeight: 26 },
-  dateCenter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-    justifyContent: 'center',
-  },
-  dateText: { fontSize: 14, fontWeight: '500', color: '#111827' },
+  dayChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  dayChipName: { fontSize: 11, fontWeight: '600', color: '#9ca3af', marginBottom: 4 },
+  dayChipNameActive: { color: 'rgba(255,255,255,0.7)' },
+  dayChipNum: { fontSize: 20, fontWeight: '800', color: '#111827', lineHeight: 24 },
+  dayChipNumActive: { color: '#fff' },
+  dayChipMon: { fontSize: 11, color: '#9ca3af', marginTop: 2 },
+  dayChipMonActive: { color: 'rgba(255,255,255,0.6)' },
   // Summary card
   summaryCard: {
     borderWidth: 1,
