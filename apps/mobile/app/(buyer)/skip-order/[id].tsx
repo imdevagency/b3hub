@@ -34,6 +34,7 @@ import { t } from '@/lib/translations';
 import { RatingModal } from '@/components/ui/RatingModal';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { formatDate } from '@/lib/format';
+import { SectionLabel } from '@/components/ui/SectionLabel';
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -211,13 +212,13 @@ export default function SkipOrderDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
         {/* ── Status timeline ── */}
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Statuss</Text>
+          <SectionLabel label="Statuss" style={{ marginBottom: 8, marginTop: 0 }} />
           <StatusTimeline status={order.status} />
         </View>
 
         {/* ── Order details ── */}
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Pasūtījuma informācija</Text>
+          <SectionLabel label="Pasūtījuma informācija" style={{ marginBottom: 8, marginTop: 0 }} />
           <View style={s.card}>
             <Row label="Piegādes vieta" value={order.location} icon={MapPin} />
             <Row
@@ -252,7 +253,7 @@ export default function SkipOrderDetailScreen() {
         {/* ── Contact ── */}
         {(order.contactName || order.contactEmail || order.contactPhone) && (
           <View style={s.section}>
-            <Text style={s.sectionTitle}>Kontaktpersona</Text>
+            <SectionLabel label="Kontaktpersona" style={{ marginBottom: 8, marginTop: 0 }} />
             <View style={s.card}>
               <Row label="Vārds" value={order.contactName} icon={User} />
               <Row label="E-pasts" value={order.contactEmail} icon={Mail} />
@@ -354,14 +355,6 @@ const s = StyleSheet.create({
   scroll: { paddingHorizontal: 16, gap: 0 },
 
   section: { marginBottom: 16 },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
 
   card: {
     backgroundColor: '#fff',

@@ -40,6 +40,7 @@ import { InfoSection } from '@/components/ui/InfoSection';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { DetailRow } from '@/components/ui/DetailRow';
 import { UNIT_SHORT } from '@/lib/materials';
+import { formatDate } from '@/lib/format';
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -59,11 +60,6 @@ const ORDER_STEPS = [
   { key: 'SHIPPED', label: 'Ceļā', hint: 'Šoferis dodas uz jums' },
   { key: 'DELIVERED', label: 'Piegādāts', hint: 'Piegāde pabeigta' },
 ];
-
-function formatDate(iso: string): string {
-  const d = new Date(iso + (iso.includes('T') ? '' : 'T00:00:00'));
-  return d.toLocaleDateString('lv-LV', { day: 'numeric', month: 'long', year: 'numeric' });
-}
 
 // ── Main Screen ────────────────────────────────────────────────
 

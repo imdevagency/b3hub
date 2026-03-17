@@ -48,6 +48,7 @@ import { api, SkipHireOrder, SkipHireStatus } from '@/lib/api';
 import { BaseMap } from '@/components/map';
 import { Marker } from 'react-native-maps';
 import { t } from '@/lib/translations';
+import { formatDateNumeric } from '@/lib/format';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -59,14 +60,6 @@ const GOOGLE_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 const cs = t.carrierSkips;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('lv-LV', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-}
 
 function openMaps(address: string) {
   const enc = encodeURIComponent(address);
@@ -180,7 +173,7 @@ function OrderCard({ order, onStatusUpdate, updating, flat = false }: OrderCardP
             <Package size={13} color="#6b7280" />
             <Text style={s.metaText}>{sizeLabel}</Text>
             <Calendar size={13} color="#6b7280" style={{ marginLeft: 10 }} />
-            <Text style={s.metaText}>{formatDate(order.deliveryDate)}</Text>
+            <Text style={s.metaText}>{formatDateNumeric(order.deliveryDate)}</Text>
           </View>
         </View>
         {!flat &&
@@ -212,7 +205,7 @@ function OrderCard({ order, onStatusUpdate, updating, flat = false }: OrderCardP
           <DetailRow
             icon={<Calendar size={14} color="#6b7280" />}
             label={cs.deliveryDate}
-            value={formatDate(order.deliveryDate)}
+            value={formatDateNumeric(order.deliveryDate)}
           />
           {order.contactName && (
             <DetailRow

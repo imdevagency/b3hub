@@ -17,6 +17,7 @@ import {
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { Sidebar } from '@/components/ui/Sidebar';
+import { SectionLabel } from '@/components/ui/SectionLabel';
 
 const ACTIVE_STATUSES = new Set([
   'PENDING',
@@ -325,7 +326,7 @@ export default function HomeScreen() {
         )}
 
         {/* Quick services row */}
-        <Text style={s.sectionTitle}>Pakalpojumi</Text>
+        <SectionLabel label="Pakalpojumi" />
         <View style={s.quickRow}>
           {SERVICES.map((svc) => {
             const Icon = svc.icon;
@@ -354,7 +355,7 @@ export default function HomeScreen() {
         {recentOrders.length > 0 && (
           <>
             <View style={s.sectionRow}>
-              <Text style={s.sectionTitle}>Nesenie pasūtījumi</Text>
+              <SectionLabel label="Nesenie pasūtījumi" />
               <TouchableOpacity onPress={() => router.push('/(buyer)/orders' as any)}>
                 <Text style={s.sectionCta}>Visi →</Text>
               </TouchableOpacity>
@@ -508,17 +509,6 @@ const s = StyleSheet.create({
   // Scroll
   scroll: { paddingHorizontal: 16, gap: 12 },
 
-  // Section labels
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
-    color: '#6b7280',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-    marginBottom: 2,
-    marginTop: 8,
-  },
   sectionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

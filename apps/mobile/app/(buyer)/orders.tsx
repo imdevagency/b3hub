@@ -17,6 +17,7 @@ import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { formatDateShort } from '@/lib/format';
 import { t } from '@/lib/translations';
 import type { SkipHireOrder, ApiOrder, ApiTransportJob } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
@@ -73,11 +74,6 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: 'DONE', label: 'Pabeigti' },
   { key: 'CANCELLED', label: 'Atcelti' },
 ];
-
-function formatDate(iso: string): string {
-  const d = new Date(iso + (iso.includes('T') ? '' : 'T00:00:00'));
-  return d.toLocaleDateString('lv-LV', { day: 'numeric', month: 'short' });
-}
 
 function skipBucket(status: string): FilterKey {
   if (SKIP_ACTIVE.has(status)) return 'ACTIVE';
@@ -145,7 +141,7 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
           </View>
           <View style={s.metaRow}>
             <CalendarDays size={13} color="#6b7280" />
-            <Text style={s.metaText}>{formatDate(order.deliveryDate)}</Text>
+            <Text style={s.metaText}>{formatDateShort(order.deliveryDate)}</Text>
           </View>
           <View style={s.cardFooter}>
             <Text style={s.price}>€{order.price}</Text>
@@ -239,7 +235,7 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
         {order.deliveryDate ? (
           <View style={s.metaRow}>
             <CalendarDays size={13} color="#6b7280" />
-            <Text style={s.metaText}>{formatDate(order.deliveryDate)}</Text>
+            <Text style={s.metaText}>{formatDateShort(order.deliveryDate)}</Text>
           </View>
         ) : null}
         {first && (
@@ -306,7 +302,7 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
         </View>
         <View style={s.metaRow}>
           <CalendarDays size={13} color="#6b7280" />
-          <Text style={s.metaText}>{formatDate(job.pickupDate)}</Text>
+            <Text style={s.metaText}>{formatDateShort(job.pickupDate)}</Text>
         </View>
         {job.requiredVehicleType && (
           <View style={s.metaRow}>

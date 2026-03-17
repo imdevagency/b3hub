@@ -10,6 +10,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { SectionLabel } from '@/components/ui/SectionLabel';
 import {
   Inbox,
   LayoutGrid,
@@ -147,7 +148,7 @@ export default function SellerHomeScreen() {
         </TouchableOpacity>
 
         {/* Section label */}
-        <Text style={s.sectionTitle}>Ātrās darbības</Text>
+        <SectionLabel label="Ātrās darbības" />
 
         {/* 2×2 quick action grid */}
         <View style={s.grid}>
@@ -233,17 +234,6 @@ const s = StyleSheet.create({
   },
 
   scroll: { paddingHorizontal: 16, gap: 12 },
-
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
-    color: '#6b7280',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-    marginBottom: 2,
-    marginTop: 8,
-  },
 
   // Alert card
   alertCard: {
