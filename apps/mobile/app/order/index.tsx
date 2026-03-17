@@ -19,6 +19,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -257,19 +258,12 @@ export default function OrderWizard() {
     }
   }, [setLocationWithCoords]);
 
-  // ── CTA gating ────────────────────────────────────────────────
-  const canNext =
-    step === 1
-      ? !!confirmedAddress
-      : step === 2
-        ? !!selectedWaste
-        : step === 3
-          ? !!selectedSize
-          : !!(startDate && endDate);
+  // ── CTA gating (only step 1 + step 4 have explicit CTAs now) ──
+  const canNext = step === 1 ? !!confirmedAddress : !!(startDate && endDate);
 
-  // ── Step navigation ───────────────────────────────────────────
-  // ── CTA unlock bounce effect ──────────────────────────────────────────
+  // ── CTA unlock bounce — only fires on step 1 and step 4 ─────
   useEffect(() => {
+    if (step !== 1 && step !== 4) return;
     if (canNext && !prevCanNext.current) {
       haptics.selection();
       Animated.sequence([
@@ -286,7 +280,7 @@ export default function OrderWizard() {
     }
     prevCanNext.current = canNext;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canNext]);
+  }, [canNext, step]);
 
   const goNext = useCallback(() => {
     const next = Math.min(4, step + 1) as Step;
@@ -302,81 +296,68 @@ export default function OrderWizard() {
     }
   }, [step, router, transitionTo]);
 
-  // ── CTA handler ───────────────────────────────────────────────
-  const onCTA = useCallback(async () => {
-    if (step === 1) {
-      if (!confirmedAddress) return;
-      goNext();
-    } else if (step === 2) {
-      if (!selectedWaste) return;
-      setWasteCategory(selectedWaste);
-      goNext();
-    } else if (step === 3) {
-      if (!selectedSize) return;
-      setSkipSize(selectedSize);
-      goNext();
-    } else {
-      // Step 4 — submit
-      if (!state.location || !state.wasteCategory || !state.skipSize) return;
-      setSubmitting(true);
-      setDeliveryDate(startDate ?? minDate);
-      try {
-        const order = await api.skipHire.create(
-          {
-            location: state.location,
-            wasteCategory: state.wasteCategory,
-            skipSize: state.skipSize,
-            deliveryDate: startDate ?? minDate,
-          },
-          token ?? undefined,
-        );
-        haptics.success();
-        setConfirmedOrder(order);
-        router.push('/order/confirmation');
-      } catch (err) {
-        Alert.alert(t.skipHire.errorTitle, err instanceof Error ? err.message : t.skipHire.error);
-      } finally {
-        setSubmitting(false);
-      }
+  // ── Auto-advance timer (steps 2 + 3) ─────────────────────────
+  const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current); }, []);
+
+  const handleWasteSelect = useCallback(
+    (waste: SkipWasteCategory) => {
+      setSelectedWaste(waste);
+      setWasteCategory(waste);
+      if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
+      autoAdvanceTimer.current = setTimeout(() => transitionTo(3, 'forward'), 320);
+    },
+    [setWasteCategory, transitionTo],
+  );
+
+  const handleSizeSelect = useCallback(
+    (size: SkipSize) => {
+      setSelectedSize(size);
+      setSkipSize(size);
+      if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
+      autoAdvanceTimer.current = setTimeout(() => transitionTo(4, 'forward'), 350);
+    },
+    [setSkipSize, transitionTo],
+  );
+
+  // ── Step 4 submit ─────────────────────────────────────────────
+  const onSubmit = useCallback(async () => {
+    if (!state.location || !state.wasteCategory || !state.skipSize) return;
+    setSubmitting(true);
+    setDeliveryDate(startDate ?? minDate);
+    try {
+      const order = await api.skipHire.create(
+        {
+          location: state.location,
+          wasteCategory: state.wasteCategory,
+          skipSize: state.skipSize,
+          deliveryDate: startDate ?? minDate,
+        },
+        token ?? undefined,
+      );
+      haptics.success();
+      setConfirmedOrder(order);
+      router.push('/order/confirmation');
+    } catch (err) {
+      Alert.alert(t.skipHire.errorTitle, err instanceof Error ? err.message : t.skipHire.error);
+    } finally {
+      setSubmitting(false);
     }
-  }, [
-    step,
-    confirmedAddress,
-    selectedWaste,
-    selectedSize,
-    startDate,
-    endDate,
-    minDate,
-    state,
-    token,
-    goNext,
-    setWasteCategory,
-    setSkipSize,
-    setDeliveryDate,
-    setConfirmedOrder,
-    router,
-  ]);
+  }, [startDate, minDate, state, token, setDeliveryDate, setConfirmedOrder, router]);
+
+  // ── Step 1 CTA ────────────────────────────────────────────────
+  const onLocationCTA = useCallback(() => {
+    if (!confirmedAddress) return;
+    goNext();
+  }, [confirmedAddress, goNext]);
 
   const price = SKIP_PRICES[state.skipSize ?? selectedSize ?? 'MIDI'] ?? 129;
-
-  const CTA_LABELS = [
-    t.skipHire.step1.next,
-    t.skipHire.step2.next,
-    t.skipHire.step3.next,
-    t.skipHire.step4.placeOrder,
-  ];
 
   const TITLES = [
     t.skipHire.step1.title,
     t.skipHire.step2.title,
     t.skipHire.step3.title,
     t.skipHire.step4.title,
-  ];
-  const SUBTITLES = [
-    t.skipHire.step1.subtitle,
-    t.skipHire.step2.subtitle,
-    t.skipHire.step3.subtitle,
-    t.skipHire.step4.subtitle,
   ];
 
   // ── Render ────────────────────────────────────────────────────
@@ -468,6 +449,12 @@ export default function OrderWizard() {
             <Animated.View style={{ opacity: sheetBgAnim }}>
               <StepProgressBar step={step} />
               <View style={s.stepHeader}>
+                {/* Inline back button for steps 2–3 (no footer CTA on those steps) */}
+                {(step === 2 || step === 3) && (
+                  <TouchableOpacity style={s.backBtnInline} onPress={goBack} activeOpacity={0.8}>
+                    <ChevronLeft size={18} color="#6b7280" />
+                  </TouchableOpacity>
+                )}
                 <Text style={s.stepTitle}>{TITLES[step - 1]}</Text>
               </View>
             </Animated.View>
@@ -475,9 +462,9 @@ export default function OrderWizard() {
             {/* Step content */}
             <View style={s.content}>
               {step === 2 && (
-                <Step2WasteType selected={selectedWaste} onSelect={setSelectedWaste} />
+                <Step2WasteType selected={selectedWaste} onSelect={handleWasteSelect} />
               )}
-              {step === 3 && <Step3Size selected={selectedSize} onSelect={setSelectedSize} />}
+              {step === 3 && <Step3Size selected={selectedSize} onSelect={handleSizeSelect} />}
               {step === 4 && (
                 <Step4Date
                   minDate={minDate}
@@ -502,47 +489,39 @@ export default function OrderWizard() {
           </Animated.View>
         </View>
 
-        {/* Footer CTA — fades out on step 1 (replaced by floating CTA) */}
-        <Animated.View
-          style={{ opacity: sheetBgAnim }}
-          pointerEvents={step === 1 ? 'none' : 'box-none'}
-        >
+        {/* Footer — only on step 4 (steps 2+3 auto-advance on tap, no CTA needed) */}
+        {step === 4 && (
           <View style={[s.footer, { paddingBottom: insets.bottom + 12 }]}>
-            {step === 4 && (
-              <View style={s.priceRow}>
-                <View>
-                  <Text style={s.priceLabel}>Kopā ar PVN 21%</Text>
-                  <Text style={s.priceSub}>bez PVN €{(price / 1.21).toFixed(2)}</Text>
-                </View>
-                <Text style={s.priceAmount}>€{price}</Text>
+            <View style={s.priceRow}>
+              <View>
+                <Text style={s.priceLabel}>Kopā ar PVN 21%</Text>
+                <Text style={s.priceSub}>bez PVN €{(price / 1.21).toFixed(2)}</Text>
               </View>
-            )}
+              <Text style={s.priceAmount}>€{price}</Text>
+            </View>
             <View style={s.ctaRow}>
-              {step > 1 && (
-                <TouchableOpacity style={s.backBtn} onPress={goBack} activeOpacity={0.8}>
-                  <ChevronLeft size={20} color="#111827" />
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity style={s.backBtn} onPress={goBack} activeOpacity={0.8}>
+                <ChevronLeft size={20} color="#111827" />
+              </TouchableOpacity>
               <Animated.View style={[{ flex: 1 }, { transform: [{ scale: ctaScale }] }]}>
                 <TouchableOpacity
                   style={[s.cta, (!canNext || submitting) && s.ctaDisabled, { flex: 1 }]}
                   disabled={!canNext || submitting}
-                  onPress={onCTA}
+                  onPress={onSubmit}
                   activeOpacity={0.85}
                 >
                   {submitting ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
                     <Text style={[s.ctaText, !canNext && s.ctaTextDisabled]}>
-                      {CTA_LABELS[step - 1]}
-                      {step < 4 ? '  →' : ''}
+                      {t.skipHire.step4.placeOrder}
                     </Text>
                   )}
                 </TouchableOpacity>
               </Animated.View>
             </View>
           </View>
-        </Animated.View>
+        )}
       </Animated.View>
 
       {/* Floating CTA — only on step 1, fades out as sheet card appears */}
@@ -554,10 +533,10 @@ export default function OrderWizard() {
           <TouchableOpacity
             style={[s.cta, !canNext && s.ctaDisabled]}
             disabled={!canNext}
-            onPress={onCTA}
+            onPress={onLocationCTA}
             activeOpacity={0.85}
           >
-            <Text style={[s.ctaText, !canNext && s.ctaTextDisabled]}>{CTA_LABELS[0]} →</Text>
+            <Text style={[s.ctaText, !canNext && s.ctaTextDisabled]}>{t.skipHire.step1.next} →</Text>
           </TouchableOpacity>
         </Animated.View>
       </Animated.View>
@@ -665,6 +644,18 @@ const s = StyleSheet.create({
   stepHeader: {
     paddingHorizontal: 20,
     marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  backBtnInline: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   backBtn: {
     width: 48,
