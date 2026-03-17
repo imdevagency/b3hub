@@ -29,7 +29,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
-import type { SkipHireOrder } from '@/lib/api';
+import { useSkipOrder } from '@/lib/use-skip-order';
 import { t } from '@/lib/translations';
 import { RatingModal } from '@/components/ui/RatingModal';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -132,22 +132,16 @@ export default function SkipOrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
   const router = useRouter();
-  const [order, setOrder] = useState<SkipHireOrder | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { order, setOrder, loading, error } = useSkipOrder(id);
   const [showRating, setShowRating] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
-    if (!id || !token) return;
-    api.skipHire
-      .getById(id, token)
-      .then(setOrder)
-      .catch(() => {
-        Alert.alert('Kļūda', 'Neizdevās ielādēt pasūtījumu.');
-        router.back();
-      })
-      .finally(() => setLoading(false));
-  }, [id, token]);
+    if (error) {
+      Alert.alert('Kļūda', 'Neizdevās ielādēt pasūtījumu.');
+      router.back();
+    }
+  }, [error, router]);
 
   if (loading) {
     return (

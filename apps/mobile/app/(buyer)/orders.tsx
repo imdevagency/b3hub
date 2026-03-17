@@ -10,17 +10,15 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
-import React, { useState, useCallback, useMemo } from 'react';
-import { useFocusEffect } from 'expo-router';
-import { useAuth } from '@/lib/auth-context';
-import { api } from '@/lib/api';
+import React, { useState } from 'react';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { formatDateShort } from '@/lib/format';
 import { t } from '@/lib/translations';
-import type { SkipHireOrder, ApiOrder, ApiTransportJob } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
+import { useOrders } from '@/lib/use-orders';
+import type { UnifiedOrder, FilterKey } from '@/lib/use-orders';
 import {
   MapPin,
   CalendarDays,
@@ -38,22 +36,7 @@ import { RatingModal } from '@/components/ui/RatingModal';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { UNIT_SHORT, MAT_STATUS, TJB_STATUS, SIZE_LABEL } from '@/lib/materials';
 
-// ── Types ─────────────────────────────────────────────────────
-
-type FilterKey = 'ALL' | 'ACTIVE' | 'DONE' | 'CANCELLED';
-
-type UnifiedOrder =
-  | { kind: 'skip'; data: SkipHireOrder; sortDate: number; isActive: boolean }
-  | { kind: 'material'; data: ApiOrder; sortDate: number; isActive: boolean }
-  | { kind: 'transport'; data: ApiTransportJob; sortDate: number; isActive: boolean };
-
 // ── Constants ─────────────────────────────────────────────────
-
-const SKIP_ACTIVE = new Set(['PENDING', 'CONFIRMED', 'DELIVERED']);
-const SKIP_DONE = new Set(['COLLECTED', 'COMPLETED']);
-const MAT_ACTIVE = new Set(['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED']);
-
-// SIZE_LABEL imported from @/lib/materials
 
 const WASTE_TYPE_LABEL: Record<string, string> = {
   CONCRETE: 'Betons / Bruģis',
@@ -66,42 +49,12 @@ const WASTE_TYPE_LABEL: Record<string, string> = {
   HAZARDOUS: 'Bīstami atkritumi',
 };
 
-// UNIT_SHORT, MAT_STATUS, TJB_STATUS — imported from @/lib/materials
-
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: 'ALL', label: 'Visi' },
   { key: 'ACTIVE', label: 'Aktīvie' },
   { key: 'DONE', label: 'Pabeigti' },
   { key: 'CANCELLED', label: 'Atcelti' },
 ];
-
-function skipBucket(status: string): FilterKey {
-  if (SKIP_ACTIVE.has(status)) return 'ACTIVE';
-  if (SKIP_DONE.has(status)) return 'DONE';
-  return 'CANCELLED';
-}
-
-function matBucket(status: string): FilterKey {
-  if (MAT_ACTIVE.has(status)) return 'ACTIVE';
-  if (status === 'DELIVERED') return 'DONE';
-  return 'CANCELLED';
-}
-
-const TJB_ACTIVE = new Set([
-  'AVAILABLE',
-  'ASSIGNED',
-  'ACCEPTED',
-  'EN_ROUTE_PICKUP',
-  'AT_PICKUP',
-  'LOADED',
-  'EN_ROUTE_DELIVERY',
-  'AT_DELIVERY',
-]);
-function reqBucket(status: string): FilterKey {
-  if (TJB_ACTIVE.has(status)) return 'ACTIVE';
-  if (status === 'DELIVERED') return 'DONE';
-  return 'CANCELLED';
-}
 
 // ── Unified card ──────────────────────────────────────────────
 
@@ -318,113 +271,11 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
 }
 
 export default function OrdersScreen() {
-  const { token } = useAuth();
   const router = useRouter();
-  const [skipOrders, setSkipOrders] = useState<SkipHireOrder[]>([]);
-  const [matOrders, setMatOrders] = useState<ApiOrder[]>([]);
-  const [reqOrders, setReqOrders] = useState<ApiTransportJob[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState<FilterKey>('ALL');
+  const { loading, refreshing, onRefresh, filter, setFilter, unified, filtered, counts } =
+    useOrders();
   const [ratingSkipId, setRatingSkipId] = useState<string | null>(null);
   const [showTypePicker, setShowTypePicker] = useState(false);
-
-  const loadOrders = useCallback(
-    async (showSkeleton = true) => {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-      if (showSkeleton) setLoading(true);
-      try {
-        const [skipData, matData, reqData] = await Promise.all([
-          api.skipHire.myOrders(token),
-          api.orders.myOrders(token),
-          api.transportJobs.myRequests(token),
-        ]);
-        setSkipOrders(Array.isArray(skipData) ? skipData : []);
-        setMatOrders(Array.isArray(matData) ? matData : []);
-        setReqOrders(Array.isArray(reqData) ? reqData : []);
-      } catch {
-        // show empty state on error
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [token],
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      loadOrders();
-    }, [loadOrders]),
-  );
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadOrders(false);
-  };
-
-  // Merge + sort: active first, then newest
-  const unified = useMemo<UnifiedOrder[]>(() => {
-    const list: UnifiedOrder[] = [];
-    skipOrders.forEach((o) => {
-      list.push({
-        kind: 'skip',
-        data: o,
-        sortDate: new Date(o.deliveryDate).getTime(),
-        isActive: skipBucket(o.status) === 'ACTIVE',
-      });
-    });
-    matOrders.forEach((o) => {
-      list.push({
-        kind: 'material',
-        data: o,
-        sortDate: new Date(o.createdAt).getTime(),
-        isActive: matBucket(o.status) === 'ACTIVE',
-      });
-    });
-    reqOrders.forEach((o) => {
-      list.push({
-        kind: 'transport',
-        data: o,
-        sortDate: new Date(o.pickupDate).getTime(),
-        isActive: reqBucket(o.status) === 'ACTIVE',
-      });
-    });
-    return list.sort((a, b) => {
-      if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
-      return b.sortDate - a.sortDate;
-    });
-  }, [skipOrders, matOrders, reqOrders]);
-
-  const filtered = useMemo(() => {
-    if (filter === 'ALL') return unified;
-    return unified.filter((item) => {
-      const bucket =
-        item.kind === 'skip'
-          ? skipBucket(item.data.status)
-          : item.kind === 'transport'
-            ? reqBucket(item.data.status)
-            : matBucket(item.data.status);
-      return bucket === filter;
-    });
-  }, [unified, filter]);
-
-  const counts = useMemo(() => {
-    const c: Record<FilterKey, number> = { ALL: unified.length, ACTIVE: 0, DONE: 0, CANCELLED: 0 };
-    unified.forEach((item) => {
-      const b =
-        item.kind === 'skip'
-          ? skipBucket(item.data.status)
-          : item.kind === 'transport'
-            ? reqBucket(item.data.status)
-            : matBucket(item.data.status);
-      c[b] = (c[b] ?? 0) + 1;
-    });
-    return c;
-  }, [unified]);
 
   return (
     <ScreenContainer bg="#f2f2f7">

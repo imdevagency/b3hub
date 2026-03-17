@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -32,7 +32,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
-import type { ApiOrder, ApiDocument } from '@/lib/api';
+import { useOrderDetail } from '@/lib/use-order-detail';
 import { t } from '@/lib/translations';
 import { RatingModal } from '@/components/ui/RatingModal';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -59,46 +59,9 @@ export default function OrderDetailScreen() {
   const { token } = useAuth();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [order, setOrder] = useState<ApiOrder | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { order, setOrder, loading, alreadyRated, documents, reload: load } = useOrderDetail(id);
   const [actionLoading, setActionLoading] = useState(false);
   const [showRating, setShowRating] = useState(false);
-  const [alreadyRated, setAlreadyRated] = useState(false);
-  const [documents, setDocuments] = useState<ApiDocument[]>([]);
-
-  const load = useCallback(async () => {
-    if (!token || !id) {
-      setLoading(false);
-      return;
-    }
-    try {
-      const found = await api.orders.getOne(String(id), token);
-      setOrder(found ?? null);
-      // Check if already rated (only for DELIVERED)
-      if (found?.status === 'DELIVERED') {
-        try {
-          const { reviewed } = await api.reviews.status({ orderId: id }, token);
-          setAlreadyRated(reviewed);
-        } catch {
-          // Non-critical — leave as false
-        }
-        try {
-          const docs = await api.documents.getByOrder(id, token);
-          setDocuments(docs);
-        } catch {
-          // Non-critical — documents may not be generated yet
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [token, id]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   const handleCancel = () => {
     haptics.heavy();
