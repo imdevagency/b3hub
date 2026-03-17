@@ -166,9 +166,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(freshUser);
             AsyncStorage.setItem(USER_KEY, JSON.stringify(freshUser));
           })
-          .catch(() => {
-            // 401 even after refresh — clear session
-            clearSession();
+          .catch((err: any) => {
+            // Only clear session on genuine auth failure (401/Unauthorized).
+            // Transient network errors, timeouts, etc. keep the stale session alive.
+            const msg: string = err?.message ?? '';
+            if (msg.includes('401') || msg.toLowerCase().includes('unauthorized')) {
+              clearSession();
+            }
           });
       })
       .catch(() => clearSession())

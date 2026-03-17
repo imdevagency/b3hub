@@ -31,10 +31,12 @@ import {
   Star,
   Plus,
   ChevronRight,
+  HardHat,
+  Clock,
 } from 'lucide-react-native';
 import { RatingModal } from '@/components/ui/RatingModal';
 import { BottomSheet } from '@/components/ui/BottomSheet';
-import { UNIT_SHORT, MAT_STATUS, TJB_STATUS, SIZE_LABEL } from '@/lib/materials';
+import { UNIT_SHORT, MAT_STATUS, TJB_STATUS, SIZE_LABEL, CATEGORY_LABELS } from '@/lib/materials';
 
 // ── Constants ─────────────────────────────────────────────────
 
@@ -115,6 +117,11 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
     return <TransportRequestCard item={item} />;
   }
 
+  // RFQ (quote request — open / pending supplier responses)
+  if (item.kind === 'rfq') {
+    return <RfqCard item={item} />;
+  }
+
   // Material order
   const order = item.data;
   const st = MAT_STATUS[order.status] ?? MAT_STATUS.PENDING;
@@ -155,7 +162,7 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
             ? `${first.material.name}${extra > 0 ? ` +${extra}` : ''}`
             : 'Materiālu pasūtījums'}
         </Text>
-        {driver && order.status === 'SHIPPED' && (
+        {driver && activeJob && (
           <View style={s.driverRow}>
             <User size={13} color="#111827" />
             <Text style={s.driverName} numberOfLines={1}>
@@ -255,7 +262,7 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
         </View>
         <View style={s.metaRow}>
           <CalendarDays size={13} color="#6b7280" />
-            <Text style={s.metaText}>{formatDateShort(job.pickupDate)}</Text>
+          <Text style={s.metaText}>{formatDateShort(job.pickupDate)}</Text>
         </View>
         {job.requiredVehicleType && (
           <View style={s.metaRow}>
@@ -265,6 +272,80 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
             </Text>
           </View>
         )}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ── RFQ card (quote request awaiting / responding supplier) ──
+
+const RFQ_STATUS_LABEL: Record<string, { label: string; bg: string; color: string }> = {
+  PENDING:   { label: 'Gaida piedāvājumus', bg: '#fef3c7', color: '#d97706' },
+  QUOTED:    { label: 'Ir piedāvājumi',      bg: '#d1fae5', color: '#059669' },
+  ACCEPTED:  { label: 'Pieņemts',            bg: '#dcfce7', color: '#15803d' },
+  CANCELLED: { label: 'Atcelts',             bg: '#f3f4f6', color: '#6b7280' },
+  EXPIRED:   { label: 'Beidzies',            bg: '#f3f4f6', color: '#9ca3af' },
+};
+
+function RfqCard({ item }: { item: UnifiedOrder & { kind: 'rfq' } }) {
+  const router = useRouter();
+  const rfq = item.data;
+  const st = RFQ_STATUS_LABEL[rfq.status] ?? RFQ_STATUS_LABEL.PENDING;
+  const responseCount = rfq.responses?.length ?? 0;
+
+  return (
+    <TouchableOpacity
+      style={[s.card, item.isActive && s.cardActive]}
+      onPress={() => {
+        haptics.light();
+        router.push({ pathname: '/(buyer)/rfq/[id]', params: { id: rfq.id } } as any);
+      }}
+      activeOpacity={0.88}
+    >
+      {item.isActive && <View style={s.activeStrip} />}
+      <View style={s.cardInner}>
+        <View style={s.cardTop}>
+          <View style={s.typeTag}>
+            <HardHat size={11} color="#6b7280" />
+            <Text style={s.typeTagText}>Pieprasījums</Text>
+          </View>
+          <StatusPill label={st.label} bg={st.bg} color={st.color} />
+        </View>
+        <Text style={s.orderNum}>{rfq.requestNumber}</Text>
+        <Text style={s.orderSub} numberOfLines={1}>
+          {CATEGORY_LABELS[rfq.materialCategory] ?? rfq.materialCategory} · {rfq.materialName}
+        </Text>
+        <View style={s.metaRow}>
+          <MapPin size={13} color="#6b7280" />
+          <Text style={s.metaText} numberOfLines={1}>
+            {rfq.deliveryCity || rfq.deliveryAddress}
+          </Text>
+        </View>
+        <View style={s.matRow}>
+          <Text style={s.matDetail}>
+            {rfq.quantity} {UNIT_SHORT[rfq.unit] ?? rfq.unit}
+          </Text>
+          {responseCount > 0 && (
+            <Text style={[s.matPrice, { color: '#059669' }]}>
+              {responseCount} pied.
+            </Text>
+          )}
+        </View>
+        <View style={s.cardFooter}>
+          {rfq.status === 'QUOTED' ? (
+            <Text style={[s.price, { color: '#059669', fontSize: 13 }]}>
+              Skatīt piedāvājumus →
+            </Text>
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Clock size={12} color="#9ca3af" />
+              <Text style={[s.price, { color: '#9ca3af', fontSize: 12, fontWeight: '500' }]}>
+                {rfq.status === 'PENDING' ? 'Gaidām atbildes...' : st.label}
+              </Text>
+            </View>
+          )}
+          <ChevronRight size={16} color="#9ca3af" />
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -344,16 +425,20 @@ export default function OrdersScreen() {
             <EmptyState
               icon={<Package size={44} color="#d1d5db" />}
               title={filter === 'ALL' ? 'Nav pasūtījumu' : 'Šajā kategorijā nav pasūtījumu'}
-              subtitle={filter === 'ALL' ? 'Veiciet savu pirmo pasūtījumu' : 'Mēģiniet mainīt filtru'}
-              action={filter === 'ALL' ? (
-                <TouchableOpacity
-                  style={s.emptyBtn}
-                  onPress={() => setShowTypePicker(true)}
-                  activeOpacity={0.85}
-                >
-                  <Text style={s.emptyBtnText}>Izveidot pasūtījumu</Text>
-                </TouchableOpacity>
-              ) : undefined}
+              subtitle={
+                filter === 'ALL' ? 'Veiciet savu pirmo pasūtījumu' : 'Mēģiniet mainīt filtru'
+              }
+              action={
+                filter === 'ALL' ? (
+                  <TouchableOpacity
+                    style={s.emptyBtn}
+                    onPress={() => setShowTypePicker(true)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={s.emptyBtnText}>Izveidot pasūtījumu</Text>
+                  </TouchableOpacity>
+                ) : undefined
+              }
             />
           ) : (
             filtered.map((item) => (

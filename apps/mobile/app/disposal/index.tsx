@@ -284,6 +284,10 @@ export default function DisposalWizard() {
 
   // ── Submit ────────────────────────────────────────────────────
   const handleSubmit = useCallback(async () => {
+    if (!token) {
+      Alert.alert('Kļūda', 'Jūs neesat pieteicies. Lūdzu, piesakieties vēlreiz.');
+      return;
+    }
     if (!state.wasteType) {
       Alert.alert('Kļūda', 'Lūdzu, izvēlieties atkritumu veidu.');
       return;
@@ -309,7 +313,7 @@ export default function DisposalWizard() {
           description: desc || undefined,
           requestedDate: toISO(date),
         },
-        token!,
+        token,
       );
       reset();
       setJobNumber(result?.jobNumber ?? '—');

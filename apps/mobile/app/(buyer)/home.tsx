@@ -205,26 +205,30 @@ export default function HomeScreen() {
         dotColor: '#9ca3af',
       });
     });
-  skipOrders.forEach((o) => {
-    recentItems.push({
-      id: o.id,
-      num: `#${o.orderNumber}`,
-      sub: o.location ?? '—',
-      status: o.status,
-      kind: 'skip',
-      dotColor: '#9ca3af',
+  skipOrders
+    .filter((o) => !SKIP_ACTIVE_STATUSES.has(o.status))
+    .forEach((o) => {
+      recentItems.push({
+        id: o.id,
+        num: `#${o.orderNumber}`,
+        sub: o.location ?? '—',
+        status: o.status,
+        kind: 'skip',
+        dotColor: '#9ca3af',
+      });
     });
-  });
-  transportOrders.forEach((o) => {
-    recentItems.push({
-      id: o.id,
-      num: `#${o.jobNumber}`,
-      sub: o.pickupCity ?? '—',
-      status: o.status,
-      kind: 'transport',
-      dotColor: '#9ca3af',
+  transportOrders
+    .filter((o) => !TJ_ACTIVE_STATUSES.has(o.status))
+    .forEach((o) => {
+      recentItems.push({
+        id: o.id,
+        num: `#${o.jobNumber}`,
+        sub: o.pickupCity ?? '—',
+        status: o.status,
+        kind: 'transport',
+        dotColor: '#9ca3af',
+      });
     });
-  });
   const recentOrders = recentItems.slice(0, 3);
   const totalOrders = orders.length + skipOrders.length + transportOrders.length;
 
@@ -309,12 +313,7 @@ export default function HomeScreen() {
                   },
                 ]}
               />
-              <View
-                style={[
-                  s.activeDot,
-                  { backgroundColor: activeItem.dotColor },
-                ]}
-              />
+              <View style={[s.activeDot, { backgroundColor: activeItem.dotColor }]} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={s.activeLabel}>Aktīvs pasūtījums</Text>

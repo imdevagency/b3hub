@@ -82,7 +82,7 @@ export default function TransportWizard() {
     setRequestedDate,
     reset,
   } = useTransport();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
   /* step */
   const [step, setStep] = useState(1);
@@ -250,23 +250,26 @@ export default function TransportWizard() {
 
   /* ── submit ── */
   const handleSubmit = useCallback(async () => {
-    if (!user || !pickupStop || !dropoffStop || !selectedVehicle) return;
+    if (!user || !token || !pickupStop || !dropoffStop || !selectedVehicle) return;
     setSubmitting(true);
     try {
-      const job = await api.transportJobs.create({
-        pickupAddress: pickupLabel,
-        pickupCity: state.pickupCity,
-        pickupLat: pickupStop.lat,
-        pickupLng: pickupStop.lng,
-        dropoffAddress: dropoffLabel,
-        dropoffCity: state.dropoffCity,
-        dropoffLat: dropoffStop.lat,
-        dropoffLng: dropoffStop.lng,
-        vehicleType: selectedVehicle,
-        loadDescription: activeDesc,
-        estimatedWeight: weightText ? parseFloat(weightText) : undefined,
-        requestedDate: selectedDay,
-      });
+      const job = await api.transport.create(
+        {
+          pickupAddress: pickupLabel,
+          pickupCity: state.pickupCity,
+          pickupLat: pickupStop.lat,
+          pickupLng: pickupStop.lng,
+          dropoffAddress: dropoffLabel,
+          dropoffCity: state.dropoffCity,
+          dropoffLat: dropoffStop.lat,
+          dropoffLng: dropoffStop.lng,
+          vehicleType: selectedVehicle,
+          loadDescription: activeDesc,
+          estimatedWeight: weightText ? parseFloat(weightText) : undefined,
+          requestedDate: selectedDay,
+        },
+        token,
+      );
       setJobNumber(job.jobNumber ?? job.id.slice(0, 8).toUpperCase());
       reset();
       setSuccess(true);
@@ -277,6 +280,7 @@ export default function TransportWizard() {
     }
   }, [
     user,
+    token,
     pickupStop,
     dropoffStop,
     selectedVehicle,

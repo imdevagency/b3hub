@@ -122,11 +122,19 @@ export function useOrders() {
         isActive: reqBucket(o.status) === 'ACTIVE',
       });
     });
+    rfqOrders.forEach((o) => {
+      list.push({
+        kind: 'rfq',
+        data: o,
+        sortDate: new Date(o.createdAt).getTime(),
+        isActive: rfqBucket(o.status) === 'ACTIVE',
+      });
+    });
     return list.sort((a, b) => {
       if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
       return b.sortDate - a.sortDate;
     });
-  }, [skipOrders, matOrders, reqOrders]);
+  }, [skipOrders, matOrders, reqOrders, rfqOrders]);
 
   const filtered = useMemo(() => {
     if (filter === 'ALL') return unified;
@@ -136,7 +144,9 @@ export function useOrders() {
           ? skipBucket(item.data.status)
           : item.kind === 'transport'
             ? reqBucket(item.data.status)
-            : matBucket(item.data.status);
+            : item.kind === 'rfq'
+              ? rfqBucket(item.data.status)
+              : matBucket(item.data.status);
       return bucket === filter;
     });
   }, [unified, filter]);
@@ -149,7 +159,9 @@ export function useOrders() {
           ? skipBucket(item.data.status)
           : item.kind === 'transport'
             ? reqBucket(item.data.status)
-            : matBucket(item.data.status);
+            : item.kind === 'rfq'
+              ? rfqBucket(item.data.status)
+              : matBucket(item.data.status);
       c[b] = (c[b] ?? 0) + 1;
     });
     return c;
