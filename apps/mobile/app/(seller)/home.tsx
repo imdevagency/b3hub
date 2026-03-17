@@ -1,10 +1,9 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  Animated,
   ScrollView,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -68,23 +67,6 @@ export default function SellerHomeScreen() {
   const insets = useSafeAreaInsets();
   const [pendingCount, setPendingCount] = useState<number | null>(null);
 
-  // Tile entrance animations
-  const tileAnims = useRef(QUICK_ACTIONS.map(() => new Animated.Value(0))).current;
-  const tileScales = useRef(QUICK_ACTIONS.map(() => new Animated.Value(1))).current;
-
-  useEffect(() => {
-    tileAnims.forEach((anim, i) => {
-      Animated.spring(anim, {
-        toValue: 1,
-        delay: 80 + i * 70,
-        useNativeDriver: true,
-        tension: 75,
-        friction: 10,
-      }).start();
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   useFocusEffect(
     useCallback(() => {
       if (!token) return;
@@ -99,23 +81,6 @@ export default function SellerHomeScreen() {
         .catch(() => {});
     }, [token]),
   );
-
-  const pressTile = (idx: number) => {
-    Animated.sequence([
-      Animated.spring(tileScales[idx], {
-        toValue: 0.93,
-        useNativeDriver: true,
-        tension: 300,
-        friction: 8,
-      }),
-      Animated.spring(tileScales[idx], {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 100,
-        friction: 7,
-      }),
-    ]).start();
-  };
 
   return (
     <View style={s.root}>
@@ -186,25 +151,17 @@ export default function SellerHomeScreen() {
 
         {/* 2×2 quick action grid */}
         <View style={s.grid}>
-          {QUICK_ACTIONS.map((a, idx) => {
+          {QUICK_ACTIONS.map((a) => {
             const Icon = a.icon;
             return (
-              <Animated.View
-                key={a.id}
-                style={{
-                  opacity: tileAnims[idx],
-                  transform: [{ scale: tileScales[idx] }],
-                  width: '48%',
-                }}
-              >
+              <View key={a.id} style={{ width: '48%' }}>
                 <TouchableOpacity
                   style={s.gridTile}
                   onPress={() => {
                     haptics.light();
-                    pressTile(idx);
-                    setTimeout(() => router.push(a.route as any), 70);
+                    router.push(a.route as any);
                   }}
-                  activeOpacity={1}
+                  activeOpacity={0.75}
                 >
                   <View style={s.gridIcon}>
                     <Icon size={24} color="#111827" />
@@ -217,7 +174,7 @@ export default function SellerHomeScreen() {
                     <ArrowRight size={14} color="#9ca3af" />
                   </View>
                 </TouchableOpacity>
-              </Animated.View>
+              </View>
             );
           })}
         </View>

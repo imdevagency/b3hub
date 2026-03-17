@@ -17,6 +17,7 @@ import {
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Plus, Pencil, Trash2, Leaf, PackageSearch, ChevronDown, Check } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
+import { CATEGORY_LABELS } from '@/lib/materials';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -24,18 +25,7 @@ import type { ApiMaterial, MaterialCategory, MaterialUnit } from '@/lib/api';
 
 // ── Constants ──────────────────────────────────────────────────
 
-const CATEGORY_LABELS: Record<MaterialCategory, string> = {
-  SAND: 'Smiltis',
-  GRAVEL: 'Šķembas',
-  STONE: 'Akmens',
-  CONCRETE: 'Betons',
-  SOIL: 'Zeme',
-  RECYCLED_CONCRETE: 'Rec. betons',
-  RECYCLED_SOIL: 'Rec. zeme',
-  ASPHALT: 'Asfalta gran.',
-  CLAY: 'Māls',
-  OTHER: 'Cits',
-};
+// CATEGORY_LABELS imported from @/lib/materials
 
 const UNIT_LABELS: Record<MaterialUnit, string> = {
   TONNE: 't',
@@ -44,7 +34,7 @@ const UNIT_LABELS: Record<MaterialUnit, string> = {
   LOAD: 'krava',
 };
 
-const CATEGORIES = Object.keys(CATEGORY_LABELS) as MaterialCategory[];
+const CATEGORIES = (Object.keys(CATEGORY_LABELS) as string[]).filter((k) => k !== 'ALL') as MaterialCategory[];
 const UNITS = Object.keys(UNIT_LABELS) as MaterialUnit[];
 
 const CATEGORY_COLOR: Record<MaterialCategory, { bg: string; color: string }> = {

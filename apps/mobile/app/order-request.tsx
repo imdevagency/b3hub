@@ -29,7 +29,7 @@ import { Marker } from 'react-native-maps';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import { UNIT_SHORT, CATEGORY_ICON } from '@/lib/materials';
+import { UNIT_SHORT, CATEGORY_ICON, CATEGORY_LABELS } from '@/lib/materials';
 import type {
   MaterialCategory,
   MaterialUnit,
@@ -82,20 +82,7 @@ type Step =
 
 const RIGA: LatLng = { latitude: 56.9496, longitude: 24.1052 };
 
-const CATEGORY_LABELS: Record<MaterialCategoryAll, string> = {
-  ALL: 'Visi',
-  SAND: 'Smiltis',
-  GRAVEL: 'Šķembas',
-  STONE: 'Akmens',
-  CONCRETE: 'Betons',
-  SOIL: 'Zeme',
-  RECYCLED_CONCRETE: 'Rec. betons',
-  RECYCLED_SOIL: 'Rec. zeme',
-  ASPHALT: 'Asfalta gran.',
-  CLAY: 'Māls',
-  OTHER: 'Cits',
-};
-
+// CATEGORY_LABELS imported from @/lib/materials
 const CATEGORIES = Object.keys(CATEGORY_LABELS) as MaterialCategoryAll[];
 
 const CATEGORY_COLOR: Record<string, string> = {
@@ -260,8 +247,6 @@ const GLOBAL_MATERIALS: GlobalMaterial[] = [
     isRecycled: false,
   },
 ];
-
-
 
 // UNIT_SHORT — imported from @/lib/materials
 
@@ -1450,260 +1435,255 @@ export default function OrderRequestScreen() {
     <View style={{ flex: 1 }}>
       <StatusBar barStyle="dark-content" />
       <View style={{ flex: 1 }}>
-          {/* Always-on background map — true 100vh, camera inset via mapPadding */}
-          <View style={StyleSheet.absoluteFillObject}>
-            <BaseMap
-              cameraRef={cameraRef}
-              center={pin ? [pin.longitude, pin.latitude] : RIGA_CENTER}
-              zoom={pin ? 14 : 10}
-              onPress={step === 'map' ? onMapPress : undefined}
-              mapType={satellite ? 'hybrid' : 'standard'}
-              mapPadding={{ bottom: step === 'map' ? SCREEN_H - MAP_FULL : SCREEN_H - MAP_SMALL }}
-            >
-              <UserLayer />
-              {pin && (
-                <Marker
-                  coordinate={pin}
-                  draggable={step === 'map'}
-                  onDragEnd={step === 'map' ? onPinDragEnd : undefined}
-                >
-                  <View style={sa.markerWrap}>
-                    <View style={sa.markerOuter}>
-                      <View style={sa.markerInner} />
-                    </View>
-                    <View style={sa.markerStem} />
-                  </View>
-                </Marker>
-              )}
-            </BaseMap>
-          </View>
-
-          {/* Floating back button — always top-left, visible on map step, fades as sheet appears */}
-          <Animated.View
-            style={[sa.mapBackBtn, { top: insets.top + 12, opacity: floatingCtaOpacity }]}
-            pointerEvents={step === 'map' ? 'box-none' : 'none'}
+        {/* Always-on background map — true 100vh, camera inset via mapPadding */}
+        <View style={StyleSheet.absoluteFillObject}>
+          <BaseMap
+            cameraRef={cameraRef}
+            center={pin ? [pin.longitude, pin.latitude] : RIGA_CENTER}
+            zoom={pin ? 14 : 10}
+            onPress={step === 'map' ? onMapPress : undefined}
+            mapType={satellite ? 'hybrid' : 'standard'}
+            mapPadding={{ bottom: step === 'map' ? SCREEN_H - MAP_FULL : SCREEN_H - MAP_SMALL }}
           >
-            <TouchableOpacity style={sa.mapFab} onPress={() => router.back()} activeOpacity={0.8}>
-              <ChevronLeft size={20} color="#111827" />
-            </TouchableOpacity>
-          </Animated.View>
-
-          {/* Search card — floats at top of map, only on map step */}
-          {step === 'map' && (
-            <View style={[sa.mapSearchCard, { top: insets.top + 66 }]}>
-              <View style={sa.mapCardShadow}>
-                <View style={sa.mapCard}>
-                  <View style={sa.mapCardSearchRow}>
-                    <Search size={15} color="#9ca3af" />
-                    <TextInput
-                      style={sa.mapSearchInput}
-                      placeholder="Meklēt piegādes adresi..."
-                      placeholderTextColor="#9ca3af"
-                      value={geoSearchText}
-                      onChangeText={onGeoSearchChange}
-                      autoCorrect={false}
-                      returnKeyType="search"
-                      autoFocus
-                    />
-                    {geoLoading ? (
-                      <ActivityIndicator size="small" color="#6b7280" />
-                    ) : geoSearchText.length > 0 ? (
-                      <TouchableOpacity
-                        onPress={() => {
-                          setGeoSearchText('');
-                          setGeoSuggestions([]);
-                        }}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <X size={15} color="#9ca3af" />
-                      </TouchableOpacity>
-                    ) : null}
-                  </View>
-                  <View style={sa.mapCardDivider} />
-                  <TouchableOpacity style={sa.mapSuggRow} onPress={locateMe} activeOpacity={0.75}>
-                    <View style={[sa.mapMyLocIcon, { marginLeft: 2 }]}>
-                      <Navigation2 size={14} color="#2563eb" />
-                    </View>
-                    <Text style={[sa.mapSuggText, { fontWeight: '600', color: '#2563eb' }]}>
-                      Izmantot manu atrašanās vietu
-                    </Text>
-                  </TouchableOpacity>
-                  {geoSuggestions.map((item) => (
-                    <React.Fragment key={item.id}>
-                      <View style={sa.mapCardDivider} />
-                      <TouchableOpacity style={sa.mapSuggRow} onPress={() => onPlaceSelected(item)}>
-                        <View style={sa.mapSuggDotCol}>
-                          <View style={sa.mapSuggDot} />
-                        </View>
-                        <Text style={sa.mapSuggText} numberOfLines={2}>
-                          {item.place_name}
-                        </Text>
-                      </TouchableOpacity>
-                    </React.Fragment>
-                  ))}
-                </View>
-              </View>
-              {pin && (
-                <View style={[sa.mapConfirmedRow, { marginTop: 8 }]}>
-                  <MapPin size={14} color="#059669" />
-                  <Text style={sa.mapConfirmedText} numberOfLines={2}>
-                    {address || 'Nosakām adresi...'}
-                  </Text>
-                  <TouchableOpacity
-                    style={sa.resetBtn}
-                    onPress={() => {
-                      setPin(null);
-                      setAddress('');
-                      setCity('');
-                      setGeoSearchText('');
-                      setGeoSuggestions([]);
-                    }}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <RotateCcw size={14} color="#6b7280" />
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* FABs floating over map (satellite toggle only on map step; GPS is inline in card) */}
-          {step === 'map' && (
-            <View style={[sa.mapFabColumn, { top: insets.top + 12, bottom: undefined }]}>
-              <TouchableOpacity
-                style={[sa.mapFab, satellite && sa.mapFabActive]}
-                onPress={() => setSatellite((s) => !s)}
-                activeOpacity={0.85}
+            <UserLayer />
+            {pin && (
+              <Marker
+                coordinate={pin}
+                draggable={step === 'map'}
+                onDragEnd={step === 'map' ? onPinDragEnd : undefined}
               >
-                <Layers size={18} color={satellite ? '#fff' : '#111827'} />
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Sheet — transparent on map step, white on all other steps */}
-          {isSheetStep && (
-            <Animated.View style={[sa.sheet, { top: mapHeight, backgroundColor: sheetBg }]}>
-              {/* Handle — fades out on map step */}
-              <Animated.View style={[sa.sheetHandleWrap, { opacity: sheetBgAnim }]}>
-                <View style={sa.sheetHandle} />
-              </Animated.View>
-
-              {/* Title row — fades out on map step */}
-              <Animated.View style={{ opacity: sheetBgAnim }}>
-                <View style={sa.sheetTitleRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={sa.sheetTitle} numberOfLines={1}>
-                      {SHEET_TITLE[step] ?? ''}
-                    </Text>
-                    {SHEET_SUB[step] ? (
-                      <Text style={sa.sheetSub} numberOfLines={1}>
-                        {SHEET_SUB[step]}
-                      </Text>
-                    ) : null}
+                <View style={sa.markerWrap}>
+                  <View style={sa.markerOuter}>
+                    <View style={sa.markerInner} />
                   </View>
-                  <TouchableOpacity
-                    style={sa.sheetCloseBtn}
-                    onPress={() => router.back()}
-                    activeOpacity={0.8}
-                  >
-                    <X size={18} color="#6b7280" />
-                  </TouchableOpacity>
+                  <View style={sa.markerStem} />
                 </View>
-              </Animated.View>
+              </Marker>
+            )}
+          </BaseMap>
+        </View>
 
-              <View style={sa.sheetSlideClip}>
-                <Animated.View
-                  style={[
-                    sa.sheetSlideWrapper,
-                    { transform: [{ translateX: slideAnim }], opacity: fadeAnim },
-                  ]}
-                >
-                  {step === 'material' && renderMaterial()}
-                  {step === 'configure' && renderConfigure()}
-                  {step === 'offers' && renderOffers()}
-                  {step === 'quotes' && renderQuotes()}
-                  {step === 'confirm' && renderConfirm()}
-                </Animated.View>
-              </View>
+        {/* Floating back button — always top-left, visible on map step, fades as sheet appears */}
+        <Animated.View
+          style={[sa.mapBackBtn, { top: insets.top + 12, opacity: floatingCtaOpacity }]}
+          pointerEvents={step === 'map' ? 'box-none' : 'none'}
+        >
+          <TouchableOpacity style={sa.mapFab} onPress={() => router.back()} activeOpacity={0.8}>
+            <ChevronLeft size={20} color="#111827" />
+          </TouchableOpacity>
+        </Animated.View>
 
-              {/* Footer CTA — fades out on map step; floating CTA takes over */}
-              <Animated.View
-                style={{ opacity: sheetBgAnim }}
-                pointerEvents={step === 'map' ? 'none' : 'box-none'}
-              >
-                <View style={[sa.sheetFooter, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-                  {step !== 'map' && (
-                    <TouchableOpacity style={sa.backFooterBtn} onPress={goBack} activeOpacity={0.8}>
-                      <ChevronLeft size={20} color="#374151" />
-                    </TouchableOpacity>
-                  )}
-                  {CTA_LABEL[step] && (
+        {/* Search card — floats at top of map, only on map step */}
+        {step === 'map' && (
+          <View style={[sa.mapSearchCard, { top: insets.top + 66 }]}>
+            <View style={sa.mapCardShadow}>
+              <View style={sa.mapCard}>
+                <View style={sa.mapCardSearchRow}>
+                  <Search size={15} color="#9ca3af" />
+                  <TextInput
+                    style={sa.mapSearchInput}
+                    placeholder="Meklēt piegādes adresi..."
+                    placeholderTextColor="#9ca3af"
+                    value={geoSearchText}
+                    onChangeText={onGeoSearchChange}
+                    autoCorrect={false}
+                    returnKeyType="search"
+                    autoFocus
+                  />
+                  {geoLoading ? (
+                    <ActivityIndicator size="small" color="#6b7280" />
+                  ) : geoSearchText.length > 0 ? (
                     <TouchableOpacity
-                      style={[sa.ctaBtn, { flex: 1 }, !canCTA && sa.ctaBtnDisabled]}
-                      onPress={onSheetCTA}
-                      disabled={!canCTA && step !== 'configure'}
-                      activeOpacity={0.85}
+                      onPress={() => {
+                        setGeoSearchText('');
+                        setGeoSuggestions([]);
+                      }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
-                      <Text style={[sa.ctaBtnText, !canCTA && sa.ctaBtnTextDisabled]}>
-                        {CTA_LABEL[step]}
+                      <X size={15} color="#9ca3af" />
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+                <View style={sa.mapCardDivider} />
+                <TouchableOpacity style={sa.mapSuggRow} onPress={locateMe} activeOpacity={0.75}>
+                  <View style={[sa.mapMyLocIcon, { marginLeft: 2 }]}>
+                    <Navigation2 size={14} color="#2563eb" />
+                  </View>
+                  <Text style={[sa.mapSuggText, { fontWeight: '600', color: '#2563eb' }]}>
+                    Izmantot manu atrašanās vietu
+                  </Text>
+                </TouchableOpacity>
+                {geoSuggestions.map((item) => (
+                  <React.Fragment key={item.id}>
+                    <View style={sa.mapCardDivider} />
+                    <TouchableOpacity style={sa.mapSuggRow} onPress={() => onPlaceSelected(item)}>
+                      <View style={sa.mapSuggDotCol}>
+                        <View style={sa.mapSuggDot} />
+                      </View>
+                      <Text style={sa.mapSuggText} numberOfLines={2}>
+                        {item.place_name}
                       </Text>
                     </TouchableOpacity>
-                  )}
-                </View>
-              </Animated.View>
-            </Animated.View>
-          )}
+                  </React.Fragment>
+                ))}
+              </View>
+            </View>
+            {pin && (
+              <View style={[sa.mapConfirmedRow, { marginTop: 8 }]}>
+                <MapPin size={14} color="#059669" />
+                <Text style={sa.mapConfirmedText} numberOfLines={2}>
+                  {address || 'Nosakām adresi...'}
+                </Text>
+                <TouchableOpacity
+                  style={sa.resetBtn}
+                  onPress={() => {
+                    setPin(null);
+                    setAddress('');
+                    setCity('');
+                    setGeoSearchText('');
+                    setGeoSuggestions([]);
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <RotateCcw size={14} color="#6b7280" />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
 
-          {/* Floating CTA — visible only on map step, fades when navigating forward */}
-          {isSheetStep && (
-            <Animated.View
-              style={[
-                sa.mapFloatingCta,
-                { bottom: insets.bottom + 20, opacity: floatingCtaOpacity },
-              ]}
-              pointerEvents={step === 'map' ? 'box-none' : 'none'}
+        {/* FABs floating over map (satellite toggle only on map step; GPS is inline in card) */}
+        {step === 'map' && (
+          <View style={[sa.mapFabColumn, { top: insets.top + 12, bottom: undefined }]}>
+            <TouchableOpacity
+              style={[sa.mapFab, satellite && sa.mapFabActive]}
+              onPress={() => setSatellite((s) => !s)}
+              activeOpacity={0.85}
             >
-              {CTA_LABEL['map'] && (
-                <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
+              <Layers size={18} color={satellite ? '#fff' : '#111827'} />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Sheet — transparent on map step, white on all other steps */}
+        {isSheetStep && (
+          <Animated.View style={[sa.sheet, { top: mapHeight, backgroundColor: sheetBg }]}>
+            {/* Handle — fades out on map step */}
+            <Animated.View style={[sa.sheetHandleWrap, { opacity: sheetBgAnim }]}>
+              <View style={sa.sheetHandle} />
+            </Animated.View>
+
+            {/* Title row — fades out on map step */}
+            <Animated.View style={{ opacity: sheetBgAnim }}>
+              <View style={sa.sheetTitleRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={sa.sheetTitle} numberOfLines={1}>
+                    {SHEET_TITLE[step] ?? ''}
+                  </Text>
+                  {SHEET_SUB[step] ? (
+                    <Text style={sa.sheetSub} numberOfLines={1}>
+                      {SHEET_SUB[step]}
+                    </Text>
+                  ) : null}
+                </View>
+                <TouchableOpacity
+                  style={sa.sheetCloseBtn}
+                  onPress={() => router.back()}
+                  activeOpacity={0.8}
+                >
+                  <X size={18} color="#6b7280" />
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
+
+            <View style={sa.sheetSlideClip}>
+              <Animated.View
+                style={[
+                  sa.sheetSlideWrapper,
+                  { transform: [{ translateX: slideAnim }], opacity: fadeAnim },
+                ]}
+              >
+                {step === 'material' && renderMaterial()}
+                {step === 'configure' && renderConfigure()}
+                {step === 'offers' && renderOffers()}
+                {step === 'quotes' && renderQuotes()}
+                {step === 'confirm' && renderConfirm()}
+              </Animated.View>
+            </View>
+
+            {/* Footer CTA — fades out on map step; floating CTA takes over */}
+            <Animated.View
+              style={{ opacity: sheetBgAnim }}
+              pointerEvents={step === 'map' ? 'none' : 'box-none'}
+            >
+              <View style={[sa.sheetFooter, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+                {step !== 'map' && (
+                  <TouchableOpacity style={sa.backFooterBtn} onPress={goBack} activeOpacity={0.8}>
+                    <ChevronLeft size={20} color="#374151" />
+                  </TouchableOpacity>
+                )}
+                {CTA_LABEL[step] && (
                   <TouchableOpacity
-                    style={[sa.ctaBtn, !canCTA && sa.ctaBtnDisabled]}
+                    style={[sa.ctaBtn, { flex: 1 }, !canCTA && sa.ctaBtnDisabled]}
                     onPress={onSheetCTA}
-                    disabled={!canCTA}
+                    disabled={!canCTA && step !== 'configure'}
                     activeOpacity={0.85}
-                    onPressIn={() =>
-                      Animated.spring(ctaScale, {
-                        toValue: 0.96,
-                        useNativeDriver: true,
-                        tension: 300,
-                        friction: 8,
-                      }).start()
-                    }
-                    onPressOut={() =>
-                      Animated.spring(ctaScale, {
-                        toValue: 1,
-                        useNativeDriver: true,
-                        tension: 120,
-                        friction: 6,
-                      }).start()
-                    }
                   >
                     <Text style={[sa.ctaBtnText, !canCTA && sa.ctaBtnTextDisabled]}>
-                      {CTA_LABEL['map']}
+                      {CTA_LABEL[step]}
                     </Text>
                   </TouchableOpacity>
-                </Animated.View>
-              )}
+                )}
+              </View>
             </Animated.View>
-          )}
+          </Animated.View>
+        )}
 
-          {/* Full-screen overlays */}
-          {step === 'searching' && (
-            <View style={StyleSheet.absoluteFillObject}>{renderSearching()}</View>
-          )}
-          {step === 'success' && (
-            <View style={StyleSheet.absoluteFillObject}>{renderSuccess()}</View>
-          )}
-        </View>
+        {/* Floating CTA — visible only on map step, fades when navigating forward */}
+        {isSheetStep && (
+          <Animated.View
+            style={[sa.mapFloatingCta, { bottom: insets.bottom + 20, opacity: floatingCtaOpacity }]}
+            pointerEvents={step === 'map' ? 'box-none' : 'none'}
+          >
+            {CTA_LABEL['map'] && (
+              <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
+                <TouchableOpacity
+                  style={[sa.ctaBtn, !canCTA && sa.ctaBtnDisabled]}
+                  onPress={onSheetCTA}
+                  disabled={!canCTA}
+                  activeOpacity={0.85}
+                  onPressIn={() =>
+                    Animated.spring(ctaScale, {
+                      toValue: 0.96,
+                      useNativeDriver: true,
+                      tension: 300,
+                      friction: 8,
+                    }).start()
+                  }
+                  onPressOut={() =>
+                    Animated.spring(ctaScale, {
+                      toValue: 1,
+                      useNativeDriver: true,
+                      tension: 120,
+                      friction: 6,
+                    }).start()
+                  }
+                >
+                  <Text style={[sa.ctaBtnText, !canCTA && sa.ctaBtnTextDisabled]}>
+                    {CTA_LABEL['map']}
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
+            )}
+          </Animated.View>
+        )}
+
+        {/* Full-screen overlays */}
+        {step === 'searching' && (
+          <View style={StyleSheet.absoluteFillObject}>{renderSearching()}</View>
+        )}
+        {step === 'success' && <View style={StyleSheet.absoluteFillObject}>{renderSuccess()}</View>}
+      </View>
     </View>
   );
 }

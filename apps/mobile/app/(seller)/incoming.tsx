@@ -80,7 +80,7 @@ function mapApiOrder(o: ApiOrder): IncomingOrder {
 
 const STATUS_COLORS: Record<OrderStatus, { bg: string; text: string; label: string }> = {
   PENDING: { bg: '#f3f4f6', text: '#6b7280', label: 'Jauns' },
-  CONFIRMED: { bg: '#f3f4f6', text: '#111827', label: 'Apstipārināts' },
+  CONFIRMED: { bg: '#f3f4f6', text: '#111827', label: 'Apstiprināts' },
   LOADING: { bg: '#f3f4f6', text: '#374151', label: 'Iekraušana' },
   DISPATCHED: { bg: '#dcfce7', text: '#111827', label: 'Nosūtīts' },
 };
