@@ -30,6 +30,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
+import { ACCOUNT_STATUS } from '@/lib/materials';
 
 export default function ProfileScreen() {
   const { user, token, updateUser, logout } = useAuth();
@@ -60,13 +61,6 @@ export default function ProfileScreen() {
     CARRIER: 'Pārvadātājs',
     ADMIN: 'Administrators',
   };
-  const STATUS_LABEL: Record<string, string> = {
-    ACTIVE: 'Aktīvs',
-    PENDING: 'Gaida apstiprināšanu',
-    SUSPENDED: 'Apturēts',
-    INACTIVE: 'Neaktīvs',
-  };
-
   const handleLogout = () => {
     Alert.alert('Iziet', 'Vai tiešām vēlaties izrakstīties?', [
       { text: 'Atcelt', style: 'cancel' },
@@ -120,7 +114,7 @@ export default function ProfileScreen() {
       label: t.profile.accountType,
       value: USER_TYPE_LABEL[user?.userType ?? ''] ?? user?.userType,
     },
-    { label: t.profile.status, value: STATUS_LABEL[user?.status ?? ''] ?? user?.status },
+    { label: t.profile.status, value: ACCOUNT_STATUS[user?.status ?? ''] ?? user?.status },
   ];
 
   const set = (key: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [key]: v }));

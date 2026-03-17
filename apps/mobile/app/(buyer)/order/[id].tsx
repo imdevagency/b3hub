@@ -39,19 +39,11 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { InfoSection } from '@/components/ui/InfoSection';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { DetailRow } from '@/components/ui/DetailRow';
-import { UNIT_SHORT } from '@/lib/materials';
+import { UNIT_SHORT, MAT_STATUS } from '@/lib/materials';
 import { formatDate } from '@/lib/format';
 
 // ── Constants ──────────────────────────────────────────────────
 
-const STATUS_MAP: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING: { label: 'Gaida', bg: '#f3f4f6', color: '#6b7280' },
-  CONFIRMED: { label: 'Apstiprināts', bg: '#f3f4f6', color: '#374151' },
-  PROCESSING: { label: 'Apstrādā', bg: '#f3f4f6', color: '#374151' },
-  SHIPPED: { label: 'Ceļā', bg: '#f3f4f6', color: '#374151' },
-  DELIVERED: { label: 'Piegādāts', bg: '#dcfce7', color: '#15803d' },
-  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: '#b91c1c' },
-};
 
 const ORDER_STEPS = [
   { key: 'PENDING', label: 'Pasūtīts', hint: 'Gaida apstiprināšanu' },
@@ -163,7 +155,7 @@ export default function OrderDetailScreen() {
     );
   }
 
-  const st = STATUS_MAP[order.status] ?? STATUS_MAP.PENDING;
+  const st = MAT_STATUS[order.status] ?? MAT_STATUS.PENDING;
   const activeJob = order.transportJobs?.find(
     (j) =>
       j.status === 'ACCEPTED' ||

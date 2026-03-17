@@ -19,6 +19,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import type { ApiContainer, ApiContainerOrder, ContainerType, ContainerSize } from '@/lib/api';
+import { CONTAINER_STATUS } from '@/lib/materials';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -35,16 +36,6 @@ const SIZE_LABELS: Record<ContainerSize, string> = {
   MEDIUM: 'Vidējs',
   LARGE: 'Liels',
   EXTRA_LARGE: 'Ļoti liels',
-};
-
-const ORDER_STATUS_LABELS: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING: { label: 'Gaida', bg: '#f3f4f6', color: '#6b7280' },
-  CONFIRMED: { label: 'Apstiprināts', bg: '#dbeafe', color: '#1d4ed8' },
-  DELIVERED: { label: 'Nogādāts', bg: '#d1fae5', color: '#059669' },
-  AWAITING_PICKUP: { label: 'Gaida izņemšanu', bg: '#fef3c7', color: '#d97706' },
-  COLLECTED: { label: 'Savākts', bg: '#e0e7ff', color: '#4338ca' },
-  COMPLETED: { label: 'Pabeigts', bg: '#dcfce7', color: '#15803d' },
-  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: '#b91c1c' },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -73,7 +64,7 @@ function ContainerCard({ item, onRent }: { item: ApiContainer; onRent: () => voi
 }
 
 function OrderCard({ item }: { item: ApiContainerOrder }) {
-  const st = ORDER_STATUS_LABELS[item.status] ?? {
+  const st = CONTAINER_STATUS[item.status] ?? {
     label: item.status,
     bg: '#f3f4f6',
     color: '#6b7280',

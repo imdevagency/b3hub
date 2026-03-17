@@ -30,6 +30,7 @@ import type { ApiTransportJob } from '@/lib/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { formatDate, formatDateTime } from '@/lib/format';
+import { TJB_STATUS } from '@/lib/materials';
 import { BaseMap, RouteLayer, useRoute } from '@/components/map';
 import { Marker } from 'react-native-maps';
 
@@ -54,18 +55,6 @@ const STATUS_ORDER = [
   'DELIVERED',
 ];
 
-const STATUS_LABEL: Record<string, { label: string; bg: string; color: string }> = {
-  AVAILABLE: { label: 'Gaida pārvadātāju', bg: '#f3f4f6', color: '#6b7280' },
-  ASSIGNED: { label: 'Pārvadātājs atrasts', bg: '#f3f4f6', color: '#374151' },
-  ACCEPTED: { label: 'Apstiprināts', bg: '#dbeafe', color: '#1d4ed8' },
-  EN_ROUTE_PICKUP: { label: 'Brauc uz iekraušanu', bg: '#fef3c7', color: '#92400e' },
-  AT_PICKUP: { label: 'Iekraujas', bg: '#fef3c7', color: '#92400e' },
-  LOADED: { label: 'Iekrauts', bg: '#fef3c7', color: '#92400e' },
-  EN_ROUTE_DELIVERY: { label: 'Ceļā', bg: '#dcfce7', color: '#15803d' },
-  AT_DELIVERY: { label: 'Piegādā', bg: '#dcfce7', color: '#15803d' },
-  DELIVERED: { label: 'Piegādāts', bg: '#f0fdf4', color: '#15803d' },
-  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: '#b91c1c' },
-};
 
 const VEHICLE_LABEL: Record<string, string> = {
   TIPPER_SMALL: 'Pašizgāzējs (10 t)',
@@ -225,7 +214,7 @@ export default function TransportJobDetailScreen() {
   const isDisposal = job?.jobType === 'WASTE_COLLECTION';
   const Icon = isDisposal ? Recycle : Truck;
   const typeLabel = isDisposal ? 'Atkritumu izvešana' : 'Kravas pārvadāšana';
-  const st = job ? (STATUS_LABEL[job.status] ?? STATUS_LABEL.AVAILABLE) : null;
+  const st = job ? (TJB_STATUS[job.status] ?? TJB_STATUS.AVAILABLE) : null;
   const canCancel = job?.status === 'AVAILABLE';
 
   const handleCancel = async () => {

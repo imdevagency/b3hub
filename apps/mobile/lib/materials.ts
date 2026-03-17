@@ -80,8 +80,34 @@ export const TJB_STATUS: Record<string, { label: string; bg: string; color: stri
   LOADED:            { label: 'Iekrauts',                           bg: '#fef3c7', color: '#92400e' },
   EN_ROUTE_DELIVERY: { label: 'Ce\u013c\u0101',                     bg: '#dcfce7', color: '#15803d' },
   AT_DELIVERY:       { label: 'Pieg\u0101d\u0101',                  bg: '#dcfce7', color: '#15803d' },
-  DELIVERED:         { label: 'Pabeigts',                           bg: '#f0fdf4', color: '#15803d' },
+  DELIVERED:         { label: 'Piegādāts',                          bg: '#f0fdf4', color: '#15803d' },
   CANCELLED:         { label: 'Atcelts',                            bg: '#fee2e2', color: '#b91c1c' },
+};
+
+export const CONTAINER_STATUS: Record<string, { label: string; bg: string; color: string }> = {
+  PENDING:         { label: 'Gaida',            bg: '#f3f4f6', color: '#6b7280' },
+  CONFIRMED:       { label: 'Apstiprānāts',    bg: '#dbeafe', color: '#1d4ed8' },
+  DELIVERED:       { label: 'Nogādāts',         bg: '#d1fae5', color: '#059669' },
+  AWAITING_PICKUP: { label: 'Gaida izņemšanu', bg: '#fef3c7', color: '#d97706' },
+  COLLECTED:       { label: 'Savākts',          bg: '#e0e7ff', color: '#4338ca' },
+  COMPLETED:       { label: 'Pabeigts',          bg: '#dcfce7', color: '#15803d' },
+  CANCELLED:       { label: 'Atcelts',           bg: '#fee2e2', color: '#b91c1c' },
+};
+
+/** Seller-side incoming order statuses (PENDING → DISPATCHED pipeline). */
+export const SELLER_ORDER_STATUS: Record<string, { label: string; bg: string; color: string }> = {
+  PENDING:    { label: 'Jauns',        bg: '#f3f4f6', color: '#6b7280' },
+  CONFIRMED:  { label: 'Apstiprānāts', bg: '#f3f4f6', color: '#111827' },
+  LOADING:    { label: 'Iekraušana',   bg: '#f3f4f6', color: '#374151' },
+  DISPATCHED: { label: 'Nosūtīts',    bg: '#dcfce7', color: '#111827' },
+};
+
+/** User account status labels (profile screens). */
+export const ACCOUNT_STATUS: Record<string, string> = {
+  ACTIVE:    'Aktīvs',
+  PENDING:   'Gaida apstiprināšanu',
+  SUSPENDED: 'Apturēts',
+  INACTIVE:  'Neaktīvs',
 };
 
 // ── Skip-hire container size labels ──────────────────────────────────

@@ -21,6 +21,7 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { haptics } from '@/lib/haptics';
+import { SELLER_ORDER_STATUS } from '@/lib/materials';
 import { useToast } from '@/components/ui/Toast';
 import { api, type ApiOrder } from '@/lib/api';
 import { Clock, CheckCircle2, Package, X, Square, MapPin, Check, Inbox } from 'lucide-react-native';
@@ -79,13 +80,6 @@ function mapApiOrder(o: ApiOrder): IncomingOrder {
     transportJobId: (o as any).transportJobs?.[0]?.id,
   };
 }
-
-const STATUS_COLORS: Record<OrderStatus, { bg: string; text: string; label: string }> = {
-  PENDING: { bg: '#f3f4f6', text: '#6b7280', label: 'Jauns' },
-  CONFIRMED: { bg: '#f3f4f6', text: '#111827', label: 'Apstiprināts' },
-  LOADING: { bg: '#f3f4f6', text: '#374151', label: 'Iekraušana' },
-  DISPATCHED: { bg: '#dcfce7', text: '#111827', label: 'Nosūtīts' },
-};
 
 // ── LoadingDock — seller confirms driver has loaded ─────────────────────────────────
 function LoadingModal({
@@ -212,14 +206,14 @@ function OrderCard({
   actioning: string | null;
 }) {
   const isBusy = actioning === order.id;
-  const statusInfo = STATUS_COLORS[order.status];
+  const statusInfo = SELLER_ORDER_STATUS[order.status] ?? SELLER_ORDER_STATUS.PENDING;
 
   return (
     <View style={styles.card}>
       {/* Header */}
       <View style={styles.cardHeader}>
         <Text style={styles.orderNumber}>#{order.orderNumber}</Text>
-        <StatusPill label={statusInfo.label} bg={statusInfo.bg} color={statusInfo.text} size="sm" />
+        <StatusPill label={statusInfo.label} bg={statusInfo.bg} color={statusInfo.color} size="sm" />
       </View>
 
       {/* Material info */}
