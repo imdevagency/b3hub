@@ -36,6 +36,10 @@ import type { ApiOrder, ApiDocument } from '@/lib/api';
 import { t } from '@/lib/translations';
 import { RatingModal } from '@/components/ui/RatingModal';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { InfoSection } from '@/components/ui/InfoSection';
+import { StatusPill } from '@/components/ui/StatusPill';
+import { DetailRow } from '@/components/ui/DetailRow';
+import { UNIT_SHORT } from '@/lib/materials';
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -46,13 +50,6 @@ const STATUS_MAP: Record<string, { label: string; bg: string; color: string }> =
   SHIPPED: { label: 'Ceļā', bg: '#f3f4f6', color: '#374151' },
   DELIVERED: { label: 'Piegādāts', bg: '#dcfce7', color: '#15803d' },
   CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: '#b91c1c' },
-};
-
-const UNIT_SHORT: Record<string, string> = {
-  TONNE: 't',
-  M3: 'm³',
-  PIECE: 'gab.',
-  LOAD: 'krava',
 };
 
 const ORDER_STEPS = [
@@ -66,18 +63,6 @@ const ORDER_STEPS = [
 function formatDate(iso: string): string {
   const d = new Date(iso + (iso.includes('T') ? '' : 'T00:00:00'));
   return d.toLocaleDateString('lv-LV', { day: 'numeric', month: 'long', year: 'numeric' });
-}
-
-// ── Detail Row ─────────────────────────────────────────────────
-
-function Row({ label, value }: { label: string; value: string | null | undefined }) {
-  if (!value) return null;
-  return (
-    <View style={s.row}>
-      <Text style={s.rowLabel}>{label}</Text>
-      <Text style={s.rowValue}>{value}</Text>
-    </View>
-  );
 }
 
 // ── Main Screen ────────────────────────────────────────────────
@@ -205,9 +190,7 @@ export default function OrderDetailScreen() {
         <Text style={s.headerTitle} numberOfLines={1}>
           {order.orderNumber}
         </Text>
-        <View style={[s.statusBadge, { backgroundColor: st.bg }]}>
-          <Text style={[s.statusBadgeText, { color: st.color }]}>{st.label}</Text>
-        </View>
+        <StatusPill label={st.label} bg={st.bg} color={st.color} />
       </View>
 
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
@@ -255,11 +238,7 @@ export default function OrderDetailScreen() {
 
         {/* Order status timeline */}
         {order.status !== 'CANCELLED' && (
-          <View style={s.section}>
-            <View style={s.sectionHeader}>
-              <CheckCircle size={14} color="#6b7280" />
-              <Text style={s.sectionTitle}>Izpildes progress</Text>
-            </View>
+          <InfoSection icon={<CheckCircle size={14} color="#6b7280" />} title="Izpildes progress">
             {ORDER_STEPS.map((step, i) => {
               const currentIdx = ORDER_STEPS.findIndex((s) => s.key === order.status);
               const isDone = i < currentIdx;
@@ -283,7 +262,7 @@ export default function OrderDetailScreen() {
                 </View>
               );
             })}
-          </View>
+          </InfoSection>
         )}
 
         {/* Weighing slip photo — shown as soon as driver marks job LOADED */}
@@ -291,31 +270,24 @@ export default function OrderDetailScreen() {
           const jobWithPhoto = order.transportJobs?.find((j) => j.pickupPhotoUrl);
           if (!jobWithPhoto?.pickupPhotoUrl) return null;
           return (
-            <View style={s.section}>
-              <View style={s.sectionHeader}>
-                <Camera size={14} color="#6b7280" />
-                <Text style={s.sectionTitle}>Svēršanas biļete</Text>
-                {jobWithPhoto.actualWeightKg != null && (
-                  <Text style={s.weighingWeight}>
-                    ⚖️ {jobWithPhoto.actualWeightKg.toFixed(0)} kg
-                  </Text>
-                )}
-              </View>
+            <InfoSection
+              icon={<Camera size={14} color="#6b7280" />}
+              title="Svēršanas biļete"
+              right={jobWithPhoto.actualWeightKg != null ? (
+                <Text style={s.weighingWeight}>⚖️ {jobWithPhoto.actualWeightKg.toFixed(0)} kg</Text>
+              ) : undefined}
+            >
               <Image
                 source={{ uri: jobWithPhoto.pickupPhotoUrl }}
                 style={s.weighingSlipPhoto}
                 resizeMode="contain"
               />
-            </View>
+            </InfoSection>
           );
         })()}
 
         {/* Order items */}
-        <View style={s.section}>
-          <View style={s.sectionHeader}>
-            <Package size={14} color="#6b7280" />
-            <Text style={s.sectionTitle}>Preces</Text>
-          </View>
+        <InfoSection icon={<Package size={14} color="#6b7280" />} title="Preces">
           {order.items.map((item, idx) => (
             <View key={idx} style={[s.itemRow, idx < order.items.length - 1 && s.itemBorder]}>
               <View style={{ flex: 1 }}>
@@ -334,19 +306,15 @@ export default function OrderDetailScreen() {
               €{order.total.toFixed(2)} {order.currency}
             </Text>
           </View>
-        </View>
+        </InfoSection>
 
         {/* Delivery details */}
-        <View style={s.section}>
-          <View style={s.sectionHeader}>
-            <MapPin size={14} color="#6b7280" />
-            <Text style={s.sectionTitle}>Piegādes dati</Text>
-          </View>
-          <Row label="Adrese" value={order.deliveryAddress} />
-          <Row label="Pilsēta" value={order.deliveryCity} />
-          <Row label="Datums" value={order.deliveryDate ? formatDate(order.deliveryDate) : null} />
-          <Row label="Kontaktpersona" value={order.siteContactName} />
-          <Row label="Tālrunis" value={order.siteContactPhone} />
+        <InfoSection icon={<MapPin size={14} color="#6b7280" />} title="Piegādes dati">
+          <DetailRow label="Adrese" value={order.deliveryAddress} />
+          <DetailRow label="Pilsēta" value={order.deliveryCity} />
+          <DetailRow label="Datums" value={order.deliveryDate ? formatDate(order.deliveryDate) : null} />
+          <DetailRow label="Kontaktpersona" value={order.siteContactName} />
+          <DetailRow label="Tālrunis" value={order.siteContactPhone} />
           {order.siteContactPhone && (
             <TouchableOpacity
               style={s.callSiteBtn}
@@ -357,15 +325,11 @@ export default function OrderDetailScreen() {
               <Text style={s.callSiteBtnText}>Zvanīt kontaktpersonai</Text>
             </TouchableOpacity>
           )}
-        </View>
+        </InfoSection>
 
         {/* Documents — CMR, weighing slip (shown after delivery) */}
         {order.status === 'DELIVERED' && documents.length > 0 && (
-          <View style={s.section}>
-            <View style={s.sectionHeader}>
-              <FileDown size={14} color="#6b7280" />
-              <Text style={s.sectionTitle}>Dokumenti</Text>
-            </View>
+          <InfoSection icon={<FileDown size={14} color="#6b7280" />} title="Dokumenti">
             {documents.map((doc) => {
               const docLabel =
                 doc.type === 'WEIGHING_SLIP'
@@ -400,7 +364,7 @@ export default function OrderDetailScreen() {
                 </View>
               );
             })}
-          </View>
+          </InfoSection>
         )}
 
         {/* Delivery proof — photos + notes submitted by driver */}
@@ -409,10 +373,10 @@ export default function OrderDetailScreen() {
             const proof = order.transportJobs?.find((j) => j.deliveryProof)?.deliveryProof;
             if (!proof) return null;
             return (
-              <View style={s.section}>
-                <View style={s.sectionHeader}>
-                  <Camera size={14} color="#6b7280" />
-                  <Text style={s.sectionTitle}>Piegādes pierādījums</Text>
+              <InfoSection
+                icon={<Camera size={14} color="#6b7280" />}
+                title="Piegādes pierādījums"
+                right={
                   <Text style={s.proofTime}>
                     {new Date(proof.createdAt).toLocaleDateString('lv-LV', {
                       day: 'numeric',
@@ -421,9 +385,10 @@ export default function OrderDetailScreen() {
                       minute: '2-digit',
                     })}
                   </Text>
-                </View>
-                {proof.recipientName ? <Row label="Pieņēma" value={proof.recipientName} /> : null}
-                {proof.notes ? <Row label="Piezīmes" value={proof.notes} /> : null}
+                }
+              >
+                {proof.recipientName ? <DetailRow label="Pieņēma" value={proof.recipientName} /> : null}
+                {proof.notes ? <DetailRow label="Piezīmes" value={proof.notes} /> : null}
                 {proof.photos.length > 0 && (
                   <ScrollView
                     horizontal
@@ -441,20 +406,16 @@ export default function OrderDetailScreen() {
                     <Text style={s.proofNoPhotoText}>Piegāde apstiprināta bez fotogrāfijas</Text>
                   </View>
                 )}
-              </View>
+              </InfoSection>
             );
           })()}
 
         {/* Buyer info */}
         {order.buyer && (
-          <View style={s.section}>
-            <View style={s.sectionHeader}>
-              <User size={14} color="#6b7280" />
-              <Text style={s.sectionTitle}>Pasūtītājs</Text>
-            </View>
-            <Row label="Vārds" value={`${order.buyer.firstName} ${order.buyer.lastName}`} />
-            <Row label="Tālrunis" value={order.buyer.phone} />
-          </View>
+          <InfoSection icon={<User size={14} color="#6b7280" />} title="Pasūtītājs">
+            <DetailRow label="Vārds" value={`${order.buyer.firstName} ${order.buyer.lastName}`} />
+            <DetailRow label="Tālrunis" value={order.buyer.phone} last />
+          </InfoSection>
         )}
 
         {/* Actions */}
@@ -589,8 +550,6 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: { fontSize: 17, fontWeight: '700', color: '#111827', flex: 1, marginHorizontal: 10 },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
-  statusBadgeText: { fontSize: 12, fontWeight: '700' },
   content: { padding: 16, gap: 12, paddingBottom: 48 },
   driverCard: {
     backgroundColor: '#fff7f7',
@@ -632,33 +591,6 @@ const s = StyleSheet.create({
     paddingVertical: 6,
   },
   callBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
-  section: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: '#f9fafb',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -681,17 +613,6 @@ const s = StyleSheet.create({
   },
   totalLabel: { fontSize: 14, fontWeight: '700', color: '#111827' },
   totalValue: { fontSize: 18, fontWeight: '800', color: '#111827' },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  rowLabel: { fontSize: 13, color: '#6b7280', flex: 1 },
-  rowValue: { fontSize: 13, fontWeight: '600', color: '#111827', flex: 2, textAlign: 'right' },
   callSiteBtn: {
     flexDirection: 'row',
     alignItems: 'center',

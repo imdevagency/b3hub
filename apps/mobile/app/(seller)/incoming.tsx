@@ -19,6 +19,7 @@ import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { haptics } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
 import { api, type ApiOrder } from '@/lib/api';
@@ -218,9 +219,7 @@ function OrderCard({
       {/* Header */}
       <View style={styles.cardHeader}>
         <Text style={styles.orderNumber}>#{order.orderNumber}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: statusInfo.bg }]}>
-          <Text style={[styles.statusText, { color: statusInfo.text }]}>{statusInfo.label}</Text>
-        </View>
+        <StatusPill label={statusInfo.label} bg={statusInfo.bg} color={statusInfo.text} size="sm" />
       </View>
 
       {/* Material info */}
@@ -615,8 +614,6 @@ const styles = StyleSheet.create({
 
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   orderNumber: { fontSize: 12, fontWeight: '600', color: '#6b7280', letterSpacing: 0.5 },
-  statusBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  statusText: { fontSize: 12, fontWeight: '700' },
 
   materialRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   materialName: { fontSize: 18, fontWeight: '700', color: '#111827', flex: 1 },
