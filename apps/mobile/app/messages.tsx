@@ -16,7 +16,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { t } from '@/lib/translations';
-import { MessageCircle, Truck, Trash2, ChevronRight, ArrowLeft } from 'lucide-react-native';
+import { MessageCircle, Truck, Trash2, ChevronRight } from 'lucide-react-native';
 
 function formatRelative(iso: string): string {
   const now = Date.now();

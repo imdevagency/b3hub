@@ -79,11 +79,13 @@ function deepLinkPath(notif: ApiNotification): string | null {
       return '/(buyer)/orders';
     // ── Driver ────────────────────────────────────────────────
     case 'JOB_AVAILABLE':
+      return '/(driver)/jobs';
     case 'JOB_ACCEPTED':
-    case 'JOB_COMPLETED':
     case 'TRANSPORT_STARTED':
+      return '/(driver)/active';
+    case 'JOB_COMPLETED':
     case 'TRANSPORT_COMPLETED':
-      return d.jobId ? `/(driver)/job/${d.jobId}` : '/(driver)/jobs';
+      return '/(driver)/earnings';
     // ── Finance / docs ─────────────────────────────────────────
     case 'PAYMENT_RECEIVED':
       return '/(driver)/earnings';
