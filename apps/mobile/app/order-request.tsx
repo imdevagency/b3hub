@@ -27,7 +27,6 @@ import { BaseMap, UserLayer, useGeocode, RIGA_CENTER } from '@/components/map';
 import type { GeocodeSuggestion } from '@/components/map';
 import { Marker } from 'react-native-maps';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { UNIT_SHORT, CATEGORY_ICON } from '@/lib/materials';
@@ -55,7 +54,6 @@ import {
 import * as Location from 'expo-location';
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 const SW = SCREEN_W; // kept for layout refs inside this file
-const ONBOARDING_KEY = '@b3hub:material_order_onboarding_v1';
 /** Map height when the location step is active (big map, ~46% of screen) */
 const MAP_FULL = Math.round(SCREEN_H * 0.46);
 /** Map height for all non-location steps (small strip, ~22% of screen) */
@@ -71,7 +69,6 @@ interface LatLng {
 type MaterialCategoryAll = MaterialCategory | 'ALL';
 
 type Step =
-  | 'onboarding'
   | 'map'
   | 'material'
   | 'configure'
@@ -264,44 +261,19 @@ const GLOBAL_MATERIALS: GlobalMaterial[] = [
   },
 ];
 
-const ONBOARDING_SLIDES = [
-  {
-    step: '01',
-    icon: '📍',
-    accent: '#111827',
-    bg: '#fef2f2',
-    title: 'Norādiet piegādes vietu',
-    desc: 'Pieskarieties kartei vai meklējiet adresi. Mēs piegādāsim tieši uz jūsu norādīto vietu.',
-  },
-  {
-    step: '02',
-    icon: '🏜️',
-    accent: '#6b7280',
-    bg: '#f3f4f6',
-    title: 'Izvēlieties materiālu',
-    desc: 'Pārlūkojiet simtiem celtniecības materiālu. Filtrējiet pēc kategorijām vai meklējiet.',
-  },
-  {
-    step: '03',
-    icon: '⚡',
-    accent: '#111827',
-    bg: '#f3f4f6',
-    title: 'Saņemiet labākās cenas',
-    desc: 'Pieprasījums aiziet visiem piegādātājiem Latvijā. Jūs izvēlaties izdevīgāko piedāvājumu.',
-  },
-];
+
 
 // UNIT_SHORT — imported from @/lib/materials
 
 const FRACTIONS: Record<string, string[]> = {
-  DEFAULT: ['Standarts', '0/4', '0/8', '0/16', '0/32', '0/45', '4/16', '8/32', '16/45'],
-  SAND: ['Standarts', '0/4', '0/8', '0.1/0.3', '0.5/1', 'Smalkas', 'Rupjas'],
-  GRAVEL: ['Standarts', '0/8', '0/16', '0/32', '4/8', '8/16', '16/32', '16/45', '32/63'],
-  STONE: ['Standarts', '0/32', '0/45', '16/45', '32/63', '45/90'],
-  CONCRETE: ['B25 (Standarts)', 'B20', 'B25', 'B30', 'B35', 'B40'],
-  ASPHALT: ['Standarts', '0/8', '0/11', '0/16', 'SMA-11', 'SMA-16'],
-  RECYCLED_CONCRETE: ['Standarts', '0/32', '0/45', '16/45', '32/63'],
-  RECYCLED_SOIL: ['Standarts', '0/45', '0/63', 'Jaukta'],
+  DEFAULT: ['0/4', '0/8', '0/16', '0/32', '0/45', '4/16', '8/32', '16/45'],
+  SAND: ['0/4', '0/8', '0.1/0.3', '0.5/1', 'Smalkas', 'Rupjas'],
+  GRAVEL: ['0/8', '0/16', '0/32', '4/8', '8/16', '16/32', '16/45', '32/63'],
+  STONE: ['0/32', '0/45', '16/45', '32/63', '45/90'],
+  CONCRETE: ['B20', 'B25', 'B30', 'B35', 'B40'],
+  ASPHALT: ['0/8', '0/11', '0/16', 'SMA-11', 'SMA-16'],
+  RECYCLED_CONCRETE: ['0/32', '0/45', '16/45', '32/63'],
+  RECYCLED_SOIL: ['0/45', '0/63', 'Jaukta'],
 };
 
 const VEHICLES = [
@@ -438,9 +410,8 @@ export default function OrderRequestScreen() {
     loading: geoLoading,
   } = useGeocode();
 
-  // ── Step & onboarding ─────────────────────────────────────────
+  // ── Step ─────────────────────────────────────────────────────
   const [step, setStep] = useState<Step>('map');
-  const [onboardSlideIdx, setOnboardSlideIdx] = useState(0);
 
   // ── Location ──────────────────────────────────────────────────
   const [pin, setPin] = useState<LatLng | null>(null);
@@ -494,31 +465,11 @@ export default function OrderRequestScreen() {
   const selectedVehicle = VEHICLES.find((v) => v.id === vehicleId) ?? VEHICLES[0];
   const maxTonnes = parseInt(selectedVehicle.label, 10) || 26;
 
-  // ── Init: onboarding check ────────────────────────────────────
+  // ── Init ─────────────────────────────────────────────────────
   useEffect(() => {
-    (async () => {
-      if (params.materialId) {
-        setStep('map');
-        return;
-      }
-      try {
-        const seen = await AsyncStorage.getItem(ONBOARDING_KEY);
-        setStep(seen ? 'map' : 'onboarding');
-      } catch {
-        setStep('map');
-      }
-    })();
+    setStep('map');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const finishOnboarding = async () => {
-    try {
-      await AsyncStorage.setItem(ONBOARDING_KEY, '1');
-    } catch {
-      /* ignore */
-    }
-    setStep('map');
-  };
 
   // ── Filter global material catalogue ─────────────────────────
   const filterMaterials = useCallback((q: string, cat: MaterialCategoryAll) => {
@@ -1344,67 +1295,6 @@ export default function OrderRequestScreen() {
     </View>
   );
 
-  // ── ONBOARDING ───────────────────────────────────────────────
-  const renderOnboarding = () => {
-    const slide = ONBOARDING_SLIDES[onboardSlideIdx];
-    const isLast = onboardSlideIdx === ONBOARDING_SLIDES.length - 1;
-    return (
-      <View
-        style={[
-          sa.onboardingScreen,
-          { paddingTop: insets.top + 32, paddingBottom: Math.max(insets.bottom, 48) },
-        ]}
-      >
-        {/* Skip */}
-        <TouchableOpacity style={sa.skipBtn} onPress={finishOnboarding}>
-          <Text style={sa.skipText}>Izlaist</Text>
-        </TouchableOpacity>
-
-        {/* Illustration */}
-        <View style={sa.onboardingIllustration}>
-          <View style={[sa.onboardingIconCircle, { backgroundColor: slide.bg }]}>
-            <Text style={sa.onboardingIcon}>{slide.icon}</Text>
-          </View>
-          <Text style={[sa.onboardingWatermark, { color: slide.accent + '12' }]}>{slide.step}</Text>
-        </View>
-
-        {/* Dots */}
-        <View style={sa.onboardDotsRow}>
-          {ONBOARDING_SLIDES.map((_, i) => (
-            <TouchableOpacity key={i} onPress={() => setOnboardSlideIdx(i)}>
-              <View
-                style={[
-                  sa.onboardDot,
-                  i === onboardSlideIdx
-                    ? [sa.onboardDotActive, { backgroundColor: slide.accent }]
-                    : sa.onboardDotInactive,
-                ]}
-              />
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Text */}
-        <View style={sa.onboardingContent}>
-          <Text style={[sa.onboardingStepLabel, { color: slide.accent }]}>
-            Solis {onboardSlideIdx + 1} / {ONBOARDING_SLIDES.length}
-          </Text>
-          <Text style={sa.onboardingTitle}>{slide.title}</Text>
-          <Text style={sa.onboardingDesc}>{slide.desc}</Text>
-        </View>
-
-        {/* CTA */}
-        <TouchableOpacity
-          style={[sa.ctaBtn, { backgroundColor: slide.accent, width: '100%' }]}
-          onPress={() => (isLast ? finishOnboarding() : setOnboardSlideIdx((i) => i + 1))}
-          activeOpacity={0.88}
-        >
-          <Text style={sa.ctaBtnText}>{isLast ? 'Sākt pasūtīšanu →' : 'Tālāk →'}</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
   // ── MATERIAL SELECTION ───────────────────────────────────────
   const renderMaterial = () => (
     <View style={{ flex: 1 }}>
@@ -1554,14 +1444,12 @@ export default function OrderRequestScreen() {
     else if (step === 'confirm') confirmOrder();
   };
 
-  const isSheetStep = !['onboarding', 'searching', 'success'].includes(step);
+  const isSheetStep = !['searching', 'success'].includes(step);
 
   return (
     <View style={{ flex: 1 }}>
       <StatusBar barStyle="dark-content" />
-      {step === 'onboarding' && renderOnboarding()}
-      {step !== 'onboarding' && (
-        <View style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
           {/* Always-on background map — true 100vh, camera inset via mapPadding */}
           <View style={StyleSheet.absoluteFillObject}>
             <BaseMap
@@ -1816,7 +1704,6 @@ export default function OrderRequestScreen() {
             <View style={StyleSheet.absoluteFillObject}>{renderSuccess()}</View>
           )}
         </View>
-      )}
     </View>
   );
 }

@@ -7,11 +7,10 @@ import {
   RefreshControl,
   Linking,
   Alert,
-  Animated,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -112,29 +111,6 @@ function reqBucket(status: string): FilterKey {
 }
 
 // ── Unified card ──────────────────────────────────────────────
-
-function AnimatedCardWrapper({ children, index }: { children: React.ReactNode; index: number }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(18)).current;
-
-  useEffect(() => {
-    const delay = Animated.delay(Math.min(index, 6) * 55);
-    Animated.sequence([
-      delay,
-      Animated.parallel([
-        Animated.spring(opacity, { toValue: 1, useNativeDriver: true, tension: 72, friction: 11 }),
-        Animated.spring(translateY, {
-          toValue: 0,
-          useNativeDriver: true,
-          tension: 72,
-          friction: 11,
-        }),
-      ]),
-    ]).start();
-  }, []);
-
-  return <Animated.View style={{ opacity, transform: [{ translateY }] }}>{children}</Animated.View>;
-}
 
 function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void }) {
   const router = useRouter();
@@ -546,13 +522,12 @@ export default function OrdersScreen() {
               )}
             </View>
           ) : (
-            filtered.map((item, idx) => (
-              <AnimatedCardWrapper key={`${item.kind}-${item.data.id}`} index={idx}>
-                <UnifiedCard
-                  item={item}
-                  onRate={item.kind === 'skip' ? () => setRatingSkipId(item.data.id) : undefined}
-                />
-              </AnimatedCardWrapper>
+            filtered.map((item) => (
+              <UnifiedCard
+                key={`${item.kind}-${item.data.id}`}
+                item={item}
+                onRate={item.kind === 'skip' ? () => setRatingSkipId(item.data.id) : undefined}
+              />
             ))
           )}
         </View>

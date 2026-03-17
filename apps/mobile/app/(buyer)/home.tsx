@@ -11,7 +11,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import type { ApiOrder } from '@/lib/api';
+import type { ApiOrder, SkipHireOrder, ApiTransportJob } from '@/lib/api';
 import {
   HardHat,
   Trash2,
@@ -99,28 +99,13 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
 
   const [orders, setOrders] = useState<ApiOrder[]>([]);
+  const [skipOrders, setSkipOrders] = useState<SkipHireOrder[]>([]);
+  const [transportOrders, setTransportOrders] = useState<ApiTransportJob[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Service tile entrance animations
-  const tileAnims = useRef(SERVICES.map(() => new Animated.Value(0))).current;
-  const tileScales = useRef(SERVICES.map(() => new Animated.Value(1))).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const activeCardScale = useRef(new Animated.Value(1)).current;
-
-  // Staggered entrance on mount
-  useEffect(() => {
-    tileAnims.forEach((anim, i) => {
-      Animated.spring(anim, {
-        toValue: 1,
-        delay: 80 + i * 70,
-        useNativeDriver: true,
-        tension: 75,
-        friction: 10,
-      }).start();
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Pulsing live dot on active order
   useEffect(() => {
@@ -140,7 +125,15 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       if (!token) return;
-      api.orders.myOrders(token).then(setOrders).catch(() => setOrders([]));
+      Promise.all([
+        api.orders.myOrders(token).catch(() => [] as ApiOrder[]),
+        api.skipHire.myOrders(token).catch(() => [] as SkipHireOrder[]),
+        api.transportJobs.myRequests(token).catch(() => [] as ApiTransportJob[]),
+      ]).then(([mats, skips, reqs]) => {
+        setOrders(mats as ApiOrder[]);
+        setSkipOrders(skips as SkipHireOrder[]);
+        setTransportOrders(reqs as ApiTransportJob[]);
+      });
       api.notifications
         .unreadCount(token)
         .then((res) => setUnreadCount(res.count))
@@ -148,25 +141,21 @@ export default function HomeScreen() {
     }, [token]),
   );
 
-  const pressTile = (idx: number) => {
-    Animated.sequence([
-      Animated.spring(tileScales[idx], {
-        toValue: 0.93,
-        useNativeDriver: true,
-        tension: 300,
-        friction: 8,
-      }),
-      Animated.spring(tileScales[idx], {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 100,
-        friction: 7,
-      }),
-    ]).start();
-  };
-
   const activeOrder = orders.find((o) => ACTIVE_STATUSES.has(o.status)) ?? null;
-  const recentOrders = orders.filter((o) => !ACTIVE_STATUSES.has(o.status)).slice(0, 3);
+
+  type RecentItem = { id: string; num: string; sub: string; status: string; kind: 'mat' | 'skip' | 'transport' };
+  const recentItems: RecentItem[] = [];
+  orders.filter((o) => !ACTIVE_STATUSES.has(o.status)).forEach((o) => {
+    recentItems.push({ id: o.id, num: `#${o.orderNumber}`, sub: o.deliveryCity ?? '—', status: STATUS_LABEL[o.status] ?? o.status, kind: 'mat' });
+  });
+  skipOrders.forEach((o) => {
+    recentItems.push({ id: o.id, num: `#${o.orderNumber}`, sub: o.location ?? '—', status: o.status, kind: 'skip' });
+  });
+  transportOrders.forEach((o) => {
+    recentItems.push({ id: o.id, num: `#${o.jobNumber}`, sub: o.pickupCity ?? '—', status: o.status, kind: 'transport' });
+  });
+  const recentOrders = recentItems.slice(0, 3);
+  const totalOrders = orders.length + skipOrders.length + transportOrders.length;
 
   return (
     <View style={s.root}>
@@ -263,35 +252,26 @@ export default function HomeScreen() {
           </Animated.View>
         )}
 
-        {/* Quick services row — compact shortcuts, full detail lives on Services tab */}
+        {/* Quick services row */}
         <Text style={s.sectionTitle}>Pakalpojumi</Text>
         <View style={s.quickRow}>
-          {SERVICES.map((svc, idx) => {
+          {SERVICES.map((svc) => {
             const Icon = svc.icon;
             return (
-              <Animated.View
+              <TouchableOpacity
                 key={svc.id}
-                style={{
-                  flex: 1,
-                  opacity: tileAnims[idx],
-                  transform: [{ scale: tileScales[idx] }],
+                style={[s.quickTile, { flex: 1 }]}
+                onPress={() => {
+                  haptics.light();
+                  router.push(svc.route as any);
                 }}
+                activeOpacity={0.75}
               >
-                <TouchableOpacity
-                  style={s.quickTile}
-                  onPress={() => {
-                    haptics.light();
-                    pressTile(idx);
-                    setTimeout(() => router.push(svc.route as any), 70);
-                  }}
-                  activeOpacity={1}
-                >
-                  <View style={s.quickTileIcon}>
-                    <Icon size={22} color="#111827" />
-                  </View>
-                  <Text style={s.quickTileLabel} numberOfLines={1}>{svc.label}</Text>
-                </TouchableOpacity>
-              </Animated.View>
+                <View style={s.quickTileIcon}>
+                  <Icon size={22} color="#111827" />
+                </View>
+                <Text style={s.quickTileLabel} numberOfLines={1}>{svc.label}</Text>
+              </TouchableOpacity>
             );
           })}
         </View>
@@ -306,32 +286,38 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             <View style={s.recentCard}>
-              {recentOrders.map((o, i) => (
-                <TouchableOpacity
-                  key={o.id}
-                  style={[s.recentRow, i < recentOrders.length - 1 && s.recentRowBorder]}
-                  activeOpacity={0.7}
-                  onPress={() => router.push(`/(buyer)/order/${o.id}` as any)}
-                >
-                  <View style={s.recentIcon}>
-                    <Package size={13} color="#6b7280" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.recentNum}>#{o.orderNumber}</Text>
-                    <Text style={s.recentCity} numberOfLines={1}>
-                      {o.deliveryCity}
-                    </Text>
-                  </View>
-                  <Text style={s.recentStatus}>{STATUS_LABEL[o.status] ?? o.status}</Text>
-                  <ChevronRight size={14} color="#d1d5db" style={{ marginLeft: 4 }} />
-                </TouchableOpacity>
-              ))}
+              {recentOrders.map((item, i) => {
+                const Icon = item.kind === 'skip' ? Trash2 : item.kind === 'transport' ? Truck : Package;
+                const route = item.kind === 'skip'
+                  ? `/(buyer)/skip-order/${item.id}`
+                  : item.kind === 'transport'
+                  ? `/(buyer)/transport-job/${item.id}`
+                  : `/(buyer)/order/${item.id}`;
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[s.recentRow, i < recentOrders.length - 1 && s.recentRowBorder]}
+                    activeOpacity={0.7}
+                    onPress={() => router.push(route as any)}
+                  >
+                    <View style={s.recentIcon}>
+                      <Icon size={13} color="#6b7280" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.recentNum}>{item.num}</Text>
+                      <Text style={s.recentCity} numberOfLines={1}>{item.sub}</Text>
+                    </View>
+                    <Text style={s.recentStatus}>{item.status}</Text>
+                    <ChevronRight size={14} color="#d1d5db" style={{ marginLeft: 4 }} />
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </>
         )}
 
         {/* Empty state */}
-        {orders.length === 0 && (
+        {totalOrders === 0 && (
           <View style={s.emptyState}>
             <View style={s.emptyIconWrap}>
               <ClipboardList size={32} color="#9ca3af" />
@@ -344,7 +330,7 @@ export default function HomeScreen() {
         )}
 
         {/* All orders link */}
-        {orders.length > 3 && (
+        {totalOrders > 3 && (
           <TouchableOpacity
             style={s.allOrdersBtn}
             onPress={() => router.push('/(buyer)/orders' as any)}
