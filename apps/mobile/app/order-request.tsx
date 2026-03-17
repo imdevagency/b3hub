@@ -157,6 +157,11 @@ export default function OrderRequestScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
 
+  // ── Contact / Notes ───────────────────────────────────────────────────────
+  const [contactName, setContactName] = useState(() => `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim());
+  const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
+  const [notes, setNotes] = useState('');
+
   // ── Resolved material props ───────────────────────────────────
   const matName = selectedMaterial?.name ?? params.materialName ?? '';
   const matDescription = selectedMaterial?.description ?? '';
@@ -441,6 +446,9 @@ export default function OrderRequestScreen() {
             deliveryAddress: address,
             deliveryCity: city || selectedOffer.supplier.city || '',
             deliveryDate: deliveryDate.toISOString().split('T')[0],
+            siteContactName: contactName || undefined,
+            siteContactPhone: contactPhone || undefined,
+            notes: notes || undefined,
           },
           token,
         );
@@ -882,6 +890,36 @@ export default function OrderRequestScreen() {
           <Text style={[sa.summaryValue, { flex: 1, textAlign: 'right' }]} numberOfLines={3}>
             {address}
           </Text>
+        </View>
+      </View>
+
+      {/* Contact */}
+      <View style={sa.summaryCard}>
+        <Text style={sa.summaryTitle}>Kontaktinformācija</Text>
+        <View style={{ gap: 10 }}>
+          <TextInput
+            style={sa.contactInput}
+            placeholder="Kontaktpersona"
+            placeholderTextColor="#9ca3af"
+            value={contactName}
+            onChangeText={setContactName}
+          />
+          <TextInput
+            style={sa.contactInput}
+            placeholder="Tālrunis"
+            placeholderTextColor="#9ca3af"
+            keyboardType="phone-pad"
+            value={contactPhone}
+            onChangeText={setContactPhone}
+          />
+          <TextInput
+            style={[sa.contactInput, { height: 72, textAlignVertical: 'top' }]}
+            placeholder="Piezīmes un norādījumi (neobligāti)"
+            placeholderTextColor="#9ca3af"
+            multiline
+            value={notes}
+            onChangeText={setNotes}
+          />
         </View>
       </View>
 

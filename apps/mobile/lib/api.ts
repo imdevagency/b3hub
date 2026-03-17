@@ -139,6 +139,9 @@ export interface CreateDisposalOrderInput {
   estimatedWeight: number;
   description?: string;
   requestedDate: string;
+  siteContactName?: string;
+  siteContactPhone?: string;
+  notes?: string;
 }
 
 export interface CreateTransportOrderInput {
@@ -158,6 +161,9 @@ export interface CreateTransportOrderInput {
   loadDescription: string;
   estimatedWeight?: number;
   requestedDate: string;
+  siteContactName?: string;
+  siteContactPhone?: string;
+  notes?: string;
 }
 
 export interface ApiWasteRecord {
@@ -630,6 +636,7 @@ export interface CreateMaterialOrderInput {
   deliveryDate: string;
   siteContactName?: string;
   siteContactPhone?: string;
+  notes?: string;
 }
 
 async function apiFetch<T>(endpoint: string, options?: RequestInit, timeoutMs = 10_000): Promise<T> {
@@ -988,6 +995,7 @@ export const api = {
           deliveryDate: input.deliveryDate,
           siteContactName: input.siteContactName,
           siteContactPhone: input.siteContactPhone,
+          notes: input.notes,
         }),
       }),
 

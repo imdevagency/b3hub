@@ -69,7 +69,7 @@ export default function OrderWizard() {
     setDeliveryDate,
     setConfirmedOrder,
   } = useOrder();
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const { forwardGeocode, resolvePlace } = useGeocode();
 
   // ── Wizard step ───────────────────────────────────────────────
@@ -95,6 +95,11 @@ export default function OrderWizard() {
   const [startDate, setStartDate] = useState<string | null>(state.deliveryDate || null);
   const [endDate, setEndDate] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // ── Contact / Notes ───────────────────────────────────────────────────────
+  const [contactName, setContactName] = useState(() => `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim());
+  const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
+  const [notes, setNotes] = useState('');
 
   // ── Map ref ───────────────────────────────────────────────────
   const cameraRef = useRef<any>(null);
@@ -348,6 +353,9 @@ export default function OrderWizard() {
           wasteCategory: state.wasteCategory,
           skipSize: state.skipSize,
           deliveryDate: startDate ?? minDate,
+          contactName: contactName || undefined,
+          contactPhone: contactPhone || undefined,
+          notes: notes || undefined,
         },
         token ?? undefined,
       );
@@ -359,7 +367,7 @@ export default function OrderWizard() {
     } finally {
       setSubmitting(false);
     }
-  }, [startDate, minDate, state, token, setDeliveryDate, setConfirmedOrder, router]);
+  }, [startDate, minDate, state, token, contactName, contactPhone, notes, setDeliveryDate, setConfirmedOrder, router]);
 
   // ── Step 1 CTA ────────────────────────────────────────────────
   const onLocationCTA = useCallback(() => {
@@ -499,6 +507,12 @@ export default function OrderWizard() {
                     state.skipSize ? (t.skipHire.step3.sizes[state.skipSize]?.label ?? '—') : '—'
                   }
                   location={state.location}
+                  contactName={contactName}
+                  contactPhone={contactPhone}
+                  notes={notes}
+                  onContactNameChange={setContactName}
+                  onContactPhoneChange={setContactPhone}
+                  onNotesChange={setNotes}
                 />
               )}
             </View>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { t } from '@/lib/translations';
 import { toISO, formatShort } from './skip-hire-types';
@@ -53,6 +53,12 @@ export function Step4Date({
   wasteLabel,
   sizeLabel,
   location,
+  contactName = '',
+  contactPhone = '',
+  notes = '',
+  onContactNameChange,
+  onContactPhoneChange,
+  onNotesChange,
 }: {
   minDate: string;
   startDate: string | null;
@@ -61,6 +67,12 @@ export function Step4Date({
   wasteLabel: string;
   sizeLabel: string;
   location: string;
+  contactName?: string;
+  contactPhone?: string;
+  notes?: string;
+  onContactNameChange?: (v: string) => void;
+  onContactPhoneChange?: (v: string) => void;
+  onNotesChange?: (v: string) => void;
 }) {
   const handleDayPress = (day: { dateString: string }) => {
     const iso = day.dateString;
@@ -137,6 +149,34 @@ export function Step4Date({
           </View>
         ))}
       </View>
+
+      {/* Contact info */}
+      <Text style={[s4.summTitle, { marginTop: 20 }]}>Kontaktinformācija</Text>
+      <View style={{ gap: 10 }}>
+        <TextInput
+          style={s4.contactInput}
+          placeholder="Kontaktpersona"
+          placeholderTextColor="#9ca3af"
+          value={contactName}
+          onChangeText={onContactNameChange}
+        />
+        <TextInput
+          style={s4.contactInput}
+          placeholder="Tālrunis"
+          placeholderTextColor="#9ca3af"
+          keyboardType="phone-pad"
+          value={contactPhone}
+          onChangeText={onContactPhoneChange}
+        />
+        <TextInput
+          style={[s4.contactInput, { height: 72, textAlignVertical: 'top' }]}
+          placeholder="Piezīmes un norādījumi (neobligāti)"
+          placeholderTextColor="#9ca3af"
+          multiline
+          value={notes}
+          onChangeText={onNotesChange}
+        />
+      </View>
     </ScrollView>
   );
 }
@@ -175,5 +215,15 @@ const s4 = StyleSheet.create({
     color: '#111827',
     maxWidth: '55%',
     textAlign: 'right',
+  },
+  contactInput: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 14,
+    color: '#111827',
   },
 });

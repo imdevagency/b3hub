@@ -120,6 +120,11 @@ export default function TransportWizard() {
   const [success, setSuccess] = useState(false);
   const [jobNumber, setJobNumber] = useState('');
 
+  /* contact & notes */
+  const [siteContactName, setSiteContactName] = useState(() => `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim());
+  const [siteContactPhone, setSiteContactPhone] = useState(() => user?.phone ?? '');
+  const [notes, setNotes] = useState('');
+
   /* route */
   const { route } = useRoute(
     step >= 3 && pickupStop ? pickupStop : null,
@@ -267,6 +272,9 @@ export default function TransportWizard() {
           loadDescription: activeDesc,
           estimatedWeight: weightText ? parseFloat(weightText) : undefined,
           requestedDate: selectedDay,
+          siteContactName: siteContactName || undefined,
+          siteContactPhone: siteContactPhone || undefined,
+          notes: notes || undefined,
         },
         token,
       );
@@ -290,6 +298,9 @@ export default function TransportWizard() {
     pickupLabel,
     dropoffLabel,
     state,
+    siteContactName,
+    siteContactPhone,
+    notes,
     reset,
   ]);
 
@@ -604,6 +615,34 @@ export default function TransportWizard() {
                   <Text style={ss.priceEstValue}>no €{currentVehiclePrice}</Text>
                 </View>
               )}
+
+              {/* contact & notes */}
+              <Text style={[ss.fieldLabel, { marginTop: 18 }]}>Kontaktinformācija</Text>
+              <View style={{ gap: 10 }}>
+                <TextInput
+                  style={ss.contactInput}
+                  placeholder="Kontaktpersona"
+                  placeholderTextColor="#9ca3af"
+                  value={siteContactName}
+                  onChangeText={setSiteContactName}
+                />
+                <TextInput
+                  style={ss.contactInput}
+                  placeholder="Tālrunis"
+                  placeholderTextColor="#9ca3af"
+                  keyboardType="phone-pad"
+                  value={siteContactPhone}
+                  onChangeText={setSiteContactPhone}
+                />
+                <TextInput
+                  style={[ss.contactInput, { height: 72, textAlignVertical: 'top' }]}
+                  placeholder="Piezīmes un norādījumi (neobligāti)"
+                  placeholderTextColor="#9ca3af"
+                  multiline
+                  value={notes}
+                  onChangeText={setNotes}
+                />
+              </View>
               <View style={{ height: 24 }} />
             </ScrollView>
           )}
@@ -906,4 +945,15 @@ const ss = StyleSheet.create({
   nextBtnDisabled: { backgroundColor: '#f3f4f6' },
   nextTxt: { fontSize: 16, fontWeight: '600', color: '#fff' },
   nextTxtDisabled: { color: '#9ca3af' },
+  /* contact inputs */
+  contactInput: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 14,
+    color: '#111827',
+  },
 });

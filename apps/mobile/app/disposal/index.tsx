@@ -179,7 +179,7 @@ export default function DisposalWizard() {
     setRequestedDate,
     reset,
   } = useDisposal();
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const { forwardGeocode, resolvePlace, reverseGeocodeWithCity } = useGeocode();
 
   // ── Step state ────────────────────────────────────────────────
@@ -229,6 +229,11 @@ export default function DisposalWizard() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [jobNumber, setJobNumber] = useState('');
+
+  // ── Contact / Notes ──────────────────────────────────────────────────
+  const [contactName, setContactName] = useState(() => `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim());
+  const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
+  const [notes, setNotes] = useState('');
 
   // ── Geocode search ────────────────────────────────────────────
   const handleSearchChange = useCallback(
@@ -312,6 +317,9 @@ export default function DisposalWizard() {
           estimatedWeight: truck.capacity * preset.truckCount,
           description: desc || undefined,
           requestedDate: toISO(date),
+          siteContactName: contactName || undefined,
+          siteContactPhone: contactPhone || undefined,
+          notes: notes || undefined,
         },
         token,
       );
@@ -323,7 +331,7 @@ export default function DisposalWizard() {
     } finally {
       setLoading(false);
     }
-  }, [state, volumeKey, desc, date, token]);
+  }, [state, volumeKey, desc, date, token, contactName, contactPhone, notes]);
 
   // ── Back action per step ──────────────────────────────────────
   const handleBack = () => {
@@ -708,6 +716,34 @@ export default function DisposalWizard() {
                   </View>
                 </View>
               </View>
+
+              {/* Contact & Notes */}
+              <Text style={[s.sectionLabel, { marginTop: 20 }]}>Kontaktinformācija</Text>
+              <View style={{ gap: 10, marginBottom: 8 }}>
+                <TextInput
+                  style={s.contactInput}
+                  placeholder="Kontaktpersona"
+                  placeholderTextColor="#9ca3af"
+                  value={contactName}
+                  onChangeText={setContactName}
+                />
+                <TextInput
+                  style={s.contactInput}
+                  placeholder="Tālrunis"
+                  placeholderTextColor="#9ca3af"
+                  keyboardType="phone-pad"
+                  value={contactPhone}
+                  onChangeText={setContactPhone}
+                />
+                <TextInput
+                  style={[s.contactInput, { height: 72, textAlignVertical: 'top' }]}
+                  placeholder="Piezīmes un norādījumi (neobligāti)"
+                  placeholderTextColor="#9ca3af"
+                  multiline
+                  value={notes}
+                  onChangeText={setNotes}
+                />
+              </View>
             </ScrollView>
 
             <View style={s.footer}>
@@ -1010,4 +1046,16 @@ const s = StyleSheet.create({
     paddingHorizontal: 32,
   },
   successBtnText: { fontSize: 16, fontWeight: '600', color: '#111827' },
+
+  // ── Contact / Notes inputs ───────────────────────────────────────────────
+  contactInput: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 14,
+    color: '#111827',
+  },
 });
