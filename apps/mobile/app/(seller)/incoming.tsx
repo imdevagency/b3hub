@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { haptics } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
 import { api, type ApiOrder } from '@/lib/api';
@@ -419,14 +420,14 @@ export default function IncomingScreen() {
 
   if (fetching) {
     return (
-      <ScreenContainer bg="#f9fafb">
+      <ScreenContainer bg="#f2f2f7">
         <SkeletonCard count={4} />
       </ScreenContainer>
     );
   }
 
   return (
-    <ScreenContainer bg="#f9fafb">
+    <ScreenContainer bg="#f2f2f7">
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t.incoming.title}</Text>
@@ -506,11 +507,11 @@ export default function IncomingScreen() {
           }
         >
           {visibleOrders.length === 0 && (
-            <View style={styles.empty}>
-              <Inbox size={36} color="#d1d5db" />
-              <Text style={styles.emptyTitle}>Nav pasūtījumu</Text>
-              <Text style={styles.emptyDesc}>Šajā kategorijā nav pasūtījumu</Text>
-            </View>
+            <EmptyState
+              icon={<Inbox size={36} color="#d1d5db" />}
+              title="Nav pasūtījumu"
+              subtitle="Šajā kategorijā nav pasūtījumu"
+            />
           )}
           {visibleOrders.map((order) => (
             <OrderCard

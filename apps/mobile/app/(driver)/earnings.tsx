@@ -14,6 +14,7 @@ import { Check, Clock, TrendingUp, Banknote, CheckCircle2 } from 'lucide-react-n
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiTransportJob } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 // ── Types & helpers ───────────────────────────────────────────────────────
 interface EarningsStats {
@@ -297,10 +298,10 @@ export default function EarningsScreen() {
           <View style={styles.historySection}>
             <Text style={styles.sectionTitle}>{t.earnings.history}</Text>
             {history.length === 0 ? (
-              <View style={styles.emptyHistory}>
-                <Banknote size={36} color="#d1d5db" />
-                <Text style={styles.emptyHistoryText}>Nav darbu vēsturē</Text>
-              </View>
+              <EmptyState
+                icon={<Banknote size={36} color="#d1d5db" />}
+                title="Nav darbu vēsturē"
+              />
             ) : (
               <View style={styles.historyList}>
                 {history.map((job, idx) => (

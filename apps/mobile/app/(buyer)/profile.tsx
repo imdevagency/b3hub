@@ -126,7 +126,7 @@ export default function ProfileScreen() {
   const set = (key: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [key]: v }));
 
   return (
-    <ScreenContainer bg="#f9fafb">
+    <ScreenContainer bg="#f2f2f7">
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Avatar header */}
         <View style={s.avatarSection}>

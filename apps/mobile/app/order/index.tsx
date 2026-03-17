@@ -57,7 +57,7 @@ import type { LucideIcon } from 'lucide-react-native';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 const RIGA: [number, number] = [24.1052, 56.9496];
-const GOOGLE_KEY = 'AIzaSyBNIZk1VBorD3kU02BNjz_2m4Dlek_gsx8';
+const GOOGLE_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 
 /** Map section heights — animates between step 1 (large) and steps 2-4 (small strip) */
 const MAP_FULL = Math.round(SCREEN_H * 0.46); // step 1: map takes ~46% of screen

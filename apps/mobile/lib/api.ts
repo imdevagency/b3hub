@@ -833,19 +833,19 @@ export const api = {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
+    /** Buyer: cancel a pending/confirmed skip hire order. */
+    cancel: (id: string, token: string) =>
+      apiFetch<SkipHireOrder>(`/skip-hire/${id}/cancel`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
     /** Carrier: advance a skip order status (CONFIRMED→DELIVERED or DELIVERED→COLLECTED). */
     updateCarrierStatus: (id: string, status: SkipHireStatus, token: string) =>
       apiFetch<SkipHireOrder>(`/skip-hire/${id}/carrier-status`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
-      }),
-
-    /** Buyer: cancel a PENDING skip-hire order. */
-    cancel: (id: string, token: string) =>
-      apiFetch<SkipHireOrder>(`/skip-hire/${id}/cancel`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
       }),
   },
 

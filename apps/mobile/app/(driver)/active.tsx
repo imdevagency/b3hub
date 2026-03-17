@@ -213,7 +213,7 @@ export default function ActiveJobScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer bg="#f9fafb">
+      <ScreenContainer bg="#f2f2f7">
         <SkeletonDetail />
       </ScreenContainer>
     );
@@ -221,7 +221,7 @@ export default function ActiveJobScreen() {
 
   if (!job) {
     return (
-      <ScreenContainer bg="#f9fafb">
+      <ScreenContainer bg="#f2f2f7">
         <EmptyState
           icon={<Map size={32} color="#9ca3af" />}
           title={t.activeJob.noJob}
@@ -381,7 +381,7 @@ export default function ActiveJobScreen() {
   };
 
   return (
-    <ScreenContainer bg="#f9fafb">
+    <ScreenContainer bg="#f2f2f7">
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Header */}
         <View style={styles.header}>

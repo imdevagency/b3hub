@@ -170,4 +170,3 @@ const s = StyleSheet.create({
     marginLeft: 10,
   },
 });
-

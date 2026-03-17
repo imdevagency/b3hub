@@ -54,7 +54,7 @@ import { t } from '@/lib/translations';
 const ACCENT = '#111827';
 const RIGA: [number, number] = [24.1052, 56.9496];
 const SCREEN_H = Dimensions.get('window').height;
-const GOOGLE_KEY = 'AIzaSyBNIZk1VBorD3kU02BNjz_2m4Dlek_gsx8';
+const GOOGLE_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 
 const cs = t.carrierSkips;
 
@@ -479,7 +479,7 @@ export default function CarrierSkipsScreen() {
   const toCollect = orders.filter((o) => o.status === 'DELIVERED');
 
   return (
-    <ScreenContainer bg="#f9fafb">
+    <ScreenContainer bg="#f2f2f7">
       {/* ── Header ── */}
       <View style={s.header}>
         <View>

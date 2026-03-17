@@ -133,7 +133,7 @@ export default function HelpScreen() {
   const router = useRouter();
 
   return (
-    <ScreenContainer standalone bg="#f9fafb">
+    <ScreenContainer standalone bg="#f2f2f7">
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>

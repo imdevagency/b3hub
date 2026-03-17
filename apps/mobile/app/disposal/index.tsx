@@ -96,10 +96,42 @@ const VOLUME_PRESETS: Array<{
   truckCount: number;
   fromPrice: number;
 }> = [
-  { key: 'xs', label: 'Neliela', sublabel: '~5 m³ / ~4 t', emoji: '🧺', truckType: 'TIPPER_SMALL', truckCount: 1, fromPrice: 89 },
-  { key: 'sm', label: 'Vidēja', sublabel: '~10 m³ / ~8 t', emoji: '🏗️', truckType: 'TIPPER_SMALL', truckCount: 1, fromPrice: 89 },
-  { key: 'md', label: 'Liela', sublabel: '~18 m³ / ~14 t', emoji: '🚛', truckType: 'TIPPER_LARGE', truckCount: 1, fromPrice: 149 },
-  { key: 'lg', label: 'Ļoti liela', sublabel: '~36 m³ / ~26 t', emoji: '🏭', truckType: 'ARTICULATED_TIPPER', truckCount: 2, fromPrice: 219 },
+  {
+    key: 'xs',
+    label: 'Neliela',
+    sublabel: '~5 m³ / ~4 t',
+    emoji: '🧺',
+    truckType: 'TIPPER_SMALL',
+    truckCount: 1,
+    fromPrice: 89,
+  },
+  {
+    key: 'sm',
+    label: 'Vidēja',
+    sublabel: '~10 m³ / ~8 t',
+    emoji: '🏗️',
+    truckType: 'TIPPER_SMALL',
+    truckCount: 1,
+    fromPrice: 89,
+  },
+  {
+    key: 'md',
+    label: 'Liela',
+    sublabel: '~18 m³ / ~14 t',
+    emoji: '🚛',
+    truckType: 'TIPPER_LARGE',
+    truckCount: 1,
+    fromPrice: 149,
+  },
+  {
+    key: 'lg',
+    label: 'Ļoti liela',
+    sublabel: '~36 m³ / ~26 t',
+    emoji: '🏭',
+    truckType: 'ARTICULATED_TIPPER',
+    truckCount: 2,
+    fromPrice: 219,
+  },
 ];
 
 const TRUCK_CONFIG: Record<string, { label: string; capacity: number; volume: number }> = {
@@ -137,7 +169,16 @@ type Step = 1 | 2 | 3 | 4;
 export default function DisposalWizard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { state, setLocation, setWasteType, setTruckType, setTruckCount, setDescription, setRequestedDate, reset } = useDisposal();
+  const {
+    state,
+    setLocation,
+    setWasteType,
+    setTruckType,
+    setTruckCount,
+    setDescription,
+    setRequestedDate,
+    reset,
+  } = useDisposal();
   const { token } = useAuth();
   const { forwardGeocode, resolvePlace, reverseGeocodeWithCity } = useGeocode();
 
@@ -157,7 +198,9 @@ export default function DisposalWizard() {
 
   // ── Location step state ───────────────────────────────────────
   const [pin, setPin] = useState<{ latitude: number; longitude: number } | null>(
-    state.locationLat != null ? { latitude: state.locationLat, longitude: state.locationLng! } : null,
+    state.locationLat != null
+      ? { latitude: state.locationLat, longitude: state.locationLng! }
+      : null,
   );
   const [searchText, setSearchText] = useState(state.location || '');
   const [confirmedAddress, setConfirmedAddress] = useState(state.location || '');
@@ -169,7 +212,14 @@ export default function DisposalWizard() {
   const [selectedWaste, setSelectedWaste] = useState<WasteType | null>(state.wasteType);
 
   // ── Volume step state ─────────────────────────────────────────
-  const defaultKey = state.truckCount > 1 ? 'lg' : state.truckType === 'TIPPER_SMALL' ? 'xs' : state.truckType === 'ARTICULATED_TIPPER' ? 'lg' : 'md';
+  const defaultKey =
+    state.truckCount > 1
+      ? 'lg'
+      : state.truckType === 'TIPPER_SMALL'
+        ? 'xs'
+        : state.truckType === 'ARTICULATED_TIPPER'
+          ? 'lg'
+          : 'md';
   const [volumeKey, setVolumeKey] = useState(defaultKey);
   const [desc, setDesc] = useState(state.description);
 
@@ -181,28 +231,37 @@ export default function DisposalWizard() {
   const [jobNumber, setJobNumber] = useState('');
 
   // ── Geocode search ────────────────────────────────────────────
-  const handleSearchChange = useCallback((text: string) => {
-    setSearchText(text);
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    if (!text.trim()) { setSuggestions([]); return; }
-    searchTimer.current = setTimeout(async () => {
-      setLoadingSug(true);
-      const results = await forwardGeocode(text);
-      setSuggestions(results);
-      setLoadingSug(false);
-    }, 350);
-  }, [forwardGeocode]);
+  const handleSearchChange = useCallback(
+    (text: string) => {
+      setSearchText(text);
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+      if (!text.trim()) {
+        setSuggestions([]);
+        return;
+      }
+      searchTimer.current = setTimeout(async () => {
+        setLoadingSug(true);
+        const results = await forwardGeocode(text);
+        setSuggestions(results);
+        setLoadingSug(false);
+      }, 350);
+    },
+    [forwardGeocode],
+  );
 
-  const handleSelectSuggestion = useCallback(async (sug: GeocodeSuggestion) => {
-    setSuggestions([]);
-    setSearchText(sug.place_name);
-    const coords = await resolvePlace(sug.id);
-    if (coords) {
-      const [lng, lat] = coords;
-      setPin({ latitude: lat, longitude: lng });
-      setConfirmedAddress(sug.place_name);
-    }
-  }, [resolvePlace]);
+  const handleSelectSuggestion = useCallback(
+    async (sug: GeocodeSuggestion) => {
+      setSuggestions([]);
+      setSearchText(sug.place_name);
+      const coords = await resolvePlace(sug.id);
+      if (coords) {
+        const [lng, lat] = coords;
+        setPin({ latitude: lat, longitude: lng });
+        setConfirmedAddress(sug.place_name);
+      }
+    },
+    [resolvePlace],
+  );
 
   const handleMyLocation = useCallback(async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -225,7 +284,10 @@ export default function DisposalWizard() {
 
   // ── Submit ────────────────────────────────────────────────────
   const handleSubmit = useCallback(async () => {
-    if (!state.wasteType) { Alert.alert('Kļūda', 'Lūdzu, izvēlieties atkritumu veidu.'); return; }
+    if (!state.wasteType) {
+      Alert.alert('Kļūda', 'Lūdzu, izvēlieties atkritumu veidu.');
+      return;
+    }
     const preset = VOLUME_PRESETS.find((p) => p.key === volumeKey) ?? VOLUME_PRESETS[2];
     const truck = TRUCK_CONFIG[preset.truckType];
     setTruckType(preset.truckType);
@@ -299,9 +361,7 @@ export default function DisposalWizard() {
   }
 
   // ── Map center ────────────────────────────────────────────────
-  const mapCenter: [number, number] = pin
-    ? [pin.longitude, pin.latitude]
-    : RIGA;
+  const mapCenter: [number, number] = pin ? [pin.longitude, pin.latitude] : RIGA;
 
   const preset = VOLUME_PRESETS.find((p) => p.key === volumeKey) ?? VOLUME_PRESETS[2];
   const truck = TRUCK_CONFIG[preset.truckType];
@@ -331,7 +391,13 @@ export default function DisposalWizard() {
         {/* Step label pill */}
         <View style={s.stepPill}>
           <Text style={s.stepPillText}>
-            {step === 1 ? 'Atkritumu novietne' : step === 2 ? 'Atkritumu veids' : step === 3 ? 'Apjoms' : 'Datums un apstiprinājums'}
+            {step === 1
+              ? 'Atkritumu novietne'
+              : step === 2
+                ? 'Atkritumu veids'
+                : step === 3
+                  ? 'Apjoms'
+                  : 'Datums un apstiprinājums'}
           </Text>
         </View>
       </Animated.View>
@@ -378,7 +444,9 @@ export default function DisposalWizard() {
                       activeOpacity={0.7}
                     >
                       <MapPin size={14} color="#6b7280" />
-                      <Text style={s.suggText} numberOfLines={2}>{sug.place_name}</Text>
+                      <Text style={s.suggText} numberOfLines={2}>
+                        {sug.place_name}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -426,10 +494,20 @@ export default function DisposalWizard() {
                       onPress={() => setSelectedWaste(opt.id)}
                       activeOpacity={0.7}
                     >
-                      {isSel && <View style={s.checkBadge}><Check size={11} color="#fff" /></View>}
-                      <WasteIcon size={26} color={isSel ? '#fff' : '#6b7280'} style={{ marginBottom: 6 }} />
+                      {isSel && (
+                        <View style={s.checkBadge}>
+                          <Check size={11} color="#fff" />
+                        </View>
+                      )}
+                      <WasteIcon
+                        size={26}
+                        color={isSel ? '#fff' : '#6b7280'}
+                        style={{ marginBottom: 6 }}
+                      />
                       <Text style={[s.wasteLabel, isSel && s.wasteLabelSel]}>{opt.label}</Text>
-                      <Text style={[s.wasteDesc, isSel && s.wasteDescSel]} numberOfLines={2}>{opt.desc}</Text>
+                      <Text style={[s.wasteDesc, isSel && s.wasteDescSel]} numberOfLines={2}>
+                        {opt.desc}
+                      </Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -439,7 +517,10 @@ export default function DisposalWizard() {
               <TouchableOpacity
                 style={[s.nextBtn, !selectedWaste && s.nextBtnDisabled]}
                 disabled={!selectedWaste}
-                onPress={() => { setWasteType(selectedWaste!); setStep(3); }}
+                onPress={() => {
+                  setWasteType(selectedWaste!);
+                  setStep(3);
+                }}
                 activeOpacity={0.8}
               >
                 <Text style={[s.nextText, !selectedWaste && s.nextTextDisabled]}>Turpināt →</Text>
@@ -480,8 +561,14 @@ export default function DisposalWizard() {
                       <Text style={s.volEmoji}>{p.emoji}</Text>
                       <Text style={[s.volLabel, isSel && s.volLabelSel]}>{p.label}</Text>
                       <Text style={s.volSub}>{p.sublabel}</Text>
-                      <Text style={[s.volPrice, isSel && s.volPriceSel]}>no €{p.fromPrice * p.truckCount}</Text>
-                      {isSel && <View style={s.checkBadge}><Check size={11} color="#fff" /></View>}
+                      <Text style={[s.volPrice, isSel && s.volPriceSel]}>
+                        no €{p.fromPrice * p.truckCount}
+                      </Text>
+                      {isSel && (
+                        <View style={s.checkBadge}>
+                          <Check size={11} color="#fff" />
+                        </View>
+                      )}
                     </TouchableOpacity>
                   );
                 })}
@@ -505,7 +592,9 @@ export default function DisposalWizard() {
                 style={[s.nextBtn, selectedWaste === 'HAZARDOUS' && s.nextBtnHazard]}
                 onPress={() => {
                   if (selectedWaste === 'HAZARDOUS') {
-                    Alert.alert('Bīstami atkritumi', 'Sazinieties ar mums tieši.', [{ text: 'Sapratu' }]);
+                    Alert.alert('Bīstami atkritumi', 'Sazinieties ar mums tieši.', [
+                      { text: 'Sapratu' },
+                    ]);
                     return;
                   }
                   setStep(4);
@@ -567,7 +656,9 @@ export default function DisposalWizard() {
                   <MapPin size={14} color="#6b7280" />
                   <View style={s.sumContent}>
                     <Text style={s.sumLabel}>Adrese</Text>
-                    <Text style={s.sumValue} numberOfLines={2}>{state.location || '—'}</Text>
+                    <Text style={s.sumValue} numberOfLines={2}>
+                      {state.location || '—'}
+                    </Text>
                   </View>
                 </View>
                 <View style={s.sumDivider} />
@@ -575,7 +666,9 @@ export default function DisposalWizard() {
                   <Trash2 size={14} color="#6b7280" />
                   <View style={s.sumContent}>
                     <Text style={s.sumLabel}>Atkritumu veids</Text>
-                    <Text style={s.sumValue}>{state.wasteType ? WASTE_LABELS[state.wasteType] : '—'}</Text>
+                    <Text style={s.sumValue}>
+                      {state.wasteType ? WASTE_LABELS[state.wasteType] : '—'}
+                    </Text>
                   </View>
                 </View>
                 <View style={s.sumDivider} />
@@ -583,7 +676,9 @@ export default function DisposalWizard() {
                   <Wrench size={14} color="#6b7280" />
                   <View style={s.sumContent}>
                     <Text style={s.sumLabel}>Transports</Text>
-                    <Text style={s.sumValue}>{preset.truckCount} × {truck.label}</Text>
+                    <Text style={s.sumValue}>
+                      {preset.truckCount} × {truck.label}
+                    </Text>
                   </View>
                 </View>
                 <View style={s.sumDivider} />
@@ -591,14 +686,18 @@ export default function DisposalWizard() {
                   <Package size={14} color="#6b7280" />
                   <View style={s.sumContent}>
                     <Text style={s.sumLabel}>Apjoms</Text>
-                    <Text style={s.sumValue}>{truck.capacity * preset.truckCount} t ≈ {truck.volume * preset.truckCount} m³</Text>
+                    <Text style={s.sumValue}>
+                      {truck.capacity * preset.truckCount} t ≈ {truck.volume * preset.truckCount} m³
+                    </Text>
                   </View>
                 </View>
                 <View style={s.sumDivider} />
                 <View style={s.sumPriceRow}>
                   <View style={s.sumContent}>
                     <Text style={s.sumLabel}>Orientējošā cena</Text>
-                    <Text style={s.sumValue}>no €{preset.fromPrice * preset.truckCount} + PVN 21%</Text>
+                    <Text style={s.sumValue}>
+                      no €{preset.fromPrice * preset.truckCount} + PVN 21%
+                    </Text>
                   </View>
                   <View style={s.sumPriceBadge}>
                     <Text style={s.sumPriceBadgeText}>Aptuveni</Text>
@@ -614,10 +713,11 @@ export default function DisposalWizard() {
                 onPress={handleSubmit}
                 activeOpacity={0.8}
               >
-                {loading
-                  ? <ActivityIndicator color="#fff" />
-                  : <Text style={s.nextText}>Iesniegt pieprasījumu →</Text>
-                }
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={s.nextText}>Iesniegt pieprasījumu →</Text>
+                )}
               </TouchableOpacity>
             </View>
           </>
@@ -868,8 +968,20 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 28,
   },
-  successTitle: { fontSize: 28, fontWeight: '700', color: '#fff', marginBottom: 12, textAlign: 'center' },
-  successDesc: { fontSize: 16, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 24, marginBottom: 24 },
+  successTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  successDesc: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.6)',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
   jobNumBadge: {
     backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 12,
@@ -880,7 +992,13 @@ const s = StyleSheet.create({
   },
   jobNumLabel: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 4 },
   jobNumValue: { fontSize: 22, fontWeight: '700', color: '#fff' },
-  successHint: { fontSize: 14, color: 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 20, marginBottom: 36 },
+  successHint: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.4)',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 36,
+  },
   successBtn: {
     backgroundColor: '#fff',
     borderRadius: 100,

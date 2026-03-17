@@ -428,7 +428,7 @@ export default function SellerQuotesScreen() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <ScreenContainer bg="#f9fafb">
+    <ScreenContainer bg="#f2f2f7">
       {/* Header */}
       <View style={styles.header}>
         <View>

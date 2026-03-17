@@ -15,6 +15,7 @@ import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { t } from '@/lib/translations';
 import type { SkipHireOrder, ApiOrder, ApiTransportJob } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
@@ -498,15 +499,11 @@ export default function OrdersScreen() {
           {loading ? (
             <SkeletonCard count={4} />
           ) : filtered.length === 0 ? (
-            <View style={s.empty}>
-              <Package size={44} color="#d1d5db" />
-              <Text style={s.emptyTitle}>
-                {filter === 'ALL' ? 'Nav pasūtījumu' : 'Šajā kategorijā nav pasūtījumu'}
-              </Text>
-              <Text style={s.emptySub}>
-                {filter === 'ALL' ? 'Veiciet savu pirmo pasūtījumu' : 'Mēģiniet mainīt filtru'}
-              </Text>
-              {filter === 'ALL' && (
+            <EmptyState
+              icon={<Package size={44} color="#d1d5db" />}
+              title={filter === 'ALL' ? 'Nav pasūtījumu' : 'Šajā kategorijā nav pasūtījumu'}
+              subtitle={filter === 'ALL' ? 'Veiciet savu pirmo pasūtījumu' : 'Mēģiniet mainīt filtru'}
+              action={filter === 'ALL' ? (
                 <TouchableOpacity
                   style={s.emptyBtn}
                   onPress={() => setShowTypePicker(true)}
@@ -514,8 +511,8 @@ export default function OrdersScreen() {
                 >
                   <Text style={s.emptyBtnText}>Izveidot pasūtījumu</Text>
                 </TouchableOpacity>
-              )}
-            </View>
+              ) : undefined}
+            />
           ) : (
             filtered.map((item) => (
               <UnifiedCard

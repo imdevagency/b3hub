@@ -217,7 +217,7 @@ export default function CatalogScreen() {
   const categoryLabel = category === 'ALL' ? 'Visi materi\u0101li' : CATEGORY_LABELS[category];
 
   return (
-    <ScreenContainer bg="#f8f9fa">
+    <ScreenContainer bg="#f2f2f7">
       {/* ── Header ─────────────────────────────────────────── */}
       <View style={s.header}>
         <View>

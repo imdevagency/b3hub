@@ -1125,7 +1125,7 @@ export default function JobsScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer bg="#f3f4f6">
+      <ScreenContainer bg="#f2f2f7">
         <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 12, gap: 12 }}>
           <SkeletonJobRow count={5} />
         </ScrollView>

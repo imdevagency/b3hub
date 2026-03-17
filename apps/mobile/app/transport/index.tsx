@@ -52,7 +52,12 @@ const SCREEN_H = Dimensions.get('window').height;
 const MAP_FULL = SCREEN_H * 0.46;
 const MAP_SMALL = SCREEN_H * 0.24;
 
-const VEHICLE_OPTIONS: { type: TransportVehicleType; label: string; sub: string; fromPrice: number }[] = [
+const VEHICLE_OPTIONS: {
+  type: TransportVehicleType;
+  label: string;
+  sub: string;
+  fromPrice: number;
+}[] = [
   { type: 'TIPPER_SMALL', label: 'Mazā pašizgāzēja', sub: 'līdz 5 t · 6 m³', fromPrice: 89 },
   { type: 'TIPPER_LARGE', label: 'Lielā pašizgāzēja', sub: 'līdz 15 t · 18 m³', fromPrice: 149 },
   { type: 'ARTICULATED_TIPPER', label: 'Puspiekabe', sub: 'līdz 25 t · 90 m³', fromPrice: 219 },
@@ -67,8 +72,16 @@ type Stop = { lat: number; lng: number };
 export default function TransportWizard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { state, setPickup, setDropoff, setVehicleType, setLoadDescription, setEstimatedWeight, setRequestedDate, reset } =
-    useTransport();
+  const {
+    state,
+    setPickup,
+    setDropoff,
+    setVehicleType,
+    setLoadDescription,
+    setEstimatedWeight,
+    setRequestedDate,
+    reset,
+  } = useTransport();
   const { user } = useAuth();
 
   /* step */
@@ -128,53 +141,87 @@ export default function TransportWizard() {
   useEffect(() => {
     if (!mapRef.current) return;
     if (step === 1 && pickupStop) {
-      mapRef.current.animateToRegion({ latitude: pickupStop.lat, longitude: pickupStop.lng, latitudeDelta: 0.01, longitudeDelta: 0.01 }, 600);
+      mapRef.current.animateToRegion(
+        {
+          latitude: pickupStop.lat,
+          longitude: pickupStop.lng,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        },
+        600,
+      );
     }
     if (step === 2 && dropoffStop) {
-      mapRef.current.animateToRegion({ latitude: dropoffStop.lat, longitude: dropoffStop.lng, latitudeDelta: 0.01, longitudeDelta: 0.01 }, 600);
+      mapRef.current.animateToRegion(
+        {
+          latitude: dropoffStop.lat,
+          longitude: dropoffStop.lng,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        },
+        600,
+      );
     }
   }, [pickupStop, dropoffStop, step]);
 
   /* ── geocode helpers ── */
-  const onPickupChange = useCallback(async (t: string) => {
-    setPickupQuery(t);
-    if (t.length < 2) { setPickupSugs([]); return; }
-    setPickupLoading(true);
-    const sugs = await forwardGeocode(t);
-    setPickupSugs(sugs);
-    setPickupLoading(false);
-  }, [forwardGeocode]);
+  const onPickupChange = useCallback(
+    async (t: string) => {
+      setPickupQuery(t);
+      if (t.length < 2) {
+        setPickupSugs([]);
+        return;
+      }
+      setPickupLoading(true);
+      const sugs = await forwardGeocode(t);
+      setPickupSugs(sugs);
+      setPickupLoading(false);
+    },
+    [forwardGeocode],
+  );
 
-  const onDropoffChange = useCallback(async (t: string) => {
-    setDropoffQuery(t);
-    if (t.length < 2) { setDropoffSugs([]); return; }
-    setDropoffLoading(true);
-    const sugs = await forwardGeocode(t);
-    setDropoffSugs(sugs);
-    setDropoffLoading(false);
-  }, [forwardGeocode]);
+  const onDropoffChange = useCallback(
+    async (t: string) => {
+      setDropoffQuery(t);
+      if (t.length < 2) {
+        setDropoffSugs([]);
+        return;
+      }
+      setDropoffLoading(true);
+      const sugs = await forwardGeocode(t);
+      setDropoffSugs(sugs);
+      setDropoffLoading(false);
+    },
+    [forwardGeocode],
+  );
 
-  const confirmPickup = useCallback(async (sug: GeocodeSuggestion) => {
-    const place = await resolvePlace(sug.placeId);
-    if (!place) return;
-    setPickupStop({ lat: place.lat, lng: place.lng });
-    setPickupLabel(sug.description);
-    setPickupQuery(sug.description);
-    setPickupSugs([]);
-    const cityPart = sug.description.split(',').slice(-2, -1)[0]?.trim() ?? '';
-    setPickup(sug.description, cityPart, place.lat, place.lng);
-  }, [resolvePlace, setPickup]);
+  const confirmPickup = useCallback(
+    async (sug: GeocodeSuggestion) => {
+      const place = await resolvePlace(sug.placeId);
+      if (!place) return;
+      setPickupStop({ lat: place.lat, lng: place.lng });
+      setPickupLabel(sug.description);
+      setPickupQuery(sug.description);
+      setPickupSugs([]);
+      const cityPart = sug.description.split(',').slice(-2, -1)[0]?.trim() ?? '';
+      setPickup(sug.description, cityPart, place.lat, place.lng);
+    },
+    [resolvePlace, setPickup],
+  );
 
-  const confirmDropoff = useCallback(async (sug: GeocodeSuggestion) => {
-    const place = await resolvePlace(sug.placeId);
-    if (!place) return;
-    setDropoffStop({ lat: place.lat, lng: place.lng });
-    setDropoffLabel(sug.description);
-    setDropoffQuery(sug.description);
-    setDropoffSugs([]);
-    const cityPart = sug.description.split(',').slice(-2, -1)[0]?.trim() ?? '';
-    setDropoff(sug.description, cityPart, place.lat, place.lng);
-  }, [resolvePlace, setDropoff]);
+  const confirmDropoff = useCallback(
+    async (sug: GeocodeSuggestion) => {
+      const place = await resolvePlace(sug.placeId);
+      if (!place) return;
+      setDropoffStop({ lat: place.lat, lng: place.lng });
+      setDropoffLabel(sug.description);
+      setDropoffQuery(sug.description);
+      setDropoffSugs([]);
+      const cityPart = sug.description.split(',').slice(-2, -1)[0]?.trim() ?? '';
+      setDropoff(sug.description, cityPart, place.lat, place.lng);
+    },
+    [resolvePlace, setDropoff],
+  );
 
   /* my location */
   const useMyLocation = useCallback(async () => {
@@ -228,7 +275,19 @@ export default function TransportWizard() {
     } finally {
       setSubmitting(false);
     }
-  }, [user, pickupStop, dropoffStop, selectedVehicle, activeDesc, weightText, selectedDay, pickupLabel, dropoffLabel, state, reset]);
+  }, [
+    user,
+    pickupStop,
+    dropoffStop,
+    selectedVehicle,
+    activeDesc,
+    weightText,
+    selectedDay,
+    pickupLabel,
+    dropoffLabel,
+    state,
+    reset,
+  ]);
 
   /* ── success screen ── */
   if (success) {
@@ -245,7 +304,13 @@ export default function TransportWizard() {
         <TouchableOpacity style={ss.successBtn} onPress={() => router.replace('/(buyer)/orders')}>
           <Text style={ss.successBtnText}>Skatīt pasūtījumus</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => { setSuccess(false); setStep(1); }} style={{ marginTop: 12 }}>
+        <TouchableOpacity
+          onPress={() => {
+            setSuccess(false);
+            setStep(1);
+          }}
+          style={{ marginTop: 12 }}
+        >
           <Text style={{ color: '#6b7280', fontSize: 14 }}>Jauns pasūtījums</Text>
         </TouchableOpacity>
       </View>
@@ -254,7 +319,7 @@ export default function TransportWizard() {
 
   /* ── main wizard ── */
   const progressPct = `${(step / 4) * 100}%`;
-  const currentVehiclePrice = VEHICLE_OPTIONS.find(v => v.type === selectedVehicle)?.fromPrice;
+  const currentVehiclePrice = VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle)?.fromPrice;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -263,13 +328,23 @@ export default function TransportWizard() {
         <BaseMap ref={mapRef} style={StyleSheet.absoluteFill}>
           {step >= 3 && route && <RouteLayer coords={route.coords} />}
           {pickupStop && (
-            <Marker coordinate={{ latitude: pickupStop.lat, longitude: pickupStop.lng }} anchor={{ x: 0.5, y: 1 }}>
-              <View style={ss.pinA}><Text style={ss.pinLetter}>A</Text></View>
+            <Marker
+              coordinate={{ latitude: pickupStop.lat, longitude: pickupStop.lng }}
+              anchor={{ x: 0.5, y: 1 }}
+            >
+              <View style={ss.pinA}>
+                <Text style={ss.pinLetter}>A</Text>
+              </View>
             </Marker>
           )}
           {dropoffStop && (
-            <Marker coordinate={{ latitude: dropoffStop.lat, longitude: dropoffStop.lng }} anchor={{ x: 0.5, y: 1 }}>
-              <View style={ss.pinB}><Text style={ss.pinLetter}>B</Text></View>
+            <Marker
+              coordinate={{ latitude: dropoffStop.lat, longitude: dropoffStop.lng }}
+              anchor={{ x: 0.5, y: 1 }}
+            >
+              <View style={ss.pinB}>
+                <Text style={ss.pinLetter}>B</Text>
+              </View>
             </Marker>
           )}
         </BaseMap>
@@ -287,7 +362,7 @@ export default function TransportWizard() {
           {/* header row */}
           <View style={ss.sheetHeader}>
             {step > 1 ? (
-              <TouchableOpacity onPress={() => setStep(s => s - 1)} style={ss.backBtn}>
+              <TouchableOpacity onPress={() => setStep((s) => s - 1)} style={ss.backBtn}>
                 <ChevronLeft size={20} color="#374151" />
               </TouchableOpacity>
             ) : (
@@ -321,11 +396,21 @@ export default function TransportWizard() {
                 {pickupLoading && <ActivityIndicator size="small" color="#9ca3af" />}
               </View>
               {pickupSugs.length > 0 && (
-                <ScrollView style={ss.sugList} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
-                  {pickupSugs.map(s => (
-                    <TouchableOpacity key={s.placeId} style={ss.sugRow} onPress={() => confirmPickup(s)}>
+                <ScrollView
+                  style={ss.sugList}
+                  keyboardShouldPersistTaps="handled"
+                  nestedScrollEnabled
+                >
+                  {pickupSugs.map((s) => (
+                    <TouchableOpacity
+                      key={s.placeId}
+                      style={ss.sugRow}
+                      onPress={() => confirmPickup(s)}
+                    >
                       <MapPin size={14} color="#6b7280" style={{ marginRight: 8, flexShrink: 0 }} />
-                      <Text style={ss.sugText} numberOfLines={2}>{s.description}</Text>
+                      <Text style={ss.sugText} numberOfLines={2}>
+                        {s.description}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -345,7 +430,9 @@ export default function TransportWizard() {
               {pickupLabel.length > 0 && (
                 <View style={ss.confirmedRow}>
                   <View style={ss.pinDotA} />
-                  <Text style={ss.confirmedText} numberOfLines={1}>{pickupLabel}</Text>
+                  <Text style={ss.confirmedText} numberOfLines={1}>
+                    {pickupLabel}
+                  </Text>
                 </View>
               )}
               <View style={ss.searchRow}>
@@ -361,11 +448,21 @@ export default function TransportWizard() {
                 {dropoffLoading && <ActivityIndicator size="small" color="#9ca3af" />}
               </View>
               {dropoffSugs.length > 0 && (
-                <ScrollView style={ss.sugList} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
-                  {dropoffSugs.map(s => (
-                    <TouchableOpacity key={s.placeId} style={ss.sugRow} onPress={() => confirmDropoff(s)}>
+                <ScrollView
+                  style={ss.sugList}
+                  keyboardShouldPersistTaps="handled"
+                  nestedScrollEnabled
+                >
+                  {dropoffSugs.map((s) => (
+                    <TouchableOpacity
+                      key={s.placeId}
+                      style={ss.sugRow}
+                      onPress={() => confirmDropoff(s)}
+                    >
                       <MapPin size={14} color="#6b7280" style={{ marginRight: 8, flexShrink: 0 }} />
-                      <Text style={ss.sugText} numberOfLines={2}>{s.description}</Text>
+                      <Text style={ss.sugText} numberOfLines={2}>
+                        {s.description}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -383,32 +480,46 @@ export default function TransportWizard() {
                 </Text>
               )}
               <Text style={ss.fieldLabel}>Transportlīdzeklis</Text>
-              {VEHICLE_OPTIONS.map(v => (
+              {VEHICLE_OPTIONS.map((v) => (
                 <TouchableOpacity
                   key={v.type}
                   style={[ss.vehicleCard, selectedVehicle === v.type && ss.vehicleCardActive]}
-                  onPress={() => { setSelectedVehicle(v.type); setVehicleType(v.type); }}
+                  onPress={() => {
+                    setSelectedVehicle(v.type);
+                    setVehicleType(v.type);
+                  }}
                   activeOpacity={0.75}
                 >
                   <Truck size={20} color={selectedVehicle === v.type ? '#fff' : '#374151'} />
                   <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={[ss.vehicleName, selectedVehicle === v.type && { color: '#fff' }]}>{v.label}</Text>
-                    <Text style={[ss.vehicleSub, selectedVehicle === v.type && { color: '#d1d5db' }]}>{v.sub}</Text>
+                    <Text style={[ss.vehicleName, selectedVehicle === v.type && { color: '#fff' }]}>
+                      {v.label}
+                    </Text>
+                    <Text
+                      style={[ss.vehicleSub, selectedVehicle === v.type && { color: '#d1d5db' }]}
+                    >
+                      {v.sub}
+                    </Text>
                   </View>
-                  <Text style={[ss.vehiclePrice, selectedVehicle === v.type && { color: '#d1fae5' }]}>
+                  <Text
+                    style={[ss.vehiclePrice, selectedVehicle === v.type && { color: '#d1fae5' }]}
+                  >
                     no €{v.fromPrice}
                   </Text>
                 </TouchableOpacity>
               ))}
               <Text style={[ss.fieldLabel, { marginTop: 18 }]}>Kravas veids</Text>
               <View style={ss.chipWrap}>
-                {CARGO_PRESETS.map(preset => {
+                {CARGO_PRESETS.map((preset) => {
                   const active = activeDesc === preset;
                   return (
                     <TouchableOpacity
                       key={preset}
                       style={[ss.chip, active && ss.chipActive]}
-                      onPress={() => { setActiveDesc(preset); setLoadDescription(preset); }}
+                      onPress={() => {
+                        setActiveDesc(preset);
+                        setLoadDescription(preset);
+                      }}
                     >
                       <Text style={[ss.chipText, active && ss.chipTextActive]}>{preset}</Text>
                     </TouchableOpacity>
@@ -436,16 +547,29 @@ export default function TransportWizard() {
             <ScrollView style={ss.stepBody} showsVerticalScrollIndicator={false}>
               <Text style={ss.stepTitle}>Kad pārvadāt?</Text>
               <Text style={ss.stepSub}>Izvēlieties vēlamo datumu</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
-                {DAY_OPTIONS.map(d => (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginBottom: 20 }}
+              >
+                {DAY_OPTIONS.map((d) => (
                   <TouchableOpacity
                     key={d.iso}
                     style={[ss.dayChip, selectedDay === d.iso && ss.dayChipActive]}
-                    onPress={() => { setSelectedDay(d.iso); setRequestedDate(d.iso); }}
+                    onPress={() => {
+                      setSelectedDay(d.iso);
+                      setRequestedDate(d.iso);
+                    }}
                   >
-                    <Text style={[ss.dayChipSub, selectedDay === d.iso && { color: '#fff' }]}>{d.dow}</Text>
-                    <Text style={[ss.dayChipNum, selectedDay === d.iso && { color: '#fff' }]}>{d.day}</Text>
-                    <Text style={[ss.dayChipSub, selectedDay === d.iso && { color: '#d1d5db' }]}>{d.mon}</Text>
+                    <Text style={[ss.dayChipSub, selectedDay === d.iso && { color: '#fff' }]}>
+                      {d.dow}
+                    </Text>
+                    <Text style={[ss.dayChipNum, selectedDay === d.iso && { color: '#fff' }]}>
+                      {d.day}
+                    </Text>
+                    <Text style={[ss.dayChipSub, selectedDay === d.iso && { color: '#d1d5db' }]}>
+                      {d.mon}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -454,8 +578,18 @@ export default function TransportWizard() {
               <View style={ss.summaryCard}>
                 <SummaryRow icon="📍" label="No" value={pickupLabel} />
                 <SummaryRow icon="🏁" label="Uz" value={dropoffLabel} />
-                {route && <SummaryRow icon="🛣" label="Distance" value={`${route.distanceKm.toFixed(1)} km · ${route.durationLabel}`} />}
-                <SummaryRow icon="🚛" label="Auto" value={VEHICLE_OPTIONS.find(v => v.type === selectedVehicle)?.label ?? ''} />
+                {route && (
+                  <SummaryRow
+                    icon="🛣"
+                    label="Distance"
+                    value={`${route.distanceKm.toFixed(1)} km · ${route.durationLabel}`}
+                  />
+                )}
+                <SummaryRow
+                  icon="🚛"
+                  label="Auto"
+                  value={VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle)?.label ?? ''}
+                />
                 <SummaryRow icon="📦" label="Krava" value={activeDesc} />
               </View>
 
@@ -474,12 +608,22 @@ export default function TransportWizard() {
           <View style={ss.ctaRow}>
             {step < 4 ? (
               <TouchableOpacity
-                style={[ss.nextBtn, !(step === 1 ? step1Valid : step === 2 ? step2Valid : step3Valid) && ss.nextBtnDisabled]}
+                style={[
+                  ss.nextBtn,
+                  !(step === 1 ? step1Valid : step === 2 ? step2Valid : step3Valid) &&
+                    ss.nextBtnDisabled,
+                ]}
                 disabled={!(step === 1 ? step1Valid : step === 2 ? step2Valid : step3Valid)}
-                onPress={() => setStep(s => s + 1)}
+                onPress={() => setStep((s) => s + 1)}
                 activeOpacity={0.85}
               >
-                <Text style={[ss.nextTxt, !(step === 1 ? step1Valid : step === 2 ? step2Valid : step3Valid) && ss.nextTxtDisabled]}>
+                <Text
+                  style={[
+                    ss.nextTxt,
+                    !(step === 1 ? step1Valid : step === 2 ? step2Valid : step3Valid) &&
+                      ss.nextTxtDisabled,
+                  ]}
+                >
                   Turpināt <ArrowRight size={16} color="#fff" />
                 </Text>
               </TouchableOpacity>
@@ -512,7 +656,9 @@ function SummaryRow({ icon, label, value }: { icon: string; label: string; value
     <View style={ss.sumRow}>
       <Text style={{ fontSize: 16, marginRight: 8 }}>{icon}</Text>
       <Text style={ss.sumLabel}>{label}</Text>
-      <Text style={ss.sumValue} numberOfLines={2}>{value}</Text>
+      <Text style={ss.sumValue} numberOfLines={2}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -539,22 +685,79 @@ function buildDays() {
 
 const ss = StyleSheet.create({
   /* success */
-  successRoot: { flex: 1, backgroundColor: '#111827', alignItems: 'center', justifyContent: 'center', padding: 32 },
+  successRoot: {
+    flex: 1,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
   successTitle: { fontSize: 28, fontWeight: '700', color: '#fff', marginTop: 24, marginBottom: 8 },
   successSubtitle: { fontSize: 16, color: '#9ca3af', marginBottom: 24 },
-  jobBadge: { backgroundColor: '#1f2937', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10, marginBottom: 32 },
+  jobBadge: {
+    backgroundColor: '#1f2937',
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginBottom: 32,
+  },
   jobBadgeText: { color: '#22c55e', fontWeight: '700', fontSize: 22, letterSpacing: 2 },
-  successBtn: { backgroundColor: '#fff', borderRadius: 100, paddingHorizontal: 40, paddingVertical: 16 },
+  successBtn: {
+    backgroundColor: '#fff',
+    borderRadius: 100,
+    paddingHorizontal: 40,
+    paddingVertical: 16,
+  },
   successBtnText: { color: '#111827', fontWeight: '700', fontSize: 16 },
   /* map pins */
-  pinA: { width: 28, height: 28, borderRadius: 6, backgroundColor: '#111827', alignItems: 'center', justifyContent: 'center' },
-  pinB: { width: 28, height: 28, borderRadius: 6, backgroundColor: '#22c55e', alignItems: 'center', justifyContent: 'center' },
+  pinA: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pinB: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: '#22c55e',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   pinLetter: { color: '#fff', fontSize: 13, fontWeight: '700' },
   /* sheet */
-  sheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, flex: 1, paddingTop: 8, paddingHorizontal: 20, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 10 },
-  dragPill: { width: 40, height: 4, backgroundColor: '#e5e7eb', borderRadius: 2, alignSelf: 'center', marginBottom: 12 },
+  sheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    flex: 1,
+    paddingTop: 8,
+    paddingHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  dragPill: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
   sheetHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   progressTrack: { height: 4, backgroundColor: '#f3f4f6', borderRadius: 2, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: '#111827', borderRadius: 2 },
   stepLabel: { fontSize: 12, color: '#9ca3af', fontWeight: '600' },
@@ -562,35 +765,111 @@ const ss = StyleSheet.create({
   stepTitle: { fontSize: 22, fontWeight: '700', color: '#111827', marginBottom: 4 },
   stepSub: { fontSize: 14, color: '#6b7280', marginBottom: 16 },
   /* search */
-  searchRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f9fafb', borderWidth: 1.5, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 8 },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 8,
+  },
   searchInput: { flex: 1, fontSize: 15, color: '#111827' },
   sugList: { maxHeight: 180, marginBottom: 8 },
-  sugRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
+  sugRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
   sugText: { flex: 1, fontSize: 14, color: '#374151', lineHeight: 18 },
   myLocBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
   myLocText: { fontSize: 14, color: '#111827', fontWeight: '500' },
-  confirmedRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f9fafb', borderRadius: 10, padding: 10, marginBottom: 12, gap: 8 },
+  confirmedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 12,
+    gap: 8,
+  },
   confirmedText: { flex: 1, fontSize: 13, color: '#6b7280' },
   pinDotA: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#111827' },
-  routeInfo: { fontSize: 13, color: '#22c55e', fontWeight: '600', marginBottom: 14, backgroundColor: '#f0fdf4', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start' },
+  routeInfo: {
+    fontSize: 13,
+    color: '#22c55e',
+    fontWeight: '600',
+    marginBottom: 14,
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
   /* vehicle */
-  fieldLabel: { fontSize: 12, fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-  vehicleCard: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: '#e5e7eb', borderRadius: 14, padding: 14, marginBottom: 10 },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9ca3af',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  vehicleCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+  },
   vehicleCardActive: { backgroundColor: '#111827', borderColor: '#111827' },
   vehicleName: { fontSize: 15, fontWeight: '600', color: '#111827' },
   vehicleSub: { fontSize: 12, color: '#6b7280', marginTop: 2 },
   vehiclePrice: { fontSize: 15, fontWeight: '700', color: '#111827' },
   /* chips */
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: '#e5e7eb', backgroundColor: '#f9fafb' },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
+  },
   chipActive: { backgroundColor: '#111827', borderColor: '#111827' },
   chipText: { fontSize: 13, color: '#374151', fontWeight: '500' },
   chipTextActive: { color: '#fff' },
   /* weight */
-  weightRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f9fafb', borderWidth: 1.5, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, gap: 8 },
+  weightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 8,
+  },
   weightInput: { flex: 1, fontSize: 15, color: '#111827' },
   /* day chips */
-  dayChip: { alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, borderWidth: 1.5, borderColor: '#e5e7eb', marginRight: 8, minWidth: 56, backgroundColor: '#f9fafb' },
+  dayChip: {
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    marginRight: 8,
+    minWidth: 56,
+    backgroundColor: '#f9fafb',
+  },
   dayChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
   dayChipSub: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
   dayChipNum: { fontSize: 20, fontWeight: '700', color: '#111827', marginVertical: 2 },
@@ -600,12 +879,26 @@ const ss = StyleSheet.create({
   sumLabel: { fontSize: 13, color: '#9ca3af', width: 60 },
   sumValue: { flex: 1, fontSize: 13, color: '#111827', fontWeight: '500' },
   /* price estimate */
-  priceEstRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f0fdf4', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 8 },
+  priceEstRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f0fdf4',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
   priceEstLabel: { fontSize: 14, color: '#166534' },
   priceEstValue: { fontSize: 18, fontWeight: '700', color: '#166534' },
   /* CTA */
   ctaRow: { paddingTop: 12 },
-  nextBtn: { backgroundColor: '#111827', borderRadius: 100, paddingVertical: 16, alignItems: 'center' },
+  nextBtn: {
+    backgroundColor: '#111827',
+    borderRadius: 100,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
   nextBtnDisabled: { backgroundColor: '#f3f4f6' },
   nextTxt: { fontSize: 16, fontWeight: '600', color: '#fff' },
   nextTxtDisabled: { color: '#9ca3af' },

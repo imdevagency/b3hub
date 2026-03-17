@@ -17,7 +17,7 @@ import {
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Plus, Pencil, Trash2, Leaf, PackageSearch, ChevronDown, Check } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
-import { CATEGORY_LABELS } from '@/lib/materials';
+import { CATEGORY_LABELS, UNIT_SHORT } from '@/lib/materials';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -25,17 +25,10 @@ import type { ApiMaterial, MaterialCategory, MaterialUnit } from '@/lib/api';
 
 // ── Constants ──────────────────────────────────────────────────
 
-// CATEGORY_LABELS imported from @/lib/materials
-
-const UNIT_LABELS: Record<MaterialUnit, string> = {
-  TONNE: 't',
-  M3: 'm³',
-  PIECE: 'gab.',
-  LOAD: 'krava',
-};
+// CATEGORY_LABELS and UNIT_SHORT imported from @/lib/materials
 
 const CATEGORIES = (Object.keys(CATEGORY_LABELS) as string[]).filter((k) => k !== 'ALL') as MaterialCategory[];
-const UNITS = Object.keys(UNIT_LABELS) as MaterialUnit[];
+const UNITS = Object.keys(UNIT_SHORT) as MaterialUnit[];
 
 const CATEGORY_COLOR: Record<MaterialCategory, { bg: string; color: string }> = {
   SAND: { bg: '#f3f4f6', color: '#6b7280' },
@@ -113,11 +106,11 @@ function ListingCard({
 
       <View style={s.cardMeta}>
         <Text style={s.cardPrice}>
-          €{material.basePrice.toFixed(2)} / {UNIT_LABELS[material.unit]}
+          €{material.basePrice.toFixed(2)} / {UNIT_SHORT[material.unit]}
         </Text>
         {material.minOrder != null && (
           <Text style={s.cardMin}>
-            Min: {material.minOrder} {UNIT_LABELS[material.unit]}
+            Min: {material.minOrder} {UNIT_SHORT[material.unit]}
           </Text>
         )}
         {material.isRecycled && (
@@ -260,7 +253,7 @@ function ListingModal({
                 onPress={() => set('unit')(unit)}
               >
                 <Text style={[s.chipText, form.unit === unit && s.chipTextActive]}>
-                  {UNIT_LABELS[unit]}
+                  {UNIT_SHORT[unit]}
                 </Text>
               </TouchableOpacity>
             ))}
