@@ -1,11 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
@@ -260,7 +254,13 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   alertBadgeNum: { color: '#fff', fontWeight: '800', fontSize: 16, lineHeight: 20 },
-  alertTitle: { fontSize: 15, fontWeight: '700', fontFamily: 'Inter_700Bold', color: '#92400e', lineHeight: 20 },
+  alertTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    color: '#92400e',
+    lineHeight: 20,
+  },
   alertSub: { fontSize: 12, color: '#a16207', marginTop: 2, lineHeight: 17 },
 
   // Primary CTA button
@@ -275,7 +275,13 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: 'Inter_700Bold', letterSpacing: 0.2 },
+  primaryBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 0.2,
+  },
 
   // 2×2 grid
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },

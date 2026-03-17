@@ -27,7 +27,9 @@ import type { ApiMaterial, MaterialCategory, MaterialUnit } from '@/lib/api';
 
 // CATEGORY_LABELS and UNIT_SHORT imported from @/lib/materials
 
-const CATEGORIES = (Object.keys(CATEGORY_LABELS) as string[]).filter((k) => k !== 'ALL') as MaterialCategory[];
+const CATEGORIES = (Object.keys(CATEGORY_LABELS) as string[]).filter(
+  (k) => k !== 'ALL',
+) as MaterialCategory[];
 const UNITS = Object.keys(UNIT_SHORT) as MaterialUnit[];
 
 const CATEGORY_COLOR: Record<MaterialCategory, { bg: string; color: string }> = {

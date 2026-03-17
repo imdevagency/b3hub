@@ -16,6 +16,7 @@ import {
   Bell,
   Box,
   ChevronRight,
+  FileText,
   FolderOpen,
   LogOut,
   MessageCircle,
@@ -79,6 +80,11 @@ function buildItems(role: Role): MenuItem[] {
       icon: (c) => <Users size={20} color={c} />,
       label: 'Komanda',
       route: '/(buyer)/team',
+    });
+    items.push({
+      icon: (c) => <FileText size={20} color={c} />,
+      label: 'Rāmjlīgumi',
+      route: '/(buyer)/framework-contracts',
     });
     items.push({
       icon: (c) => <Receipt size={20} color={c} />,

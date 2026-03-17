@@ -324,7 +324,10 @@ export default function EarningsScreen() {
                 {filteredHistory.map((job, idx) => (
                   <View
                     key={job.id}
-                    style={[styles.historyRow, idx < filteredHistory.length - 1 && styles.historyRowBorder]}
+                    style={[
+                      styles.historyRow,
+                      idx < filteredHistory.length - 1 && styles.historyRowBorder,
+                    ]}
                   >
                     <View
                       style={[

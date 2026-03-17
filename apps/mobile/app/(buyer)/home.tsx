@@ -331,9 +331,7 @@ export default function HomeScreen() {
               <Text style={s.activeLabel}>
                 {activeCount > 1 ? `${activeCount} aktīvie pasūtījumi` : 'Aktīvs pasūtījums'}
               </Text>
-              <Text style={s.activeNum}>
-                {activeCount > 1 ? 'Skatīt visus →' : activeItem.num}
-              </Text>
+              <Text style={s.activeNum}>{activeCount > 1 ? 'Skatīt visus →' : activeItem.num}</Text>
               {activeCount === 1 && <Text style={s.activeStatus}>{activeItem.status}</Text>}
             </View>
             <ChevronRight size={18} color="#6b7280" />

@@ -333,10 +333,12 @@ export default function OrderWizard() {
   );
 
   // ── Step 4 submit ─────────────────────────────────────────────
-  const onSubmit = useCallback(async () => {    if (!token) {
+  const onSubmit = useCallback(async () => {
+    if (!token) {
       Alert.alert('Pieteikties nepīciešams', 'Lai veiktu pasūtījumu, lūdzu vispirms piesakieties.');
       return;
-    }    if (!state.location || !state.wasteCategory || !state.skipSize) return;
+    }
+    if (!state.location || !state.wasteCategory || !state.skipSize) return;
     setSubmitting(true);
     setDeliveryDate(startDate ?? minDate);
     try {

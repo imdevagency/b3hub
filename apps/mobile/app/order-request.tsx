@@ -1316,12 +1316,9 @@ export default function OrderRequestScreen() {
         )}
 
         {/* Full-screen overlays */}
-        {step === 'sent' && (
-          <View style={StyleSheet.absoluteFillObject}>{renderSent()}</View>
-        )}
+        {step === 'sent' && <View style={StyleSheet.absoluteFillObject}>{renderSent()}</View>}
         {step === 'success' && <View style={StyleSheet.absoluteFillObject}>{renderSuccess()}</View>}
       </View>
     </View>
   );
 }
-

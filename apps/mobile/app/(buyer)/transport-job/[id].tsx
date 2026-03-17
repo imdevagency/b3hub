@@ -78,6 +78,17 @@ const CARGO_LABEL: Record<string, string> = {
 const { height: SCREEN_H } = Dimensions.get('window');
 const MAP_H = Math.round(SCREEN_H * 0.38);
 
+/** Haversine great-circle distance in km between two lat/lng points. */
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.asin(Math.sqrt(a));
+}
+
 // ── Stepper ────────────────────────────────────────────────────
 
 function StatusStepper({ status }: { status: string }) {
@@ -156,6 +167,32 @@ export default function TransportJobDetailScreen() {
   const { job, loading, reload: loadJob } = useTransportJob(id);
   const [cancelling, setCancelling] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+  const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const locationPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── Poll driver GPS every 10 s while job is active ────────────────
+  useEffect(() => {
+    if (!token || !id || !job) return;
+    if (!ACTIVE_STATUSES.has(job.status)) {
+      setDriverLocation(null);
+      return;
+    }
+    const poll = async () => {
+      try {
+        const loc = await api.transportJobs.getLocation(String(id), token);
+        if (loc.currentLocation) {
+          setDriverLocation({ lat: loc.currentLocation.lat, lng: loc.currentLocation.lng });
+        }
+      } catch {
+        // silent — don't interrupt UX
+      }
+    };
+    poll();
+    locationPollRef.current = setInterval(poll, 10_000);
+    return () => {
+      if (locationPollRef.current) clearInterval(locationPollRef.current);
+    };
+  }, [token, id, job?.status]);
 
   // Route between pickup and delivery
   const pickup =
@@ -187,32 +224,28 @@ export default function TransportJobDetailScreen() {
   const handleCancel = () => {
     if (!job || !token) return;
     haptics.medium();
-    Alert.alert(
-      'Atcelt pasūtījumu?',
-      'Šo darbību nevar atsaukt. Pasūtījums tiks atcelts.',
-      [
-        { text: 'Nē', style: 'cancel' },
-        {
-          text: 'Atcelt',
-          style: 'destructive',
-          onPress: async () => {
-            setCancelling(true);
-            try {
-              await api.transportJobs.updateStatus(job.id, 'CANCELLED', token);
-              loadJob();
-            } catch (err) {
-              haptics.error();
-              Alert.alert(
-                'Kļūda',
-                err instanceof Error ? err.message : 'Neizdevās atcelt pasūtījumu',
-              );
-            } finally {
-              setCancelling(false);
-            }
-          },
+    Alert.alert('Atcelt pasūtījumu?', 'Šo darbību nevar atsaukt. Pasūtījums tiks atcelts.', [
+      { text: 'Nē', style: 'cancel' },
+      {
+        text: 'Atcelt',
+        style: 'destructive',
+        onPress: async () => {
+          setCancelling(true);
+          try {
+            await api.transportJobs.updateStatus(job.id, 'CANCELLED', token);
+            loadJob();
+          } catch (err) {
+            haptics.error();
+            Alert.alert(
+              'Kļūda',
+              err instanceof Error ? err.message : 'Neizdevās atcelt pasūtījumu',
+            );
+          } finally {
+            setCancelling(false);
+          }
         },
-      ],
-    );
+      },
+    ]);
   };
 
   return (
@@ -252,6 +285,18 @@ export default function TransportJobDetailScreen() {
               </View>
             </Marker>
           )}
+          {/* Live driver marker */}
+          {driverLocation && (
+            <Marker
+              coordinate={{ latitude: driverLocation.lat, longitude: driverLocation.lng }}
+              anchor={{ x: 0.5, y: 0.5 }}
+              tracksViewChanges={false}
+            >
+              <View style={s.pinDriver}>
+                <Truck size={13} color="#fff" strokeWidth={2.5} />
+              </View>
+            </Marker>
+          )}
         </BaseMap>
 
         {/* Floating back button */}
@@ -281,6 +326,22 @@ export default function TransportJobDetailScreen() {
           <View style={s.distBadge}>
             <Text style={s.distText}>
               {route.distanceKm.toFixed(0)} km · {route.durationLabel}
+            </Text>
+          </View>
+        )}
+        {/* Live driver distance chip */}
+        {driverLocation && delivery && (
+          <View style={s.driverBadge}>
+            <View style={s.driverLiveDot} />
+            <Text style={s.driverBadgeText}>
+              Šoferis ~
+              {haversineKm(
+                driverLocation.lat,
+                driverLocation.lng,
+                delivery.lat,
+                delivery.lng,
+              ).toFixed(0)}{' '}
+              km
             </Text>
           </View>
         )}
@@ -505,6 +566,32 @@ const s = StyleSheet.create({
   },
   distText: { fontSize: 12, fontWeight: '600', color: '#fff' },
 
+  // Live driver badge
+  driverBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  driverLiveDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#059669',
+  },
+  driverBadgeText: { fontSize: 13, fontWeight: '600', color: '#059669' },
+
   // Map markers
   pinPickup: {
     width: 32,
@@ -525,6 +612,21 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: '#fff',
+  },
+  pinDriver: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#059669',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
+    shadowColor: '#059669',
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 6,
   },
 
   // Content

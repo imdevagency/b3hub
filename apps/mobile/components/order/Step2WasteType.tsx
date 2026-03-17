@@ -1,12 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  ScrollView,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, ScrollView } from 'react-native';
 import { Check } from 'lucide-react-native';
 import type { SkipWasteCategory } from '@/lib/api';
 import { haptics } from '@/lib/haptics';

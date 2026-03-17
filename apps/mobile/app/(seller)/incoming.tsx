@@ -24,7 +24,17 @@ import { haptics } from '@/lib/haptics';
 import { SELLER_ORDER_STATUS } from '@/lib/materials';
 import { useToast } from '@/components/ui/Toast';
 import { api, type ApiOrder } from '@/lib/api';
-import { Clock, CheckCircle2, Package, X, Square, CheckSquare2, MapPin, Check, Inbox } from 'lucide-react-native';
+import {
+  Clock,
+  CheckCircle2,
+  Package,
+  X,
+  Square,
+  CheckSquare2,
+  MapPin,
+  Check,
+  Inbox,
+} from 'lucide-react-native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type OrderStatus = 'PENDING' | 'CONFIRMED' | 'LOADING' | 'DISPATCHED';
@@ -193,7 +203,9 @@ function LoadingModal({
                 </TouchableOpacity>
               ))}
               {!allChecked && (
-                <Text style={modalStyles.checklistHint}>Atzīmējiet visus punktus, lai turpinātu</Text>
+                <Text style={modalStyles.checklistHint}>
+                  Atzīmējiet visus punktus, lai turpinātu
+                </Text>
               )}
             </View>
           </ScrollView>
@@ -778,7 +790,13 @@ const modalStyles = StyleSheet.create({
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
   checkIcon: { fontSize: 18, color: '#9ca3af' },
   checkText: { fontSize: 14, color: '#374151', flex: 1 },
-  checklistHint: { fontSize: 12, color: '#d97706', marginTop: 6, textAlign: 'center', fontStyle: 'italic' },
+  checklistHint: {
+    fontSize: 12,
+    color: '#d97706',
+    marginTop: 6,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
 
   footer: {
     padding: 20,

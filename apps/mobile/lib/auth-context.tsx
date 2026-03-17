@@ -178,7 +178,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .catch(() => clearSession())
       .finally(() => setIsLoading(false));
 
-    return () => { if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current); };
+    return () => {
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
