@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useToast } from '@/components/ui/Toast';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { Box, Package, ChevronRight, X, CheckCircle } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -83,9 +84,7 @@ function OrderCard({ item }: { item: ApiContainerOrder }) {
         <Text style={s.orderCardType}>
           {TYPE_LABELS[item.container.containerType] ?? item.container.containerType}
         </Text>
-        <View style={[s.statusPill, { backgroundColor: st.bg }]}>
-          <Text style={[s.statusPillText, { color: st.color }]}>{st.label}</Text>
-        </View>
+        <StatusPill label={st.label} bg={st.bg} color={st.color} />
       </View>
       <Text style={s.orderCardSub}>
         {item.deliveryCity} · {item.rentalDays} d. · €{item.totalPrice.toFixed(2)}
@@ -467,8 +466,6 @@ const s = StyleSheet.create({
   orderCardType: { fontSize: 15, fontWeight: '600', color: '#111827' },
   orderCardSub: { fontSize: 13, color: '#6b7280' },
   orderCardDate: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
-  statusPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
-  statusPillText: { fontSize: 12, fontWeight: '600' },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
   emptyText: { fontSize: 15, color: '#9ca3af' },

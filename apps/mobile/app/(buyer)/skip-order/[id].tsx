@@ -32,6 +32,8 @@ import { SkeletonDetail } from '@/components/ui/Skeleton';
 import type { SkipHireOrder } from '@/lib/api';
 import { t } from '@/lib/translations';
 import { RatingModal } from '@/components/ui/RatingModal';
+import { StatusPill } from '@/components/ui/StatusPill';
+import { formatDate } from '@/lib/format';
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -55,11 +57,6 @@ const WASTE_LABEL: Record<string, string> = {
   METAL_SCRAP: 'Metāls',
   ELECTRONICS_WEEE: 'Elektronika',
 };
-
-function formatDate(iso: string): string {
-  const d = new Date(iso + (iso.includes('T') ? '' : 'T00:00:00'));
-  return d.toLocaleDateString('lv-LV', { day: 'numeric', month: 'long', year: 'numeric' });
-}
 
 // ── Detail Row ─────────────────────────────────────────────────
 
@@ -208,9 +205,7 @@ export default function SkipOrderDetailScreen() {
           </Text>
           <Text style={s.headerSub}>Konteinera pasūtījums</Text>
         </View>
-        <View style={[s.badge, { backgroundColor: status.bg }]}>
-          <Text style={[s.badgeText, { color: status.color }]}>{status.label}</Text>
-        </View>
+        <StatusPill label={status.label} bg={status.bg} color={status.color} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
@@ -355,8 +350,6 @@ const s = StyleSheet.create({
   },
   headerTitle: { fontSize: 17, fontWeight: '700', color: '#111827' },
   headerSub: { fontSize: 12, color: '#9ca3af', marginTop: 1 },
-  badge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 },
-  badgeText: { fontSize: 12, fontWeight: '600' },
 
   scroll: { paddingHorizontal: 16, gap: 0 },
 

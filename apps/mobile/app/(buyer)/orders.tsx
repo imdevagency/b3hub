@@ -16,6 +16,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { t } from '@/lib/translations';
 import type { SkipHireOrder, ApiOrder, ApiTransportJob } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
@@ -132,9 +133,7 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
               <Trash2 size={11} color="#6b7280" />
               <Text style={s.typeTagText}>Konteiners</Text>
             </View>
-            <View style={[s.badge, { backgroundColor: status.bg }]}>
-              <Text style={[s.badgeText, { color: status.color }]}>{status.label}</Text>
-            </View>
+            <StatusPill label={status.label} bg={status.bg} color={status.color} />
           </View>
           <Text style={s.orderNum}>{order.orderNumber}</Text>
           <Text style={s.orderSub}>{SIZE_LABEL[order.skipSize] ?? order.skipSize}</Text>
@@ -199,9 +198,7 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
             <Truck size={11} color="#6b7280" />
             <Text style={s.typeTagText}>Materiāli</Text>
           </View>
-          <View style={[s.badge, { backgroundColor: st.bg }]}>
-            <Text style={[s.badgeText, { color: st.color }]}>{st.label}</Text>
-          </View>
+          <StatusPill label={st.label} bg={st.bg} color={st.color} />
         </View>
         <Text style={s.orderNum}>{order.orderNumber}</Text>
         <Text style={s.orderSub} numberOfLines={1}>
@@ -288,9 +285,7 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
             <Icon size={11} color="#6b7280" />
             <Text style={s.typeTagText}>{typeLabel}</Text>
           </View>
-          <View style={[s.badge, { backgroundColor: st.bg }]}>
-            <Text style={[s.badgeText, { color: st.color }]}>{st.label}</Text>
-          </View>
+          <StatusPill label={st.label} bg={st.bg} color={st.color} />
         </View>
         <Text style={s.orderNum}>{job.jobNumber}</Text>
         {!isDisposal && (
@@ -726,8 +721,6 @@ const s = StyleSheet.create({
     paddingVertical: 3,
   },
   typeTagText: { fontSize: 11, fontWeight: '600', color: '#6b7280' },
-  badge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
-  badgeText: { fontSize: 12, fontWeight: '600' },
 
   orderNum: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2 },
   orderSub: { fontSize: 13, color: '#6b7280', marginBottom: 8 },

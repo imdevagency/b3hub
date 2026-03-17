@@ -28,6 +28,8 @@ import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import type { ApiTransportJob } from '@/lib/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusPill } from '@/components/ui/StatusPill';
+import { formatDate, formatDateTime } from '@/lib/format';
 import { BaseMap, RouteLayer, useRoute } from '@/components/map';
 import { Marker } from 'react-native-maps';
 
@@ -95,21 +97,6 @@ const ACTIVE_STATUSES = new Set([
   'EN_ROUTE_DELIVERY',
   'AT_DELIVERY',
 ]);
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString('lv-LV', { day: 'numeric', month: 'long', year: 'numeric' });
-}
-
-function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString('lv-LV', {
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 // ── Stepper ────────────────────────────────────────────────────
 
@@ -348,9 +335,7 @@ export default function TransportJobDetailScreen() {
               <Text style={s.jobType}>{typeLabel}</Text>
             </View>
             {st && (
-              <View style={[s.statusBadge, { backgroundColor: st.bg }]}>
-                <Text style={[s.statusBadgeText, { color: st.color }]}>{st.label}</Text>
-              </View>
+              <StatusPill label={st.label} bg={st.bg} color={st.color} />
             )}
           </View>
 
@@ -587,8 +572,6 @@ const s = StyleSheet.create({
   },
   jobNumber: { fontSize: 18, fontWeight: '700', color: '#111827' },
   jobType: { fontSize: 13, color: '#6b7280', marginTop: 2 },
-  statusBadge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
-  statusBadgeText: { fontSize: 12, fontWeight: '600' },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: '#6b7280' },
