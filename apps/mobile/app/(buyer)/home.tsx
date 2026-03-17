@@ -1,12 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  ScrollView,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, ScrollView } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
@@ -20,6 +13,7 @@ import {
   ChevronRight,
   Bell,
   ClipboardList,
+  MessageCircle,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { Sidebar } from '@/components/ui/Sidebar';
@@ -52,6 +46,16 @@ const STATUS_DOT: Record<string, string> = {
   DISPATCHED: '#059669',
   DELIVERING: '#059669',
 };
+
+const SKIP_ACTIVE_STATUSES = new Set(['PENDING', 'CONFIRMED', 'DELIVERED']);
+const TJ_ACTIVE_STATUSES = new Set([
+  'ACCEPTED',
+  'EN_ROUTE_PICKUP',
+  'AT_PICKUP',
+  'LOADED',
+  'EN_ROUTE_DELIVERY',
+  'AT_DELIVERY',
+]);
 
 const SERVICES = [
   {
@@ -105,11 +109,13 @@ export default function HomeScreen() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const activeCardScale = useRef(new Animated.Value(1)).current;
 
-  // Pulsing live dot on active order
+  // Pulsing live dot on active order (any type)
   useEffect(() => {
-    const hasActive = orders.some((o) => ACTIVE_STATUSES.has(o.status));
+    const hasActive =
+      orders.some((o) => ACTIVE_STATUSES.has(o.status)) ||
+      skipOrders.some((o) => SKIP_ACTIVE_STATUSES.has(o.status)) ||
+      transportOrders.some((o) => TJ_ACTIVE_STATUSES.has(o.status));
     if (!hasActive) return;
     const loop = Animated.loop(
       Animated.sequence([
@@ -120,7 +126,7 @@ export default function HomeScreen() {
     loop.start();
     return () => loop.stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orders]);
+  }, [orders, skipOrders, transportOrders]);
 
   useFocusEffect(
     useCallback(() => {
@@ -141,18 +147,82 @@ export default function HomeScreen() {
     }, [token]),
   );
 
-  const activeOrder = orders.find((o) => ACTIVE_STATUSES.has(o.status)) ?? null;
+  type RecentItem = {
+    id: string;
+    num: string;
+    sub: string;
+    status: string;
+    kind: 'mat' | 'skip' | 'transport';
+    dotColor: string;
+  };
 
-  type RecentItem = { id: string; num: string; sub: string; status: string; kind: 'mat' | 'skip' | 'transport' };
+  // Active item from any of the 3 order types
+  const activeItem: RecentItem | null = (() => {
+    const mat = orders.find((o) => ACTIVE_STATUSES.has(o.status));
+    if (mat)
+      return {
+        id: mat.id,
+        num: `#${mat.orderNumber}`,
+        sub: mat.deliveryCity ?? '—',
+        status: STATUS_LABEL[mat.status] ?? mat.status,
+        kind: 'mat',
+        dotColor: STATUS_DOT[mat.status] ?? '#9ca3af',
+      };
+    const skip = skipOrders.find((o) => SKIP_ACTIVE_STATUSES.has(o.status));
+    if (skip)
+      return {
+        id: skip.id,
+        num: `#${skip.orderNumber}`,
+        sub: skip.location ?? '—',
+        status: skip.status,
+        kind: 'skip',
+        dotColor: '#059669',
+      };
+    const tj = transportOrders.find((o) => TJ_ACTIVE_STATUSES.has(o.status));
+    if (tj)
+      return {
+        id: tj.id,
+        num: `#${tj.jobNumber}`,
+        sub: tj.pickupCity ?? '—',
+        status: tj.status,
+        kind: 'transport',
+        dotColor: '#059669',
+      };
+    return null;
+  })();
+
   const recentItems: RecentItem[] = [];
-  orders.filter((o) => !ACTIVE_STATUSES.has(o.status)).forEach((o) => {
-    recentItems.push({ id: o.id, num: `#${o.orderNumber}`, sub: o.deliveryCity ?? '—', status: STATUS_LABEL[o.status] ?? o.status, kind: 'mat' });
-  });
+  orders
+    .filter((o) => !ACTIVE_STATUSES.has(o.status))
+    .forEach((o) => {
+      recentItems.push({
+        id: o.id,
+        num: `#${o.orderNumber}`,
+        sub: o.deliveryCity ?? '—',
+        status: STATUS_LABEL[o.status] ?? o.status,
+        kind: 'mat',
+        dotColor: '#9ca3af',
+      });
+    });
   skipOrders.forEach((o) => {
-    recentItems.push({ id: o.id, num: `#${o.orderNumber}`, sub: o.location ?? '—', status: o.status, kind: 'skip' });
+    recentItems.push({
+      id: o.id,
+      num: `#${o.orderNumber}`,
+      sub: o.location ?? '—',
+      status: o.status,
+      kind: 'skip',
+      dotColor: '#9ca3af',
+    });
   });
   transportOrders.forEach((o) => {
-    recentItems.push({ id: o.id, num: `#${o.jobNumber}`, sub: o.pickupCity ?? '—', status: o.status, kind: 'transport' });
+    recentItems.push({
+      id: o.id,
+      num: `#${o.jobNumber}`,
+      sub: o.pickupCity ?? '—',
+      status: o.status,
+      kind: 'transport',
+      dotColor: '#9ca3af',
+    });
   });
   const recentOrders = recentItems.slice(0, 3);
   const totalOrders = orders.length + skipOrders.length + transportOrders.length;
@@ -162,7 +232,10 @@ export default function HomeScreen() {
       {/* ── Top bar ── */}
       <View style={[s.topBar, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity
-          onPress={() => { haptics.light(); setSidebarOpen(true); }}
+          onPress={() => {
+            haptics.light();
+            setSidebarOpen(true);
+          }}
           activeOpacity={0.8}
         >
           <View style={s.avatar}>
@@ -184,6 +257,16 @@ export default function HomeScreen() {
           style={s.bellBtn}
           onPress={() => {
             haptics.light();
+            router.push('/messages' as any);
+          }}
+          activeOpacity={0.75}
+        >
+          <MessageCircle size={22} color="#111827" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={s.bellBtn}
+          onPress={() => {
+            haptics.light();
             router.push('/notifications' as any);
           }}
           activeOpacity={0.75}
@@ -200,56 +283,45 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Active order banner */}
-        {activeOrder && (
-          <Animated.View style={{ transform: [{ scale: activeCardScale }] }}>
-            <TouchableOpacity
-              style={s.activeCard}
-              onPress={() => {
-                haptics.light();
-                router.push(`/(buyer)/order/${activeOrder.id}` as any);
-              }}
-              onPressIn={() =>
-                Animated.spring(activeCardScale, {
-                  toValue: 0.97,
-                  useNativeDriver: true,
-                  tension: 300,
-                  friction: 8,
-                }).start()
-              }
-              onPressOut={() =>
-                Animated.spring(activeCardScale, {
-                  toValue: 1,
-                  useNativeDriver: true,
-                  tension: 200,
-                  friction: 8,
-                }).start()
-              }
-              activeOpacity={1}
-            >
-              <View style={s.activeDotWrap}>
-                <Animated.View
-                  style={[
-                    s.activeDotRing,
-                    {
-                      backgroundColor: STATUS_DOT[activeOrder.status] ?? '#9ca3af',
-                      transform: [{ scale: pulseAnim }],
-                    },
-                  ]}
-                />
-                <View
-                  style={[s.activeDot, { backgroundColor: STATUS_DOT[activeOrder.status] ?? '#9ca3af' }]}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.activeLabel}>Aktīvs pasūtījums</Text>
-                <Text style={s.activeNum}>#{activeOrder.orderNumber}</Text>
-                <Text style={s.activeStatus}>
-                  {STATUS_LABEL[activeOrder.status] ?? activeOrder.status}
-                </Text>
-              </View>
-              <ChevronRight size={18} color="#6b7280" />
-            </TouchableOpacity>
-          </Animated.View>
+        {activeItem && (
+          <TouchableOpacity
+            style={s.activeCard}
+            onPress={() => {
+              haptics.light();
+              const route =
+                activeItem.kind === 'skip'
+                  ? `/(buyer)/skip-order/${activeItem.id}`
+                  : activeItem.kind === 'transport'
+                    ? `/(buyer)/transport-job/${activeItem.id}`
+                    : `/(buyer)/order/${activeItem.id}`;
+              router.push(route as any);
+            }}
+            activeOpacity={0.85}
+          >
+            <View style={s.activeDotWrap}>
+              <Animated.View
+                style={[
+                  s.activeDotRing,
+                  {
+                    backgroundColor: activeItem.dotColor,
+                    transform: [{ scale: pulseAnim }],
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  s.activeDot,
+                  { backgroundColor: activeItem.dotColor },
+                ]}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.activeLabel}>Aktīvs pasūtījums</Text>
+              <Text style={s.activeNum}>{activeItem.num}</Text>
+              <Text style={s.activeStatus}>{activeItem.status}</Text>
+            </View>
+            <ChevronRight size={18} color="#6b7280" />
+          </TouchableOpacity>
         )}
 
         {/* Quick services row */}
@@ -260,7 +332,7 @@ export default function HomeScreen() {
             return (
               <TouchableOpacity
                 key={svc.id}
-                style={[s.quickTile, { flex: 1 }]}
+                style={[s.quickTile, { width: '48%' }]}
                 onPress={() => {
                   haptics.light();
                   router.push(svc.route as any);
@@ -270,7 +342,9 @@ export default function HomeScreen() {
                 <View style={s.quickTileIcon}>
                   <Icon size={22} color="#111827" />
                 </View>
-                <Text style={s.quickTileLabel} numberOfLines={1}>{svc.label}</Text>
+                <Text style={s.quickTileLabel} numberOfLines={1}>
+                  {svc.label}
+                </Text>
               </TouchableOpacity>
             );
           })}
@@ -287,12 +361,14 @@ export default function HomeScreen() {
             </View>
             <View style={s.recentCard}>
               {recentOrders.map((item, i) => {
-                const Icon = item.kind === 'skip' ? Trash2 : item.kind === 'transport' ? Truck : Package;
-                const route = item.kind === 'skip'
-                  ? `/(buyer)/skip-order/${item.id}`
-                  : item.kind === 'transport'
-                  ? `/(buyer)/transport-job/${item.id}`
-                  : `/(buyer)/order/${item.id}`;
+                const Icon =
+                  item.kind === 'skip' ? Trash2 : item.kind === 'transport' ? Truck : Package;
+                const route =
+                  item.kind === 'skip'
+                    ? `/(buyer)/skip-order/${item.id}`
+                    : item.kind === 'transport'
+                      ? `/(buyer)/transport-job/${item.id}`
+                      : `/(buyer)/order/${item.id}`;
                 return (
                   <TouchableOpacity
                     key={item.id}
@@ -305,7 +381,9 @@ export default function HomeScreen() {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={s.recentNum}>{item.num}</Text>
-                      <Text style={s.recentCity} numberOfLines={1}>{item.sub}</Text>
+                      <Text style={s.recentCity} numberOfLines={1}>
+                        {item.sub}
+                      </Text>
                     </View>
                     <Text style={s.recentStatus}>{item.status}</Text>
                     <ChevronRight size={14} color="#d1d5db" style={{ marginLeft: 4 }} />
@@ -475,12 +553,24 @@ const s = StyleSheet.create({
   activeDotWrap: { width: 12, height: 12, alignItems: 'center', justifyContent: 'center' },
   activeDot: { width: 10, height: 10, borderRadius: 5 },
   activeDotRing: { position: 'absolute', width: 10, height: 10, borderRadius: 5, opacity: 0.3 },
-  activeLabel: { fontSize: 11, color: '#9ca3af', fontWeight: '500', marginBottom: 1, lineHeight: 15 },
-  activeNum: { fontSize: 15, fontWeight: '700', fontFamily: 'Inter_700Bold', color: '#111827', lineHeight: 20 },
+  activeLabel: {
+    fontSize: 11,
+    color: '#9ca3af',
+    fontWeight: '500',
+    marginBottom: 1,
+    lineHeight: 15,
+  },
+  activeNum: {
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    color: '#111827',
+    lineHeight: 20,
+  },
   activeStatus: { fontSize: 12, color: '#374151', marginTop: 2, lineHeight: 17 },
 
-  // Quick services horizontal row
-  quickRow: { flexDirection: 'row', gap: 8 },
+  // Quick services 2×2 grid
+  quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   quickTile: {
     flex: 1,
     alignItems: 'center',
@@ -537,7 +627,13 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  recentNum: { fontSize: 13, fontWeight: '600', fontFamily: 'Inter_600SemiBold', color: '#111827', lineHeight: 18 },
+  recentNum: {
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
+    color: '#111827',
+    lineHeight: 18,
+  },
   recentCity: { fontSize: 11, color: '#9ca3af', lineHeight: 16, marginTop: 1 },
   recentStatus: { fontSize: 11, color: '#6b7280', lineHeight: 16 },
 

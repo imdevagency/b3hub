@@ -83,3 +83,11 @@ export const TJB_STATUS: Record<string, { label: string; bg: string; color: stri
   DELIVERED:         { label: 'Pabeigts',                           bg: '#f0fdf4', color: '#15803d' },
   CANCELLED:         { label: 'Atcelts',                            bg: '#fee2e2', color: '#b91c1c' },
 };
+
+// ── Skip-hire container size labels ──────────────────────────────────
+export const SIZE_LABEL: Record<string, string> = {
+  MINI:     'Mini · 2 m³',
+  MIDI:     'Midi · 4 m³',
+  BUILDERS: 'Celtniec. · 6 m³',
+  LARGE:    'Liels · 8 m³',
+};

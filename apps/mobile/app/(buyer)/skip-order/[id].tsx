@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { SIZE_LABEL } from '@/lib/materials';
 import {
   ArrowLeft,
   MapPin,
@@ -22,6 +23,7 @@ import {
   User,
   Star,
   FileText,
+  XCircle,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -43,12 +45,7 @@ const SKIP_STEPS: { key: string; label: string; hint: string }[] = [
 
 const STEP_ORDER = ['PENDING', 'CONFIRMED', 'DELIVERED', 'COLLECTED', 'COMPLETED'];
 
-const SIZE_LABEL: Record<string, string> = {
-  MINI: 'Mini · 2 m³',
-  MIDI: 'Midi · 4 m³',
-  BUILDERS: 'Celtnieks · 6 m³',
-  LARGE: 'Liels · 8 m³',
-};
+// SIZE_LABEL imported from @/lib/materials
 
 const WASTE_LABEL: Record<string, string> = {
   MIXED: 'Jaukts',
@@ -140,7 +137,7 @@ export default function SkipOrderDetailScreen() {
   const [order, setOrder] = useState<SkipHireOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [showRating, setShowRating] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (!id || !token) return;
@@ -171,33 +168,31 @@ export default function SkipOrderDetailScreen() {
 
   const status = t.skipHire.status[order.status] ?? t.skipHire.status.PENDING;
   const canRate = order.status === 'COLLECTED' || order.status === 'COMPLETED';
-  const canCancel = order.status === 'PENDING';
+  const canCancel = order.status === 'PENDING' || order.status === 'CONFIRMED';
 
   const handleCancel = () => {
-    Alert.alert(
-      'Atcelt pasūtījumu',
-      'Vai tiešām vēlaties atcelt šo konteinera pasūtījumu?',
-      [
-        { text: 'Nē', style: 'cancel' },
-        {
-          text: 'Jā, atcelt',
-          style: 'destructive',
-          onPress: async () => {
-            if (!token || !id) return;
-            try {
-              setActionLoading(true);
-              haptics.medium();
-              const updated = await api.skipHire.cancel(id, token);
-              setOrder(updated as unknown as SkipHireOrder);
-            } catch {
-              Alert.alert('Kļūda', 'Neizdevās atcelt pasūtījumu.');
-            } finally {
-              setActionLoading(false);
-            }
-          },
+    haptics.heavy();
+    Alert.alert('Atcelt pasūtījumu?', 'Šo darbību nevar atsaukt.', [
+      { text: 'Nē', style: 'cancel' },
+      {
+        text: 'Atcelt',
+        style: 'destructive',
+        onPress: async () => {
+          if (!token) return;
+          setCancelling(true);
+          try {
+            const updated = await api.skipHire.cancel(order.id, token);
+            setOrder(updated);
+            haptics.success();
+          } catch (err: any) {
+            haptics.error();
+            Alert.alert('Kļūda', err?.message ?? 'Neizdevās atcelt pasūtījumu');
+          } finally {
+            setCancelling(false);
+          }
         },
-      ],
-    );
+      },
+    ]);
   };
 
   return (
@@ -287,22 +282,6 @@ export default function SkipOrderDetailScreen() {
           </View>
         )}
 
-        {/* ── Cancel button ── */}
-        {canCancel && (
-          <TouchableOpacity
-            style={[s.cancelBtn, actionLoading && { opacity: 0.5 }]}
-            onPress={handleCancel}
-            disabled={actionLoading}
-            activeOpacity={0.8}
-          >
-            {actionLoading ? (
-              <ActivityIndicator size="small" color="#b91c1c" />
-            ) : (
-              <Text style={s.cancelBtnText}>Atcelt pasūtījumu</Text>
-            )}
-          </TouchableOpacity>
-        )}
-
         {/* ── Rate button ── */}
         {canRate && (
           <TouchableOpacity
@@ -315,6 +294,19 @@ export default function SkipOrderDetailScreen() {
           >
             <Star size={16} color="#fff" fill="#fff" />
             <Text style={s.rateBtnText}>Novērtēt pakalpojumu</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* ── Cancel button (PENDING / CONFIRMED only) ── */}
+        {canCancel && (
+          <TouchableOpacity
+            style={s.cancelBtn}
+            onPress={handleCancel}
+            disabled={cancelling}
+            activeOpacity={0.85}
+          >
+            <XCircle size={16} color="#b91c1c" />
+            <Text style={s.cancelBtnText}>{cancelling ? 'Atceļ...' : 'Atcelt pasūtījumu'}</Text>
           </TouchableOpacity>
         )}
 
@@ -430,13 +422,16 @@ const s = StyleSheet.create({
   rateBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
 
   cancelBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+    borderColor: '#fca5a5',
     borderRadius: 100,
     paddingVertical: 14,
-    marginTop: 4,
+    marginTop: 8,
+    backgroundColor: '#fff7f7',
   },
   cancelBtnText: { fontSize: 15, fontWeight: '600', color: '#b91c1c' },
 

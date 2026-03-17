@@ -33,7 +33,7 @@ import {
 } from 'lucide-react-native';
 import { RatingModal } from '@/components/ui/RatingModal';
 import { BottomSheet } from '@/components/ui/BottomSheet';
-import { UNIT_SHORT, MAT_STATUS, TJB_STATUS } from '@/lib/materials';
+import { UNIT_SHORT, MAT_STATUS, TJB_STATUS, SIZE_LABEL } from '@/lib/materials';
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -50,12 +50,7 @@ const SKIP_ACTIVE = new Set(['PENDING', 'CONFIRMED', 'DELIVERED']);
 const SKIP_DONE = new Set(['COLLECTED', 'COMPLETED']);
 const MAT_ACTIVE = new Set(['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED']);
 
-const SIZE_LABEL: Record<string, string> = {
-  MINI: 'Mini · 2 m³',
-  MIDI: 'Midi · 4 m³',
-  BUILDERS: 'Celtniec. · 6 m³',
-  LARGE: 'Liels · 8 m³',
-};
+// SIZE_LABEL imported from @/lib/materials
 
 const WASTE_TYPE_LABEL: Record<string, string> = {
   CONCRETE: 'Betons / Bruģis',
