@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -32,8 +32,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
-import type { ApiOrder, JobLocation, ApiDocument } from '@/lib/api';
-import { JobRouteMap } from '@/components/ui/JobRouteMap';
+import type { ApiOrder, ApiDocument } from '@/lib/api';
 import { t } from '@/lib/translations';
 import { RatingModal } from '@/components/ui/RatingModal';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -92,11 +91,7 @@ export default function OrderDetailScreen() {
   const [actionLoading, setActionLoading] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [alreadyRated, setAlreadyRated] = useState(false);
-  const [driverLoc, setDriverLoc] = useState<{ lat: number; lng: number } | null>(null);
-  const [jobLoc, setJobLoc] = useState<JobLocation | null>(null);
-  const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
   const [documents, setDocuments] = useState<ApiDocument[]>([]);
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
     if (!token || !id) {
@@ -131,67 +126,6 @@ export default function OrderDetailScreen() {
   useEffect(() => {
     load();
   }, [load]);
-
-  // Poll driver GPS while order is in transit (or load coords for planned route)
-  useEffect(() => {
-    const liveJob = order?.transportJobs?.find(
-      (j) =>
-        j.status === 'ACCEPTED' ||
-        j.status === 'EN_ROUTE_DELIVERY' ||
-        j.status === 'AT_DELIVERY' ||
-        j.status === 'LOADED' ||
-        j.status === 'EN_ROUTE_PICKUP' ||
-        j.status === 'AT_PICKUP',
-    );
-
-    if (!liveJob || !token) {
-      setDriverLoc(null);
-      setJobLoc(null);
-      if (pollingRef.current) clearInterval(pollingRef.current);
-      return;
-    }
-
-    const poll = async () => {
-      try {
-        const data = await api.transportJobs.getLocation(liveJob.id, token);
-        setJobLoc(data);
-        if (data.currentLocation) {
-          const loc = { lat: data.currentLocation.lat, lng: data.currentLocation.lng };
-          setDriverLoc(loc);
-          // ETA to pickup when heading there; ETA to delivery when cargo loaded
-          const toPickup = liveJob.status === 'ACCEPTED' || liveJob.status === 'EN_ROUTE_PICKUP';
-          const toDelivery =
-            liveJob.status === 'LOADED' ||
-            liveJob.status === 'EN_ROUTE_DELIVERY' ||
-            liveJob.status === 'AT_DELIVERY';
-          const targetLat = toPickup ? data.pickupLat : toDelivery ? data.deliveryLat : null;
-          const targetLng = toPickup ? data.pickupLng : toDelivery ? data.deliveryLng : null;
-          if (targetLat != null && targetLng != null) {
-            const R = 6371;
-            const dLat = ((targetLat - loc.lat) * Math.PI) / 180;
-            const dLng = ((targetLng - loc.lng) * Math.PI) / 180;
-            const a =
-              Math.sin(dLat / 2) ** 2 +
-              Math.cos((loc.lat * Math.PI) / 180) *
-                Math.cos((targetLat * Math.PI) / 180) *
-                Math.sin(dLng / 2) ** 2;
-            const distKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            setEtaMinutes(Math.max(1, Math.round(distKm / 0.6)));
-          } else {
-            setEtaMinutes(null);
-          }
-        }
-      } catch {
-        /* silent — don’t disrupt buyer UX */
-      }
-    };
-
-    poll();
-    pollingRef.current = setInterval(poll, 10_000);
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, [order, token]);
 
   const handleCancel = () => {
     haptics.heavy();
@@ -278,58 +212,6 @@ export default function OrderDetailScreen() {
 
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         {/* Live driver tracking map — shows planned route even before GPS fix */}
-        {activeJob && jobLoc?.pickupLat != null && jobLoc?.deliveryLat != null && (
-          <View style={s.trackingCard}>
-            <View style={s.trackingHeader}>
-              <Truck size={14} color="#111827" />
-              <Text style={s.trackingTitle}>Maršruts</Text>
-            </View>
-            <JobRouteMap
-              pickup={{
-                lat: jobLoc.pickupLat,
-                lng: jobLoc.pickupLng ?? 0,
-                label: 'Iekraušana',
-              }}
-              delivery={{
-                lat: jobLoc.deliveryLat,
-                lng: jobLoc.deliveryLng ?? 0,
-                label: 'Piegāde',
-              }}
-              current={driverLoc ?? undefined}
-              showToPickupLeg={
-                !!driverLoc &&
-                (activeJob.status === 'EN_ROUTE_PICKUP' || activeJob.status === 'ACCEPTED')
-              }
-              height={220}
-            />
-          </View>
-        )}
-
-        {/* ETA card — shown whenever we have a live ETA */}
-        {etaMinutes != null && activeJob && (
-          <View style={s.etaCard}>
-            <View style={s.etaLeft}>
-              <Text style={s.etaEmoji}>
-                {activeJob.status === 'ACCEPTED' || activeJob.status === 'EN_ROUTE_PICKUP'
-                  ? '📍'
-                  : '🚚'}
-              </Text>
-              <View>
-                <Text style={s.etaLabel}>
-                  {activeJob.status === 'ACCEPTED' || activeJob.status === 'EN_ROUTE_PICKUP'
-                    ? 'Šoferis ieradīsies iekraušanā'
-                    : 'Piegāde paredzama'}
-                </Text>
-                <Text style={s.etaValue}>
-                  {'pēc ~'}
-                  {etaMinutes}
-                  {' min'}
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-
         {/* Driver card — if order is in transit */}
         {driver && (
           <View style={s.driverCard}>

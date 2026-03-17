@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  Animated,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
@@ -43,23 +42,23 @@ interface TypeInfo {
 
 const TYPE_INFO: Record<string, TypeInfo> = {
   // Backend types
-  ORDER_CREATED:         { Icon: Package,      bg: '#f3f4f6', iconColor: '#374151' },
-  ORDER_CONFIRMED:       { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#111827' },
-  ORDER_DELIVERED:       { Icon: CheckCircle2, bg: '#dcfce7', iconColor: '#15803d' },
-  TRANSPORT_ASSIGNED:    { Icon: Truck,        bg: '#eff6ff', iconColor: '#2563eb' },
-  TRANSPORT_STARTED:     { Icon: Truck,        bg: '#f3f4f6', iconColor: '#374151' },
-  TRANSPORT_COMPLETED:   { Icon: Award,        bg: '#f0fdf4', iconColor: '#059669' },
-  PAYMENT_RECEIVED:      { Icon: Banknote,     bg: '#f0fdf4', iconColor: '#111827' },
-  SYSTEM_ALERT:          { Icon: Bell,         bg: '#fefce8', iconColor: '#ca8a04' },
+  ORDER_CREATED: { Icon: Package, bg: '#f3f4f6', iconColor: '#374151' },
+  ORDER_CONFIRMED: { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#111827' },
+  ORDER_DELIVERED: { Icon: CheckCircle2, bg: '#dcfce7', iconColor: '#15803d' },
+  TRANSPORT_ASSIGNED: { Icon: Truck, bg: '#eff6ff', iconColor: '#2563eb' },
+  TRANSPORT_STARTED: { Icon: Truck, bg: '#f3f4f6', iconColor: '#374151' },
+  TRANSPORT_COMPLETED: { Icon: Award, bg: '#f0fdf4', iconColor: '#059669' },
+  PAYMENT_RECEIVED: { Icon: Banknote, bg: '#f0fdf4', iconColor: '#111827' },
+  SYSTEM_ALERT: { Icon: Bell, bg: '#fefce8', iconColor: '#ca8a04' },
   // Legacy / future
-  ORDER_PLACED:          { Icon: Package,      bg: '#f3f4f6', iconColor: '#374151' },
-  ORDER_SHIPPED:         { Icon: Truck,        bg: '#f3f4f6', iconColor: '#374151' },
-  ORDER_CANCELLED:       { Icon: XCircle,      bg: '#fef2f2', iconColor: '#111827' },
-  JOB_AVAILABLE:         { Icon: Briefcase,    bg: '#f3f4f6', iconColor: '#374151' },
-  JOB_ACCEPTED:          { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#059669' },
-  JOB_COMPLETED:         { Icon: Award,        bg: '#f3f4f6', iconColor: '#6b7280' },
-  INVOICE_ISSUED:        { Icon: FileText,     bg: '#f9fafb', iconColor: '#6b7280' },
-  SYSTEM:                { Icon: Bell,         bg: '#f3f4f6', iconColor: '#6b7280' },
+  ORDER_PLACED: { Icon: Package, bg: '#f3f4f6', iconColor: '#374151' },
+  ORDER_SHIPPED: { Icon: Truck, bg: '#f3f4f6', iconColor: '#374151' },
+  ORDER_CANCELLED: { Icon: XCircle, bg: '#fef2f2', iconColor: '#111827' },
+  JOB_AVAILABLE: { Icon: Briefcase, bg: '#f3f4f6', iconColor: '#374151' },
+  JOB_ACCEPTED: { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#059669' },
+  JOB_COMPLETED: { Icon: Award, bg: '#f3f4f6', iconColor: '#6b7280' },
+  INVOICE_ISSUED: { Icon: FileText, bg: '#f9fafb', iconColor: '#6b7280' },
+  SYSTEM: { Icon: Bell, bg: '#f3f4f6', iconColor: '#6b7280' },
 };
 const DEFAULT_TYPE_INFO: TypeInfo = { Icon: Bell, bg: '#f3f4f6', iconColor: '#6b7280' };
 
@@ -106,28 +105,12 @@ function timeAgo(iso: string): string {
 function NotifCard({
   notif,
   onMarkRead,
-  index = 0,
 }: {
   notif: ApiNotification;
   onMarkRead: (id: string) => void;
-  index?: number;
 }) {
   const { Icon, bg, iconColor } = TYPE_INFO[notif.type] ?? DEFAULT_TYPE_INFO;
   const router = useRouter();
-  const anim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.spring(anim, {
-      toValue: 1,
-      delay: index * 55,
-      useNativeDriver: true,
-      tension: 72,
-      friction: 11,
-    }).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] });
 
   const handlePress = () => {
     if (!notif.isRead) onMarkRead(notif.id);
@@ -135,30 +118,12 @@ function NotifCard({
     if (path) router.push(path as Parameters<typeof router.push>[0]);
   };
 
-  const pressScale = useRef(new Animated.Value(1)).current;
-
   return (
-    <Animated.View style={{ opacity: anim, transform: [{ translateY }, { scale: pressScale }] }}>
+    <View>
       <TouchableOpacity
         style={[s.card, !notif.isRead && s.cardUnread]}
         onPress={handlePress}
-        onPressIn={() =>
-          Animated.spring(pressScale, {
-            toValue: 0.97,
-            useNativeDriver: true,
-            tension: 300,
-            friction: 8,
-          }).start()
-        }
-        onPressOut={() =>
-          Animated.spring(pressScale, {
-            toValue: 1,
-            useNativeDriver: true,
-            tension: 200,
-            friction: 8,
-          }).start()
-        }
-        activeOpacity={1}
+        activeOpacity={0.8}
       >
         <View style={s.iconWrap}>
           <View style={[s.iconCircle, { backgroundColor: bg }]}>
@@ -176,7 +141,7 @@ function NotifCard({
           <Text style={s.cardTime}>{timeAgo(notif.createdAt)}</Text>
         </View>
       </TouchableOpacity>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -272,7 +237,7 @@ export default function NotificationsScreen() {
               subtitle="Šeit parādīsies jūsu paziņojumi"
             />
           ) : (
-            notifs.map((n, i) => <NotifCard key={n.id} notif={n} index={i} onMarkRead={markRead} />)
+            notifs.map((n) => <NotifCard key={n.id} notif={n} onMarkRead={markRead} />)
           )}
         </ScrollView>
       )}

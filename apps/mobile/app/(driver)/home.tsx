@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Animated,
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -75,33 +74,6 @@ export default function DriverHomeScreen() {
   const [availableJobs, setAvailableJobs] = useState<ApiTransportJob[]>([]);
   const [hasActiveJob, setHasActiveJob] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-
-  // Tile stagger entrance animation
-  const tileAnims = useRef(
-    QUICK_ACTIONS.map(() => ({ opacity: new Animated.Value(0), y: new Animated.Value(20) })),
-  ).current;
-
-  useEffect(() => {
-    QUICK_ACTIONS.forEach((_, i) => {
-      Animated.sequence([
-        Animated.delay(i * 70),
-        Animated.parallel([
-          Animated.spring(tileAnims[i].opacity, {
-            toValue: 1,
-            useNativeDriver: true,
-            tension: 72,
-            friction: 11,
-          }),
-          Animated.spring(tileAnims[i].y, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 72,
-            friction: 11,
-          }),
-        ]),
-      ]).start();
-    });
-  }, []);
 
   // Fly camera to driver's current location once on mount
   useEffect(() => {
@@ -243,34 +215,26 @@ export default function DriverHomeScreen() {
 
         {/* Quick-action tiles 2×2 */}
         <View style={s.grid}>
-          {QUICK_ACTIONS.map((a, idx) => {
+          {QUICK_ACTIONS.map((a) => {
             const Icon = a.icon;
             return (
-              <Animated.View
+              <TouchableOpacity
                 key={a.id}
-                style={{
-                  opacity: tileAnims[idx].opacity,
-                  transform: [{ translateY: tileAnims[idx].y }],
-                  width: '48%',
+                style={[s.gridTile, { width: '48%' }]}
+                onPress={() => {
+                  haptics.light();
+                  router.push(a.route as any);
                 }}
+                activeOpacity={0.75}
               >
-                <TouchableOpacity
-                  style={[s.gridTile, { width: '100%' }]}
-                  onPress={() => {
-                    haptics.light();
-                    router.push(a.route as any);
-                  }}
-                  activeOpacity={0.75}
-                >
-                  <View style={s.gridIcon}>
-                    <Icon size={20} color="#111827" />
-                  </View>
-                  <Text style={s.gridLabel}>{a.label}</Text>
-                  <Text style={s.gridSub} numberOfLines={1}>
-                    {a.sub}
-                  </Text>
-                </TouchableOpacity>
-              </Animated.View>
+                <View style={s.gridIcon}>
+                  <Icon size={20} color="#111827" />
+                </View>
+                <Text style={s.gridLabel}>{a.label}</Text>
+                <Text style={s.gridSub} numberOfLines={1}>
+                  {a.sub}
+                </Text>
+              </TouchableOpacity>
             );
           })}
         </View>

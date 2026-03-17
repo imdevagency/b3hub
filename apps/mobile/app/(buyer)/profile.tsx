@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -20,13 +20,7 @@ import {
   X,
   Check,
   LogOut,
-  Bell,
   ChevronRight,
-  Package,
-  Truck,
-  ShoppingCart,
-  Clock,
-  MessageCircle,
   Phone,
   AlertCircle,
   HelpCircle,
@@ -34,7 +28,7 @@ import {
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
-import { api, ProviderApplication } from '@/lib/api';
+import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 
 export default function ProfileScreen() {
@@ -48,22 +42,13 @@ export default function ProfileScreen() {
     lastName: user?.lastName ?? '',
     phone: user?.phone ?? '',
   });
-  const [pendingApps, setPendingApps] = useState<ProviderApplication[]>([]);
   const toast = useToast();
-
-  useEffect(() => {
-    if (!token) return;
-    api.providerApplications
-      .mine(token)
-      .then(setPendingApps)
-      .catch(() => {});
-  }, [token]);
 
   const roleLabel = t.mode[mode];
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`;
 
   const ROLE_THEME: Record<string, { avatarBg: string; badgeBg: string; badgeText: string }> = {
-    buyer:  { avatarBg: '#fee2e2', badgeBg: '#fef2f2', badgeText: '#b91c1c' },
+    buyer: { avatarBg: '#fee2e2', badgeBg: '#fef2f2', badgeText: '#b91c1c' },
     seller: { avatarBg: '#d1fae5', badgeBg: '#f0fdf4', badgeText: '#15803d' },
     driver: { avatarBg: '#dbeafe', badgeBg: '#eff6ff', badgeText: '#1d4ed8' },
   };
@@ -176,87 +161,6 @@ export default function ProfileScreen() {
         )}
 
         <View style={s.body}>
-          {/* Roles section */}
-          <View style={s.card}>
-            <Text style={s.cardTitle}>Manas lomas</Text>
-
-            {/* Buyer — always active */}
-            <View style={[s.roleRow, s.roleRowBorder]}>
-              <View style={[s.roleIcon, { backgroundColor: '#fef2f2' }]}>
-                <ShoppingCart size={15} color="#b91c1c" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.roleName}>Pircējs</Text>
-                <Text style={s.roleDesc}>Pasūtīšana un piegādes</Text>
-              </View>
-              <View style={s.activeChip}>
-                <Text style={s.activeChipText}>Aktīvs</Text>
-              </View>
-            </View>
-
-            {/* Supplier */}
-            <View style={[s.roleRow, s.roleRowBorder]}>
-              <View style={[s.roleIcon, { backgroundColor: '#d1fae5' }]}>
-                <Package size={15} color="#059669" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.roleName}>Piegādātājs</Text>
-                <Text style={s.roleDesc}>Pārdod materiālus</Text>
-              </View>
-              {user?.canSell ? (
-                <View style={[s.activeChip, { backgroundColor: '#d1fae5' }]}>
-                  <Text style={[s.activeChipText, { color: '#059669' }]}>Aktīvs</Text>
-                </View>
-              ) : pendingApps.some((a) => a.appliesForSell && a.status === 'PENDING') ? (
-                <View style={s.pendingChip}>
-                  <Clock size={11} color="#d97706" />
-                  <Text style={s.pendingChipText}>Gaida</Text>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={s.applyBtn}
-                  onPress={() =>
-                    router.push({ pathname: '/(auth)/apply-role', params: { type: 'supplier' } })
-                  }
-                  activeOpacity={0.8}
-                >
-                  <Text style={s.applyBtnText}>Pieteikt</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Carrier */}
-            <View style={s.roleRow}>
-              <View style={[s.roleIcon, { backgroundColor: '#eff6ff' }]}>
-                <Truck size={15} color="#1d4ed8" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.roleName}>Pārvadātājs</Text>
-                <Text style={s.roleDesc}>Kravas un transports</Text>
-              </View>
-              {user?.canTransport ? (
-                <View style={[s.activeChip, { backgroundColor: '#eff6ff' }]}>
-                  <Text style={[s.activeChipText, { color: '#1d4ed8' }]}>Aktīvs</Text>
-                </View>
-              ) : pendingApps.some((a) => a.appliesForTransport && a.status === 'PENDING') ? (
-                <View style={s.pendingChip}>
-                  <Clock size={11} color="#d97706" />
-                  <Text style={s.pendingChipText}>Gaida</Text>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={s.applyBtn}
-                  onPress={() =>
-                    router.push({ pathname: '/(auth)/apply-role', params: { type: 'carrier' } })
-                  }
-                  activeOpacity={0.8}
-                >
-                  <Text style={s.applyBtnText}>Pieteikt</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-
           {/* Info card */}
           <View style={s.card}>
             <Text style={s.cardTitle}>{t.profile.account}</Text>
@@ -272,30 +176,6 @@ export default function ProfileScreen() {
           </View>
 
           {/* Quick links */}
-          <TouchableOpacity
-            style={s.linkRow}
-            onPress={() => router.push('/messages' as any)}
-            activeOpacity={0.8}
-          >
-            <View style={s.linkLeft}>
-              <MessageCircle size={16} color="#374151" />
-              <Text style={s.linkText}>Ziņojumi</Text>
-            </View>
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={s.linkRow}
-            onPress={() => router.push('/notifications')}
-            activeOpacity={0.8}
-          >
-            <View style={s.linkLeft}>
-              <Bell size={16} color="#374151" />
-              <Text style={s.linkText}>Paziņojumi</Text>
-            </View>
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
-
           <TouchableOpacity
             style={s.linkRow}
             onPress={() => router.push('/help' as any)}

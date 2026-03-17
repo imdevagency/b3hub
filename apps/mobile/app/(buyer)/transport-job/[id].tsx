@@ -35,11 +35,8 @@ import { Marker } from 'react-native-maps';
 
 const STATUS_STEPS = [
   { key: 'AVAILABLE', label: 'Iesniegts', hint: 'Meklē pārvadātāju' },
-  { key: 'ASSIGNED', label: 'Piešķirts', hint: 'Pārvadātājs atrasts' },
-  { key: 'ACCEPTED', label: 'Apstiprināts', hint: 'Pasūtījums apstiprināts' },
-  { key: 'EN_ROUTE_PICKUP', label: 'Brauc', hint: 'Brauc uz iekraušanu' },
-  { key: 'LOADED', label: 'Iekrauts', hint: 'Krava iekrauta' },
-  { key: 'EN_ROUTE_DELIVERY', label: 'Ceļā', hint: 'Ceļā uz galamērķi' },
+  { key: 'ACCEPTED', label: 'Apstiprināts', hint: 'Pārvadātājs apstiprināts' },
+  { key: 'EN_ROUTE_PICKUP', label: 'Ceļā', hint: 'Pārvadātājs dodas uz jums' },
   { key: 'DELIVERED', label: 'Piegādāts', hint: 'Piegāde pabeigta' },
 ];
 
@@ -91,8 +88,12 @@ const { height: SCREEN_H } = Dimensions.get('window');
 const MAP_H = Math.round(SCREEN_H * 0.38);
 
 const ACTIVE_STATUSES = new Set([
-  'ACCEPTED', 'EN_ROUTE_PICKUP', 'AT_PICKUP',
-  'LOADED', 'EN_ROUTE_DELIVERY', 'AT_DELIVERY',
+  'ACCEPTED',
+  'EN_ROUTE_PICKUP',
+  'AT_PICKUP',
+  'LOADED',
+  'EN_ROUTE_DELIVERY',
+  'AT_DELIVERY',
 ]);
 
 function formatDate(iso: string): string {
@@ -129,9 +130,7 @@ function StatusStepper({ status }: { status: string }) {
                 {done ? (
                   <Text style={s.stepCheck}>✓</Text>
                 ) : (
-                  <Text
-                    style={[s.stepNum, active ? s.stepNumActive : s.stepNumInactive]}
-                  >
+                  <Text style={[s.stepNum, active ? s.stepNumActive : s.stepNumInactive]}>
                     {i + 1}
                   </Text>
                 )}
@@ -144,9 +143,7 @@ function StatusStepper({ status }: { status: string }) {
               <Text style={[s.stepLabel, active ? s.stepLabelActive : s.stepLabelInactive]}>
                 {step.label}
               </Text>
-              {active && (
-                <Text style={s.stepHint}>{step.hint}</Text>
-              )}
+              {active && <Text style={s.stepHint}>{step.hint}</Text>}
             </View>
           </View>
         );
@@ -206,7 +203,9 @@ export default function TransportJobDetailScreen() {
       .finally(() => setLoading(false));
   }, [id, token]);
 
-  useEffect(() => { loadJob(); }, [loadJob]);
+  useEffect(() => {
+    loadJob();
+  }, [loadJob]);
 
   // Poll every 10s while job is actively in-progress
   useEffect(() => {
@@ -216,12 +215,10 @@ export default function TransportJobDetailScreen() {
   }, [job?.status, loadJob]);
 
   // Route between pickup and delivery
-  const pickup = job?.pickupLat && job?.pickupLng
-    ? { lat: job.pickupLat, lng: job.pickupLng }
-    : null;
-  const delivery = job?.deliveryLat && job?.deliveryLng
-    ? { lat: job.deliveryLat, lng: job.deliveryLng }
-    : null;
+  const pickup =
+    job?.pickupLat && job?.pickupLng ? { lat: job.pickupLat, lng: job.pickupLng } : null;
+  const delivery =
+    job?.deliveryLat && job?.deliveryLng ? { lat: job.deliveryLat, lng: job.deliveryLng } : null;
   const { route } = useRoute(pickup, delivery);
 
   // Fit map to show both pins once map + data are ready
@@ -235,7 +232,7 @@ export default function TransportJobDetailScreen() {
         600,
       );
     }, 400);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapReady, pickup?.lat, delivery?.lat]);
 
   const isDisposal = job?.jobType === 'WASTE_COLLECTION';
@@ -250,7 +247,7 @@ export default function TransportJobDetailScreen() {
     setCancelling(true);
     try {
       await api.transportJobs.updateStatus(job.id, 'CANCELLED', token);
-      setJob((j) => j ? { ...j, status: 'CANCELLED' } : j);
+      setJob((j) => (j ? { ...j, status: 'CANCELLED' } : j));
     } catch {
       // silent
     } finally {
@@ -273,12 +270,7 @@ export default function TransportJobDetailScreen() {
           onMapReady={() => setMapReady(true)}
         >
           {route && (
-            <RouteLayer
-              id="job-route"
-              coordinates={route.coords}
-              color="#111827"
-              width={4}
-            />
+            <RouteLayer id="job-route" coordinates={route.coords} color="#111827" width={4} />
           )}
           {pickup && (
             <Marker
@@ -305,7 +297,10 @@ export default function TransportJobDetailScreen() {
         {/* Floating back button */}
         <TouchableOpacity
           style={[s.mapBackBtn, { top: insets.top + 12 }]}
-          onPress={() => { haptics.light(); router.back(); }}
+          onPress={() => {
+            haptics.light();
+            router.back();
+          }}
           activeOpacity={0.8}
           hitSlop={12}
         >
@@ -317,16 +312,16 @@ export default function TransportJobDetailScreen() {
           <View style={s.mapStatusPill}>
             <Icon size={13} color={st.color} strokeWidth={2} />
             <Text style={[s.mapStatusText, { color: st.color }]}>{st.label}</Text>
-            {ACTIVE_STATUSES.has(job.status) && (
-              <View style={s.liveDot} />
-            )}
+            {ACTIVE_STATUSES.has(job.status) && <View style={s.liveDot} />}
           </View>
         )}
 
         {/* Distance badge */}
         {route && (
           <View style={s.distBadge}>
-            <Text style={s.distText}>{route.distanceKm.toFixed(0)} km · {route.durationLabel}</Text>
+            <Text style={s.distText}>
+              {route.distanceKm.toFixed(0)} km · {route.durationLabel}
+            </Text>
           </View>
         )}
       </View>
@@ -345,10 +340,7 @@ export default function TransportJobDetailScreen() {
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={s.scroll}
-        >
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
           {/* Job number + type header */}
           <View style={s.jobHeader}>
             <View style={{ flex: 1 }}>
@@ -377,7 +369,9 @@ export default function TransportJobDetailScreen() {
               <View style={s.routeDot} />
               <View style={s.routeInfo}>
                 <Text style={s.routePlace}>{job.pickupCity}</Text>
-                <Text style={s.routeAddr} numberOfLines={2}>{job.pickupAddress}</Text>
+                <Text style={s.routeAddr} numberOfLines={2}>
+                  {job.pickupAddress}
+                </Text>
               </View>
             </View>
             {job.distanceKm != null && (
@@ -390,7 +384,9 @@ export default function TransportJobDetailScreen() {
               <View style={[s.routeDot, s.routeDotDest]} />
               <View style={s.routeInfo}>
                 <Text style={s.routePlace}>{job.deliveryCity}</Text>
-                <Text style={s.routeAddr} numberOfLines={2}>{job.deliveryAddress}</Text>
+                <Text style={s.routeAddr} numberOfLines={2}>
+                  {job.deliveryAddress}
+                </Text>
               </View>
             </View>
           </View>
@@ -398,7 +394,11 @@ export default function TransportJobDetailScreen() {
           {/* Details card */}
           <View style={s.card}>
             <Text style={s.cardTitle}>Detaļas</Text>
-            <InfoRow icon={Package} label="Krava" value={CARGO_LABEL[job.cargoType] ?? job.cargoType} />
+            <InfoRow
+              icon={Package}
+              label="Krava"
+              value={CARGO_LABEL[job.cargoType] ?? job.cargoType}
+            />
             {job.cargoWeight != null && (
               <InfoRow
                 icon={Package}
@@ -406,8 +406,20 @@ export default function TransportJobDetailScreen() {
                 value={`${(job.cargoWeight / 1000).toFixed(1)} t`}
               />
             )}
-            <InfoRow icon={Truck} label="Transportlīdzeklis" value={job.requiredVehicleType ? (VEHICLE_LABEL[job.requiredVehicleType] ?? job.requiredVehicleType) : undefined} />
-            <InfoRow icon={CalendarDays} label="Izbraukšanas datums" value={formatDate(job.pickupDate)} />
+            <InfoRow
+              icon={Truck}
+              label="Transportlīdzeklis"
+              value={
+                job.requiredVehicleType
+                  ? (VEHICLE_LABEL[job.requiredVehicleType] ?? job.requiredVehicleType)
+                  : undefined
+              }
+            />
+            <InfoRow
+              icon={CalendarDays}
+              label="Izbraukšanas datums"
+              value={formatDate(job.pickupDate)}
+            />
             <InfoRow icon={Clock} label="Piegādes datums" value={formatDate(job.deliveryDate)} />
           </View>
 
@@ -472,9 +484,7 @@ export default function TransportJobDetailScreen() {
               activeOpacity={0.85}
             >
               <XCircle size={16} color="#b91c1c" />
-              <Text style={s.cancelBtnText}>
-                {cancelling ? 'Atceļ...' : 'Atcelt pasūtījumu'}
-              </Text>
+              <Text style={s.cancelBtnText}>{cancelling ? 'Atceļ...' : 'Atcelt pasūtījumu'}</Text>
             </TouchableOpacity>
           )}
 
