@@ -4,10 +4,12 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
+  Banknote,
   Building2,
   CalendarClock,
   Car,
   ClipboardList,
+  FolderKanban,
   FolderOpen,
   LayoutDashboard,
   LayoutGrid,
@@ -19,6 +21,7 @@ import {
   Settings,
   ShoppingCart,
   ShieldCheck,
+  Star,
   Users,
 } from 'lucide-react';
 
@@ -59,6 +62,7 @@ const ROLE_NAV: Record<Mode, NavItem[]> = {
     { label: 'Materiālu Katalogs', href: '/dashboard/catalog', icon: Package },
     { label: 'Grozs', href: '/dashboard/checkout', icon: ShoppingCart },
     { label: 'Mani Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
+    { label: 'Rāmjlīgumi', href: '/dashboard/buyer/projects', icon: FolderKanban },
     { label: 'Cenu Pieprasījumi', href: '/dashboard/quote-requests', icon: MessageSquare },
     { label: 'Rēķini', href: '/dashboard/invoices', icon: Receipt },
     { label: 'Pasūtīt', href: '/dashboard/order', icon: LayoutGrid },
@@ -69,7 +73,9 @@ const ROLE_NAV: Record<Mode, NavItem[]> = {
     { label: 'Informācijas Panelis', href: '/dashboard/supplier', icon: LayoutDashboard },
     { label: 'Mani Materiāli', href: '/dashboard/materials', icon: Package },
     { label: 'Ienākošie Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
+    { label: 'Ieņēmumi', href: '/dashboard/supplier/earnings', icon: Banknote },
     { label: 'Pieprasījumu Tirgus', href: '/dashboard/quote-requests/open', icon: MessageSquare },
+    { label: 'Atsauksmes', href: '/dashboard/reviews', icon: Star },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
   CARRIER: [
@@ -77,6 +83,7 @@ const ROLE_NAV: Record<Mode, NavItem[]> = {
     { label: 'Mans Autoparks', href: '/dashboard/garage', icon: Car },
     { label: 'Job Board', href: '/dashboard/jobs', icon: MapPin },
     { label: 'Mani Darbi', href: '/dashboard/orders', icon: ClipboardList },
+    { label: 'Ienākumi', href: '/dashboard/transporter/earnings', icon: Banknote },
     { label: 'Darba Grafiks', href: '/dashboard/schedule', icon: CalendarClock },
     { label: 'Utilizācijas Centri', href: '/dashboard/recycling-centers', icon: MapPin },
     { label: 'Čats', href: '/dashboard/chat', icon: MessageSquare },
