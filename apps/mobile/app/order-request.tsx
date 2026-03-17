@@ -24,6 +24,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BaseMap, UserLayer, useGeocode, RIGA_CENTER } from '@/components/map';
 import type { GeocodeSuggestion } from '@/components/map';
 import { Marker } from 'react-native-maps';
+import { AddressPickerModal } from '@/components/wizard/AddressPickerModal';
+import type { PickedAddress } from '@/components/wizard/AddressPickerModal';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -123,6 +125,7 @@ export default function OrderRequestScreen() {
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [satellite, setSatellite] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(true);
   // ── Geo-search (address autocomplete) ───────────────────────────────
   const [geoSearchText, setGeoSearchText] = useState('');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -179,6 +182,10 @@ export default function OrderRequestScreen() {
     setStep('map');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (step === 'map') setShowLocationPicker(true);
+  }, [step]);
 
   // ── Filter global material catalogue ─────────────────────────
   const filterMaterials = useCallback((q: string, cat: MaterialCategoryAll) => {
@@ -481,7 +488,21 @@ export default function OrderRequestScreen() {
 
   // ── STEP: Location — search card is now an absolute overlay at top of map (Uber-style)
   //    Rendered separately in the main JSX, NOT inside the sheet.
-  const renderMapContent = () => null;
+  const renderMapContent = () => (
+    <TouchableOpacity
+      style={sa.mapAddressCard}
+      onPress={() => setShowLocationPicker(true)}
+      activeOpacity={0.75}
+    >
+      <MapPin size={18} color={address ? '#111827' : '#9ca3af'} style={{ marginRight: 10 }} />
+      <Text
+        style={{ flex: 1, fontSize: 15, color: address ? '#111827' : '#9ca3af', fontWeight: address ? '500' : '400' }}
+        numberOfLines={2}
+      >
+        {address || 'Pieskarieties, lai izvēlētos piegādes adresi'}
+      </Text>
+    </TouchableOpacity>
+  );
 
   // ── STEP 2 — Configure ───────────────────────────────────────
   const renderConfigure = () => (
@@ -1118,7 +1139,7 @@ export default function OrderRequestScreen() {
             zoom={pin ? 14 : 10}
             onPress={step === 'map' ? onMapPress : undefined}
             mapType={satellite ? 'hybrid' : 'standard'}
-            mapPadding={{ bottom: step === 'map' ? SCREEN_H - MAP_FULL : SCREEN_H - MAP_SMALL }}
+            mapPadding={{ top: 0, right: 0, left: 0, bottom: step === 'map' ? SCREEN_H - MAP_FULL : SCREEN_H - MAP_SMALL }}
           >
             <UserLayer />
             {pin && (
@@ -1148,97 +1169,7 @@ export default function OrderRequestScreen() {
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Search card — floats at top of map, only on map step */}
-        {step === 'map' && (
-          <View style={[sa.mapSearchCard, { top: insets.top + 66 }]}>
-            <View style={sa.mapCardShadow}>
-              <View style={sa.mapCard}>
-                <View style={sa.mapCardSearchRow}>
-                  <Search size={15} color="#9ca3af" />
-                  <TextInput
-                    style={sa.mapSearchInput}
-                    placeholder="Meklēt piegādes adresi..."
-                    placeholderTextColor="#9ca3af"
-                    value={geoSearchText}
-                    onChangeText={onGeoSearchChange}
-                    autoCorrect={false}
-                    returnKeyType="search"
-                    autoFocus
-                  />
-                  {geoLoading ? (
-                    <ActivityIndicator size="small" color="#6b7280" />
-                  ) : geoSearchText.length > 0 ? (
-                    <TouchableOpacity
-                      onPress={() => {
-                        setGeoSearchText('');
-                        setGeoSuggestions([]);
-                      }}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <X size={15} color="#9ca3af" />
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
-                <View style={sa.mapCardDivider} />
-                <TouchableOpacity style={sa.mapSuggRow} onPress={locateMe} activeOpacity={0.75}>
-                  <View style={[sa.mapMyLocIcon, { marginLeft: 2 }]}>
-                    <Navigation2 size={14} color="#2563eb" />
-                  </View>
-                  <Text style={[sa.mapSuggText, { fontWeight: '600', color: '#2563eb' }]}>
-                    Izmantot manu atrašanās vietu
-                  </Text>
-                </TouchableOpacity>
-                {geoSuggestions.map((item) => (
-                  <React.Fragment key={item.id}>
-                    <View style={sa.mapCardDivider} />
-                    <TouchableOpacity style={sa.mapSuggRow} onPress={() => onPlaceSelected(item)}>
-                      <View style={sa.mapSuggDotCol}>
-                        <View style={sa.mapSuggDot} />
-                      </View>
-                      <Text style={sa.mapSuggText} numberOfLines={2}>
-                        {item.place_name}
-                      </Text>
-                    </TouchableOpacity>
-                  </React.Fragment>
-                ))}
-              </View>
-            </View>
-            {pin && (
-              <View style={[sa.mapConfirmedRow, { marginTop: 8 }]}>
-                <MapPin size={14} color="#059669" />
-                <Text style={sa.mapConfirmedText} numberOfLines={2}>
-                  {address || 'Nosakām adresi...'}
-                </Text>
-                <TouchableOpacity
-                  style={sa.resetBtn}
-                  onPress={() => {
-                    setPin(null);
-                    setAddress('');
-                    setCity('');
-                    setGeoSearchText('');
-                    setGeoSuggestions([]);
-                  }}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <RotateCcw size={14} color="#6b7280" />
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        )}
 
-        {/* FABs floating over map (satellite toggle only on map step; GPS is inline in card) */}
-        {step === 'map' && (
-          <View style={[sa.mapFabColumn, { top: insets.top + 12, bottom: undefined }]}>
-            <TouchableOpacity
-              style={[sa.mapFab, satellite && sa.mapFabActive]}
-              onPress={() => setSatellite((s) => !s)}
-              activeOpacity={0.85}
-            >
-              <Layers size={18} color={satellite ? '#fff' : '#111827'} />
-            </TouchableOpacity>
-          </View>
-        )}
 
         {/* Sheet — transparent on map step, white on all other steps */}
         {isSheetStep && (
@@ -1278,6 +1209,7 @@ export default function OrderRequestScreen() {
                   { transform: [{ translateX: slideAnim }], opacity: fadeAnim },
                 ]}
               >
+                {step === 'map' && renderMapContent()}
                 {step === 'material' && renderMaterial()}
                 {step === 'configure' && renderConfigure()}
                 {step === 'offers' && renderOffers()}
@@ -1314,44 +1246,28 @@ export default function OrderRequestScreen() {
           </Animated.View>
         )}
 
-        {/* Floating CTA — visible only on map step, fades when navigating forward */}
-        {isSheetStep && (
-          <Animated.View
-            style={[sa.mapFloatingCta, { bottom: insets.bottom + 20, opacity: floatingCtaOpacity }]}
-            pointerEvents={step === 'map' ? 'box-none' : 'none'}
-          >
-            {CTA_LABEL['map'] && (
-              <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
-                <TouchableOpacity
-                  style={[sa.ctaBtn, !canCTA && sa.ctaBtnDisabled]}
-                  onPress={onSheetCTA}
-                  disabled={!canCTA}
-                  activeOpacity={0.85}
-                  onPressIn={() =>
-                    Animated.spring(ctaScale, {
-                      toValue: 0.96,
-                      useNativeDriver: true,
-                      tension: 300,
-                      friction: 8,
-                    }).start()
-                  }
-                  onPressOut={() =>
-                    Animated.spring(ctaScale, {
-                      toValue: 1,
-                      useNativeDriver: true,
-                      tension: 120,
-                      friction: 6,
-                    }).start()
-                  }
-                >
-                  <Text style={[sa.ctaBtnText, !canCTA && sa.ctaBtnTextDisabled]}>
-                    {CTA_LABEL['map']}
-                  </Text>
-                </TouchableOpacity>
-              </Animated.View>
-            )}
-          </Animated.View>
-        )}
+        <AddressPickerModal
+          visible={showLocationPicker}
+          title="Piegādes vieta"
+          onClose={() => {
+            if (!address) router.back();
+            else setShowLocationPicker(false);
+          }}
+          onConfirm={(p: PickedAddress) => {
+            setPin({ latitude: p.lat, longitude: p.lng });
+            setAddress(p.address);
+            setCity(p.city);
+            setShowLocationPicker(false);
+            if (step === 'map') {
+              transitionTo(params.materialId ? 'configure' : 'material', 'forward');
+            }
+          }}
+          initial={
+            address
+              ? { address, lat: pin?.latitude ?? 0, lng: pin?.longitude ?? 0, city }
+              : undefined
+          }
+        />
 
         {/* Full-screen overlays */}
         {step === 'sent' && <View style={StyleSheet.absoluteFillObject}>{renderSent()}</View>}

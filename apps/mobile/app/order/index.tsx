@@ -1,358 +1,123 @@
 /**
- * Container order wizard — Bolt/Uber-style map + bottom sheet.
+ * Container / Skip-Hire wizard — full-screen step pages.
  *
- * Single screen with persistent Google Maps backdrop. A draggable
- * bottom sheet cycles through 4 steps without new screen pushes:
- *   1. Location   — search bar + map pin
- *   2. Waste type — 2-col grid
- *   3. Skip size  — visual size cards
- *   4. Date       — quick-date picker + order summary → submit
+ *   Step 1 – Location   (AddressPickerModal)
+ *   Step 2 – Waste type (Step2WasteType, auto-advance)
+ *   Step 3 – Skip size  (Step3Size, auto-advance)
+ *   Step 4 – Date + confirm
  */
 
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
+  ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Animated,
-  ActivityIndicator,
   Alert,
-  Dimensions,
-  Platform,
+  TextInput,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Marker } from 'react-native-maps';
-import { BaseMap } from '@/components/map';
-import { useGeocode } from '@/components/map';
-import type { GeocodeSuggestion } from '@/components/map';
+import { MapPin, CheckCircle } from 'lucide-react-native';
 import { useOrder } from '@/lib/order-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 import type { SkipSize, SkipWasteCategory } from '@/lib/api';
-import * as Location from 'expo-location';
-import { ChevronLeft } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
-import {
-  MAP_FULL,
-  MAP_SMALL,
-  RIGA,
-  SKIP_PRICES,
-  toISO,
-  addDays,
-} from '@/components/order/skip-hire-types';
-import { StepProgressBar } from '@/components/order/StepProgressBar';
-import { Step1Location } from '@/components/order/Step1Location';
+import { SKIP_PRICES, toISO, addDays } from '@/components/order/skip-hire-types';
 import { Step2WasteType } from '@/components/order/Step2WasteType';
 import { Step3Size } from '@/components/order/Step3Size';
-import { Step4Date } from '@/components/order/Step4Date';
+import { WizardLayout } from '@/components/wizard/WizardLayout';
+import { AddressPickerModal } from '@/components/wizard/AddressPickerModal';
+import type { PickedAddress } from '@/components/wizard/AddressPickerModal';
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
-const GOOGLE_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
-
-// ── Main component ────────────────────────────────────────────────────────────
-
+// ── Types ─────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
 
+const today = new Date();
+
+// ── Component ─────────────────────────────────────────────────────
 export default function OrderWizard() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const {
-    state,
-    setLocationWithCoords,
-    setWasteCategory,
-    setSkipSize,
-    setDeliveryDate,
-    setConfirmedOrder,
-  } = useOrder();
+  const { state, setLocationWithCoords, setWasteCategory, setSkipSize, setDeliveryDate, setConfirmedOrder } = useOrder();
   const { user, token } = useAuth();
-  const { forwardGeocode, resolvePlace } = useGeocode();
 
-  // ── Wizard step ───────────────────────────────────────────────
+  // ── Wizard state ──────────────────────────────────────────────
   const [step, setStep] = useState<Step>(1);
-
-  // ── Location state ────────────────────────────────────────────
-  const [pin, setPin] = useState<{ latitude: number; longitude: number } | null>(
-    state.locationLat != null && state.locationLng != null
-      ? { latitude: state.locationLat, longitude: state.locationLng }
+  const [showPicker, setShowPicker] = useState(false);
+  const [picked, setPicked] = useState<PickedAddress | null>(
+    state.locationLat != null && state.locationLng != null && state.location
+      ? { address: state.location, lat: state.locationLat, lng: state.locationLng, city: '' }
       : null,
   );
-  const [searchText, setSearchText] = useState(state.location || '');
-  const [confirmedAddress, setConfirmedAddress] = useState(state.location || '');
-  const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
-  const [loadingSug, setLoadingSug] = useState(false);
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // ── Selections ────────────────────────────────────────────────
-  const [selectedWaste, setSelectedWaste] = useState<SkipWasteCategory | null>(state.wasteCategory);
-  const [selectedSize, setSelectedSize] = useState<SkipSize | null>(state.skipSize);
-  const today = new Date();
-  const minDate = toISO(addDays(today, 1));
-  const [startDate, setStartDate] = useState<string | null>(state.deliveryDate || null);
-  const [endDate, setEndDate] = useState<string | null>(null);
+  const [selectedWaste, setSelectedWasteState] = useState<SkipWasteCategory | null>(state.wasteCategory);
+  const [selectedSize, setSelectedSizeState] = useState<SkipSize | null>(state.skipSize);
+  const [selectedDay, setSelectedDay] = useState<string>(toISO(addDays(today, 1)));
   const [submitting, setSubmitting] = useState(false);
-
-  // ── Contact / Notes ───────────────────────────────────────────────────────
+  const [success, setSuccess] = useState(false);
+  const [jobNumber, setJobNumber] = useState('');
   const [contactName, setContactName] = useState(() => `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim());
   const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
   const [notes, setNotes] = useState('');
 
-  // ── Map ref ───────────────────────────────────────────────────
-  const cameraRef = useRef<any>(null);
-
-  // ── Map pin pulse (expanding ripple ring) ──────────────────────────────
-  const pulseAnim = useRef(new Animated.Value(0)).current;
-  const pulseLoop = useRef<Animated.CompositeAnimation | null>(null);
-  useEffect(() => {
-    if (pin) {
-      pulseLoop.current = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 0, duration: 0, useNativeDriver: true }),
-        ]),
-      );
-      pulseLoop.current.start();
-    } else {
-      pulseLoop.current?.stop();
-      pulseAnim.setValue(0);
-    }
-    return () => pulseLoop.current?.stop();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [!!pin]);
-
-  // ── CTA unlock bounce ───────────────────────────────────────────────────
-  const ctaScale = useRef(new Animated.Value(0.95)).current;
-  const prevCanNext = useRef(false);
-
-  // ── Map height animation (shrinks on steps 2-4) ──────────────
-  const mapHeight = useRef(new Animated.Value(MAP_FULL)).current;
-
-  // ── Sheet card visibility — 0 = step 1 (transparent), 1 = steps 2-4 (white card) ──
-  const sheetBgAnim = useRef(new Animated.Value(0)).current;
-  // Interpolated background colour driven by sheetBgAnim (no native driver)
-  const sheetBg = useRef(
-    sheetBgAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: ['rgba(255,255,255,0)', 'rgba(255,255,255,1)'],
-    }),
-  ).current;
-  // Floating CTA fades in when sheet is transparent (step 1)
-  const floatingCtaOpacity = useRef(
-    sheetBgAnim.interpolate({ inputRange: [0, 0.6], outputRange: [1, 0], extrapolate: 'clamp' }),
-  ).current;
-
-  // ── Step slide transition ─────────────────────────────────
-  const slideAnim = useRef(new Animated.Value(0)).current;
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-
-  const animateMap = useCallback(
-    (toStep: Step) => {
-      Animated.spring(mapHeight, {
-        toValue: toStep === 1 ? MAP_FULL : MAP_SMALL,
-        useNativeDriver: false,
-        tension: 60,
-        friction: 14,
-      }).start();
-      // Fade the sheet card in/out with the map transition
-      Animated.timing(sheetBgAnim, {
-        toValue: toStep === 1 ? 0 : 1,
-        duration: 280,
-        useNativeDriver: false,
-      }).start();
-    },
-    [mapHeight, sheetBgAnim],
-  );
-
-  const transitionTo = useCallback(
-    (nextStep: Step, direction: 'forward' | 'back') => {
-      haptics.light();
-      const fromX = direction === 'forward' ? SCREEN_W : -SCREEN_W;
-      // Snap to off-screen position, update step, then spring into place
-      slideAnim.setValue(fromX);
-      fadeAnim.setValue(0.6);
-      setStep(nextStep);
-      animateMap(nextStep);
-      Animated.parallel([
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          useNativeDriver: true,
-          tension: 80,
-          friction: 11,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 160,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    },
-    [slideAnim, fadeAnim, animateMap],
-  );
-
-  // ── Search debounce ───────────────────────────────────────────
-  useEffect(() => {
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    if (!searchText.trim() || searchText === confirmedAddress) {
-      setSuggestions([]);
-      return;
-    }
-    setLoadingSug(true);
-    searchTimer.current = setTimeout(async () => {
-      const res = await forwardGeocode(searchText);
-      setSuggestions(res);
-      setLoadingSug(false);
-    }, 350);
-    return () => {
-      if (searchTimer.current) clearTimeout(searchTimer.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchText]);
-
-  // ── Pick address suggestion ───────────────────────────────────
-  const pickSuggestion = useCallback(
-    async (s: GeocodeSuggestion) => {
-      haptics.medium();
-      setConfirmedAddress(s.place_name);
-      setSearchText(s.place_name);
-      setSuggestions([]);
-      // Resolve coords from place_id via Place Details API
-      const coords = await resolvePlace(s.id);
-      if (coords) {
-        const [lng, lat] = coords;
-        setPin({ latitude: lat, longitude: lng });
-        setLocationWithCoords(s.place_name, lat, lng);
-        cameraRef.current?.setCamera({
-          centerCoordinate: [lng, lat],
-          zoomLevel: 15,
-          animationDuration: 700,
-        });
-      } else {
-        // Coords unavailable — store address text only (rare fallback)
-        setLocationWithCoords(s.place_name, 0, 0);
-      }
-    },
-    [setLocationWithCoords, resolvePlace],
-  );
-
-  // ── Use device GPS ────────────────────────────────────────────
-  const useMyLocation = useCallback(async () => {
-    haptics.light();
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') return;
-    const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-    const { latitude, longitude } = loc.coords;
-    setPin({ latitude, longitude });
-    cameraRef.current?.setCamera({
-      centerCoordinate: [longitude, latitude],
-      zoomLevel: 15,
-      animationDuration: 700,
-    });
-    try {
-      const res = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&language=lv&key=${GOOGLE_KEY}`,
-      );
-      const json = await res.json();
-      const addr: string =
-        (json.results?.[0]?.formatted_address as string | undefined) ??
-        `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-      setConfirmedAddress(addr);
-      setSearchText(addr);
-      setLocationWithCoords(addr, latitude, longitude);
-    } catch {
-      const addr = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-      setConfirmedAddress(addr);
-      setSearchText(addr);
-      setLocationWithCoords(addr, latitude, longitude);
-    }
+  // ── Handlers ──────────────────────────────────────────────────
+  const handlePickConfirm = useCallback((p: PickedAddress) => {
+    setPicked(p);
+    setLocationWithCoords(p.address, p.lat, p.lng);
+    setShowPicker(false);
+    setStep(2);
   }, [setLocationWithCoords]);
 
-  // ── CTA gating (only step 1 + step 4 have explicit CTAs now) ──
-  const canNext = step === 1 ? !!confirmedAddress : !!(startDate && endDate);
+  const handleWasteSelect = useCallback((waste: SkipWasteCategory) => {
+    setSelectedWasteState(waste);
+    setWasteCategory(waste);
+    setTimeout(() => setStep(3), 180);
+  }, [setWasteCategory]);
 
-  // ── CTA unlock bounce — only fires on step 1 and step 4 ─────
-  useEffect(() => {
-    if (step !== 1 && step !== 4) return;
-    if (canNext && !prevCanNext.current) {
-      haptics.selection();
-      Animated.sequence([
-        Animated.spring(ctaScale, {
-          toValue: 1.04,
-          useNativeDriver: true,
-          tension: 200,
-          friction: 6,
-        }),
-        Animated.spring(ctaScale, { toValue: 1, useNativeDriver: true, tension: 80, friction: 8 }),
-      ]).start();
-    } else if (!canNext) {
-      ctaScale.setValue(0.95);
-    }
-    prevCanNext.current = canNext;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canNext, step]);
-
-  const goNext = useCallback(() => {
-    const next = Math.min(4, step + 1) as Step;
-    transitionTo(next, 'forward');
-  }, [step, transitionTo]);
+  const handleSizeSelect = useCallback((size: SkipSize) => {
+    setSelectedSizeState(size);
+    setSkipSize(size);
+    setTimeout(() => setStep(4), 180);
+  }, [setSkipSize]);
 
   const goBack = useCallback(() => {
-    if (step === 1) {
-      router.back();
-    } else {
-      const prev = Math.max(1, step - 1) as Step;
-      transitionTo(prev, 'back');
+    if (step === 1) router.back();
+    else setStep((s) => (s - 1) as Step);
+  }, [step, router]);
+
+  const price = SKIP_PRICES[state.skipSize ?? selectedSize ?? 'MIDI'] ?? 129;
+
+  const ctaLabel =
+    step === 4 ? `Pasūtīt — €${price}` : 'Turpināt';
+
+  const ctaDisabled =
+    (step === 1 && !picked) ||
+    (step === 2 && !selectedWaste) ||
+    (step === 3 && !selectedSize) ||
+    submitting;
+
+  const onCTA = useCallback(async () => {
+    if (step < 4) {
+      if (step === 1 && !picked) { setShowPicker(true); return; }
+      setStep((s) => (s + 1) as Step);
+      return;
     }
-  }, [step, router, transitionTo]);
-
-  // ── Auto-advance timer (steps 2 + 3) ─────────────────────────
-  const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(
-    () => () => {
-      if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
-    },
-    [],
-  );
-
-  const handleWasteSelect = useCallback(
-    (waste: SkipWasteCategory) => {
-      setSelectedWaste(waste);
-      setWasteCategory(waste);
-      if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
-      autoAdvanceTimer.current = setTimeout(() => transitionTo(3, 'forward'), 320);
-    },
-    [setWasteCategory, transitionTo],
-  );
-
-  const handleSizeSelect = useCallback(
-    (size: SkipSize) => {
-      setSelectedSize(size);
-      setSkipSize(size);
-      if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
-      autoAdvanceTimer.current = setTimeout(() => transitionTo(4, 'forward'), 350);
-    },
-    [setSkipSize, transitionTo],
-  );
-
-  // ── Step 4 submit ─────────────────────────────────────────────
-  const onSubmit = useCallback(async () => {
+    // Submit
     if (!token) {
       Alert.alert('Pieteikties nepīciešams', 'Lai veiktu pasūtījumu, lūdzu vispirms piesakieties.');
       return;
     }
     if (!state.location || !state.wasteCategory || !state.skipSize) return;
     setSubmitting(true);
-    setDeliveryDate(startDate ?? minDate);
+    setDeliveryDate(selectedDay);
     try {
       const order = await api.skipHire.create(
         {
           location: state.location,
           wasteCategory: state.wasteCategory,
           skipSize: state.skipSize,
-          deliveryDate: startDate ?? minDate,
+          deliveryDate: selectedDay,
           contactName: contactName || undefined,
           contactPhone: contactPhone || undefined,
           notes: notes || undefined,
@@ -367,409 +132,183 @@ export default function OrderWizard() {
     } finally {
       setSubmitting(false);
     }
-  }, [startDate, minDate, state, token, contactName, contactPhone, notes, setDeliveryDate, setConfirmedOrder, router]);
+  }, [step, picked, token, state, selectedDay, contactName, contactPhone, notes, setDeliveryDate, setConfirmedOrder, router]);
 
-  // ── Step 1 CTA ────────────────────────────────────────────────
-  const onLocationCTA = useCallback(() => {
-    if (!confirmedAddress) return;
-    goNext();
-  }, [confirmedAddress, goNext]);
+  const STEP_TITLES: Record<Step, string> = {
+    1: t.skipHire.step1.title,
+    2: t.skipHire.step2.title,
+    3: t.skipHire.step3.title,
+    4: t.skipHire.step4.title,
+  };
 
-  const price = SKIP_PRICES[state.skipSize ?? selectedSize ?? 'MIDI'] ?? 129;
-
-  const TITLES = [
-    t.skipHire.step1.title,
-    t.skipHire.step2.title,
-    t.skipHire.step3.title,
-    t.skipHire.step4.title,
-  ];
-
-  // ── Render ────────────────────────────────────────────────────
-  return (
-    <View style={s.root}>
-      {/* Full-screen map — true 100vh, camera inset via mapPadding */}
-      <View style={StyleSheet.absoluteFillObject}>
-        <BaseMap
-          cameraRef={cameraRef}
-          center={RIGA}
-          zoom={11}
-          showsMyLocationButton={false}
-          mapPadding={{ bottom: step === 1 ? SCREEN_H - MAP_FULL : SCREEN_H - MAP_SMALL }}
-        >
-          {pin && (
-            <Marker coordinate={pin} tappable={false}>
-              <View style={s.mapPin}>
-                <Animated.View
-                  style={[
-                    s.mapPinPulse,
-                    {
-                      opacity: pulseAnim.interpolate({
-                        inputRange: [0, 0.4, 1],
-                        outputRange: [0.7, 0.3, 0],
-                      }),
-                      transform: [
-                        {
-                          scale: pulseAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [1, 2.8],
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                />
-                <View style={s.mapPinRing} />
-                <View style={s.mapPinDot} />
-              </View>
-            </Marker>
-          )}
-        </BaseMap>
+  // ── Success screen ────────────────────────────────────────────
+  if (success) {
+    return (
+      <View style={s.successRoot}>
+        <CheckCircle size={72} color="#22c55e" />
+        <Text style={s.successTitle}>Pasūtījums pieņemts!</Text>
+        <Text style={s.successSub}>Mēs sazināsimies drīzumā</Text>
+        {jobNumber ? (
+          <View style={s.jobBadge}><Text style={s.jobBadgeText}>#{jobNumber}</Text></View>
+        ) : null}
+        <TouchableOpacity style={s.successBtn} onPress={() => router.replace('/(buyer)/orders')}>
+          <Text style={s.successBtnText}>Skatīt pasūtījumus</Text>
+        </TouchableOpacity>
       </View>
+    );
+  }
 
-      {/* Floating back button — always top-left over the map */}
-      <TouchableOpacity
-        style={[s.closeBtn, { top: insets.top + 12 }]}
-        onPress={() => router.back()}
-        activeOpacity={0.8}
+  return (
+    <>
+      <AddressPickerModal
+        visible={showPicker}
+        title="Kur piegādāt konteinerus?"
+        onClose={() => { if (step === 1) router.back(); else setShowPicker(false); }}
+        onConfirm={handlePickConfirm}
+        initial={picked ?? undefined}
+      />
+
+      <WizardLayout
+        title={STEP_TITLES[step]}
+        step={step}
+        totalSteps={4}
+        onBack={goBack}
+        onClose={() => router.back()}
+        ctaLabel={ctaLabel}
+        onCTA={step === 1 ? () => setShowPicker(true) : onCTA}
+        ctaDisabled={ctaDisabled}
+        ctaLoading={submitting}
       >
-        <ChevronLeft size={20} color="#111827" />
-      </TouchableOpacity>
+        {/* ── Step 1: Location ── */}
+        {step === 1 && (
+          <ScrollView style={s.content} contentContainerStyle={s.contentPad} showsVerticalScrollIndicator={false}>
+            <Text style={s.hint}>Norādiet adresi, kur piegādāt skipus.</Text>
 
-      {/* Search card — floats at top of map, only on step 1 */}
-      {step === 1 && (
-        <View style={[s.mapSearchOverlay, { top: insets.top + 66 }]}>
-          <Step1Location
-            floating
-            searchText={searchText}
-            onSearchChange={setSearchText}
-            loadingSug={loadingSug}
-            suggestions={suggestions}
-            confirmedAddress={confirmedAddress}
-            onPickSuggestion={pickSuggestion}
-            onUseMyLocation={useMyLocation}
-            onClearSearch={() => {
-              setSearchText('');
-              setSuggestions([]);
-            }}
-          />
-        </View>
-      )}
+            <TouchableOpacity style={s.addressCard} onPress={() => setShowPicker(true)} activeOpacity={0.75}>
+              <MapPin size={20} color={picked ? '#111827' : '#9ca3af'} style={{ marginRight: 10 }} />
+              <Text style={[s.addressText, !picked && s.addressPlaceholder]} numberOfLines={2}>
+                {picked?.address ?? 'Pieskarieties, lai izvēlētos adresi'}
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        )}
 
-      {/* Sheet — absolute overlay, top edge springs with mapHeight */}
-      {/* backgroundColor drives iOS shadow too — transparent bg = no shadow on step 1 */}
-      <Animated.View style={[s.sheet, { top: mapHeight, backgroundColor: sheetBg }]}>
-        {/* Handle nub — fades out on step 1 */}
-        <Animated.View style={[s.handleArea, { opacity: sheetBgAnim }]} pointerEvents="none">
-          <View style={s.handle} />
-        </Animated.View>
-
-        {/* Clip container — prevents sliding content from bleeding outside the sheet */}
-        <View style={s.slideClip}>
-          {/* Step header + content wrapped together so they slide as one unit */}
-          <Animated.View
-            style={[s.slideWrapper, { transform: [{ translateX: slideAnim }], opacity: fadeAnim }]}
-          >
-            {/* Step progress bar + header — fades out on step 1 */}
-            <Animated.View style={{ opacity: sheetBgAnim }}>
-              <StepProgressBar step={step} />
-              <View style={s.stepHeader}>
-                {/* Inline back button for steps 2–3 (no footer CTA on those steps) */}
-                {(step === 2 || step === 3) && (
-                  <TouchableOpacity style={s.backBtnInline} onPress={goBack} activeOpacity={0.8}>
-                    <ChevronLeft size={18} color="#6b7280" />
-                  </TouchableOpacity>
-                )}
-                <Text style={s.stepTitle}>{TITLES[step - 1]}</Text>
-              </View>
-            </Animated.View>
-
-            {/* Step content */}
-            <View style={s.content}>
-              {step === 2 && (
-                <Step2WasteType selected={selectedWaste} onSelect={handleWasteSelect} />
-              )}
-              {step === 3 && <Step3Size selected={selectedSize} onSelect={handleSizeSelect} />}
-              {step === 4 && (
-                <Step4Date
-                  minDate={minDate}
-                  startDate={startDate}
-                  endDate={endDate}
-                  onRangeChange={(s, e) => {
-                    setStartDate(s);
-                    setEndDate(e);
-                  }}
-                  wasteLabel={
-                    state.wasteCategory
-                      ? (t.skipHire.step2.types[state.wasteCategory]?.label ?? '—')
-                      : '—'
-                  }
-                  sizeLabel={
-                    state.skipSize ? (t.skipHire.step3.sizes[state.skipSize]?.label ?? '—') : '—'
-                  }
-                  location={state.location}
-                  contactName={contactName}
-                  contactPhone={contactPhone}
-                  notes={notes}
-                  onContactNameChange={setContactName}
-                  onContactPhoneChange={setContactPhone}
-                  onNotesChange={setNotes}
-                />
-              )}
-            </View>
-          </Animated.View>
-        </View>
-
-        {/* Footer — only on step 4 (steps 2+3 auto-advance on tap, no CTA needed) */}
-        {step === 4 && (
-          <View style={[s.footer, { paddingBottom: insets.bottom + 12 }]}>
-            <View style={s.priceRow}>
-              <View>
-                <Text style={s.priceLabel}>Kopā ar PVN 21%</Text>
-                <Text style={s.priceSub}>bez PVN €{(price / 1.21).toFixed(2)}</Text>
-              </View>
-              <Text style={s.priceAmount}>€{price}</Text>
-            </View>
-            <View style={s.ctaRow}>
-              <TouchableOpacity style={s.backBtn} onPress={goBack} activeOpacity={0.8}>
-                <ChevronLeft size={20} color="#111827" />
-              </TouchableOpacity>
-              <Animated.View style={[{ flex: 1 }, { transform: [{ scale: ctaScale }] }]}>
-                <TouchableOpacity
-                  style={[s.cta, (!canNext || submitting) && s.ctaDisabled, { flex: 1 }]}
-                  disabled={!canNext || submitting}
-                  onPress={onSubmit}
-                  activeOpacity={0.85}
-                >
-                  {submitting ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={[s.ctaText, !canNext && s.ctaTextDisabled]}>
-                      {t.skipHire.step4.placeOrder}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </Animated.View>
-            </View>
+        {/* ── Step 2: Waste type ── */}
+        {step === 2 && (
+          <View style={{ flex: 1 }}>
+            <Step2WasteType selected={selectedWaste} onSelect={handleWasteSelect} />
           </View>
         )}
-      </Animated.View>
 
-      {/* Floating CTA — only on step 1, fades out as sheet card appears */}
-      <Animated.View
-        style={[s.floatingCta, { bottom: insets.bottom + 20, opacity: floatingCtaOpacity }]}
-        pointerEvents={step === 1 ? 'box-none' : 'none'}
-      >
-        <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
-          <TouchableOpacity
-            style={[s.cta, !canNext && s.ctaDisabled]}
-            disabled={!canNext}
-            onPress={onLocationCTA}
-            activeOpacity={0.85}
-          >
-            <Text style={[s.ctaText, !canNext && s.ctaTextDisabled]}>
-              {t.skipHire.step1.next} →
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </Animated.View>
+        {/* ── Step 3: Skip size ── */}
+        {step === 3 && (
+          <View style={{ flex: 1 }}>
+            <Step3Size selected={selectedSize} onSelect={handleSizeSelect} />
+          </View>
+        )}
+
+        {/* ── Step 4: Date + Contact ── */}
+        {step === 4 && (
+          <ScrollView style={s.content} contentContainerStyle={s.contentPad} showsVerticalScrollIndicator={false}>
+            <Text style={s.sectionLabel}>Piegādes datums</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.dayStrip}>
+              {Array.from({ length: 14 }, (_, i) => {
+                const d = addDays(today, i + 1);
+                const iso = toISO(d);
+                const active = selectedDay === iso;
+                return (
+                  <TouchableOpacity key={iso} style={[s.dayChip, active && s.dayChipActive]} onPress={() => setSelectedDay(iso)} activeOpacity={0.75}>
+                    <Text style={[s.dayDow, active && s.dayActive]}>{d.toLocaleDateString('lv-LV', { weekday: 'short' })}</Text>
+                    <Text style={[s.dayNum, active && s.dayActive]}>{d.getDate()}</Text>
+                    <Text style={[s.dayMon, active && s.dayActiveSub]}>{d.toLocaleDateString('lv-LV', { month: 'short' })}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {/* Summary */}
+            <Text style={[s.sectionLabel, { marginTop: 20 }]}>Kopsavilkums</Text>
+            <View style={s.summaryCard}>
+              <SumRow icon="📍" label="Adrese" value={picked?.address ?? state.location ?? '—'} />
+              <SumRow icon="♻️" label="Atkritumu veids" value={selectedWaste ? (t.skipHire.step2.types[selectedWaste]?.label ?? selectedWaste) : '—'} />
+              <SumRow icon="📦" label="Konteinera izmērs" value={selectedSize ? (t.skipHire.step3.sizes[selectedSize]?.label ?? selectedSize) : '—'} />
+              <SumRow icon="💰" label="Cena" value={`€${price} + PVN`} />
+            </View>
+
+            {/* Contact */}
+            <Text style={[s.sectionLabel, { marginTop: 20 }]}>Kontaktinformācija</Text>
+            <View style={{ gap: 10, marginBottom: 8 }}>
+              <TextInput style={s.input} placeholder="Kontaktpersona" placeholderTextColor="#9ca3af" value={contactName} onChangeText={setContactName} />
+              <TextInput style={s.input} placeholder="Tālrunis" placeholderTextColor="#9ca3af" keyboardType="phone-pad" value={contactPhone} onChangeText={setContactPhone} />
+              <TextInput style={[s.input, s.inputMulti]} placeholder="Piezīmes (neobligāti)" placeholderTextColor="#9ca3af" multiline value={notes} onChangeText={setNotes} />
+            </View>
+            <View style={{ height: 16 }} />
+          </ScrollView>
+        )}
+      </WizardLayout>
+    </>
+  );
+}
+
+// ── Summary helper ────────────────────────────────────────────────
+function SumRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <View style={s.sumRow}>
+      <Text style={s.sumIcon}>{icon}</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={s.sumLabel}>{label}</Text>
+        <Text style={s.sumValue} numberOfLines={2}>{value}</Text>
+      </View>
     </View>
   );
 }
 
-// ── Root styles ───────────────────────────────────────────────────────────────
-
+// ── Styles ────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  root: { flex: 1 },
-
-  mapPin: { alignItems: 'center', justifyContent: 'center', width: 36, height: 36 },
-  mapPinRing: {
-    position: 'absolute',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(17,24,39,0.15)',
+  content: { flex: 1 },
+  contentPad: { padding: 20, paddingBottom: 32 },
+  hint: { fontSize: 14, color: '#6b7280', marginBottom: 16, lineHeight: 20 },
+  addressCard: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#f9fafb', borderWidth: 1.5, borderColor: '#e5e7eb',
+    borderRadius: 12, padding: 16,
   },
-  mapPinDot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#111827',
-    borderWidth: 3,
-    borderColor: '#fff',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.35,
-        shadowRadius: 4,
-      },
-      android: { elevation: 5 },
-    }),
+  addressText: { flex: 1, fontSize: 15, color: '#111827', fontWeight: '500', lineHeight: 20 },
+  addressPlaceholder: { color: '#9ca3af', fontWeight: '400' },
+  sectionLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 10 },
+  dayStrip: { flexGrow: 0 },
+  dayChip: {
+    alignItems: 'center', paddingVertical: 10, paddingHorizontal: 14,
+    borderRadius: 10, borderWidth: 1.5, borderColor: '#e5e7eb',
+    marginRight: 8, backgroundColor: '#fff', minWidth: 54,
   },
-
-  mapPinPulse: {
-    position: 'absolute',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#111827',
+  dayChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  dayDow: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
+  dayNum: { fontSize: 20, fontWeight: '700', color: '#111827', marginVertical: 2 },
+  dayMon: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
+  dayActive: { color: '#fff' },
+  dayActiveSub: { color: '#9ca3af' },
+  summaryCard: {
+    backgroundColor: '#f9fafb', borderRadius: 12, borderWidth: 1, borderColor: '#f3f4f6', overflow: 'hidden',
   },
-
-  closeBtn: {
-    position: 'absolute',
-    left: 16,
-    zIndex: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.12,
-        shadowRadius: 6,
-      },
-      android: { elevation: 4 },
-    }),
+  sumRow: {
+    flexDirection: 'row', alignItems: 'flex-start', padding: 14,
+    borderBottomWidth: 1, borderBottomColor: '#f3f4f6', gap: 12,
   },
-
-  // Search card overlay — absolute, floats above map at top (step 1 only)
-  mapSearchOverlay: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    zIndex: 30,
+  sumIcon: { fontSize: 18, marginTop: 1 },
+  sumLabel: { fontSize: 11, color: '#9ca3af', fontWeight: '500', marginBottom: 2 },
+  sumValue: { fontSize: 14, color: '#111827', fontWeight: '600' },
+  input: {
+    backgroundColor: '#f9fafb', borderWidth: 1.5, borderColor: '#e5e7eb',
+    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
+    fontSize: 15, color: '#111827',
   },
-
-  sheet: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    // top is animated via mapHeight; backgroundColor animated via sheetBg interpolation
-    // iOS: shadow is suppressed automatically when backgroundColor is transparent
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -3 },
-        shadowOpacity: 0.1,
-        shadowRadius: 16,
-      },
-      android: { elevation: 20 },
-    }),
-  },
-  floatingCta: {
-    position: 'absolute',
-    left: 20,
-    right: 20,
-    // bottom set inline with safe-area inset
-  },
-  handleArea: { paddingTop: 12, paddingBottom: 6, alignItems: 'center' },
-  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#e5e7eb' },
-
-  stepHeader: {
-    paddingHorizontal: 20,
-    marginBottom: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  backBtnInline: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  backBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepStepNumber: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#9ca3af',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-    textTransform: 'uppercase',
-  },
-  stepTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
-    color: '#111827',
-    lineHeight: 26,
-  },
-  stepSub: { fontSize: 13, color: '#6b7280', marginTop: 2 },
-
-  slideClip: { flex: 1, overflow: 'hidden' },
-  slideWrapper: { flex: 1 },
-  content: { flex: 1, paddingHorizontal: 20, minHeight: 0 },
-
-  footer: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    gap: 8,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-  },
-  ctaRow: {
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'center',
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#f9fafb',
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    marginBottom: 2,
-  },
-  priceLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-    color: '#374151',
-  },
-  priceSub: { fontSize: 11, color: '#9ca3af', marginTop: 1 },
-  priceAmount: {
-    fontSize: 26,
-    fontWeight: '800',
-    fontFamily: 'Inter_800ExtraBold',
-    color: '#111827',
-  },
-
-  cta: {
-    backgroundColor: '#111827',
-    borderRadius: 100,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  ctaDisabled: { backgroundColor: '#e5e7eb' },
-  ctaText: {
-    fontSize: 16,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
-    color: '#fff',
-    letterSpacing: 0.3,
-  },
-  ctaTextDisabled: { color: '#9ca3af' },
+  inputMulti: { height: 80, textAlignVertical: 'top' },
+  successRoot: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', padding: 32 },
+  successTitle: { fontSize: 24, fontWeight: '700', color: '#111827', marginTop: 20, marginBottom: 8 },
+  successSub: { fontSize: 15, color: '#6b7280', marginBottom: 24 },
+  jobBadge: { backgroundColor: '#f3f4f6', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 20, marginBottom: 32 },
+  jobBadgeText: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  successBtn: { backgroundColor: '#111827', borderRadius: 14, paddingVertical: 14, paddingHorizontal: 40 },
+  successBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
 });

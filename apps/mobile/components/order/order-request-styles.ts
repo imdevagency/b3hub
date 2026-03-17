@@ -859,4 +859,16 @@ export const sa = StyleSheet.create({
     fontSize: 14,
     color: '#111827',
   },
+
+  // ── Map step address card ──────────────────────────────────
+  mapAddressCard: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: '#f9fafb',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    padding: 16,
+    margin: 20,
+  },
 });
