@@ -29,11 +29,11 @@ import { haptics } from '@/lib/haptics';
 // ── Status helpers ─────────────────────────────────────────────
 
 const RFQ_STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING:   { label: 'Gaida piedāvājumus', bg: '#fef3c7',  color: '#d97706' },
-  QUOTED:    { label: 'Ir piedāvājumi',      bg: '#d1fae5',  color: '#059669' },
-  ACCEPTED:  { label: 'Pieņemts',            bg: '#dcfce7',  color: '#15803d' },
-  CANCELLED: { label: 'Atcelts',             bg: '#f3f4f6',  color: '#6b7280' },
-  EXPIRED:   { label: 'Beidzies',            bg: '#f3f4f6',  color: '#9ca3af' },
+  PENDING: { label: 'Gaida piedāvājumus', bg: '#fef3c7', color: '#d97706' },
+  QUOTED: { label: 'Ir piedāvājumi', bg: '#d1fae5', color: '#059669' },
+  ACCEPTED: { label: 'Pieņemts', bg: '#dcfce7', color: '#15803d' },
+  CANCELLED: { label: 'Atcelts', bg: '#f3f4f6', color: '#6b7280' },
+  EXPIRED: { label: 'Beidzies', bg: '#f3f4f6', color: '#9ca3af' },
 };
 
 // ── Component ──────────────────────────────────────────────────
@@ -93,7 +93,10 @@ export default function RfqDetailScreen() {
                 },
               ]);
             } catch (e) {
-              Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās pieņemt piedāvājumu');
+              Alert.alert(
+                'Kļūda',
+                e instanceof Error ? e.message : 'Neizdevās pieņemt piedāvājumu',
+              );
             } finally {
               setAccepting(null);
             }
@@ -124,16 +127,14 @@ export default function RfqDetailScreen() {
 
   const st = RFQ_STATUS[rfq.status] ?? RFQ_STATUS.PENDING;
   const categoryLabel = CATEGORY_LABELS[rfq.materialCategory] ?? rfq.materialCategory;
+  // Sort cheapest-first so the "Best" badge always lands on the lowest-price offer
+  const sortedResponses = [...rfq.responses].sort((a, b) => a.totalPrice - b.totalPrice);
 
   return (
     <View style={[ss.root, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={ss.header}>
-        <TouchableOpacity
-          style={ss.backBtn}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity style={ss.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
           <ChevronLeft size={22} color="#111827" />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
@@ -194,12 +195,12 @@ export default function RfqDetailScreen() {
 
         {/* Responses */}
         <Text style={ss.sectionTitle}>
-          {rfq.responses.length === 0
+          {sortedResponses.length === 0
             ? 'Vēl nav piedāvājumu'
-            : `${rfq.responses.length} piedāvājum${rfq.responses.length === 1 ? 's' : 'i'}`}
+            : `${sortedResponses.length} piedāvājum${sortedResponses.length === 1 ? 's' : 'i'}`}
         </Text>
 
-        {rfq.responses.length === 0 && (
+        {sortedResponses.length === 0 && (
           <View style={ss.emptyResponses}>
             <Clock size={32} color="#d1d5db" />
             <Text style={ss.emptyResponsesTitle}>Gaidām piegādātāju atbildes</Text>
@@ -209,7 +210,7 @@ export default function RfqDetailScreen() {
           </View>
         )}
 
-        {rfq.responses.map((resp, idx) => (
+        {sortedResponses.map((resp, idx) => (
           <View key={resp.id} style={ss.responseCard}>
             {idx === 0 && rfq.responses.length > 1 && (
               <View style={ss.bestBadge}>
@@ -219,9 +220,7 @@ export default function RfqDetailScreen() {
             )}
             <View style={ss.responseTop}>
               <Text style={ss.supplierName}>{resp.supplier.name}</Text>
-              {resp.supplier.city && (
-                <Text style={ss.supplierCity}>{resp.supplier.city}</Text>
-              )}
+              {resp.supplier.city && <Text style={ss.supplierCity}>{resp.supplier.city}</Text>}
             </View>
             <View style={ss.priceRow}>
               <View>
@@ -240,30 +239,30 @@ export default function RfqDetailScreen() {
               </Text>
             )}
             {resp.validUntil && (
-              <Text style={ss.validUntil}>
-                Derīgs līdz {formatDateShort(resp.validUntil)}
-              </Text>
+              <Text style={ss.validUntil}>Derīgs līdz {formatDateShort(resp.validUntil)}</Text>
             )}
-            {rfq.status !== 'ACCEPTED' && rfq.status !== 'CANCELLED' && rfq.status !== 'EXPIRED' && (
-              <TouchableOpacity
-                style={[ss.acceptBtn, accepting === resp.id && { opacity: 0.6 }]}
-                onPress={() => {
-                  haptics.medium();
-                  handleAccept(resp);
-                }}
-                disabled={accepting !== null}
-                activeOpacity={0.85}
-              >
-                {accepting === resp.id ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <>
-                    <CheckCircle size={15} color="#fff" />
-                    <Text style={ss.acceptBtnText}>Pieņemt piedāvājumu</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            )}
+            {rfq.status !== 'ACCEPTED' &&
+              rfq.status !== 'CANCELLED' &&
+              rfq.status !== 'EXPIRED' && (
+                <TouchableOpacity
+                  style={[ss.acceptBtn, accepting === resp.id && { opacity: 0.6 }]}
+                  onPress={() => {
+                    haptics.medium();
+                    handleAccept(resp);
+                  }}
+                  disabled={accepting !== null}
+                  activeOpacity={0.85}
+                >
+                  {accepting === resp.id ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <CheckCircle size={15} color="#fff" />
+                      <Text style={ss.acceptBtnText}>Pieņemt piedāvājumu</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
           </View>
         ))}
       </ScrollView>
@@ -272,10 +271,10 @@ export default function RfqDetailScreen() {
 }
 
 const ss = StyleSheet.create({
-  root:     { flex: 1, backgroundColor: '#f2f2f7' },
-  center:   { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f2f2f7' },
+  root: { flex: 1, backgroundColor: '#f2f2f7' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f2f2f7' },
   emptyText: { fontSize: 15, color: '#6b7280' },
-  link:     { fontSize: 15, color: '#111827', fontWeight: '600' },
+  link: { fontSize: 15, color: '#111827', fontWeight: '600' },
 
   // Header
   header: {
@@ -361,10 +360,10 @@ const ss = StyleSheet.create({
   bestBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700', letterSpacing: 0.2 },
   responseTop: { gap: 2 },
   supplierName: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  supplierCity:  { fontSize: 12, color: '#6b7280' },
+  supplierCity: { fontSize: 12, color: '#6b7280' },
   priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   priceMain: { fontSize: 22, fontWeight: '800', color: '#111827' },
-  priceSub:  { fontSize: 12, color: '#6b7280', marginTop: 1 },
+  priceSub: { fontSize: 12, color: '#6b7280', marginTop: 1 },
   etaChip: {
     backgroundColor: '#f3f4f6',
     borderRadius: 8,

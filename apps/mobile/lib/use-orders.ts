@@ -2,16 +2,17 @@ import { useState, useCallback, useMemo } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from './auth-context';
 import { api } from './api';
-import type { SkipHireOrder, ApiOrder, ApiTransportJob } from './api';
+import type { SkipHireOrder, ApiOrder, ApiTransportJob, QuoteRequest } from './api';
 
-// ── Types ─────────────────────────────────────────────────────
+// ── Types ────────────────────────────────────────────────────────────────────────────────────
 
 export type FilterKey = 'ALL' | 'ACTIVE' | 'DONE' | 'CANCELLED';
 
 export type UnifiedOrder =
   | { kind: 'skip'; data: SkipHireOrder; sortDate: number; isActive: boolean }
   | { kind: 'material'; data: ApiOrder; sortDate: number; isActive: boolean }
-  | { kind: 'transport'; data: ApiTransportJob; sortDate: number; isActive: boolean };
+  | { kind: 'transport'; data: ApiTransportJob; sortDate: number; isActive: boolean }
+  | { kind: 'rfq'; data: QuoteRequest; sortDate: number; isActive: boolean };
 
 // ── Bucket helpers (exported for use in card components) ──────
 
@@ -47,6 +48,13 @@ export function reqBucket(status: string): FilterKey {
   return 'CANCELLED';
 }
 
+const RFQ_ACTIVE = new Set(['PENDING', 'QUOTED']);
+export function rfqBucket(status: string): FilterKey {
+  if (RFQ_ACTIVE.has(status)) return 'ACTIVE';
+  if (status === 'ACCEPTED') return 'DONE';
+  return 'CANCELLED';
+}
+
 // ── Hook ──────────────────────────────────────────────────────
 
 export function useOrders() {
@@ -54,6 +62,7 @@ export function useOrders() {
   const [skipOrders, setSkipOrders] = useState<SkipHireOrder[]>([]);
   const [matOrders, setMatOrders] = useState<ApiOrder[]>([]);
   const [reqOrders, setReqOrders] = useState<ApiTransportJob[]>([]);
+  const [rfqOrders, setRfqOrders] = useState<QuoteRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterKey>('ALL');
@@ -65,21 +74,18 @@ export function useOrders() {
         return;
       }
       if (showSkeleton) setLoading(true);
-      try {
-        const [skipData, matData, reqData] = await Promise.all([
-          api.skipHire.myOrders(token),
-          api.orders.myOrders(token),
-          api.transportJobs.myRequests(token),
-        ]);
-        setSkipOrders(Array.isArray(skipData) ? skipData : []);
-        setMatOrders(Array.isArray(matData) ? matData : []);
-        setReqOrders(Array.isArray(reqData) ? reqData : []);
-      } catch {
-        // show empty state on error
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
+      const [skipRes, matRes, reqRes, rfqRes] = await Promise.allSettled([
+        api.skipHire.myOrders(token),
+        api.orders.myOrders(token),
+        api.transportJobs.myRequests(token),
+        api.quoteRequests.list(token),
+      ]);
+      setSkipOrders(skipRes.status === 'fulfilled' && Array.isArray(skipRes.value) ? skipRes.value : []);
+      setMatOrders(matRes.status === 'fulfilled' && Array.isArray(matRes.value) ? matRes.value : []);
+      setReqOrders(reqRes.status === 'fulfilled' && Array.isArray(reqRes.value) ? reqRes.value : []);
+      setRfqOrders(rfqRes.status === 'fulfilled' && Array.isArray(rfqRes.value) ? rfqRes.value : []);
+      setLoading(false);
+      setRefreshing(false);
     },
     [token],
   );

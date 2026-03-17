@@ -192,6 +192,12 @@ export default function HomeScreen() {
     return null;
   })();
 
+  // Total active order count across all types — used to show "2 aktīvie" when > 1
+  const activeCount =
+    orders.filter((o) => ACTIVE_STATUSES.has(o.status)).length +
+    skipOrders.filter((o) => SKIP_ACTIVE_STATUSES.has(o.status)).length +
+    transportOrders.filter((o) => TJ_ACTIVE_STATUSES.has(o.status)).length;
+
   const recentItems: RecentItem[] = [];
   orders
     .filter((o) => !ACTIVE_STATUSES.has(o.status))
@@ -293,6 +299,11 @@ export default function HomeScreen() {
             style={s.activeCard}
             onPress={() => {
               haptics.light();
+              // If more than one order is active, go to the full orders list
+              if (activeCount > 1) {
+                router.push('/(buyer)/orders' as any);
+                return;
+              }
               const route =
                 activeItem.kind === 'skip'
                   ? `/(buyer)/skip-order/${activeItem.id}`
@@ -316,9 +327,13 @@ export default function HomeScreen() {
               <View style={[s.activeDot, { backgroundColor: activeItem.dotColor }]} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.activeLabel}>Aktīvs pasūtījums</Text>
-              <Text style={s.activeNum}>{activeItem.num}</Text>
-              <Text style={s.activeStatus}>{activeItem.status}</Text>
+              <Text style={s.activeLabel}>
+                {activeCount > 1 ? `${activeCount} aktīvie pasūtījumi` : 'Aktīvs pasūtījums'}
+              </Text>
+              <Text style={s.activeNum}>
+                {activeCount > 1 ? 'Skatīt visus →' : activeItem.num}
+              </Text>
+              {activeCount === 1 && <Text style={s.activeStatus}>{activeItem.status}</Text>}
             </View>
             <ChevronRight size={18} color="#6b7280" />
           </TouchableOpacity>

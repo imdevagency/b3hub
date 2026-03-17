@@ -19,6 +19,7 @@ import { t } from '@/lib/translations';
 import { haptics } from '@/lib/haptics';
 import { useOrders } from '@/lib/use-orders';
 import type { UnifiedOrder, FilterKey } from '@/lib/use-orders';
+import { useAuth } from '@/lib/auth-context';
 import {
   MapPin,
   CalendarDays,
@@ -262,7 +263,7 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
         </View>
         <View style={s.metaRow}>
           <CalendarDays size={13} color="#6b7280" />
-          <Text style={s.metaText}>{formatDateShort(job.pickupDate)}</Text>
+          <Text style={s.metaText}>{job.pickupDate ? formatDateShort(job.pickupDate) : '—'}</Text>
         </View>
         {job.requiredVehicleType && (
           <View style={s.metaRow}>
@@ -280,11 +281,11 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
 // ── RFQ card (quote request awaiting / responding supplier) ──
 
 const RFQ_STATUS_LABEL: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING:   { label: 'Gaida piedāvājumus', bg: '#fef3c7', color: '#d97706' },
-  QUOTED:    { label: 'Ir piedāvājumi',      bg: '#d1fae5', color: '#059669' },
-  ACCEPTED:  { label: 'Pieņemts',            bg: '#dcfce7', color: '#15803d' },
-  CANCELLED: { label: 'Atcelts',             bg: '#f3f4f6', color: '#6b7280' },
-  EXPIRED:   { label: 'Beidzies',            bg: '#f3f4f6', color: '#9ca3af' },
+  PENDING: { label: 'Gaida piedāvājumus', bg: '#fef3c7', color: '#d97706' },
+  QUOTED: { label: 'Ir piedāvājumi', bg: '#d1fae5', color: '#059669' },
+  ACCEPTED: { label: 'Pieņemts', bg: '#dcfce7', color: '#15803d' },
+  CANCELLED: { label: 'Atcelts', bg: '#f3f4f6', color: '#6b7280' },
+  EXPIRED: { label: 'Beidzies', bg: '#f3f4f6', color: '#9ca3af' },
 };
 
 function RfqCard({ item }: { item: UnifiedOrder & { kind: 'rfq' } }) {
@@ -326,16 +327,12 @@ function RfqCard({ item }: { item: UnifiedOrder & { kind: 'rfq' } }) {
             {rfq.quantity} {UNIT_SHORT[rfq.unit] ?? rfq.unit}
           </Text>
           {responseCount > 0 && (
-            <Text style={[s.matPrice, { color: '#059669' }]}>
-              {responseCount} pied.
-            </Text>
+            <Text style={[s.matPrice, { color: '#059669' }]}>{responseCount} pied.</Text>
           )}
         </View>
         <View style={s.cardFooter}>
           {rfq.status === 'QUOTED' ? (
-            <Text style={[s.price, { color: '#059669', fontSize: 13 }]}>
-              Skatīt piedāvājumus →
-            </Text>
+            <Text style={[s.price, { color: '#059669', fontSize: 13 }]}>Skatīt piedāvājumus →</Text>
           ) : (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Clock size={12} color="#9ca3af" />
@@ -355,6 +352,7 @@ export default function OrdersScreen() {
   const router = useRouter();
   const { loading, refreshing, onRefresh, filter, setFilter, unified, filtered, counts } =
     useOrders();
+  const { token } = useAuth();
   const [ratingSkipId, setRatingSkipId] = useState<string | null>(null);
   const [showTypePicker, setShowTypePicker] = useState(false);
 
@@ -460,7 +458,7 @@ export default function OrdersScreen() {
           onClose={() => setRatingSkipId(null)}
           onSuccess={() => {
             setRatingSkipId(null);
-            loadOrders();
+            onRefresh();
           }}
           token={token}
           skipOrderId={ratingSkipId}

@@ -24,7 +24,7 @@ import { haptics } from '@/lib/haptics';
 import { SELLER_ORDER_STATUS } from '@/lib/materials';
 import { useToast } from '@/components/ui/Toast';
 import { api, type ApiOrder } from '@/lib/api';
-import { Clock, CheckCircle2, Package, X, Square, MapPin, Check, Inbox } from 'lucide-react-native';
+import { Clock, CheckCircle2, Package, X, Square, CheckSquare2, MapPin, Check, Inbox } from 'lucide-react-native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type OrderStatus = 'PENDING' | 'CONFIRMED' | 'LOADING' | 'DISPATCHED';
@@ -95,7 +95,29 @@ function LoadingModal({
   onConfirm: (weightKg?: number) => void;
   confirming?: boolean;
 }) {
+  const CHECKLIST = [
+    'Kravas automašīna atrodas pareizājā vietā',
+    'Svars sakrīt ar pasūtījumu',
+    'Materiāls ir pareizs un kvaliātīvs',
+    'Vadītājs ir klāt un gatavs',
+  ];
   const [weight, setWeight] = useState('');
+  const [checkedItems, setCheckedItems] = useState<boolean[]>(CHECKLIST.map(() => false));
+
+  // Reset checklist + weight whenever the modal opens
+  useEffect(() => {
+    if (visible) {
+      setWeight('');
+      setCheckedItems(CHECKLIST.map(() => false));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
+  const allChecked = checkedItems.every(Boolean);
+
+  const toggleItem = (i: number) =>
+    setCheckedItems((prev) => prev.map((v, idx) => (idx === i ? !v : v)));
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <SafeAreaView style={modalStyles.container} edges={['top', 'bottom']}>
@@ -150,20 +172,29 @@ function LoadingModal({
               </View>
             </View>
 
-            {/* Checklist */}
+            {/* Checklist — all items must be ticked before confirming */}
             <View style={modalStyles.checklistCard}>
               <Text style={modalStyles.checklistTitle}>Pirms iekraušanas pārbaudīt:</Text>
-              {[
-                'Kravas automašīna atrodas pareizajā vietā',
-                'Svars sakrīt ar pasūtījumu',
-                'Materiāls ir pareizs un kvalitatīvs',
-                'Vadītājs ir klāt un gatavs',
-              ].map((item, i) => (
-                <View key={i} style={modalStyles.checkRow}>
-                  <Square size={16} color="#9ca3af" />
-                  <Text style={modalStyles.checkText}>{item}</Text>
-                </View>
+              {CHECKLIST.map((item, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={modalStyles.checkRow}
+                  onPress={() => toggleItem(i)}
+                  activeOpacity={0.7}
+                >
+                  {checkedItems[i] ? (
+                    <CheckSquare2 size={16} color="#059669" />
+                  ) : (
+                    <Square size={16} color="#9ca3af" />
+                  )}
+                  <Text style={[modalStyles.checkText, checkedItems[i] && { color: '#059669' }]}>
+                    {item}
+                  </Text>
+                </TouchableOpacity>
               ))}
+              {!allChecked && (
+                <Text style={modalStyles.checklistHint}>Atzīmējiet visus punktus, lai turpinātu</Text>
+              )}
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -172,12 +203,12 @@ function LoadingModal({
         <View style={modalStyles.footer}>
           <Text style={modalStyles.footerDesc}>{t.incoming.loadingDesc}</Text>
           <TouchableOpacity
-            style={[modalStyles.confirmBtn, confirming && { opacity: 0.6 }]}
+            style={[modalStyles.confirmBtn, (!allChecked || confirming) && { opacity: 0.5 }]}
             onPress={() => {
               const parsed = parseFloat(weight);
               onConfirm(isNaN(parsed) ? undefined : parsed);
             }}
-            disabled={confirming}
+            disabled={!allChecked || confirming}
           >
             {confirming ? (
               <ActivityIndicator color="#ffffff" />
@@ -213,7 +244,12 @@ function OrderCard({
       {/* Header */}
       <View style={styles.cardHeader}>
         <Text style={styles.orderNumber}>#{order.orderNumber}</Text>
-        <StatusPill label={statusInfo.label} bg={statusInfo.bg} color={statusInfo.color} size="sm" />
+        <StatusPill
+          label={statusInfo.label}
+          bg={statusInfo.bg}
+          color={statusInfo.color}
+          size="sm"
+        />
       </View>
 
       {/* Material info */}
@@ -739,9 +775,10 @@ const modalStyles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   checklistTitle: { fontSize: 14, fontWeight: '700', color: '#374151', marginBottom: 4 },
-  checkRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  checkRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
   checkIcon: { fontSize: 18, color: '#9ca3af' },
   checkText: { fontSize: 14, color: '#374151', flex: 1 },
+  checklistHint: { fontSize: 12, color: '#d97706', marginTop: 6, textAlign: 'center', fontStyle: 'italic' },
 
   footer: {
     padding: 20,

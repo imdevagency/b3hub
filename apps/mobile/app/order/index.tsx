@@ -35,7 +35,14 @@ import type { SkipSize, SkipWasteCategory } from '@/lib/api';
 import * as Location from 'expo-location';
 import { ChevronLeft } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
-import { MAP_FULL, MAP_SMALL, RIGA, SKIP_PRICES, toISO, addDays } from '@/components/order/skip-hire-types';
+import {
+  MAP_FULL,
+  MAP_SMALL,
+  RIGA,
+  SKIP_PRICES,
+  toISO,
+  addDays,
+} from '@/components/order/skip-hire-types';
 import { StepProgressBar } from '@/components/order/StepProgressBar';
 import { Step1Location } from '@/components/order/Step1Location';
 import { Step2WasteType } from '@/components/order/Step2WasteType';
@@ -298,7 +305,12 @@ export default function OrderWizard() {
 
   // ── Auto-advance timer (steps 2 + 3) ─────────────────────────
   const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current); }, []);
+  useEffect(
+    () => () => {
+      if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
+    },
+    [],
+  );
 
   const handleWasteSelect = useCallback(
     (waste: SkipWasteCategory) => {
@@ -321,8 +333,10 @@ export default function OrderWizard() {
   );
 
   // ── Step 4 submit ─────────────────────────────────────────────
-  const onSubmit = useCallback(async () => {
-    if (!state.location || !state.wasteCategory || !state.skipSize) return;
+  const onSubmit = useCallback(async () => {    if (!token) {
+      Alert.alert('Pieteikties nepīciešams', 'Lai veiktu pasūtījumu, lūdzu vispirms piesakieties.');
+      return;
+    }    if (!state.location || !state.wasteCategory || !state.skipSize) return;
     setSubmitting(true);
     setDeliveryDate(startDate ?? minDate);
     try {
@@ -536,7 +550,9 @@ export default function OrderWizard() {
             onPress={onLocationCTA}
             activeOpacity={0.85}
           >
-            <Text style={[s.ctaText, !canNext && s.ctaTextDisabled]}>{t.skipHire.step1.next} →</Text>
+            <Text style={[s.ctaText, !canNext && s.ctaTextDisabled]}>
+              {t.skipHire.step1.next} →
+            </Text>
           </TouchableOpacity>
         </Animated.View>
       </Animated.View>
