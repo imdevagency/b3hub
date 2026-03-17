@@ -2,7 +2,7 @@
  * order-request.tsx
  *
  * Clean material ordering flow:
- *   ONBOARDING (first time) → MAP → MATERIAL → CONFIGURE → SEARCHING → QUOTES → CONFIRM → SUCCESS
+ *   ONBOARDING (first time) → MAP → MATERIAL → CONFIGURE → [OFFERS | SENT] → QUOTES → CONFIRM → SUCCESS
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -36,7 +36,6 @@ import type {
   QuoteResponse,
 } from '@/lib/api';
 import { sa } from '@/components/order/order-request-styles';
-import { SearchingAnimation } from '@/components/order/SearchingAnimation';
 import { FlowProgress, STEP_ORDER } from '@/components/order/FlowProgress';
 import type {
   LatLng,
@@ -154,7 +153,6 @@ export default function OrderRequestScreen() {
   // ── RFQ / quote-request path ───────────────────────────────────
   const [quoteRequest, setQuoteRequest] = useState<QuoteRequest | null>(null);
   const [selectedQuoteResponse, setSelectedQuoteResponse] = useState<QuoteResponse | null>(null);
-  const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
@@ -307,14 +305,6 @@ export default function OrderRequestScreen() {
   const stepQty = (delta: number) =>
     setQuantity((prev) => Math.max(1, Math.min(maxTonnes, prev + delta)));
 
-  // ── Cleanup polling on unmount ────────────────────────────────
-  useEffect(
-    () => () => {
-      if (pollTimer.current) clearInterval(pollTimer.current);
-    },
-    [],
-  );
-
   // ── Map height animation ──────────────────────────────────────
   const animateMap = useCallback(
     (toStep: Step) => {
@@ -368,7 +358,36 @@ export default function OrderRequestScreen() {
     else router.back();
   }, [step, selectedOffer, transitionTo, router]);
 
-  // ── Step 3: fetch instant offers or fall back to RFQ ─────────
+  // ── Submit RFQ (fire-and-forget) ──────────────────────────────
+  const submitRFQ = useCallback(
+    async (onError: () => void) => {
+      if (!token) return;
+      try {
+        const req = await api.quoteRequests.create(
+          {
+            materialCategory: matCategoryValue,
+            materialName: matName,
+            quantity,
+            unit: matUnit,
+            deliveryAddress: address,
+            deliveryCity: city,
+            deliveryLat: pin?.latitude,
+            deliveryLng: pin?.longitude,
+          },
+          token,
+        );
+        setQuoteRequest(req);
+        transitionTo('sent', 'forward');
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'Neizdevās nosūtīt pieprasījumu';
+        Alert.alert('Kļūda', msg);
+        onError();
+      }
+    },
+    [token, matCategoryValue, matName, matUnit, quantity, address, city, pin, transitionTo],
+  );
+
+  // ── Step 3: fetch instant offers or fall back to fire-and-forget RFQ ──
   const requestQuotes = useCallback(async () => {
     if (!token) return;
     setInstantOffers([]);
@@ -388,7 +407,7 @@ export default function OrderRequestScreen() {
       );
 
       if (offers.length > 0) {
-        // Sort cheapest first
+        // Instant inventory — show offers immediately
         const sorted = [...offers].sort((a, b) => a.totalPrice - b.totalPrice);
         setInstantOffers(sorted);
         setSelectedOffer(sorted[0]);
@@ -399,46 +418,9 @@ export default function OrderRequestScreen() {
       /* fall through to RFQ */
     }
 
-    // No instant offers — start RFQ flow
-    transitionTo('searching', 'forward');
-    try {
-      const req = await api.quoteRequests.create(
-        {
-          materialCategory: matCategoryValue,
-          materialName: matName,
-          quantity,
-          unit: matUnit,
-          deliveryAddress: address,
-          deliveryCity: city,
-          deliveryLat: pin?.latitude,
-          deliveryLng: pin?.longitude,
-        },
-        token,
-      );
-      setQuoteRequest(req);
-
-      // Poll every 4 s for responses
-      if (pollTimer.current) clearInterval(pollTimer.current);
-      pollTimer.current = setInterval(async () => {
-        try {
-          const updated = await api.quoteRequests.get(req.id, token);
-          setQuoteRequest(updated);
-          if (updated.responses.length > 0) {
-            clearInterval(pollTimer.current!);
-            pollTimer.current = null;
-            setSelectedQuoteResponse(updated.responses[0]);
-            transitionTo('quotes', 'forward');
-          }
-        } catch {
-          /* keep polling */
-        }
-      }, 4000);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Neizdevās nosūtīt pieprasījumu';
-      Alert.alert('Kļūda', msg);
-      transitionTo('configure', 'back');
-    }
-  }, [token, matCategoryValue, matName, matUnit, quantity, address, city, pin]);
+    // No instant stock — submit RFQ and let user leave
+    await submitRFQ(() => transitionTo('configure', 'back'));
+  }, [token, matCategoryValue, quantity, pin, transitionTo, submitRFQ]);
 
   // ── Step confirm: instant offer OR accepted RFQ response ──────
   const confirmOrder = async () => {
@@ -701,57 +683,22 @@ export default function OrderRequestScreen() {
     </ScrollView>
   );
 
-  // ── RFQ fallback (bypass instant offers) ────────────────────
+  // ── RFQ fallback (user pressed "no good price" from offers list) ──
   const requestQuotesFallback = useCallback(async () => {
-    if (!token) return;
-    transitionTo('searching', 'forward');
-    try {
-      const req = await api.quoteRequests.create(
-        {
-          materialCategory: matCategoryValue,
-          materialName: matName,
-          quantity,
-          unit: matUnit,
-          deliveryAddress: address,
-          deliveryCity: city,
-          deliveryLat: pin?.latitude,
-          deliveryLng: pin?.longitude,
-        },
-        token,
-      );
-      setQuoteRequest(req);
-      if (pollTimer.current) clearInterval(pollTimer.current);
-      pollTimer.current = setInterval(async () => {
-        try {
-          const updated = await api.quoteRequests.get(req.id, token);
-          setQuoteRequest(updated);
-          if (updated.responses.length > 0) {
-            clearInterval(pollTimer.current!);
-            pollTimer.current = null;
-            setSelectedQuoteResponse(updated.responses[0]);
-            transitionTo('quotes', 'forward');
-          }
-        } catch {
-          /* keep polling */
-        }
-      }, 4000);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Neizdevās nosūtīt pieprasījumu';
-      Alert.alert('Kļūda', msg);
-      transitionTo('offers', 'back');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, matCategoryValue, matName, matUnit, quantity, address, city, pin]);
+    await submitRFQ(() => transitionTo('offers', 'back'));
+  }, [submitRFQ, transitionTo]);
 
-  // ── STEP — Searching / RFQ polling ──────────────────────────
-  const responseCount = quoteRequest?.responses?.length ?? 0;
-  const renderSearching = () => (
+  // ── STEP — Sent (fire-and-forget RFQ confirmation) ──────────
+  const renderSent = () => (
     <View style={[sa.searchingScreen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <SearchingAnimation />
+      {/* Static checkmark — no spinning animation */}
+      <View style={sa.successCircle}>
+        <CheckCircle size={52} color="#111827" strokeWidth={1.5} />
+      </View>
 
-      <Text style={sa.searchingTitle}>Pieprasījums iesniegts!</Text>
+      <Text style={sa.searchingTitle}>Pieprasījums nosūtīts!</Text>
       <Text style={sa.searchingDesc}>
-        Piegādātāji izskata Jūsu pieprasījumu{'\n'}un atbildēs tuvākajā laikā
+        Paziņosim, kad piegādātāji{'\n'}atbildēs ar saviem piedāvājumiem
       </Text>
 
       {/* Request summary */}
@@ -778,48 +725,17 @@ export default function OrderRequestScreen() {
         </View>
       </View>
 
-      {/* Live status pill */}
-      <View style={sa.searchingPill}>
-        <View style={[sa.searchingDot, responseCount > 0 && sa.searchingDotActive]} />
-        <Text style={sa.searchingPillText}>
-          {responseCount === 0
-            ? 'Gaidam piegādātāju atbildes...'
-            : `${responseCount} piedāvājum${responseCount === 1 ? 's' : 'i'} saņemts`}
-        </Text>
-      </View>
-
-      {/* Primary CTA — lights up when responses arrive */}
+      {/* Primary CTA — user leaves now, checks later */}
       <TouchableOpacity
-        style={[
-          sa.ctaBtn,
-          { marginTop: 8, minWidth: 260 },
-          responseCount === 0 && { opacity: 0.42 },
-        ]}
-        onPress={() => {
-          if (responseCount > 0) {
-            setSelectedQuoteResponse(quoteRequest!.responses[0]);
-            transitionTo('quotes', 'forward');
-          }
-        }}
-        disabled={responseCount === 0}
+        style={[sa.ctaBtn, { marginTop: 8, minWidth: 260 }]}
+        onPress={() => router.replace('/(buyer)/orders')}
         activeOpacity={0.85}
       >
-        <Text style={sa.ctaBtnText}>
-          {responseCount === 0
-            ? 'Gaidam piedāvājumus...'
-            : `Skatīt ${responseCount} piedāvājum${responseCount === 1 ? 'u' : 'us'} →`}
-        </Text>
+        <Text style={sa.ctaBtnText}>Skatīt manus pieprasījumus →</Text>
       </TouchableOpacity>
 
-      {/* Escape — navigate away without losing the request */}
-      <TouchableOpacity
-        style={{ marginTop: 16 }}
-        onPress={() => {
-          if (pollTimer.current) clearInterval(pollTimer.current);
-          router.replace('/(buyer)/orders');
-        }}
-      >
-        <Text style={sa.dimText}>Doties uz pasūtījumiem</Text>
+      <TouchableOpacity style={{ marginTop: 16 }} onPress={() => router.back()}>
+        <Text style={sa.dimText}>Atgriezties sākumā</Text>
       </TouchableOpacity>
     </View>
   );
@@ -1150,7 +1066,7 @@ export default function OrderRequestScreen() {
     else if (step === 'confirm') confirmOrder();
   };
 
-  const isSheetStep = !['searching', 'success'].includes(step);
+  const isSheetStep = !['sent', 'success'].includes(step);
 
   return (
     <View style={{ flex: 1 }}>
@@ -1400,8 +1316,8 @@ export default function OrderRequestScreen() {
         )}
 
         {/* Full-screen overlays */}
-        {step === 'searching' && (
-          <View style={StyleSheet.absoluteFillObject}>{renderSearching()}</View>
+        {step === 'sent' && (
+          <View style={StyleSheet.absoluteFillObject}>{renderSent()}</View>
         )}
         {step === 'success' && <View style={StyleSheet.absoluteFillObject}>{renderSuccess()}</View>}
       </View>

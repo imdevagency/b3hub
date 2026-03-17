@@ -19,7 +19,7 @@ export type Step =
   | 'material'
   | 'configure'
   | 'offers'
-  | 'searching'
+  | 'sent'       // RFQ submitted — fire-and-forget confirmation
   | 'quotes'
   | 'confirm'
   | 'success';
