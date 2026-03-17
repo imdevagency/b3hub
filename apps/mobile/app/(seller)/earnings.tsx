@@ -44,6 +44,7 @@ interface OrderEntry {
   orderNumber: string;
   buyerName: string;
   date: string;
+  rawDate: Date;
   amount: number;
   status: 'confirmed' | 'pending' | 'delivered';
 }
@@ -90,6 +91,7 @@ function computeRevenue(orders: ApiOrder[]): { stats: RevenueStats; entries: Ord
           ? `${order.buyer.firstName ?? ''} ${order.buyer.lastName ?? ''}`.trim()
           : 'Pircējs',
         date: d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+        rawDate: d,
         amount,
         status:
           order.status === 'DELIVERED' || order.status === 'COMPLETED' ? 'delivered' : 'confirmed',
@@ -103,6 +105,7 @@ function computeRevenue(orders: ApiOrder[]): { stats: RevenueStats; entries: Ord
           ? `${order.buyer.firstName ?? ''} ${order.buyer.lastName ?? ''}`.trim()
           : 'Pircējs',
         date: d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+        rawDate: d,
         amount,
         status: 'pending',
       });
@@ -179,6 +182,22 @@ export default function SellerEarningsScreen() {
       : period === 'week'
         ? stats.weekRevenue
         : stats.monthRevenue;
+
+  // Filter history to match the selected period
+  const filteredEntries = (() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (period === 'today') {
+      return entries.filter((e) => e.rawDate >= todayStart);
+    }
+    if (period === 'week') {
+      const weekStart = new Date(todayStart);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      return entries.filter((e) => e.rawDate >= weekStart);
+    }
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    return entries.filter((e) => e.rawDate >= monthStart);
+  })();
 
   const PERIODS: { key: Period; label: string }[] = [
     { key: 'today', label: 'Šodien' },
@@ -280,14 +299,14 @@ export default function SellerEarningsScreen() {
           {/* ── Order history ── */}
           <View style={s.section}>
             <Text style={s.sectionTitle}>Darījumu vēsture</Text>
-            {entries.length === 0 ? (
+            {filteredEntries.length === 0 ? (
               <View style={s.empty}>
                 <Banknote size={36} color="#d1d5db" />
                 <Text style={s.emptyText}>Nav darījumu vēstures</Text>
               </View>
             ) : (
               <View style={s.historyCard}>
-                {entries.map((e, idx) => {
+                {filteredEntries.map((e, idx) => {
                   const meta = STATUS_STYLE[e.status];
                   return (
                     <View key={e.id}>
@@ -316,7 +335,7 @@ export default function SellerEarningsScreen() {
                           </View>
                         </View>
                       </View>
-                      {idx < entries.length - 1 && <View style={s.divider} />}
+                      {idx < filteredEntries.length - 1 && <View style={s.divider} />}
                     </View>
                   );
                 })}

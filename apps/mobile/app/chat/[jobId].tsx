@@ -57,7 +57,7 @@ export default function ChatScreen() {
       <View style={[styles.msgRow, isOwn && styles.msgRowOwn]}>
         {!isOwn && (
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{item.senderName.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.avatarText}>{(item.senderName?.[0] ?? '?').toUpperCase()}</Text>
           </View>
         )}
         <View style={[styles.bubble, isOwn ? styles.bubbleOwn : styles.bubbleOther]}>
