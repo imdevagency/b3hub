@@ -26,6 +26,7 @@ const ACTIVE_STATUSES = new Set([
   'LOADING',
   'DISPATCHED',
   'DELIVERING',
+  'SHIPPED',
 ]);
 
 const STATUS_LABEL: Record<string, string> = {

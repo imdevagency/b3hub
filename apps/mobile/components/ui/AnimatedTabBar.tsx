@@ -4,7 +4,7 @@
  * to avoid JSI HostFunction crashes in Expo Go.
  */
 import React, { useCallback, useRef, useEffect } from 'react';
-import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptics } from '@/lib/haptics';
 
@@ -83,7 +83,15 @@ function TabItem({
       <Animated.View style={{ transform: [{ scale }] }}>
         <View>
           {options.tabBarIcon?.({ focused: isFocused, color, size: 22 })}
-          {!!options.tabBarBadge && <View style={styles.badge} />}
+          {!!options.tabBarBadge && (
+            <View style={styles.badge}>
+              {typeof options.tabBarBadge === 'number' && options.tabBarBadge > 0 && (
+                <Text style={styles.badgeText}>
+                  {options.tabBarBadge > 99 ? '99+' : options.tabBarBadge}
+                </Text>
+              )}
+            </View>
+          )}
         </View>
       </Animated.View>
       <Animated.Text style={[styles.label, { color, opacity: labelOpacity }]} numberOfLines={1}>
@@ -205,11 +213,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -1,
     right: -2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: '#dc2626',
     borderWidth: 1.5,
     borderColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    color: '#ffffff',
+    fontSize: 9,
+    fontWeight: '800',
+    lineHeight: 13,
   },
 });

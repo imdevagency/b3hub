@@ -4,7 +4,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
-import { Home, ClipboardList, User } from 'lucide-react-native';
+import { Home, ClipboardList, User, ShoppingBag } from 'lucide-react-native';
 import { TopBar } from '@/components/ui/TopBar';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
@@ -66,6 +66,14 @@ export default function BuyerLayout() {
             options={{
               title: t.tabs.activity,
               tabBarIcon: ({ color }) => <ClipboardList size={22} color={color} />,
+              tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+            }}
+          />
+          <Tabs.Screen
+            name="catalog"
+            options={{
+              title: 'Katalogs',
+              tabBarIcon: ({ color }) => <ShoppingBag size={22} color={color} />,
             }}
           />
           <Tabs.Screen
@@ -75,7 +83,6 @@ export default function BuyerLayout() {
               tabBarIcon: ({ color }) => <User size={22} color={color} />,
             }}
           />
-          <Tabs.Screen name="catalog" options={{ href: null }} />
           <Tabs.Screen name="order/[id]" options={{ href: null }} />
           <Tabs.Screen name="skip-order/[id]" options={{ href: null }} />
           <Tabs.Screen name="invoices" options={{ href: null }} />

@@ -16,7 +16,6 @@ import {
   Bell,
   Box,
   ChevronRight,
-  FileText,
   FolderOpen,
   LogOut,
   MessageCircle,
@@ -58,13 +57,6 @@ interface MenuItem {
 function buildItems(role: Role): MenuItem[] {
   const items: MenuItem[] = [];
 
-  if (role === 'seller') {
-    items.push({
-      icon: (c) => <FileText size={20} color={c} />,
-      label: 'Pieprasījumi',
-      route: '/(seller)/quotes',
-    });
-  }
   if (role === 'driver') {
     items.push({
       icon: (c) => <Trash2 size={20} color={c} />,
