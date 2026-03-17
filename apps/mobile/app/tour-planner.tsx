@@ -274,7 +274,7 @@ export default function TourPlannerScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f3f4f6' },
+  safe: { flex: 1, backgroundColor: '#f2f2f7' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

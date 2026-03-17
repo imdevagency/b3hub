@@ -69,7 +69,7 @@ const SECTIONS = [
       },
       {
         q: 'Kā kļūt par piegādātāju vai pārvadātāju?',
-        a: 'Profilā sadaļā "Manas lomas" spiediet "Pieteikt" pie vēlamās lomas. Mēs izskatīsim pieteikumu un sazināsimies ar Jums.',
+        a: 'Apmeklējiet b3hub.lv/apply un aizpildiet pieteikuma formu. Mēs izskatīsim pieteikumu un sazināsimies ar Jums pa e-pastu.',
       },
       {
         q: 'Kā mainīt paroli?',

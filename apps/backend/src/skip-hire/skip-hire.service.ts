@@ -5,9 +5,19 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/dto/create-notification.dto';
 import { CreateSkipHireDto } from './dto/create-skip-hire.dto';
 import { UpdateSkipHireStatusDto } from './dto/update-skip-hire-status.dto';
 import { CompanyType, SkipHireStatus, SkipSize } from '@prisma/client';
+
+const SKIP_STATUS_LABEL: Partial<Record<SkipHireStatus, string>> = {
+  [SkipHireStatus.CONFIRMED]:  'Konteiners apstiprināts',
+  [SkipHireStatus.DELIVERED]:  'Konteiners piegādāts',
+  [SkipHireStatus.COLLECTED]:  'Konteiners savākts',
+  [SkipHireStatus.CANCELLED]:  'Pasūtījums atcelts',
+  [SkipHireStatus.COMPLETED]:  'Pasūtījums pabeigts',
+};
 
 // Fallback prices used when no carrier is selected (direct/admin orders)
 const SKIP_PRICES: Record<SkipSize, number> = {
@@ -30,7 +40,10 @@ export interface SkipHireQuoteResult {
 
 @Injectable()
 export class SkipHireService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   // ── Create (public — no auth needed) ──────────────────────────
   async create(dto: CreateSkipHireDto, userId?: string) {
@@ -61,7 +74,7 @@ export class SkipHireService {
       price = SKIP_PRICES[dto.skipSize];
     }
 
-    return this.prisma.skipHireOrder.create({
+    const order = await this.prisma.skipHireOrder.create({
       data: {
         orderNumber,
         location: dto.location,
@@ -81,6 +94,18 @@ export class SkipHireService {
         carrierId,
       },
     });
+    if (userId) {
+      this.notifications
+        .create({
+          userId,
+          type: NotificationType.ORDER_CREATED,
+          title: 'Konteinera pasūtījums saņemts',
+          message: `Pasūtījums #${orderNumber} reģistrēts. Apstiprinājums sekos drīzumā.`,
+          data: { orderId: order.id },
+        })
+        .catch(() => null);
+    }
+    return order;
   }
 
   // ── Get quotes (public) ──────────────────────────────────────────────
@@ -183,11 +208,26 @@ export class SkipHireService {
 
   // ── Update status (admin only) ──────────────────────────────
   async updateStatus(id: string, dto: UpdateSkipHireStatusDto) {
-    await this.findOne(id, undefined, true); // admin-only, skip ownership check
-    return this.prisma.skipHireOrder.update({
+    const existing = await this.findOne(id, undefined, true);
+    const updated = await this.prisma.skipHireOrder.update({
       where: { id },
       data: { status: dto.status },
     });
+    if (existing.userId) {
+      const label = SKIP_STATUS_LABEL[dto.status];
+      if (label) {
+        this.notifications
+          .create({
+            userId: existing.userId,
+            type: NotificationType.ORDER_CONFIRMED,
+            title: label,
+            message: `Konteinera pasūtījums #${existing.orderNumber}: ${label.toLowerCase()}.`,
+            data: { orderId: id },
+          })
+          .catch(() => null);
+      }
+    }
+    return updated;
   }
 
   // ── Cancel ────────────────────────────────────────────────────
@@ -201,10 +241,22 @@ export class SkipHireService {
         'Cannot cancel an order that is already completed or collected',
       );
     }
-    return this.prisma.skipHireOrder.update({
+    const updated = await this.prisma.skipHireOrder.update({
       where: { id },
       data: { status: SkipHireStatus.CANCELLED },
     });
+    if (order.userId) {
+      this.notifications
+        .create({
+          userId: order.userId,
+          type: NotificationType.SYSTEM_ALERT,
+          title: 'Pasūtījums atcelts',
+          message: `Konteinera pasūtījums #${order.orderNumber} ir atcelts.`,
+          data: { orderId: id },
+        })
+        .catch(() => null);
+    }
+    return updated;
   }
 
   // ── Carrier fleet map (skip driver view) ─────────────────────
@@ -281,10 +333,25 @@ export class SkipHireService {
         `Expected next status to be ${expectedNext}`,
       );
 
-    return this.prisma.skipHireOrder.update({
+    const updated = await this.prisma.skipHireOrder.update({
       where: { id },
       data: { status: newStatus },
     });
+    if (order.userId) {
+      const label = SKIP_STATUS_LABEL[newStatus];
+      if (label) {
+        this.notifications
+          .create({
+            userId: order.userId,
+            type: NotificationType.ORDER_DELIVERED,
+            title: label,
+            message: `Konteinera pasūtījums #${order.orderNumber}: ${label.toLowerCase()}.`,
+            data: { orderId: id },
+          })
+          .catch(() => null);
+      }
+    }
+    return updated;
   }
 
   // ── Helpers ───────────────────────────────────────────────────

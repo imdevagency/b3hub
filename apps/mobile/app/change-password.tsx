@@ -215,7 +215,7 @@ const s = StyleSheet.create({
   },
   backBtn: { padding: 4 },
   headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: ACCENT },
-  scroll: { flex: 1, backgroundColor: '#f9fafb' },
+  scroll: { flex: 1, backgroundColor: '#f2f2f7' },
   content: { padding: 20, paddingBottom: 48 },
   label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
   inputRow: {

@@ -541,7 +541,7 @@ export default function IncomingScreen() {
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
+  container: { flex: 1, backgroundColor: '#f2f2f7' },
 
   header: {
     flexDirection: 'row',

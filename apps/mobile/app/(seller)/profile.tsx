@@ -250,7 +250,7 @@ export default function ProfileScreen() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f9fafb' },
+  safe: { flex: 1, backgroundColor: '#f2f2f7' },
   avatarSection: {
     backgroundColor: '#fff',
     paddingVertical: 32,
