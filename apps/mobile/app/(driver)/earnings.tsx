@@ -39,6 +39,7 @@ interface HistoryEntry {
   id: string;
   jobNumber: string;
   date: string;
+  rawDate: Date;
   route: string;
   amount: number;
   paid: boolean;
@@ -103,6 +104,7 @@ function computeStats(jobs: ApiTransportJob[]): {
         id: job.id,
         jobNumber: job.jobNumber,
         date: d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+        rawDate: d,
         route: `${job.pickupCity} → ${job.deliveryCity}`,
         amount: job.rate,
         paid: false, // no real payout mechanism yet — always show as pending
@@ -117,6 +119,7 @@ function computeStats(jobs: ApiTransportJob[]): {
           month: '2-digit',
           year: 'numeric',
         }),
+        rawDate: new Date(job.pickupDate),
         route: `${job.pickupCity} → ${job.deliveryCity}`,
         amount: job.rate,
         paid: false,
@@ -158,7 +161,7 @@ function WeeklyBarChart({ bars }: { bars: DayBar[] }) {
                   style={[
                     chartStyles.barFill,
                     { height: fillH, backgroundColor: bar.isToday ? '#111827' : '#d1d5db' },
-                    bar.amount > 0 && !bar.isToday && { backgroundColor: '#ef4444' },
+                    bar.amount > 0 && !bar.isToday && { backgroundColor: '#374151' },
                   ]}
                 />
               </View>
@@ -219,6 +222,23 @@ export default function EarningsScreen() {
       : period === 'week'
         ? stats.weekEarnings
         : stats.monthEarnings;
+
+  // Filter history list to match the selected period
+  const filteredHistory = (() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (period === 'today') {
+      return history.filter((e) => e.rawDate >= todayStart);
+    }
+    if (period === 'week') {
+      const weekStart = new Date(todayStart);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      return history.filter((e) => e.rawDate >= weekStart);
+    }
+    // month
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    return history.filter((e) => e.rawDate >= monthStart);
+  })();
 
   const PERIODS: { key: Period; label: string }[] = [
     { key: 'today', label: t.earnings.today },
@@ -297,17 +317,14 @@ export default function EarningsScreen() {
           {/* ── History ── */}
           <View style={styles.historySection}>
             <Text style={styles.sectionTitle}>{t.earnings.history}</Text>
-            {history.length === 0 ? (
-              <EmptyState
-                icon={<Banknote size={36} color="#d1d5db" />}
-                title="Nav darbu vēsturē"
-              />
+            {filteredHistory.length === 0 ? (
+              <EmptyState icon={<Banknote size={36} color="#d1d5db" />} title="Nav darbu vēsturē" />
             ) : (
               <View style={styles.historyList}>
-                {history.map((job, idx) => (
+                {filteredHistory.map((job, idx) => (
                   <View
                     key={job.id}
-                    style={[styles.historyRow, idx < history.length - 1 && styles.historyRowBorder]}
+                    style={[styles.historyRow, idx < filteredHistory.length - 1 && styles.historyRowBorder]}
                   >
                     <View
                       style={[

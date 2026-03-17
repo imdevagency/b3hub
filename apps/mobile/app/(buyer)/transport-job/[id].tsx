@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Alert,
   Linking,
   Dimensions,
 } from 'react-native';
@@ -54,7 +55,6 @@ const STATUS_ORDER = [
   'AT_DELIVERY',
   'DELIVERED',
 ];
-
 
 const VEHICLE_LABEL: Record<string, string> = {
   TIPPER_SMALL: 'Pašizgāzējs (10 t)',
@@ -184,18 +184,35 @@ export default function TransportJobDetailScreen() {
   const st = job ? (TJB_STATUS[job.status] ?? TJB_STATUS.AVAILABLE) : null;
   const canCancel = job?.status === 'AVAILABLE';
 
-  const handleCancel = async () => {
+  const handleCancel = () => {
     if (!job || !token) return;
     haptics.medium();
-    setCancelling(true);
-    try {
-      await api.transportJobs.updateStatus(job.id, 'CANCELLED', token);
-      loadJob();
-    } catch {
-      // silent
-    } finally {
-      setCancelling(false);
-    }
+    Alert.alert(
+      'Atcelt pasūtījumu?',
+      'Šo darbību nevar atsaukt. Pasūtījums tiks atcelts.',
+      [
+        { text: 'Nē', style: 'cancel' },
+        {
+          text: 'Atcelt',
+          style: 'destructive',
+          onPress: async () => {
+            setCancelling(true);
+            try {
+              await api.transportJobs.updateStatus(job.id, 'CANCELLED', token);
+              loadJob();
+            } catch (err) {
+              haptics.error();
+              Alert.alert(
+                'Kļūda',
+                err instanceof Error ? err.message : 'Neizdevās atcelt pasūtījumu',
+              );
+            } finally {
+              setCancelling(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -290,9 +307,7 @@ export default function TransportJobDetailScreen() {
               <Text style={s.jobNumber}>{job.jobNumber}</Text>
               <Text style={s.jobType}>{typeLabel}</Text>
             </View>
-            {st && (
-              <StatusPill label={st.label} bg={st.bg} color={st.color} />
-            )}
+            {st && <StatusPill label={st.label} bg={st.bg} color={st.color} />}
           </View>
 
           {/* Progress stepper */}

@@ -44,7 +44,6 @@ import { formatDate } from '@/lib/format';
 
 // ── Constants ──────────────────────────────────────────────────
 
-
 const ORDER_STEPS = [
   { key: 'PENDING', label: 'Pasūtīts', hint: 'Gaida apstiprināšanu' },
   { key: 'CONFIRMED', label: 'Apstiprināts', hint: 'Pasūtījums apstiprināts' },
@@ -62,6 +61,9 @@ export default function OrderDetailScreen() {
   const { order, setOrder, loading, alreadyRated, documents, reload: load } = useOrderDetail(id);
   const [actionLoading, setActionLoading] = useState(false);
   const [showRating, setShowRating] = useState(false);
+  // Local flag so the UI updates immediately after rating without a reload
+  const [ratedLocally, setRatedLocally] = useState(false);
+  const hasRated = alreadyRated || ratedLocally;
 
   const handleCancel = () => {
     haptics.heavy();
@@ -159,8 +161,8 @@ export default function OrderDetailScreen() {
               ) : (
                 <View style={s.driverAvatarFallback}>
                   <Text style={s.driverAvatarInitials}>
-                    {driver.firstName[0]}
-                    {driver.lastName[0]}
+                    {driver.firstName?.[0] ?? '?'}
+                    {driver.lastName?.[0] ?? ''}
                   </Text>
                 </View>
               )}
@@ -224,9 +226,13 @@ export default function OrderDetailScreen() {
             <InfoSection
               icon={<Camera size={14} color="#6b7280" />}
               title="Svēršanas biļete"
-              right={jobWithPhoto.actualWeightKg != null ? (
-                <Text style={s.weighingWeight}>⚖️ {jobWithPhoto.actualWeightKg.toFixed(0)} kg</Text>
-              ) : undefined}
+              right={
+                jobWithPhoto.actualWeightKg != null ? (
+                  <Text style={s.weighingWeight}>
+                    ⚖️ {jobWithPhoto.actualWeightKg.toFixed(0)} kg
+                  </Text>
+                ) : undefined
+              }
             >
               <Image
                 source={{ uri: jobWithPhoto.pickupPhotoUrl }}
@@ -263,7 +269,10 @@ export default function OrderDetailScreen() {
         <InfoSection icon={<MapPin size={14} color="#6b7280" />} title="Piegādes dati">
           <DetailRow label="Adrese" value={order.deliveryAddress} />
           <DetailRow label="Pilsēta" value={order.deliveryCity} />
-          <DetailRow label="Datums" value={order.deliveryDate ? formatDate(order.deliveryDate) : null} />
+          <DetailRow
+            label="Datums"
+            value={order.deliveryDate ? formatDate(order.deliveryDate) : null}
+          />
           <DetailRow label="Kontaktpersona" value={order.siteContactName} />
           <DetailRow label="Tālrunis" value={order.siteContactPhone} />
           {order.siteContactPhone && (
@@ -338,7 +347,9 @@ export default function OrderDetailScreen() {
                   </Text>
                 }
               >
-                {proof.recipientName ? <DetailRow label="Pieņēma" value={proof.recipientName} /> : null}
+                {proof.recipientName ? (
+                  <DetailRow label="Pieņēma" value={proof.recipientName} />
+                ) : null}
                 {proof.notes ? <DetailRow label="Piezīmes" value={proof.notes} /> : null}
                 {proof.photos.length > 0 && (
                   <ScrollView
@@ -424,7 +435,7 @@ export default function OrderDetailScreen() {
             </TouchableOpacity>
           )}
 
-          {order.status === 'DELIVERED' && !alreadyRated && (
+          {order.status === 'DELIVERED' && !hasRated && (
             <TouchableOpacity
               style={s.rateBtn}
               onPress={() => setShowRating(true)}
@@ -434,7 +445,7 @@ export default function OrderDetailScreen() {
               <Text style={s.rateBtnText}>{t.rating.rateBtn}</Text>
             </TouchableOpacity>
           )}
-          {order.status === 'DELIVERED' && alreadyRated && (
+          {order.status === 'DELIVERED' && hasRated && (
             <View style={s.alreadyRated}>
               <Star size={14} color="#9ca3af" fill="#9ca3af" />
               <Text style={s.alreadyRatedText}>{t.rating.alreadyRated}</Text>
@@ -470,7 +481,7 @@ export default function OrderDetailScreen() {
           onClose={() => setShowRating(false)}
           onSuccess={() => {
             setShowRating(false);
-            setAlreadyRated(true);
+            setRatedLocally(true);
           }}
           token={token}
           orderId={id}
