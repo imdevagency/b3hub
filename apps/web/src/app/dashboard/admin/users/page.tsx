@@ -107,8 +107,8 @@ export default function AdminUsersPage() {
     try {
       const updated = await adminUpdateUser(userId, { [field]: !currentValue }, token);
       setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
-    } catch (e: any) {
-      alert(e?.message ?? 'Neizdevās atjaunināt');
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Neizdevās atjaunināt');
     } finally {
       setUpdating(null);
     }
@@ -121,8 +121,8 @@ export default function AdminUsersPage() {
     try {
       const updated = await adminUpdateUser(u.id, { status: next }, token);
       setUsers((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
-    } catch (e: any) {
-      alert(e?.message ?? 'Neizdevās atjaunināt');
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Neizdevās atjaunināt');
     } finally {
       setUpdating(null);
     }

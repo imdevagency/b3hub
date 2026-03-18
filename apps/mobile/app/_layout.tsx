@@ -89,35 +89,35 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <ModeProvider>
-            <ToastProvider>
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  animation: 'slide_from_right',
-                  animationDuration: 200,
-                }}
-              >
-                {/* Booking wizard flows enter from the bottom — Uber-style */}
-                <Stack.Screen
-                  name="order-request"
-                  options={{ animation: 'fade_from_bottom', animationDuration: 320 }}
-                />
-                <Stack.Screen
-                  name="disposal"
-                  options={{ animation: 'fade_from_bottom', animationDuration: 320 }}
-                />
-                <Stack.Screen
-                  name="transport"
-                  options={{ animation: 'fade_from_bottom', animationDuration: 320 }}
-                />
-              </Stack>
-            </ToastProvider>
-          </ModeProvider>
-        </AuthProvider>
-      </SafeAreaProvider>
+        <SafeAreaProvider>
+          <AuthProvider>
+            <ModeProvider>
+              <ToastProvider>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    animation: 'slide_from_right',
+                    animationDuration: 200,
+                  }}
+                >
+                  {/* Booking wizard flows enter from the bottom — Uber-style */}
+                  <Stack.Screen
+                    name="order-request"
+                    options={{ animation: 'fade_from_bottom', animationDuration: 320 }}
+                  />
+                  <Stack.Screen
+                    name="disposal"
+                    options={{ animation: 'fade_from_bottom', animationDuration: 320 }}
+                  />
+                  <Stack.Screen
+                    name="transport"
+                    options={{ animation: 'fade_from_bottom', animationDuration: 320 }}
+                  />
+                </Stack>
+              </ToastProvider>
+            </ModeProvider>
+          </AuthProvider>
+        </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
   );

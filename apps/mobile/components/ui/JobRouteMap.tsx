@@ -13,6 +13,7 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ViewStyle, ActivityIndicator } from 'react-native';
 import { BaseMap, RouteLayer, PinLayer, useRoute } from '@/components/map';
+import type { CameraRefHandle } from '@/components/map';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface MapPin {
@@ -74,8 +75,7 @@ export function JobRouteMap({
   style,
   showToPickupLeg = true,
 }: JobRouteMapProps) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cameraRef = useRef<any>(null);
+  const cameraRef = useRef<CameraRefHandle | null>(null);
 
   // Only use current position if it looks like a real European GPS fix.
   // Simulator defaults (Apple HQ / SF) are in California and would push the

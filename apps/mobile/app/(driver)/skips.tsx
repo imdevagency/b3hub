@@ -46,6 +46,7 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { api, SkipHireOrder, SkipHireStatus } from '@/lib/api';
 import { BaseMap } from '@/components/map';
+import type { CameraRefHandle } from '@/components/map';
 import { Marker } from 'react-native-maps';
 import { t } from '@/lib/translations';
 import { formatDateNumeric } from '@/lib/format';
@@ -283,8 +284,7 @@ interface MapViewProps {
 }
 
 function SkipsMapView({ orders, onStatusUpdate, updatingId }: MapViewProps) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cameraRef = useRef<any>(null);
+  const cameraRef = useRef<CameraRefHandle | null>(null);
   const [coords, setCoords] = useState<Record<string, [number, number]>>({});
   const [geocoding, setGeocoding] = useState(false);
   const [selected, setSelected] = useState<SkipHireOrder | null>(null);
@@ -459,8 +459,8 @@ export default function CarrierSkipsScreen() {
             ? prev.filter((o) => o.id !== id)
             : prev.map((o) => (o.id === id ? { ...o, status: updated.status } : o)),
         );
-      } catch (err: any) {
-        Alert.alert(cs.errorTitle, err?.message ?? 'Neizdevās atjaunināt statusu.');
+      } catch (err: unknown) {
+        Alert.alert(cs.errorTitle, err instanceof Error ? err.message : 'Neizdevās atjaunināt statusu.');
       } finally {
         setUpdatingId(null);
       }

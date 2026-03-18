@@ -11,13 +11,23 @@ import MapView, { PROVIDER_GOOGLE, MapPressEvent, EdgePadding } from 'react-nati
 /** Rīga city centre — [longitude, latitude] (Mapbox convention kept for compat). */
 export const RIGA_CENTER: [number, number] = [24.1052, 56.9496];
 
+/** Subset of the Mapbox Camera API exposed via the cameraRef shim. */
+export interface CameraRefHandle {
+  setCamera(opts: { centerCoordinate: [number, number]; zoomLevel: number; animationDuration?: number }): void;
+  fitBounds(ne: [number, number], sw: [number, number], padding?: number | number[], animationDuration?: number): void;
+}
+
+export interface MapPressFeature {
+  geometry?: { coordinates?: number[] };
+  coordinates?: number[];
+}
+
 export interface BaseMapProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cameraRef?: React.RefObject<any>;
+  cameraRef?: React.RefObject<CameraRefHandle | null>;
   /** [longitude, latitude]. Defaults to Rīga. */
   center?: [number, number];
   zoom?: number;
-  onPress?: (feature: unknown) => void;
+  onPress?: (feature: MapPressFeature) => void;
   style?: ViewStyle;
   children?: React.ReactNode;
   rotateEnabled?: boolean;
@@ -77,8 +87,7 @@ export function BaseMap({
   // Populate cameraRef with a Mapbox-compat shim so all callers work unchanged
   useEffect(() => {
     if (!cameraRef) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (cameraRef as any).current = {
+    (cameraRef as React.MutableRefObject<CameraRefHandle>).current = {
       setCamera({
         centerCoordinate,
         zoomLevel,

@@ -389,9 +389,9 @@ export default function IncomingScreen() {
       const updated = await api.orders.confirm(id, token);
       setOrders((prev) => prev.map((o) => (o.id === id ? mapApiOrder(updated) : o)));
       haptics.success();
-    } catch (e: any) {
+    } catch (e: unknown) {
       haptics.error();
-      toast.error(e.message ?? 'Neizdevās apstiprināt pasūtījumu.');
+      toast.error(e instanceof Error ? e.message : 'Neizdevās apstiprināt pasūtījumu.');
     } finally {
       setActioning(null);
     }
@@ -410,9 +410,9 @@ export default function IncomingScreen() {
             await api.orders.cancel(id, token);
             setOrders((prev) => prev.filter((o) => o.id !== id));
             haptics.success();
-          } catch (e: any) {
+          } catch (e: unknown) {
             haptics.error();
-            toast.error(e.message ?? 'Neizdevās noraidīt pasūtījumu.');
+            toast.error(e instanceof Error ? e.message : 'Neizdevās noraidīt pasūtījumu.');
           } finally {
             setActioning(null);
           }
@@ -441,9 +441,9 @@ export default function IncomingScreen() {
       setLoadingOrder(null);
       haptics.success();
       toast.success('Iekraušana apstiprināta — transporta darbs sākts!');
-    } catch (e: any) {
+    } catch (e: unknown) {
       haptics.error();
-      toast.error(e.message ?? 'Neizdevās apstiprināt iekraušanu.');
+      toast.error(e instanceof Error ? e.message : 'Neizdevās apstiprināt iekraušanu.');
     } finally {
       setConfirmingLoad(false);
     }

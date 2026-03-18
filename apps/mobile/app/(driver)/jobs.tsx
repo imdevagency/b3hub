@@ -46,8 +46,15 @@ import {
   List,
 } from 'lucide-react-native';
 // Lazy-load: react-native-gesture-handler native module not available in Expo Go
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let Swipeable: any = ({ children }: { children?: React.ReactNode }) => <View>{children}</View>;
+type SwipeableProps = {
+  children?: React.ReactNode;
+  renderRightActions?: () => React.ReactNode;
+  friction?: number;
+  rightThreshold?: number;
+  overshootRight?: boolean;
+  ref?: React.Ref<{ close(): void }>;
+};
+let Swipeable: React.ComponentType<SwipeableProps> = ({ children }: SwipeableProps) => <View>{children}</View>;
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   Swipeable = require('react-native-gesture-handler').Swipeable;
@@ -230,8 +237,7 @@ function JobCard({
   selected?: boolean;
   onToggleSelect?: (id: string) => void;
 }) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const swipeRef = useRef<any>(null);
+  const swipeRef = useRef<{ close(): void } | null>(null);
 
   const renderRightActions = () => (
     <TouchableOpacity
@@ -558,9 +564,9 @@ export default function JobsScreen() {
       setAllJobs((prev) => prev.filter((j) => j.id !== jobId));
       haptics.success();
       router.replace('/(driver)/active');
-    } catch (err: any) {
+    } catch (err: unknown) {
       haptics.error();
-      Alert.alert('Kļūda', err.message ?? 'Neizdevās pieņemt darbu');
+      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās pieņemt darbu');
     }
   };
 

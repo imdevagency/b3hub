@@ -223,7 +223,15 @@ export default function JobsPage() {
   const { user, token, isLoading } = useAuth();
   const router = useRouter();
 
-  const { jobs: apiJobs, setJobs, vehicles, drivers, loading: loadingJobs, error: jobError, reload } = useAvailableJobs(token);
+  const {
+    jobs: apiJobs,
+    setJobs,
+    vehicles,
+    drivers,
+    loading: loadingJobs,
+    error: jobError,
+    reload,
+  } = useAvailableJobs(token);
   const allJobs = apiJobs.map(mapApiJob);
   const [activeFilter, setActiveFilter] = useState<SearchFilter | null>(null);
   const [draft, setDraft] = useState<SearchFilter>({

@@ -166,8 +166,8 @@ function MaterialFormModal({
         result = await createMaterial(input, token);
       }
       onSaved(result);
-    } catch (err: any) {
-      setError(err?.message ?? 'Kļūda saglabājot materiālu.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Kļūda saglabājot materiālu.');
     } finally {
       setSaving(false);
     }
@@ -399,8 +399,8 @@ function DeleteConfirm({
     try {
       await deleteMaterial(material.id, token);
       onDeleted(material.id);
-    } catch (err: any) {
-      setError(err?.message ?? 'Kļūda dzēšot materiālu.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Kļūda dzēšot materiālu.');
       setDeleting(false);
     }
   }

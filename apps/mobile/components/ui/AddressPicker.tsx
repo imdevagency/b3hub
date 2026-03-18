@@ -34,6 +34,7 @@ import {
 import { Marker } from 'react-native-maps';
 import { MapPin, X, Check, Search } from 'lucide-react-native';
 import { BaseMap, useGeocode, GeocodeSuggestion } from '@/components/map';
+import type { CameraRefHandle, MapPressFeature } from '@/components/map';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface PickedLocation {
@@ -70,8 +71,7 @@ export function AddressPicker({
   onClose,
   pinColor = '#111827',
 }: AddressPickerProps) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cameraRef = useRef<any>(null);
+  const cameraRef = useRef<CameraRefHandle | null>(null);
   const { forwardGeocode, reverseGeocode, loading: geocodeLoading } = useGeocode();
 
   const [lat, setLat] = useState(initialLat ?? DEFAULT_LAT);
@@ -94,7 +94,7 @@ export function AddressPicker({
 
   // User tapped the map → move pin + reverse-geocode
   const handleMapPress = useCallback(
-    async (feature: any) => {
+    async (feature: MapPressFeature) => {
       const coords = (feature?.geometry?.coordinates ?? feature?.coordinates) as
         | number[]
         | undefined;

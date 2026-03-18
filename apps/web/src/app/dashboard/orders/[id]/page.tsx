@@ -128,8 +128,8 @@ export default function OrderDetailPage() {
       setLoading(true);
       const data = await getTransportJob(id, token);
       setJob(data);
-    } catch (e: any) {
-      setError(e.message ?? 'Kļūda ielādējot pasūtījumu');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Kļūda ielādējot pasūtījumu');
     } finally {
       setLoading(false);
     }

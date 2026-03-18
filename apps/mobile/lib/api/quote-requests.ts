@@ -90,7 +90,7 @@ export const quoteRequestsApi = {
       }),
 
     accept: (id: string, responseId: string, token: string) =>
-      apiFetch<any>(`/quote-requests/${id}/accept/${responseId}`, {
+      apiFetch<{ id: string; orderNumber: string }>(`/quote-requests/${id}/accept/${responseId}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       }),

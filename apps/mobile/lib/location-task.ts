@@ -29,7 +29,12 @@ try {
 }
 
 if (TaskManager && Location) {
-  TaskManager.defineTask(BG_LOCATION_TASK, async ({ data, error }: any) => {
+  TaskManager.defineTask(
+    BG_LOCATION_TASK,
+    async ({ data, error }: {
+      data?: { locations: { coords: { latitude: number; longitude: number } }[] };
+      error: { message: string } | null;
+    }) => {
     if (error) return;
 
     const locations: { coords: { latitude: number; longitude: number } }[] =

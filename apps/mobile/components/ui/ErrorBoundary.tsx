@@ -46,9 +46,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
             <Text style={styles.icon}>⚠️</Text>
           </View>
           <Text style={styles.title}>Something went wrong</Text>
-          <Text style={styles.message}>
-            An unexpected error occurred. Please try again.
-          </Text>
+          <Text style={styles.message}>An unexpected error occurred. Please try again.</Text>
           {__DEV__ && this.state.error && (
             <ScrollView style={styles.devError}>
               <Text style={styles.devErrorText}>{this.state.error.message}</Text>

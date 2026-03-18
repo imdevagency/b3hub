@@ -8,6 +8,7 @@ import { Home, Inbox, LayoutGrid, Wallet, FileText, User } from 'lucide-react-na
 import { TopBar } from '@/components/ui/TopBar';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
 import { useUnreadCount } from '@/lib/use-unread-count';
 
@@ -24,7 +25,7 @@ export default function SellerLayout() {
   // Seller home renders its own greeting header — no layout TopBar or padding on that screen
   const isHome = pathname === '/(seller)/home' || pathname === '/home';
   // eslint-disable-next-line react/display-name
-  const renderTabBar = useCallback((props: any) => <AnimatedTabBar {...props} />, []);
+  const renderTabBar = useCallback((props: BottomTabBarProps) => <AnimatedTabBar {...props} />, []);
 
   useEffect(() => {
     if (!isLoading && !user) {

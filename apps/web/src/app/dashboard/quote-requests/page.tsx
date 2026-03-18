@@ -129,7 +129,7 @@ function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const set = (k: keyof CreateQuoteRequestInput, v: any) =>
+  const set = (k: keyof CreateQuoteRequestInput, v: CreateQuoteRequestInput[typeof k]) =>
     setForm((prev) => ({ ...prev, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,8 +143,8 @@ function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
     try {
       const created = await createQuoteRequest(form, token);
       onCreated(created);
-    } catch (err: any) {
-      setError(err.message ?? 'Kļūda nosūtot pieprasījumu');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Kļūda nosūtot pieprasījumu');
     } finally {
       setSaving(false);
     }
@@ -426,8 +426,8 @@ export default function QuoteRequestsPage() {
     try {
       const data = await getMyQuoteRequests(token);
       setRequests(data);
-    } catch (e: any) {
-      setError(e.message ?? 'Kļūda ielādējot datus');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Kļūda ielādējot datus');
     } finally {
       setLoading(false);
     }
@@ -447,8 +447,8 @@ export default function QuoteRequestsPage() {
     try {
       const updated = await acceptQuoteResponse(requestId, responseId, token);
       setRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
-    } catch (e: any) {
-      alert(e.message ?? 'Kļūda pieņemot piedāvājumu');
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Kļūda pieņemot piedāvājumu');
     }
   };
 

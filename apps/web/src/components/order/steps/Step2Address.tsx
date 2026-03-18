@@ -54,7 +54,7 @@ export function Step2Address({ value, onAddressChange, onNext, onBack }: Props) 
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<any>(null);
+  const autocompleteRef = useRef<object | null>(null);
   const googleInputRef = useRef<HTMLInputElement>(null);
 
   // ── Google Places Autocomplete (if API key is available) ────────────────────

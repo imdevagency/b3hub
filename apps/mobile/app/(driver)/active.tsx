@@ -136,8 +136,8 @@ export default function ActiveJobScreen() {
             await api.transportJobs.accept(tripId, token);
             setReturnTrips((prev) => prev.filter((t) => t.id !== tripId));
             Alert.alert('✓ Darbs pieņemts', 'Atpakaļceļa darbs pievienots jūsu darbu sarakstam.');
-          } catch (err: any) {
-            Alert.alert('Kļūda', err.message ?? 'Neizdevās pieņemt darbu');
+          } catch (err: unknown) {
+            Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās pieņemt darbu');
           } finally {
             setAcceptingReturnId(null);
           }
@@ -345,9 +345,9 @@ export default function ActiveJobScreen() {
             const updated = await api.transportJobs.updateStatus(job.id, nextStatus, token);
             setJob(updated);
             haptics.success();
-          } catch (err: any) {
+          } catch (err: unknown) {
             haptics.error();
-            Alert.alert('Kļūda', err.message ?? 'Neizdevās atjaunināt statusu');
+            Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās atjaunināt statusu');
           }
         },
       },
@@ -374,9 +374,9 @@ export default function ActiveJobScreen() {
       setWeightModalVisible(false);
       setPickupPhotoUri(null);
       haptics.success();
-    } catch (err: any) {
+    } catch (err: unknown) {
       haptics.error();
-      Alert.alert('Kļūda', err.message ?? 'Neizdevās atjaunināt statusu');
+      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās atjaunināt statusu');
     } finally {
       setWeightSubmitting(false);
     }

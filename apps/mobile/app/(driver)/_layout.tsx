@@ -8,6 +8,7 @@ import { Home, ClipboardList, Map, User, Wallet } from 'lucide-react-native';
 import { TopBar } from '@/components/ui/TopBar';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
 import { useUnreadCount } from '@/lib/use-unread-count';
 
@@ -24,7 +25,7 @@ export default function DriverLayout() {
   // Driver home is a full-screen map with its own FAB header — no layout TopBar or padding
   const isHome = pathname === '/(driver)/home' || pathname === '/home';
   // eslint-disable-next-line react/display-name
-  const renderTabBar = useCallback((props: any) => <AnimatedTabBar {...props} />, []);
+  const renderTabBar = useCallback((props: BottomTabBarProps) => <AnimatedTabBar {...props} />, []);
 
   useEffect(() => {
     if (!isLoading && !user) {

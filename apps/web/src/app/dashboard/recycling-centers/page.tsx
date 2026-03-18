@@ -20,7 +20,7 @@ interface RecyclingCenter {
   state?: string;
   postalCode?: string;
   acceptedWasteTypes: string[];
-  operatingHours?: any;
+  operatingHours?: Record<string, string>;
   capacity?: number;
   certifications?: string[];
   active: boolean;
@@ -58,17 +58,17 @@ export default function RecyclingCentersPage() {
   useEffect(() => {
     if (!token) return;
 
-    const promises: Promise<any>[] = [
-      getRecyclingCenters(token).then((res: any) => {
-        const data = (res as RecyclingCentersResponse).data ?? (res as RecyclingCenter[]);
+    const promises: Promise<void>[] = [
+      getRecyclingCenters(token).then((res) => {
+        const data = (res as unknown as RecyclingCentersResponse).data ?? (res as unknown as RecyclingCenter[]);
         setCenters(data);
       }),
     ];
 
     if (isCarrier) {
       promises.push(
-        getMyRecyclingCenters(token).then((data: any) => {
-          setMineCenters(data);
+        getMyRecyclingCenters(token).then((data) => {
+          setMineCenters(data as unknown as RecyclingCenter[]);
         }),
       );
     }

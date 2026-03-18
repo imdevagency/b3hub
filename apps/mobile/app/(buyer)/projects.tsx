@@ -156,8 +156,8 @@ function CreateModal({
       onCreated(result);
       reset();
       onClose();
-    } catch (e: any) {
-      showToast(e.message ?? 'Kļūda', 'error');
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : 'Kļūda', 'error');
     } finally {
       setSaving(false);
     }
@@ -249,8 +249,8 @@ export default function ProjectsScreen() {
       try {
         const data = await api.frameworkContracts.list(token);
         setContracts(data);
-      } catch (e: any) {
-        showToast(e.message ?? 'Kļūda ielādējot projektus', 'error');
+      } catch (e: unknown) {
+        showToast(e instanceof Error ? e.message : 'Kļūda ielādējot projektus', 'error');
       } finally {
         setLoading(false);
         setRefreshing(false);

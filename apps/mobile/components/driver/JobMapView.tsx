@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { BaseMap } from '@/components/map';
+import type { CameraRefHandle } from '@/components/map';
 import { Marker } from 'react-native-maps';
 import { haversineKm, RADIUS_OPTIONS } from './job-types';
 import type { TransportJob } from './job-types';
@@ -35,7 +36,7 @@ export function JobMapView({
   onRadiusChange,
   onJobSelect,
 }: JobMapViewProps) {
-  const cameraRef = useRef<any>(null);
+  const cameraRef = useRef<CameraRefHandle | null>(null);
   const centerLat = driverLat ?? 56.946;
   const centerLng = driverLng ?? 24.105; // Riga default
 

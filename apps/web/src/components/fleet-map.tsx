@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl/mapbox';
+import type { MapRef } from '@vis.gl/react-mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useRouter } from 'next/navigation';
 import { type ApiTransportJob } from '@/lib/api';
@@ -61,7 +62,7 @@ interface FleetMapProps {
 export function FleetMap({ jobs }: FleetMapProps) {
   const router = useRouter();
   const [selected, setSelected] = useState<ApiTransportJob | null>(null);
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<MapRef | null>(null);
 
   const mappable = useMemo(
     () =>

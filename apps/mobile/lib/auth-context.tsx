@@ -166,10 +166,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(freshUser);
             AsyncStorage.setItem(USER_KEY, JSON.stringify(freshUser));
           })
-          .catch((err: any) => {
+          .catch((err: unknown) => {
             // Only clear session on genuine auth failure (401/Unauthorized).
             // Transient network errors, timeouts, etc. keep the stale session alive.
-            const msg: string = err?.message ?? '';
+            const msg: string = err instanceof Error ? err.message : '';
             if (msg.includes('401') || msg.toLowerCase().includes('unauthorized')) {
               clearSession();
             }

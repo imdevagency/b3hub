@@ -90,8 +90,8 @@ export default function ApplyPage() {
       };
       await createProviderApplication(payload);
       setStep(4);
-    } catch (e: any) {
-      setError(e?.message ?? 'Neizdevās nosūtīt pieteikumu');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Neizdevās nosūtīt pieteikumu');
     } finally {
       setSubmitting(false);
     }

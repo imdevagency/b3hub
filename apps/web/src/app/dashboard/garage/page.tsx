@@ -167,8 +167,8 @@ export default function GaragePage() {
         setVehicles((prev) => [created, ...prev]);
       }
       setSheetOpen(false);
-    } catch (e: any) {
-      setError(e.message ?? 'Neizdevās saglabāt transportlīdzekli');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Neizdevās saglabāt transportlīdzekli');
     } finally {
       setSaving(false);
     }

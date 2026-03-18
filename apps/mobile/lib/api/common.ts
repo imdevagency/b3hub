@@ -29,8 +29,8 @@ export async function apiFetch<T>(
         ...options?.headers,
       },
     });
-  } catch (err: any) {
-    if (err?.name === 'AbortError') throw new Error('Request timed out');
+  } catch (err: unknown) {
+    if (err instanceof Error && err.name === 'AbortError') throw new Error('Request timed out');
     throw err;
   } finally {
     clearTimeout(timer);

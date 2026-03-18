@@ -65,7 +65,7 @@ function RespondPanel({ request, token, onClose, onResponded }: RespondPanelProp
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const set = (k: keyof CreateQuoteResponseInput, v: any) =>
+  const set = (k: keyof CreateQuoteResponseInput, v: CreateQuoteResponseInput[typeof k]) =>
     setForm((prev) => ({ ...prev, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,8 +86,8 @@ function RespondPanel({ request, token, onClose, onResponded }: RespondPanelProp
       if (form.validUntil?.trim()) payload.validUntil = form.validUntil;
       const updated = await respondToQuoteRequest(request.id, payload, token);
       onResponded(updated);
-    } catch (err: any) {
-      setError(err.message ?? 'Kļūda nosūtot piedāvājumu');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Kļūda nosūtot piedāvājumu');
     } finally {
       setSaving(false);
     }
@@ -290,8 +290,8 @@ export default function OpenQuoteRequestsPage() {
     try {
       const data = await getOpenQuoteRequests(token);
       setRequests(data);
-    } catch (e: any) {
-      setError(e.message ?? 'Kļūda ielādējot datus');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Kļūda ielādējot datus');
     } finally {
       setLoading(false);
     }

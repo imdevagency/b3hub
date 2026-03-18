@@ -7,6 +7,8 @@ import React, { useCallback, useRef, useEffect } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptics } from '@/lib/haptics';
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import type { Route } from '@react-navigation/native';
 
 const TAB_HEIGHT = 56;
 
@@ -17,14 +19,7 @@ const SPRING_BASE = {
   useNativeDriver: true as const,
 };
 
-interface AnimatedTabBarProps {
-  // Standard react-navigation BottomTabBar props
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  state: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  descriptors: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  navigation: any;
+interface AnimatedTabBarProps extends BottomTabBarProps {
   /** Active tab tint (indicator + icon). Default #111827 */
   activeTint?: string;
   /** Inactive icon + label color. Default #9ca3af */
@@ -40,11 +35,9 @@ function TabItem({
   activeTint,
   inactiveTint,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  route: any;
+  route: Route<string>;
   isFocused: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  descriptor: any;
+  descriptor: BottomTabBarProps['descriptors'][string];
   onPress: () => void;
   onLongPress: () => void;
   activeTint: string;
@@ -116,8 +109,7 @@ export function AnimatedTabBar({
   if (!state || !navigation || !descriptors) return null;
 
   const visibleRoutes = state.routes.filter(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (r: any) => {
+    (r: Route<string>) => {
       const opts = descriptors[r.key]?.options;
       // expo-router converts href:null → tabBarButton: () => null in descriptor options
       if (typeof opts?.tabBarButton === 'function') return false;
@@ -126,8 +118,7 @@ export function AnimatedTabBar({
   );
 
   const handlePress = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (route: any, isFocused: boolean) => {
+    (route: Route<string>, isFocused: boolean) => {
       haptics.selection();
       const event = navigation.emit({
         type: 'tabPress',
@@ -142,8 +133,7 @@ export function AnimatedTabBar({
   );
 
   const handleLongPress = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (route: any) => {
+    (route: Route<string>) => {
       navigation.emit({ type: 'tabLongPress', target: route.key });
     },
     [navigation],
@@ -154,11 +144,9 @@ export function AnimatedTabBar({
       {/* Tab items — dot indicator is per-item, no sliding bar */}
       <View style={styles.row}>
         {visibleRoutes.map(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (route: any) => {
+          (route: Route<string>) => {
             const fullIdx = state.routes.findIndex(
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              (r: any) => r.key === route.key,
+              (r: Route<string>) => r.key === route.key,
             );
             const isFocused = state.index === fullIdx;
             return (

@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiTransportJob } from '@/lib/api';
 import { BaseMap, PinLayer } from '@/components/map';
+import type { CameraRefHandle } from '@/components/map';
 import * as Location from 'expo-location';
 import {
   ClipboardList,
@@ -63,7 +64,7 @@ export default function DriverHomeScreen() {
   const { user, token } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const cameraRef = useRef<any>(null);
+  const cameraRef = useRef<CameraRefHandle | null>(null);
 
   const [availableJobs, setAvailableJobs] = useState<ApiTransportJob[]>([]);
   const [hasActiveJob, setHasActiveJob] = useState(false);

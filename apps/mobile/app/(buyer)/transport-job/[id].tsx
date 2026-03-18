@@ -33,6 +33,7 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { TJB_STATUS } from '@/lib/materials';
 import { BaseMap, RouteLayer, useRoute } from '@/components/map';
+import type { CameraRefHandle } from '@/components/map';
 import { Marker } from 'react-native-maps';
 
 // ── Constants ──────────────────────────────────────────────────
@@ -137,7 +138,7 @@ function InfoRow({
   label,
   value,
 }: {
-  icon: any;
+  icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number; style?: object }>;
   label: string;
   value: string | null | undefined;
 }) {
@@ -162,7 +163,7 @@ export default function TransportJobDetailScreen() {
   const { token } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const cameraRef = useRef<any>(null);
+  const cameraRef = useRef<CameraRefHandle | null>(null);
 
   const { job, loading, reload: loadJob } = useTransportJob(id);
   const [cancelling, setCancelling] = useState(false);

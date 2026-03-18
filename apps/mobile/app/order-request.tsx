@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BaseMap, UserLayer, useGeocode, RIGA_CENTER } from '@/components/map';
+import type { CameraRefHandle, MapPressFeature } from '@/components/map';
 import type { GeocodeSuggestion } from '@/components/map';
 import { Marker } from 'react-native-maps';
 import { AddressPickerModal } from '@/components/wizard/AddressPickerModal';
@@ -90,8 +91,7 @@ export default function OrderRequestScreen() {
   const router = useRouter();
   const { user, token } = useAuth();
   const insets = useSafeAreaInsets();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cameraRef = useRef<any>(null);
+  const cameraRef = useRef<CameraRefHandle | null>(null);
 
   // ── Animation refs ─────────────────────────────────────────────
   const mapHeight = useRef(new Animated.Value(MAP_FULL)).current;
@@ -229,9 +229,8 @@ export default function OrderRequestScreen() {
   };
 
   // ── Step 1: tap map to drop pin ──────────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onMapPress = useCallback(
-    async (feature: any) => {
+    async (feature: MapPressFeature) => {
       const coords = feature?.geometry?.coordinates as number[] | undefined;
       if (!Array.isArray(coords) || coords.length < 2) return;
       const [longitude, latitude] = coords;
@@ -245,9 +244,8 @@ export default function OrderRequestScreen() {
   );
 
   // ── Draggable pin drag-end handler ────────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onPinDragEnd = useCallback(
-    async (e: any) => {
+    async (e: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
       const { latitude, longitude } = e?.nativeEvent?.coordinate ?? {};
       if (latitude == null || longitude == null) return;
       setPin({ latitude, longitude });

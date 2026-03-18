@@ -128,8 +128,8 @@ function ProposalModal({ request, visible, onClose, onSuccess, token }: Proposal
         onSuccess(request.id);
         onClose();
       }, 1600);
-    } catch (err: any) {
-      Alert.alert(sq.errorTitle, err?.message ?? 'Neizdevās iesniegt piedāvājumu.');
+    } catch (err: unknown) {
+      Alert.alert(sq.errorTitle, err instanceof Error ? err.message : 'Neizdevās iesniegt piedāvājumu.');
     } finally {
       setSubmitting(false);
     }

@@ -149,8 +149,8 @@ function CallOffModal({
       reset();
       onCreated();
       onClose();
-    } catch (e: any) {
-      showToast(e.message ?? 'Kļūda', 'error');
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : 'Kļūda', 'error');
     } finally {
       setSaving(false);
     }
@@ -346,8 +346,8 @@ export default function ProjectDetailScreen() {
       try {
         const data = await api.frameworkContracts.get(id, token);
         setContract(data);
-      } catch (e: any) {
-        showToast(e.message ?? 'Kļūda', 'error');
+      } catch (e: unknown) {
+        showToast(e instanceof Error ? e.message : 'Kļūda', 'error');
       } finally {
         setLoading(false);
         setRefreshing(false);

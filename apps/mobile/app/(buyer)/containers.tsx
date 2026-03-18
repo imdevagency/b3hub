@@ -178,9 +178,9 @@ export default function ContainersScreen() {
       setTab('mine');
       loadOrders();
       toast.success('Konteinera nomas pieprasījums pieņemts.');
-    } catch (err: any) {
+    } catch (err: unknown) {
       haptics.error();
-      toast.error(err?.message ?? 'Neizdevās pasūtīt konteineru.');
+      toast.error(err instanceof Error ? err.message : 'Neizdevās pasūtīt konteineru.');
     } finally {
       setRenting(false);
     }

@@ -23,7 +23,7 @@
 
 // Core
 export { BaseMap, RIGA_CENTER } from './BaseMap';
-export type { BaseMapProps } from './BaseMap';
+export type { BaseMapProps, CameraRefHandle, MapPressFeature } from './BaseMap';
 
 // Layers
 export { RouteLayer } from './layers/RouteLayer';

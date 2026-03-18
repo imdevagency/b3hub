@@ -72,6 +72,12 @@ export interface CreateMaterialOrderInput {
 
 // ─── Order response types ─────────────────────────────────────────────────
 
+export interface CreateOrderResponse {
+  id: string;
+  jobNumber?: string;
+  orderNumber?: string;
+}
+
 export interface ApiOrder {
   id: string;
   orderNumber: string;
@@ -125,7 +131,7 @@ export const ordersApi = {
   /** Disposal order — buyer requests waste collection */
   disposal: {
     create: (input: CreateDisposalOrderInput, token: string) =>
-      apiFetch<any>('/orders/disposal', {
+      apiFetch<CreateOrderResponse>('/orders/disposal', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
@@ -135,7 +141,7 @@ export const ordersApi = {
   /** Freight order — buyer requests cargo transport */
   transport: {
     create: (input: CreateTransportOrderInput, token: string) =>
-      apiFetch<any>('/orders/freight', {
+      apiFetch<CreateOrderResponse>('/orders/freight', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(input),

@@ -102,8 +102,8 @@ function PermissionsSheet({
       onSaved(updated);
       showToast('Tiesības atjauninātas', 'success');
       onClose();
-    } catch (e: any) {
-      showToast(e.message ?? 'Kļūda', 'error');
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : 'Kļūda', 'error');
     } finally {
       setSaving(false);
     }
@@ -216,8 +216,8 @@ function InviteModal({
       showToast(msg, 'success');
       reset();
       onClose();
-    } catch (e: any) {
-      showToast(e.message ?? 'Kļūda', 'error');
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : 'Kļūda', 'error');
     } finally {
       setSaving(false);
     }
@@ -405,8 +405,8 @@ export default function TeamScreen() {
       try {
         const data = await api.companyMembers.list(token);
         setMembers(data);
-      } catch (e: any) {
-        showToast(e.message ?? 'Kļūda ielādējot komandu', 'error');
+      } catch (e: unknown) {
+        showToast(e instanceof Error ? e.message : 'Kļūda ielādējot komandu', 'error');
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -439,8 +439,8 @@ export default function TeamScreen() {
               await api.companyMembers.remove(member.id, token ?? '');
               setMembers((prev) => prev.filter((m) => m.id !== member.id));
               showToast('Dalībnieks noņemts', 'success');
-            } catch (e: any) {
-              showToast(e.message ?? 'Kļūda', 'error');
+            } catch (e: unknown) {
+              showToast(e instanceof Error ? e.message : 'Kļūda', 'error');
             }
           },
         },

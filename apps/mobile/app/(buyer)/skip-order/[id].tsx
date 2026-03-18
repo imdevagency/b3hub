@@ -68,7 +68,7 @@ function Row({
 }: {
   label: string;
   value: string | null | undefined;
-  icon?: any;
+  icon?: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number; style?: object }>;
 }) {
   if (!value) return null;
   return (
@@ -176,9 +176,9 @@ export default function SkipOrderDetailScreen() {
             const updated = await api.skipHire.cancel(order.id, token);
             setOrder(updated);
             haptics.success();
-          } catch (err: any) {
+          } catch (err: unknown) {
             haptics.error();
-            Alert.alert('Kļūda', err?.message ?? 'Neizdevās atcelt pasūtījumu');
+            Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās atcelt pasūtījumu');
           } finally {
             setCancelling(false);
           }

@@ -27,6 +27,17 @@ export interface GeocodeSuggestion {
   center: [number, number];
 }
 
+interface GooglePrediction {
+  place_id: string;
+  description: string;
+}
+
+interface AddressComponent {
+  types: string[];
+  long_name: string;
+  short_name: string;
+}
+
 export interface AddressWithCity {
   address: string;
   city: string;
@@ -58,8 +69,7 @@ export function useGeocode(): UseGeocodeResult {
       const res = await fetch(url);
       const json = await res.json();
       if (json.status !== 'OK' && json.status !== 'ZERO_RESULTS') return [];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (json.predictions ?? []).slice(0, 6).map((p: any) => ({
+      return (json.predictions ?? []).slice(0, 6).map((p: GooglePrediction) => ({
         id: p.place_id as string,
         place_name: p.description as string,
         center: [0, 0] as [number, number], // resolved lazily via resolvePlace()
@@ -114,10 +124,9 @@ export function useGeocode(): UseGeocodeResult {
         const result = json.results?.[0];
         if (result) {
           const address = result.formatted_address as string;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const components: any[] = result.address_components ?? [];
+          const components: AddressComponent[] = result.address_components ?? [];
           const cityComp = components.find(
-            (c: { types: string[] }) =>
+            (c) =>
               c.types.includes('locality') || c.types.includes('administrative_area_level_2'),
           );
           return { address, city: (cityComp?.long_name as string) ?? '' };

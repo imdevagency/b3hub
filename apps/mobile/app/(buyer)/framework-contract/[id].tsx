@@ -55,7 +55,7 @@ const CONTRACT_STATUS: Record<
   CANCELLED: { label: 'Atcelts', bg: '#fef2f2', color: '#b91c1c' },
 };
 
-const POSITION_TYPE_LABEL: Record<string, { label: string; icon: any }> = {
+const POSITION_TYPE_LABEL: Record<string, { label: string; icon: React.ComponentType<{ size?: number; color?: string }> }> = {
   MATERIAL_DELIVERY: { label: 'Materiālu piegāde', icon: Package },
   WASTE_DISPOSAL: { label: 'Atkritumu izvešana', icon: Trash2 },
   FREIGHT_TRANSPORT: { label: 'Kravas pārvadāšana', icon: Truck },

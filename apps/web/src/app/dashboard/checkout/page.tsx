@@ -107,8 +107,8 @@ export default function CheckoutPage() {
       );
       clearCart();
       router.push('/dashboard/orders');
-    } catch (err: any) {
-      setError(err?.message ?? 'Kļūda veicot pasūtījumu. Mēģiniet vēlreiz.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Kļūda veicot pasūtījumu. Mēģiniet vēlreiz.');
       setSaving(false);
     }
   };

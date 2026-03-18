@@ -135,8 +135,8 @@ export default function DeliveryProofScreen() {
       Alert.alert(t.deliveryProof.successTitle, t.deliveryProof.successMessage, [
         { text: 'OK', onPress: () => router.replace('/(driver)/jobs') },
       ]);
-    } catch (err: any) {
-      Alert.alert(t.deliveryProof.errorTitle, err.message ?? 'Kļūda nosūtot pierādījumu');
+    } catch (err: unknown) {
+      Alert.alert(t.deliveryProof.errorTitle, err instanceof Error ? err.message : 'Kļūda nosūtot pierādījumu');
     } finally {
       setSubmitting(false);
     }

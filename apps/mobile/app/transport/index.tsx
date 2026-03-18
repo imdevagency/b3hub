@@ -165,8 +165,8 @@ export default function TransportWizard() {
       setJobNumber(job.jobNumber ?? job.id.slice(0, 8).toUpperCase());
       reset();
       setSuccess(true);
-    } catch (e: any) {
-      Alert.alert('Kļūda', e?.message ?? 'Neizdevās izveidot pasūtījumu');
+    } catch (e: unknown) {
+      Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās izveidot pasūtījumu');
     } finally {
       setSubmitting(false);
     }

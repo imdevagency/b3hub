@@ -260,8 +260,8 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
     try {
       const updated = await updateTransportJobStatus(job.id, next, token);
       setJob(updated);
-    } catch (e: any) {
-      alert(e?.message ?? 'Neizdevās atjaunināt statusu');
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Neizdevās atjaunināt statusu');
     } finally {
       setAdvancing(false);
     }
@@ -285,8 +285,8 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
       if (updated.status === 'DELIVERED') {
         setDeliveredJob(updated);
       }
-    } catch (e: any) {
-      setProofError(e?.message ?? 'Neizdevās iesniegt piegādes apstiprinājumu');
+    } catch (e: unknown) {
+      setProofError(e instanceof Error ? e.message : 'Neizdevās iesniegt piegādes apstiprinājumu');
     } finally {
       setProofSubmitting(false);
     }

@@ -236,8 +236,8 @@ export default function DisposalWizard() {
       reset();
       setJobNumber(result?.jobNumber ?? '—');
       setSubmitted(true);
-    } catch (err: any) {
-      Alert.alert('Kļūda', err?.message ?? 'Neizdevās nosūtīt pieprasījumu. Mēģiniet vēlreiz.');
+    } catch (err: unknown) {
+      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās nosūtīt pieprasījumu. Mēģiniet vēlreiz.');
     } finally {
       setLoading(false);
     }
