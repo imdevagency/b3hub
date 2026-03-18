@@ -3,6 +3,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '@/lib/auth-context';
 import { ModeProvider } from '@/lib/mode-context';
 import { ToastProvider } from '@/components/ui/Toast';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import React, { useEffect, useRef } from 'react';
 import { Text, TextInput, View } from 'react-native';
 import { useFonts } from 'expo-font';
@@ -86,7 +87,8 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
           <ModeProvider>
@@ -116,6 +118,7 @@ export default function RootLayout() {
           </ModeProvider>
         </AuthProvider>
       </SafeAreaProvider>
-    </GestureHandlerRootView>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
