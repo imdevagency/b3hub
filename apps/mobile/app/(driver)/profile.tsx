@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
-import { Pencil, X, Check, LogOut, Bell, Truck, ChevronRight, Power } from 'lucide-react-native';
+import { Pencil, X, Check, LogOut, Bell, Truck, ChevronRight, Power, Settings, MessageCircle, HelpCircle } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
@@ -204,12 +204,45 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={s.linkRow}
-            onPress={() => router.push('/notifications')}
+            onPress={() => router.push('/notifications' as any)}
             activeOpacity={0.8}
           >
             <View style={s.linkLeft}>
               <Bell size={16} color="#374151" />
               <Text style={s.linkText}>Paziņojumi</Text>
+            </View>
+            <ChevronRight size={16} color="#9ca3af" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={s.linkRow}
+            onPress={() => router.push('/messages' as any)}
+            activeOpacity={0.8}
+          >
+            <View style={s.linkLeft}>
+              <MessageCircle size={16} color="#374151" />
+              <Text style={s.linkText}>Ziņojumi</Text>
+            </View>
+            <ChevronRight size={16} color="#9ca3af" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={s.linkRow}
+            onPress={() => router.push('/settings' as any)}
+            activeOpacity={0.8}
+          >
+            <View style={s.linkLeft}>
+              <Settings size={16} color="#374151" />
+              <Text style={s.linkText}>Iestatījumi</Text>
+            </View>
+            <ChevronRight size={16} color="#9ca3af" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={s.linkRow}
+            onPress={() => router.push('/help' as any)}
+            activeOpacity={0.8}
+          >
+            <View style={s.linkLeft}>
+              <HelpCircle size={16} color="#374151" />
+              <Text style={s.linkText}>Palīdzība / BUJ</Text>
             </View>
             <ChevronRight size={16} color="#9ca3af" />
           </TouchableOpacity>

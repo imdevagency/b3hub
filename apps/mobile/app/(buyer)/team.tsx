@@ -116,7 +116,7 @@ function PermissionsSheet({
       visible={visible}
       onClose={onClose}
       title={`${member.firstName} ${member.lastName}`}
-      subtitle={member.email}
+      subtitle={member.email ?? undefined}
     >
       <View style={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 24 }}>
         <Text style={styles.permSection}>Tiesības</Text>

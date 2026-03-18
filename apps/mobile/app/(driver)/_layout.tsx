@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
@@ -16,9 +16,13 @@ const ACCENT = '#111827';
 export default function DriverLayout() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const unreadCount = useUnreadCount();
+
+  // Driver home is a full-screen map with its own FAB header — no layout TopBar or padding
+  const isHome = pathname === '/(driver)/home' || pathname === '/home';
   // eslint-disable-next-line react/display-name
   const renderTabBar = useCallback((props: any) => <AnimatedTabBar {...props} />, []);
 
@@ -39,12 +43,14 @@ export default function DriverLayout() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: insets.top }}>
-      <TopBar
-        accentColor={ACCENT}
-        onMenuPress={() => setSidebarOpen(true)}
-        unreadCount={unreadCount}
-      />
+    <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: isHome ? 0 : insets.top }}>
+      {!isHome && (
+        <TopBar
+          accentColor={ACCENT}
+          onMenuPress={() => setSidebarOpen(true)}
+          unreadCount={unreadCount}
+        />
+      )}
       <View style={{ flex: 1 }}>
         <Tabs screenOptions={{ headerShown: false }} tabBar={renderTabBar}>
           <Tabs.Screen
