@@ -1,3 +1,8 @@
+/**
+ * Authentication controller — /api/v1/auth
+ * register, login, refresh, logout, forgot/reset/change-password, profile CRUD,
+ * notification preferences. Login & register are throttled to 10 req/min.
+ */
 import {
   Controller,
   Post,

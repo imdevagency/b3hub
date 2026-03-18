@@ -1,3 +1,7 @@
+/**
+ * Reset password page — /reset-password?token=...
+ * Reads the reset token from the URL and sets a new password.
+ */
 'use client';
 
 import { useState, Suspense } from 'react';

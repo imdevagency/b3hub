@@ -1,3 +1,7 @@
+/**
+ * Public landing page (/).
+ * Renders the marketing landing sections: Hero, Features, HowItWorks, Stats, CTA, Footer.
+ */
 import { Navbar } from '@/components/layout/Navbar';
 import { Hero } from '@/components/landing/Hero';
 import { HowItWorks } from '@/components/landing/HowItWorks';

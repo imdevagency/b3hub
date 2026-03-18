@@ -1,3 +1,8 @@
+/**
+ * Provider applications service.
+ * Users apply to become a supplier (canSell) or carrier (canTransport).
+ * Stores application data, triggers admin review, and on approval sets user flags.
+ */
 import {
   Injectable,
   Logger,

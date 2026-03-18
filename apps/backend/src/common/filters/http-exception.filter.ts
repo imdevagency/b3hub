@@ -1,3 +1,9 @@
+/**
+ * Global HTTP exception filters.
+ * HttpExceptionFilter formats NestJS HttpExceptions into a consistent JSON body
+ * { statusCode, timestamp, message }.
+ * AllExceptionsFilter is a catch-all for unexpected server errors (500).
+ */
 import {
   ExceptionFilter,
   Catch,

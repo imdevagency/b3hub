@@ -1,3 +1,7 @@
+/**
+ * Delivery proof screen.
+ * Camera/photo picker for the driver to capture and upload proof-of-delivery images.
+ */
 import React, { useRef, useState } from 'react';
 import {
   View,

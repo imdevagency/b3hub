@@ -1,3 +1,7 @@
+/**
+ * Documents API module.
+ * Functions to upload, list, get download URL, and action compliance documents.
+ */
 import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────

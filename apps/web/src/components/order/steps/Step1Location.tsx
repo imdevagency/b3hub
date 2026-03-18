@@ -1,3 +1,7 @@
+/**
+ * Step1Location — Order wizard step 1 (pickup location).
+ * Map-based postcode picker for the material collection address.
+ */
 'use client';
 
 import { MapPin, ArrowRight } from 'lucide-react';

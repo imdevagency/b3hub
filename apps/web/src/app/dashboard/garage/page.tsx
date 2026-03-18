@@ -1,3 +1,7 @@
+/**
+ * Garage / containers page — /dashboard/garage
+ * Manage physical container inventory (skips, bins) owned by the carrier.
+ */
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';

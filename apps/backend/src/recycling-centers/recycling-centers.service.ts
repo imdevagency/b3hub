@@ -1,3 +1,8 @@
+/**
+ * Recycling centers service.
+ * CRUD for facility profiles: accepted waste types, GPS coordinates,
+ * operating hours, and processing capacity.
+ */
 import {
   ForbiddenException,
   Injectable,

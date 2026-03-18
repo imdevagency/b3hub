@@ -1,3 +1,7 @@
+/**
+ * Public order entry page — /order
+ * Redirects unauthenticated visitors to login; authenticated users to the order wizard.
+ */
 'use client';
 
 import { useEffect } from 'react';

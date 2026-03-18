@@ -1,3 +1,7 @@
+/**
+ * Vehicles controller — /api/v1/vehicles
+ * Carrier-only endpoints to register, update, list, and delete fleet vehicles.
+ */
 import {
   Controller,
   Get,

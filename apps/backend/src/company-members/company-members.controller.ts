@@ -1,3 +1,7 @@
+/**
+ * Company members controller — /api/v1/company-members
+ * Owner/manager endpoints to invite, list, update roles, and remove members.
+ */
 import {
   Controller,
   Get,

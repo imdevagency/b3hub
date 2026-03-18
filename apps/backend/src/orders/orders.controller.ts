@@ -1,3 +1,8 @@
+/**
+ * Orders controller — /api/v1/orders
+ * Endpoints for placing orders, listing buyer/supplier orders,
+ * updating order status, and retrieving order details with line items.
+ */
 import {
   Controller,
   Get,

@@ -1,3 +1,7 @@
+/**
+ * Orders list page — /dashboard/orders
+ * Shows the current user's material purchase orders with status filters.
+ */
 'use client';
 
 import { useEffect, useState } from 'react';

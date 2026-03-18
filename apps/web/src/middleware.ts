@@ -1,3 +1,8 @@
+/**
+ * Next.js middleware.
+ * Runs on every request — checks for a valid JWT cookie/header and redirects
+ * unauthenticated users away from protected /dashboard/* routes.
+ */
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 

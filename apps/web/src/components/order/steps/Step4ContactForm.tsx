@@ -1,3 +1,7 @@
+/**
+ * Step4ContactForm — Order wizard step 4 (contact details).
+ * Collects contact name, phone, and any special delivery instructions.
+ */
 'use client';
 
 import { Loader2, MapPin, Package, CalendarDays, Tag } from 'lucide-react';

@@ -1,3 +1,9 @@
+/**
+ * Skip-hire service.
+ * Manages skip (dumpster) hire bookings: browsing available skips by postcode,
+ * placing hire orders, carrier acceptance, delivery/collection scheduling,
+ * and status tracking.
+ */
 import {
   Injectable,
   Logger,

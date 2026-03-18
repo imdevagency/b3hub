@@ -1,3 +1,7 @@
+/**
+ * Skip-hire order page — /dashboard/order/skip-hire
+ * Multi-step form for hiring a skip: size selection, address, and date booking.
+ */
 'use client';
 
 import { useAuth } from '@/lib/auth-context';

@@ -1,3 +1,8 @@
+/**
+ * Dashboard home page — /dashboard
+ * Role-aware redirect: sends BUYERs to /dashboard/buyer, SUPPLIERs to /dashboard/supplier,
+ * CARRIERs to /dashboard/transporter, and ADMINs to /dashboard/admin.
+ */
 'use client';
 
 import { useEffect } from 'react';

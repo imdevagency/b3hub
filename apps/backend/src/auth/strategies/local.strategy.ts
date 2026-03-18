@@ -1,3 +1,7 @@
+/**
+ * Passport local strategy.
+ * Validates email + password credentials against bcrypt hash (used by login).
+ */
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-local';

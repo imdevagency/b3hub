@@ -1,3 +1,8 @@
+/**
+ * App sidebar component.
+ * Role-aware navigation sidebar showing different items for BUYER / SUPPLIER /
+ * CARRIER / ADMIN. Built with shadcn/ui Sidebar primitives.
+ */
 'use client';
 
 import * as React from 'react';

@@ -1,3 +1,7 @@
+/**
+ * Containers controller — /api/v1/containers
+ * Carrier endpoints to register and manage their container fleet inventory.
+ */
 import {
   Body,
   Controller,

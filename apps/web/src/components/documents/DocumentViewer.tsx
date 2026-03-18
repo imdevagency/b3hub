@@ -1,3 +1,7 @@
+/**
+ * DocumentViewer component.
+ * Modal/drawer that renders a document preview with metadata and admin action buttons.
+ */
 'use client';
 
 import { useEffect, useRef } from 'react';

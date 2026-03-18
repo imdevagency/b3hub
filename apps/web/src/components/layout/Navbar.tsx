@@ -1,3 +1,7 @@
+/**
+ * Public Navbar component.
+ * Top navigation bar on the marketing/public pages with logo, nav links, and auth buttons.
+ */
 'use client';
 
 import Link from 'next/link';

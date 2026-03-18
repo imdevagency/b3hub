@@ -1,3 +1,7 @@
+/**
+ * useTransportJobs hook.
+ * Fetches the carrier's own assigned transport jobs (all statuses).
+ */
 import { useCallback, useEffect, useState } from 'react';
 import { getMyTransportJobs, type ApiTransportJob } from '@/lib/api';
 

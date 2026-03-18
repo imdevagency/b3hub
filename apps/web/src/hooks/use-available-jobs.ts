@@ -1,3 +1,8 @@
+/**
+ * useAvailableJobs hook.
+ * Fetches the list of open transport jobs a carrier can accept.
+ * Includes polling for real-time availability updates.
+ */
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   getAvailableTransportJobs,

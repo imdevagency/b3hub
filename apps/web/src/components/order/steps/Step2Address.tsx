@@ -1,3 +1,7 @@
+/**
+ * Step2Address — Order wizard step 2 (delivery address).
+ * Google Places autocomplete input for the delivery destination.
+ */
 'use client';
 
 import { useEffect, useRef, useState } from 'react';

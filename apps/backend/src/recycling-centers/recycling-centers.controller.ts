@@ -1,3 +1,7 @@
+/**
+ * Recycling centers controller — /api/v1/recycling-centers
+ * Public listing and authenticated management of recycling center profiles.
+ */
 import {
   Body,
   Controller,

@@ -1,3 +1,9 @@
+/**
+ * Orders service.
+ * Manages material purchase orders (buyer → supplier).
+ * Handles creation, status transitions (pending → confirmed → delivered),
+ * invoice generation triggers, and order history queries.
+ */
 import {
   Injectable,
   Logger,

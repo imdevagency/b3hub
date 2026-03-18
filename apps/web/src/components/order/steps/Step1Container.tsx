@@ -1,3 +1,7 @@
+/**
+ * Step1Container — Order wizard step 1 (container type).
+ * User selects the container/vehicle type required for their haulage job.
+ */
 'use client';
 
 import { cn } from '@/lib/utils';

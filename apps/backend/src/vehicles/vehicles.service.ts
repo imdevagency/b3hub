@@ -1,3 +1,8 @@
+/**
+ * Vehicles service.
+ * CRUD for carrier fleet vehicles (trucks, vans, etc.).
+ * Validates company/individual ownership before any mutation.
+ */
 import {
   Injectable,
   Logger,

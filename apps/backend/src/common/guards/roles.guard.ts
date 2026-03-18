@@ -1,3 +1,8 @@
+/**
+ * Role-based access guard.
+ * Reads @Roles() decorator metadata and checks req.user.userType.
+ * Returns false (forbidden) when the user's role is not in the required set.
+ */
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserType } from '@prisma/client';

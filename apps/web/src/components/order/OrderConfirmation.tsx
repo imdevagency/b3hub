@@ -1,3 +1,7 @@
+/**
+ * OrderConfirmation component.
+ * Success screen shown after an order is placed; summary of items + next-step links.
+ */
 'use client';
 
 import { CheckCircle2, MapPin, Trash2, Package, CalendarDays, ArrowRight } from 'lucide-react';

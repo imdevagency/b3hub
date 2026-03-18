@@ -1,3 +1,8 @@
+/**
+ * Invoices controller — /api/v1/invoices
+ * Authenticated endpoints to list invoices, fetch a single invoice,
+ * and mark invoices as paid.
+ */
 import {
   Controller,
   Get,

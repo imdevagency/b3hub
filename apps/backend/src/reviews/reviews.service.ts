@@ -1,3 +1,8 @@
+/**
+ * Reviews service.
+ * Buyers rate completed orders/transport jobs (1-5 stars + comment).
+ * Prevents duplicate reviews and verifies the reviewer is the order buyer.
+ */
 import {
   BadRequestException,
   ConflictException,

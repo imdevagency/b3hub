@@ -1,3 +1,7 @@
+/**
+ * Admin applications page — /dashboard/admin/applications
+ * Lists pending provider applications (supplier/carrier); approve or reject them.
+ */
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';

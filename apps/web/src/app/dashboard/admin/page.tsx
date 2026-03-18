@@ -1,3 +1,7 @@
+/**
+ * Admin overview page — /dashboard/admin
+ * Platform-wide statistics: total users, orders, revenue, and pending applications.
+ */
 'use client';
 
 import { useEffect, useState } from 'react';

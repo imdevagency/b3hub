@@ -1,3 +1,8 @@
+/**
+ * Materials service.
+ * CRUD for recyclable/raw material listings created by approved suppliers (canSell).
+ * Supports category & text filtering, Supabase image upload, and ownership checks.
+ */
 import {
   Injectable,
   Logger,

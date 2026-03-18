@@ -1,3 +1,8 @@
+/**
+ * Driver schedule service.
+ * CRUD for driver availability windows and shift schedules.
+ * Ensures job assignments respect declared working hours.
+ */
 import {
   ForbiddenException,
   Injectable,

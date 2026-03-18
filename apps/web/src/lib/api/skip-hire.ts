@@ -1,3 +1,7 @@
+/**
+ * Skip-hire API module.
+ * Functions wrapping /api/v1/skip-hire/* for browsing skips and managing bookings.
+ */
 import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────

@@ -1,3 +1,8 @@
+/**
+ * Transactional email service (Resend).
+ * Sends welcome, password-reset, order confirmation, and quote notification emails.
+ * Falls back to console.log when RESEND_API_KEY is absent (dev mode).
+ */
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';

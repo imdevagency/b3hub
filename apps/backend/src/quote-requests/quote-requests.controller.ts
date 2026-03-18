@@ -1,3 +1,7 @@
+/**
+ * Quote requests controller — /api/v1/quote-requests
+ * Endpoints to create RFQs, list open/my requests, submit offers, and accept one.
+ */
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { QuoteRequestsService } from './quote-requests.service';
 import { CreateQuoteRequestDto } from './dto/create-quote-request.dto';

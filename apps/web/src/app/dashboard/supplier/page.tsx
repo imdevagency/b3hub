@@ -1,3 +1,7 @@
+/**
+ * Supplier overview page — /dashboard/supplier
+ * Shows incoming orders, material listing summary, and earnings snapshot.
+ */
 'use client';
 
 import { useEffect, useState } from 'react';

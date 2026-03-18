@@ -1,3 +1,7 @@
+/**
+ * Transport jobs API module.
+ * Functions for creating, listing, accepting, and updating transport jobs.
+ */
 import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────

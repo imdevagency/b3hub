@@ -1,3 +1,7 @@
+/**
+ * Messages screen.
+ * Conversation list view for the in-app chat on mobile.
+ */
 import {
   View,
   Text,

@@ -1,3 +1,7 @@
+/**
+ * Open quote requests page — /dashboard/quote-requests/open
+ * Marketplace view of all active RFQs a supplier or carrier can respond to.
+ */
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';

@@ -1,3 +1,7 @@
+/**
+ * Recycling centers API module.
+ * Functions to list and manage recycling facility profiles.
+ */
 import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────

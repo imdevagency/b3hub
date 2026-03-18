@@ -1,3 +1,7 @@
+/**
+ * Forgot password page — /forgot-password
+ * Submits email to /api/v1/auth/forgot-password to trigger a reset email.
+ */
 'use client';
 
 import { useState } from 'react';

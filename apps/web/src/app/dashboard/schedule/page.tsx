@@ -1,3 +1,7 @@
+/**
+ * Driver schedule page — /dashboard/schedule
+ * Weekly calendar for drivers to set their availability windows.
+ */
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';

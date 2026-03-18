@@ -1,3 +1,7 @@
+/**
+ * Admin users page — /dashboard/admin/users
+ * Lists all registered users with filters; approve, suspend, or change user roles.
+ */
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';

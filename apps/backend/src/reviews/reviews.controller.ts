@@ -1,3 +1,7 @@
+/**
+ * Reviews controller — /api/v1/reviews
+ * Endpoints to submit a review for a completed order and list reviews for a supplier/carrier.
+ */
 import {
   Body,
   Controller,

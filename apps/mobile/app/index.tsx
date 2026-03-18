@@ -1,3 +1,8 @@
+/**
+ * Mobile home / splash screen.
+ * Shows the B3Hub logo and routes authenticated users to the dashboard
+ * or unauthenticated users to the login screen.
+ */
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';

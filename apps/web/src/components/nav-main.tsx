@@ -1,3 +1,7 @@
+/**
+ * NavMain component.
+ * Primary navigation link group inside the sidebar (role-specific menu items).
+ */
 'use client';
 
 import { ChevronRight, type LucideIcon } from 'lucide-react';

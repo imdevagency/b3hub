@@ -1,3 +1,7 @@
+/**
+ * useBuyerOrders hook.
+ * Fetches and caches the current buyer's material purchase orders.
+ */
 import { useCallback, useEffect, useState } from 'react';
 import { getMySkipHireOrders, getMyOrders, type SkipHireOrder, type ApiOrder } from '@/lib/api';
 

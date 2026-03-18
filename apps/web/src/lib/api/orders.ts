@@ -1,3 +1,7 @@
+/**
+ * Orders API module.
+ * Functions wrapping /api/v1/orders/* for placing and managing material purchase orders.
+ */
 import { apiFetch } from './common';
 import type { MaterialUnit } from './materials';
 

@@ -1,3 +1,8 @@
+/**
+ * Chat API module.
+ * Functions wrapping /api/v1/chat/* endpoints: list conversations,
+ * fetch messages, send a message.
+ */
 import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────

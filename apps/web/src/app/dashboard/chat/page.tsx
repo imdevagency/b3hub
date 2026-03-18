@@ -1,3 +1,7 @@
+/**
+ * Chat page — /dashboard/chat
+ * Conversation list sidebar + message thread view for in-app messaging.
+ */
 'use client';
 
 import { useEffect, useRef, useState } from 'react';

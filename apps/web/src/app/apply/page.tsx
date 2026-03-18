@@ -1,3 +1,8 @@
+/**
+ * Provider application page — /apply
+ * Form for existing buyers to apply as a supplier or carrier.
+ * Submits to /api/v1/provider-applications.
+ */
 'use client';
 
 import { useState } from 'react';

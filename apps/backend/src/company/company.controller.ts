@@ -1,3 +1,7 @@
+/**
+ * Company controller — /api/v1/company
+ * Endpoints to create or update a company profile and retrieve company details.
+ */
 import {
   Controller,
   Get,

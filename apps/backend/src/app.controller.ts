@@ -1,3 +1,7 @@
+/**
+ * Root controller.
+ * Exposes GET / — a minimal health-check endpoint that returns "Hello World!".
+ */
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
 

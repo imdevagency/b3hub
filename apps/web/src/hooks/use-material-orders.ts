@@ -1,3 +1,7 @@
+/**
+ * useMaterialOrders hook.
+ * Fetches material orders for the supplier view (incoming orders to fulfil).
+ */
 import React, { useCallback, useEffect, useState } from 'react';
 import { getMyOrders, type ApiOrder } from '@/lib/api';
 

@@ -1,3 +1,7 @@
+/**
+ * Documents controller — /api/v1/documents
+ * Endpoints to upload, list, download (signed URL), and admin approve/reject documents.
+ */
 import {
   Controller,
   Get,

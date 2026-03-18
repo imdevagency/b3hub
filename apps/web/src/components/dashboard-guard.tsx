@@ -1,3 +1,8 @@
+/**
+ * DashboardGuard component.
+ * Client-side auth redirect — wraps dashboard pages and pushes unauthenticated
+ * users to /login.
+ */
 'use client';
 
 import { useEffect } from 'react';

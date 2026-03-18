@@ -1,3 +1,7 @@
+/**
+ * Step3Size — Skip-hire wizard step 3 (container size).
+ * Size selector grid with capacity descriptions for skip hire.
+ */
 'use client';
 
 import { cn } from '@/lib/utils';

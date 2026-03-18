@@ -1,3 +1,8 @@
+/**
+ * Materials controller — /api/v1/materials
+ * Public listing (with optional auth for pricing visibility) and authenticated
+ * endpoints to create, update, and delete material listings.
+ */
 import {
   Controller,
   Get,

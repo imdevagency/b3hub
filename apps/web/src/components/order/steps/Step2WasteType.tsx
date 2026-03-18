@@ -1,3 +1,7 @@
+/**
+ * Step2WasteType — Order wizard step 2 (waste/material type).
+ * Category picker so the system can match appropriate carriers.
+ */
 'use client';
 
 import { Trash2, Leaf, HardHat, Trees, Cpu, Package } from 'lucide-react';

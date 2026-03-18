@@ -1,3 +1,9 @@
+/**
+ * Invoices service.
+ * Generates and tracks invoices for material orders and transport jobs.
+ * Supports payment-status updates (pending → paid) and filtered queries
+ * by buyer/supplier/carrier and date range.
+ */
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentStatus, Prisma } from '@prisma/client';

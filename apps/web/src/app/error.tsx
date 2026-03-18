@@ -1,3 +1,7 @@
+/**
+ * Root error boundary page.
+ * Catches unhandled render errors at the root level and shows a recovery UI.
+ */
 'use client';
 
 import { useEffect } from 'react';

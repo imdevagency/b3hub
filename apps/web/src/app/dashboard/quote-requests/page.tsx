@@ -1,3 +1,7 @@
+/**
+ * Quote requests page — /dashboard/quote-requests
+ * Lists the buyer's RFQs and received offers. Suppliers see open RFQs they can bid on.
+ */
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';

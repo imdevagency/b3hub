@@ -1,3 +1,7 @@
+/**
+ * Order wizard entry page — /dashboard/order
+ * Launches the multi-step OrderWizard for placing a material transport order.
+ */
 import Link from 'next/link';
 import { ArrowRight, CheckCircle2, Package, Recycle, ShieldCheck, Truck } from 'lucide-react';
 

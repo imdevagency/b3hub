@@ -1,3 +1,8 @@
+/**
+ * Root Next.js layout.
+ * Wraps the entire app with AuthProvider, CartProvider, ModeProvider,
+ * global fonts, and the Toaster notification component.
+ */
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';

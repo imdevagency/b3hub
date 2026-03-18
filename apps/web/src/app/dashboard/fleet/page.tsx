@@ -1,3 +1,7 @@
+/**
+ * Fleet management page — /dashboard/fleet
+ * Add, edit, and remove carrier vehicles. Shows vehicle details and status.
+ */
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';

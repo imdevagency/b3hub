@@ -1,3 +1,8 @@
+/**
+ * TrackingMap component.
+ * Leaflet map showing the real-time location of a single transport job's driver.
+ * Polls the API for GPS updates and animates the marker.
+ */
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';

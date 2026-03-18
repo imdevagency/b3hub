@@ -1,3 +1,8 @@
+/**
+ * Quote requests service.
+ * Buyers post material/transport RFQs; suppliers & carriers submit offers.
+ * Handles creation, listing, offer submission, offer acceptance, and expiry.
+ */
 import {
   BadRequestException,
   ForbiddenException,

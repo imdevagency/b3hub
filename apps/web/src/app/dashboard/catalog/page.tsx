@@ -1,3 +1,7 @@
+/**
+ * Materials catalog page — /dashboard/catalog
+ * Browsable grid of all material listings with category filters and search.
+ */
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';

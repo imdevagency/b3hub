@@ -1,3 +1,8 @@
+/**
+ * Containers service.
+ * Tracks physical waste containers (skips, bins) associated with skip-hire orders —
+ * inventory management, location updates, and availability checks.
+ */
 import {
   BadRequestException,
   ForbiddenException,

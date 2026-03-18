@@ -1,3 +1,8 @@
+/**
+ * Transport jobs controller — /api/v1/transport-jobs
+ * Endpoints: create job, list available/my jobs, accept, update location,
+ * upload delivery proof, complete job.
+ */
 import {
   Controller,
   Get,

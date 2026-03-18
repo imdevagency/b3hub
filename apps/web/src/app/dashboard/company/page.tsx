@@ -1,3 +1,7 @@
+/**
+ * Company profile page — /dashboard/company
+ * View and edit the company profile: name, registration number, logo upload.
+ */
 'use client';
 
 import { useState, useEffect } from 'react';

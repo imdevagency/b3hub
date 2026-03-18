@@ -1,3 +1,8 @@
+/**
+ * Framework contracts controller — /api/v1/framework-contracts
+ * Endpoints to create contracts, list buyer/supplier contracts,
+ * release call-offs against a contract, and view contract detail.
+ */
 import {
   Controller,
   Get,

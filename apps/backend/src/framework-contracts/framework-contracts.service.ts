@@ -1,3 +1,9 @@
+/**
+ * Framework contracts service.
+ * Long-term supply agreements between buyers and suppliers.
+ * Manages contract creation, line-item positions, call-off (partial order) releases,
+ * and the full contract status lifecycle (draft → active → closed).
+ */
 import {
   Injectable,
   Logger,

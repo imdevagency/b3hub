@@ -1,3 +1,7 @@
+/**
+ * Order detail page — /dashboard/orders/[id]
+ * Full detail view for a single material order: items, status timeline, invoice link.
+ */
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';

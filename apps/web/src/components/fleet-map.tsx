@@ -1,3 +1,7 @@
+/**
+ * FleetMap component.
+ * Leaflet map showing all active carrier vehicle positions for the fleet manager.
+ */
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';

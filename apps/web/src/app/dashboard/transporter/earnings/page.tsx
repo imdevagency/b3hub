@@ -1,3 +1,7 @@
+/**
+ * Transporter earnings page — /dashboard/transporter/earnings
+ * Revenue breakdown and invoice history for the carrier.
+ */
 'use client';
 
 import { useEffect, useState } from 'react';

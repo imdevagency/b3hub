@@ -1,3 +1,8 @@
+/**
+ * In-app notifications service.
+ * Creates, lists, marks-as-read, and deletes user notifications stored in the DB.
+ * Called by other services when key events occur (new order, status change, etc.).
+ */
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';

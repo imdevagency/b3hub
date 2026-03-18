@@ -1,3 +1,7 @@
+/**
+ * Register page — /register
+ * New account form supporting buyer, supplier, and carrier role selection.
+ */
 'use client';
 
 import { useState } from 'react';

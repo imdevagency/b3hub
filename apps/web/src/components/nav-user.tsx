@@ -1,3 +1,7 @@
+/**
+ * NavUser component.
+ * User avatar + name + role badge at the bottom of the sidebar with a sign-out option.
+ */
 'use client';
 
 import { BadgeCheck, Bell, ChevronsUpDown, CreditCard, LogOut, Sparkles } from 'lucide-react';

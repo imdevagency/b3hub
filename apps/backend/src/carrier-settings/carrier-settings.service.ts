@@ -1,3 +1,8 @@
+/**
+ * Carrier settings service.
+ * Manages transport pricing configurations: per-km rates, minimum charges,
+ * zone-based pricing, and vehicle-type-specific overrides.
+ */
 import {
   ForbiddenException,
   Injectable,

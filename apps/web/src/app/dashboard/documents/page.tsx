@@ -1,3 +1,8 @@
+/**
+ * Documents page — /dashboard/documents
+ * Upload and manage compliance documents (licenses, certificates).
+ * Shows document status (pending/approved/rejected) and expiry dates.
+ */
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';

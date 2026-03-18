@@ -1,3 +1,8 @@
+/**
+ * useActiveTransportJob hook.
+ * Fetches and polls the carrier's currently active transport job.
+ * Used by the active-job dashboard page and live tracking map.
+ */
 import React, { useCallback, useEffect, useState } from 'react';
 import { getMyActiveTransportJob, type ApiTransportJob } from '@/lib/api';
 

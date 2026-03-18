@@ -1,3 +1,7 @@
+/**
+ * Carrier settings controller — /api/v1/carrier-settings
+ * Carrier-only endpoints to read and update transport pricing configuration.
+ */
 import {
   Body,
   Controller,

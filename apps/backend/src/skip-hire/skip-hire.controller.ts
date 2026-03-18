@@ -1,3 +1,8 @@
+/**
+ * Skip-hire controller — /api/v1/skip-hire
+ * Endpoints for browsing skips, creating hire bookings, updating booking status,
+ * and managing carrier-side skip inventory.
+ */
 import {
   Controller,
   Get,

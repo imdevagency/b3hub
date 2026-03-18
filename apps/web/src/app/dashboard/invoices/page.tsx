@@ -1,3 +1,8 @@
+/**
+ * Invoices page — /dashboard/invoices
+ * Lists all invoices for the current user (buyer / supplier / carrier).
+ * Allows marking invoices as paid.
+ */
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';

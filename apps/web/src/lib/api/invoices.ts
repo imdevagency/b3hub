@@ -1,3 +1,7 @@
+/**
+ * Invoices API module.
+ * Functions to list, fetch, and update invoices via /api/v1/invoices/*.
+ */
 import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────

@@ -1,3 +1,8 @@
+/**
+ * Company members service.
+ * Invite users by email, assign roles (OWNER/MANAGER/DRIVER/MEMBER),
+ * set fine-grained permissions, and remove members from a company.
+ */
 import {
   Injectable,
   Logger,

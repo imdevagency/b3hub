@@ -1,3 +1,7 @@
+/**
+ * Root service.
+ * Returns the health-check string used by AppController.
+ */
 import { Injectable } from '@nestjs/common';
 
 @Injectable()

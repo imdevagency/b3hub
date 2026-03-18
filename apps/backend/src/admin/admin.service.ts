@@ -1,3 +1,9 @@
+/**
+ * Admin service.
+ * Platform-level operations: list/approve/suspend users, view all orders,
+ * review provider applications, and retrieve aggregated statistics.
+ * All methods are restricted to ADMIN userType.
+ */
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserStatus, UserType } from '@prisma/client';

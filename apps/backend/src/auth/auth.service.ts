@@ -1,3 +1,9 @@
+/**
+ * Core authentication service.
+ * User registration (bcrypt hashing), login (JWT + 30-day refresh token),
+ * token refresh, server-side logout, password reset flow (email via Resend),
+ * profile updates, and notification preference management.
+ */
 import {
   Injectable,
   Logger,

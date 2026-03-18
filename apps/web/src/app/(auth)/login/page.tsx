@@ -1,3 +1,7 @@
+/**
+ * Login page — /login
+ * Email + password form, calls /api/v1/auth/login and stores JWT in auth context.
+ */
 'use client';
 
 import { useState } from 'react';

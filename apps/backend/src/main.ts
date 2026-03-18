@@ -1,3 +1,8 @@
+/**
+ * Application entry point.
+ * Creates the NestJS app, applies global middleware (CORS, validation pipe,
+ * exception filter, rate-throttler guard) and starts the HTTP server on PORT.
+ */
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';

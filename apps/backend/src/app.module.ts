@@ -1,3 +1,8 @@
+/**
+ * Root NestJS module.
+ * Imports every feature module, configures the global rate-limit throttler
+ * (120 req/min per IP), and validates env variables via ConfigModule.
+ */
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { validateEnv } from './config/env.validation';

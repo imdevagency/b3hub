@@ -1,3 +1,7 @@
+/**
+ * Skip-hire management page — /dashboard/skip-hire
+ * Carrier view: list of active skip-hire bookings and status management.
+ */
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';

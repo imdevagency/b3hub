@@ -1,3 +1,7 @@
+/**
+ * @Roles(...roles) method/class decorator.
+ * Attaches required UserType roles as metadata consumed by RolesGuard.
+ */
 import { SetMetadata } from '@nestjs/common';
 import { UserType } from '@prisma/client';
 

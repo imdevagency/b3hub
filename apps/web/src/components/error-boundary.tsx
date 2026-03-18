@@ -1,3 +1,7 @@
+/**
+ * React error boundary component.
+ * Catches render errors in child trees and renders a fallback UI with a retry button.
+ */
 'use client';
 
 import React from 'react';

@@ -1,3 +1,7 @@
+/**
+ * Supplier earnings page — /dashboard/supplier/earnings
+ * Displays revenue breakdown, invoice history, and payment status for the supplier.
+ */
 'use client';
 
 import { useEffect, useState } from 'react';

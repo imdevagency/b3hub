@@ -1,3 +1,8 @@
+/**
+ * Passport JWT strategy.
+ * Extracts the Bearer token from Authorization header, verifies against
+ * JWT_SECRET, and maps the payload to a RequestingUser placed on req.user.
+ */
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';

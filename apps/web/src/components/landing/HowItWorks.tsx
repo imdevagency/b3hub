@@ -1,3 +1,7 @@
+/**
+ * HowItWorks landing section.
+ * Numbered steps explaining the platform workflow for buyers and suppliers.
+ */
 import Link from 'next/link';
 import { ShoppingCart, Package, Truck } from 'lucide-react';
 

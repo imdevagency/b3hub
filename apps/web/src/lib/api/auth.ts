@@ -1,3 +1,8 @@
+/**
+ * Auth API module.
+ * Functions wrapping /api/v1/auth/* endpoints: login, register, refresh token,
+ * logout, forgot/reset/change password, get/update profile.
+ */
 import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────

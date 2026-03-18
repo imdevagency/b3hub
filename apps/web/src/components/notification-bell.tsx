@@ -1,3 +1,8 @@
+/**
+ * NotificationBell component.
+ * Bell icon in the top nav; shows unread count badge and a dropdown of recent
+ * in-app notifications fetched from the API.
+ */
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';

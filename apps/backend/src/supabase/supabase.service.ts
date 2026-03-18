@@ -1,3 +1,9 @@
+/**
+ * Supabase client service.
+ * Initialises the Supabase JS client from SUPABASE_URL / SUPABASE_KEY env vars.
+ * Used for file storage (upload, signed URLs). Gracefully warns and disables
+ * itself when credentials are not configured.
+ */
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';

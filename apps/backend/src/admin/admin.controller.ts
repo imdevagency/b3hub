@@ -1,3 +1,8 @@
+/**
+ * Admin controller — /api/v1/admin
+ * Admin-only endpoints for user management, platform stats,
+ * and provider application approval workflow.
+ */
 import { Controller, Get, Patch, Param, Body, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';

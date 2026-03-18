@@ -1,3 +1,7 @@
+/**
+ * Hero landing section.
+ * Above-the-fold banner with headline, subtext, and primary CTA buttons.
+ */
 import Link from 'next/link';
 
 export function Hero() {

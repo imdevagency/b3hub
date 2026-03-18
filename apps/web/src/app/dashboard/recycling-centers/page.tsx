@@ -1,3 +1,7 @@
+/**
+ * Recycling centers page — /dashboard/recycling-centers
+ * Map and list view of nearby recycling facilities with accepted material types.
+ */
 'use client';
 
 import { useEffect, useState } from 'react';

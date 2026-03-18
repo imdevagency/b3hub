@@ -1,3 +1,7 @@
+/**
+ * Quote requests API module.
+ * Functions for creating RFQs, listing quotes, submitting and accepting offers.
+ */
 import { apiFetch } from './common';
 import type { MaterialCategory, MaterialUnit } from './materials';
 

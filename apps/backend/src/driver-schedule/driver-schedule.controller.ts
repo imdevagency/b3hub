@@ -1,3 +1,7 @@
+/**
+ * Driver schedule controller — /api/v1/driver-schedule
+ * Endpoints for drivers to manage their weekly availability schedule.
+ */
 import {
   Body,
   Controller,

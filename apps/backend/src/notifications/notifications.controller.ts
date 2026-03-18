@@ -1,3 +1,7 @@
+/**
+ * Notifications controller — /api/v1/notifications
+ * Authenticated endpoints: list my notifications, mark one/all as read, delete one.
+ */
 import {
   Controller,
   Get,

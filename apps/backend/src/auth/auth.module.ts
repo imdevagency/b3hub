@@ -1,3 +1,8 @@
+/**
+ * Authentication module.
+ * Configures JWT signing (7-day tokens), Passport local + JWT strategies,
+ * and exports AuthService for other modules.
+ */
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';

@@ -1,3 +1,7 @@
+/**
+ * Reviews page — /dashboard/reviews
+ * Buyers can submit star ratings; suppliers/carriers see their received reviews.
+ */
 'use client';
 
 import { useEffect, useState } from 'react';

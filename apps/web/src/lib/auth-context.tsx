@@ -1,3 +1,8 @@
+/**
+ * AuthContext & AuthProvider.
+ * Global React context holding the current user, JWT token, and auth actions
+ * (login, logout, register). Persists the token in localStorage.
+ */
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';

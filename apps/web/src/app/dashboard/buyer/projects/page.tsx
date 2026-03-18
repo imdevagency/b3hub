@@ -1,3 +1,7 @@
+/**
+ * Buyer projects list — /dashboard/buyer/projects
+ * Lists all procurement projects/quote requests created by the buyer.
+ */
 'use client';
 
 import { useEffect, useState } from 'react';

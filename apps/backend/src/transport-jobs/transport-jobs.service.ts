@@ -1,3 +1,9 @@
+/**
+ * Transport jobs service.
+ * Bulk-material haulage jobs: creation by buyers, acceptance by carriers,
+ * real-time GPS tracking, delivery-proof photo uploads, and status transitions
+ * (open → assigned → in_progress → completed).
+ */
 import {
   Injectable,
   Logger,

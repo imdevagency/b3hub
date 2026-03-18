@@ -1,3 +1,7 @@
+/**
+ * TeamSwitcher component.
+ * Dropdown at the top of the sidebar to switch between personal and company context.
+ */
 'use client';
 
 import * as React from 'react';

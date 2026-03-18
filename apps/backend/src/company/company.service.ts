@@ -1,3 +1,8 @@
+/**
+ * Company service.
+ * Manages company profiles: create, update, logo upload via Supabase,
+ * and fetch with members and linked vehicles.
+ */
 import {
   Injectable,
   Logger,

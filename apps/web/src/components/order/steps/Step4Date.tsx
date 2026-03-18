@@ -1,3 +1,7 @@
+/**
+ * Step4Date — Skip-hire wizard step 4 (date selection).
+ * Calendar date picker for requested delivery and collection dates.
+ */
 'use client';
 
 import { CalendarDays, Info } from 'lucide-react';

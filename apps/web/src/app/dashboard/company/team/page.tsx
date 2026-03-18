@@ -1,3 +1,7 @@
+/**
+ * Team management page — /dashboard/company/team
+ * Invite members, assign roles and permissions within the company.
+ */
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';

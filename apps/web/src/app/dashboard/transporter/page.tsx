@@ -1,3 +1,7 @@
+/**
+ * Transporter (carrier) overview page — /dashboard/transporter
+ * Shows available transport jobs, active jobs, and earnings summary.
+ */
 'use client';
 
 import { useEffect, useState } from 'react';

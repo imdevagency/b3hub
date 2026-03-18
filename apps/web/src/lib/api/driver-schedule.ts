@@ -1,3 +1,7 @@
+/**
+ * Driver schedule API module.
+ * Functions wrapping /api/v1/driver-schedule/* endpoints for availability management.
+ */
 import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────

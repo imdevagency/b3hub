@@ -1,3 +1,9 @@
+/**
+ * Documents service.
+ * Compliance documents (licenses, certificates, waste consignment notes).
+ * Handles Supabase Storage uploads, status tracking (pending/approved/rejected),
+ * signed download URLs, and expiry-date monitoring.
+ */
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { DocumentType, DocumentStatus, Prisma } from '@prisma/client';

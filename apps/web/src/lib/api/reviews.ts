@@ -1,3 +1,7 @@
+/**
+ * Reviews API module.
+ * Functions to submit and list reviews via /api/v1/reviews/*.
+ */
 import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────

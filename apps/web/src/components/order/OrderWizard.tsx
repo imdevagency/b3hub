@@ -1,3 +1,8 @@
+/**
+ * OrderWizard component.
+ * Multi-step form orchestrator for placing a material transport order.
+ * Steps: location → container → address → date/offers.
+ */
 'use client';
 
 import { useState } from 'react';

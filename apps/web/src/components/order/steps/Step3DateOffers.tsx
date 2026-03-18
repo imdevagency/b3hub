@@ -1,3 +1,8 @@
+/**
+ * Step3DateOffers — Order wizard step 3 (date & carrier offers).
+ * Shows available carrier quotes for the chosen date range;
+ * user selects a preferred offer before checkout.
+ */
 'use client';
 
 import { useEffect, useState } from 'react';

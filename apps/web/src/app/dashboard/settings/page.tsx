@@ -1,3 +1,7 @@
+/**
+ * Account settings page — /dashboard/settings
+ * Change password, update profile info, and manage notification preferences.
+ */
 'use client';
 
 import { useState } from 'react';

@@ -1,3 +1,7 @@
+/**
+ * Features landing section.
+ * Grid of platform feature cards (materials marketplace, transport, skip-hire, etc.).
+ */
 import { ShoppingCart, Users, Package, BarChart3, Shield, Zap } from 'lucide-react';
 
 const features = [

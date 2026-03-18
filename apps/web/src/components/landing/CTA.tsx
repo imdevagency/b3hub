@@ -1,3 +1,7 @@
+/**
+ * CTA (Call-to-Action) landing section.
+ * Full-width banner prompting visitors to sign up, with links to register.
+ */
 import Link from 'next/link';
 
 export function CTA() {

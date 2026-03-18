@@ -1,3 +1,7 @@
+/**
+ * AddressAutocomplete UI component.
+ * Text input wired to the Google Places Autocomplete API for address search.
+ */
 'use client';
 
 import { useEffect, useRef } from 'react';

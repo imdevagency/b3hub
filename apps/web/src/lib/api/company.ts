@@ -1,3 +1,7 @@
+/**
+ * Company API module.
+ * Functions wrapping /api/v1/company/* and /api/v1/company-members/* endpoints.
+ */
 import { apiFetch } from './common';
 import type { CompanyRole } from './auth';
 

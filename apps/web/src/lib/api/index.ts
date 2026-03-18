@@ -1,3 +1,8 @@
+/**
+ * API module barrel export.
+ * Re-exports all domain-specific API modules (auth, orders, materials, etc.)
+ * for convenient single-import access.
+ */
 export * from './common';
 export * from './auth';
 export * from './company';

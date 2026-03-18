@@ -1,3 +1,7 @@
+/**
+ * NavProjects component.
+ * Secondary navigation section in the sidebar listing the user's active projects.
+ */
 'use client';
 
 import { Folder, Forward, MoreHorizontal, Trash2, type LucideIcon } from 'lucide-react';

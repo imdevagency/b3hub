@@ -1,3 +1,7 @@
+/**
+ * Materials API module.
+ * Functions wrapping /api/v1/materials/* for listing, creating, updating, deleting materials.
+ */
 import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────

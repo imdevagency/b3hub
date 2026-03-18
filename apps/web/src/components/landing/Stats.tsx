@@ -1,3 +1,7 @@
+/**
+ * Stats landing section.
+ * Animated counters showing key platform metrics (users, orders, tonnes recycled).
+ */
 const stats = [
   { id: 1, name: 'Apstrādātie Pasūtījumi', value: '10K+' },
   { id: 2, name: 'Aktīvie Lietotāji', value: '500+' },

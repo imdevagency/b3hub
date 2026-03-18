@@ -1,3 +1,7 @@
+/**
+ * Provider applications controller — /api/v1/provider-applications
+ * Endpoints for users to submit applications and for admins to list, approve, or reject them.
+ */
 import {
   Controller,
   Post,

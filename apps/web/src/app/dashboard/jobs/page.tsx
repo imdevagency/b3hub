@@ -1,3 +1,7 @@
+/**
+ * Available transport jobs page — /dashboard/jobs
+ * Lists open haulage jobs that a carrier can accept, with distance and load details.
+ */
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';

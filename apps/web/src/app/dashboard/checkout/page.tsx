@@ -1,3 +1,7 @@
+/**
+ * Checkout page — /dashboard/checkout
+ * Summarises the cart, collects delivery address, and places a material order.
+ */
 'use client';
 
 import { useEffect, useState } from 'react';

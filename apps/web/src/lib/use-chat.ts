@@ -1,3 +1,8 @@
+/**
+ * useChat hook.
+ * Manages chat state for a conversation: fetches message history, sends messages,
+ * and polls for new messages at a regular interval.
+ */
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';

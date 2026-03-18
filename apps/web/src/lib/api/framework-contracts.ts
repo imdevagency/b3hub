@@ -1,3 +1,7 @@
+/**
+ * Framework contracts API module.
+ * Functions wrapping /api/v1/framework-contracts/* endpoints.
+ */
 import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────

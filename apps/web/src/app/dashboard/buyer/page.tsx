@@ -1,3 +1,7 @@
+/**
+ * Buyer overview page — /dashboard/buyer
+ * Shows the buyer's active orders, recent activity, and quick-action shortcuts.
+ */
 'use client';
 
 import { useEffect, useState } from 'react';

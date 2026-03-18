@@ -1,3 +1,8 @@
+/**
+ * Dashboard shell layout.
+ * Renders the app sidebar, top navigation, and wraps all dashboard routes.
+ * Guarded by DashboardGuard — redirects to /login if unauthenticated.
+ */
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Separator } from '@/components/ui/separator';

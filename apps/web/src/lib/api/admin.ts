@@ -1,3 +1,8 @@
+/**
+ * Admin API module.
+ * Functions wrapping /api/v1/admin/* endpoints: user listing, approve/suspend users,
+ * platform stats, and provider application management.
+ */
 import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────

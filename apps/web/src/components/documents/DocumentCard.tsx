@@ -1,3 +1,7 @@
+/**
+ * DocumentCard component.
+ * Displays a single compliance document: type, status badge, expiry date, and download link.
+ */
 'use client';
 
 import {

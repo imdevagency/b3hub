@@ -1,3 +1,8 @@
+/**
+ * useMobile hook.
+ * Returns true when the viewport width is below the mobile breakpoint (768 px).
+ * Used to conditionally render mobile vs desktop layouts.
+ */
 import * as React from 'react';
 
 const MOBILE_BREAKPOINT = 768;

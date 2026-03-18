@@ -1,3 +1,7 @@
+/**
+ * Dashboard-level error boundary.
+ * Catches render errors inside the dashboard shell and shows a retry UI.
+ */
 'use client';
 
 import { useEffect } from 'react';

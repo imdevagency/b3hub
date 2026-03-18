@@ -1,3 +1,8 @@
+/**
+ * Active jobs page — /dashboard/active
+ * Real-time view of the carrier's currently in-progress transport job
+ * with live GPS tracking map.
+ */
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';

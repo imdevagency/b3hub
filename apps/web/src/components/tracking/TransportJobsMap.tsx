@@ -1,3 +1,7 @@
+/**
+ * TransportJobsMap component.
+ * Overview map showing all active transport jobs with pickup/delivery markers.
+ */
 'use client';
 
 import React, { useEffect, useRef } from 'react';

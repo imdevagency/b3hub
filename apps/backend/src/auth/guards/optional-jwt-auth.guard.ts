@@ -1,3 +1,8 @@
+/**
+ * Optional JWT auth guard.
+ * Like JwtAuthGuard but never throws — public routes that can optionally
+ * identify the caller use this. req.user is undefined when no valid token.
+ */
 import { Injectable } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import type { RequestingUser } from '../../common/types/requesting-user.interface.js';

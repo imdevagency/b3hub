@@ -1,3 +1,7 @@
+/**
+ * Vehicles API module.
+ * Functions to register, list, update, and delete fleet vehicles.
+ */
 import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────

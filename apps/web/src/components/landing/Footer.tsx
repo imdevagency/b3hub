@@ -1,3 +1,7 @@
+/**
+ * Landing page footer.
+ * Site links, social icons, and copyright information.
+ */
 import Link from 'next/link';
 
 const navigation = {

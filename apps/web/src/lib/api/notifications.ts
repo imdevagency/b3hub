@@ -1,3 +1,7 @@
+/**
+ * Notifications API module.
+ * Functions to list, mark-as-read, and delete notifications via /api/v1/notifications/*.
+ */
 import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────

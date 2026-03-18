@@ -1,3 +1,7 @@
+/**
+ * Buyer project detail — /dashboard/buyer/projects/[id]
+ * Shows a single quote-request project with submitted offers and status.
+ */
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';

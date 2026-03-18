@@ -1,3 +1,8 @@
+/**
+ * CartContext & CartProvider.
+ * Global React context for the material shopping cart — add/remove items,
+ * update quantities, clear cart. Persisted in localStorage.
+ */
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';

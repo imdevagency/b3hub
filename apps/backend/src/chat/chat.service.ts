@@ -1,3 +1,9 @@
+/**
+ * Chat service.
+ * Manages 1-to-1 and order-scoped conversations.
+ * Stores messages in the DB and supports paginated message history.
+ * Real-time delivery is handled via the Chat WebSocket gateway.
+ */
 import {
   Injectable,
   Logger,

@@ -1,3 +1,8 @@
+/**
+ * Chat controller — /api/v1/chat
+ * REST endpoints: list conversations, fetch message history, send a message.
+ * Real-time push is handled by the companion WebSocket gateway.
+ */
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { SendMessageDto } from './dto/send-message.dto';

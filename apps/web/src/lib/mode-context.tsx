@@ -1,3 +1,8 @@
+/**
+ * ModeContext & ModeProvider.
+ * Tracks the user's active role mode (buyer / supplier / carrier) when a user
+ * holds multiple roles, persisted in localStorage.
+ */
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
