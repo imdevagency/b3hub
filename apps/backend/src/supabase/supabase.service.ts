@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 @Injectable()
@@ -6,9 +7,9 @@ export class SupabaseService {
   private supabase: SupabaseClient | null = null;
   private readonly logger = new Logger(SupabaseService.name);
 
-  constructor() {
-    const url = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY;
+  constructor(private readonly config: ConfigService) {
+    const url = this.config.get<string>('SUPABASE_URL');
+    const key = this.config.get<string>('SUPABASE_KEY') ?? this.config.get<string>('SUPABASE_ANON_KEY');
     if (url && key) {
       this.supabase = createClient(url, key);
     } else {

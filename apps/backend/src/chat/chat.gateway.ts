@@ -11,6 +11,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import * as jwt from 'jsonwebtoken';
 import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Gateway
@@ -30,6 +31,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server!: Server;
 
   private readonly logger = new Logger(ChatGateway.name);
+  private readonly jwtSecret: string;
+
+  constructor(private readonly config: ConfigService) {
+    this.jwtSecret = this.config.get<string>('JWT_SECRET') ?? 'your-secret-key';
+  }
 
   // ── Connection lifecycle ──────────────────────────────────────────────────
 
@@ -110,8 +116,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private verifyToken(token: string): jwt.JwtPayload | null {
     try {
-      const secret = process.env.JWT_SECRET ?? 'your-secret-key';
-      return jwt.verify(token, secret) as jwt.JwtPayload;
+      return jwt.verify(token, this.jwtSecret) as jwt.JwtPayload;
     } catch {
       return null;
     }
