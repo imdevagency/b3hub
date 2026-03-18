@@ -33,7 +33,12 @@ type Step = 1 | 2 | 3 | 4;
 type Stop = { lat: number; lng: number };
 
 // ── Constants ─────────────────────────────────────────────────────
-const VEHICLE_OPTIONS: { type: TransportVehicleType; label: string; sub: string; fromPrice: number }[] = [
+const VEHICLE_OPTIONS: {
+  type: TransportVehicleType;
+  label: string;
+  sub: string;
+  fromPrice: number;
+}[] = [
   { type: 'TIPPER_SMALL', label: 'Mazā pašizgāzēja', sub: 'līdz 5 t · 6 m³', fromPrice: 89 },
   { type: 'TIPPER_LARGE', label: 'Lielā pašizgāzēja', sub: 'līdz 15 t · 18 m³', fromPrice: 149 },
   { type: 'ARTICULATED_TIPPER', label: 'Puspiekabe', sub: 'līdz 25 t · 90 m³', fromPrice: 219 },
@@ -61,7 +66,16 @@ const DAY_OPTIONS = buildDays();
 // ── Component ─────────────────────────────────────────────────────
 export default function TransportWizard() {
   const router = useRouter();
-  const { state, setPickup, setDropoff, setVehicleType, setLoadDescription, setEstimatedWeight, setRequestedDate, reset } = useTransport();
+  const {
+    state,
+    setPickup,
+    setDropoff,
+    setVehicleType,
+    setLoadDescription,
+    setEstimatedWeight,
+    setRequestedDate,
+    reset,
+  } = useTransport();
   const { user, token } = useAuth();
 
   // ── Wizard state ──────────────────────────────────────────────
@@ -82,7 +96,9 @@ export default function TransportWizard() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [jobNumber, setJobNumber] = useState('');
-  const [siteContactName, setSiteContactName] = useState(() => `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim());
+  const [siteContactName, setSiteContactName] = useState(() =>
+    `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
+  );
   const [siteContactPhone, setSiteContactPhone] = useState(() => user?.phone ?? '');
   const [notes, setNotes] = useState('');
 
@@ -95,21 +111,27 @@ export default function TransportWizard() {
   const currentVehiclePrice = VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle)?.fromPrice;
 
   // ── Handlers ──────────────────────────────────────────────────
-  const handlePickupConfirm = useCallback((p: PickedAddress) => {
-    setPickupPicked(p);
-    setPickupStop({ lat: p.lat, lng: p.lng });
-    setPickup(p.address, p.city, p.lat, p.lng);
-    setShowPickupPicker(false);
-    setStep(2);
-  }, [setPickup]);
+  const handlePickupConfirm = useCallback(
+    (p: PickedAddress) => {
+      setPickupPicked(p);
+      setPickupStop({ lat: p.lat, lng: p.lng });
+      setPickup(p.address, p.city, p.lat, p.lng);
+      setShowPickupPicker(false);
+      setStep(2);
+    },
+    [setPickup],
+  );
 
-  const handleDropoffConfirm = useCallback((p: PickedAddress) => {
-    setDropoffPicked(p);
-    setDropoffStop({ lat: p.lat, lng: p.lng });
-    setDropoff(p.address, p.city, p.lat, p.lng);
-    setShowDropoffPicker(false);
-    setStep(3);
-  }, [setDropoff]);
+  const handleDropoffConfirm = useCallback(
+    (p: PickedAddress) => {
+      setDropoffPicked(p);
+      setDropoffStop({ lat: p.lat, lng: p.lng });
+      setDropoff(p.address, p.city, p.lat, p.lng);
+      setShowDropoffPicker(false);
+      setStep(3);
+    },
+    [setDropoff],
+  );
 
   const goBack = useCallback(() => {
     if (step === 1) router.back();
@@ -148,7 +170,23 @@ export default function TransportWizard() {
     } finally {
       setSubmitting(false);
     }
-  }, [user, token, pickupStop, dropoffStop, selectedVehicle, activeDesc, weightText, selectedDay, pickupPicked, dropoffPicked, state, siteContactName, siteContactPhone, notes, reset]);
+  }, [
+    user,
+    token,
+    pickupStop,
+    dropoffStop,
+    selectedVehicle,
+    activeDesc,
+    weightText,
+    selectedDay,
+    pickupPicked,
+    dropoffPicked,
+    state,
+    siteContactName,
+    siteContactPhone,
+    notes,
+    reset,
+  ]);
 
   const step3Valid = selectedVehicle !== null;
   const step4Valid = selectedDay !== null;
@@ -159,14 +197,26 @@ export default function TransportWizard() {
     (step === 3 && !step3Valid) ||
     submitting;
 
-  const ctaLabel = step === 4
-    ? (currentVehiclePrice ? `Pasūtīt — no €${currentVehiclePrice}` : 'Pasūtīt')
-    : 'Turpināt';
+  const ctaLabel =
+    step === 4
+      ? currentVehiclePrice
+        ? `Pasūtīt — no €${currentVehiclePrice}`
+        : 'Pasūtīt'
+      : 'Turpināt';
 
   const onCTA = useCallback(() => {
-    if (step === 1) { setShowPickupPicker(true); return; }
-    if (step === 2) { setShowDropoffPicker(true); return; }
-    if (step === 4) { handleSubmit(); return; }
+    if (step === 1) {
+      setShowPickupPicker(true);
+      return;
+    }
+    if (step === 2) {
+      setShowDropoffPicker(true);
+      return;
+    }
+    if (step === 4) {
+      handleSubmit();
+      return;
+    }
     setStep((s) => (s + 1) as Step);
   }, [step, handleSubmit]);
 
@@ -185,7 +235,9 @@ export default function TransportWizard() {
         <Text style={s.successTitle}>Pasūtījums pieņemts!</Text>
         <Text style={s.successSub}>Mēs sazināsimies drīzumā</Text>
         {jobNumber ? (
-          <View style={s.jobBadge}><Text style={s.jobBadgeText}>#{jobNumber}</Text></View>
+          <View style={s.jobBadge}>
+            <Text style={s.jobBadgeText}>#{jobNumber}</Text>
+          </View>
         ) : null}
         <TouchableOpacity style={s.successBtn} onPress={() => router.replace('/(buyer)/orders')}>
           <Text style={s.successBtnText}>Skatīt pasūtījumus</Text>
@@ -199,7 +251,10 @@ export default function TransportWizard() {
       <AddressPickerModal
         visible={showPickupPicker}
         title="No kurienes ielādēt?"
-        onClose={() => { if (step === 1) router.back(); else setShowPickupPicker(false); }}
+        onClose={() => {
+          if (step === 1) router.back();
+          else setShowPickupPicker(false);
+        }}
         onConfirm={handlePickupConfirm}
         initial={pickupPicked ?? undefined}
       />
@@ -218,16 +273,34 @@ export default function TransportWizard() {
         onBack={goBack}
         onClose={() => router.back()}
         ctaLabel={ctaLabel}
-        onCTA={step === 1 ? () => setShowPickupPicker(true) : step === 2 ? () => setShowDropoffPicker(true) : onCTA}
+        onCTA={
+          step === 1
+            ? () => setShowPickupPicker(true)
+            : step === 2
+              ? () => setShowDropoffPicker(true)
+              : onCTA
+        }
         ctaDisabled={ctaDisabled}
         ctaLoading={submitting}
       >
         {/* ── Step 1: Pickup ── */}
         {step === 1 && (
-          <ScrollView style={s.content} contentContainerStyle={s.pad} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={s.content}
+            contentContainerStyle={s.pad}
+            showsVerticalScrollIndicator={false}
+          >
             <Text style={s.hint}>Norādiet adresi, no kuras jāielādē krava.</Text>
-            <TouchableOpacity style={s.addressCard} onPress={() => setShowPickupPicker(true)} activeOpacity={0.75}>
-              <MapPin size={20} color={pickupPicked ? '#111827' : '#9ca3af'} style={{ marginRight: 10 }} />
+            <TouchableOpacity
+              style={s.addressCard}
+              onPress={() => setShowPickupPicker(true)}
+              activeOpacity={0.75}
+            >
+              <MapPin
+                size={20}
+                color={pickupPicked ? '#111827' : '#9ca3af'}
+                style={{ marginRight: 10 }}
+              />
               <Text style={[s.addressText, !pickupPicked && s.placeholder]} numberOfLines={2}>
                 {pickupPicked?.address ?? 'Pieskarieties, lai izvēlētos ielādes vietu'}
               </Text>
@@ -237,16 +310,30 @@ export default function TransportWizard() {
 
         {/* ── Step 2: Dropoff ── */}
         {step === 2 && (
-          <ScrollView style={s.content} contentContainerStyle={s.pad} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={s.content}
+            contentContainerStyle={s.pad}
+            showsVerticalScrollIndicator={false}
+          >
             <Text style={s.hint}>Norādiet galamērķa adresi.</Text>
             {/* Show pickup as reference */}
             <View style={s.refRow}>
               <View style={s.refDot} />
-              <Text style={s.refLabel} numberOfLines={1}>{pickupPicked?.address}</Text>
+              <Text style={s.refLabel} numberOfLines={1}>
+                {pickupPicked?.address}
+              </Text>
             </View>
             <View style={s.refLine} />
-            <TouchableOpacity style={s.addressCard} onPress={() => setShowDropoffPicker(true)} activeOpacity={0.75}>
-              <MapPin size={20} color={dropoffPicked ? '#111827' : '#9ca3af'} style={{ marginRight: 10 }} />
+            <TouchableOpacity
+              style={s.addressCard}
+              onPress={() => setShowDropoffPicker(true)}
+              activeOpacity={0.75}
+            >
+              <MapPin
+                size={20}
+                color={dropoffPicked ? '#111827' : '#9ca3af'}
+                style={{ marginRight: 10 }}
+              />
               <Text style={[s.addressText, !dropoffPicked && s.placeholder]} numberOfLines={2}>
                 {dropoffPicked?.address ?? 'Pieskarieties, lai izvēlētos izkraušanas vietu'}
               </Text>
@@ -256,7 +343,12 @@ export default function TransportWizard() {
 
         {/* ── Step 3: Vehicle + Cargo ── */}
         {step === 3 && (
-          <ScrollView style={s.content} contentContainerStyle={s.pad} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            style={s.content}
+            contentContainerStyle={s.pad}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             <Text style={s.sectionLabel}>Transportlīdzekļa veids</Text>
             <View style={{ gap: 10, marginBottom: 20 }}>
               {VEHICLE_OPTIONS.map((v) => {
@@ -271,12 +363,18 @@ export default function TransportWizard() {
                     }}
                     activeOpacity={0.75}
                   >
-                    <Truck size={22} color={isSel ? '#fff' : '#6b7280'} style={{ marginRight: 14 }} />
+                    <Truck
+                      size={22}
+                      color={isSel ? '#fff' : '#6b7280'}
+                      style={{ marginRight: 14 }}
+                    />
                     <View style={{ flex: 1 }}>
                       <Text style={[s.vehicleLabel, isSel && s.vehicleLabelSel]}>{v.label}</Text>
                       <Text style={[s.vehicleSub, isSel && s.vehicleSubSel]}>{v.sub}</Text>
                     </View>
-                    <Text style={[s.vehiclePrice, isSel && s.vehiclePriceSel]}>no €{v.fromPrice}</Text>
+                    <Text style={[s.vehiclePrice, isSel && s.vehiclePriceSel]}>
+                      no €{v.fromPrice}
+                    </Text>
                     {isSel && <Check size={16} color="#fff" style={{ marginLeft: 8 }} />}
                   </TouchableOpacity>
                 );
@@ -284,7 +382,11 @@ export default function TransportWizard() {
             </View>
 
             <Text style={s.sectionLabel}>Kravas veids</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: 16 }}
+            >
               {CARGO_PRESETS.map((c) => {
                 const isSel = activeDesc === c;
                 return (
@@ -325,9 +427,17 @@ export default function TransportWizard() {
 
         {/* ── Step 4: Date + summary ── */}
         {step === 4 && (
-          <ScrollView style={s.content} contentContainerStyle={s.pad} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={s.content}
+            contentContainerStyle={s.pad}
+            showsVerticalScrollIndicator={false}
+          >
             <Text style={s.sectionLabel}>Pārvadāšanas datums</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: 20 }}
+            >
               {DAY_OPTIONS.map((d) => {
                 const active = selectedDay === d.iso;
                 return (
@@ -353,9 +463,17 @@ export default function TransportWizard() {
               <SumRow icon="📍" label="Ielāde" value={pickupPicked?.address ?? '—'} />
               <SumRow icon="🏁" label="Izkraušana" value={dropoffPicked?.address ?? '—'} />
               {route && (
-                <SumRow icon="🛣" label="Distance" value={`${route.distanceKm.toFixed(1)} km · ${route.durationLabel}`} />
+                <SumRow
+                  icon="🛣"
+                  label="Distance"
+                  value={`${route.distanceKm.toFixed(1)} km · ${route.durationLabel}`}
+                />
               )}
-              <SumRow icon="🚛" label="Auto" value={VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle)?.label ?? '—'} />
+              <SumRow
+                icon="🚛"
+                label="Auto"
+                value={VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle)?.label ?? '—'}
+              />
               <SumRow icon="📦" label="Krava" value={activeDesc || '—'} />
               {currentVehiclePrice && (
                 <SumRow icon="💰" label="Orientējošā cena" value={`no €${currentVehiclePrice}`} />
@@ -364,9 +482,29 @@ export default function TransportWizard() {
 
             <Text style={[s.sectionLabel, { marginTop: 20 }]}>Kontaktinformācija</Text>
             <View style={{ gap: 10, marginBottom: 8 }}>
-              <TextInput style={s.input} placeholder="Kontaktpersona" placeholderTextColor="#9ca3af" value={siteContactName} onChangeText={setSiteContactName} />
-              <TextInput style={s.input} placeholder="Tālrunis" placeholderTextColor="#9ca3af" keyboardType="phone-pad" value={siteContactPhone} onChangeText={setSiteContactPhone} />
-              <TextInput style={[s.input, s.inputMulti]} placeholder="Piezīmes un norādījumi (neobligāti)" placeholderTextColor="#9ca3af" multiline value={notes} onChangeText={setNotes} />
+              <TextInput
+                style={s.input}
+                placeholder="Kontaktpersona"
+                placeholderTextColor="#9ca3af"
+                value={siteContactName}
+                onChangeText={setSiteContactName}
+              />
+              <TextInput
+                style={s.input}
+                placeholder="Tālrunis"
+                placeholderTextColor="#9ca3af"
+                keyboardType="phone-pad"
+                value={siteContactPhone}
+                onChangeText={setSiteContactPhone}
+              />
+              <TextInput
+                style={[s.input, s.inputMulti]}
+                placeholder="Piezīmes un norādījumi (neobligāti)"
+                placeholderTextColor="#9ca3af"
+                multiline
+                value={notes}
+                onChangeText={setNotes}
+              />
             </View>
             <View style={{ height: 16 }} />
           </ScrollView>
@@ -383,7 +521,9 @@ function SumRow({ icon, label, value }: { icon: string; label: string; value: st
       <Text style={s.sumIcon}>{icon}</Text>
       <View style={{ flex: 1 }}>
         <Text style={s.sumLabel}>{label}</Text>
-        <Text style={s.sumValue} numberOfLines={2}>{value}</Text>
+        <Text style={s.sumValue} numberOfLines={2}>
+          {value}
+        </Text>
       </View>
     </View>
   );
@@ -394,13 +534,24 @@ const s = StyleSheet.create({
   content: { flex: 1 },
   pad: { padding: 20, paddingBottom: 32 },
   hint: { fontSize: 14, color: '#6b7280', marginBottom: 16, lineHeight: 20 },
-  sectionLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 10 },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6b7280',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 10,
+  },
 
   // Address cards
   addressCard: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#f9fafb', borderWidth: 1.5, borderColor: '#e5e7eb',
-    borderRadius: 12, padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    padding: 16,
   },
   addressText: { flex: 1, fontSize: 15, color: '#111827', fontWeight: '500', lineHeight: 20 },
   placeholder: { color: '#9ca3af', fontWeight: '400' },
@@ -413,9 +564,13 @@ const s = StyleSheet.create({
 
   // Vehicle cards
   vehicleCard: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#f9fafb', borderWidth: 1.5, borderColor: '#e5e7eb',
-    borderRadius: 12, padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    padding: 14,
   },
   vehicleCardSel: { backgroundColor: '#111827', borderColor: '#111827' },
   vehicleLabel: { fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 2 },
@@ -427,24 +582,43 @@ const s = StyleSheet.create({
 
   // Cargo chips
   cargoChip: {
-    paddingHorizontal: 14, paddingVertical: 8,
-    borderRadius: 20, borderWidth: 1.5, borderColor: '#e5e7eb',
-    marginRight: 8, backgroundColor: '#fff',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    marginRight: 8,
+    backgroundColor: '#fff',
   },
   cargoChipSel: { backgroundColor: '#111827', borderColor: '#111827' },
   cargoText: { fontSize: 13, color: '#374151', fontWeight: '500' },
   cargoTextSel: { color: '#fff' },
 
   // Weight input
-  weightRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f9fafb', borderWidth: 1.5, borderColor: '#e5e7eb', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 },
+  weightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
   weightInput: { flex: 1, fontSize: 15, color: '#111827', paddingVertical: 0 },
   weightUnit: { fontSize: 13, color: '#6b7280', marginLeft: 8 },
 
   // Day chips
   dayChip: {
-    alignItems: 'center', paddingVertical: 10, paddingHorizontal: 14,
-    borderRadius: 10, borderWidth: 1.5, borderColor: '#e5e7eb',
-    marginRight: 8, backgroundColor: '#fff', minWidth: 54,
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    marginRight: 8,
+    backgroundColor: '#fff',
+    minWidth: 54,
   },
   dayChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
   dayDow: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
@@ -454,26 +628,67 @@ const s = StyleSheet.create({
   dayActiveSub: { color: '#d1d5db' },
 
   // Summary card
-  summaryCard: { backgroundColor: '#f9fafb', borderRadius: 12, borderWidth: 1, borderColor: '#f3f4f6', overflow: 'hidden' },
-  sumRow: { flexDirection: 'row', alignItems: 'flex-start', padding: 14, borderBottomWidth: 1, borderBottomColor: '#f3f4f6', gap: 12 },
+  summaryCard: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+    overflow: 'hidden',
+  },
+  sumRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+    gap: 12,
+  },
   sumIcon: { fontSize: 18, marginTop: 1 },
   sumLabel: { fontSize: 11, color: '#9ca3af', fontWeight: '500', marginBottom: 2 },
   sumValue: { fontSize: 14, color: '#111827', fontWeight: '600' },
 
   // Inputs
   input: {
-    backgroundColor: '#f9fafb', borderWidth: 1.5, borderColor: '#e5e7eb',
-    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 15, color: '#111827',
+    backgroundColor: '#f9fafb',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#111827',
   },
   inputMulti: { height: 80, textAlignVertical: 'top' },
 
   // Success
-  successRoot: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', padding: 32 },
-  successTitle: { fontSize: 24, fontWeight: '700', color: '#111827', marginTop: 20, marginBottom: 8 },
+  successRoot: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    padding: 32,
+  },
+  successTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#111827',
+    marginTop: 20,
+    marginBottom: 8,
+  },
   successSub: { fontSize: 15, color: '#6b7280', marginBottom: 24 },
-  jobBadge: { backgroundColor: '#f3f4f6', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 20, marginBottom: 32 },
+  jobBadge: {
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    marginBottom: 32,
+  },
   jobBadgeText: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  successBtn: { backgroundColor: '#111827', borderRadius: 14, paddingVertical: 14, paddingHorizontal: 40 },
+  successBtn: {
+    backgroundColor: '#111827',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+  },
   successBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
 });

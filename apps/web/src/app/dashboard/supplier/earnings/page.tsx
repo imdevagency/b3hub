@@ -5,7 +5,15 @@ import { useAuth } from '@/lib/auth-context';
 import { getMyOrders, type ApiOrder } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, TrendingUp, Clock, CheckCircle, Package, BarChart3, RefreshCw } from 'lucide-react';
+import {
+  Banknote,
+  TrendingUp,
+  Clock,
+  CheckCircle,
+  Package,
+  BarChart3,
+  RefreshCw,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // ── types ─────────────────────────────────────────────────────────────────────
@@ -40,7 +48,14 @@ type Period = 'today' | 'week' | 'month';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-const REVENUE_STATUSES = ['CONFIRMED', 'PROCESSING', 'IN_PROGRESS', 'SHIPPED', 'DELIVERED', 'COMPLETED'];
+const REVENUE_STATUSES = [
+  'CONFIRMED',
+  'PROCESSING',
+  'IN_PROGRESS',
+  'SHIPPED',
+  'DELIVERED',
+  'COMPLETED',
+];
 const PENDING_STATUSES = ['PENDING'];
 
 const LV_DAYS = ['Sv', 'Pr', 'Ot', 'Tr', 'Ce', 'Pk', 'Se'];
@@ -49,14 +64,21 @@ function euro(v: number) {
   return `€${v.toLocaleString('lv-LV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function computeRevenue(orders: ApiOrder[]): { stats: RevenueStats; entries: OrderEntry[]; chart: DayBar[] } {
+function computeRevenue(orders: ApiOrder[]): {
+  stats: RevenueStats;
+  entries: OrderEntry[];
+  chart: DayBar[];
+} {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekStart = new Date(todayStart);
   weekStart.setDate(weekStart.getDate() - weekStart.getDay());
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  let todayRevenue = 0, weekRevenue = 0, monthRevenue = 0, pendingRevenue = 0;
+  let todayRevenue = 0,
+    weekRevenue = 0,
+    monthRevenue = 0,
+    pendingRevenue = 0;
   const entries: OrderEntry[] = [];
 
   for (const order of orders) {
@@ -69,18 +91,23 @@ function computeRevenue(orders: ApiOrder[]): { stats: RevenueStats; entries: Ord
       entries.push({
         id: order.id,
         orderNumber: order.orderNumber,
-        buyerName: order.buyer ? `${order.buyer.firstName ?? ''} ${order.buyer.lastName ?? ''}`.trim() : 'Pircējs',
+        buyerName: order.buyer
+          ? `${order.buyer.firstName ?? ''} ${order.buyer.lastName ?? ''}`.trim()
+          : 'Pircējs',
         date: d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' }),
         rawDate: d,
         amount,
-        status: order.status === 'DELIVERED' || order.status === 'COMPLETED' ? 'delivered' : 'confirmed',
+        status:
+          order.status === 'DELIVERED' || order.status === 'COMPLETED' ? 'delivered' : 'confirmed',
       });
     } else if (PENDING_STATUSES.includes(order.status)) {
       pendingRevenue += amount;
       entries.push({
         id: order.id,
         orderNumber: order.orderNumber,
-        buyerName: order.buyer ? `${order.buyer.firstName ?? ''} ${order.buyer.lastName ?? ''}`.trim() : 'Pircējs',
+        buyerName: order.buyer
+          ? `${order.buyer.firstName ?? ''} ${order.buyer.lastName ?? ''}`.trim()
+          : 'Pircējs',
         date: d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' }),
         rawDate: d,
         amount,
@@ -90,9 +117,10 @@ function computeRevenue(orders: ApiOrder[]): { stats: RevenueStats; entries: Ord
   }
 
   const confirmedOrders = orders.filter((o) => REVENUE_STATUSES.includes(o.status));
-  const avgOrderValue = confirmedOrders.length > 0
-    ? confirmedOrders.reduce((s, o) => s + (o.total ?? 0), 0) / confirmedOrders.length
-    : 0;
+  const avgOrderValue =
+    confirmedOrders.length > 0
+      ? confirmedOrders.reduce((s, o) => s + (o.total ?? 0), 0) / confirmedOrders.length
+      : 0;
 
   // Build 7-day chart
   const chart: DayBar[] = [];
@@ -117,7 +145,14 @@ function computeRevenue(orders: ApiOrder[]): { stats: RevenueStats; entries: Ord
   entries.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
 
   return {
-    stats: { todayRevenue, weekRevenue, monthRevenue, totalOrders: confirmedOrders.length, pendingRevenue, avgOrderValue },
+    stats: {
+      todayRevenue,
+      weekRevenue,
+      monthRevenue,
+      totalOrders: confirmedOrders.length,
+      pendingRevenue,
+      avgOrderValue,
+    },
     entries,
     chart,
   };
@@ -129,16 +164,29 @@ const PERIOD_REVENUE: Record<Period, keyof RevenueStats> = {
   month: 'monthRevenue',
 };
 
-const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; variant: 'default' | 'secondary' | 'outline' }
+> = {
   delivered: { label: 'Piegādāts', variant: 'default' },
   confirmed: { label: 'Apstiprināts', variant: 'secondary' },
-  pending:   { label: 'Gaida', variant: 'outline' },
+  pending: { label: 'Gaida', variant: 'outline' },
 };
 
 // ── sub-components ────────────────────────────────────────────────────────────
 
-function StatCard({ label, value, icon: Icon, sub, color }: {
-  label: string; value: string; icon: React.ElementType; sub?: string; color: string;
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  sub,
+  color,
+}: {
+  label: string;
+  value: string;
+  icon: React.ElementType;
+  sub?: string;
+  color: string;
 }) {
   return (
     <Card className="shadow-none border-border/50">
@@ -171,19 +219,27 @@ export default function SupplierEarningsPage() {
     try {
       const data = await getMyOrders(token);
       setOrders(data);
-    } catch { /* ignore */ } finally {
+    } catch {
+      /* ignore */
+    } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => { load(); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    load();
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { stats, entries, chart } = computeRevenue(orders);
   const maxChart = Math.max(...chart.map((b) => b.amount), 1);
   const periodRevenue = stats[PERIOD_REVENUE[period]] as number;
 
-  const PERIOD_LABELS: Record<Period, string> = { today: 'Šodien', week: 'Šonedēļ', month: 'Šomēnes' };
+  const PERIOD_LABELS: Record<Period, string> = {
+    today: 'Šodien',
+    week: 'Šonedēļ',
+    month: 'Šomēnes',
+  };
 
   return (
     <div className="space-y-6 p-6 max-w-5xl">
@@ -191,7 +247,9 @@ export default function SupplierEarningsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Ieņēmumi</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Pārdošanas apgrozījums un pasūtījumu vēsture</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Pārdošanas apgrozījums un pasūtījumu vēsture
+          </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing}>
           <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
@@ -206,7 +264,9 @@ export default function SupplierEarningsPage() {
             key={p}
             onClick={() => setPeriod(p)}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              period === p ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+              period === p
+                ? 'bg-background shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {PERIOD_LABELS[p]}
@@ -219,20 +279,54 @@ export default function SupplierEarningsPage() {
         <p className="text-sm font-medium opacity-80">{PERIOD_LABELS[period]} ieņēmumi</p>
         <p className="text-4xl font-extrabold mt-1 tabular-nums">{euro(periodRevenue)}</p>
         <div className="flex gap-6 mt-4 text-sm opacity-90">
-          <span><span className="font-semibold">{stats.totalOrders}</span> pasūtījumi</span>
-          <span>Vid. <span className="font-semibold">{euro(stats.avgOrderValue)}</span></span>
+          <span>
+            <span className="font-semibold">{stats.totalOrders}</span> pasūtījumi
+          </span>
+          <span>
+            Vid. <span className="font-semibold">{euro(stats.avgOrderValue)}</span>
+          </span>
           <span className="text-yellow-200">{euro(stats.pendingRevenue)} gaida</span>
         </div>
       </div>
 
       {/* stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <StatCard label="Šodien"    value={euro(stats.todayRevenue)}  icon={Banknote}     color="bg-emerald-100 text-emerald-700" />
-        <StatCard label="Šonedēļ"  value={euro(stats.weekRevenue)}   icon={TrendingUp}   color="bg-blue-100 text-blue-700" />
-        <StatCard label="Šomēnes"  value={euro(stats.monthRevenue)}  icon={BarChart3}    color="bg-violet-100 text-violet-700" />
-        <StatCard label="Pasūtījumi"    value={String(stats.totalOrders)}  icon={Package}  color="bg-gray-100 text-gray-700" />
-        <StatCard label="Gaida apmaksu" value={euro(stats.pendingRevenue)} icon={Clock}   color="bg-yellow-100 text-yellow-700" />
-        <StatCard label="Vid. pasūtījums" value={euro(stats.avgOrderValue)} icon={CheckCircle} color="bg-pink-100 text-pink-700" />
+        <StatCard
+          label="Šodien"
+          value={euro(stats.todayRevenue)}
+          icon={Banknote}
+          color="bg-emerald-100 text-emerald-700"
+        />
+        <StatCard
+          label="Šonedēļ"
+          value={euro(stats.weekRevenue)}
+          icon={TrendingUp}
+          color="bg-blue-100 text-blue-700"
+        />
+        <StatCard
+          label="Šomēnes"
+          value={euro(stats.monthRevenue)}
+          icon={BarChart3}
+          color="bg-violet-100 text-violet-700"
+        />
+        <StatCard
+          label="Pasūtījumi"
+          value={String(stats.totalOrders)}
+          icon={Package}
+          color="bg-gray-100 text-gray-700"
+        />
+        <StatCard
+          label="Gaida apmaksu"
+          value={euro(stats.pendingRevenue)}
+          icon={Clock}
+          color="bg-yellow-100 text-yellow-700"
+        />
+        <StatCard
+          label="Vid. pasūtījums"
+          value={euro(stats.avgOrderValue)}
+          icon={CheckCircle}
+          color="bg-pink-100 text-pink-700"
+        />
       </div>
 
       {/* 7-day bar chart */}
@@ -256,7 +350,9 @@ export default function SupplierEarningsPage() {
                         title={euro(bar.amount)}
                       />
                     </div>
-                    <span className={`text-[10px] font-medium ${bar.isToday ? 'text-emerald-700' : 'text-muted-foreground'}`}>
+                    <span
+                      className={`text-[10px] font-medium ${bar.isToday ? 'text-emerald-700' : 'text-muted-foreground'}`}
+                    >
                       {bar.shortLabel}
                     </span>
                   </div>
@@ -287,15 +383,26 @@ export default function SupplierEarningsPage() {
               {entries.map((entry) => {
                 const cfg = STATUS_CONFIG[entry.status];
                 return (
-                  <div key={entry.id} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/40 transition-colors">
+                  <div
+                    key={entry.id}
+                    className="flex items-center gap-3 px-5 py-3 hover:bg-muted/40 transition-colors"
+                  >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-foreground">#{entry.orderNumber}</span>
-                        <Badge variant={cfg.variant} className="text-[10px] h-4 px-1.5">{cfg.label}</Badge>
+                        <span className="text-sm font-medium text-foreground">
+                          #{entry.orderNumber}
+                        </span>
+                        <Badge variant={cfg.variant} className="text-[10px] h-4 px-1.5">
+                          {cfg.label}
+                        </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate">{entry.buyerName} · {entry.date}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {entry.buyerName} · {entry.date}
+                      </p>
                     </div>
-                    <span className="text-sm font-semibold tabular-nums text-emerald-700 shrink-0">{euro(entry.amount)}</span>
+                    <span className="text-sm font-semibold tabular-nums text-emerald-700 shrink-0">
+                      {euro(entry.amount)}
+                    </span>
                   </div>
                 );
               })}

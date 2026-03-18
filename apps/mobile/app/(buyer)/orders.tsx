@@ -481,8 +481,8 @@ export default function OrdersScreen() {
               router.push('/order');
             }}
           >
-            <View style={[s.pickerIcon, { backgroundColor: '#fef2f2' }]}>
-              <Trash2 size={22} color="#dc2626" strokeWidth={1.8} />
+            <View style={[s.pickerIcon, { backgroundColor: '#eff6ff' }]}>
+              <Package size={22} color="#2563eb" strokeWidth={1.8} />
             </View>
             <View style={s.pickerOptionText}>
               <Text style={s.pickerOptionTitle}>Konteinera īre</Text>
@@ -499,8 +499,8 @@ export default function OrdersScreen() {
               router.push('/order-request');
             }}
           >
-            <View style={[s.pickerIcon, { backgroundColor: '#eff6ff' }]}>
-              <Package size={22} color="#2563eb" strokeWidth={1.8} />
+            <View style={[s.pickerIcon, { backgroundColor: '#fef3c7' }]}>
+              <HardHat size={22} color="#d97706" strokeWidth={1.8} />
             </View>
             <View style={s.pickerOptionText}>
               <Text style={s.pickerOptionTitle}>Materiālu pasūtījums</Text>

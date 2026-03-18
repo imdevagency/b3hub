@@ -161,7 +161,9 @@ export default function OrderRequestScreen() {
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
 
   // ── Contact / Notes ───────────────────────────────────────────────────────
-  const [contactName, setContactName] = useState(() => `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim());
+  const [contactName, setContactName] = useState(() =>
+    `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
+  );
   const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
   const [notes, setNotes] = useState('');
 
@@ -496,7 +498,12 @@ export default function OrderRequestScreen() {
     >
       <MapPin size={18} color={address ? '#111827' : '#9ca3af'} style={{ marginRight: 10 }} />
       <Text
-        style={{ flex: 1, fontSize: 15, color: address ? '#111827' : '#9ca3af', fontWeight: address ? '500' : '400' }}
+        style={{
+          flex: 1,
+          fontSize: 15,
+          color: address ? '#111827' : '#9ca3af',
+          fontWeight: address ? '500' : '400',
+        }}
         numberOfLines={2}
       >
         {address || 'Pieskarieties, lai izvēlētos piegādes adresi'}
@@ -1139,7 +1146,12 @@ export default function OrderRequestScreen() {
             zoom={pin ? 14 : 10}
             onPress={step === 'map' ? onMapPress : undefined}
             mapType={satellite ? 'hybrid' : 'standard'}
-            mapPadding={{ top: 0, right: 0, left: 0, bottom: step === 'map' ? SCREEN_H - MAP_FULL : SCREEN_H - MAP_SMALL }}
+            mapPadding={{
+              top: 0,
+              right: 0,
+              left: 0,
+              bottom: step === 'map' ? SCREEN_H - MAP_FULL : SCREEN_H - MAP_SMALL,
+            }}
           >
             <UserLayer />
             {pin && (
@@ -1168,8 +1180,6 @@ export default function OrderRequestScreen() {
             <ChevronLeft size={20} color="#111827" />
           </TouchableOpacity>
         </Animated.View>
-
-
 
         {/* Sheet — transparent on map step, white on all other steps */}
         {isSheetStep && (

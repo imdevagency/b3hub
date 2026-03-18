@@ -79,16 +79,7 @@ export function WizardLayout({
         {Array.from({ length: totalSteps }, (_, i) => {
           const done = i < step - 1;
           const active = i === step - 1;
-          return (
-            <View
-              key={i}
-              style={[
-                wl.pill,
-                done && wl.pillDone,
-                active && wl.pillActive,
-              ]}
-            />
-          );
+          return <View key={i} style={[wl.pill, done && wl.pillDone, active && wl.pillActive]} />;
         })}
       </View>
 
@@ -106,9 +97,7 @@ export function WizardLayout({
           {ctaLoading ? (
             <ActivityIndicator color={ctaDisabled ? '#9ca3af' : '#fff'} />
           ) : (
-            <Text style={[wl.ctaText, ctaDisabled && wl.ctaTextDisabled]}>
-              {ctaLabel}
-            </Text>
+            <Text style={[wl.ctaText, ctaDisabled && wl.ctaTextDisabled]}>{ctaLabel}</Text>
           )}
         </TouchableOpacity>
       </View>

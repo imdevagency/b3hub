@@ -5,7 +5,15 @@ import { useAuth } from '@/lib/auth-context';
 import { getMyTransportJobs, type ApiTransportJob } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, TrendingUp, Clock, CheckCircle, Truck, BarChart3, RefreshCw } from 'lucide-react';
+import {
+  Banknote,
+  TrendingUp,
+  Clock,
+  CheckCircle,
+  Truck,
+  BarChart3,
+  RefreshCw,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // ── types ─────────────────────────────────────────────────────────────────────
@@ -37,7 +45,14 @@ interface DayBar {
 
 type Period = 'today' | 'week' | 'month';
 
-const ACTIVE_STATUSES = ['ACCEPTED', 'EN_ROUTE_PICKUP', 'AT_PICKUP', 'LOADED', 'EN_ROUTE_DELIVERY', 'AT_DELIVERY'];
+const ACTIVE_STATUSES = [
+  'ACCEPTED',
+  'EN_ROUTE_PICKUP',
+  'AT_PICKUP',
+  'LOADED',
+  'EN_ROUTE_DELIVERY',
+  'AT_DELIVERY',
+];
 const LV_DAYS = ['Sv', 'Pr', 'Ot', 'Tr', 'Ce', 'Pk', 'Se'];
 
 function euro(v: number) {
@@ -78,7 +93,11 @@ function computeStats(jobs: ApiTransportJob[]): {
   weekStart.setDate(weekStart.getDate() - weekStart.getDay());
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  let todayEarnings = 0, weekEarnings = 0, monthEarnings = 0, completedJobs = 0, pendingPayout = 0;
+  let todayEarnings = 0,
+    weekEarnings = 0,
+    monthEarnings = 0,
+    completedJobs = 0,
+    pendingPayout = 0;
   const history: HistoryEntry[] = [];
 
   for (const job of jobs) {
@@ -116,13 +135,25 @@ function computeStats(jobs: ApiTransportJob[]): {
   history.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
   const chart = buildDailyChart(jobs);
 
-  return { stats: { todayEarnings, weekEarnings, monthEarnings, completedJobs, pendingPayout }, history, chart };
+  return {
+    stats: { todayEarnings, weekEarnings, monthEarnings, completedJobs, pendingPayout },
+    history,
+    chart,
+  };
 }
 
 // ── sub-components ────────────────────────────────────────────────────────────
 
-function StatCard({ label, value, icon: Icon, color }: {
-  label: string; value: string; icon: React.ElementType; color: string;
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  color,
+}: {
+  label: string;
+  value: string;
+  icon: React.ElementType;
+  color: string;
 }) {
   return (
     <Card className="shadow-none border-border/50">
@@ -141,11 +172,15 @@ function StatCard({ label, value, icon: Icon, color }: {
 
 const STATUS_CONFIG = {
   delivered: { label: 'Pabeigts', variant: 'default' as const },
-  active:    { label: 'Aktīvs',   variant: 'secondary' as const },
+  active: { label: 'Aktīvs', variant: 'secondary' as const },
 };
 
 type Period2 = Period;
-const PERIOD_LABELS: Record<Period2, string> = { today: 'Šodien', week: 'Šonedēļ', month: 'Šomēnes' };
+const PERIOD_LABELS: Record<Period2, string> = {
+  today: 'Šodien',
+  week: 'Šonedēļ',
+  month: 'Šomēnes',
+};
 
 // ── page ─────────────────────────────────────────────────────────────────────
 
@@ -162,20 +197,27 @@ export default function TransporterEarningsPage() {
     try {
       const data = await getMyTransportJobs(token);
       setJobs(data);
-    } catch { /* ignore */ } finally {
+    } catch {
+      /* ignore */
+    } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => { load(); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    load();
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { stats, history, chart } = computeStats(jobs);
   const maxChart = Math.max(...chart.map((b) => b.amount), 1);
 
-  const periodEarnings = period === 'today' ? stats.todayEarnings
-    : period === 'week' ? stats.weekEarnings
-    : stats.monthEarnings;
+  const periodEarnings =
+    period === 'today'
+      ? stats.todayEarnings
+      : period === 'week'
+        ? stats.weekEarnings
+        : stats.monthEarnings;
 
   return (
     <div className="space-y-6 p-6 max-w-5xl">
@@ -198,7 +240,9 @@ export default function TransporterEarningsPage() {
             key={p}
             onClick={() => setPeriod(p)}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              period === p ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+              period === p
+                ? 'bg-background shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {PERIOD_LABELS[p]}
@@ -211,18 +255,45 @@ export default function TransporterEarningsPage() {
         <p className="text-sm font-medium opacity-80">{PERIOD_LABELS[period]} ienākumi</p>
         <p className="text-4xl font-extrabold mt-1 tabular-nums">{euro(periodEarnings)}</p>
         <div className="flex gap-6 mt-4 text-sm opacity-90">
-          <span><span className="font-semibold">{stats.completedJobs}</span> pabeigti darbi</span>
+          <span>
+            <span className="font-semibold">{stats.completedJobs}</span> pabeigti darbi
+          </span>
           <span className="text-yellow-200">{euro(stats.pendingPayout)} gaidāmie</span>
         </div>
       </div>
 
       {/* stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <StatCard label="Šodien"    value={euro(stats.todayEarnings)}  icon={Banknote}     color="bg-red-100 text-red-700" />
-        <StatCard label="Šonedēļ"  value={euro(stats.weekEarnings)}   icon={TrendingUp}   color="bg-orange-100 text-orange-700" />
-        <StatCard label="Šomēnes"  value={euro(stats.monthEarnings)}  icon={BarChart3}    color="bg-blue-100 text-blue-700" />
-        <StatCard label="Pabeigti darbi" value={String(stats.completedJobs)} icon={CheckCircle} color="bg-gray-100 text-gray-700" />
-        <StatCard label="Gaidāmie"  value={euro(stats.pendingPayout)} icon={Clock}         color="bg-yellow-100 text-yellow-700" />
+        <StatCard
+          label="Šodien"
+          value={euro(stats.todayEarnings)}
+          icon={Banknote}
+          color="bg-red-100 text-red-700"
+        />
+        <StatCard
+          label="Šonedēļ"
+          value={euro(stats.weekEarnings)}
+          icon={TrendingUp}
+          color="bg-orange-100 text-orange-700"
+        />
+        <StatCard
+          label="Šomēnes"
+          value={euro(stats.monthEarnings)}
+          icon={BarChart3}
+          color="bg-blue-100 text-blue-700"
+        />
+        <StatCard
+          label="Pabeigti darbi"
+          value={String(stats.completedJobs)}
+          icon={CheckCircle}
+          color="bg-gray-100 text-gray-700"
+        />
+        <StatCard
+          label="Gaidāmie"
+          value={euro(stats.pendingPayout)}
+          icon={Clock}
+          color="bg-yellow-100 text-yellow-700"
+        />
       </div>
 
       {/* 7-day bar chart */}
@@ -246,7 +317,9 @@ export default function TransporterEarningsPage() {
                         title={euro(bar.amount)}
                       />
                     </div>
-                    <span className={`text-[10px] font-medium ${bar.isToday ? 'text-red-700' : 'text-muted-foreground'}`}>
+                    <span
+                      className={`text-[10px] font-medium ${bar.isToday ? 'text-red-700' : 'text-muted-foreground'}`}
+                    >
                       {bar.shortLabel}
                     </span>
                   </div>
@@ -277,18 +350,27 @@ export default function TransporterEarningsPage() {
               {history.map((entry) => {
                 const cfg = STATUS_CONFIG[entry.status];
                 return (
-                  <div key={entry.id} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/40 transition-colors">
+                  <div
+                    key={entry.id}
+                    className="flex items-center gap-3 px-5 py-3 hover:bg-muted/40 transition-colors"
+                  >
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted shrink-0">
                       <Truck className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">#{entry.jobNumber}</span>
-                        <Badge variant={cfg.variant} className="text-[10px] h-4 px-1.5">{cfg.label}</Badge>
+                        <Badge variant={cfg.variant} className="text-[10px] h-4 px-1.5">
+                          {cfg.label}
+                        </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate">{entry.route} · {entry.date}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {entry.route} · {entry.date}
+                      </p>
                     </div>
-                    <span className="text-sm font-semibold tabular-nums text-red-700 shrink-0">{euro(entry.amount)}</span>
+                    <span className="text-sm font-semibold tabular-nums text-red-700 shrink-0">
+                      {euro(entry.amount)}
+                    </span>
                   </div>
                 );
               })}
