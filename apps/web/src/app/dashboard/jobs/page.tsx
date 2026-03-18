@@ -22,10 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth-context';
 import {
-  getAvailableTransportJobs,
   acceptTransportJob,
-  getMyVehicles,
-  getTransportDrivers,
   assignTransportJob,
   createTransportJob,
   type ApiTransportJob,
@@ -33,6 +30,7 @@ import {
   type ApiDriver,
   type CreateTransportJobInput,
 } from '@/lib/api';
+import { useAvailableJobs } from '@/hooks/use-available-jobs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { CalendarDays, Users, CircleCheck } from 'lucide-react';
 
@@ -225,9 +223,8 @@ export default function JobsPage() {
   const { user, token, isLoading } = useAuth();
   const router = useRouter();
 
-  const [allJobs, setAllJobs] = useState<TransportJob[]>([]);
-  const [loadingJobs, setLoadingJobs] = useState(false);
-  const [jobError, setJobError] = useState<string | null>(null);
+  const { jobs: apiJobs, setJobs, vehicles, drivers, loading: loadingJobs, error: jobError, reload } = useAvailableJobs(token);
+  const allJobs = apiJobs.map(mapApiJob);
   const [activeFilter, setActiveFilter] = useState<SearchFilter | null>(null);
   const [draft, setDraft] = useState<SearchFilter>({
     fromLocation: '',
@@ -248,8 +245,6 @@ export default function JobsPage() {
   const [dispatchDriverId, setDispatchDriverId] = useState('');
   const [assigning, setAssigning] = useState(false);
   const [assignSuccess, setAssignSuccess] = useState(false);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [drivers, setDrivers] = useState<ApiDriver[]>([]);
 
   // Create-job Sheet
   const [createOpen, setCreateOpen] = useState(false);
@@ -291,36 +286,6 @@ export default function JobsPage() {
     }
   }, [savedSearches]);
 
-  // Load vehicles + drivers for dispatch panel
-  useEffect(() => {
-    if (!token) return;
-    getMyVehicles(token)
-      .then(setVehicles)
-      .catch(() => {});
-    getTransportDrivers(token)
-      .then(setDrivers)
-      .catch(() => {});
-  }, [token]);
-
-  // Fetch live jobs from backend
-  const fetchJobs = useCallback(async () => {
-    if (!token) return;
-    setLoadingJobs(true);
-    setJobError(null);
-    try {
-      const data = await getAvailableTransportJobs(token);
-      setAllJobs(data.map(mapApiJob));
-    } catch (e) {
-      setJobError(e instanceof Error ? e.message : 'Neizdevās ielādēt darbus');
-    } finally {
-      setLoadingJobs(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    if (!isLoading && user && token) fetchJobs();
-  }, [isLoading, user, token, fetchJobs]);
-
   const filteredJobs = filterJobs(allJobs, activeFilter);
 
   const handleApply = () => {
@@ -361,7 +326,7 @@ export default function JobsPage() {
     if (!token || !confirm('Pieņemt šo darbu?')) return;
     try {
       await acceptTransportJob(jobId, token);
-      setAllJobs((prev) => prev.filter((j) => j.id !== jobId));
+      setJobs((prev) => prev.filter((j) => j.id !== jobId));
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Neizdevās pieņemt darbu');
     }
@@ -383,7 +348,7 @@ export default function JobsPage() {
         { driverId: dispatchDriverId, vehicleId: dispatchVehicleId },
         token,
       );
-      setAllJobs((prev) => prev.filter((j) => j.id !== dispatchJob.id));
+      setJobs((prev) => prev.filter((j) => j.id !== dispatchJob.id));
       setAssignSuccess(true);
       setTimeout(() => {
         setDispatchJob(null);
@@ -398,9 +363,9 @@ export default function JobsPage() {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchJobs();
+    await reload();
     setRefreshing(false);
-  }, [fetchJobs]);
+  }, [reload]);
 
   const handleCreateJob = async () => {
     if (!token) return;
@@ -422,7 +387,7 @@ export default function JobsPage() {
     setCreating(true);
     try {
       const newJob = await createTransportJob(f as CreateTransportJobInput, token);
-      setAllJobs((prev) => [mapApiJob(newJob), ...prev]);
+      setJobs((prev) => [newJob, ...prev]);
       setCreateSuccess(true);
       setTimeout(() => {
         setCreateOpen(false);

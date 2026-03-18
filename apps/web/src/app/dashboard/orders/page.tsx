@@ -9,7 +9,6 @@ import {
   getMyOrders,
   getMySkipHireOrders,
   getMyTransportJobs,
-  getMyActiveTransportJob,
   updateTransportJobStatus,
   submitDeliveryProof,
   confirmOrder,
@@ -18,6 +17,10 @@ import {
   type SkipHireOrder,
   type ApiTransportJob,
 } from '@/lib/api';
+import { useActiveTransportJob } from '@/hooks/use-active-transport-job';
+import { useTransportJobs } from '@/hooks/use-transport-jobs';
+import { useMaterialOrders } from '@/hooks/use-material-orders';
+import { useBuyerOrders } from '@/hooks/use-buyer-orders';
 import {
   ArrowRight,
   Banknote,
@@ -220,8 +223,7 @@ function mapsUrl(lat: number, lng: number): string {
 
 function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () => void }) {
   const router = useRouter();
-  const [job, setJob] = useState<ApiTransportJob | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { job, setJob, loading, reload } = useActiveTransportJob(token);
   const [refreshing, setRefreshing] = useState(false);
   const [advancing, setAdvancing] = useState(false);
 
@@ -235,29 +237,9 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
   // Delivery success modal
   const [deliveredJob, setDeliveredJob] = useState<ApiTransportJob | null>(null);
 
-  const fetchJob = useCallback(async () => {
-    try {
-      const data = await getMyActiveTransportJob(token);
-      // Only show jobs that are in-progress (not delivered or assigned-but-not-started)
-      const isActive =
-        data != null &&
-        (STATUS_STEPS as readonly string[]).includes(data.status) &&
-        data.status !== 'DELIVERED';
-      setJob(isActive ? data : null);
-    } catch {
-      /**/
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    fetchJob();
-  }, [fetchJob]);
-
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchJob();
+    await reload();
     setRefreshing(false);
   };
 
@@ -662,25 +644,8 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
 // ── CARRIER view ───────────────────────────────────────────────────────────────
 
 function CarrierHistoryView({ token }: { token: string }) {
-  const [jobs, setJobs] = useState<ApiTransportJob[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { jobs, loading, reload } = useTransportJobs(token);
   const [filter, setFilter] = useState<'all' | 'active' | 'done'>('all');
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await getMyTransportJobs(token);
-      setJobs(data);
-    } catch {
-      /**/
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   const ACTIVE = [
     'ACCEPTED',
@@ -745,7 +710,7 @@ function CarrierHistoryView({ token }: { token: string }) {
           </button>
         ))}
         <button
-          onClick={load}
+          onClick={reload}
           disabled={loading}
           className="ml-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
@@ -919,25 +884,8 @@ function CarrierView({ token }: { token: string }) {
 // ── SUPPLIER view ──────────────────────────────────────────────────────────────
 
 function SupplierView({ token }: { token: string }) {
-  const [orders, setOrders] = useState<ApiOrder[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { orders, setOrders, loading, reload } = useMaterialOrders(token);
   const [actioning, setActioning] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await getMyOrders(token);
-      setOrders(data);
-    } catch {
-      /**/
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   const handleConfirm = async (id: string) => {
     setActioning(id);
@@ -998,7 +946,7 @@ function SupplierView({ token }: { token: string }) {
 
       <div className="flex justify-end">
         <button
-          onClick={load}
+          onClick={reload}
           disabled={loading}
           className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
@@ -1167,26 +1115,7 @@ function SupplierView({ token }: { token: string }) {
 
 function BuyerView({ token }: { token: string }) {
   const [tab, setTab] = useState<'skip' | 'material'>('skip');
-  const [skipOrders, setSkipOrders] = useState<SkipHireOrder[]>([]);
-  const [matOrders, setMatOrders] = useState<ApiOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [skip, mat] = await Promise.all([getMySkipHireOrders(token), getMyOrders(token)]);
-      setSkipOrders(skip);
-      setMatOrders(mat);
-    } catch {
-      /**/
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { skipOrders, matOrders, loading, reload } = useBuyerOrders(token);
 
   const totalSpent =
     skipOrders.reduce((s, o) => s + o.price, 0) + matOrders.reduce((s, o) => s + o.total, 0);
@@ -1229,7 +1158,7 @@ function BuyerView({ token }: { token: string }) {
           </button>
         ))}
         <button
-          onClick={load}
+          onClick={reload}
           disabled={loading}
           className="ml-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
