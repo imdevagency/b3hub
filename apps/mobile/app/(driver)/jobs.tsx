@@ -394,7 +394,7 @@ export default function JobsScreen() {
       const data = await api.transportJobs.available(token);
       setAllJobs(data.map(mapJob));
     } catch (e) {
-      console.error('Failed to load jobs', e);
+      Alert.alert('Kļūda', 'Neizdevās ielādēt darbus');
     } finally {
       setLoading(false);
       setRefreshing(false);

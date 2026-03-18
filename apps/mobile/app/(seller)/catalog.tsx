@@ -359,7 +359,7 @@ export default function SellerCatalog() {
         const data = await api.materials.getAll(token, { supplierId: user.id });
         setMaterials(data);
       } catch (err) {
-        console.error(err);
+        Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās ielādēt materiālus');
       } finally {
         setLoading(false);
         setRefreshing(false);

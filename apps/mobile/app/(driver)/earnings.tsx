@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
+  Alert,
   ActivityIndicator,
   TouchableOpacity,
   Dimensions,
@@ -207,7 +208,7 @@ export default function EarningsScreen() {
       setHistory(h);
       setDailyChart(dc);
     } catch (e) {
-      console.error('Failed to load earnings', e);
+      Alert.alert('Kļūda', 'Neizdevās ielādēt ienākumu datus');
     } finally {
       setLoading(false);
     }

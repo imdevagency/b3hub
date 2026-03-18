@@ -5,7 +5,7 @@
  * and a history list of all orders with revenue breakdown.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
