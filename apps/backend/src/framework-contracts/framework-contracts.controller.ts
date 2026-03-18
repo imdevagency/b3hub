@@ -16,9 +16,10 @@ import { UpdateFrameworkContractDto } from './dto/update-contract.dto';
 import { CreateCallOffDto } from './dto/create-calloff.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { RequestingUser } from '../common/types/requesting-user.interface';
 
 /** Returns true if the user has full access (OWNER or solo account) */
-function isOwnerOrSolo(user: any): boolean {
+function isOwnerOrSolo(user: RequestingUser): boolean {
   return !user.companyId || user.companyRole === 'OWNER';
 }
 
@@ -29,19 +30,19 @@ export class FrameworkContractsController {
 
   /** GET /framework-contracts — list my contracts */
   @Get()
-  findAll(@CurrentUser() user: any) {
+  findAll(@CurrentUser() user: RequestingUser) {
     return this.service.findAll(user.userId, user.companyId);
   }
 
   /** GET /framework-contracts/:id — contract detail */
   @Get(':id')
-  findOne(@Param('id') id: string, @CurrentUser() user: any) {
+  findOne(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.service.findOne(id, user.userId, user.companyId);
   }
 
   /** POST /framework-contracts — create contract (OWNER or permCreateContracts) */
   @Post()
-  create(@Body() dto: CreateFrameworkContractDto, @CurrentUser() user: any) {
+  create(@Body() dto: CreateFrameworkContractDto, @CurrentUser() user: RequestingUser) {
     if (!isOwnerOrSolo(user) && !user.permCreateContracts) {
       throw new ForbiddenException('You do not have permission to create framework contracts');
     }
@@ -53,7 +54,7 @@ export class FrameworkContractsController {
   update(
     @Param('id') id: string,
     @Body() dto: UpdateFrameworkContractDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrSolo(user) && !user.permCreateContracts) {
       throw new ForbiddenException('You do not have permission to update framework contracts');
@@ -66,7 +67,7 @@ export class FrameworkContractsController {
   addPosition(
     @Param('id') id: string,
     @Body() dto: CreatePositionDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrSolo(user) && !user.permCreateContracts) {
       throw new ForbiddenException('You do not have permission to manage contract positions');
@@ -79,7 +80,7 @@ export class FrameworkContractsController {
   removePosition(
     @Param('id') id: string,
     @Param('posId') posId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrSolo(user) && !user.permCreateContracts) {
       throw new ForbiddenException('You do not have permission to manage contract positions');
@@ -93,7 +94,7 @@ export class FrameworkContractsController {
     @Param('id') id: string,
     @Param('posId') posId: string,
     @Body() dto: CreateCallOffDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrSolo(user) && !user.permReleaseCallOffs) {
       throw new ForbiddenException('You do not have permission to release call-offs');

@@ -10,6 +10,7 @@ import { UpdateNotificationPrefsDto } from './dto/update-notification-prefs.dto'
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import type { RequestingUser } from '../common/types/requesting-user.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -49,27 +50,27 @@ export class AuthController {
   /** Revoke the current refresh token (server-side logout). */
   @Post('logout')
   @UseGuards(JwtAuthGuard)
-  async logout(@CurrentUser() user: any) {
+  async logout(@CurrentUser() user: RequestingUser) {
     await this.authService.revokeRefreshToken(user.userId);
     return { ok: true };
   }
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async getProfile(@CurrentUser() user: any) {
+  async getProfile(@CurrentUser() user: RequestingUser) {
     return this.authService.getUserById(user.userId);
   }
 
   @Patch('me')
   @UseGuards(JwtAuthGuard)
-  async updateProfile(@CurrentUser() user: any, @Body() dto: UpdateProfileDto) {
+  async updateProfile(@CurrentUser() user: RequestingUser, @Body() dto: UpdateProfileDto) {
     return this.authService.updateProfile(user.userId, dto);
   }
 
   @Patch('push-token')
   @UseGuards(JwtAuthGuard)
   async updatePushToken(
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
     @Body('pushToken') pushToken: string | null,
   ) {
     await this.authService.updatePushToken(user.userId, pushToken ?? null);
@@ -78,13 +79,13 @@ export class AuthController {
 
   @Patch('change-password')
   @UseGuards(JwtAuthGuard)
-  async changePassword(@CurrentUser() user: any, @Body() dto: ChangePasswordDto) {
+  async changePassword(@CurrentUser() user: RequestingUser, @Body() dto: ChangePasswordDto) {
     return this.authService.changePassword(user.userId, dto.currentPassword, dto.newPassword);
   }
 
   @Patch('notifications')
   @UseGuards(JwtAuthGuard)
-  async updateNotificationPrefs(@CurrentUser() user: any, @Body() dto: UpdateNotificationPrefsDto) {
+  async updateNotificationPrefs(@CurrentUser() user: RequestingUser, @Body() dto: UpdateNotificationPrefsDto) {
     return this.authService.updateNotificationPrefs(user.userId, dto);
   }
 }

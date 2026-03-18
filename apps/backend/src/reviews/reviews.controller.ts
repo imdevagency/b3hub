@@ -11,6 +11,7 @@ import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { RequestingUser } from '../common/types/requesting-user.interface';
 
 @Controller('reviews')
 @UseGuards(JwtAuthGuard)
@@ -19,7 +20,7 @@ export class ReviewsController {
 
   /** POST /reviews — buyer submits a review for a completed order */
   @Post()
-  create(@Body() dto: CreateReviewDto, @CurrentUser() user: any) {
+  create(@Body() dto: CreateReviewDto, @CurrentUser() user: RequestingUser) {
     return this.service.create(dto, user.userId);
   }
 
@@ -34,7 +35,7 @@ export class ReviewsController {
   status(
     @Query('orderId') orderId: string | undefined,
     @Query('skipOrderId') skipOrderId: string | undefined,
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
   ) {
     return this.service.getReviewStatus(user.userId, orderId, skipOrderId);
   }

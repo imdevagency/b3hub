@@ -15,9 +15,10 @@ import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { RequestingUser } from '../common/types/requesting-user.interface';
 
 /** Checks that the authenticated user has canSell=true (or is ADMIN) */
-function assertCanSell(user: any) {
+function assertCanSell(user: RequestingUser) {
   if (!user.canSell && user.userType !== 'ADMIN') {
     throw new ForbiddenException('Only approved sellers can manage materials');
   }
@@ -31,7 +32,7 @@ export class MaterialsController {
   @Post()
   create(
     @Body() createMaterialDto: CreateMaterialDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
   ) {
     assertCanSell(user);
     return this.materialsService.create(createMaterialDto);
@@ -88,23 +89,15 @@ export class MaterialsController {
   update(
     @Param('id') id: string,
     @Body() updateMaterialDto: UpdateMaterialDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
   ) {
     assertCanSell(user);
-    return this.materialsService.update(id, updateMaterialDto, {
-      userId: user.userId,
-      userType: user.userType,
-      companyId: user.companyId,
-    });
+    return this.materialsService.update(id, updateMaterialDto, user);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @CurrentUser() user: any) {
+  remove(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     assertCanSell(user);
-    return this.materialsService.remove(id, {
-      userId: user.userId,
-      userType: user.userType,
-      companyId: user.companyId,
-    });
+    return this.materialsService.remove(id, user);
   }
 }

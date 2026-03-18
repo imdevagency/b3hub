@@ -4,6 +4,7 @@ import { CreateQuoteRequestDto } from './dto/create-quote-request.dto';
 import { CreateQuoteResponseDto } from './dto/create-quote-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { RequestingUser } from '../common/types/requesting-user.interface';
 
 @Controller('quote-requests')
 @UseGuards(JwtAuthGuard)
@@ -14,13 +15,13 @@ export class QuoteRequestsController {
 
   /** POST /quote-requests — buyer submits a new request */
   @Post()
-  create(@Body() dto: CreateQuoteRequestDto, @CurrentUser() user: any) {
+  create(@Body() dto: CreateQuoteRequestDto, @CurrentUser() user: RequestingUser) {
     return this.service.create(dto, user.userId);
   }
 
   /** GET /quote-requests — buyer lists their own requests */
   @Get()
-  findAll(@CurrentUser() user: any) {
+  findAll(@CurrentUser() user: RequestingUser) {
     return this.service.findAll(user.userId);
   }
 
@@ -38,7 +39,7 @@ export class QuoteRequestsController {
 
   /** GET /quote-requests/:id — buyer polls their request + responses */
   @Get(':id')
-  findOne(@Param('id') id: string, @CurrentUser() user: any) {
+  findOne(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.service.findOne(id, user.userId);
   }
 
@@ -47,7 +48,7 @@ export class QuoteRequestsController {
   accept(
     @Param('id') id: string,
     @Param('responseId') responseId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
   ) {
     return this.service.acceptResponse(id, responseId, user.userId);
   }
@@ -57,8 +58,8 @@ export class QuoteRequestsController {
   respond(
     @Param('id') id: string,
     @Body() dto: CreateQuoteResponseDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
   ) {
-    return this.service.addResponse(id, dto, user.companyId);
+    return this.service.addResponse(id, dto, user.companyId!);
   }
 }

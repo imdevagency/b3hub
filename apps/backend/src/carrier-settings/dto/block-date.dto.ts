@@ -1,10 +1,2 @@
-import { IsDateString, IsOptional, IsString } from 'class-validator';
-
-export class BlockDateDto {
-  @IsDateString()
-  date: string;
-
-  @IsOptional()
-  @IsString()
-  reason?: string;
-}
+// Re-export from the canonical location to avoid code duplication
+export { BlockDateDto } from '../../driver-schedule/dto/block-date.dto';

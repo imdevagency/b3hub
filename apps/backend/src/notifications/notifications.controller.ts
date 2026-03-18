@@ -9,6 +9,7 @@ import {
 import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { RequestingUser } from '../common/types/requesting-user.interface';
 
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
@@ -18,7 +19,7 @@ export class NotificationsController {
   /** GET /notifications?page=1&limit=20 */
   @Get()
   getMyNotifications(
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
@@ -31,19 +32,19 @@ export class NotificationsController {
 
   /** GET /notifications/unread-count */
   @Get('unread-count')
-  getUnreadCount(@CurrentUser() user: any) {
+  getUnreadCount(@CurrentUser() user: RequestingUser) {
     return this.notificationsService.getUnreadCount(user.userId);
   }
 
   /** PATCH /notifications/read-all */
   @Patch('read-all')
-  markAllRead(@CurrentUser() user: any) {
+  markAllRead(@CurrentUser() user: RequestingUser) {
     return this.notificationsService.markAllRead(user.userId);
   }
 
   /** PATCH /notifications/:id/read */
   @Patch(':id/read')
-  markRead(@Param('id') id: string, @CurrentUser() user: any) {
+  markRead(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.notificationsService.markRead(id, user.userId);
   }
 }

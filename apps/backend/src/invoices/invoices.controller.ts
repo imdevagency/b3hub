@@ -9,6 +9,7 @@ import {
 import { InvoicesService } from './invoices.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { RequestingUser } from '../common/types/requesting-user.interface';
 
 @Controller('invoices')
 @UseGuards(JwtAuthGuard)
@@ -18,7 +19,7 @@ export class InvoicesController {
   /** GET /invoices?page=1&limit=20 — my invoices */
   @Get()
   getMyInvoices(
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
@@ -31,19 +32,19 @@ export class InvoicesController {
 
   /** GET /invoices/order/:orderId */
   @Get('order/:orderId')
-  getByOrder(@Param('orderId') orderId: string, @CurrentUser() user: any) {
+  getByOrder(@Param('orderId') orderId: string, @CurrentUser() user: RequestingUser) {
     return this.invoicesService.getByOrder(orderId, user.userId);
   }
 
   /** GET /invoices/:id */
   @Get(':id')
-  getById(@Param('id') id: string, @CurrentUser() user: any) {
+  getById(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.invoicesService.getById(id, user.userId);
   }
 
   /** PATCH /invoices/:id/pay */
   @Patch(':id/pay')
-  markAsPaid(@Param('id') id: string, @CurrentUser() user: any) {
+  markAsPaid(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.invoicesService.markAsPaid(id, user.userId);
   }
 }

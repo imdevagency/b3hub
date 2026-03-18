@@ -7,7 +7,6 @@ import {
   Body,
   Query,
   UseGuards,
-  Request,
 } from '@nestjs/common';
 import { TransportJobsService } from './transport-jobs.service';
 import { UpdateStatusDto } from './dto/update-status.dto';
@@ -16,6 +15,7 @@ import { UpdateLocationDto } from './dto/update-location.dto';
 import { SubmitDeliveryProofDto } from './dto/submit-delivery-proof.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { RequestingUser } from '../common/types/requesting-user.interface';
 
 @Controller('transport-jobs')
 @UseGuards(JwtAuthGuard)
@@ -45,8 +45,8 @@ export class TransportJobsController {
    * Returns the logged-in driver's current in-progress job (or null).
    */
   @Get('my-active')
-  findMyActiveJob(@CurrentUser() user: any) {
-    return this.service.findMyActiveJob(user.id);
+  findMyActiveJob(@CurrentUser() user: RequestingUser) {
+    return this.service.findMyActiveJob(user.userId);
   }
 
   /**
@@ -54,8 +54,8 @@ export class TransportJobsController {
    * Returns all jobs ever assigned to the logged-in driver.
    */
   @Get('my-jobs')
-  findMyJobs(@CurrentUser() user: any) {
-    return this.service.findMyJobs(user.id);
+  findMyJobs(@CurrentUser() user: RequestingUser) {
+    return this.service.findMyJobs(user.userId);
   }
 
   /**
@@ -63,7 +63,7 @@ export class TransportJobsController {
    * Returns all disposal / freight jobs requested by the current user (buyer role).
    */
   @Get('my-requests')
-  findMyRequests(@CurrentUser() user: any) {
+  findMyRequests(@CurrentUser() user: RequestingUser) {
     return this.service.findMyRequests(user.userId);
   }
 
@@ -109,8 +109,8 @@ export class TransportJobsController {
    * Driver accepts an available job.
    */
   @Post(':id/accept')
-  accept(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.service.accept(id, user.id);
+  accept(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+    return this.service.accept(id, user.userId);
   }
 
   /**
@@ -141,10 +141,10 @@ export class TransportJobsController {
   @Patch(':id/status')
   updateStatus(
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
     @Body() dto: UpdateStatusDto,
   ) {
-    return this.service.updateStatus(id, user.id, dto);
+    return this.service.updateStatus(id, user.userId, dto);
   }
 
   /**
@@ -154,10 +154,10 @@ export class TransportJobsController {
   @Patch(':id/location')
   updateLocation(
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
     @Body() dto: UpdateLocationDto,
   ) {
-    return this.service.updateLocation(id, user.id, dto);
+    return this.service.updateLocation(id, user.userId, dto);
   }
 
   /**
@@ -176,10 +176,10 @@ export class TransportJobsController {
   @Post(':id/delivery-proof')
   submitDeliveryProof(
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
     @Body() dto: SubmitDeliveryProofDto,
   ) {
-    return this.service.submitDeliveryProof(id, user.id, dto);
+    return this.service.submitDeliveryProof(id, user.userId, dto);
   }
 
   /**

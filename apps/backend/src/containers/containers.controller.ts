@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { ContainersService } from './containers.service';
 import { CreateContainerDto } from './dto/create-container.dto';
 import { UpdateContainerDto } from './dto/update-container.dto';
@@ -27,7 +28,7 @@ export class ContainersController {
 
   /** POST /containers — carrier adds a container to their fleet */
   @Post()
-  create(@Body() dto: CreateContainerDto, @CurrentUser() user: any) {
+  create(@Body() dto: CreateContainerDto, @CurrentUser() user: RequestingUser) {
     if (!user.companyId) {
       return { error: 'Company account required' };
     }
@@ -36,21 +37,22 @@ export class ContainersController {
 
   /** GET /containers/mine — carrier sees their own fleet */
   @Get('mine')
-  findMine(@CurrentUser() user: any) {
-    return this.service.findMine(user.companyId);
+  findMine(@CurrentUser() user: RequestingUser) {
+    // companyId is always present for carrier accounts
+    return this.service.findMine(user.companyId!);
   }
 
   // ── Rental orders ─────────────────────────────────────────────────────────
 
   /** GET /containers/orders — buyer's rental history */
   @Get('orders')
-  findMyOrders(@CurrentUser() user: any) {
+  findMyOrders(@CurrentUser() user: RequestingUser) {
     return this.service.findMyOrders(user.userId);
   }
 
   /** GET /containers/orders/:id — single rental order */
   @Get('orders/:id')
-  findOrder(@Param('id') id: string, @CurrentUser() user: any) {
+  findOrder(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.service.findOrder(id, user.userId);
   }
 
@@ -59,9 +61,9 @@ export class ContainersController {
   updateOrderStatus(
     @Param('id') id: string,
     @Body() dto: UpdateContainerOrderStatusDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
   ) {
-    return this.service.updateOrderStatus(id, dto, user.companyId);
+    return this.service.updateOrderStatus(id, dto, user.companyId!);
   }
 
   // ── Browse (public w/ auth) ───────────────────────────────────────────────
@@ -83,15 +85,15 @@ export class ContainersController {
   update(
     @Param('id') id: string,
     @Body() dto: UpdateContainerDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
   ) {
-    return this.service.update(id, dto, user.companyId);
+    return this.service.update(id, dto, user.companyId!);
   }
 
   /** DELETE /containers/:id — carrier removes container */
   @Delete(':id')
-  remove(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.service.remove(id, user.companyId);
+  remove(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+    return this.service.remove(id, user.companyId!);
   }
 
   /** POST /containers/:id/rent — buyer rents a container */
@@ -99,7 +101,7 @@ export class ContainersController {
   rent(
     @Param('id') id: string,
     @Body() dto: CreateContainerOrderDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: RequestingUser,
   ) {
     return this.service.createOrder(id, dto, user.userId);
   }

@@ -14,6 +14,7 @@ import { BlockDateDto } from './dto/block-date.dto';
 import { ToggleOnlineDto } from './dto/toggle-online.dto';
 import { UpdateScheduleDto } from './dto/update-schedule.dto';
 import { DriverScheduleService } from './driver-schedule.service';
+import type { RequestingUser } from '../common/types/requesting-user.interface';
 
 @Controller('driver-schedule')
 @UseGuards(JwtAuthGuard)
@@ -26,8 +27,8 @@ export class DriverScheduleController {
    * isOnline, autoSchedule, maxJobsPerDay, weeklySchedule[], dateBlocks[], effectiveOnline
    */
   @Get()
-  getMyAvailability(@CurrentUser() user: any) {
-    return this.service.getMyAvailability(user.id);
+  getMyAvailability(@CurrentUser() user: RequestingUser) {
+    return this.service.getMyAvailability(user.userId);
   }
 
   /**
@@ -36,8 +37,8 @@ export class DriverScheduleController {
    * Body: { isOnline: boolean }
    */
   @Patch('online')
-  toggleOnline(@CurrentUser() user: any, @Body() dto: ToggleOnlineDto) {
-    return this.service.toggleOnline(user.id, dto);
+  toggleOnline(@CurrentUser() user: RequestingUser, @Body() dto: ToggleOnlineDto) {
+    return this.service.toggleOnline(user.userId, dto);
   }
 
   /**
@@ -46,8 +47,8 @@ export class DriverScheduleController {
    * Sends the full array of 7 days (or any subset).
    */
   @Post()
-  updateSchedule(@CurrentUser() user: any, @Body() dto: UpdateScheduleDto) {
-    return this.service.updateSchedule(user.id, dto);
+  updateSchedule(@CurrentUser() user: RequestingUser, @Body() dto: UpdateScheduleDto) {
+    return this.service.updateSchedule(user.userId, dto);
   }
 
   /**
@@ -56,8 +57,8 @@ export class DriverScheduleController {
    * Body: { date: "2026-03-15", reason?: string }
    */
   @Post('blocks')
-  blockDate(@CurrentUser() user: any, @Body() dto: BlockDateDto) {
-    return this.service.blockDate(user.id, dto);
+  blockDate(@CurrentUser() user: RequestingUser, @Body() dto: BlockDateDto) {
+    return this.service.blockDate(user.userId, dto);
   }
 
   /**
@@ -65,7 +66,7 @@ export class DriverScheduleController {
    * Remove a previously blocked date.
    */
   @Delete('blocks/:id')
-  unblockDate(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.service.unblockDate(user.id, id);
+  unblockDate(@CurrentUser() user: RequestingUser, @Param('id') id: string) {
+    return this.service.unblockDate(user.userId, id);
   }
 }

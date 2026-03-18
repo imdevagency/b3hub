@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
@@ -21,6 +22,8 @@ import { NotificationType } from '../notifications/dto/create-notification.dto';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     private prisma: PrismaService,
     private email: EmailService,
@@ -141,8 +144,8 @@ export class OrdersService {
         await this.spawnTransportJob(order.id, items, orderData, total);
       } catch (err) {
         // Non-fatal — log but don't roll back the order
-        console.error(
-          `[OrdersService] Failed to auto-create transport job for order ${order.id}:`,
+        this.logger.error(
+          `Failed to auto-create transport job for order ${order.id}:`,
           err,
         );
       }
@@ -417,8 +420,8 @@ export class OrdersService {
       try {
         await this.spawnInvoice(order);
       } catch (err) {
-        console.error(
-          `[OrdersService] Failed to auto-create invoice for order ${id}:`,
+        this.logger.error(
+          `Failed to auto-create invoice for order ${id}:`,
           err,
         );
       }
@@ -635,9 +638,7 @@ export class OrdersService {
       },
     });
 
-    console.log(
-      `[OrdersService] Invoice ${invoiceNumber} created for order ${order.id}`,
-    );
+    this.logger.log(`Invoice ${invoiceNumber} created for order ${order.id}`);
   }
 
   private async generateInvoiceNumber(): Promise<string> {
@@ -676,8 +677,8 @@ export class OrdersService {
     });
 
     if (!firstMaterial?.supplier) {
-      console.warn(
-        `[OrdersService] Could not find supplier for material ${items[0].materialId} — transport job skipped`,
+      this.logger.warn(
+        `Could not find supplier for material ${items[0].materialId} — transport job skipped`,
       );
       return;
     }
@@ -712,8 +713,8 @@ export class OrdersService {
       },
     });
 
-    console.log(
-      `[OrdersService] Transport job ${jobNumber} created for order ${orderId} (pickup: ${firstMaterial.supplier.city} → delivery: ${orderData.deliveryCity})`,
+    this.logger.log(
+      `Transport job ${jobNumber} created for order ${orderId} (pickup: ${firstMaterial.supplier.city} → delivery: ${orderData.deliveryCity})`,
     );
   }
 
@@ -779,7 +780,7 @@ export class OrdersService {
       },
     });
 
-    console.log(`[OrdersService] Disposal job ${jobNumber} created (${dto.wasteType} × ${dto.truckCount} trucks from ${dto.pickupCity})`);
+    this.logger.log(`Disposal job ${jobNumber} created (${dto.wasteType} × ${dto.truckCount} trucks from ${dto.pickupCity})`);
     return job;
   }
 
@@ -824,8 +825,8 @@ export class OrdersService {
       },
     });
 
-    console.log(
-      `[OrdersService] Freight job ${jobNumber} created ` +
+    this.logger.log(
+      `Freight job ${jobNumber} created ` +
       `(${dto.pickupCity} → ${dto.dropoffCity}, ${vehicle.label})`,
     );
     return job;

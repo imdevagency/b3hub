@@ -280,7 +280,10 @@ export default function VehiclesScreen() {
         const data = await api.vehicles.getAll(token);
         setVehicles(data);
       } catch (err) {
-        Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās ielādēt transportlīdzekļus');
+        Alert.alert(
+          'Kļūda',
+          err instanceof Error ? err.message : 'Neizdevās ielādēt transportlīdzekļus',
+        );
       } finally {
         setLoading(false);
         setRefreshing(false);
