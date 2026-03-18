@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Banknote,
+  Briefcase,
   Building2,
   CalendarClock,
   Car,
@@ -20,6 +21,7 @@ import {
   Package,
   PackagePlus,
   Receipt,
+  Search,
   Settings,
   ShoppingCart,
   ShieldCheck,
@@ -76,14 +78,14 @@ const ROLE_NAV: Record<Mode, NavItem[]> = {
     { label: 'Mani Materiāli', href: '/dashboard/materials', icon: Package },
     { label: 'Ienākošie Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
     { label: 'Ieņēmumi', href: '/dashboard/supplier/earnings', icon: Banknote },
-    { label: 'Pieprasījumu Tirgus', href: '/dashboard/quote-requests/open', icon: MessageSquare },
+    { label: 'Pieprasījumu Tirgus', href: '/dashboard/quote-requests/open', icon: Search },
     { label: 'Atsauksmes', href: '/dashboard/reviews', icon: Star },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],
   CARRIER: [
     { label: 'Informācijas Panelis', href: '/dashboard/transporter', icon: LayoutDashboard },
     { label: 'Mans Autoparks', href: '/dashboard/garage', icon: Car },
-    { label: 'Darbu Tirgus', href: '/dashboard/jobs', icon: MapPin },
+    { label: 'Darbu Tirgus', href: '/dashboard/jobs', icon: Briefcase },
     { label: 'Mani Darbi', href: '/dashboard/orders', icon: ClipboardList },
     { label: 'Ienākumi', href: '/dashboard/transporter/earnings', icon: Banknote },
     { label: 'Darba Grafiks', href: '/dashboard/schedule', icon: CalendarClock },
