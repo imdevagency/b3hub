@@ -15,6 +15,7 @@ import {
   Switch,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { useFocusEffect } from 'expo-router';
 import { Plus, Pencil, Trash2, Leaf, PackageSearch, ChevronDown, Check } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { CATEGORY_LABELS, UNIT_SHORT } from '@/lib/materials';
@@ -367,9 +368,11 @@ export default function SellerCatalog() {
     [token, user],
   );
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const openNew = () => {
     setEditing(null);

@@ -9,6 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { useFocusEffect } from 'expo-router';
 import { t } from '@/lib/translations';
 import { Check, Clock, TrendingUp, Banknote, CheckCircle2 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
@@ -212,9 +213,11 @@ export default function EarningsScreen() {
     }
   }, [token]);
 
-  useEffect(() => {
-    fetchEarnings();
-  }, [fetchEarnings]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchEarnings();
+    }, [fetchEarnings]),
+  );
 
   const heroAmount =
     period === 'today'

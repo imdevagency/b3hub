@@ -16,6 +16,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { useFocusEffect } from 'expo-router';
 import {
   TrendingUp,
   Banknote,
@@ -167,9 +168,11 @@ export default function SellerEarningsScreen() {
     [token],
   );
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const onRefresh = () => {
     setRefreshing(true);

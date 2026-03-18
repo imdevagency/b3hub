@@ -18,6 +18,7 @@ import {
   Alert,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { useFocusEffect } from 'expo-router';
 import {
   FileText,
   ChevronDown,
@@ -397,9 +398,11 @@ export default function SellerQuotesScreen() {
     [token],
   );
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);

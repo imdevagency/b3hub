@@ -14,7 +14,17 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
-import { Pencil, X, Check, LogOut, Bell, ChevronRight, Settings, MessageCircle, HelpCircle } from 'lucide-react-native';
+import {
+  Pencil,
+  X,
+  Check,
+  LogOut,
+  Bell,
+  ChevronRight,
+  Settings,
+  MessageCircle,
+  HelpCircle,
+} from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';

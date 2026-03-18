@@ -172,8 +172,7 @@ export function AddressPickerModal({ visible, title, onClose, onConfirm, initial
         );
         // Use the suggestion text directly — no need to reverse-geocode back
         const displayAddress = sug.place_name;
-        const extractedCity =
-          displayAddress.split(',').slice(-2, -1)[0]?.trim() ?? '';
+        const extractedCity = displayAddress.split(',').slice(-2, -1)[0]?.trim() ?? '';
         setAddress(displayAddress);
         setCity(extractedCity);
         setQuery(displayAddress);

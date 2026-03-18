@@ -14,6 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
@@ -375,9 +376,11 @@ export default function IncomingScreen() {
     [token],
   );
 
-  useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchOrders();
+    }, [fetchOrders]),
+  );
 
   const handleConfirm = async (id: string) => {
     if (!token) return;

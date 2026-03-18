@@ -27,7 +27,7 @@ import {
   Box,
   SlidersHorizontal,
 } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -183,10 +183,11 @@ export default function CatalogScreen() {
     [token, filterOpacity],
   );
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    loadMaterials('', 'ALL');
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadMaterials('', 'ALL');
+    }, [loadMaterials]),
+  );
 
   const onSearchChange = (text: string) => {
     setSearch(text);

@@ -14,7 +14,7 @@ import {
   Animated,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { useToast } from '@/components/ui/Toast';
@@ -159,9 +159,11 @@ export default function ActiveJobScreen() {
     }
   }, [token]);
 
-  useEffect(() => {
-    fetchActiveJob();
-  }, [fetchActiveJob]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchActiveJob();
+    }, [fetchActiveJob]),
+  );
 
   // ── Background + foreground GPS tracking ──────────────────────
   useEffect(() => {

@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { t } from '@/lib/translations';
@@ -423,10 +423,12 @@ export default function JobsScreen() {
     }
   };
 
-  // Load jobs on mount
-  useEffect(() => {
-    fetchJobs();
-  }, [fetchJobs]);
+  // Refresh jobs whenever the tab is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchJobs();
+    }, [fetchJobs]),
+  );
 
   // Today's earnings summary
   useEffect(() => {
