@@ -16,12 +16,15 @@ import {
 } from '@prisma/client';
 import { RequestingUser } from '../common/types/requesting-user.interface';
 import { EmailService } from '../email/email.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/dto/create-notification.dto';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private email: EmailService,
+    private notifications: NotificationsService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, currentUser: RequestingUser) {
@@ -145,7 +148,36 @@ export class OrdersService {
       }
     }
 
+    // Notify seller(s) of new order (fire-and-forget)
+    this.notifyOrderSellers(order.id, order.orderNumber).catch(() => null);
+
     return order;
+  }
+
+  /** Push ORDER_CREATED to every user belonging to supplier companies in this order. */
+  private async notifyOrderSellers(orderId: string, orderNumber: string) {
+    const items = await this.prisma.orderItem.findMany({
+      where: { orderId },
+      include: { material: { select: { supplierId: true } } },
+    });
+    const supplierIds = [...new Set(items.map((i) => i.material.supplierId))];
+    for (const supplierId of supplierIds) {
+      const users = await this.prisma.user.findMany({
+        where: { companyId: supplierId },
+        select: { id: true },
+      });
+      for (const user of users) {
+        this.notifications
+          .create({
+            userId: user.id,
+            type: NotificationType.ORDER_CREATED,
+            title: 'Jauns pasūtījums',
+            message: `Saņemts jauns pasūtījums #${orderNumber} jūsu materiāliem.`,
+            data: { orderId },
+          })
+          .catch(() => null);
+      }
+    }
   }
 
   async findAll(currentUser: RequestingUser, status?: OrderStatus) {
@@ -392,6 +424,33 @@ export class OrdersService {
       }
     }
 
+    // Notify buyer of status change (fire-and-forget)
+    const notifMap: Partial<
+      Record<OrderStatus, { type: NotificationType; title: string; message: string }>
+    > = {
+      [OrderStatus.CONFIRMED]: {
+        type: NotificationType.ORDER_CONFIRMED,
+        title: 'Pasūtījums apstiprināts',
+        message: `Jūsu pasūtījums #${order.orderNumber} ir apstiprināts.`,
+      },
+      [OrderStatus.DELIVERED]: {
+        type: NotificationType.ORDER_DELIVERED,
+        title: 'Pasūtījums piegādāts',
+        message: `Jūsu pasūtījums #${order.orderNumber} ir piegādāts.`,
+      },
+      [OrderStatus.CANCELLED]: {
+        type: NotificationType.ORDER_CANCELLED,
+        title: 'Pasūtījums atcelts',
+        message: `Pasūtījums #${order.orderNumber} ir atcelts.`,
+      },
+    };
+    const notif = notifMap[status];
+    if (notif) {
+      this.notifications
+        .create({ userId: order.createdById, ...notif, data: { orderId: id } })
+        .catch(() => null);
+    }
+
     return updated;
   }
 
@@ -407,10 +466,23 @@ export class OrdersService {
       );
     }
 
-    return this.prisma.order.update({
+    const updated = await this.prisma.order.update({
       where: { id },
       data: { status: OrderStatus.CANCELLED },
     });
+
+    // Notify buyer (if someone else cancelled on their behalf)
+    this.notifications
+      .create({
+        userId: order.createdById,
+        type: NotificationType.ORDER_CANCELLED,
+        title: 'Pasūtījums atcelts',
+        message: `Pasūtījums #${order.orderNumber} ir atcelts.`,
+        data: { orderId: id },
+      })
+      .catch(() => null);
+
+    return updated;
   }
 
   async getDashboardStats(currentUser: RequestingUser) {

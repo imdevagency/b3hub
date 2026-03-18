@@ -5,6 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/dto/create-notification.dto';
 import { CreateQuoteRequestDto } from './dto/create-quote-request.dto';
 import { CreateQuoteResponseDto } from './dto/create-quote-response.dto';
 import {
@@ -29,7 +31,10 @@ const INCLUDE_REQUEST = {
 
 @Injectable()
 export class QuoteRequestsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
   // ── Buyer: create request ────────────────────────────────────
   async create(dto: CreateQuoteRequestDto, userId: string) {
@@ -174,6 +179,23 @@ export class QuoteRequestsService {
       return [updReq, updResp, newOrder] as const;
     });
 
+    // Notify supplier's users that their quote was accepted (fire-and-forget)
+    const supplierUsers = await this.prisma.user.findMany({
+      where: { companyId: response.supplierId },
+      select: { id: true },
+    });
+    for (const u of supplierUsers) {
+      this.notifications
+        .create({
+          userId: u.id,
+          type: NotificationType.QUOTE_ACCEPTED,
+          title: 'Piedāvājums pieņemts!',
+          message: `Pircējs pieņēma jūsu piedāvājumu par pieprasījumu #${req.requestNumber}.`,
+          data: { requestId, orderId: order.id },
+        })
+        .catch(() => null);
+    }
+
     return order;
   }
 
@@ -219,6 +241,17 @@ export class QuoteRequestsService {
       where: { id: requestId },
       data: { status: QuoteRequestStatus.QUOTED },
     });
+
+    // Notify buyer of new quote response (fire-and-forget)
+    this.notifications
+      .create({
+        userId: req.buyerId,
+        type: NotificationType.QUOTE_RECEIVED,
+        title: 'Jauns piedāvājums saņemts',
+        message: `Saņemts jauns piedāvājums par pieprasījumu #${req.requestNumber}.`,
+        data: { requestId },
+      })
+      .catch(() => null);
 
     return resp;
   }

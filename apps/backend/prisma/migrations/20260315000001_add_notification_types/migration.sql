@@ -1,0 +1,4 @@
+-- AlterEnum
+ALTER TYPE "NotificationType" ADD VALUE 'ORDER_CANCELLED';
+ALTER TYPE "NotificationType" ADD VALUE 'QUOTE_RECEIVED';
+ALTER TYPE "NotificationType" ADD VALUE 'QUOTE_ACCEPTED';
