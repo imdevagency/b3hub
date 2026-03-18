@@ -97,7 +97,9 @@ export class ReviewsService {
       },
     });
 
-    this.logger.log(`Review ${review.id} created by user ${userId} for company ${companyId}`);
+    this.logger.log(
+      `Review ${review.id} created by user ${userId} for company ${companyId}`,
+    );
 
     // Recompute and update company average rating
     await this.recomputeRating(companyId);

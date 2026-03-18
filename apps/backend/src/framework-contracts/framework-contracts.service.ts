@@ -6,8 +6,53 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { FrameworkContractStatus, TransportJobStatus, TransportJobType } from '@prisma/client';
-import { CreateFrameworkContractDto, CreatePositionDto } from './dto/create-contract.dto';
+import {
+  FrameworkContractStatus,
+  TransportJobStatus,
+  TransportJobType,
+} from '@prisma/client';
+
+// ── Local shape types for formatContract ─────────────────────────────────────
+interface RawCallOff {
+  status: string;
+  cargoWeight?: number | null;
+}
+
+interface RawPosition {
+  id: string;
+  positionType: string;
+  description?: string | null;
+  agreedQty: number;
+  unit?: string | null;
+  unitPrice?: number | null;
+  pickupAddress?: string | null;
+  pickupCity?: string | null;
+  deliveryAddress?: string | null;
+  deliveryCity?: string | null;
+  callOffs?: RawCallOff[];
+}
+
+interface RawContract {
+  id: string;
+  contractNumber: string;
+  title: string;
+  status: string;
+  startDate?: Date | null;
+  endDate?: Date | null;
+  notes?: string | null;
+  buyer?: unknown;
+  createdBy?: unknown;
+  _count?: { callOffJobs?: number };
+  callOffJobs?: unknown[];
+  positions?: RawPosition[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+import {
+  CreateFrameworkContractDto,
+  CreatePositionDto,
+} from './dto/create-contract.dto';
 import { UpdateFrameworkContractDto } from './dto/update-contract.dto';
 import { CreateCallOffDto } from './dto/create-calloff.dto';
 
@@ -30,7 +75,11 @@ export class FrameworkContractsService {
     return `TJ-${String(count + 1).padStart(6, '0')}`;
   }
 
-  private async assertOwner(contractId: string, userId: string, companyId?: string) {
+  private async assertOwner(
+    contractId: string,
+    userId: string,
+    companyId?: string,
+  ) {
     const contract = await this.prisma.frameworkContract.findUnique({
       where: { id: contractId },
       select: { buyerId: true, createdById: true },
@@ -65,7 +114,9 @@ export class FrameworkContractsService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return contracts.map((c) => this.formatContract(c));
+    return contracts.map((c) =>
+      this.formatContract(c as unknown as RawContract),
+    );
   }
 
   async findOne(id: string, userId: string, companyId?: string) {
@@ -86,7 +137,9 @@ export class FrameworkContractsService {
                 deliveryDate: true,
                 pickupCity: true,
                 deliveryCity: true,
-                driver: { select: { id: true, firstName: true, lastName: true } },
+                driver: {
+                  select: { id: true, firstName: true, lastName: true },
+                },
               },
               orderBy: { createdAt: 'desc' },
             },
@@ -111,12 +164,18 @@ export class FrameworkContractsService {
     });
 
     if (!contract) throw new NotFoundException('Framework contract not found');
-    return this.formatContract(contract);
+    return this.formatContract(contract as unknown as RawContract);
   }
 
-  async create(dto: CreateFrameworkContractDto, userId: string, companyId?: string) {
+  async create(
+    dto: CreateFrameworkContractDto,
+    userId: string,
+    companyId?: string,
+  ) {
     if (!companyId) {
-      throw new BadRequestException('A company account is required to create a framework contract');
+      throw new BadRequestException(
+        'A company account is required to create a framework contract',
+      );
     }
 
     const contractNumber = await this.generateContractNumber();
@@ -148,15 +207,24 @@ export class FrameworkContractsService {
           : undefined,
       },
       include: {
-        positions: { include: { callOffs: { select: { id: true, cargoWeight: true, status: true } } } },
+        positions: {
+          include: {
+            callOffs: { select: { id: true, cargoWeight: true, status: true } },
+          },
+        },
         _count: { select: { callOffJobs: true } },
       },
     });
 
-    return this.formatContract(contract);
+    return this.formatContract(contract as unknown as RawContract);
   }
 
-  async update(id: string, dto: UpdateFrameworkContractDto, userId: string, companyId?: string) {
+  async update(
+    id: string,
+    dto: UpdateFrameworkContractDto,
+    userId: string,
+    companyId?: string,
+  ) {
     await this.assertOwner(id, userId, companyId);
 
     const contract = await this.prisma.frameworkContract.update({
@@ -168,17 +236,26 @@ export class FrameworkContractsService {
         ...(dto.status ? { status: dto.status } : {}),
       },
       include: {
-        positions: { include: { callOffs: { select: { id: true, cargoWeight: true, status: true } } } },
+        positions: {
+          include: {
+            callOffs: { select: { id: true, cargoWeight: true, status: true } },
+          },
+        },
         _count: { select: { callOffJobs: true } },
       },
     });
 
-    return this.formatContract(contract);
+    return this.formatContract(contract as unknown as RawContract);
   }
 
   // ── Positions ─────────────────────────────────────────────────────────────
 
-  async addPosition(contractId: string, dto: CreatePositionDto, userId: string, companyId?: string) {
+  async addPosition(
+    contractId: string,
+    dto: CreatePositionDto,
+    userId: string,
+    companyId?: string,
+  ) {
     await this.assertOwner(contractId, userId, companyId);
 
     return this.prisma.frameworkPosition.create({
@@ -197,7 +274,12 @@ export class FrameworkContractsService {
     });
   }
 
-  async removePosition(contractId: string, positionId: string, userId: string, companyId?: string) {
+  async removePosition(
+    contractId: string,
+    positionId: string,
+    userId: string,
+    companyId?: string,
+  ) {
     await this.assertOwner(contractId, userId, companyId);
 
     const position = await this.prisma.frameworkPosition.findFirst({
@@ -250,7 +332,8 @@ export class FrameworkContractsService {
     const job = await this.prisma.transportJob.create({
       data: {
         jobNumber,
-        jobType: jobTypeMap[position.positionType] ?? TransportJobType.TRANSPORT,
+        jobType:
+          jobTypeMap[position.positionType] ?? TransportJobType.TRANSPORT,
         frameworkContractId: contractId,
         frameworkPositionId: positionId,
         requestedById: userId,
@@ -288,12 +371,12 @@ export class FrameworkContractsService {
 
   // ── Formatting ────────────────────────────────────────────────────────────
 
-  private formatContract(c: any) {
-    const positions = (c.positions ?? []).map((p: any) => {
+  private formatContract(c: RawContract) {
+    const positions = (c.positions ?? []).map((p: RawPosition) => {
       const callOffs = p.callOffs ?? [];
       const consumed = callOffs
-        .filter((j: any) => j.status !== 'CANCELLED')
-        .reduce((s: number, j: any) => s + (j.cargoWeight ?? 0), 0);
+        .filter((j: RawCallOff) => j.status !== 'CANCELLED')
+        .reduce((s: number, j: RawCallOff) => s + (j.cargoWeight ?? 0), 0);
       return {
         id: p.id,
         positionType: p.positionType,
@@ -307,13 +390,20 @@ export class FrameworkContractsService {
         deliveryCity: p.deliveryCity,
         consumedQty: consumed,
         remainingQty: Math.max(0, p.agreedQty - consumed),
-        progressPct: p.agreedQty > 0 ? Math.min(100, (consumed / p.agreedQty) * 100) : 0,
+        progressPct:
+          p.agreedQty > 0 ? Math.min(100, (consumed / p.agreedQty) * 100) : 0,
         callOffs: p.callOffs ?? [],
       };
     });
 
-    const totalAgreed = positions.reduce((s: number, p: any) => s + p.agreedQty, 0);
-    const totalConsumed = positions.reduce((s: number, p: any) => s + p.consumedQty, 0);
+    const totalAgreed = positions.reduce(
+      (s: number, p: { agreedQty: number }) => s + p.agreedQty,
+      0,
+    );
+    const totalConsumed = positions.reduce(
+      (s: number, p: { consumedQty: number }) => s + p.consumedQty,
+      0,
+    );
 
     return {
       id: c.id,
@@ -328,7 +418,10 @@ export class FrameworkContractsService {
       totalCallOffs: c._count?.callOffJobs ?? 0,
       totalAgreedQty: totalAgreed,
       totalConsumedQty: totalConsumed,
-      totalProgressPct: totalAgreed > 0 ? Math.min(100, (totalConsumed / totalAgreed) * 100) : 0,
+      totalProgressPct:
+        totalAgreed > 0
+          ? Math.min(100, (totalConsumed / totalAgreed) * 100)
+          : 0,
       positions,
       recentCallOffs: c.callOffJobs ?? [],
       createdAt: c.createdAt,

@@ -45,7 +45,7 @@ export class SkipHireController {
   @Post()
   @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() dto: CreateSkipHireDto, @Request() req: any) {
+  create(@Body() dto: CreateSkipHireDto, @Request() req: Express.Request) {
     // Attach user id if logged in (optional JWT)
     const userId: string | undefined = req.user?.userId;
     return this.skipHireService.create(dto, userId);
@@ -57,7 +57,10 @@ export class SkipHireController {
    */
   @Get()
   @UseGuards(JwtAuthGuard)
-  findAll(@Request() req: any, @Query('status') status?: SkipHireStatus) {
+  findAll(
+    @Request() req: Express.Request,
+    @Query('status') status?: SkipHireStatus,
+  ) {
     const isAdmin = req.user?.userType === 'ADMIN';
     return this.skipHireService.findAll(req.user.userId, isAdmin, status);
   }
@@ -68,7 +71,7 @@ export class SkipHireController {
    */
   @Get('my')
   @UseGuards(JwtAuthGuard)
-  findMine(@Request() req: any) {
+  findMine(@Request() req: Express.Request) {
     return this.skipHireService.findByUser(req.user.userId);
   }
 
@@ -88,7 +91,7 @@ export class SkipHireController {
    */
   @Get('carrier-map')
   @UseGuards(JwtAuthGuard)
-  getCarrierMap(@Request() req: any) {
+  getCarrierMap(@Request() req: Express.Request) {
     return this.skipHireService.getCarrierMapSkips(req.user.userId);
   }
 
@@ -98,7 +101,7 @@ export class SkipHireController {
    */
   @Get(':id')
   @UseGuards(JwtAuthGuard)
-  findOne(@Param('id') id: string, @Request() req: any) {
+  findOne(@Param('id') id: string, @Request() req: Express.Request) {
     const isAdmin = req.user?.userType === 'ADMIN';
     return this.skipHireService.findOne(id, req.user.userId, isAdmin);
   }
@@ -113,7 +116,7 @@ export class SkipHireController {
   updateCarrierStatus(
     @Param('id') id: string,
     @Body() dto: UpdateSkipHireStatusDto,
-    @Request() req: any,
+    @Request() req: Express.Request,
   ) {
     return this.skipHireService.updateCarrierStatus(
       id,
@@ -138,7 +141,7 @@ export class SkipHireController {
    */
   @Post(':id/cancel')
   @UseGuards(JwtAuthGuard)
-  cancel(@Param('id') id: string, @Request() req: any) {
+  cancel(@Param('id') id: string, @Request() req: Express.Request) {
     const isAdmin = req.user?.userType === 'ADMIN';
     return this.skipHireService.cancel(id, req.user.userId, isAdmin);
   }

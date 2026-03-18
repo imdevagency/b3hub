@@ -6,7 +6,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ContainerOrderStatus, ContainerStatus, OrderStatus, OrderType, PaymentStatus } from '@prisma/client';
+import {
+  ContainerOrderStatus,
+  ContainerStatus,
+  OrderStatus,
+  OrderType,
+  PaymentStatus,
+  Prisma,
+} from '@prisma/client';
 import { CreateContainerDto } from './dto/create-container.dto';
 import { UpdateContainerDto } from './dto/update-container.dto';
 import { QueryContainersDto } from './dto/query-containers.dto';
@@ -50,7 +57,9 @@ export class ContainersService {
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: any = { status: ContainerStatus.AVAILABLE };
+    const where: Prisma.ContainerWhereInput = {
+      status: ContainerStatus.AVAILABLE,
+    };
     if (query.containerType) where.containerType = query.containerType;
     if (query.size) where.size = query.size;
     if (query.minVolume) where.volume = { gte: query.minVolume };
@@ -60,7 +69,15 @@ export class ContainersService {
       this.prisma.container.findMany({
         where,
         include: {
-          owner: { select: { id: true, name: true, logo: true, rating: true, city: true } },
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              logo: true,
+              rating: true,
+              city: true,
+            },
+          },
         },
         orderBy: { rentalPrice: 'asc' },
         skip,
@@ -87,7 +104,16 @@ export class ContainersService {
     const container = await this.prisma.container.findUnique({
       where: { id },
       include: {
-        owner: { select: { id: true, name: true, logo: true, rating: true, city: true, phone: true } },
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            logo: true,
+            rating: true,
+            city: true,
+            phone: true,
+          },
+        },
       },
     });
     if (!container) throw new NotFoundException('Container not found');
@@ -107,7 +133,9 @@ export class ContainersService {
   async remove(id: string, companyId: string) {
     const container = await this.assertOwnership(id, companyId);
     if (container.status === ContainerStatus.RENTED) {
-      throw new BadRequestException('Cannot delete a container that is currently rented');
+      throw new BadRequestException(
+        'Cannot delete a container that is currently rented',
+      );
     }
     await this.prisma.container.delete({ where: { id } });
     return { ok: true };
@@ -206,7 +234,7 @@ export class ContainersService {
 
   /** Buyer: get their own container orders */
   async findMyOrders(userId: string) {
-    const user = await this.prisma.user.findUnique({
+    const _user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { companyId: true },
     });
@@ -219,7 +247,14 @@ export class ContainersService {
             owner: { select: { id: true, name: true, phone: true } },
           },
         },
-        order: { select: { id: true, orderNumber: true, status: true, createdAt: true } },
+        order: {
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            createdAt: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -234,7 +269,9 @@ export class ContainersService {
       include: {
         container: {
           include: {
-            owner: { select: { id: true, name: true, phone: true, email: true } },
+            owner: {
+              select: { id: true, name: true, phone: true, email: true },
+            },
           },
         },
         order: true,
@@ -260,7 +297,8 @@ export class ContainersService {
         container: { select: { id: true, ownerId: true, status: true } },
       },
     });
-    if (!containerOrder) throw new NotFoundException('Container order not found');
+    if (!containerOrder)
+      throw new NotFoundException('Container order not found');
     if (containerOrder.container.ownerId !== companyId) {
       throw new ForbiddenException('You do not own this container');
     }

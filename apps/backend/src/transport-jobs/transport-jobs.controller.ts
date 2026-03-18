@@ -189,10 +189,7 @@ export class TransportJobsController {
    * Body: { weightKg?: number }
    */
   @Post(':id/loading-dock')
-  loadingDock(
-    @Param('id') id: string,
-    @Body() body: { weightKg?: number },
-  ) {
+  loadingDock(@Param('id') id: string, @Body() body: { weightKg?: number }) {
     return this.service.loadingDock(id, body.weightKg);
   }
 }

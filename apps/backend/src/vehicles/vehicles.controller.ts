@@ -27,7 +27,7 @@ export class VehiclesController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() dto: CreateVehicleDto, @Request() req: any) {
+  create(@Body() dto: CreateVehicleDto, @Request() req: Express.Request) {
     return this.vehiclesService.create(dto, req.user.userId);
   }
 
@@ -36,7 +36,7 @@ export class VehiclesController {
    * Returns all vehicles owned by the current user (or their company).
    */
   @Get()
-  findAll(@Request() req: any) {
+  findAll(@Request() req: Express.Request) {
     return this.vehiclesService.findMine(req.user.userId);
   }
 
@@ -45,7 +45,7 @@ export class VehiclesController {
    * Returns vehicle count for dashboard stats.
    */
   @Get('count')
-  count(@Request() req: any) {
+  count(@Request() req: Express.Request) {
     return this.vehiclesService
       .countMine(req.user.userId)
       .then((count) => ({ count }));
@@ -56,7 +56,7 @@ export class VehiclesController {
    * Get single vehicle (must be owner or same company).
    */
   @Get(':id')
-  findOne(@Param('id') id: string, @Request() req: any) {
+  findOne(@Param('id') id: string, @Request() req: Express.Request) {
     return this.vehiclesService.findOne(id, req.user.userId);
   }
 
@@ -68,7 +68,7 @@ export class VehiclesController {
   update(
     @Param('id') id: string,
     @Body() dto: UpdateVehicleDto,
-    @Request() req: any,
+    @Request() req: Express.Request,
   ) {
     return this.vehiclesService.update(id, dto, req.user.userId);
   }
@@ -79,7 +79,7 @@ export class VehiclesController {
    */
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string, @Request() req: any) {
+  remove(@Param('id') id: string, @Request() req: Express.Request) {
     return this.vehiclesService.remove(id, req.user.userId);
   }
 }

@@ -18,7 +18,7 @@ export interface AppNotification {
   title: string;
   message: string;
   isRead: boolean;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   createdAt: string;
 }
 

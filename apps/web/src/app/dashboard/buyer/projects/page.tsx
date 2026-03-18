@@ -9,7 +9,7 @@ import {
   type FrameworkContractStatus,
   type FrameworkPositionType,
 } from '@/lib/api';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,15 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  FolderOpen,
-  Plus,
-  ChevronRight,
-  RefreshCw,
-  Layers,
-  CalendarDays,
-  Package,
-} from 'lucide-react';
+import { Plus, ChevronRight, RefreshCw, Layers, CalendarDays, Package } from 'lucide-react';
 import Link from 'next/link';
 
 // ── helpers ───────────────────────────────────────────────────────────────────

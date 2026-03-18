@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import type { RequestingUser } from '../../common/types/requesting-user.interface.js';
 
 /**
  * Like JwtAuthGuard but never throws — if no token or invalid token is
@@ -8,8 +9,10 @@ import { AuthGuard } from '@nestjs/passport';
  */
 @Injectable()
 export class OptionalJwtAuthGuard extends AuthGuard('jwt') {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  handleRequest(_err: any, user: any) {
-    return user || undefined;
+  handleRequest(
+    _err: unknown,
+    user: RequestingUser | null,
+  ): RequestingUser | undefined {
+    return user ?? undefined;
   }
 }

@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { CreateProviderApplicationDto } from './dto/create-provider-application.dto';
+import { ApplicationStatus } from '@prisma/client';
 
 @Injectable()
 export class ProviderApplicationsService {
@@ -62,7 +63,7 @@ export class ProviderApplicationsService {
   /** Admin — list all applications, optionally filtered by status */
   async findAll(status?: string) {
     return this.prisma.providerApplication.findMany({
-      where: status ? { status: status as any } : undefined,
+      where: status ? { status: status as ApplicationStatus } : undefined,
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -115,7 +116,9 @@ export class ProviderApplicationsService {
       })
       .catch(() => null);
 
-    this.logger.log(`Provider application ${id} approved by admin ${reviewedByUserId}`);
+    this.logger.log(
+      `Provider application ${id} approved by admin ${reviewedByUserId}`,
+    );
     return updated;
   }
 
@@ -141,7 +144,9 @@ export class ProviderApplicationsService {
       .sendApplicationRejected(app.email, app.firstName ?? '', reviewNote)
       .catch(() => null);
 
-    this.logger.log(`Provider application ${id} rejected by admin ${reviewedByUserId}`);
+    this.logger.log(
+      `Provider application ${id} rejected by admin ${reviewedByUserId}`,
+    );
     return rejected;
   }
 }

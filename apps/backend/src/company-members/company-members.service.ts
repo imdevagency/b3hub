@@ -46,11 +46,15 @@ export class CompanyMembersService {
       where: { id: callerId },
       select: { companyId: true, companyRole: true, permManageTeam: true },
     });
-    if (!caller?.companyId) throw new ForbiddenException('You are not part of a company');
+    if (!caller?.companyId)
+      throw new ForbiddenException('You are not part of a company');
     const isOwner = caller.companyRole === 'OWNER';
-    if (requireOwner && !isOwner) throw new ForbiddenException('Only the company owner can do this');
+    if (requireOwner && !isOwner)
+      throw new ForbiddenException('Only the company owner can do this');
     if (!isOwner && !caller.permManageTeam) {
-      throw new ForbiddenException('You do not have permission to manage team members');
+      throw new ForbiddenException(
+        'You do not have permission to manage team members',
+      );
     }
     return { companyId: caller.companyId, isOwner };
   }
@@ -61,7 +65,8 @@ export class CompanyMembersService {
       where: { id: callerId },
       select: { companyId: true },
     });
-    if (!caller?.companyId) throw new ForbiddenException('You are not part of a company');
+    if (!caller?.companyId)
+      throw new ForbiddenException('You are not part of a company');
     return this.prisma.user.findMany({
       where: { companyId: caller.companyId },
       select: MEMBER_SELECT,
@@ -74,14 +79,20 @@ export class CompanyMembersService {
     const { companyId } = await this.assertCanManage(callerId);
 
     // Check if user with this email already exists
-    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
 
     if (existing) {
       if (existing.companyId && existing.companyId !== companyId) {
-        throw new ConflictException('This user already belongs to another company');
+        throw new ConflictException(
+          'This user already belongs to another company',
+        );
       }
       if (existing.companyId === companyId) {
-        throw new ConflictException('This user is already a member of your company');
+        throw new ConflictException(
+          'This user is already a member of your company',
+        );
       }
       // Link existing user to company
       const updated = await this.prisma.user.update({
@@ -125,19 +136,21 @@ export class CompanyMembersService {
     });
 
     // Send invite email (non-blocking)
-    const company = await this.prisma.company.findUnique({
+    const _company = await this.prisma.company.findUnique({
       where: { id: companyId },
       select: { name: true },
     });
-    this.email
-      .sendWelcome(dto.email, dto.firstName)
-      .catch(() => null);
+    this.email.sendWelcome(dto.email, dto.firstName).catch(() => null);
 
     return { member, isNew: true, tempPassword };
   }
 
   /** Update a member's permission flags */
-  async updatePermissions(callerId: string, targetUserId: string, dto: UpdatePermissionsDto) {
+  async updatePermissions(
+    callerId: string,
+    targetUserId: string,
+    dto: UpdatePermissionsDto,
+  ) {
     const { companyId } = await this.assertCanManage(callerId);
 
     // Ensure target is in same company
@@ -149,15 +162,22 @@ export class CompanyMembersService {
       throw new NotFoundException('Member not found in your company');
     }
     if (target.companyRole === 'OWNER') {
-      throw new BadRequestException('Cannot change permissions for the company owner');
+      throw new BadRequestException(
+        'Cannot change permissions for the company owner',
+      );
     }
 
     const updateData: Record<string, boolean> = {};
-    if (dto.permCreateContracts !== undefined) updateData.permCreateContracts = dto.permCreateContracts;
-    if (dto.permReleaseCallOffs !== undefined) updateData.permReleaseCallOffs = dto.permReleaseCallOffs;
-    if (dto.permManageOrders !== undefined) updateData.permManageOrders = dto.permManageOrders;
-    if (dto.permViewFinancials !== undefined) updateData.permViewFinancials = dto.permViewFinancials;
-    if (dto.permManageTeam !== undefined) updateData.permManageTeam = dto.permManageTeam;
+    if (dto.permCreateContracts !== undefined)
+      updateData.permCreateContracts = dto.permCreateContracts;
+    if (dto.permReleaseCallOffs !== undefined)
+      updateData.permReleaseCallOffs = dto.permReleaseCallOffs;
+    if (dto.permManageOrders !== undefined)
+      updateData.permManageOrders = dto.permManageOrders;
+    if (dto.permViewFinancials !== undefined)
+      updateData.permViewFinancials = dto.permViewFinancials;
+    if (dto.permManageTeam !== undefined)
+      updateData.permManageTeam = dto.permManageTeam;
     return this.prisma.user.update({
       where: { id: targetUserId },
       data: updateData,
@@ -167,7 +187,8 @@ export class CompanyMembersService {
 
   /** Remove a member from the company (sets companyId + permissions to null/false) */
   async removeMember(callerId: string, targetUserId: string) {
-    if (callerId === targetUserId) throw new BadRequestException('You cannot remove yourself');
+    if (callerId === targetUserId)
+      throw new BadRequestException('You cannot remove yourself');
     const { companyId } = await this.assertCanManage(callerId);
 
     const target = await this.prisma.user.findUnique({

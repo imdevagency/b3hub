@@ -16,6 +16,7 @@ import { UpdateMaterialDto } from './dto/update-material.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
+import { MaterialCategory } from '@prisma/client';
 
 /** Checks that the authenticated user has canSell=true (or is ADMIN) */
 function assertCanSell(user: RequestingUser) {
@@ -45,7 +46,7 @@ export class MaterialsController {
     @Query('isRecycled') isRecycled?: string,
   ) {
     return this.materialsService.findAll({
-      category: category as any,
+      category: category as MaterialCategory | undefined,
       supplierId,
       isRecycled: isRecycled === 'true',
     });

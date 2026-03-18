@@ -44,7 +44,10 @@ export class CompanyMembersController {
 
   /** Remove a member from the company */
   @Delete(':userId')
-  removeMember(@CurrentUser() user: RequestingUser, @Param('userId') targetUserId: string) {
+  removeMember(
+    @CurrentUser() user: RequestingUser,
+    @Param('userId') targetUserId: string,
+  ) {
     return this.service.removeMember(user.userId, targetUserId);
   }
 }

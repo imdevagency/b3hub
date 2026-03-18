@@ -38,11 +38,13 @@ import { CompanyMembersModule } from './company-members/company-members.module';
     }),
     // Global rate limits: 120 requests per minute per IP (generous default)
     // Individual routes can override with @Throttle()
-    ThrottlerModule.forRoot([{
-      name: 'default',
-      ttl: 60_000,
-      limit: 120,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60_000,
+        limit: 120,
+      },
+    ]),
     PrismaModule,
     SupabaseModule,
     AuthModule,

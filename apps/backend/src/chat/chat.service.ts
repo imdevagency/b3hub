@@ -1,4 +1,10 @@
-import { Injectable, Logger, ForbiddenException, NotFoundException, Optional } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ForbiddenException,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { ChatGateway } from './chat.gateway';
@@ -25,7 +31,8 @@ export class ChatService {
     if (!job) throw new NotFoundException('Transport job not found');
 
     const isDriver = job.driverId === userId;
-    const isBuyer = job.order?.createdById === userId || job.requestedById === userId;
+    const isBuyer =
+      job.order?.createdById === userId || job.requestedById === userId;
 
     if (!isDriver && !isBuyer) {
       throw new ForbiddenException('You are not a participant in this job');

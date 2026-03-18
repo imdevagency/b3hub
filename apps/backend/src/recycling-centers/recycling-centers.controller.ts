@@ -28,7 +28,10 @@ export class RecyclingCentersController {
 
   /** POST /recycling-centers — carrier registers a recycling center */
   @Post()
-  create(@Body() dto: CreateRecyclingCenterDto, @CurrentUser() user: RequestingUser) {
+  create(
+    @Body() dto: CreateRecyclingCenterDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
     // companyId is always present for carrier accounts
     return this.service.create(dto, user.companyId!);
   }
@@ -87,7 +90,10 @@ export class RecyclingCentersController {
 
   /** GET /recycling-centers/:centerId/waste-records — center's intake history */
   @Get(':centerId/waste-records')
-  getWasteRecords(@Param('centerId') centerId: string, @CurrentUser() user: RequestingUser) {
+  getWasteRecords(
+    @Param('centerId') centerId: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
     return this.service.getWasteRecords(centerId, user.companyId!);
   }
 
@@ -99,6 +105,11 @@ export class RecyclingCentersController {
     @Body() dto: UpdateWasteRecordDto,
     @CurrentUser() user: RequestingUser,
   ) {
-    return this.service.updateWasteRecord(centerId, recordId, dto, user.companyId!);
+    return this.service.updateWasteRecord(
+      centerId,
+      recordId,
+      dto,
+      user.companyId!,
+    );
   }
 }

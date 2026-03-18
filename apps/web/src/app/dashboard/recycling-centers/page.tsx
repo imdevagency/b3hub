@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { getRecyclingCenters, getMyRecyclingCenters } from '@/lib/api';
-import { Building2, MapPin, Phone, Clock, Recycle, ChevronRight } from 'lucide-react';
+import { Building2, MapPin, Recycle } from 'lucide-react';
 
 interface RecyclingCenterCompany {
   id: string;
@@ -60,7 +60,9 @@ export default function RecyclingCentersPage() {
 
     const promises: Promise<void>[] = [
       getRecyclingCenters(token).then((res) => {
-        const data = (res as unknown as RecyclingCentersResponse).data ?? (res as unknown as RecyclingCenter[]);
+        const data =
+          (res as unknown as RecyclingCentersResponse).data ??
+          (res as unknown as RecyclingCenter[]);
         setCenters(data);
       }),
     ];

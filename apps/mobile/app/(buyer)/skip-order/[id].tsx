@@ -68,7 +68,12 @@ function Row({
 }: {
   label: string;
   value: string | null | undefined;
-  icon?: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number; style?: object }>;
+  icon?: React.ComponentType<{
+    size?: number;
+    color?: string;
+    strokeWidth?: number;
+    style?: object;
+  }>;
 }) {
   if (!value) return null;
   return (
@@ -178,7 +183,10 @@ export default function SkipOrderDetailScreen() {
             haptics.success();
           } catch (err: unknown) {
             haptics.error();
-            Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās atcelt pasūtījumu');
+            Alert.alert(
+              'Kļūda',
+              err instanceof Error ? err.message : 'Neizdevās atcelt pasūtījumu',
+            );
           } finally {
             setCancelling(false);
           }

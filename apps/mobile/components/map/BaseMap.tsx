@@ -13,8 +13,17 @@ export const RIGA_CENTER: [number, number] = [24.1052, 56.9496];
 
 /** Subset of the Mapbox Camera API exposed via the cameraRef shim. */
 export interface CameraRefHandle {
-  setCamera(opts: { centerCoordinate: [number, number]; zoomLevel: number; animationDuration?: number }): void;
-  fitBounds(ne: [number, number], sw: [number, number], padding?: number | number[], animationDuration?: number): void;
+  setCamera(opts: {
+    centerCoordinate: [number, number];
+    zoomLevel: number;
+    animationDuration?: number;
+  }): void;
+  fitBounds(
+    ne: [number, number],
+    sw: [number, number],
+    padding?: number | number[],
+    animationDuration?: number,
+  ): void;
 }
 
 export interface MapPressFeature {

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import {
   getMySkipHireOrders,
   createSkipHireOrder,
@@ -27,7 +26,6 @@ import {
   Phone,
   Mail,
   User,
-  Package,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -128,7 +126,7 @@ type BookStep = 1 | 2 | 3;
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function SkipHirePage() {
-  const { user, token, isLoading } = useAuth();
+  const { token, isLoading } = useAuth();
   const router = useRouter();
 
   const [tab, setTab] = useState<'orders' | 'new'>('orders');

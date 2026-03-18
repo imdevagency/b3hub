@@ -63,7 +63,9 @@ export function AddressAutocomplete({
   // Keep stable refs for callbacks so the effect doesn't re-run on every render
   const onChangeRef = useRef(onChange);
   const onSelectRef = useRef(onSelect);
+  // eslint-disable-next-line react-hooks/refs
   onChangeRef.current = onChange;
+  // eslint-disable-next-line react-hooks/refs
   onSelectRef.current = onSelect;
 
   useEffect(() => {
@@ -110,7 +112,6 @@ export function AddressAutocomplete({
       });
     });
     // intentionally run once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

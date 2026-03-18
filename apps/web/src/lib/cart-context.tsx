@@ -37,10 +37,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LS_KEY);
-      if (raw) setItems(JSON.parse(raw));
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (raw) setItems(JSON.parse(raw) as CartItem[]);
     } catch {
       /* ignore */
     }
+
     setHydrated(true);
   }, []);
 

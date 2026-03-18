@@ -108,14 +108,12 @@ export function AnimatedTabBar({
   // Guard: bail out safely if the navigator hasn't fully initialised yet
   if (!state || !navigation || !descriptors) return null;
 
-  const visibleRoutes = state.routes.filter(
-    (r: Route<string>) => {
-      const opts = descriptors[r.key]?.options;
-      // expo-router converts href:null → tabBarButton: () => null in descriptor options
-      if (typeof opts?.tabBarButton === 'function') return false;
-      return true;
-    },
-  );
+  const visibleRoutes = state.routes.filter((r: Route<string>) => {
+    const opts = descriptors[r.key]?.options;
+    // expo-router converts href:null → tabBarButton: () => null in descriptor options
+    if (typeof opts?.tabBarButton === 'function') return false;
+    return true;
+  });
 
   const handlePress = useCallback(
     (route: Route<string>, isFocused: boolean) => {
@@ -143,26 +141,22 @@ export function AnimatedTabBar({
     <View style={[styles.container, { paddingBottom: bottomInset }]}>
       {/* Tab items — dot indicator is per-item, no sliding bar */}
       <View style={styles.row}>
-        {visibleRoutes.map(
-          (route: Route<string>) => {
-            const fullIdx = state.routes.findIndex(
-              (r: Route<string>) => r.key === route.key,
-            );
-            const isFocused = state.index === fullIdx;
-            return (
-              <TabItem
-                key={route.key}
-                route={route}
-                isFocused={isFocused}
-                descriptor={descriptors[route.key]}
-                onPress={() => handlePress(route, isFocused)}
-                onLongPress={() => handleLongPress(route)}
-                activeTint={activeTint}
-                inactiveTint={inactiveTint}
-              />
-            );
-          },
-        )}
+        {visibleRoutes.map((route: Route<string>) => {
+          const fullIdx = state.routes.findIndex((r: Route<string>) => r.key === route.key);
+          const isFocused = state.index === fullIdx;
+          return (
+            <TabItem
+              key={route.key}
+              route={route}
+              isFocused={isFocused}
+              descriptor={descriptors[route.key]}
+              onPress={() => handlePress(route, isFocused)}
+              onLongPress={() => handleLongPress(route)}
+              activeTint={activeTint}
+              inactiveTint={inactiveTint}
+            />
+          );
+        })}
       </View>
     </View>
   );

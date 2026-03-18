@@ -9,7 +9,9 @@ export class SupabaseService {
 
   constructor(private readonly config: ConfigService) {
     const url = this.config.get<string>('SUPABASE_URL');
-    const key = this.config.get<string>('SUPABASE_KEY') ?? this.config.get<string>('SUPABASE_ANON_KEY');
+    const key =
+      this.config.get<string>('SUPABASE_KEY') ??
+      this.config.get<string>('SUPABASE_ANON_KEY');
     if (url && key) {
       this.supabase = createClient(url, key);
     } else {
@@ -38,7 +40,7 @@ export class SupabaseService {
     return data;
   }
 
-  async getPublicUrl(bucket: string, path: string) {
+  getPublicUrl(bucket: string, path: string) {
     const { data } = this.getClient().storage.from(bucket).getPublicUrl(path);
 
     return data.publicUrl;

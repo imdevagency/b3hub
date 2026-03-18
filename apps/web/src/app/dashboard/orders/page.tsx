@@ -1,20 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import {
-  getMyOrders,
-  getMySkipHireOrders,
-  getMyTransportJobs,
   updateTransportJobStatus,
   submitDeliveryProof,
   confirmOrder,
   cancelOrder,
-  type ApiOrder,
-  type SkipHireOrder,
   type ApiTransportJob,
 } from '@/lib/api';
 import { useActiveTransportJob } from '@/hooks/use-active-transport-job';

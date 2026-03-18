@@ -172,11 +172,11 @@ export class AuthService {
       user.company?.id,
       user.companyRole ?? undefined,
       {
-        permCreateContracts: (user as any).permCreateContracts ?? false,
-        permReleaseCallOffs: (user as any).permReleaseCallOffs ?? false,
-        permManageOrders: (user as any).permManageOrders ?? false,
-        permViewFinancials: (user as any).permViewFinancials ?? false,
-        permManageTeam: (user as any).permManageTeam ?? false,
+        permCreateContracts: user.permCreateContracts ?? false,
+        permReleaseCallOffs: user.permReleaseCallOffs ?? false,
+        permManageOrders: user.permManageOrders ?? false,
+        permViewFinancials: user.permViewFinancials ?? false,
+        permManageTeam: user.permManageTeam ?? false,
       },
     );
 
@@ -296,7 +296,9 @@ export class AuthService {
     });
   }
 
-  async forgotPassword(email: string): Promise<{ ok: boolean; _devResetUrl?: string }> {
+  async forgotPassword(
+    email: string,
+  ): Promise<{ ok: boolean; _devResetUrl?: string }> {
     const user = await this.prisma.user.findUnique({ where: { email } });
     // Always return ok to prevent user enumeration
     if (!user) return { ok: true };
@@ -311,7 +313,9 @@ export class AuthService {
     });
 
     // Send password reset email
-    this.email.sendPasswordReset(user.email ?? '', user.firstName ?? '', rawToken).catch(() => null);
+    this.email
+      .sendPasswordReset(user.email ?? '', user.firstName ?? '', rawToken)
+      .catch(() => null);
 
     // Surface raw token in dev for testing without a real email
     const isDev = process.env.NODE_ENV !== 'production';
@@ -323,7 +327,10 @@ export class AuthService {
     };
   }
 
-  async resetPassword(token: string, newPassword: string): Promise<{ ok: boolean }> {
+  async resetPassword(
+    token: string,
+    newPassword: string,
+  ): Promise<{ ok: boolean }> {
     const hashed = crypto.createHash('sha256').update(token).digest('hex');
 
     const user = await this.prisma.user.findFirst({
@@ -350,7 +357,11 @@ export class AuthService {
     return { ok: true };
   }
 
-  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -358,30 +369,58 @@ export class AuthService {
     if (!valid) throw new BadRequestException('Esošā parole nav pareiza');
 
     const hashed = await bcrypt.hash(newPassword, 10);
-    await this.prisma.user.update({ where: { id: userId }, data: { password: hashed } });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashed },
+    });
     return { ok: true };
   }
 
-  async updateNotificationPrefs(userId: string, prefs: { notifPush?: boolean; notifOrderUpdates?: boolean; notifJobAlerts?: boolean; notifMarketing?: boolean }) {
+  async updateNotificationPrefs(
+    userId: string,
+    prefs: {
+      notifPush?: boolean;
+      notifOrderUpdates?: boolean;
+      notifJobAlerts?: boolean;
+      notifMarketing?: boolean;
+    },
+  ) {
     return this.prisma.user.update({
       where: { id: userId },
       data: {
         ...(prefs.notifPush !== undefined && { notifPush: prefs.notifPush }),
-        ...(prefs.notifOrderUpdates !== undefined && { notifOrderUpdates: prefs.notifOrderUpdates }),
-        ...(prefs.notifJobAlerts !== undefined && { notifJobAlerts: prefs.notifJobAlerts }),
-        ...(prefs.notifMarketing !== undefined && { notifMarketing: prefs.notifMarketing }),
+        ...(prefs.notifOrderUpdates !== undefined && {
+          notifOrderUpdates: prefs.notifOrderUpdates,
+        }),
+        ...(prefs.notifJobAlerts !== undefined && {
+          notifJobAlerts: prefs.notifJobAlerts,
+        }),
+        ...(prefs.notifMarketing !== undefined && {
+          notifMarketing: prefs.notifMarketing,
+        }),
       },
-      select: { notifPush: true, notifOrderUpdates: true, notifJobAlerts: true, notifMarketing: true },
+      select: {
+        notifPush: true,
+        notifOrderUpdates: true,
+        notifJobAlerts: true,
+        notifMarketing: true,
+      },
     });
   }
 
   // ── Refresh token helpers ───────────────────────────────────────────────────
 
   /** Issue a new opaque refresh token, persist its hash, return the raw value. */
-  private async issueRefreshToken(userId: string): Promise<{ rawToken: string }> {
-    const rawToken = crypto.randomBytes(REFRESH_TOKEN_BYTES).toString('base64url');
+  private async issueRefreshToken(
+    userId: string,
+  ): Promise<{ rawToken: string }> {
+    const rawToken = crypto
+      .randomBytes(REFRESH_TOKEN_BYTES)
+      .toString('base64url');
     const hashed = crypto.createHash('sha256').update(rawToken).digest('hex');
-    const expiry = new Date(Date.now() + REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000);
+    const expiry = new Date(
+      Date.now() + REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
+    );
 
     await this.prisma.$executeRaw`
       UPDATE users
@@ -394,24 +433,29 @@ export class AuthService {
 
   /** Validate a raw refresh token and return a new access token + rolling refresh token. */
   async refreshAccessToken(rawRefreshToken: string) {
-    const hashed = crypto.createHash('sha256').update(rawRefreshToken).digest('hex');
+    const hashed = crypto
+      .createHash('sha256')
+      .update(rawRefreshToken)
+      .digest('hex');
 
-    const rows = await this.prisma.$queryRaw<{
-      id: string;
-      email: string | null;
-      userType: string;
-      isCompany: boolean;
-      canSell: boolean;
-      canTransport: boolean;
-      companyId: string | null;
-      companyRole: string | null;
-      permCreateContracts: boolean;
-      permReleaseCallOffs: boolean;
-      permManageOrders: boolean;
-      permViewFinancials: boolean;
-      permManageTeam: boolean;
-      refreshTokenExpiry: Date | null;
-    }[]>`
+    const rows = await this.prisma.$queryRaw<
+      {
+        id: string;
+        email: string | null;
+        userType: string;
+        isCompany: boolean;
+        canSell: boolean;
+        canTransport: boolean;
+        companyId: string | null;
+        companyRole: string | null;
+        permCreateContracts: boolean;
+        permReleaseCallOffs: boolean;
+        permManageOrders: boolean;
+        permViewFinancials: boolean;
+        permManageTeam: boolean;
+        refreshTokenExpiry: Date | null;
+      }[]
+    >`
       SELECT id, email, "userType", "isCompany", "canSell", "canTransport",
              "companyId", "companyRole",
              "permCreateContracts", "permReleaseCallOffs", "permManageOrders",

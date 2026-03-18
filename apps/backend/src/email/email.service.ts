@@ -14,8 +14,7 @@ export class EmailService {
     const apiKey = this.config.get<string>('RESEND_API_KEY');
     this.from =
       this.config.get<string>('EMAIL_FROM') ?? 'B3Hub <noreply@b3hub.lv>';
-    this.webUrl =
-      this.config.get<string>('WEB_URL') ?? 'https://b3hub.lv';
+    this.webUrl = this.config.get<string>('WEB_URL') ?? 'https://b3hub.lv';
     this.enabled = !!apiKey;
 
     if (this.enabled) {
@@ -61,7 +60,8 @@ export class EmailService {
           <p>Ja šo pieprasījumu neveicāt jūs, varat ignorēt šo e-pastu.</p>
         `,
         cta: { label: 'Atjaunot paroli', url: resetUrl },
-        footer: 'Šī saite ir derīga vienu stundu. Pēc tās termiņa beigām pieprasiet jaunu atiestatīšanu.',
+        footer:
+          'Šī saite ir derīga vienu stundu. Pēc tās termiņa beigām pieprasiet jaunu atiestatīšanu.',
       }),
     });
   }
@@ -78,7 +78,10 @@ export class EmailService {
           <p>Paldies par jūsu pieteikumu kļūt par B3Hub piegādātāju vai pārvadātāju. Mūsu komanda to izskatīs tuvākajā laikā.</p>
           <p>Mēs jūs informēsim pa e-pastu, tiklīdz lēmums būs pieņemts.</p>
         `,
-        cta: { label: 'Skatīt pieteikuma statusu', url: `${this.webUrl}/dashboard` },
+        cta: {
+          label: 'Skatīt pieteikuma statusu',
+          url: `${this.webUrl}/dashboard`,
+        },
       }),
     });
   }
@@ -142,7 +145,11 @@ export class EmailService {
       currency: string;
       deliveryAddress?: string;
       deliveryCity?: string;
-      items: Array<{ quantity: number; unit: string; material: { name: string } }>;
+      items: Array<{
+        quantity: number;
+        unit: string;
+        material: { name: string };
+      }>;
     },
   ) {
     const itemRows = order.items
@@ -183,7 +190,10 @@ export class EmailService {
             Kopā: ${order.currency} ${order.total.toFixed(2)}
           </p>
         `,
-        cta: { label: 'Skatīt pasūtījumu', url: `${this.webUrl}/dashboard/orders` },
+        cta: {
+          label: 'Skatīt pasūtījumu',
+          url: `${this.webUrl}/dashboard/orders`,
+        },
       }),
     });
   }
@@ -193,7 +203,9 @@ export class EmailService {
   private async send(opts: { to: string; subject: string; html: string }) {
     if (!this.enabled || !this.resend) {
       // Dev mode: log the email to console so developers can see it
-      this.logger.debug(`[DEV EMAIL] To: ${opts.to} | Subject: ${opts.subject}`);
+      this.logger.debug(
+        `[DEV EMAIL] To: ${opts.to} | Subject: ${opts.subject}`,
+      );
       return;
     }
 
@@ -206,7 +218,9 @@ export class EmailService {
       });
 
       if (error) {
-        this.logger.error(`Failed to send email to ${opts.to}: ${error.message}`);
+        this.logger.error(
+          `Failed to send email to ${opts.to}: ${error.message}`,
+        );
       } else {
         this.logger.log(`Email sent to ${opts.to}: ${opts.subject}`);
       }

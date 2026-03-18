@@ -27,7 +27,10 @@ export class NotificationsService {
   }
 
   /** Notify multiple users at once (e.g. broadcast to all drivers). */
-  async createForMany(userIds: string[], dto: Omit<CreateNotificationDto, 'userId'>) {
+  async createForMany(
+    userIds: string[],
+    dto: Omit<CreateNotificationDto, 'userId'>,
+  ) {
     await Promise.all(userIds.map((userId) => this.create({ ...dto, userId })));
   }
 
@@ -41,18 +44,25 @@ export class NotificationsService {
 
     const res = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
       body: JSON.stringify({ to: pushToken, sound: 'default', title, body }),
     });
 
     if (!res.ok) {
-      this.logger.warn(`Expo push HTTP error for user ${userId}: ${res.status}`);
+      this.logger.warn(
+        `Expo push HTTP error for user ${userId}: ${res.status}`,
+      );
       return;
     }
 
     // Parse the ticket to detect stale tokens and clean up the DB
     try {
-      const json = await res.json() as { data?: { status?: string; details?: { error?: string } } };
+      const json = (await res.json()) as {
+        data?: { status?: string; details?: { error?: string } };
+      };
       const ticket = json?.data;
       if (ticket?.status === 'error') {
         const errCode = ticket?.details?.error;

@@ -138,7 +138,12 @@ function InfoRow({
   label,
   value,
 }: {
-  icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number; style?: object }>;
+  icon: React.ComponentType<{
+    size?: number;
+    color?: string;
+    strokeWidth?: number;
+    style?: object;
+  }>;
   label: string;
   value: string | null | undefined;
 }) {

@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { UserStatus, UserType } from '@prisma/client';
 
 @Injectable()
 export class AdminService {
@@ -55,8 +56,10 @@ export class AdminService {
         ...(data.canSkipHire !== undefined && {
           canSkipHire: data.canSkipHire,
         }),
-        ...(data.status !== undefined && { status: data.status as any }),
-        ...(data.userType !== undefined && { userType: data.userType as any }),
+        ...(data.status !== undefined && { status: data.status as UserStatus }),
+        ...(data.userType !== undefined && {
+          userType: data.userType as UserType,
+        }),
       },
       select: this.userSelect,
     });

@@ -1,4 +1,12 @@
-import { Controller, Post, Body, Get, Patch, UseGuards, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Patch,
+  UseGuards,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -63,7 +71,10 @@ export class AuthController {
 
   @Patch('me')
   @UseGuards(JwtAuthGuard)
-  async updateProfile(@CurrentUser() user: RequestingUser, @Body() dto: UpdateProfileDto) {
+  async updateProfile(
+    @CurrentUser() user: RequestingUser,
+    @Body() dto: UpdateProfileDto,
+  ) {
     return this.authService.updateProfile(user.userId, dto);
   }
 
@@ -79,13 +90,23 @@ export class AuthController {
 
   @Patch('change-password')
   @UseGuards(JwtAuthGuard)
-  async changePassword(@CurrentUser() user: RequestingUser, @Body() dto: ChangePasswordDto) {
-    return this.authService.changePassword(user.userId, dto.currentPassword, dto.newPassword);
+  async changePassword(
+    @CurrentUser() user: RequestingUser,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(
+      user.userId,
+      dto.currentPassword,
+      dto.newPassword,
+    );
   }
 
   @Patch('notifications')
   @UseGuards(JwtAuthGuard)
-  async updateNotificationPrefs(@CurrentUser() user: RequestingUser, @Body() dto: UpdateNotificationPrefsDto) {
+  async updateNotificationPrefs(
+    @CurrentUser() user: RequestingUser,
+    @Body() dto: UpdateNotificationPrefsDto,
+  ) {
     return this.authService.updateNotificationPrefs(user.userId, dto);
   }
 }

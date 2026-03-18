@@ -1,25 +1,44 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { PaymentStatus } from '@prisma/client';
+import { PaymentStatus, Prisma } from '@prisma/client';
 
 type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PAID' | 'OVERDUE' | 'CANCELLED';
 
+type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
+  include: {
+    order: {
+      select: {
+        id: true;
+        orderNumber: true;
+        orderType: true;
+        status: true;
+        deliveryAddress: true;
+        deliveryCity: true;
+      };
+    };
+  };
+}>;
+
 function mapPaymentStatus(ps: PaymentStatus): InvoiceStatus {
   switch (ps) {
-    case PaymentStatus.PAID: return 'PAID';
-    case PaymentStatus.FAILED: return 'OVERDUE';
-    case PaymentStatus.REFUNDED: return 'CANCELLED';
-    default: return 'ISSUED'; // PENDING, PARTIALLY_PAID
+    case PaymentStatus.PAID:
+      return 'PAID';
+    case PaymentStatus.FAILED:
+      return 'OVERDUE';
+    case PaymentStatus.REFUNDED:
+      return 'CANCELLED';
+    default:
+      return 'ISSUED'; // PENDING, PARTIALLY_PAID
   }
 }
 
-function mapInvoice(inv: any) {
+function mapInvoice(inv: InvoiceWithRelations) {
   return {
     ...inv,
     status: mapPaymentStatus(inv.paymentStatus),
     vatAmount: inv.tax,
-    issuedAt: inv.createdAt?.toISOString?.() ?? inv.createdAt ?? null,
-    paidAt: inv.paidDate?.toISOString?.() ?? inv.paidDate ?? null,
+    issuedAt: inv.createdAt.toISOString(),
+    paidAt: inv.paidDate?.toISOString() ?? null,
   };
 }
 

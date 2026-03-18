@@ -10,14 +10,14 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
 import { CreateSkipHireDto } from './dto/create-skip-hire.dto';
 import { UpdateSkipHireStatusDto } from './dto/update-skip-hire-status.dto';
-import { CompanyType, SkipHireStatus, SkipSize } from '@prisma/client';
+import { CompanyType, SkipHireStatus, SkipSize, Prisma } from '@prisma/client';
 
 const SKIP_STATUS_LABEL: Partial<Record<SkipHireStatus, string>> = {
-  [SkipHireStatus.CONFIRMED]:  'Konteiners apstiprināts',
-  [SkipHireStatus.DELIVERED]:  'Konteiners piegādāts',
-  [SkipHireStatus.COLLECTED]:  'Konteiners savākts',
-  [SkipHireStatus.CANCELLED]:  'Pasūtījums atcelts',
-  [SkipHireStatus.COMPLETED]:  'Pasūtījums pabeigts',
+  [SkipHireStatus.CONFIRMED]: 'Konteiners apstiprināts',
+  [SkipHireStatus.DELIVERED]: 'Konteiners piegādāts',
+  [SkipHireStatus.COLLECTED]: 'Konteiners savākts',
+  [SkipHireStatus.CANCELLED]: 'Pasūtījums atcelts',
+  [SkipHireStatus.COMPLETED]: 'Pasūtījums pabeigts',
 };
 
 // Fallback prices used when no carrier is selected (direct/admin orders)
@@ -52,7 +52,7 @@ export class SkipHireService {
   async create(dto: CreateSkipHireDto, userId?: string) {
     const orderNumber = await this.generateOrderNumber();
     let price: number;
-    let carrierId: string | null = dto.carrierId ?? null;
+    const carrierId: string | null = dto.carrierId ?? null;
 
     if (carrierId) {
       // Re-derive price server-side from carrier’s own pricing (never trust client price)
@@ -97,7 +97,9 @@ export class SkipHireService {
         carrierId,
       },
     });
-    this.logger.log(`Skip hire order ${order.orderNumber} created (${dto.skipSize}, ${dto.location})`);
+    this.logger.log(
+      `Skip hire order ${order.orderNumber} created (${dto.skipSize}, ${dto.location})`,
+    );
     if (userId) {
       this.notifications
         .create({
@@ -174,7 +176,7 @@ export class SkipHireService {
 
   // ── List all (admin) or own orders (user) ─────────────────────
   async findAll(userId: string, isAdmin: boolean, status?: SkipHireStatus) {
-    const where: any = {};
+    const where: Prisma.SkipHireOrderWhereInput = {};
     if (!isAdmin) where.userId = userId;
     if (status) where.status = status;
     return this.prisma.skipHireOrder.findMany({

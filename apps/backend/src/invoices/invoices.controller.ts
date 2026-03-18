@@ -32,7 +32,10 @@ export class InvoicesController {
 
   /** GET /invoices/order/:orderId */
   @Get('order/:orderId')
-  getByOrder(@Param('orderId') orderId: string, @CurrentUser() user: RequestingUser) {
+  getByOrder(
+    @Param('orderId') orderId: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
     return this.invoicesService.getByOrder(orderId, user.userId);
   }
 

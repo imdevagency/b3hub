@@ -26,8 +26,6 @@ import {
   assignTransportJob,
   createTransportJob,
   type ApiTransportJob,
-  type Vehicle,
-  type ApiDriver,
   type CreateTransportJobInput,
 } from '@/lib/api';
 import { useAvailableJobs } from '@/hooks/use-available-jobs';

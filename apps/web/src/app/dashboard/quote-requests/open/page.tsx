@@ -255,7 +255,9 @@ function OpenRequestCard({ request, onRespond }: OpenRequestCardProps) {
             {request.deliveryAddress}, {request.deliveryCity}
           </div>
 
-          {request.notes && <p className="text-xs text-slate-500 mt-1 italic">"{request.notes}"</p>}
+          {request.notes && (
+            <p className="text-xs text-slate-500 mt-1 italic">&quot;{request.notes}&quot;</p>
+          )}
 
           <p className="text-[11px] text-muted-foreground/60 mt-2">
             Pieprasīts {fmtDate(request.createdAt)}

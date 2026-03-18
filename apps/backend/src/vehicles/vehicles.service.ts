@@ -8,7 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
-import { VehicleStatus } from '@prisma/client';
+import { VehicleStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class VehiclesService {
@@ -53,7 +53,9 @@ export class VehiclesService {
         companyId: user?.companyId ?? undefined,
       },
     });
-    this.logger.log(`Vehicle ${vehicle.licensePlate} registered by user ${userId}`);
+    this.logger.log(
+      `Vehicle ${vehicle.licensePlate} registered by user ${userId}`,
+    );
     return vehicle;
   }
 
@@ -65,7 +67,7 @@ export class VehiclesService {
       select: { companyId: true },
     });
 
-    const where: any = user?.companyId
+    const where: Prisma.VehicleWhereInput = user?.companyId
       ? { OR: [{ ownerId: userId }, { companyId: user.companyId }] }
       : { ownerId: userId };
 
@@ -121,7 +123,7 @@ export class VehiclesService {
       where: { id: userId },
       select: { companyId: true },
     });
-    const where: any = user?.companyId
+    const where: Prisma.VehicleWhereInput = user?.companyId
       ? { OR: [{ ownerId: userId }, { companyId: user.companyId }] }
       : { ownerId: userId };
     return this.prisma.vehicle.count({ where });
@@ -129,7 +131,10 @@ export class VehiclesService {
 
   // ── Helpers ────────────────────────────────────────────────────
 
-  private async assertAccess(vehicle: any, userId: string) {
+  private async assertAccess(
+    vehicle: { ownerId: string; companyId: string | null },
+    userId: string,
+  ) {
     if (vehicle.ownerId === userId) return;
 
     // Check if same company

@@ -24,19 +24,28 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
-  create(@Body() createOrderDto: CreateOrderDto, @CurrentUser() user: RequestingUser) {
+  create(
+    @Body() createOrderDto: CreateOrderDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
     return this.ordersService.create(createOrderDto, user);
   }
 
   /** POST /orders/disposal — buyer requests waste collection (creates WASTE_COLLECTION transport job) */
   @Post('disposal')
-  createDisposal(@Body() dto: CreateDisposalOrderDto, @CurrentUser() user: RequestingUser) {
+  createDisposal(
+    @Body() dto: CreateDisposalOrderDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
     return this.ordersService.createDisposalOrder(dto, user.userId);
   }
 
   /** POST /orders/freight — buyer requests point-to-point freight transport (creates TRANSPORT job) */
   @Post('freight')
-  createFreight(@Body() dto: CreateFreightOrderDto, @CurrentUser() user: RequestingUser) {
+  createFreight(
+    @Body() dto: CreateFreightOrderDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
     return this.ordersService.createFreightOrder(dto, user.userId);
   }
 
@@ -46,7 +55,10 @@ export class OrdersController {
   }
 
   @Get()
-  findAll(@CurrentUser() user: RequestingUser, @Query('status') status?: OrderStatus) {
+  findAll(
+    @CurrentUser() user: RequestingUser,
+    @Query('status') status?: OrderStatus,
+  ) {
     return this.ordersService.findAll(user, status);
   }
 

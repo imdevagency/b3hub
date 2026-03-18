@@ -1,4 +1,10 @@
-import { IsDateString, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class CreateCallOffDto {
   /** Actual quantity for this call-off (tonnes / m3 / loads) */

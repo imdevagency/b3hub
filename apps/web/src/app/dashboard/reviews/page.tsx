@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { getCompanyReviews } from '@/lib/api';
-import { Star, StarHalf, User } from 'lucide-react';
+import { Star, User } from 'lucide-react';
 
 interface Review {
   id: string;
@@ -37,6 +37,7 @@ export default function ReviewsPage() {
 
   useEffect(() => {
     if (!token || !companyId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
     }

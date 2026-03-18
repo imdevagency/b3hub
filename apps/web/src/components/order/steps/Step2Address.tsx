@@ -60,23 +60,11 @@ export function Step2Address({ value, onAddressChange, onNext, onBack }: Props) 
   // ── Google Places Autocomplete (if API key is available) ────────────────────
   const googleKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
 
-  useEffect(() => {
-    if (!googleKey) return;
-    // Load Google Maps script once
-    if (document.getElementById('gmap-script')) {
-      initAutocomplete();
-      return;
-    }
-    const script = document.createElement('script');
-    script.id = 'gmap-script';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${googleKey}&libraries=places&language=lv`;
-    script.async = true;
-    script.onload = initAutocomplete;
-    document.head.appendChild(script);
-  }, [googleKey]);
-
+  // Declared before the effect below to satisfy no-use-before-define
   function initAutocomplete() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (!googleInputRef.current || !(window as any).google) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const ac = new (window as any).google.maps.places.Autocomplete(googleInputRef.current, {
       types: ['address'],
       componentRestrictions: { country: 'lv' },
@@ -94,6 +82,21 @@ export function Step2Address({ value, onAddressChange, onNext, onBack }: Props) 
     });
     autocompleteRef.current = ac;
   }
+
+  useEffect(() => {
+    if (!googleKey) return;
+    // Load Google Maps script once
+    if (document.getElementById('gmap-script')) {
+      initAutocomplete();
+      return;
+    }
+    const script = document.createElement('script');
+    script.id = 'gmap-script';
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${googleKey}&libraries=places&language=lv`;
+    script.async = true;
+    script.onload = initAutocomplete;
+    document.head.appendChild(script);
+  }, [googleKey]);
 
   // ── Fallback local suggestions ───────────────────────────────────────────────
   function handleInputChange(val: string) {

@@ -37,7 +37,10 @@ export class DriverScheduleController {
    * Body: { isOnline: boolean }
    */
   @Patch('online')
-  toggleOnline(@CurrentUser() user: RequestingUser, @Body() dto: ToggleOnlineDto) {
+  toggleOnline(
+    @CurrentUser() user: RequestingUser,
+    @Body() dto: ToggleOnlineDto,
+  ) {
     return this.service.toggleOnline(user.userId, dto);
   }
 
@@ -47,7 +50,10 @@ export class DriverScheduleController {
    * Sends the full array of 7 days (or any subset).
    */
   @Post()
-  updateSchedule(@CurrentUser() user: RequestingUser, @Body() dto: UpdateScheduleDto) {
+  updateSchedule(
+    @CurrentUser() user: RequestingUser,
+    @Body() dto: UpdateScheduleDto,
+  ) {
     return this.service.updateSchedule(user.userId, dto);
   }
 

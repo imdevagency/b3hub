@@ -42,9 +42,14 @@ export class FrameworkContractsController {
 
   /** POST /framework-contracts — create contract (OWNER or permCreateContracts) */
   @Post()
-  create(@Body() dto: CreateFrameworkContractDto, @CurrentUser() user: RequestingUser) {
+  create(
+    @Body() dto: CreateFrameworkContractDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
     if (!isOwnerOrSolo(user) && !user.permCreateContracts) {
-      throw new ForbiddenException('You do not have permission to create framework contracts');
+      throw new ForbiddenException(
+        'You do not have permission to create framework contracts',
+      );
     }
     return this.service.create(dto, user.userId, user.companyId);
   }
@@ -57,7 +62,9 @@ export class FrameworkContractsController {
     @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrSolo(user) && !user.permCreateContracts) {
-      throw new ForbiddenException('You do not have permission to update framework contracts');
+      throw new ForbiddenException(
+        'You do not have permission to update framework contracts',
+      );
     }
     return this.service.update(id, dto, user.userId, user.companyId);
   }
@@ -70,7 +77,9 @@ export class FrameworkContractsController {
     @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrSolo(user) && !user.permCreateContracts) {
-      throw new ForbiddenException('You do not have permission to manage contract positions');
+      throw new ForbiddenException(
+        'You do not have permission to manage contract positions',
+      );
     }
     return this.service.addPosition(id, dto, user.userId, user.companyId);
   }
@@ -83,7 +92,9 @@ export class FrameworkContractsController {
     @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrSolo(user) && !user.permCreateContracts) {
-      throw new ForbiddenException('You do not have permission to manage contract positions');
+      throw new ForbiddenException(
+        'You do not have permission to manage contract positions',
+      );
     }
     return this.service.removePosition(id, posId, user.userId, user.companyId);
   }
@@ -97,8 +108,16 @@ export class FrameworkContractsController {
     @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrSolo(user) && !user.permReleaseCallOffs) {
-      throw new ForbiddenException('You do not have permission to release call-offs');
+      throw new ForbiddenException(
+        'You do not have permission to release call-offs',
+      );
     }
-    return this.service.createCallOff(id, posId, dto, user.userId, user.companyId);
+    return this.service.createCallOff(
+      id,
+      posId,
+      dto,
+      user.userId,
+      user.companyId,
+    );
   }
 }

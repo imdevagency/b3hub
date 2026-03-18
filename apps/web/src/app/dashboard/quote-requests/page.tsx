@@ -340,7 +340,7 @@ function RequestCard({ request, onAccept }: RequestCardProps) {
         <div className="border-t border-slate-100">
           {request.notes && (
             <div className="px-5 py-3 bg-slate-50/50 text-xs text-slate-600 italic">
-              "{request.notes}"
+              &quot;{request.notes}&quot;
             </div>
           )}
 
@@ -392,7 +392,7 @@ function ResponseRow({ response, canAccept, accepting, onAccept }: ResponseRowPr
           {response.validUntil && ` · Derīgs līdz ${fmtDate(response.validUntil)}`}
         </p>
         {response.notes && (
-          <p className="text-xs text-slate-500 mt-0.5 italic">"{response.notes}"</p>
+          <p className="text-xs text-slate-500 mt-0.5 italic">&quot;{response.notes}&quot;</p>
         )}
       </div>
       <div className="shrink-0">

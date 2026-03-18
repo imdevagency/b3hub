@@ -27,7 +27,7 @@ export class ProviderApplicationsController {
   /** GET /provider-applications/mine — authenticated user's own applications */
   @UseGuards(JwtAuthGuard)
   @Get('mine')
-  findMine(@Request() req: any) {
+  findMine(@Request() req: Express.Request) {
     return this.service.findByUser(req.user.userId);
   }
 
@@ -51,7 +51,7 @@ export class ProviderApplicationsController {
   approve(
     @Param('id') id: string,
     @Body('reviewNote') reviewNote: string,
-    @Request() req: any,
+    @Request() req: Express.Request,
   ) {
     return this.service.approve(id, req.user.userId, reviewNote);
   }
@@ -62,7 +62,7 @@ export class ProviderApplicationsController {
   reject(
     @Param('id') id: string,
     @Body('reviewNote') reviewNote: string,
-    @Request() req: any,
+    @Request() req: Express.Request,
   ) {
     return this.service.reject(id, req.user.userId, reviewNote);
   }

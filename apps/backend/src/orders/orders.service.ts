@@ -6,6 +6,8 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateDisposalOrderDto } from './dto/create-disposal-order.dto';
+import { CreateFreightOrderDto } from './dto/create-freight-order.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import {
@@ -14,6 +16,7 @@ import {
   PaymentStatus,
   TransportJobStatus,
   TransportJobType,
+  Prisma,
 } from '@prisma/client';
 import { RequestingUser } from '../common/types/requesting-user.interface';
 import { EmailService } from '../email/email.service';
@@ -262,7 +265,10 @@ export class OrdersService {
     return { ...statusFilter, OR: orConditions };
   }
 
-  private async assertOrderAccess(order: any, currentUser: RequestingUser) {
+  private async assertOrderAccess(
+    order: { id: string; createdById: string },
+    currentUser: RequestingUser,
+  ) {
     if (currentUser.userType === 'ADMIN') return;
 
     const transportOnly =
@@ -363,7 +369,7 @@ export class OrdersService {
   ) {
     await this.findOne(id, currentUser); // Check existence and ownership
 
-    const updateData: any = {};
+    const updateData: Prisma.OrderUpdateInput = {};
 
     if (updateOrderDto.deliveryAddress)
       updateData.deliveryAddress = updateOrderDto.deliveryAddress;
@@ -429,7 +435,10 @@ export class OrdersService {
 
     // Notify buyer of status change (fire-and-forget)
     const notifMap: Partial<
-      Record<OrderStatus, { type: NotificationType; title: string; message: string }>
+      Record<
+        OrderStatus,
+        { type: NotificationType; title: string; message: string }
+      >
     > = {
       [OrderStatus.CONFIRMED]: {
         type: NotificationType.ORDER_CONFIRMED,
@@ -729,105 +738,128 @@ export class OrdersService {
 
   // ── Disposal Order (WASTE_COLLECTION transport job) ─────────────────────────
 
-  async createDisposalOrder(dto: any, userId: string) {
-    const TRUCK_LABELS: Record<string, { label: string; capacity: number; volume: number }> = {
-      TIPPER_SMALL:       { label: 'Pašizgāzējs 10t',           capacity: 10, volume: 8 },
-      TIPPER_LARGE:       { label: 'Pašizgāzējs 18t',           capacity: 18, volume: 12 },
-      ARTICULATED_TIPPER: { label: 'Artikulētais pašizgāzējs 26t', capacity: 26, volume: 18 },
+  async createDisposalOrder(dto: CreateDisposalOrderDto, userId: string) {
+    const TRUCK_LABELS: Record<
+      string,
+      { label: string; capacity: number; volume: number }
+    > = {
+      TIPPER_SMALL: { label: 'Pašizgāzējs 10t', capacity: 10, volume: 8 },
+      TIPPER_LARGE: { label: 'Pašizgāzējs 18t', capacity: 18, volume: 12 },
+      ARTICULATED_TIPPER: {
+        label: 'Artikulētais pašizgāzējs 26t',
+        capacity: 26,
+        volume: 18,
+      },
     };
 
     const truck = TRUCK_LABELS[dto.truckType] ?? TRUCK_LABELS.TIPPER_LARGE;
     const totalWeight = truck.capacity * dto.truckCount;
-    const jobNumber   = await this.generateTransportJobNumber();
-    const pickupDate  = new Date(dto.requestedDate);
+    const jobNumber = await this.generateTransportJobNumber();
+    const pickupDate = new Date(dto.requestedDate);
 
     // Find nearest recycling center that accepts this waste type
     const center = await this.prisma.recyclingCenter.findFirst({
       where: { active: true, acceptedWasteTypes: { has: dto.wasteType } },
-      select: { name: true, address: true, city: true, state: true, postalCode: true },
+      select: {
+        name: true,
+        address: true,
+        city: true,
+        state: true,
+        postalCode: true,
+      },
     });
 
     const deliveryAddress = center?.address ?? 'Utilizācijas centrs';
-    const deliveryCity    = center?.city    ?? 'TBD';
-    const deliveryState   = center?.state   ?? '';
-    const deliveryPostal  = center?.postalCode ?? '';
+    const deliveryCity = center?.city ?? 'TBD';
+    const deliveryState = center?.state ?? '';
+    const deliveryPostal = center?.postalCode ?? '';
 
     const job = await this.prisma.transportJob.create({
       data: {
         jobNumber,
-        jobType:              TransportJobType.WASTE_COLLECTION,
-        requestedById:        userId,   // buyer who requested the disposal
-        pickupAddress:        dto.pickupAddress,
-        pickupCity:           dto.pickupCity,
-        pickupState:          dto.pickupState  ?? '',
-        pickupPostal:         dto.pickupPostal ?? '',
+        jobType: TransportJobType.WASTE_COLLECTION,
+        requestedById: userId, // buyer who requested the disposal
+        pickupAddress: dto.pickupAddress,
+        pickupCity: dto.pickupCity,
+        pickupState: dto.pickupState ?? '',
+        pickupPostal: dto.pickupPostal ?? '',
         pickupDate,
-        pickupLat:            dto.pickupLat  ?? null,
-        pickupLng:            dto.pickupLng  ?? null,
+        pickupLat: dto.pickupLat ?? null,
+        pickupLng: dto.pickupLng ?? null,
         deliveryAddress,
         deliveryCity,
         deliveryState,
         deliveryPostal,
-        deliveryDate:         pickupDate,
-        cargoType:            dto.wasteType,
-        cargoWeight:          totalWeight,
-        cargoVolume:          truck.volume * dto.truckCount,
-        requiredVehicleType:  truck.label,
-        specialRequirements:  dto.description ?? null,
-        rate:                 0,
-        currency:             'EUR',
-        status:               TransportJobStatus.AVAILABLE,
+        deliveryDate: pickupDate,
+        cargoType: dto.wasteType,
+        cargoWeight: totalWeight,
+        cargoVolume: truck.volume * dto.truckCount,
+        requiredVehicleType: truck.label,
+        specialRequirements: dto.description ?? null,
+        rate: 0,
+        currency: 'EUR',
+        status: TransportJobStatus.AVAILABLE,
       },
     });
 
-    this.logger.log(`Disposal job ${jobNumber} created (${dto.wasteType} × ${dto.truckCount} trucks from ${dto.pickupCity})`);
+    this.logger.log(
+      `Disposal job ${jobNumber} created (${dto.wasteType} × ${dto.truckCount} trucks from ${dto.pickupCity})`,
+    );
     return job;
   }
 
-  async createFreightOrder(dto: any, userId: string) {
-    const VEHICLE_LABELS: Record<string, { label: string; capacity: number; volume: number }> = {
-      TIPPER_SMALL:       { label: 'Pašizgāzējs 10t',              capacity: 10, volume: 8  },
-      TIPPER_LARGE:       { label: 'Pašizgāzējs 18t',              capacity: 18, volume: 12 },
-      ARTICULATED_TIPPER: { label: 'Artikulētais pašizgāzējs 26t', capacity: 26, volume: 18 },
+  async createFreightOrder(dto: CreateFreightOrderDto, userId: string) {
+    const VEHICLE_LABELS: Record<
+      string,
+      { label: string; capacity: number; volume: number }
+    > = {
+      TIPPER_SMALL: { label: 'Pašizgāzējs 10t', capacity: 10, volume: 8 },
+      TIPPER_LARGE: { label: 'Pašizgāzējs 18t', capacity: 18, volume: 12 },
+      ARTICULATED_TIPPER: {
+        label: 'Artikulētais pašizgāzējs 26t',
+        capacity: 26,
+        volume: 18,
+      },
     };
 
-    const vehicle     = VEHICLE_LABELS[dto.vehicleType] ?? VEHICLE_LABELS.TIPPER_LARGE;
-    const jobNumber   = await this.generateTransportJobNumber();
-    const pickupDate  = new Date(dto.requestedDate);
+    const vehicle =
+      VEHICLE_LABELS[dto.vehicleType] ?? VEHICLE_LABELS.TIPPER_LARGE;
+    const jobNumber = await this.generateTransportJobNumber();
+    const pickupDate = new Date(dto.requestedDate);
 
     const job = await this.prisma.transportJob.create({
       data: {
         jobNumber,
-        jobType:              TransportJobType.TRANSPORT,
-        requestedById:        userId,   // buyer who requested the freight
-        pickupAddress:        dto.pickupAddress,
-        pickupCity:           dto.pickupCity,
-        pickupState:          dto.pickupState  ?? '',
-        pickupPostal:         dto.pickupPostal ?? '',
+        jobType: TransportJobType.TRANSPORT,
+        requestedById: userId, // buyer who requested the freight
+        pickupAddress: dto.pickupAddress,
+        pickupCity: dto.pickupCity,
+        pickupState: dto.pickupState ?? '',
+        pickupPostal: dto.pickupPostal ?? '',
         pickupDate,
-        pickupLat:            dto.pickupLat  ?? null,
-        pickupLng:            dto.pickupLng  ?? null,
-        deliveryAddress:      dto.dropoffAddress,
-        deliveryCity:         dto.dropoffCity,
-        deliveryState:        dto.dropoffState  ?? '',
-        deliveryPostal:       dto.dropoffPostal ?? '',
-        deliveryDate:         pickupDate,
-        deliveryLat:          dto.dropoffLat  ?? null,
-        deliveryLng:          dto.dropoffLng  ?? null,
-        cargoType:            dto.loadDescription,
-        cargoWeight:          dto.estimatedWeight ?? vehicle.capacity,
-        cargoVolume:          vehicle.volume,
-        requiredVehicleType:  vehicle.label,
-        specialRequirements:  null,
-        rate:                 0,
-        currency:             'EUR',
-        status:               TransportJobStatus.AVAILABLE,
+        pickupLat: dto.pickupLat ?? null,
+        pickupLng: dto.pickupLng ?? null,
+        deliveryAddress: dto.dropoffAddress,
+        deliveryCity: dto.dropoffCity,
+        deliveryState: dto.dropoffState ?? '',
+        deliveryPostal: dto.dropoffPostal ?? '',
+        deliveryDate: pickupDate,
+        deliveryLat: dto.dropoffLat ?? null,
+        deliveryLng: dto.dropoffLng ?? null,
+        cargoType: dto.loadDescription,
+        cargoWeight: dto.estimatedWeight ?? vehicle.capacity,
+        cargoVolume: vehicle.volume,
+        requiredVehicleType: vehicle.label,
+        specialRequirements: null,
+        rate: 0,
+        currency: 'EUR',
+        status: TransportJobStatus.AVAILABLE,
       },
     });
 
     this.logger.log(
       `Freight job ${jobNumber} created ` +
-      `(${dto.pickupCity} → ${dto.dropoffCity}, ${vehicle.label})`,
+        `(${dto.pickupCity} → ${dto.dropoffCity}, ${vehicle.label})`,
     );
     return job;
   }

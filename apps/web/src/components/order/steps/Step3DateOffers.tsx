@@ -128,8 +128,11 @@ export function Step3DateOffers({
 
   useEffect(() => {
     if (!deliveryDate || !size || !location) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadingOffers(true);
+
     setOffersLoaded(false);
+
     setFetchError('');
     let cancelled = false;
     getSkipHireQuotes(mapSkipSize(size), location, deliveryDate)

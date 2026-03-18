@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { CreateRecyclingCenterDto } from './dto/create-recycling-center.dto';
 import { UpdateRecyclingCenterDto } from './dto/update-recycling-center.dto';
 import { QueryRecyclingCentersDto } from './dto/query-recycling-centers.dto';
@@ -34,12 +35,14 @@ export class RecyclingCentersService {
         acceptedWasteTypes: dto.acceptedWasteTypes,
         capacity: dto.capacity,
         certifications: dto.certifications ?? [],
-        operatingHours: dto.operatingHours as any,
+        operatingHours: dto.operatingHours as Prisma.InputJsonValue,
         companyId,
         active: true,
       },
     });
-    this.logger.log(`Recycling center "${center.name}" registered for company ${companyId}`);
+    this.logger.log(
+      `Recycling center "${center.name}" registered for company ${companyId}`,
+    );
     return center;
   }
 
@@ -49,7 +52,7 @@ export class RecyclingCentersService {
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.RecyclingCenterWhereInput = {};
     if (query.activeOnly !== false) where.active = true;
     if (query.city) where.city = { contains: query.city, mode: 'insensitive' };
     if (query.wasteType) where.acceptedWasteTypes = { has: query.wasteType };
@@ -87,7 +90,15 @@ export class RecyclingCentersService {
     const center = await this.prisma.recyclingCenter.findUnique({
       where: { id },
       include: {
-        company: { select: { id: true, name: true, logo: true, phone: true, email: true } },
+        company: {
+          select: {
+            id: true,
+            name: true,
+            logo: true,
+            phone: true,
+            email: true,
+          },
+        },
         _count: { select: { wasteRecords: true } },
       },
     });
@@ -97,21 +108,26 @@ export class RecyclingCentersService {
 
   /** Carrier: update their recycling center */
   async update(id: string, dto: UpdateRecyclingCenterDto, companyId: string) {
-    const center = await this.prisma.recyclingCenter.findUnique({ where: { id } });
+    const center = await this.prisma.recyclingCenter.findUnique({
+      where: { id },
+    });
     if (!center) throw new NotFoundException('Recycling center not found');
-    if (center.companyId !== companyId) throw new ForbiddenException('Not your recycling center');
+    if (center.companyId !== companyId)
+      throw new ForbiddenException('Not your recycling center');
 
-    const data: any = {};
-    if (dto.name !== undefined) data.name = dto.name;
+    const data: Prisma.RecyclingCenterUpdateInput = {};
     if (dto.address !== undefined) data.address = dto.address;
     if (dto.city !== undefined) data.city = dto.city;
     if (dto.state !== undefined) data.state = dto.state;
     if (dto.postalCode !== undefined) data.postalCode = dto.postalCode;
     if (dto.coordinates !== undefined) data.coordinates = dto.coordinates;
-    if (dto.acceptedWasteTypes !== undefined) data.acceptedWasteTypes = dto.acceptedWasteTypes;
+    if (dto.acceptedWasteTypes !== undefined)
+      data.acceptedWasteTypes = dto.acceptedWasteTypes;
     if (dto.capacity !== undefined) data.capacity = dto.capacity;
-    if (dto.certifications !== undefined) data.certifications = dto.certifications;
-    if (dto.operatingHours !== undefined) data.operatingHours = dto.operatingHours;
+    if (dto.certifications !== undefined)
+      data.certifications = dto.certifications;
+    if (dto.operatingHours !== undefined)
+      data.operatingHours = dto.operatingHours;
     if (dto.active !== undefined) data.active = dto.active;
 
     return this.prisma.recyclingCenter.update({ where: { id }, data });
@@ -119,9 +135,12 @@ export class RecyclingCentersService {
 
   /** Carrier: deactivate (soft delete) their recycling center */
   async deactivate(id: string, companyId: string) {
-    const center = await this.prisma.recyclingCenter.findUnique({ where: { id } });
+    const center = await this.prisma.recyclingCenter.findUnique({
+      where: { id },
+    });
     if (!center) throw new NotFoundException('Recycling center not found');
-    if (center.companyId !== companyId) throw new ForbiddenException('Not your recycling center');
+    if (center.companyId !== companyId)
+      throw new ForbiddenException('Not your recycling center');
 
     return this.prisma.recyclingCenter.update({
       where: { id },
@@ -132,11 +151,18 @@ export class RecyclingCentersService {
   // ── Waste Records ─────────────────────────────────────────────────────────
 
   /** Carrier: log a waste delivery to a recycling center */
-  async createWasteRecord(centerId: string, dto: CreateWasteRecordDto, companyId: string) {
+  async createWasteRecord(
+    centerId: string,
+    dto: CreateWasteRecordDto,
+    companyId: string,
+  ) {
     // Verify the center belongs to this carrier
-    const center = await this.prisma.recyclingCenter.findUnique({ where: { id: centerId } });
+    const center = await this.prisma.recyclingCenter.findUnique({
+      where: { id: centerId },
+    });
     if (!center) throw new NotFoundException('Recycling center not found');
-    if (center.companyId !== companyId) throw new ForbiddenException('Not your recycling center');
+    if (center.companyId !== companyId)
+      throw new ForbiddenException('Not your recycling center');
 
     return this.prisma.wasteRecord.create({
       data: {
@@ -159,9 +185,12 @@ export class RecyclingCentersService {
 
   /** Carrier/Admin: get all waste records for a center */
   async getWasteRecords(centerId: string, companyId: string) {
-    const center = await this.prisma.recyclingCenter.findUnique({ where: { id: centerId } });
+    const center = await this.prisma.recyclingCenter.findUnique({
+      where: { id: centerId },
+    });
     if (!center) throw new NotFoundException('Recycling center not found');
-    if (center.companyId !== companyId) throw new ForbiddenException('Not your recycling center');
+    if (center.companyId !== companyId)
+      throw new ForbiddenException('Not your recycling center');
 
     return this.prisma.wasteRecord.findMany({
       where: { recyclingCenterId: centerId },
@@ -181,7 +210,9 @@ export class RecyclingCentersService {
         },
       },
       include: {
-        recyclingCenter: { select: { id: true, name: true, address: true, city: true } },
+        recyclingCenter: {
+          select: { id: true, name: true, address: true, city: true },
+        },
         containerOrder: {
           select: {
             id: true,
@@ -200,20 +231,29 @@ export class RecyclingCentersService {
     dto: UpdateWasteRecordDto,
     companyId: string,
   ) {
-    const center = await this.prisma.recyclingCenter.findUnique({ where: { id: centerId } });
+    const center = await this.prisma.recyclingCenter.findUnique({
+      where: { id: centerId },
+    });
     if (!center) throw new NotFoundException('Recycling center not found');
-    if (center.companyId !== companyId) throw new ForbiddenException('Not your recycling center');
+    if (center.companyId !== companyId)
+      throw new ForbiddenException('Not your recycling center');
 
-    const record = await this.prisma.wasteRecord.findUnique({ where: { id: recordId } });
+    const record = await this.prisma.wasteRecord.findUnique({
+      where: { id: recordId },
+    });
     if (!record) throw new NotFoundException('Waste record not found');
-    if (record.recyclingCenterId !== centerId) throw new ForbiddenException('Record not in this center');
+    if (record.recyclingCenterId !== centerId)
+      throw new ForbiddenException('Record not in this center');
 
-    const data: any = {};
-    if (dto.processedDate !== undefined) data.processedDate = new Date(dto.processedDate);
-    if (dto.recyclableWeight !== undefined) data.recyclableWeight = dto.recyclableWeight;
+    const data: Prisma.WasteRecordUpdateInput = {};
+    data.processedDate = new Date(dto.processedDate);
+    if (dto.recyclableWeight !== undefined)
+      data.recyclableWeight = dto.recyclableWeight;
     if (dto.recyclingRate !== undefined) data.recyclingRate = dto.recyclingRate;
-    if (dto.producedMaterialId !== undefined) data.producedMaterialId = dto.producedMaterialId;
-    if (dto.certificateUrl !== undefined) data.certificateUrl = dto.certificateUrl;
+    if (dto.producedMaterialId !== undefined)
+      data.producedMaterialId = dto.producedMaterialId;
+    if (dto.certificateUrl !== undefined)
+      data.certificateUrl = dto.certificateUrl;
 
     return this.prisma.wasteRecord.update({ where: { id: recordId }, data });
   }

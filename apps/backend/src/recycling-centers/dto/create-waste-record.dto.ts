@@ -6,8 +6,8 @@ export class CreateWasteRecordDto {
 
   // Waste details
   wasteType!: WasteType;
-  weight!: number;   // tonnes
-  volume?: number;   // m³
+  weight!: number; // tonnes
+  volume?: number; // m³
 
   // Processing results (can be filled in later via PATCH)
   processedDate?: string; // ISO date string

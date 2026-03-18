@@ -15,7 +15,10 @@ export class QuoteRequestsController {
 
   /** POST /quote-requests — buyer submits a new request */
   @Post()
-  create(@Body() dto: CreateQuoteRequestDto, @CurrentUser() user: RequestingUser) {
+  create(
+    @Body() dto: CreateQuoteRequestDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
     return this.service.create(dto, user.userId);
   }
 

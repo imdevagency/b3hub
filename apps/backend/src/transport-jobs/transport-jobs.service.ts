@@ -67,7 +67,13 @@ export class TransportJobsService {
     pickupPhotoUrl: true,
     driverId: true,
     driver: {
-      select: { id: true, firstName: true, lastName: true, phone: true, avatar: true },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        avatar: true,
+      },
     },
     vehicle: {
       select: { id: true, licensePlate: true, vehicleType: true },
@@ -76,6 +82,7 @@ export class TransportJobsService {
       select: {
         id: true,
         orderNumber: true,
+        buyerId: true,
         siteContactName: true,
         siteContactPhone: true,
       },
@@ -127,7 +134,9 @@ export class TransportJobsService {
       `${dto.cargoType}${dto.cargoWeight ? ` • ${dto.cargoWeight}t` : ''} • ${dto.distanceKm ? `${Math.round(dto.distanceKm ?? 0)} km` : 'attālums nav norādīts'}`,
     ).catch(() => {});
 
-    this.logger.log(`Transport job ${job.jobNumber} created (${dto.pickupCity} → ${dto.deliveryCity})`);
+    this.logger.log(
+      `Transport job ${job.jobNumber} created (${dto.pickupCity} → ${dto.deliveryCity})`,
+    );
     return job;
   }
 
@@ -247,15 +256,17 @@ export class TransportJobsService {
     });
 
     // Notify buyer if job has an order
-    const buyerId = (updatedJob as any).order?.buyerId ?? (updatedJob as any).order?.buyer?.id;
+    const buyerId = updatedJob.order?.buyerId ?? undefined;
     if (buyerId) {
-      this.notifications.create({
-        userId: buyerId,
-        type: NotificationType.TRANSPORT_ASSIGNED,
-        title: '🚚 Šoferis pieņēmis darbu',
-        message: `${updatedJob.jobNumber} • ${updatedJob.pickupCity} → ${updatedJob.deliveryCity}`,
-        data: { jobId: updatedJob.id },
-      }).catch(() => {});
+      this.notifications
+        .create({
+          userId: buyerId,
+          type: NotificationType.TRANSPORT_ASSIGNED,
+          title: '🚚 Šoferis pieņēmis darbu',
+          message: `${updatedJob.jobNumber} • ${updatedJob.pickupCity} → ${updatedJob.deliveryCity}`,
+          data: { jobId: updatedJob.id },
+        })
+        .catch(() => {});
     }
 
     return updatedJob;
@@ -371,7 +382,9 @@ export class TransportJobsService {
 
     // Weight ticket required when loading
     if (dto.status === TransportJobStatus.LOADED && !dto.weightKg) {
-      throw new BadRequestException('Weight ticket reading (weightKg) is required when marking job as LOADED');
+      throw new BadRequestException(
+        'Weight ticket reading (weightKg) is required when marking job as LOADED',
+      );
     }
 
     const updatedJob = await this.prisma.transportJob.update({
@@ -389,8 +402,7 @@ export class TransportJobsService {
     });
 
     // Auto-generate documents on key transitions
-    const orderId = (updatedJob as any).order?.id as string | undefined;
-    const createdById = (updatedJob as any).order?.createdById as string | undefined;
+    const orderId = updatedJob.order?.id;
 
     if (dto.status === TransportJobStatus.LOADED && orderId) {
       // Fetch order owner (createdById = buyer user)
@@ -420,45 +432,55 @@ export class TransportJobsService {
           : 'Šoferis';
 
         if (dto.status === TransportJobStatus.EN_ROUTE_PICKUP) {
-          this.notifications.create({
-            userId: buyerId,
-            type: NotificationType.SYSTEM_ALERT,
-            title: '🚚 Šoferis dodas uz iekraušanu',
-            message: `${driverName} dodas uz iekraušanas vietu • ${orderNum}`,
-            data: { jobId: updatedJob.id },
-          }).catch(() => {});
+          this.notifications
+            .create({
+              userId: buyerId,
+              type: NotificationType.SYSTEM_ALERT,
+              title: '🚚 Šoferis dodas uz iekraušanu',
+              message: `${driverName} dodas uz iekraušanas vietu • ${orderNum}`,
+              data: { jobId: updatedJob.id },
+            })
+            .catch(() => {});
         } else if (dto.status === TransportJobStatus.LOADED) {
-          this.notifications.create({
-            userId: buyerId,
-            type: NotificationType.SYSTEM_ALERT,
-            title: '📦 Krava iekrauta',
-            message: `Krava iekrauta, šoferis dodas uz Jums • ${orderNum}`,
-            data: { jobId: updatedJob.id },
-          }).catch(() => {});
+          this.notifications
+            .create({
+              userId: buyerId,
+              type: NotificationType.SYSTEM_ALERT,
+              title: '📦 Krava iekrauta',
+              message: `Krava iekrauta, šoferis dodas uz Jums • ${orderNum}`,
+              data: { jobId: updatedJob.id },
+            })
+            .catch(() => {});
         } else if (dto.status === TransportJobStatus.EN_ROUTE_DELIVERY) {
-          this.notifications.create({
-            userId: buyerId,
-            type: NotificationType.SYSTEM_ALERT,
-            title: '🚛 Piegāde ceļā',
-            message: `${driverName} dodas uz piegādes vietu • ${orderNum}`,
-            data: { jobId: updatedJob.id },
-          }).catch(() => {});
+          this.notifications
+            .create({
+              userId: buyerId,
+              type: NotificationType.SYSTEM_ALERT,
+              title: '🚛 Piegāde ceļā',
+              message: `${driverName} dodas uz piegādes vietu • ${orderNum}`,
+              data: { jobId: updatedJob.id },
+            })
+            .catch(() => {});
         } else if (dto.status === TransportJobStatus.AT_DELIVERY) {
-          this.notifications.create({
-            userId: buyerId,
-            type: NotificationType.SYSTEM_ALERT,
-            title: '📍 Šoferis ieradies',
-            message: `${driverName} ir ieradies piegādes vietā • ${orderNum}`,
-            data: { jobId: updatedJob.id },
-          }).catch(() => {});
+          this.notifications
+            .create({
+              userId: buyerId,
+              type: NotificationType.SYSTEM_ALERT,
+              title: '📍 Šoferis ieradies',
+              message: `${driverName} ir ieradies piegādes vietā • ${orderNum}`,
+              data: { jobId: updatedJob.id },
+            })
+            .catch(() => {});
         } else if (dto.status === TransportJobStatus.DELIVERED) {
-          this.notifications.create({
-            userId: buyerId,
-            type: NotificationType.ORDER_DELIVERED,
-            title: '✅ Piegāde pabeigta',
-            message: `Pasūtījums ${orderNum} ir veiksmīgi piegādāts.`,
-            data: { jobId: updatedJob.id },
-          }).catch(() => {});
+          this.notifications
+            .create({
+              userId: buyerId,
+              type: NotificationType.ORDER_DELIVERED,
+              title: '✅ Piegāde pabeigta',
+              message: `Pasūtījums ${orderNum} ir veiksmīgi piegādāts.`,
+              data: { jobId: updatedJob.id },
+            })
+            .catch(() => {});
         }
       }
     }
@@ -598,10 +620,12 @@ export class TransportJobsService {
           order.status !== OrderStatus.COMPLETED &&
           order.status !== OrderStatus.CANCELLED
         ) {
-          await this.prisma.order.update({
-            where: { id: job.orderId },
-            data: { status: OrderStatus.DELIVERED },
-          }).catch(() => {});
+          await this.prisma.order
+            .update({
+              where: { id: job.orderId },
+              data: { status: OrderStatus.DELIVERED },
+            })
+            .catch(() => {});
         }
       }
     }
@@ -613,10 +637,7 @@ export class TransportJobsService {
   // Called from the seller's LoadingDock screen when the driver arrives
   // at the pickup yard. Seller enters weight and confirms loading.
   // Transitions AT_PICKUP → LOADED and auto-generates WEIGHING_SLIP.
-  async loadingDock(
-    id: string,
-    weightKg?: number,
-  ) {
+  async loadingDock(id: string, weightKg?: number) {
     const job = await this.prisma.transportJob.findUnique({ where: { id } });
     if (!job) throw new NotFoundException('Transport job not found');
 
@@ -648,7 +669,12 @@ export class TransportJobsService {
       if (order?.createdById) {
         const weight = weightKg ?? job.cargoWeight;
         this.documents
-          .generateWeighingSlip(job.orderId, order.createdById, weight ?? 0, 't')
+          .generateWeighingSlip(
+            job.orderId,
+            order.createdById,
+            weight ?? 0,
+            't',
+          )
           .catch(() => {});
       }
     }

@@ -54,7 +54,9 @@ type SwipeableProps = {
   overshootRight?: boolean;
   ref?: React.Ref<{ close(): void }>;
 };
-let Swipeable: React.ComponentType<SwipeableProps> = ({ children }: SwipeableProps) => <View>{children}</View>;
+let Swipeable: React.ComponentType<SwipeableProps> = ({ children }: SwipeableProps) => (
+  <View>{children}</View>
+);
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   Swipeable = require('react-native-gesture-handler').Swipeable;

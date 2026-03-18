@@ -36,6 +36,7 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
     try {
       const stored = localStorage.getItem(LS_MODE_KEY) as Mode | null;
       if (stored && availableModes.includes(stored)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setActiveModeState(stored);
       } else {
         setActiveModeState(availableModes[0]);

@@ -1,4 +1,13 @@
-import { IsString, IsDateString, IsOptional, IsArray, ValidateNested, IsEnum, IsNumber, Min } from 'class-validator';
+import {
+  IsString,
+  IsDateString,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+  IsEnum,
+  IsNumber,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { FrameworkPositionType } from '@prisma/client';
 

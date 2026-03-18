@@ -49,13 +49,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const payload = this.verifyToken(token);
     if (!payload) {
-      this.logger.warn(`[WS] Rejected connection — invalid token (${client.id})`);
+      this.logger.warn(
+        `[WS] Rejected connection — invalid token (${client.id})`,
+      );
       client.disconnect();
       return;
     }
 
-    // Attach userId to socket for later use
-    (client as any).userId = payload.sub as string;
+    // Attach userId to socket data for later use
+    (client.data as Record<string, unknown>).userId = payload.sub;
     this.logger.debug(`[WS] Connected: ${payload.sub} (${client.id})`);
   }
 
@@ -73,8 +75,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     if (!data?.jobId) throw new WsException('jobId is required');
     const room = `job:${data.jobId}`;
-    client.join(room);
-    this.logger.debug(`[WS] ${(client as any).userId} joined ${room}`);
+    void client.join(room);
+    this.logger.debug(
+      `[WS] ${String((client.data as Record<string, string>).userId ?? 'unknown')} joined ${room}`,
+    );
     return { ok: true, room };
   }
 
@@ -85,18 +89,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { jobId: string },
   ) {
     if (!data?.jobId) return;
-    client.leave(`job:${data.jobId}`);
+    void client.leave(`job:${data.jobId}`);
   }
 
   // ── Called by ChatService after persisting a message ──────────────────────
 
-  broadcastMessage(jobId: string, message: {
-    id: string;
-    senderId: string;
-    senderName: string;
-    body: string;
-    createdAt: Date;
-  }) {
+  broadcastMessage(
+    jobId: string,
+    message: {
+      id: string;
+      senderId: string;
+      senderName: string;
+      body: string;
+      createdAt: Date;
+    },
+  ) {
     this.server.to(`job:${jobId}`).emit('newMessage', message);
   }
 
@@ -104,7 +111,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private extractToken(client: Socket): string | null {
     // Preferred: socket auth object { token: 'Bearer xxx' or 'xxx' }
-    const authToken = (client.handshake.auth as any)?.token as string | undefined;
+    const authToken = (client.handshake.auth as Record<string, unknown>)
+      .token as string | undefined;
     if (authToken) return authToken.replace(/^Bearer\s+/i, '');
 
     // Fallback: ?token= query param

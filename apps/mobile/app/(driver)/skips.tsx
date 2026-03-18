@@ -460,7 +460,10 @@ export default function CarrierSkipsScreen() {
             : prev.map((o) => (o.id === id ? { ...o, status: updated.status } : o)),
         );
       } catch (err: unknown) {
-        Alert.alert(cs.errorTitle, err instanceof Error ? err.message : 'Neizdevās atjaunināt statusu.');
+        Alert.alert(
+          cs.errorTitle,
+          err instanceof Error ? err.message : 'Neizdevās atjaunināt statusu.',
+        );
       } finally {
         setUpdatingId(null);
       }

@@ -191,7 +191,7 @@ export class MaterialsService {
       where: {
         active: true,
         inStock: true,
-        category: params.category as any,
+        category: params.category,
         ...(params.quantity
           ? {
               OR: [{ minOrder: null }, { minOrder: { lte: params.quantity } }],

@@ -21,7 +21,10 @@ export class DocumentsController {
 
   /** GET /api/v1/documents — list all documents for the current user */
   @Get()
-  findAll(@CurrentUser() user: RequestingUser, @Query() query: QueryDocumentsDto) {
+  findAll(
+    @CurrentUser() user: RequestingUser,
+    @Query() query: QueryDocumentsDto,
+  ) {
     return this.documentsService.findAll(user.userId, query);
   }
 

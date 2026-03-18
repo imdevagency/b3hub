@@ -59,7 +59,9 @@ export class QuoteRequestsService {
       },
       include: INCLUDE_REQUEST,
     });
-    this.logger.log(`Quote request ${request.requestNumber} created by user ${userId}`);
+    this.logger.log(
+      `Quote request ${request.requestNumber} created by user ${userId}`,
+    );
     return request;
   }
 
