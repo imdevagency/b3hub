@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
@@ -9,6 +10,8 @@ import { CreateProviderApplicationDto } from './dto/create-provider-application.
 
 @Injectable()
 export class ProviderApplicationsService {
+  private readonly logger = new Logger(ProviderApplicationsService.name);
+
   constructor(
     private prisma: PrismaService,
     private email: EmailService,
@@ -44,6 +47,7 @@ export class ProviderApplicationsService {
       .sendApplicationReceived(application.email, application.firstName ?? '')
       .catch(() => null);
 
+    this.logger.log(`Provider application submitted by ${application.email}`);
     return application;
   }
 
@@ -111,6 +115,7 @@ export class ProviderApplicationsService {
       })
       .catch(() => null);
 
+    this.logger.log(`Provider application ${id} approved by admin ${reviewedByUserId}`);
     return updated;
   }
 
@@ -136,6 +141,7 @@ export class ProviderApplicationsService {
       .sendApplicationRejected(app.email, app.firstName ?? '', reviewNote)
       .catch(() => null);
 
+    this.logger.log(`Provider application ${id} rejected by admin ${reviewedByUserId}`);
     return rejected;
   }
 }

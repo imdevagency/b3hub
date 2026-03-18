@@ -1,6 +1,7 @@
 import {
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { CompanyType, SkipSize } from '@prisma/client';
@@ -12,6 +13,8 @@ const ALLOWED_TYPES: CompanyType[] = ['CARRIER', 'HYBRID'];
 
 @Injectable()
 export class CarrierSettingsService {
+  private readonly logger = new Logger(CarrierSettingsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   // ── Guard helper ────────────────────────────────────────────────────────────

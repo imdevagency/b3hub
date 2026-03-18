@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -16,13 +17,15 @@ import { UpdateContainerOrderStatusDto } from './dto/update-container-order-stat
 
 @Injectable()
 export class ContainersService {
+  private readonly logger = new Logger(ContainersService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   // ── Container Fleet (carrier) ─────────────────────────────────────────────
 
   /** Carrier: add a container to their company fleet */
   async create(dto: CreateContainerDto, companyId: string) {
-    return this.prisma.container.create({
+    const container = await this.prisma.container.create({
       data: {
         containerType: dto.containerType,
         size: dto.size,
@@ -37,6 +40,8 @@ export class ContainersService {
         ownerId: companyId,
       },
     });
+    this.logger.log(`Container ${container.id} added to company ${companyId}`);
+    return container;
   }
 
   /** Public: list available containers with optional filters */

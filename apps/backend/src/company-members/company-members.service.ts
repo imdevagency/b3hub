@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ForbiddenException,
   ConflictException,
@@ -32,6 +33,8 @@ const MEMBER_SELECT = {
 
 @Injectable()
 export class CompanyMembersService {
+  private readonly logger = new Logger(CompanyMembersService.name);
+
   constructor(
     private prisma: PrismaService,
     private email: EmailService,

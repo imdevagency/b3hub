@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
@@ -29,6 +30,8 @@ const NEXT_STATUS: Partial<Record<TransportJobStatus, TransportJobStatus>> = {
 
 @Injectable()
 export class TransportJobsService {
+  private readonly logger = new Logger(TransportJobsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
@@ -124,6 +127,7 @@ export class TransportJobsService {
       `${dto.cargoType}${dto.cargoWeight ? ` • ${dto.cargoWeight}t` : ''} • ${dto.distanceKm ? `${Math.round(dto.distanceKm ?? 0)} km` : 'attālums nav norādīts'}`,
     ).catch(() => {});
 
+    this.logger.log(`Transport job ${job.jobNumber} created (${dto.pickupCity} → ${dto.deliveryCity})`);
     return job;
   }
 

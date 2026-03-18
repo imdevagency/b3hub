@@ -1,6 +1,7 @@
 import {
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,6 +11,8 @@ import { UpdateScheduleDto } from './dto/update-schedule.dto';
 
 @Injectable()
 export class DriverScheduleService {
+  private readonly logger = new Logger(DriverScheduleService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   // ── Auto-create a minimal DriverProfile for any canTransport user ─────────

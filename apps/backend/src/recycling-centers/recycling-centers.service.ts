@@ -1,6 +1,7 @@
 import {
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -14,13 +15,15 @@ import { UpdateWasteRecordDto } from './dto/update-waste-record.dto';
 
 @Injectable()
 export class RecyclingCentersService {
+  private readonly logger = new Logger(RecyclingCentersService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   // ── Recycling Center CRUD ─────────────────────────────────────────────────
 
   /** Carrier: register a new recycling center for their company */
   async create(dto: CreateRecyclingCenterDto, companyId: string) {
-    return this.prisma.recyclingCenter.create({
+    const center = await this.prisma.recyclingCenter.create({
       data: {
         name: dto.name,
         address: dto.address,
@@ -36,6 +39,8 @@ export class RecyclingCentersService {
         active: true,
       },
     });
+    this.logger.log(`Recycling center "${center.name}" registered for company ${companyId}`);
+    return center;
   }
 
   /** Public: list active recycling centers with optional filters */

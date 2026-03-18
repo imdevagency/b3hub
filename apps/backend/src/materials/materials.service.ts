@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
@@ -10,10 +11,12 @@ import { MaterialCategory } from '@prisma/client';
 
 @Injectable()
 export class MaterialsService {
+  private readonly logger = new Logger(MaterialsService.name);
+
   constructor(private prisma: PrismaService) {}
 
   async create(createMaterialDto: CreateMaterialDto) {
-    return this.prisma.material.create({
+    const material = await this.prisma.material.create({
       data: createMaterialDto,
       include: {
         supplier: {
@@ -26,6 +29,8 @@ export class MaterialsService {
         },
       },
     });
+    this.logger.log(`Material ${material.id} created`);
+    return material;
   }
 
   async findAll(filters?: {

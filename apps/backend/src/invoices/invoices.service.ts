@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentStatus } from '@prisma/client';
 
@@ -25,6 +25,8 @@ function mapInvoice(inv: any) {
 
 @Injectable()
 export class InvoicesService {
+  private readonly logger = new Logger(InvoicesService.name);
+
   constructor(private prisma: PrismaService) {}
 
   /**
@@ -99,6 +101,7 @@ export class InvoicesService {
       where: { id: invoiceId, order: { buyerId: userId } },
     });
     if (!invoice) throw new NotFoundException('Invoice not found');
+    this.logger.log(`Invoice ${invoiceId} marked as paid by user ${userId}`);
     return this.prisma.invoice.update({
       where: { id: invoiceId },
       data: {

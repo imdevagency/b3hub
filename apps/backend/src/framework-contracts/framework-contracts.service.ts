@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   ForbiddenException,
   NotFoundException,
   BadRequestException,
@@ -12,6 +13,8 @@ import { CreateCallOffDto } from './dto/create-calloff.dto';
 
 @Injectable()
 export class FrameworkContractsService {
+  private readonly logger = new Logger(FrameworkContractsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   // ── Helpers ───────────────────────────────────────────────────────────────

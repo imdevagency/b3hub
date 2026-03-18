@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,6 +11,8 @@ import { CreateReviewDto } from './dto/create-review.dto';
 
 @Injectable()
 export class ReviewsService {
+  private readonly logger = new Logger(ReviewsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   // ── Buyer: submit a review ────────────────────────────────────
@@ -93,6 +96,8 @@ export class ReviewsService {
         skipOrderId: dto.skipOrderId ?? null,
       },
     });
+
+    this.logger.log(`Review ${review.id} created by user ${userId} for company ${companyId}`);
 
     // Recompute and update company average rating
     await this.recomputeRating(companyId);

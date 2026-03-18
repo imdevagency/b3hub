@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { DocumentType, DocumentStatus, Prisma } from '@prisma/client';
 import { QueryDocumentsDto } from './dto/query-documents.dto';
@@ -6,6 +6,8 @@ import { CreateDocumentDto } from './dto/create-document.dto';
 
 @Injectable()
 export class DocumentsService {
+  private readonly logger = new Logger(DocumentsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /** List all documents visible to the requesting user */

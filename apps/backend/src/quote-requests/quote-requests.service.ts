@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -31,6 +32,8 @@ const INCLUDE_REQUEST = {
 
 @Injectable()
 export class QuoteRequestsService {
+  private readonly logger = new Logger(QuoteRequestsService.name);
+
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService,
@@ -39,7 +42,7 @@ export class QuoteRequestsService {
   // ── Buyer: create request ────────────────────────────────────
   async create(dto: CreateQuoteRequestDto, userId: string) {
     const requestNumber = await this.generateRequestNumber();
-    return this.prisma.quoteRequest.create({
+    const request = await this.prisma.quoteRequest.create({
       data: {
         requestNumber,
         buyerId: userId,
@@ -56,6 +59,8 @@ export class QuoteRequestsService {
       },
       include: INCLUDE_REQUEST,
     });
+    this.logger.log(`Quote request ${request.requestNumber} created by user ${userId}`);
+    return request;
   }
 
   // ── Buyer: get single request with responses ─────────────────

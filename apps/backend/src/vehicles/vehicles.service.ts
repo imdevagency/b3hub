@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ForbiddenException,
   ConflictException,
@@ -11,6 +12,8 @@ import { VehicleStatus } from '@prisma/client';
 
 @Injectable()
 export class VehiclesService {
+  private readonly logger = new Logger(VehiclesService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   // ── Create ─────────────────────────────────────────────────────
@@ -32,7 +35,7 @@ export class VehiclesService {
       select: { id: true, companyId: true },
     });
 
-    return this.prisma.vehicle.create({
+    const vehicle = await this.prisma.vehicle.create({
       data: {
         vehicleType: dto.vehicleType,
         make: dto.make,
@@ -50,6 +53,8 @@ export class VehiclesService {
         companyId: user?.companyId ?? undefined,
       },
     });
+    this.logger.log(`Vehicle ${vehicle.licensePlate} registered by user ${userId}`);
+    return vehicle;
   }
 
   // ── Find all for current user (own + company vehicles) ─────────

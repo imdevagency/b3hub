@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   UnauthorizedException,
   ConflictException,
   NotFoundException,
@@ -18,6 +19,8 @@ const REFRESH_TOKEN_TTL_DAYS = 30;
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -118,6 +121,7 @@ export class AuthService {
 
     const { rawToken: refreshToken } = await this.issueRefreshToken(user.id);
 
+    this.logger.log(`User ${user.id} registered (${email})`);
     return {
       user,
       token,
@@ -181,6 +185,7 @@ export class AuthService {
 
     const { rawToken: refreshToken } = await this.issueRefreshToken(user.id);
 
+    this.logger.log(`User ${user.id} logged in (${email})`);
     return {
       user: userWithoutPassword,
       token,

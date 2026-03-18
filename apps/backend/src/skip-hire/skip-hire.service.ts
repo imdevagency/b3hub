@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
@@ -40,6 +41,8 @@ export interface SkipHireQuoteResult {
 
 @Injectable()
 export class SkipHireService {
+  private readonly logger = new Logger(SkipHireService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
@@ -94,6 +97,7 @@ export class SkipHireService {
         carrierId,
       },
     });
+    this.logger.log(`Skip hire order ${order.orderNumber} created (${dto.skipSize}, ${dto.location})`);
     if (userId) {
       this.notifications
         .create({
