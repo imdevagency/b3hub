@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useToast } from '@/components/ui/Toast';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { t } from '@/lib/translations';
@@ -173,9 +173,11 @@ export default function NotificationsScreen() {
     [token],
   );
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const markRead = async (id: string) => {
     if (!token) return;

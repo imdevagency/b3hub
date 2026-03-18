@@ -7,8 +7,8 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { useState, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiChatRoom } from '@/lib/api';
@@ -58,9 +58,11 @@ export default function MessagesScreen() {
     [token],
   );
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const renderItem = ({ item }: { item: ApiChatRoom }) => {
     const isDisposal = item.jobType === 'WASTE_COLLECTION';
