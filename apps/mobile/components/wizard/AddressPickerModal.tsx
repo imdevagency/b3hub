@@ -1,10 +1,12 @@
 /**
  * AddressPickerModal — Full-screen address-picker overlay.
  *
+ * Flow: type in search bar → tap suggestion → map zooms to pin → confirm.
+ * Map is read-only (visual confirmation only). GPS button snaps to current location.
+ *
  * Features:
  *   - Google Places autocomplete search bar
- *   - Interactive map with draggable pin
- *   - Tap anywhere on map to drop pin + reverse-geocode
+ *   - Read-only map that shows where the selected address is
  *   - GPS "Use my location" button
  *   - "Apstiprināt vietu" CTA returns { address, lat, lng, city }
  *
@@ -33,7 +35,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import type { MapPressEvent, MarkerDragStartEndEvent } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { MapPin, Search, X, Navigation, ChevronLeft } from 'lucide-react-native';
 import { useGeocode } from '@/components/map';
@@ -60,14 +61,25 @@ type Props = {
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const { height: SH } = Dimensions.get('window');
-const MAP_H = Math.round(SH * 0.5);
-const RIGA_REGION = { latitude: 56.9496, longitude: 24.1052, latitudeDelta: 0.12, longitudeDelta: 0.12 };
+// Smaller height — map is a preview, not an input surface
+const MAP_H = Math.round(SH * 0.38);
+const RIGA_REGION = {
+  latitude: 56.9496,
+  longitude: 24.1052,
+  latitudeDelta: 0.12,
+  longitudeDelta: 0.12,
+};
 
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function AddressPickerModal({ visible, title, onClose, onConfirm, initial }: Props) {
   const insets = useSafeAreaInsets();
-  const { forwardGeocode, resolvePlace, reverseGeocodeWithCity, loading: geoLoading } = useGeocode();
+  const {
+    forwardGeocode,
+    resolvePlace,
+    reverseGeocodeWithCity,
+    loading: geoLoading,
+  } = useGeocode();
   const mapRef = useRef<MapView>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -158,32 +170,18 @@ export function AddressPickerModal({ visible, title, onClose, onConfirm, initial
           { ...newPin, latitudeDelta: 0.01, longitudeDelta: 0.01 },
           600,
         );
-        await applyCoords(lat, lng);
+        // Use the suggestion text directly — no need to reverse-geocode back
+        const displayAddress = sug.place_name;
+        const extractedCity =
+          displayAddress.split(',').slice(-2, -1)[0]?.trim() ?? '';
+        setAddress(displayAddress);
+        setCity(extractedCity);
+        setQuery(displayAddress);
       } finally {
         setResolving(false);
       }
     },
-    [resolvePlace, applyCoords],
-  );
-
-  const handleMapPress = useCallback(
-    (e: MapPressEvent) => {
-      const { latitude, longitude } = e.nativeEvent.coordinate;
-      Keyboard.dismiss();
-      setShowSugs(false);
-      setPin({ latitude, longitude });
-      applyCoords(latitude, longitude);
-    },
-    [applyCoords],
-  );
-
-  const handleDragEnd = useCallback(
-    (e: MarkerDragStartEndEvent) => {
-      const { latitude, longitude } = e.nativeEvent.coordinate;
-      setPin({ latitude, longitude });
-      applyCoords(latitude, longitude);
-    },
-    [applyCoords],
+    [resolvePlace],
   );
 
   const handleGPS = useCallback(async () => {
@@ -243,17 +241,17 @@ export function AddressPickerModal({ visible, title, onClose, onConfirm, initial
             style={{ flex: 1 }}
             provider={PROVIDER_GOOGLE}
             initialRegion={
-              pin
-                ? { ...pin, latitudeDelta: 0.01, longitudeDelta: 0.01 }
-                : RIGA_REGION
+              pin ? { ...pin, latitudeDelta: 0.01, longitudeDelta: 0.01 } : RIGA_REGION
             }
-            onPress={handleMapPress}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            rotateEnabled={false}
+            pitchEnabled={false}
             showsUserLocation
             showsMyLocationButton={false}
+            pointerEvents="none"
           >
-            {pin && (
-              <Marker coordinate={pin} draggable onDragEnd={handleDragEnd} />
-            )}
+            {pin && <Marker coordinate={pin} />}
           </MapView>
 
           {/* GPS overlay button */}
