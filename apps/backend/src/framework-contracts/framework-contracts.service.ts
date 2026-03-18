@@ -13,12 +13,12 @@ import {
 } from '@prisma/client';
 
 // ── Local shape types for formatContract ─────────────────────────────────────
-interface RawCallOff {
+export interface RawCallOff {
   status: string;
   cargoWeight?: number | null;
 }
 
-interface RawPosition {
+export interface RawPosition {
   id: string;
   positionType: string;
   description?: string | null;
@@ -32,7 +32,7 @@ interface RawPosition {
   callOffs?: RawCallOff[];
 }
 
-interface RawContract {
+export interface RawContract {
   id: string;
   contractNumber: string;
   title: string;

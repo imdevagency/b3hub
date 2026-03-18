@@ -9,10 +9,8 @@ import type { RequestingUser } from '../../common/types/requesting-user.interfac
  */
 @Injectable()
 export class OptionalJwtAuthGuard extends AuthGuard('jwt') {
-  handleRequest(
-    _err: unknown,
-    user: RequestingUser | null,
-  ): RequestingUser | undefined {
-    return user ?? undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  override handleRequest(_err: any, user: any, ..._rest: any[]): any {
+    return (user as RequestingUser | null) ?? undefined;
   }
 }

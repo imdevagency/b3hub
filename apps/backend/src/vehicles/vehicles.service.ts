@@ -132,7 +132,7 @@ export class VehiclesService {
   // ── Helpers ────────────────────────────────────────────────────
 
   private async assertAccess(
-    vehicle: { ownerId: string; companyId: string | null },
+    vehicle: { ownerId: string | null; companyId: string | null },
     userId: string,
   ) {
     if (vehicle.ownerId === userId) return;

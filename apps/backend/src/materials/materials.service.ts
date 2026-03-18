@@ -191,7 +191,7 @@ export class MaterialsService {
       where: {
         active: true,
         inStock: true,
-        category: params.category,
+        category: params.category as import('@prisma/client').MaterialCategory,
         ...(params.quantity
           ? {
               OR: [{ minOrder: null }, { minOrder: { lte: params.quantity } }],

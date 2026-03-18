@@ -120,7 +120,11 @@ export class RecyclingCentersService {
     if (dto.city !== undefined) data.city = dto.city;
     if (dto.state !== undefined) data.state = dto.state;
     if (dto.postalCode !== undefined) data.postalCode = dto.postalCode;
-    if (dto.coordinates !== undefined) data.coordinates = dto.coordinates;
+    if (dto.coordinates !== undefined)
+      data.coordinates =
+        dto.coordinates !== null
+          ? (dto.coordinates as Prisma.InputJsonValue)
+          : Prisma.DbNull;
     if (dto.acceptedWasteTypes !== undefined)
       data.acceptedWasteTypes = dto.acceptedWasteTypes;
     if (dto.capacity !== undefined) data.capacity = dto.capacity;
@@ -246,7 +250,7 @@ export class RecyclingCentersService {
       throw new ForbiddenException('Record not in this center');
 
     const data: Prisma.WasteRecordUpdateInput = {};
-    data.processedDate = new Date(dto.processedDate);
+    if (dto.processedDate) data.processedDate = new Date(dto.processedDate);
     if (dto.recyclableWeight !== undefined)
       data.recyclableWeight = dto.recyclableWeight;
     if (dto.recyclingRate !== undefined) data.recyclingRate = dto.recyclingRate;
