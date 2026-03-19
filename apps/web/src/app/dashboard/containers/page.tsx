@@ -17,14 +17,45 @@ import { getMyContainerOrders, type ApiContainerOrder, type ContainerOrderStatus
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const STATUS_MAP: Record<ContainerOrderStatus, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive'; className: string }> = {
-  PENDING:         { label: 'Gaida apstiprinājumu', variant: 'secondary', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-  CONFIRMED:       { label: 'Apstiprināts',          variant: 'default',   className: 'bg-blue-100 text-blue-800 border-blue-200' },
-  DELIVERED:       { label: 'Piegādāts',             variant: 'default',   className: 'bg-primary/10 text-primary border-primary/20' },
-  AWAITING_PICKUP: { label: 'Gaida savākšanu',       variant: 'secondary', className: 'bg-orange-100 text-orange-800 border-orange-200' },
-  COLLECTED:       { label: 'Savākts',               variant: 'secondary', className: 'bg-purple-100 text-purple-800 border-purple-200' },
-  COMPLETED:       { label: 'Pabeigts',              variant: 'secondary', className: 'bg-green-100 text-green-800 border-green-200' },
-  CANCELLED:       { label: 'Atcelts',               variant: 'destructive', className: 'bg-red-100 text-red-800 border-red-200' },
+const STATUS_MAP: Record<
+  ContainerOrderStatus,
+  { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive'; className: string }
+> = {
+  PENDING: {
+    label: 'Gaida apstiprinājumu',
+    variant: 'secondary',
+    className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  },
+  CONFIRMED: {
+    label: 'Apstiprināts',
+    variant: 'default',
+    className: 'bg-blue-100 text-blue-800 border-blue-200',
+  },
+  DELIVERED: {
+    label: 'Piegādāts',
+    variant: 'default',
+    className: 'bg-primary/10 text-primary border-primary/20',
+  },
+  AWAITING_PICKUP: {
+    label: 'Gaida savākšanu',
+    variant: 'secondary',
+    className: 'bg-orange-100 text-orange-800 border-orange-200',
+  },
+  COLLECTED: {
+    label: 'Savākts',
+    variant: 'secondary',
+    className: 'bg-purple-100 text-purple-800 border-purple-200',
+  },
+  COMPLETED: {
+    label: 'Pabeigts',
+    variant: 'secondary',
+    className: 'bg-green-100 text-green-800 border-green-200',
+  },
+  CANCELLED: {
+    label: 'Atcelts',
+    variant: 'destructive',
+    className: 'bg-red-100 text-red-800 border-red-200',
+  },
 };
 
 const CONTAINER_TYPE_LV: Record<string, string> = {
@@ -42,12 +73,24 @@ const SIZE_LV: Record<string, string> = {
   EXTRA_LARGE: 'Īpaši liels',
 };
 
-const ALL_STATUSES = ['ALL', 'PENDING', 'CONFIRMED', 'DELIVERED', 'AWAITING_PICKUP', 'COMPLETED', 'CANCELLED'] as const;
+const ALL_STATUSES = [
+  'ALL',
+  'PENDING',
+  'CONFIRMED',
+  'DELIVERED',
+  'AWAITING_PICKUP',
+  'COMPLETED',
+  'CANCELLED',
+] as const;
 type FilterStatus = (typeof ALL_STATUSES)[number];
 
 function fmtDate(iso?: string | null) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return new Date(iso).toLocaleDateString('lv-LV', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
 }
 
 function euro(v: number) {
@@ -57,7 +100,11 @@ function euro(v: number) {
 // ─── Order card ───────────────────────────────────────────────────────────────
 
 function OrderCard({ order }: { order: ApiContainerOrder }) {
-  const status = STATUS_MAP[order.status] ?? { label: order.status, variant: 'secondary' as const, className: '' };
+  const status = STATUS_MAP[order.status] ?? {
+    label: order.status,
+    variant: 'secondary' as const,
+    className: '',
+  };
 
   return (
     <Card className="shadow-none border-border/60 hover:border-border transition-colors">
@@ -71,10 +118,12 @@ function OrderCard({ order }: { order: ApiContainerOrder }) {
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-semibold text-sm">
-                  {CONTAINER_TYPE_LV[order.container.containerType] ?? order.container.containerType}
+                  {CONTAINER_TYPE_LV[order.container.containerType] ??
+                    order.container.containerType}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {SIZE_LV[order.container.size] ?? order.container.size} · {order.container.volume} m³
+                  {SIZE_LV[order.container.size] ?? order.container.size} · {order.container.volume}{' '}
+                  m³
                 </span>
                 <Badge className={`text-xs font-medium border ${status.className}`}>
                   {status.label}
@@ -96,9 +145,7 @@ function OrderCard({ order }: { order: ApiContainerOrder }) {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">
-                {order.deliveryAddress}
-              </p>
+              <p className="text-xs text-muted-foreground">{order.deliveryAddress}</p>
             </div>
           </div>
 
@@ -142,7 +189,9 @@ export default function ContainersPage() {
     }
   }, [token]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const filtered = filter === 'ALL' ? orders : orders.filter((o) => o.status === filter);
 
@@ -219,7 +268,9 @@ export default function ContainersPage() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={Box}
-          title={filter === 'ALL' ? 'Nav konteineru nomas pasūtījumu' : 'Nav pasūtījumu ar šo statusu'}
+          title={
+            filter === 'ALL' ? 'Nav konteineru nomas pasūtījumu' : 'Nav pasūtījumu ar šo statusu'
+          }
           description={
             filter === 'ALL'
               ? 'Pasūtiet konteineru atkritumu izvešanai vai celtniecības darbiem'

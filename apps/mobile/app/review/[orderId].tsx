@@ -32,13 +32,7 @@ import { Star, CheckCircle } from 'lucide-react-native';
 
 // ─── Star row ─────────────────────────────────────────────────────────────
 
-function StarRow({
-  rating,
-  onChange,
-}: {
-  rating: number;
-  onChange: (n: number) => void;
-}) {
+function StarRow({ rating, onChange }: { rating: number; onChange: (n: number) => void }) {
   return (
     <View style={s.starRow}>
       {[1, 2, 3, 4, 5].map((n) => (
@@ -177,9 +171,7 @@ export default function ReviewScreen() {
 
               <StarRow rating={rating} onChange={setRating} />
 
-              {rating > 0 && (
-                <Text style={s.ratingLabel}>{RATING_LABELS[rating]}</Text>
-              )}
+              {rating > 0 && <Text style={s.ratingLabel}>{RATING_LABELS[rating]}</Text>}
 
               <View style={s.inputWrap}>
                 <TextInput
@@ -211,7 +203,9 @@ export default function ReviewScreen() {
 
               <TouchableOpacity
                 style={s.skipBtn}
-                onPress={() => router.canGoBack() ? router.back() : router.replace('/(buyer)/orders' as any)}
+                onPress={() =>
+                  router.canGoBack() ? router.back() : router.replace('/(buyer)/orders' as any)
+                }
                 activeOpacity={0.7}
               >
                 <Text style={s.skipBtnText}>Vēlāk</Text>

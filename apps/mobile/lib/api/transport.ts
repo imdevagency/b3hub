@@ -141,6 +141,11 @@ export const transportApi = {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
+    getOne: (id: string, token: string) =>
+      apiFetch<ApiTransportJob>(`/transport-jobs/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
     accept: (id: string, token: string) =>
       apiFetch<ApiTransportJob>(`/transport-jobs/${id}/accept`, {
         method: 'POST',

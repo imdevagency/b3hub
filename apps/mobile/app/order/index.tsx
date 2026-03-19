@@ -1,7 +1,7 @@
 /**
  * Container / Skip-Hire wizard — full-screen step pages.
  *
- *   Step 1 – Location   (AddressPickerModal)
+ *   Step 1 – Location   (inline map)
  *   Step 2 – Waste type (Step2WasteType, auto-advance)
  *   Step 3 – Skip size  (Step3Size, auto-advance)
  *   Step 4 – Date + confirm
@@ -29,8 +29,8 @@ import { SKIP_PRICES, toISO, addDays } from '@/components/order/skip-hire-types'
 import { Step2WasteType } from '@/components/order/Step2WasteType';
 import { Step3Size } from '@/components/order/Step3Size';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
-import { AddressPickerModal } from '@/components/wizard/AddressPickerModal';
-import type { PickedAddress } from '@/components/wizard/AddressPickerModal';
+import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
+import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 
 // ── Types ─────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
@@ -52,7 +52,6 @@ export default function OrderWizard() {
 
   // ── Wizard state ──────────────────────────────────────────────
   const [step, setStep] = useState<Step>(1);
-  const [showPicker, setShowPicker] = useState(false);
   const [picked, setPicked] = useState<PickedAddress | null>(
     state.locationLat != null && state.locationLng != null && state.location
       ? { address: state.location, lat: state.locationLat, lng: state.locationLng, city: '' }
@@ -77,7 +76,6 @@ export default function OrderWizard() {
     (p: PickedAddress) => {
       setPicked(p);
       setLocationWithCoords(p.address, p.lat, p.lng);
-      setShowPicker(false);
       setStep(2);
     },
     [setLocationWithCoords],
@@ -118,10 +116,6 @@ export default function OrderWizard() {
 
   const onCTA = useCallback(async () => {
     if (step < 4) {
-      if (step === 1 && !picked) {
-        setShowPicker(true);
-        return;
-      }
       setStep((s) => (s + 1) as Step);
       return;
     }
@@ -196,17 +190,6 @@ export default function OrderWizard() {
 
   return (
     <>
-      <AddressPickerModal
-        visible={showPicker}
-        title="Kur piegādāt konteinerus?"
-        onClose={() => {
-          if (step === 1) router.back();
-          else setShowPicker(false);
-        }}
-        onConfirm={handlePickConfirm}
-        initial={picked ?? undefined}
-      />
-
       <WizardLayout
         title={STEP_TITLES[step]}
         step={step}
@@ -214,35 +197,12 @@ export default function OrderWizard() {
         onBack={goBack}
         onClose={() => router.back()}
         ctaLabel={ctaLabel}
-        onCTA={step === 1 ? () => setShowPicker(true) : onCTA}
+        onCTA={onCTA}
         ctaDisabled={ctaDisabled}
         ctaLoading={submitting}
       >
         {/* ── Step 1: Location ── */}
-        {step === 1 && (
-          <ScrollView
-            style={s.content}
-            contentContainerStyle={s.contentPad}
-            showsVerticalScrollIndicator={false}
-          >
-            <Text style={s.hint}>Norādiet adresi, kur piegādāt skipus.</Text>
-
-            <TouchableOpacity
-              style={s.addressCard}
-              onPress={() => setShowPicker(true)}
-              activeOpacity={0.75}
-            >
-              <MapPin
-                size={20}
-                color={picked ? '#111827' : '#9ca3af'}
-                style={{ marginRight: 10 }}
-              />
-              <Text style={[s.addressText, !picked && s.addressPlaceholder]} numberOfLines={2}>
-                {picked?.address ?? 'Pieskarieties, lai izvēlētos adresi'}
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        )}
+        {step === 1 && <InlineAddressStep picked={picked} onPick={handlePickConfirm} />}
 
         {/* ── Step 2: Waste type ── */}
         {step === 2 && (

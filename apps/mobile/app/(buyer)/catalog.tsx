@@ -202,7 +202,7 @@ export default function CatalogScreen() {
 
   const handleOrder = (mat: ApiMaterial) => {
     router.push({
-      pathname: '/order-request',
+      pathname: '/order-request-new',
       params: {
         materialId: mat.id,
         materialName: mat.name,
@@ -218,7 +218,7 @@ export default function CatalogScreen() {
   const categoryLabel = category === 'ALL' ? 'Visi materi\u0101li' : CATEGORY_LABELS[category];
 
   return (
-    <ScreenContainer bg="#f2f2f7">
+    <ScreenContainer bg="#f9fafb">
       {/* ── Header ─────────────────────────────────────────── */}
       <View style={s.header}>
         <View>

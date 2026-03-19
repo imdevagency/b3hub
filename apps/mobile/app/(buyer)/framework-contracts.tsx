@@ -3,13 +3,12 @@
  *
  * Buyer: list of framework contracts (rāmjlīgumi).
  * A framework contract is a long-running agreement with agreed quantities and
- * unit prices that the buyer releases as individual "call-off" transport jobs.
+ * unit prices that the buyer releases as individual call-off transport jobs.
  */
 
 import React, { useCallback, useState } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -20,14 +19,16 @@ import {
   Modal,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiFrameworkContract, type FrameworkContractStatus } from '@/lib/api';
 import { formatDateShort } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
-import { ChevronRight, Plus, FileText, Calendar, Package, X } from 'lucide-react-native';
-
-// ── Status map ────────────────────────────────────────────────────────────────
+import { Calendar, ChevronRight, FileText, Package, Plus, X } from 'lucide-react-native';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { StatusPill } from '@/components/ui/StatusPill';
+import { Text } from '@/components/ui/text';
 
 const STATUS: Record<FrameworkContractStatus, { label: string; bg: string; color: string }> = {
   ACTIVE: { label: 'Aktīvs', bg: '#dcfce7', color: '#15803d' },
@@ -36,26 +37,20 @@ const STATUS: Record<FrameworkContractStatus, { label: string; bg: string; color
   CANCELLED: { label: 'Atcelts', bg: '#fef2f2', color: '#b91c1c' },
 };
 
-// ── Main screen ───────────────────────────────────────────────────────────────
-
 export default function FrameworkContractsScreen() {
   const { token } = useAuth();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
 
   const [contracts, setContracts] = useState<ApiFrameworkContract[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // New contract form
   const [createVisible, setCreateVisible] = useState(false);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState('');
   const [notes, setNotes] = useState('');
-
-  // ── Load ─────────────────────────────────────────────────────────────────────
 
   const load = useCallback(
     async (skeleton = true) => {
@@ -80,13 +75,16 @@ export default function FrameworkContractsScreen() {
     }, [load]),
   );
 
-  // ── Create ───────────────────────────────────────────────────────────────────
-
   const resetForm = () => {
     setTitle('');
     setStartDate(new Date().toISOString().split('T')[0]);
     setEndDate('');
     setNotes('');
+  };
+
+  const closeCreate = () => {
+    setCreateVisible(false);
+    resetForm();
   };
 
   const handleCreate = async () => {
@@ -99,6 +97,7 @@ export default function FrameworkContractsScreen() {
       Alert.alert('Datuma formāts: GGGG-MM-DD');
       return;
     }
+
     setCreating(true);
     try {
       await api.frameworkContracts.create(
@@ -111,8 +110,7 @@ export default function FrameworkContractsScreen() {
         token,
       );
       haptics.success();
-      setCreateVisible(false);
-      resetForm();
+      closeCreate();
       load(false);
     } catch (e) {
       Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās izveidot līgumu');
@@ -121,33 +119,36 @@ export default function FrameworkContractsScreen() {
     }
   };
 
-  // ── Render ───────────────────────────────────────────────────────────────────
-
   return (
-    <View style={[s.root, { paddingTop: insets.top }]}>
-      {/* ── Header ── */}
-      <View style={s.header}>
-        <Text style={s.headerTitle}>Rāmjlīgumi</Text>
-        <TouchableOpacity
-          style={s.addBtn}
+    <ScreenContainer standalone topInset={0}>
+      <View style={s.pageHeader}>
+        <View style={s.pageHeaderLeft}>
+          <FileText size={20} color="#111827" />
+          <Text style={s.pageTitle}>
+            Rāmjlīgumi
+          </Text>
+        </View>
+        <Button
+          size="sm"
           onPress={() => {
             haptics.light();
             setCreateVisible(true);
           }}
-          activeOpacity={0.8}
         >
-          <Plus size={18} color="#fff" />
-        </TouchableOpacity>
+          <View style={s.addBtnContent}>
+            <Plus size={16} color="#ffffff" />
+            <Text style={s.addBtnText}>Jauns</Text>
+          </View>
+        </Button>
       </View>
 
-      {/* ── List ── */}
       {loading ? (
         <View style={s.center}>
           <ActivityIndicator color="#111827" size="large" />
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={s.scroll}
+          contentContainerStyle={contracts.length === 0 ? s.emptyScroll : s.scroll}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -161,112 +162,103 @@ export default function FrameworkContractsScreen() {
           }
         >
           {contracts.length === 0 ? (
-            <View style={s.empty}>
-              <FileText size={44} color="#d1d5db" />
-              <Text style={s.emptyTitle}>Nav rāmjlīgumu</Text>
-              <Text style={s.emptyDesc}>
-                Izveidojiet rāmjlīgumu atkārtotiem materiālu vai kravas pārvadāšanas pasūtījumiem ar
-                fiksētām cenām.
-              </Text>
-              <TouchableOpacity
-                style={s.emptyBtn}
-                onPress={() => {
-                  haptics.light();
-                  setCreateVisible(true);
-                }}
-                activeOpacity={0.85}
-              >
-                <Text style={s.emptyBtnText}>Izveidot pirmo līgumu</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            contracts.map((c) => {
-              const st = STATUS[c.status] ?? STATUS.ACTIVE;
-              const pct = Math.min(100, c.totalProgressPct);
-              return (
-                <TouchableOpacity
-                  key={c.id}
-                  style={s.card}
+            <EmptyState
+              icon={<FileText size={32} color="#9ca3af" />}
+              title="Nav rāmjlīgumu"
+              subtitle="Izveidojiet pirmo rāmjlīgumu, lai vēlāk varētu atbrīvot darba uzdevumus ar fiksētām cenām."
+              action={
+                <Button
                   onPress={() => {
                     haptics.light();
-                    router.push({
-                      pathname: '/(buyer)/framework-contract/[id]',
-                      params: { id: c.id },
-                    } as any);
+                    setCreateVisible(true);
                   }}
-                  activeOpacity={0.88}
                 >
-                  {/* Top row: number + status */}
-                  <View style={s.cardTop}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.contractNum}>{c.contractNumber}</Text>
-                      <Text style={s.contractTitle} numberOfLines={2}>
-                        {c.title}
+                  Izveidot pirmo līgumu
+                </Button>
+              }
+            />
+          ) : (
+            <>
+              {contracts.map((contract) => {
+                const status = STATUS[contract.status] ?? STATUS.ACTIVE;
+                const pct = Math.min(100, contract.totalProgressPct);
+
+                return (
+                  <TouchableOpacity
+                    key={contract.id}
+                    style={s.card}
+                    onPress={() => {
+                      haptics.light();
+                      router.push({
+                        pathname: '/(buyer)/framework-contract/[id]',
+                        params: { id: contract.id },
+                      } as any);
+                    }}
+                    activeOpacity={0.88}
+                  >
+                    <View style={s.cardTop}>
+                      <View style={s.cardTopCopy}>
+                        <Text variant="muted" size="sm" style={s.contractNum}>
+                          {contract.contractNumber}
+                        </Text>
+                        <Text style={s.contractTitle}>{contract.title}</Text>
+                      </View>
+                      <StatusPill
+                        label={status.label}
+                        bg={status.bg}
+                        color={status.color}
+                        size="sm"
+                      />
+                    </View>
+
+                    <View>
+                      <View style={s.progRow}>
+                        <Text variant="muted" size="sm">
+                          Izpilde
+                        </Text>
+                        <Text size="sm" style={s.progPct}>
+                          {pct.toFixed(0)}%
+                        </Text>
+                      </View>
+                      <View style={s.progTrack}>
+                        <View style={[s.progFill, { width: `${pct}%` as const }]} />
+                      </View>
+                      <Text variant="muted" size="sm" style={s.progQty}>
+                        {contract.totalConsumedQty.toFixed(1)} / {contract.totalAgreedQty.toFixed(1)} vien.
                       </Text>
                     </View>
-                    <View style={[s.statusPill, { backgroundColor: st.bg }]}>
-                      <Text style={[s.statusText, { color: st.color }]}>{st.label}</Text>
-                    </View>
-                  </View>
 
-                  {/* Progress */}
-                  <View>
-                    <View style={s.progRow}>
-                      <Text style={s.progLabel}>Izpilde</Text>
-                      <Text style={s.progPct}>{pct.toFixed(0)}%</Text>
+                    <View style={s.metaRow}>
+                      <View style={s.metaChip}>
+                        <Calendar size={12} color="#6b7280" />
+                        <Text variant="muted" size="sm" style={s.metaText}>
+                          {formatDateShort(contract.startDate)}
+                          {contract.endDate ? ` – ${formatDateShort(contract.endDate)}` : ''}
+                        </Text>
+                      </View>
+                      <View style={s.metaChip}>
+                        <Package size={12} color="#6b7280" />
+                        <Text variant="muted" size="sm" style={s.metaText}>
+                          {contract.totalCallOffs} darba uzd.
+                        </Text>
+                      </View>
+                      <ChevronRight size={16} color="#9ca3af" />
                     </View>
-                    <View style={s.progTrack}>
-                      <View style={[s.progFill, { width: `${pct}%` as any }]} />
-                    </View>
-                    <Text style={s.progQty}>
-                      {c.totalConsumedQty.toFixed(1)} / {c.totalAgreedQty.toFixed(1)} vien.
-                    </Text>
-                  </View>
-
-                  {/* Meta row */}
-                  <View style={s.metaRow}>
-                    <View style={s.metaChip}>
-                      <Calendar size={11} color="#6b7280" />
-                      <Text style={s.metaText}>
-                        {formatDateShort(c.startDate)}
-                        {c.endDate ? ` – ${formatDateShort(c.endDate)}` : ''}
-                      </Text>
-                    </View>
-                    <View style={s.metaChip}>
-                      <Package size={11} color="#6b7280" />
-                      <Text style={s.metaText}>{c.totalCallOffs} darba uzd.</Text>
-                    </View>
-                    <ChevronRight size={14} color="#d1d5db" />
-                  </View>
-                </TouchableOpacity>
-              );
-            })
+                  </TouchableOpacity>
+                );
+              })}
+            </>
           )}
-          <View style={{ height: 40 }} />
         </ScrollView>
       )}
 
-      {/* ── Create contract modal ── */}
-      <Modal
-        visible={createVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => {
-          setCreateVisible(false);
-          resetForm();
-        }}
-      >
-        <View style={s.modalRoot}>
+      <Modal visible={createVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeCreate}>
+        <ScreenContainer standalone>
           <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>Jauns rāmjlīgums</Text>
-            <TouchableOpacity
-              onPress={() => {
-                setCreateVisible(false);
-                resetForm();
-              }}
-              style={s.modalCloseBtn}
-              activeOpacity={0.7}
-            >
+            <Text size="xl" style={s.modalTitle}>
+              Jauns rāmjlīgums
+            </Text>
+            <TouchableOpacity onPress={closeCreate} style={s.modalCloseBtn} activeOpacity={0.7}>
               <X size={20} color="#6b7280" />
             </TouchableOpacity>
           </View>
@@ -317,162 +309,103 @@ export default function FrameworkContractsScreen() {
               numberOfLines={3}
             />
 
-            <TouchableOpacity
-              style={[s.submitBtn, creating && { opacity: 0.6 }]}
-              onPress={handleCreate}
-              disabled={creating}
-              activeOpacity={0.85}
-            >
-              {creating ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={s.submitBtnText}>Izveidot līgumu</Text>
-              )}
-            </TouchableOpacity>
+            <Button onPress={handleCreate} isLoading={creating} style={s.submitBtnSpacing}>
+              Izveidot līgumu
+            </Button>
           </ScrollView>
-        </View>
+        </ScreenContainer>
       </Modal>
-    </View>
+    </ScreenContainer>
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
-
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f2f7' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
-  // Header
-  header: {
+  pageHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#f2f2f7',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
   },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#111827' },
-  addBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // List
-  scroll: { paddingHorizontal: 16, paddingTop: 4, gap: 12 },
-
-  // Empty
-  empty: {
-    marginTop: 40,
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 24,
-  },
-  emptyTitle: { fontSize: 17, fontWeight: '700', color: '#374151' },
-  emptyDesc: { fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 20 },
-  emptyBtn: {
-    marginTop: 8,
-    backgroundColor: '#111827',
-    borderRadius: 14,
-    paddingHorizontal: 24,
-    paddingVertical: 13,
-  },
-  emptyBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-
-  // Contract card
+  pageHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  pageTitle: { fontSize: 17, fontWeight: '600', color: '#111827' },
+  addBtnContent: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  addBtnText: { color: '#ffffff', fontSize: 13, fontWeight: '600' },
+  scroll: { padding: 16, paddingBottom: 100, gap: 10 },
+  emptyScroll: { flexGrow: 1, paddingBottom: 40 },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    padding: 16,
-    gap: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    padding: 14,
+    gap: 8,
     shadowColor: '#000',
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
-  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  contractNum: { fontSize: 12, fontWeight: '600', color: '#9ca3af', marginBottom: 2 },
-  contractTitle: { fontSize: 16, fontWeight: '700', color: '#111827', lineHeight: 22 },
-  statusPill: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  statusText: { fontSize: 11, fontWeight: '700' },
-
-  // Progress
+  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  cardTopCopy: { flex: 1, gap: 2 },
+  contractNum: { letterSpacing: 0.3 },
+  contractTitle: { fontSize: 15, fontWeight: '700', lineHeight: 20 },
   progRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  progLabel: { fontSize: 12, color: '#6b7280', fontWeight: '500' },
-  progPct: { fontSize: 12, color: '#111827', fontWeight: '700' },
+  progPct: { fontWeight: '700', color: '#111827' },
   progTrack: {
     height: 6,
     backgroundColor: '#f3f4f6',
-    borderRadius: 3,
+    borderRadius: 999,
     overflow: 'hidden',
   },
   progFill: {
     height: 6,
     backgroundColor: '#111827',
-    borderRadius: 3,
+    borderRadius: 999,
   },
-  progQty: { fontSize: 11, color: '#9ca3af', marginTop: 4 },
-
-  // Meta chips
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
+  progQty: { marginTop: 3 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   metaChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    flex: 1,
     backgroundColor: '#f9fafb',
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    flex: 1,
   },
-  metaText: { fontSize: 11, color: '#6b7280', flex: 1 },
-
-  // Modal
-  modalRoot: { flex: 1, backgroundColor: '#f2f2f7' },
+  metaText: { flex: 1 },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e5e7eb',
-    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
+  modalTitle: { fontWeight: '800', color: '#111827' },
   modalCloseBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  modalContent: { padding: 20, gap: 6 },
-
-  // Form
+  modalContent: { paddingHorizontal: 16, paddingBottom: 32 },
   fieldLabel: {
     fontSize: 13,
     fontWeight: '600',
     color: '#374151',
-    marginTop: 10,
-    marginBottom: 4,
+    marginTop: 12,
+    marginBottom: 6,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
@@ -486,12 +419,5 @@ const s = StyleSheet.create({
     textAlignVertical: 'top',
     paddingTop: 12,
   },
-  submitBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 14,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  submitBtnSpacing: { marginTop: 20 },
 });

@@ -67,7 +67,7 @@ function mapApiOrder(o: ApiOrder): IncomingOrder {
     COMPLETED: 'DISPATCHED',
   };
   const item = o.items?.[0];
-  const buyerName = o.buyer ? `${o.buyer.firstName} ${o.buyer.lastName}`.trim() : o.orderNumber;
+  const buyerName = o.buyer?.name ?? o.orderNumber;
   return {
     id: o.id,
     orderNumber: o.orderNumber,

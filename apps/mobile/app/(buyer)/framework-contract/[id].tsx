@@ -2,15 +2,12 @@
  * (buyer)/framework-contract/[id].tsx
  *
  * Buyer: framework contract detail — positions with progress and call-off release.
- * A "call-off" converts an agreed position into an actual transport job on the job board.
  */
 
 import React, { useCallback, useState } from 'react';
 import {
   View,
-  Text,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
@@ -29,22 +26,24 @@ import {
 import { formatDate, formatDateShort } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
 import { BottomSheet } from '@/components/ui/BottomSheet';
-import {
-  Package,
-  Truck,
-  Trash2,
-  Calendar,
-  MapPin,
-  TrendingUp,
-  Send,
-  ChevronRight,
-  Clock,
-} from 'lucide-react-native';
+import { Button } from '@/components/ui/button';
+import { DetailRow } from '@/components/ui/DetailRow';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { InfoSection } from '@/components/ui/InfoSection';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { SectionLabel } from '@/components/ui/SectionLabel';
 import { StatusPill } from '@/components/ui/StatusPill';
-
-// ── Constants ─────────────────────────────────────────────────────────────────
+import { Text } from '@/components/ui/text';
+import {
+  Calendar,
+  Clock,
+  Package,
+  Send,
+  Trash2,
+  TrendingUp,
+  Truck,
+} from 'lucide-react-native';
 
 const CONTRACT_STATUS: Record<
   FrameworkContractStatus,
@@ -78,7 +77,116 @@ const CALLOFF_STATUS_LABEL: Record<string, string> = {
   CANCELLED: 'Atcelts',
 };
 
-// ── Component ─────────────────────────────────────────────────────────────────
+function ProgressBar({ pct, complete = false }: { pct: number; complete?: boolean }) {
+  return (
+    <View style={s.progTrack}>
+      <View
+        style={[s.progFill, complete && s.progFillDone, { width: `${Math.min(100, pct)}%` as const }]}
+      />
+    </View>
+  );
+}
+
+function PositionSection({
+  position,
+  canRelease,
+  onRelease,
+}: {
+  position: ApiFrameworkPosition;
+  canRelease: boolean;
+  onRelease: (position: ApiFrameworkPosition) => void;
+}) {
+  const typeMeta = POSITION_TYPE_LABEL[position.positionType] ?? {
+    label: position.positionType,
+    icon: Package,
+  };
+  const PosIcon = typeMeta.icon;
+  const posPct = Math.min(100, position.progressPct);
+  const callOffCount = position.callOffs?.length ?? 0;
+
+  return (
+    <InfoSection
+      icon={<PosIcon size={14} color="#6b7280" />}
+      title={typeMeta.label}
+      right={
+        <Text size="sm" style={s.sectionRightText}>
+          {posPct.toFixed(0)}%
+        </Text>
+      }
+    >
+      <View style={s.sectionBlock}>
+        <Text style={s.positionTitle}>{position.description}</Text>
+
+        <View style={s.progressBlock}>
+          <View style={s.progRow}>
+            <Text variant="muted" size="sm">
+              {position.consumedQty.toFixed(1)} / {position.agreedQty.toFixed(1)} {position.unit}
+            </Text>
+            <Text size="sm" style={s.progressValue}>
+              {posPct.toFixed(0)}%
+            </Text>
+          </View>
+          <ProgressBar pct={posPct} complete={posPct >= 100} />
+          <Text variant="muted" size="sm" style={s.progressMeta}>
+            Atlikušie: {position.remainingQty.toFixed(1)} {position.unit}
+            {position.unitPrice != null
+              ? ` · €${position.unitPrice.toFixed(2)}/${position.unit}`
+              : ''}
+          </Text>
+        </View>
+
+        <DetailRow
+          label="Maršruts"
+          value={
+            position.pickupCity && position.deliveryCity
+              ? `${position.pickupCity} → ${position.deliveryCity}`
+              : position.pickupCity ?? position.deliveryCity ?? null
+          }
+        />
+        <DetailRow label="Darba uzdevumi" value={String(callOffCount)} last={callOffCount === 0} />
+
+        {callOffCount > 0 ? (
+          <View style={s.callOffList}>
+            {(position.callOffs ?? []).slice(0, 3).map((callOff, index, items) => (
+              <View
+                key={callOff.id}
+                style={[s.callOffRow, index < items.length - 1 && s.callOffRowBorder]}
+              >
+                <View style={s.callOffCopy}>
+                  <Text size="sm" style={s.callOffNumber}>
+                    {callOff.jobNumber}
+                  </Text>
+                  <Text variant="muted" size="sm">
+                    {CALLOFF_STATUS_LABEL[callOff.status] ?? callOff.status}
+                  </Text>
+                </View>
+                {callOff.cargoWeight != null ? (
+                  <Text variant="muted" size="sm">
+                    {(callOff.cargoWeight / 1000).toFixed(1)} t
+                  </Text>
+                ) : null}
+              </View>
+            ))}
+            {callOffCount > 3 ? (
+              <Text variant="muted" size="sm" style={s.moreCallOffs}>
+                +{callOffCount - 3} vairāk
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
+
+        {canRelease && position.remainingQty > 0 ? (
+          <Button variant="outline" onPress={() => onRelease(position)}>
+            <View style={s.releaseBtnInner}>
+              <Send size={14} color="#00A878" />
+              <Text style={s.releaseBtnLabel}>Izlaist darba uzdevumu</Text>
+            </View>
+          </Button>
+        ) : null}
+      </View>
+    </InfoSection>
+  );
+}
 
 export default function FrameworkContractDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -89,19 +197,16 @@ export default function FrameworkContractDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Call-off form
   const [callOffPosition, setCallOffPosition] = useState<ApiFrameworkPosition | null>(null);
   const [qty, setQty] = useState('');
   const [pickupDate, setPickupDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [deliveryDate, setDeliveryDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    return d.toISOString().split('T')[0];
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    return date.toISOString().split('T')[0];
   });
   const [callOffNotes, setCallOffNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  // ── Load ──────────────────────────────────────────────────────────────────
 
   const load = useCallback(
     async (skeleton = true) => {
@@ -125,8 +230,6 @@ export default function FrameworkContractDetailScreen() {
       load();
     }, [load]),
   );
-
-  // ── Open call-off form ────────────────────────────────────────────────────
 
   const openCallOff = (position: ApiFrameworkPosition) => {
     haptics.light();
@@ -181,11 +284,9 @@ export default function FrameworkContractDetailScreen() {
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   if (loading) {
     return (
-      <ScreenContainer standalone>
+      <ScreenContainer standalone topInset={0}>
         <View style={s.center}>
           <ActivityIndicator color="#111827" size="large" />
         </View>
@@ -195,26 +296,33 @@ export default function FrameworkContractDetailScreen() {
 
   if (!contract) {
     return (
-      <ScreenContainer standalone>
-        <View style={s.center}>
-          <Text style={s.emptyText}>Līgums nav atrasts</Text>
-          <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
-            <Text style={s.link}>← Atpakaļ</Text>
-          </TouchableOpacity>
-        </View>
+      <ScreenContainer standalone topInset={0}>
+        <EmptyState
+          icon={<TrendingUp size={28} color="#9ca3af" />}
+          title="Līgums nav atrasts"
+          subtitle="Šo rāmjlīgumu nevarēja ielādēt vai tas vairs nav pieejams."
+          action={
+            <Button variant="outline" onPress={() => router.back()}>
+              Atpakaļ
+            </Button>
+          }
+        />
       </ScreenContainer>
     );
   }
 
-  const st = CONTRACT_STATUS[contract.status] ?? CONTRACT_STATUS.ACTIVE;
+  const status = CONTRACT_STATUS[contract.status] ?? CONTRACT_STATUS.ACTIVE;
   const overallPct = Math.min(100, contract.totalProgressPct);
   const canRelease = contract.status === 'ACTIVE';
+  const period = `${formatDate(contract.startDate)}${
+    contract.endDate ? ` – ${formatDate(contract.endDate)}` : ''
+  }`;
 
   return (
-    <ScreenContainer standalone>
+    <ScreenContainer standalone topInset={0}>
       <ScreenHeader
-        title={`${contract.contractNumber} · ${contract.title}`}
-        rightSlot={<StatusPill label={st.label} bg={st.bg} color={st.color} size="sm" />}
+        title={contract.title}
+        rightSlot={<StatusPill label={status.label} bg={status.bg} color={status.color} size="sm" />}
       />
 
       <ScrollView
@@ -231,188 +339,97 @@ export default function FrameworkContractDetailScreen() {
           />
         }
       >
-        {/* ── Overview card ── */}
-        <View style={s.card}>
-          <Text style={s.cardTitle}>Kopējā izpilde</Text>
-
-          {/* Overall progress bar */}
-          <View>
-            <View style={s.progRow}>
-              <Text style={s.progLabel}>
-                {contract.totalConsumedQty.toFixed(1)} / {contract.totalAgreedQty.toFixed(1)} vien.
-              </Text>
-              <Text style={s.progPct}>{overallPct.toFixed(0)}%</Text>
-            </View>
-            <View style={s.progTrack}>
-              <View style={[s.progFill, { width: `${overallPct}%` as any }]} />
-            </View>
-          </View>
-
-          {/* Date range */}
-          <View style={s.infoRow}>
-            <Calendar size={13} color="#6b7280" />
-            <Text style={s.infoText}>
-              {formatDate(contract.startDate)}
-              {contract.endDate ? ` – ${formatDate(contract.endDate)}` : ''}
+        <InfoSection
+          icon={<Calendar size={14} color="#6b7280" />}
+          title="Kopsavilkums"
+          right={
+            <Text size="sm" style={s.sectionRightText}>
+              {contract.contractNumber}
             </Text>
-          </View>
-
-          {contract.notes && (
-            <View style={s.infoRow}>
-              <Text style={s.notesText}>{contract.notes}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* ── Positions ── */}
-        <Text style={s.sectionTitle}>Pozīcijas ({contract.positions.length})</Text>
-
-        {contract.positions.length === 0 && (
-          <View style={s.emptyCard}>
-            <TrendingUp size={28} color="#d1d5db" />
-            <Text style={s.emptyCardText}>Nav pievienotu pozīciju</Text>
-          </View>
-        )}
-
-        {contract.positions.map((pos) => {
-          const typeMeta = POSITION_TYPE_LABEL[pos.positionType] ?? {
-            label: pos.positionType,
-            icon: Package,
-          };
-          const PosIcon = typeMeta.icon;
-          const posPct = Math.min(100, pos.progressPct);
-          const callOffCount = pos.callOffs?.length ?? 0;
-
-          return (
-            <View key={pos.id} style={s.posCard}>
-              {/* Position header */}
-              <View style={s.posHeader}>
-                <View style={s.posIconWrap}>
-                  <PosIcon size={16} color="#374151" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.posTypeLabel}>{typeMeta.label}</Text>
-                  <Text style={s.posDesc} numberOfLines={2}>
-                    {pos.description}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Position progress */}
-              <View>
-                <View style={s.progRow}>
-                  <Text style={s.progLabel}>
-                    {pos.consumedQty.toFixed(1)} / {pos.agreedQty.toFixed(1)} {pos.unit}
-                  </Text>
-                  <Text style={s.progPct}>{posPct.toFixed(0)}%</Text>
-                </View>
-                <View style={s.progTrack}>
-                  <View
-                    style={[
-                      s.progFill,
-                      { width: `${posPct}%` as any },
-                      posPct >= 100 && s.progFillDone,
-                    ]}
-                  />
-                </View>
-                <Text style={s.progRemaining}>
-                  Atlikušie: {pos.remainingQty.toFixed(1)} {pos.unit}
-                  {pos.unitPrice != null && ` · €${pos.unitPrice.toFixed(2)}/${pos.unit}`}
+          }
+        >
+          <View style={s.sectionBody}>
+            <View style={s.progressBlock}>
+              <View style={s.progRow}>
+                <Text variant="muted" size="sm">
+                  Izpilde
+                </Text>
+                <Text size="sm" style={s.progressValue}>
+                  {overallPct.toFixed(0)}%
                 </Text>
               </View>
-
-              {/* Pickup/Delivery hint */}
-              {(pos.pickupCity || pos.deliveryCity) && (
-                <View style={s.posRoute}>
-                  {pos.pickupCity && (
-                    <View style={s.posRouteChip}>
-                      <View style={[s.routeDot, { backgroundColor: '#111827' }]} />
-                      <Text style={s.posRouteText} numberOfLines={1}>
-                        {pos.pickupCity}
-                      </Text>
-                    </View>
-                  )}
-                  {pos.pickupCity && pos.deliveryCity && <Text style={s.routeArrow}>→</Text>}
-                  {pos.deliveryCity && (
-                    <View style={s.posRouteChip}>
-                      <View style={[s.routeDot, { backgroundColor: '#dc2626' }]} />
-                      <Text style={s.posRouteText} numberOfLines={1}>
-                        {pos.deliveryCity}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {/* Call-offs for this position */}
-              {callOffCount > 0 && (
-                <View style={s.callOffList}>
-                  {(pos.callOffs ?? []).slice(0, 3).map((co) => (
-                    <View key={co.id} style={s.callOffRow}>
-                      <Text style={s.callOffNum}>{co.jobNumber}</Text>
-                      <Text style={s.callOffStatus}>
-                        {CALLOFF_STATUS_LABEL[co.status] ?? co.status}
-                      </Text>
-                      {co.cargoWeight != null && (
-                        <Text style={s.callOffWeight}>{(co.cargoWeight / 1000).toFixed(1)} t</Text>
-                      )}
-                    </View>
-                  ))}
-                  {callOffCount > 3 && (
-                    <Text style={s.callOffMore}>+{callOffCount - 3} vairāk</Text>
-                  )}
-                </View>
-              )}
-
-              {/* Release call-off button */}
-              {canRelease && pos.remainingQty > 0 && (
-                <TouchableOpacity
-                  style={s.releaseBtn}
-                  onPress={() => openCallOff(pos)}
-                  activeOpacity={0.85}
-                >
-                  <Send size={14} color="#111827" />
-                  <Text style={s.releaseBtnText}>Izlaist darba uzdevumu</Text>
-                </TouchableOpacity>
-              )}
+              <ProgressBar pct={overallPct} complete={overallPct >= 100} />
+              <Text variant="muted" size="sm" style={s.progressMeta}>
+                {contract.totalConsumedQty.toFixed(1)} / {contract.totalAgreedQty.toFixed(1)} vien.
+              </Text>
             </View>
-          );
-        })}
 
-        {/* ── Recent call-offs (contract level) ── */}
-        {contract.recentCallOffs.length > 0 && (
-          <>
-            <Text style={s.sectionTitle}>Nesenie darba uzdevumi</Text>
-            <View style={s.card}>
-              {contract.recentCallOffs.map((co, i) => (
-                <View
-                  key={co.id}
-                  style={[s.recentRow, i < contract.recentCallOffs.length - 1 && s.recentRowBorder]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.recentNum}>{co.jobNumber}</Text>
-                    <View style={s.recentMeta}>
-                      <Clock size={11} color="#9ca3af" />
-                      <Text style={s.recentMetaText}>{formatDateShort(co.pickupDate)}</Text>
-                      {co.deliveryCity && (
-                        <>
-                          <Text style={s.recentMetaDot}>·</Text>
-                          <Text style={s.recentMetaText}>{co.deliveryCity}</Text>
-                        </>
-                      )}
-                    </View>
-                  </View>
-                  <Text style={s.recentStatus}>{CALLOFF_STATUS_LABEL[co.status] ?? co.status}</Text>
-                </View>
-              ))}
-            </View>
-          </>
+            <DetailRow label="Periods" value={period} />
+            <DetailRow label="Pozīcijas" value={String(contract.positions.length)} />
+            <DetailRow label="Darba uzdevumi" value={String(contract.totalCallOffs)} />
+            <DetailRow label="Piezīmes" value={contract.notes ?? null} last />
+          </View>
+        </InfoSection>
+
+        <SectionLabel label={`Pozīcijas (${contract.positions.length})`} />
+
+        {contract.positions.length === 0 ? (
+          <EmptyState
+            icon={<Package size={28} color="#9ca3af" />}
+            title="Nav pievienotu pozīciju"
+            subtitle="Kad līgumam būs pozīcijas, tās parādīsies šeit ar progresu un darba uzdevumiem."
+          />
+        ) : (
+          contract.positions.map((position) => (
+            <PositionSection
+              key={position.id}
+              position={position}
+              canRelease={canRelease}
+              onRelease={openCallOff}
+            />
+          ))
         )}
 
-        <View style={{ height: 40 }} />
+        {contract.recentCallOffs.length > 0 ? (
+          <>
+            <SectionLabel label="Nesenie darba uzdevumi" />
+            <InfoSection icon={<Clock size={14} color="#6b7280" />} title="Pēdējās aktivitātes">
+              {contract.recentCallOffs.map((callOff, index) => (
+                <View
+                  key={callOff.id}
+                  style={[s.recentRow, index < contract.recentCallOffs.length - 1 && s.recentRowBorder]}
+                >
+                  <View style={s.recentCopy}>
+                    <Text size="sm" style={s.callOffNumber}>
+                      {callOff.jobNumber}
+                    </Text>
+                    <View style={s.recentMeta}>
+                      <Clock size={11} color="#9ca3af" />
+                      <Text variant="muted" size="sm">
+                        {formatDateShort(callOff.pickupDate)}
+                      </Text>
+                      {callOff.deliveryCity ? (
+                        <>
+                          <Text variant="muted" size="sm">
+                            ·
+                          </Text>
+                          <Text variant="muted" size="sm">
+                            {callOff.deliveryCity}
+                          </Text>
+                        </>
+                      ) : null}
+                    </View>
+                  </View>
+                  <Text variant="muted" size="sm" style={s.recentStatus}>
+                    {CALLOFF_STATUS_LABEL[callOff.status] ?? callOff.status}
+                  </Text>
+                </View>
+              ))}
+            </InfoSection>
+          </>
+        ) : null}
       </ScrollView>
 
-      {/* ── Call-off bottom sheet ── */}
       <BottomSheet
         visible={callOffPosition !== null}
         onClose={() => setCallOffPosition(null)}
@@ -421,7 +438,6 @@ export default function FrameworkContractDetailScreen() {
         scrollable
       >
         <View style={s.formWrap}>
-          {/* Quantity */}
           <Text style={s.fieldLabel}>Daudzums ({callOffPosition?.unit ?? 't'}) *</Text>
           <TextInput
             style={s.input}
@@ -432,7 +448,6 @@ export default function FrameworkContractDetailScreen() {
             keyboardType="decimal-pad"
           />
 
-          {/* Pickup date */}
           <Text style={s.fieldLabel}>Iekraušanas datums *</Text>
           <TextInput
             style={s.input}
@@ -443,7 +458,6 @@ export default function FrameworkContractDetailScreen() {
             keyboardType="numbers-and-punctuation"
           />
 
-          {/* Delivery date */}
           <Text style={s.fieldLabel}>Piegādes datums *</Text>
           <TextInput
             style={s.input}
@@ -454,220 +468,93 @@ export default function FrameworkContractDetailScreen() {
             keyboardType="numbers-and-punctuation"
           />
 
-          {/* Notes */}
           <Text style={s.fieldLabel}>Piezīmes</Text>
           <TextInput
             style={[s.input, s.inputMulti]}
             value={callOffNotes}
             onChangeText={setCallOffNotes}
-            placeholder="Papildinformācija šoferiim..."
+            placeholder="Papildinformācija šoferim..."
             placeholderTextColor="#9ca3af"
             multiline
             numberOfLines={3}
           />
 
-          <TouchableOpacity
-            style={[s.submitBtn, submitting && { opacity: 0.6 }]}
-            onPress={handleCallOff}
-            disabled={submitting}
-            activeOpacity={0.85}
-          >
-            {submitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={s.submitBtnText}>Izveidot darba uzdevumu</Text>
-            )}
-          </TouchableOpacity>
+          <Button onPress={handleCallOff} isLoading={submitting} style={s.submitBtnSpacing}>
+            Izveidot darba uzdevumu
+          </Button>
         </View>
       </BottomSheet>
     </ScreenContainer>
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
-
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f2f7' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyText: { fontSize: 15, color: '#6b7280' },
-  link: { fontSize: 15, color: '#111827', fontWeight: '600' },
-
-  // Top bar
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: '#fff',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e5e7eb',
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  scroll: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40, gap: 12 },
+  sectionRightText: { fontWeight: '700', color: '#374151' },
+  sectionBody: { paddingHorizontal: 14, paddingVertical: 14, paddingBottom: 2, gap: 10 },
+  sectionBlock: { padding: 14, gap: 12 },
+  positionTitle: { fontSize: 15, fontWeight: '700', color: '#111827', lineHeight: 21 },
+  progressBlock: { gap: 6 },
+  progRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  progressValue: { fontWeight: '700', color: '#111827' },
+  progressMeta: { marginTop: 2 },
+  progTrack: {
+    height: 7,
     backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 999,
+    overflow: 'hidden',
   },
-  contractNum: { fontSize: 11, fontWeight: '600', color: '#9ca3af', marginBottom: 1 },
-  contractTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  statusPill: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 8,
+  progFill: {
+    height: 7,
+    backgroundColor: '#111827',
+    borderRadius: 999,
   },
-  statusText: { fontSize: 11, fontWeight: '700' },
-
-  // Scroll
-  scroll: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
-
-  // Section title
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginTop: 4,
-  },
-
-  // Generic card
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-  },
-  cardTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#9ca3af',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-
-  // Overview
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  infoText: { fontSize: 13, color: '#374151', flex: 1 },
-  notesText: { fontSize: 13, color: '#6b7280', fontStyle: 'italic', lineHeight: 18 },
-
-  // Progress
-  progRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  progLabel: { fontSize: 12, color: '#6b7280' },
-  progPct: { fontSize: 12, color: '#111827', fontWeight: '700' },
-  progTrack: { height: 7, backgroundColor: '#f3f4f6', borderRadius: 4, overflow: 'hidden' },
-  progFill: { height: 7, backgroundColor: '#111827', borderRadius: 4 },
   progFillDone: { backgroundColor: '#059669' },
-  progRemaining: { fontSize: 11, color: '#9ca3af', marginTop: 5 },
-
-  // Position card
-  posCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    gap: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-  },
-  posHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  posIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  posTypeLabel: { fontSize: 11, fontWeight: '600', color: '#6b7280', marginBottom: 2 },
-  posDesc: { fontSize: 14, fontWeight: '600', color: '#111827', lineHeight: 19 },
-
-  // Position route
-  posRoute: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  posRouteChip: { flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1 },
-  routeDot: { width: 7, height: 7, borderRadius: 3.5 },
-  posRouteText: { fontSize: 12, color: '#6b7280', flex: 1 },
-  routeArrow: { fontSize: 12, color: '#9ca3af' },
-
-  // Call-offs inside position
   callOffList: {
     backgroundColor: '#f9fafb',
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   callOffRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 8,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
+  },
+  callOffRowBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#e5e7eb',
   },
-  callOffNum: { fontSize: 12, fontWeight: '700', color: '#374151', width: 90 },
-  callOffStatus: { flex: 1, fontSize: 11, color: '#6b7280' },
-  callOffWeight: { fontSize: 11, color: '#9ca3af' },
-  callOffMore: { fontSize: 11, color: '#9ca3af', paddingHorizontal: 12, paddingVertical: 6 },
-
-  // Release button
-  releaseBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-    borderWidth: 1.5,
-    borderColor: '#111827',
-    borderRadius: 12,
-    paddingVertical: 12,
-    marginTop: 4,
-  },
-  releaseBtnText: { fontSize: 14, fontWeight: '700', color: '#111827' },
-
-  // Recent call-offs
+  callOffCopy: { flex: 1, gap: 2 },
+  callOffNumber: { fontWeight: '700', color: '#111827' },
+  moreCallOffs: { paddingHorizontal: 12, paddingVertical: 10 },
+  releaseBtnInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  releaseBtnLabel: { fontSize: 14, fontWeight: '700', color: '#00A878' },
   recentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    gap: 8,
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   recentRowBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#f3f4f6',
   },
-  recentNum: { fontSize: 13, fontWeight: '700', color: '#111827' },
-  recentMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  recentMetaText: { fontSize: 11, color: '#9ca3af' },
-  recentMetaDot: { fontSize: 11, color: '#d1d5db' },
-  recentStatus: { fontSize: 11, color: '#6b7280', textAlign: 'right' },
-
-  // Empty position card
-  emptyCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-    gap: 8,
-  },
-  emptyCardText: { fontSize: 14, color: '#9ca3af' },
-
-  // Call-off form
-  formWrap: { paddingHorizontal: 20, paddingBottom: 32, gap: 6 },
+  recentCopy: { flex: 1, gap: 4 },
+  recentMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' },
+  recentStatus: { textAlign: 'right', maxWidth: 110 },
+  formWrap: { paddingHorizontal: 20, paddingBottom: 32 },
   fieldLabel: {
     fontSize: 13,
     fontWeight: '600',
     color: '#374151',
-    marginTop: 10,
-    marginBottom: 4,
+    marginTop: 12,
+    marginBottom: 6,
   },
   input: {
     backgroundColor: '#f9fafb',
@@ -684,12 +571,5 @@ const s = StyleSheet.create({
     textAlignVertical: 'top',
     paddingTop: 12,
   },
-  submitBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 14,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  submitBtnSpacing: { marginTop: 20 },
 });

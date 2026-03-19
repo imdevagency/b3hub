@@ -19,24 +19,24 @@ import { getMyWasteRecords, type ApiWasteRecord, type WasteType } from '@/lib/ap
 
 const WASTE_TYPE_LV: Record<WasteType, string> = {
   CONCRETE: 'Betons',
-  BRICK:    'Ķieģeļi',
-  WOOD:     'Koks',
-  METAL:    'Metāls',
-  PLASTIC:  'Plastmasa',
-  SOIL:     'Zeme',
-  MIXED:    'Jaukti',
-  HAZARDOUS:'Bīstamie',
+  BRICK: 'Ķieģeļi',
+  WOOD: 'Koks',
+  METAL: 'Metāls',
+  PLASTIC: 'Plastmasa',
+  SOIL: 'Zeme',
+  MIXED: 'Jaukti',
+  HAZARDOUS: 'Bīstamie',
 };
 
 const WASTE_TYPE_COLOR: Record<WasteType, string> = {
   CONCRETE: 'bg-gray-100 text-gray-700 border-gray-200',
-  BRICK:    'bg-orange-100 text-orange-800 border-orange-200',
-  WOOD:     'bg-amber-100 text-amber-800 border-amber-200',
-  METAL:    'bg-slate-100 text-slate-700 border-slate-200',
-  PLASTIC:  'bg-sky-100 text-sky-700 border-sky-200',
-  SOIL:     'bg-yellow-100 text-yellow-800 border-yellow-200',
-  MIXED:    'bg-purple-100 text-purple-700 border-purple-200',
-  HAZARDOUS:'bg-red-100 text-red-800 border-red-200',
+  BRICK: 'bg-orange-100 text-orange-800 border-orange-200',
+  WOOD: 'bg-amber-100 text-amber-800 border-amber-200',
+  METAL: 'bg-slate-100 text-slate-700 border-slate-200',
+  PLASTIC: 'bg-sky-100 text-sky-700 border-sky-200',
+  SOIL: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  MIXED: 'bg-purple-100 text-purple-700 border-purple-200',
+  HAZARDOUS: 'bg-red-100 text-red-800 border-red-200',
 };
 
 const FILTER_OPTIONS = ['ALL', 'CERTIFIED', 'PENDING'] as const;
@@ -44,14 +44,19 @@ type FilterKey = (typeof FILTER_OPTIONS)[number];
 
 function fmtDate(iso?: string | null) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('lv-LV', { day: '2-digit', month: 'short', year: 'numeric' });
+  return new Date(iso).toLocaleDateString('lv-LV', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 // ─── Record card ──────────────────────────────────────────────────────────────
 
 function RecordCard({ record }: { record: ApiWasteRecord }) {
   const typeLabel = WASTE_TYPE_LV[record.wasteType] ?? record.wasteType;
-  const typeColor = WASTE_TYPE_COLOR[record.wasteType] ?? 'bg-gray-100 text-gray-700 border-gray-200';
+  const typeColor =
+    WASTE_TYPE_COLOR[record.wasteType] ?? 'bg-gray-100 text-gray-700 border-gray-200';
   const hasCert = !!record.certificateUrl;
 
   return (
@@ -60,17 +65,18 @@ function RecordCard({ record }: { record: ApiWasteRecord }) {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           {/* Left: record info */}
           <div className="flex items-start gap-4 flex-1">
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${hasCert ? 'bg-green-100' : 'bg-amber-100'}`}>
-              {hasCert
-                ? <ShieldCheck className="h-5 w-5 text-green-600" />
-                : <Clock className="h-5 w-5 text-amber-600" />
-              }
+            <div
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${hasCert ? 'bg-green-100' : 'bg-amber-100'}`}
+            >
+              {hasCert ? (
+                <ShieldCheck className="h-5 w-5 text-green-600" />
+              ) : (
+                <Clock className="h-5 w-5 text-amber-600" />
+              )}
             </div>
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge className={`text-xs font-medium border ${typeColor}`}>
-                  {typeLabel}
-                </Badge>
+                <Badge className={`text-xs font-medium border ${typeColor}`}>{typeLabel}</Badge>
                 {hasCert ? (
                   <Badge className="text-xs font-medium border bg-green-100 text-green-800 border-green-200">
                     <ShieldCheck className="h-3 w-3 mr-1" />
@@ -98,9 +104,7 @@ function RecordCard({ record }: { record: ApiWasteRecord }) {
                     {record.recyclingRate.toFixed(0)}% pārstrāde
                   </span>
                 )}
-                {record.processedDate && (
-                  <span>Apstrādāts: {fmtDate(record.processedDate)}</span>
-                )}
+                {record.processedDate && <span>Apstrādāts: {fmtDate(record.processedDate)}</span>}
               </div>
             </div>
           </div>
@@ -148,7 +152,10 @@ function SummaryBar({ records }: { records: ApiWasteRecord[] }) {
         { label: 'Kopā svars', value: `${(totalWeight / 1000).toFixed(1)} t` },
         { label: 'Vid. pārstrāde', value: avgRate != null ? `${avgRate.toFixed(0)}%` : '—' },
       ].map(({ label, value }) => (
-        <div key={label} className="rounded-xl border border-border/50 bg-muted/30 px-4 py-3 text-center">
+        <div
+          key={label}
+          className="rounded-xl border border-border/50 bg-muted/30 px-4 py-3 text-center"
+        >
           <p className="text-lg font-bold tabular-nums">{value}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
         </div>
@@ -178,14 +185,16 @@ export default function CertificatesPage() {
     }
   }, [token]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const filtered =
     filter === 'ALL'
       ? records
       : filter === 'CERTIFIED'
-      ? records.filter((r) => !!r.certificateUrl)
-      : records.filter((r) => !r.certificateUrl);
+        ? records.filter((r) => !!r.certificateUrl)
+        : records.filter((r) => !r.certificateUrl);
 
   const filterLabel: Record<FilterKey, string> = {
     ALL: 'Visi',

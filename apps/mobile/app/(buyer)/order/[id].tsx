@@ -92,7 +92,7 @@ export default function OrderDetailScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer bg="#f2f2f7">
+      <ScreenContainer bg="#f9fafb">
         <View style={s.header}>
           <TouchableOpacity style={s.backBtn} onPress={() => router.back()} hitSlop={8}>
             <ArrowLeft size={18} color="#111827" />
@@ -107,7 +107,7 @@ export default function OrderDetailScreen() {
 
   if (!order) {
     return (
-      <ScreenContainer bg="#f2f2f7">
+      <ScreenContainer bg="#f9fafb">
         <View style={s.header}>
           <TouchableOpacity style={s.backBtn} onPress={() => router.back()} hitSlop={8}>
             <ArrowLeft size={18} color="#111827" />
@@ -134,7 +134,7 @@ export default function OrderDetailScreen() {
   const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status);
 
   return (
-    <ScreenContainer bg="#f2f2f7">
+    <ScreenContainer bg="#f9fafb">
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity style={s.backBtn} onPress={() => router.back()} hitSlop={8}>
@@ -375,8 +375,8 @@ export default function OrderDetailScreen() {
         {/* Buyer info */}
         {order.buyer && (
           <InfoSection icon={<User size={14} color="#6b7280" />} title="Pasūtītājs">
-            <DetailRow label="Vārds" value={`${order.buyer.firstName} ${order.buyer.lastName}`} />
-            <DetailRow label="Tālrunis" value={order.buyer.phone} last />
+            <DetailRow label="Vārds" value={order.buyer?.name ?? ''} />
+            <DetailRow label="Tālrunis" value={order.buyer?.phone} last />
           </InfoSection>
         )}
 
@@ -421,7 +421,7 @@ export default function OrderDetailScreen() {
               style={s.reorderBtn}
               onPress={() =>
                 router.push({
-                  pathname: '/order-request',
+                  pathname: '/order-request-new',
                   params: {
                     prefillMaterial: order.items[0]?.material?.name ?? '',
                     prefillAddress: order.deliveryAddress ?? '',
@@ -514,12 +514,12 @@ const s = StyleSheet.create({
   headerTitle: { fontSize: 17, fontWeight: '700', color: '#111827', flex: 1, marginHorizontal: 10 },
   content: { padding: 16, gap: 12, paddingBottom: 48 },
   driverCard: {
-    backgroundColor: '#fff7f7',
+    backgroundColor: '#f0fdf4',
     borderRadius: 14,
     padding: 14,
     gap: 10,
     borderLeftWidth: 3,
-    borderLeftColor: '#111827',
+    borderLeftColor: '#059669',
   },
   driverCardRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   driverTitle: {

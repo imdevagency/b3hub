@@ -81,14 +81,14 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
         {item.isActive && <View style={s.activeStrip} />}
         <View style={s.cardInner}>
           <View style={s.cardTop}>
-            <View style={s.typeTag}>
-              <Trash2 size={11} color="#6b7280" />
-              <Text style={s.typeTagText}>Konteiners</Text>
+            <View style={[s.typeTag, s.typeTagSkip]}>
+              <Trash2 size={11} color="#2563eb" />
+              <Text style={[s.typeTagText, { color: '#2563eb' }]}>Konteiners</Text>
             </View>
             <StatusPill label={status.label} bg={status.bg} color={status.color} />
           </View>
-          <Text style={s.orderNum}>{order.orderNumber}</Text>
-          <Text style={s.orderSub}>{SIZE_LABEL[order.skipSize] ?? order.skipSize}</Text>
+          <Text style={s.orderTitle}>{SIZE_LABEL[order.skipSize] ?? order.skipSize}</Text>
+          <Text style={s.orderRef}>{order.orderNumber}</Text>
           <View style={s.metaRow}>
             <MapPin size={13} color="#6b7280" />
             <Text style={s.metaText} numberOfLines={1}>
@@ -151,21 +151,21 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
       {item.isActive && <View style={s.activeStrip} />}
       <View style={s.cardInner}>
         <View style={s.cardTop}>
-          <View style={s.typeTag}>
-            <Truck size={11} color="#6b7280" />
-            <Text style={s.typeTagText}>Materiāli</Text>
+          <View style={[s.typeTag, s.typeTagMaterial]}>
+            <Truck size={11} color="#d97706" />
+            <Text style={[s.typeTagText, { color: '#d97706' }]}>Materiāli</Text>
           </View>
           <StatusPill label={st.label} bg={st.bg} color={st.color} />
         </View>
-        <Text style={s.orderNum}>{order.orderNumber}</Text>
-        <Text style={s.orderSub} numberOfLines={1}>
+        <Text style={s.orderTitle} numberOfLines={1}>
           {first
             ? `${first.material.name}${extra > 0 ? ` +${extra}` : ''}`
             : 'Materiālu pasūtījums'}
         </Text>
+        <Text style={s.orderRef}>{order.orderNumber}</Text>
         {driver && activeJob && (
           <View style={s.driverRow}>
-            <User size={13} color="#111827" />
+            <User size={13} color="#059669" />
             <Text style={s.driverName} numberOfLines={1}>
               {driver.firstName} {driver.lastName}
             </Text>
@@ -245,23 +245,23 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
       {item.isActive && <View style={s.activeStrip} />}
       <View style={s.cardInner}>
         <View style={s.cardTop}>
-          <View style={s.typeTag}>
-            <Icon size={11} color="#6b7280" />
-            <Text style={s.typeTagText}>{typeLabel}</Text>
+          <View style={[s.typeTag, s.typeTagTransport]}>
+            <Icon size={11} color="#7c3aed" />
+            <Text style={[s.typeTagText, { color: '#7c3aed' }]}>{typeLabel}</Text>
           </View>
           <StatusPill label={st.label} bg={st.bg} color={st.color} />
         </View>
-        <Text style={s.orderNum}>{job.jobNumber}</Text>
         {!isDisposal && (
-          <Text style={s.orderSub} numberOfLines={1}>
+          <Text style={s.orderTitle} numberOfLines={1}>
             {job.pickupCity} → {job.deliveryCity}
           </Text>
         )}
         {isDisposal && (
-          <Text style={s.orderSub} numberOfLines={1}>
+          <Text style={s.orderTitle} numberOfLines={1}>
             {WASTE_TYPE_LABEL[job.cargoType] ?? job.cargoType} · {job.pickupCity}
           </Text>
         )}
+        <Text style={s.orderRef}>{job.jobNumber}</Text>
         <View style={s.metaRow}>
           <MapPin size={13} color="#6b7280" />
           <Text style={s.metaText} numberOfLines={1}>
@@ -313,16 +313,16 @@ function RfqCard({ item }: { item: UnifiedOrder & { kind: 'rfq' } }) {
       {item.isActive && <View style={s.activeStrip} />}
       <View style={s.cardInner}>
         <View style={s.cardTop}>
-          <View style={s.typeTag}>
-            <HardHat size={11} color="#6b7280" />
-            <Text style={s.typeTagText}>Pieprasījums</Text>
+          <View style={[s.typeTag, s.typeTagRfq]}>
+            <HardHat size={11} color="#c2410c" />
+            <Text style={[s.typeTagText, { color: '#c2410c' }]}>Pieprasījums</Text>
           </View>
           <StatusPill label={st.label} bg={st.bg} color={st.color} />
         </View>
-        <Text style={s.orderNum}>{rfq.requestNumber}</Text>
-        <Text style={s.orderSub} numberOfLines={1}>
+        <Text style={s.orderTitle} numberOfLines={1}>
           {CATEGORY_LABELS[rfq.materialCategory] ?? rfq.materialCategory} · {rfq.materialName}
         </Text>
+        <Text style={s.orderRef}>{rfq.requestNumber}</Text>
         <View style={s.metaRow}>
           <MapPin size={13} color="#6b7280" />
           <Text style={s.metaText} numberOfLines={1}>
@@ -364,7 +364,7 @@ export default function OrdersScreen() {
   const [showTypePicker, setShowTypePicker] = useState(false);
 
   return (
-    <ScreenContainer bg="#f2f2f7">
+    <ScreenContainer bg="#f9fafb">
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -376,7 +376,11 @@ export default function OrdersScreen() {
           <View>
             <Text style={s.title}>Pasūtījumi</Text>
             <Text style={s.subtitle}>
-              {unified.length === 0 ? 'Nav pasūtījumu' : `${unified.length} kopā`}
+              {unified.length === 0
+                ? 'Nav pasūtījumu'
+                : counts.ACTIVE > 0
+                  ? `${counts.ACTIVE} aktīvi · ${unified.length} kopā`
+                  : `${unified.length} kopā`}
             </Text>
           </View>
           <TouchableOpacity
@@ -454,8 +458,8 @@ export default function OrdersScreen() {
                   item.kind === 'skip'
                     ? () => setRatingSkipId(item.data.id)
                     : item.kind === 'material'
-                    ? () => router.push(`/review/${item.data.id}` as any)
-                    : undefined
+                      ? () => router.push(`/review/${item.data.id}` as any)
+                      : undefined
                 }
               />
             ))
@@ -509,7 +513,7 @@ export default function OrdersScreen() {
             activeOpacity={0.8}
             onPress={() => {
               setShowTypePicker(false);
-              router.push('/order-request');
+              router.push('/order-request-new');
             }}
           >
             <View style={[s.pickerIcon, { backgroundColor: '#fef3c7' }]}>
@@ -644,8 +648,8 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  cardActive: { shadowOpacity: 0.09, shadowRadius: 12, elevation: 3 },
-  activeStrip: { width: 4, backgroundColor: '#111827' },
+  cardActive: { backgroundColor: '#eff6ff', shadowOpacity: 0.09, shadowRadius: 12, elevation: 3 },
+  activeStrip: { width: 4, backgroundColor: '#2563eb' },
   cardInner: { flex: 1, padding: 14 },
 
   cardTop: {
@@ -658,27 +662,33 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#f3f4f6',
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 3,
+    backgroundColor: '#f3f4f6',
   },
   typeTagText: { fontSize: 11, fontWeight: '600', color: '#6b7280' },
+  typeTagMaterial: { backgroundColor: '#fef3c7' },
+  typeTagSkip: { backgroundColor: '#eff6ff' },
+  typeTagTransport: { backgroundColor: '#faf5ff' },
+  typeTagRfq: { backgroundColor: '#fff7ed' },
 
-  orderNum: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2 },
-  orderSub: { fontSize: 13, color: '#6b7280', marginBottom: 8 },
+  orderTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2 },
+  orderRef: { fontSize: 11, color: '#9ca3af', marginBottom: 8, fontWeight: '500' },
 
   driverRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#fafafa',
+    backgroundColor: '#f0fdf4',
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 7,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
   },
-  driverName: { fontSize: 13, fontWeight: '600', color: '#111827', flex: 1 },
+  driverName: { fontSize: 13, fontWeight: '600', color: '#059669', flex: 1 },
   callChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -696,15 +706,15 @@ const s = StyleSheet.create({
   matRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#f9fafb',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    alignItems: 'center',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#f3f4f6',
+    paddingTop: 8,
     marginTop: 8,
     marginBottom: 2,
   },
   matDetail: { fontSize: 12, color: '#6b7280', flex: 1 },
-  matPrice: { fontSize: 12, fontWeight: '600', color: '#374151' },
+  matPrice: { fontSize: 12, fontWeight: '700', color: '#111827' },
 
   cardFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
   price: { fontSize: 18, fontWeight: '700', color: '#111827', flex: 1 },

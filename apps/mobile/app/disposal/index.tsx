@@ -1,7 +1,7 @@
 /**
  * Disposal wizard — full-screen step pages.
  *
- *   Step 1 – Location        (AddressPickerModal)
+ *   Step 1 – Location        (inline map)
  *   Step 2 – Waste type      (2-column grid, tap to select)
  *   Step 3 – Volume          (preset cards)
  *   Step 4 – Date + confirm  (day chips + summary + contact)
@@ -28,7 +28,6 @@ import {
   Trash2,
   AlertTriangle,
   Check,
-  CheckCircle,
   type LucideIcon,
 } from 'lucide-react-native';
 import { useDisposal } from '@/lib/disposal-context';
@@ -36,8 +35,8 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { WasteType, DisposalTruckType } from '@/lib/api';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
-import { AddressPickerModal } from '@/components/wizard/AddressPickerModal';
-import type { PickedAddress } from '@/components/wizard/AddressPickerModal';
+import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
+import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 
 // ── Types ─────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
@@ -156,7 +155,6 @@ export default function DisposalWizard() {
 
   // ── Wizard state ──────────────────────────────────────────────
   const [step, setStep] = useState<Step>(1);
-  const [showPicker, setShowPicker] = useState(false);
   const [picked, setPicked] = useState<PickedAddress | null>(
     state.locationLat != null && state.locationLng != null && state.location
       ? {
@@ -173,8 +171,6 @@ export default function DisposalWizard() {
   const today = new Date();
   const [date, setDate] = useState<Date>(addDays(today, 1));
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [jobNumber, setJobNumber] = useState('');
   const [contactName, setContactName] = useState(() =>
     `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
   );
@@ -189,7 +185,6 @@ export default function DisposalWizard() {
     (p: PickedAddress) => {
       setPicked(p);
       setLocation(p.address, p.city, p.lat, p.lng);
-      setShowPicker(false);
       setStep(2);
     },
     [setLocation],
@@ -233,11 +228,24 @@ export default function DisposalWizard() {
         },
         token,
       );
+      const jn = result?.jobNumber ?? '';
       reset();
-      setJobNumber(result?.jobNumber ?? '—');
-      setSubmitted(true);
+      router.replace({
+        pathname: '/disposal/confirmation' as never,
+        params: {
+          jobNumber: jn,
+          pickupAddress: state.location ?? '',
+          wasteType: state.wasteType ?? '',
+          truckType: preset.truckType,
+          truckCount: String(preset.truckCount),
+          requestedDate: toISO(date),
+        },
+      } as never);
     } catch (err: unknown) {
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās nosūtīt pieprasījumu. Mēģiniet vēlreiz.');
+      Alert.alert(
+        'Kļūda',
+        err instanceof Error ? err.message : 'Neizdevās nosūtīt pieprasījumu. Mēģiniet vēlreiz.',
+      );
     } finally {
       setLoading(false);
     }
@@ -268,10 +276,6 @@ export default function DisposalWizard() {
     step === 4 ? `Pasūtīt — no €${preset.fromPrice * preset.truckCount}` : 'Turpināt';
 
   const onCTA = useCallback(() => {
-    if (step === 1) {
-      setShowPicker(true);
-      return;
-    }
     if (step === 4) {
       handleSubmit();
       return;
@@ -292,38 +296,8 @@ export default function DisposalWizard() {
     4: 'Kad braukt?',
   };
 
-  // ── Success screen ────────────────────────────────────────────
-  if (submitted) {
-    return (
-      <View style={s.successRoot}>
-        <CheckCircle size={72} color="#22c55e" />
-        <Text style={s.successTitle}>Pieprasījums nosūtīts!</Text>
-        <Text style={s.successSub}>Jūsu atkritumu savākšanas pieprasījums ir reģistrēts.</Text>
-        {jobNumber && jobNumber !== '—' && (
-          <View style={s.jobBadge}>
-            <Text style={s.jobBadgeText}>#{jobNumber}</Text>
-          </View>
-        )}
-        <TouchableOpacity style={s.successBtn} onPress={() => router.replace('/(buyer)/orders')}>
-          <Text style={s.successBtnText}>Skatīt pasūtījumus</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   return (
     <>
-      <AddressPickerModal
-        visible={showPicker}
-        title="Kur atrodas atkritumi?"
-        onClose={() => {
-          if (step === 1) router.back();
-          else setShowPicker(false);
-        }}
-        onConfirm={handlePickConfirm}
-        initial={picked ?? undefined}
-      />
-
       <WizardLayout
         title={STEP_TITLES[step]}
         step={step}
@@ -331,34 +305,12 @@ export default function DisposalWizard() {
         onBack={goBack}
         onClose={() => router.back()}
         ctaLabel={ctaLabel}
-        onCTA={step === 1 ? () => setShowPicker(true) : onCTA}
+        onCTA={onCTA}
         ctaDisabled={ctaDisabled}
         ctaLoading={loading}
       >
         {/* ── Step 1: Location ── */}
-        {step === 1 && (
-          <ScrollView
-            style={s.content}
-            contentContainerStyle={s.pad}
-            showsVerticalScrollIndicator={false}
-          >
-            <Text style={s.hint}>Norādiet adresi, no kuras jāsavāc atkritumi.</Text>
-            <TouchableOpacity
-              style={s.addressCard}
-              onPress={() => setShowPicker(true)}
-              activeOpacity={0.75}
-            >
-              <MapPin
-                size={20}
-                color={picked ? '#111827' : '#9ca3af'}
-                style={{ marginRight: 10 }}
-              />
-              <Text style={[s.addressText, !picked && s.placeholder]} numberOfLines={2}>
-                {picked?.address ?? 'Pieskarieties, lai izvēlētos adresi'}
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        )}
+        {step === 1 && <InlineAddressStep picked={picked} onPick={handlePickConfirm} />}
 
         {/* ── Step 2: Waste type ── */}
         {step === 2 && (
@@ -704,42 +656,4 @@ const s = StyleSheet.create({
     color: '#111827',
   },
   inputMulti: { height: 80, textAlignVertical: 'top' },
-
-  // Success
-  successRoot: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    padding: 32,
-  },
-  successTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
-    marginTop: 20,
-    marginBottom: 8,
-  },
-  successSub: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 24,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  jobBadge: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    marginBottom: 32,
-  },
-  jobBadgeText: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  successBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-  },
-  successBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
 });

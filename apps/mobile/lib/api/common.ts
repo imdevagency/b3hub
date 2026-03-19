@@ -1,10 +1,83 @@
+import * as Device from 'expo-device';
+import { Platform } from 'react-native';
+
+const DEV_FALLBACK_API_URL =
+  Platform.OS === 'android' ? 'http://10.0.2.2:3000/api/v1' : 'http://localhost:3000/api/v1';
+
+const RECENT_GET_TTL_MS = 1500;
+
+type RecentGetEntry = {
+  expiresAt: number;
+  value: unknown;
+};
+
+const inflightGetRequests = new Map<string, Promise<unknown>>();
+const recentGetResponses = new Map<string, RecentGetEntry>();
+
+function resolveDevApiUrl(rawUrl?: string): string {
+  if (!rawUrl) return DEV_FALLBACK_API_URL;
+  if (Device.isDevice) return rawUrl;
+
+  try {
+    const url = new URL(rawUrl);
+
+    if (Platform.OS === 'ios') {
+      url.hostname = 'localhost';
+      return url.toString().replace(/\/$/, '');
+    }
+
+    if (Platform.OS === 'android') {
+      url.hostname = '10.0.2.2';
+      return url.toString().replace(/\/$/, '');
+    }
+
+    return rawUrl;
+  } catch {
+    return rawUrl;
+  }
+}
+
 /** Base URL resolved once at module load-time. */
-export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? (() => {
+export const API_URL = (() => {
+  const configuredUrl = process.env.EXPO_PUBLIC_API_URL;
+  if (configuredUrl) {
+    return process.env.NODE_ENV === 'production'
+      ? configuredUrl
+      : resolveDevApiUrl(configuredUrl);
+  }
+
   if (process.env.NODE_ENV === 'production') {
     throw new Error('EXPO_PUBLIC_API_URL must be set in production');
   }
-  return 'http://localhost:3000/api/v1';
+
+  return DEV_FALLBACK_API_URL;
 })();
+
+function buildRequestKey(url: string, options?: RequestInit): string {
+  const method = options?.method?.toUpperCase() ?? 'GET';
+  const authHeader =
+    options?.headers && !Array.isArray(options.headers)
+      ? new Headers(options.headers).get('Authorization') ?? ''
+      : '';
+  return `${method}:${url}:${authHeader}`;
+}
+
+function readRecentGet<T>(key: string): T | null {
+  const recent = recentGetResponses.get(key);
+  if (!recent) return null;
+  if (recent.expiresAt <= Date.now()) {
+    recentGetResponses.delete(key);
+    return null;
+  }
+  return recent.value as T;
+}
+
+function writeRecentGet<T>(key: string, value: T) {
+  recentGetResponses.set(key, {
+    value,
+    expiresAt: Date.now() + RECENT_GET_TTL_MS,
+  });
+}
 
 /**
  * Thin fetch wrapper with:
@@ -15,39 +88,75 @@ export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? (() => {
 export async function apiFetch<T>(
   endpoint: string,
   options?: RequestInit,
-  timeoutMs = 10_000,
+  timeoutMs = 20_000,
 ): Promise<T> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}${endpoint}`, {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-    });
-  } catch (err: unknown) {
-    if (err instanceof Error && err.name === 'AbortError') throw new Error('Request timed out');
-    throw err;
-  } finally {
-    clearTimeout(timer);
+  const url = `${API_URL}${endpoint}`;
+  const method = options?.method?.toUpperCase() ?? 'GET';
+  const isGet = method === 'GET';
+  const requestKey = buildRequestKey(url, options);
+
+  if (!isGet) {
+    inflightGetRequests.clear();
+    recentGetResponses.clear();
+  } else {
+    const recent = readRecentGet<T>(requestKey);
+    if (recent !== null) return recent;
+
+    const inflight = inflightGetRequests.get(requestKey);
+    if (inflight) return inflight as Promise<T>;
   }
 
-  if (!res.ok) {
-    const errText = await res.text().catch(() => '');
-    let error: { message?: string } = { message: 'Request failed' };
+  const requestPromise = (async () => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let res: Response;
     try {
-      error = errText ? JSON.parse(errText) : error;
-    } catch {
-      /* keep default */
+      res = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options?.headers,
+        },
+      });
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') throw new Error('Request timed out');
+      throw err;
+    } finally {
+      clearTimeout(timer);
     }
-    throw new Error(error.message || `HTTP ${res.status}`);
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      let error: { message?: string } = { message: 'Request failed' };
+      try {
+        error = errText ? JSON.parse(errText) : error;
+      } catch {
+        /* keep default */
+      }
+      throw new Error(error.message || `HTTP ${res.status}`);
+    }
+
+    // Handle empty body (e.g. 204 No Content)
+    const text = await res.text();
+    const parsed = text.length > 0 ? (JSON.parse(text) as T) : (null as T);
+
+    if (isGet) {
+      writeRecentGet(requestKey, parsed);
+    }
+
+    return parsed;
+  })();
+
+  if (!isGet) {
+    return requestPromise;
   }
 
-  // Handle empty body (e.g. 204 No Content)
-  const text = await res.text();
-  return text.length > 0 ? (JSON.parse(text) as T) : (null as T);
+  inflightGetRequests.set(requestKey, requestPromise as Promise<unknown>);
+
+  try {
+    return await requestPromise;
+  } finally {
+    inflightGetRequests.delete(requestKey);
+  }
 }

@@ -35,7 +35,15 @@ import {
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 const DAY_LABELS = ['Sv', 'Pr', 'Ot', 'Tr', 'Ce', 'Pk', 'Se'];
-const DAY_FULL = ['Svētdiena', 'Pirmdiena', 'Otrdiena', 'Trešdiena', 'Ceturtdiena', 'Piektdiena', 'Sestdiena'];
+const DAY_FULL = [
+  'Svētdiena',
+  'Pirmdiena',
+  'Otrdiena',
+  'Trešdiena',
+  'Ceturtdiena',
+  'Piektdiena',
+  'Sestdiena',
+];
 
 function fmtTime(t: string): string {
   return t.substring(0, 5); // 'HH:MM:SS' → 'HH:MM'
@@ -112,19 +120,23 @@ export default function ScheduleScreen() {
     }
   }, [token]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const handleToggleOnline = async (value: boolean) => {
     if (!token || toggling) return;
     setToggling(true);
     // Optimistic update
-    setProfile((prev) => prev ? { ...prev, isOnline: value } : prev);
+    setProfile((prev) => (prev ? { ...prev, isOnline: value } : prev));
     try {
       const res = await api.driverSchedule.toggleOnline(value, token);
-      setProfile((prev) => prev ? { ...prev, isOnline: res.isOnline } : prev);
+      setProfile((prev) => (prev ? { ...prev, isOnline: res.isOnline } : prev));
     } catch {
       // Revert on error
-      setProfile((prev) => prev ? { ...prev, isOnline: !value } : prev);
+      setProfile((prev) => (prev ? { ...prev, isOnline: !value } : prev));
       Alert.alert('Kļūda', 'Neizdevās mainīt statusu.');
     } finally {
       setToggling(false);
@@ -141,7 +153,14 @@ export default function ScheduleScreen() {
   const slotMap = new Map(sortedSlots.map((s) => [s.dayOfWeek, s]));
   const allDays = [1, 2, 3, 4, 5, 6, 0];
   const gridSlots: DriverWeeklySlot[] = allDays.map(
-    (d) => slotMap.get(d) ?? { id: `placeholder-${d}`, dayOfWeek: d, startTime: '08:00', endTime: '17:00', isActive: false },
+    (d) =>
+      slotMap.get(d) ?? {
+        id: `placeholder-${d}`,
+        dayOfWeek: d,
+        startTime: '08:00',
+        endTime: '17:00',
+        isActive: false,
+      },
   );
 
   const futureBlocks = (profile?.dateBlocks ?? []).filter(
@@ -179,7 +198,11 @@ export default function ScheduleScreen() {
                 </View>
                 <View style={s.switchWrap}>
                   {toggling && (
-                    <ActivityIndicator size="small" color={colors.primary} style={s.spinnerInline} />
+                    <ActivityIndicator
+                      size="small"
+                      color={colors.primary}
+                      style={s.spinnerInline}
+                    />
                   )}
                   <Switch
                     value={profile.isOnline}
@@ -192,7 +215,6 @@ export default function ScheduleScreen() {
                 </View>
               </View>
 
-
               {profile.autoSchedule && (
                 <View style={s.infoRow}>
                   <Info size={13} color={colors.textMuted} />
@@ -204,9 +226,7 @@ export default function ScheduleScreen() {
               {profile.maxJobsPerDay != null && (
                 <View style={s.infoRow}>
                   <Clock size={13} color={colors.textMuted} />
-                  <Text style={s.infoText}>
-                    Maks. darbi dienā: {profile.maxJobsPerDay}
-                  </Text>
+                  <Text style={s.infoText}>Maks. darbi dienā: {profile.maxJobsPerDay}</Text>
                 </View>
               )}
             </View>
@@ -227,8 +247,7 @@ export default function ScheduleScreen() {
               <View style={s.editHintRow}>
                 <ExternalLink size={13} color={colors.textMuted} />
                 <Text style={s.editHint}>
-                  Rediģēt grafiku var{' '}
-                  <Text style={s.editHintBold}>B3Hub tīmekļa portālā</Text>
+                  Rediģēt grafiku var <Text style={s.editHintBold}>B3Hub tīmekļa portālā</Text>
                 </Text>
               </View>
             </View>
@@ -249,9 +268,7 @@ export default function ScheduleScreen() {
                   <React.Fragment key={block.id}>
                     <View style={s.blockRow}>
                       <Text style={s.blockDate}>{fmtBlockDate(block.blockedDate)}</Text>
-                      {block.reason ? (
-                        <Text style={s.blockReason}>{block.reason}</Text>
-                      ) : null}
+                      {block.reason ? <Text style={s.blockReason}>{block.reason}</Text> : null}
                     </View>
                     {i < futureBlocks.length - 1 && <View style={s.divider} />}
                   </React.Fragment>

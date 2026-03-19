@@ -85,6 +85,7 @@ export default function BuyerLayout() {
           />
           <Tabs.Screen name="order/[id]" options={{ href: null }} />
           <Tabs.Screen name="skip-order/[id]" options={{ href: null }} />
+          <Tabs.Screen name="rfq/[id]" options={{ href: null }} />
           <Tabs.Screen name="invoices" options={{ href: null }} />
           <Tabs.Screen name="containers" options={{ href: null }} />
           <Tabs.Screen name="certificates" options={{ href: null }} />

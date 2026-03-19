@@ -106,7 +106,8 @@ export default function RootLayout() {
                   }}
                 >
                   {/* Booking wizard flows enter from the bottom — Uber-style */}
-                  <Stack.Screen name="order-request" options={SCREEN.modal} />
+                  <Stack.Screen name="order-request-new" options={SCREEN.modal} />
+                  <Stack.Screen name="order" options={SCREEN.modal} />
                   <Stack.Screen name="disposal" options={SCREEN.modal} />
                   <Stack.Screen name="transport" options={SCREEN.modal} />
                   {/* Auth redirect — instant, no animation */}

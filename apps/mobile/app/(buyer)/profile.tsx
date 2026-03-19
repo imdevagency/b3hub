@@ -120,7 +120,7 @@ export default function ProfileScreen() {
   const set = (key: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [key]: v }));
 
   return (
-    <ScreenContainer bg="#f2f2f7">
+    <ScreenContainer bg="#f9fafb">
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Avatar header */}
         <View style={s.avatarSection}>
@@ -198,7 +198,7 @@ export default function ProfileScreen() {
         onRequestClose={() => setEditOpen(false)}
       >
         <KeyboardAvoidingView
-          style={{ flex: 1, backgroundColor: '#f2f2f7' }}
+          style={{ flex: 1, backgroundColor: '#f9fafb' }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <View style={s.modalHandle}>
@@ -349,11 +349,11 @@ const s = StyleSheet.create({
     gap: 5,
     marginTop: 12,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: '#e5e7eb',
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 7,
-    backgroundColor: '#fef2f2',
+    backgroundColor: '#f9fafb',
   },
   editBtnText: { color: '#111827', fontSize: 13, fontWeight: '600' },
 

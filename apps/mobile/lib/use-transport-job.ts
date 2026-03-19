@@ -20,14 +20,20 @@ export function useTransportJob(id: string | undefined) {
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(() => {
-    if (!token || !id) return;
+    if (!token || !id) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     api.transportJobs
-      .myRequests(token)
-      .then((jobs) => {
-        const found = jobs.find((j) => j.id === id) ?? null;
-        setJob(found);
+      .getOne(id, token)
+      .then((found) => {
+        setJob(found ?? null);
       })
-      .catch(() => {})
+      .catch(() => {
+        setJob(null);
+      })
       .finally(() => setLoading(false));
   }, [id, token]);
 

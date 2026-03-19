@@ -98,8 +98,8 @@ export interface ApiOrder {
   siteContactPhone: string | null;
   buyer?: {
     id: string;
-    firstName: string;
-    lastName: string;
+    name: string;
+    email?: string;
     phone?: string;
   } | null;
   transportJobs?: {

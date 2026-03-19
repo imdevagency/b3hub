@@ -88,9 +88,7 @@ function computeRevenue(orders: ApiOrder[]): { stats: RevenueStats; entries: Ord
       entries.push({
         id: order.id,
         orderNumber: order.orderNumber,
-        buyerName: order.buyer
-          ? `${order.buyer.firstName ?? ''} ${order.buyer.lastName ?? ''}`.trim()
-          : 'Pircējs',
+        buyerName: order.buyer?.name ?? 'Pircējs',
         date: d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' }),
         rawDate: d,
         amount,
@@ -102,9 +100,7 @@ function computeRevenue(orders: ApiOrder[]): { stats: RevenueStats; entries: Ord
       entries.push({
         id: order.id,
         orderNumber: order.orderNumber,
-        buyerName: order.buyer
-          ? `${order.buyer.firstName ?? ''} ${order.buyer.lastName ?? ''}`.trim()
-          : 'Pircējs',
+        buyerName: order.buyer?.name ?? 'Pircējs',
         date: d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' }),
         rawDate: d,
         amount,

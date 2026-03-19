@@ -5,7 +5,16 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Bell, CheckCheck, Package, Truck, CreditCard, AlertCircle, MessageSquare, RefreshCw } from 'lucide-react';
+import {
+  Bell,
+  CheckCheck,
+  Package,
+  Truck,
+  CreditCard,
+  AlertCircle,
+  MessageSquare,
+  RefreshCw,
+} from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -22,19 +31,17 @@ import {
 
 // ─── Notification icon + color map ───────────────────────────────────────────
 
-const TYPE_META: Record<
-  NotificationType,
-  { icon: React.ElementType; color: string; bg: string }
-> = {
-  ORDER_CREATED:     { icon: Package,      color: 'text-blue-600',   bg: 'bg-blue-100' },
-  ORDER_CONFIRMED:   { icon: CheckCheck,   color: 'text-green-600',  bg: 'bg-green-100' },
-  ORDER_DELIVERED:   { icon: CheckCheck,   color: 'text-green-700',  bg: 'bg-green-100' },
-  TRANSPORT_ASSIGNED:{ icon: Truck,        color: 'text-primary',    bg: 'bg-primary/10' },
-  TRANSPORT_STARTED: { icon: Truck,        color: 'text-primary',    bg: 'bg-primary/10' },
-  TRANSPORT_COMPLETED:{ icon: Truck,       color: 'text-green-600',  bg: 'bg-green-100' },
-  PAYMENT_RECEIVED:  { icon: CreditCard,   color: 'text-emerald-600',bg: 'bg-emerald-100' },
-  SYSTEM_ALERT:      { icon: AlertCircle,  color: 'text-amber-600',  bg: 'bg-amber-100' },
-};
+const TYPE_META: Record<NotificationType, { icon: React.ElementType; color: string; bg: string }> =
+  {
+    ORDER_CREATED: { icon: Package, color: 'text-blue-600', bg: 'bg-blue-100' },
+    ORDER_CONFIRMED: { icon: CheckCheck, color: 'text-green-600', bg: 'bg-green-100' },
+    ORDER_DELIVERED: { icon: CheckCheck, color: 'text-green-700', bg: 'bg-green-100' },
+    TRANSPORT_ASSIGNED: { icon: Truck, color: 'text-primary', bg: 'bg-primary/10' },
+    TRANSPORT_STARTED: { icon: Truck, color: 'text-primary', bg: 'bg-primary/10' },
+    TRANSPORT_COMPLETED: { icon: Truck, color: 'text-green-600', bg: 'bg-green-100' },
+    PAYMENT_RECEIVED: { icon: CreditCard, color: 'text-emerald-600', bg: 'bg-emerald-100' },
+    SYSTEM_ALERT: { icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-100' },
+  };
 
 function fmtRelative(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -45,7 +52,11 @@ function fmtRelative(iso: string): string {
   if (hrs < 24) return `${hrs} st. atpakaļ`;
   const days = Math.floor(hrs / 24);
   if (days < 7) return `${days} d. atpakaļ`;
-  return new Date(iso).toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return new Date(iso).toLocaleDateString('lv-LV', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
 }
 
 function groupNotifications(items: AppNotification[]) {
@@ -64,13 +75,7 @@ function groupNotifications(items: AppNotification[]) {
 
 // ─── Notification row ────────────────────────────────────────────────────────
 
-function NotifRow({
-  n,
-  onMarkRead,
-}: {
-  n: AppNotification;
-  onMarkRead: (id: string) => void;
-}) {
+function NotifRow({ n, onMarkRead }: { n: AppNotification; onMarkRead: (id: string) => void }) {
   const meta = TYPE_META[n.type] ?? { icon: Bell, color: 'text-muted-foreground', bg: 'bg-muted' };
   const Icon = meta.icon;
 
@@ -80,11 +85,15 @@ function NotifRow({
         n.isRead ? 'bg-transparent' : 'bg-primary/5 border border-primary/10'
       }`}
     >
-      <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${meta.bg}`}>
+      <div
+        className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${meta.bg}`}
+      >
         <Icon className={`h-4 w-4 ${meta.color}`} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className={`text-sm leading-snug ${n.isRead ? 'text-foreground' : 'font-semibold text-foreground'}`}>
+        <p
+          className={`text-sm leading-snug ${n.isRead ? 'text-foreground' : 'font-semibold text-foreground'}`}
+        >
           {n.title}
         </p>
         <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{n.message}</p>
@@ -102,7 +111,11 @@ function NotifRow({
   );
 }
 
-function GroupSection({ title, items, onMarkRead }: {
+function GroupSection({
+  title,
+  items,
+  onMarkRead,
+}: {
   title: string;
   items: AppNotification[];
   onMarkRead: (id: string) => void;
@@ -174,7 +187,9 @@ export default function NotificationsPage() {
     <div className="max-w-2xl space-y-6">
       <PageHeader
         title="Paziņojumi"
-        description={unreadCount > 0 ? `${unreadCount} nelasīti paziņojumi` : 'Visi paziņojumi izlasīti'}
+        description={
+          unreadCount > 0 ? `${unreadCount} nelasīti paziņojumi` : 'Visi paziņojumi izlasīti'
+        }
         action={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => load(1)}>

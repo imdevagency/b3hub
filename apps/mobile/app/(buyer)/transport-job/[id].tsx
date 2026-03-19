@@ -255,7 +255,7 @@ export default function TransportJobDetailScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f2f2f7' }}>
+    <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
       {/* ── MAP SECTION ── */}
       <View style={{ height: MAP_H, backgroundColor: '#e5e7eb' }}>
         <BaseMap

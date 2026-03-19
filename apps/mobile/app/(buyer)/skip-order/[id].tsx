@@ -150,7 +150,7 @@ export default function SkipOrderDetailScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer bg="#f2f2f7">
+      <ScreenContainer bg="#f9fafb">
         <View style={s.header}>
           <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
             <ArrowLeft size={20} color="#111827" />
@@ -196,7 +196,7 @@ export default function SkipOrderDetailScreen() {
   };
 
   return (
-    <ScreenContainer bg="#f2f2f7">
+    <ScreenContainer bg="#f9fafb">
       {/* ── Header ── */}
       <View style={s.header}>
         <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
@@ -341,7 +341,9 @@ const s = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 14,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
   },
   backBtn: {
     width: 40,

@@ -39,9 +39,9 @@ Each row is a product feature domain.
 | **Delivery Proof**               | ✅ `documents/`                   | ✅ `/dashboard/documents`                       | ✅ `delivery-proof`                      | Photo capture + signature                                                                            |
 | **Skip Hire — Ordering**         | ✅ `skip-hire/`                   | ✅ `/dashboard/skip-hire`, `/order/skip-hire`   | ✅ `(buyer)/skip-order/[id]`             |                                                                                                      |
 | **Skip Hire — Driver (skips)**   | ✅ `skip-hire/`                   | 📵                                              | ✅ `(driver)/skips`                      | Driver manages skip pickups/drops                                                                    |
-| **Containers**                   | ✅ `containers/`                  | ✅ `/dashboard/containers`                     | ✅ `(buyer)/containers`                  | Web page added this session                                                                          |
+| **Containers**                   | ✅ `containers/`                  | ✅ `/dashboard/containers`                      | ✅ `(buyer)/containers`                  | Web page added this session                                                                          |
 | **Quote Requests (RFQ)**         | ✅ `quote-requests/`              | ✅ `/dashboard/quote-requests`, `/open`         | ✅ `(buyer)/rfq/[id]`, `(seller)/quotes` | Buyer requests quotes; seller responds                                                               |
-| **Framework Contracts**          | ✅ `framework-contracts/`         | ✅ `/dashboard/framework-contracts`            | ✅ `(buyer)/framework-contracts`, `[id]` | Long-term supply contracts with call-offs. Web page added this session                               |
+| **Framework Contracts**          | ✅ `framework-contracts/`         | ✅ `/dashboard/framework-contracts`             | ✅ `(buyer)/framework-contracts`, `[id]` | Long-term supply contracts with call-offs. Web page added this session                               |
 | **Invoices**                     | ✅ `invoices/`                    | ✅ `/dashboard/invoices`                        | ✅ `(buyer)/invoices`                    | Auto-generated from completed orders                                                                 |
 | **Vehicles**                     | ✅ `vehicles/`                    | ✅ `/dashboard/garage`, `/dashboard/fleet`      | ✅ `(driver)/vehicles`                   |                                                                                                      |
 | **Driver Schedule**              | ✅ `driver-schedule/`             | ✅ `/dashboard/schedule`                        | ✅ `(driver)/schedule`                   | Mobile schedule + online toggle added this session                                                   |
@@ -50,11 +50,11 @@ Each row is a product feature domain.
 | **Earnings — Carrier**           | ✅ (from transport)               | ✅ `/dashboard/transporter/earnings`            | ✅ `(driver)/earnings`                   |                                                                                                      |
 | **Company & Team**               | ✅ `company/`, `company-members/` | ✅ `/dashboard/company`, `/company/team`        | ✅ `(buyer)/team`                        | Roles: OWNER, MANAGER, DRIVER, MEMBER                                                                |
 | **Chat**                         | ✅ `chat/`                        | ✅ `/dashboard/chat`                            | ✅ `chat/[jobId]`, `messages`            | WebSocket-based; per-job threads                                                                     |
-| **Notifications**                | ✅ `notifications/`               | ✅ `/dashboard/notifications`                  | ✅ `notifications`                       | Push via Expo; web page added this session                                                           |
+| **Notifications**                | ✅ `notifications/`               | ✅ `/dashboard/notifications`                   | ✅ `notifications`                       | Push via Expo; web page added this session                                                           |
 | **Reviews**                      | ✅ `reviews/`                     | ✅ `/dashboard/reviews`                         | ✅ `review/[orderId]`, orders.tsx chip   | Standalone review screen + rate button on completed orders added this session                        |
 | **Recycling Centers / Disposal** | ✅ `recycling-centers/`           | ✅ `/dashboard/recycling-centers`               | ✅ `disposal/index`                      | Waste disposal booking                                                                               |
 | **Projects**                     | (via orders)                      | ✅ `/dashboard/buyer/projects`, `/[id]`         | ✅ `(buyer)/projects`, `project/[id]`    | Client-side grouping of orders                                                                       |
-| **Certificates**                 | (via documents)                   | ✅ `/dashboard/certificates`                   | ✅ `(buyer)/certificates`                | Web page added this session                                                                          |
+| **Certificates**                 | (via documents)                   | ✅ `/dashboard/certificates`                    | ✅ `(buyer)/certificates`                | Web page added this session                                                                          |
 | **Admin — Dashboard**            | ✅ `admin/`                       | ✅ `/dashboard/admin`                           | 📵                                       | Web-only                                                                                             |
 | **Admin — Users**                | ✅ `admin/`                       | ✅ `/dashboard/admin/users`                     | 📵                                       |                                                                                                      |
 | **Admin — Applications**         | ✅ `provider-applications/`       | ✅ `/dashboard/admin/applications`              | 📵                                       |                                                                                                      |
@@ -68,9 +68,9 @@ Each row is a product feature domain.
 
 These are confirmed missing pieces — good first-task candidates.
 
-| Gap                                | Impact                                      | Area          |
-| ---------------------------------- | ------------------------------------------- | ------------- |
-| Stripe payment integration missing | No payment flow                             | Backend + all |
+| Gap                                | Impact          | Area          |
+| ---------------------------------- | --------------- | ------------- |
+| Stripe payment integration missing | No payment flow | Backend + all |
 
 ---
 

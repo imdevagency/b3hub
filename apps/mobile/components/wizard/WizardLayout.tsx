@@ -146,7 +146,7 @@ const wl = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: '#e5e7eb',
   },
-  pillDone: { backgroundColor: '#9ca3af' },
+  pillDone: { backgroundColor: '#22c55e' },
   pillActive: { width: 32, backgroundColor: '#111827' },
 
   // content

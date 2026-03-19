@@ -74,15 +74,15 @@ const push: StackScreenOptions = {
 };
 
 /**
- * Modal / bottom-sheet — used for booking wizards, confirmation flows.
- * Slides up from the bottom; dismisses by sliding back down.
+ * Modal / wizard — slides in from the right, same feel as a push.
+ * Full-screen back-swipe enabled so the gesture drives the animation directly.
  */
 const modal: StackScreenOptions = {
-  animation: 'fade_from_bottom',
-  animationDuration: DURATION.modal,
+  animation: 'slide_from_right',
+  animationDuration: DURATION.push,
   gestureEnabled: true,
-  gestureDirection: 'vertical',
-  fullScreenGestureEnabled: false,  // keep swipe-down local to the sheet
+  fullScreenGestureEnabled: true,
+  animationMatchesGesture: true,
 };
 
 /** Fade-only — used for auth screens, splash-to-app handoff. */

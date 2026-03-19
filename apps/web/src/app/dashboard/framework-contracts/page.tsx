@@ -32,16 +32,35 @@ import {
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const STATUS_CFG: Record<FrameworkContractStatus, { label: string; icon: React.ElementType; className: string }> = {
-  ACTIVE:    { label: 'Aktīvs',    icon: CheckCircle2, className: 'bg-green-100 text-green-800 border-green-200' },
-  COMPLETED: { label: 'Pabeigts', icon: CheckCircle2, className: 'bg-blue-100 text-blue-800 border-blue-200' },
-  EXPIRED:   { label: 'Beidzies', icon: Clock,        className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-  CANCELLED: { label: 'Atcelts',  icon: XCircle,      className: 'bg-red-100 text-red-800 border-red-200' },
+const STATUS_CFG: Record<
+  FrameworkContractStatus,
+  { label: string; icon: React.ElementType; className: string }
+> = {
+  ACTIVE: {
+    label: 'Aktīvs',
+    icon: CheckCircle2,
+    className: 'bg-green-100 text-green-800 border-green-200',
+  },
+  COMPLETED: {
+    label: 'Pabeigts',
+    icon: CheckCircle2,
+    className: 'bg-blue-100 text-blue-800 border-blue-200',
+  },
+  EXPIRED: {
+    label: 'Beidzies',
+    icon: Clock,
+    className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  },
+  CANCELLED: {
+    label: 'Atcelts',
+    icon: XCircle,
+    className: 'bg-red-100 text-red-800 border-red-200',
+  },
 };
 
 const POSITION_TYPE_LV: Record<FrameworkPositionType, string> = {
   MATERIAL_DELIVERY: 'Materiālu piegāde',
-  WASTE_DISPOSAL:    'Atkritumu izvešana',
+  WASTE_DISPOSAL: 'Atkritumu izvešana',
   FREIGHT_TRANSPORT: 'Kravu transportēšana',
 };
 
@@ -55,7 +74,11 @@ const FILTER_OPTIONS: { key: 'ALL' | FrameworkContractStatus; label: string }[] 
 
 function fmtDate(iso?: string | null) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('lv-LV', { day: '2-digit', month: 'short', year: 'numeric' });
+  return new Date(iso).toLocaleDateString('lv-LV', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 // ─── Contract card ────────────────────────────────────────────────────────────
@@ -114,9 +137,13 @@ function ContractCard({ contract }: { contract: ApiFrameworkContract }) {
         {contract.positions.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {contract.positions.map((pos) => {
-              const posPct = pos.agreedQty > 0 ? Math.min((pos.consumedQty / pos.agreedQty) * 100, 100) : 0;
+              const posPct =
+                pos.agreedQty > 0 ? Math.min((pos.consumedQty / pos.agreedQty) * 100, 100) : 0;
               return (
-                <div key={pos.id} className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5">
+                <div
+                  key={pos.id}
+                  className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5"
+                >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-medium text-foreground truncate">
                       {pos.materialName}
@@ -132,8 +159,12 @@ function ContractCard({ contract }: { contract: ApiFrameworkContract }) {
                     />
                   </div>
                   <div className="flex justify-between text-[11px] text-muted-foreground mt-1">
-                    <span>{pos.consumedQty} {pos.unit} / {pos.agreedQty} {pos.unit}</span>
-                    <span>€{pos.unitPrice}/{pos.unit}</span>
+                    <span>
+                      {pos.consumedQty} {pos.unit} / {pos.agreedQty} {pos.unit}
+                    </span>
+                    <span>
+                      €{pos.unitPrice}/{pos.unit}
+                    </span>
                   </div>
                 </div>
               );
@@ -183,9 +214,12 @@ export default function FrameworkContractsPage() {
     }
   }, [token]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  const canCreate = !user?.company?.id || user.companyRole === 'OWNER' || user.companyRole === 'MANAGER';
+  const canCreate =
+    !user?.company?.id || user.companyRole === 'OWNER' || user.companyRole === 'MANAGER';
   const filtered = filter === 'ALL' ? contracts : contracts.filter((c) => c.status === filter);
 
   return (

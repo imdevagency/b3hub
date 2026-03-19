@@ -1,8 +1,8 @@
 /**
  * Transport wizard — full-screen step pages.
  *
- *   Step 1 – Pickup address  (AddressPickerModal)
- *   Step 2 – Dropoff address (AddressPickerModal)
+ *   Step 1 – Pickup address  (inline map)
+ *   Step 2 – Dropoff address (inline map)
  *   Step 3 – Vehicle + cargo + weight
  *   Step 4 – Date + route summary + contact/notes
  */
@@ -18,15 +18,15 @@ import {
   TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { MapPin, Check, CheckCircle, ArrowRight, Truck, Weight } from 'lucide-react-native';
+import { MapPin, Check, ArrowRight, Truck, Weight } from 'lucide-react-native';
 import { useTransport } from '@/lib/transport-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { TransportVehicleType } from '@/lib/api';
 import { useRoute } from '@/components/map';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
-import { AddressPickerModal } from '@/components/wizard/AddressPickerModal';
-import type { PickedAddress } from '@/components/wizard/AddressPickerModal';
+import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
+import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 
 // ── Types ─────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
@@ -81,8 +81,6 @@ export default function TransportWizard() {
   // ── Wizard state ──────────────────────────────────────────────
   const [step, setStep] = useState<Step>(1);
 
-  const [showPickupPicker, setShowPickupPicker] = useState(false);
-  const [showDropoffPicker, setShowDropoffPicker] = useState(false);
   const [pickupPicked, setPickupPicked] = useState<PickedAddress | null>(null);
   const [dropoffPicked, setDropoffPicked] = useState<PickedAddress | null>(null);
   const [pickupStop, setPickupStop] = useState<Stop | null>(null);
@@ -94,8 +92,6 @@ export default function TransportWizard() {
   const [selectedDay, setSelectedDay] = useState<string>(DAY_OPTIONS[0].iso);
 
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [jobNumber, setJobNumber] = useState('');
   const [siteContactName, setSiteContactName] = useState(() =>
     `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
   );
@@ -116,7 +112,6 @@ export default function TransportWizard() {
       setPickupPicked(p);
       setPickupStop({ lat: p.lat, lng: p.lng });
       setPickup(p.address, p.city, p.lat, p.lng);
-      setShowPickupPicker(false);
       setStep(2);
     },
     [setPickup],
@@ -127,7 +122,6 @@ export default function TransportWizard() {
       setDropoffPicked(p);
       setDropoffStop({ lat: p.lat, lng: p.lng });
       setDropoff(p.address, p.city, p.lat, p.lng);
-      setShowDropoffPicker(false);
       setStep(3);
     },
     [setDropoff],
@@ -162,9 +156,20 @@ export default function TransportWizard() {
         },
         token,
       );
-      setJobNumber(job.jobNumber ?? job.id.slice(0, 8).toUpperCase());
+      const jn = job.jobNumber ?? job.id.slice(0, 8).toUpperCase();
       reset();
-      setSuccess(true);
+      router.replace({
+        pathname: '/transport/confirmation' as never,
+        params: {
+          jobNumber: jn,
+          pickupAddress: pickupPicked?.address ?? '',
+          pickupCity: state.pickupCity ?? '',
+          dropoffAddress: dropoffPicked?.address ?? '',
+          dropoffCity: state.dropoffCity ?? '',
+          vehicleType: selectedVehicle,
+          requestedDate: selectedDay,
+        },
+      } as never);
     } catch (e: unknown) {
       Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās izveidot pasūtījumu');
     } finally {
@@ -205,14 +210,6 @@ export default function TransportWizard() {
       : 'Turpināt';
 
   const onCTA = useCallback(() => {
-    if (step === 1) {
-      setShowPickupPicker(true);
-      return;
-    }
-    if (step === 2) {
-      setShowDropoffPicker(true);
-      return;
-    }
     if (step === 4) {
       handleSubmit();
       return;
@@ -227,45 +224,8 @@ export default function TransportWizard() {
     4: 'Kad pārvadāt?',
   };
 
-  // ── Success screen ────────────────────────────────────────────
-  if (success) {
-    return (
-      <View style={s.successRoot}>
-        <CheckCircle size={72} color="#22c55e" />
-        <Text style={s.successTitle}>Pasūtījums pieņemts!</Text>
-        <Text style={s.successSub}>Mēs sazināsimies drīzumā</Text>
-        {jobNumber ? (
-          <View style={s.jobBadge}>
-            <Text style={s.jobBadgeText}>#{jobNumber}</Text>
-          </View>
-        ) : null}
-        <TouchableOpacity style={s.successBtn} onPress={() => router.replace('/(buyer)/orders')}>
-          <Text style={s.successBtnText}>Skatīt pasūtījumus</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   return (
     <>
-      <AddressPickerModal
-        visible={showPickupPicker}
-        title="No kurienes ielādēt?"
-        onClose={() => {
-          if (step === 1) router.back();
-          else setShowPickupPicker(false);
-        }}
-        onConfirm={handlePickupConfirm}
-        initial={pickupPicked ?? undefined}
-      />
-      <AddressPickerModal
-        visible={showDropoffPicker}
-        title="Kur izkraut?"
-        onClose={() => setShowDropoffPicker(false)}
-        onConfirm={handleDropoffConfirm}
-        initial={dropoffPicked ?? undefined}
-      />
-
       <WizardLayout
         title={STEP_TITLES[step]}
         step={step}
@@ -273,72 +233,29 @@ export default function TransportWizard() {
         onBack={goBack}
         onClose={() => router.back()}
         ctaLabel={ctaLabel}
-        onCTA={
-          step === 1
-            ? () => setShowPickupPicker(true)
-            : step === 2
-              ? () => setShowDropoffPicker(true)
-              : onCTA
-        }
+        onCTA={onCTA}
         ctaDisabled={ctaDisabled}
         ctaLoading={submitting}
       >
         {/* ── Step 1: Pickup ── */}
-        {step === 1 && (
-          <ScrollView
-            style={s.content}
-            contentContainerStyle={s.pad}
-            showsVerticalScrollIndicator={false}
-          >
-            <Text style={s.hint}>Norādiet adresi, no kuras jāielādē krava.</Text>
-            <TouchableOpacity
-              style={s.addressCard}
-              onPress={() => setShowPickupPicker(true)}
-              activeOpacity={0.75}
-            >
-              <MapPin
-                size={20}
-                color={pickupPicked ? '#111827' : '#9ca3af'}
-                style={{ marginRight: 10 }}
-              />
-              <Text style={[s.addressText, !pickupPicked && s.placeholder]} numberOfLines={2}>
-                {pickupPicked?.address ?? 'Pieskarieties, lai izvēlētos ielādes vietu'}
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        )}
+        {step === 1 && <InlineAddressStep picked={pickupPicked} onPick={handlePickupConfirm} />}
 
         {/* ── Step 2: Dropoff ── */}
         {step === 2 && (
-          <ScrollView
-            style={s.content}
-            contentContainerStyle={s.pad}
-            showsVerticalScrollIndicator={false}
-          >
-            <Text style={s.hint}>Norādiet galamērķa adresi.</Text>
-            {/* Show pickup as reference */}
-            <View style={s.refRow}>
-              <View style={s.refDot} />
-              <Text style={s.refLabel} numberOfLines={1}>
-                {pickupPicked?.address}
-              </Text>
-            </View>
-            <View style={s.refLine} />
-            <TouchableOpacity
-              style={s.addressCard}
-              onPress={() => setShowDropoffPicker(true)}
-              activeOpacity={0.75}
-            >
-              <MapPin
-                size={20}
-                color={dropoffPicked ? '#111827' : '#9ca3af'}
-                style={{ marginRight: 10 }}
-              />
-              <Text style={[s.addressText, !dropoffPicked && s.placeholder]} numberOfLines={2}>
-                {dropoffPicked?.address ?? 'Pieskarieties, lai izvēlētos izkraušanas vietu'}
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
+          <InlineAddressStep
+            picked={dropoffPicked}
+            onPick={handleDropoffConfirm}
+            banner={
+              pickupPicked ? (
+                <View style={s.refRow}>
+                  <View style={s.refDot} />
+                  <Text style={s.refLabel} numberOfLines={1}>
+                    {pickupPicked.address}
+                  </Text>
+                </View>
+              ) : undefined
+            }
+          />
         )}
 
         {/* ── Step 3: Vehicle + Cargo ── */}
@@ -659,36 +576,4 @@ const s = StyleSheet.create({
     color: '#111827',
   },
   inputMulti: { height: 80, textAlignVertical: 'top' },
-
-  // Success
-  successRoot: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    padding: 32,
-  },
-  successTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
-    marginTop: 20,
-    marginBottom: 8,
-  },
-  successSub: { fontSize: 15, color: '#6b7280', marginBottom: 24 },
-  jobBadge: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    marginBottom: 32,
-  },
-  jobBadgeText: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  successBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-  },
-  successBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
 });
