@@ -244,7 +244,7 @@ export default function CheckoutPage() {
                   onSelect={handleAddressSelect}
                   placeholder="Sākt rakstīt adresi..."
                   required
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -256,7 +256,7 @@ export default function CheckoutPage() {
                     value={form.city}
                     onChange={set('city')}
                     required
-                    className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
                 <div>
@@ -266,7 +266,7 @@ export default function CheckoutPage() {
                     placeholder="LV-1001"
                     value={form.postal}
                     onChange={set('postal')}
-                    className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
               </div>
@@ -277,7 +277,7 @@ export default function CheckoutPage() {
                   value={form.date}
                   onChange={set('date')}
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
               <div>
@@ -287,7 +287,7 @@ export default function CheckoutPage() {
                   placeholder="Piegādes instrukcijas, darba laiki..."
                   value={form.notes}
                   onChange={set('notes')}
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
                 />
               </div>
 
@@ -309,7 +309,7 @@ export default function CheckoutPage() {
                       placeholder="Jānis Bērziņš"
                       value={form.siteContactName}
                       onChange={set('siteContactName')}
-                      className="w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
                   <div>
@@ -321,7 +321,7 @@ export default function CheckoutPage() {
                       placeholder="+371 20 000 000"
                       value={form.siteContactPhone}
                       onChange={set('siteContactPhone')}
-                      className="w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
                 </div>

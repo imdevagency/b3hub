@@ -81,7 +81,7 @@ export function Step4Date({ value, onChange, onNext, onBack, submitting = false 
                   className={cn(
                     'rounded-xl border-2 py-3 text-sm font-semibold transition-all duration-200',
                     selected
-                      ? 'border-primary bg-red-50 text-red-700 ring-4 ring-red-100'
+                      ? 'border-primary bg-primary/5 text-primary ring-4 ring-primary/10'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50',
                   )}
                 >
@@ -111,8 +111,8 @@ export function Step4Date({ value, onChange, onNext, onBack, submitting = false 
             className={cn(
               'w-full rounded-xl border-2 py-4 pl-12 pr-4 text-base text-gray-900 outline-none transition-all',
               value
-                ? 'border-primary bg-red-50 focus:border-primary focus:ring-4 focus:ring-red-100'
-                : 'border-gray-200 bg-white focus:border-primary focus:ring-4 focus:ring-red-50',
+                ? 'border-primary bg-primary/5 focus:border-primary focus:ring-4 focus:ring-primary/10'
+                : 'border-gray-200 bg-white focus:border-primary focus:ring-4 focus:ring-primary/10',
             )}
           />
         </div>

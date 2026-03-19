@@ -32,9 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
               {/* Page content */}
               <div className="flex flex-1 flex-col gap-6 p-6 bg-muted/20 min-h-[calc(100vh-3.5rem)]">
-                <PageAnimate>
-                  {children}
-                </PageAnimate>
+                <PageAnimate>{children}</PageAnimate>
               </div>
             </SidebarInset>
           </SidebarProvider>

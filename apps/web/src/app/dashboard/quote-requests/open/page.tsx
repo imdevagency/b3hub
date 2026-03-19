@@ -333,7 +333,7 @@ export default function OpenQuoteRequestsPage() {
       {/* Content */}
       {loading ? (
         <div className="flex h-40 items-center justify-center">
-          <div className="h-7 w-7 animate-spin rounded-full border-b-2 border-red-600" />
+          <div className="h-7 w-7 animate-spin rounded-full border-b-2 border-primary" />
         </div>
       ) : error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-700">

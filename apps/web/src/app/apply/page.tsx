@@ -111,7 +111,7 @@ export default function ApplyPage() {
           href="/"
           className="flex items-center gap-2 font-extrabold text-xl tracking-tight text-gray-900"
         >
-          <span className="text-red-600">B3</span>Hub
+          <span className="text-primary">B3</span>Hub
         </Link>
         <Link
           href="/login"
@@ -134,7 +134,7 @@ export default function ApplyPage() {
                         s < step
                           ? 'bg-primary text-primary-foreground'
                           : s === step
-                            ? 'bg-red-100 text-red-700 border-2 border-red-600'
+                            ? 'bg-primary/10 text-primary border-2 border-primary'
                             : 'bg-gray-100 text-gray-400'
                       }`}
                     >
@@ -160,8 +160,8 @@ export default function ApplyPage() {
             {step === 1 && (
               <>
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
-                    <User className="h-5 w-5 text-red-600" />
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                    <User className="h-5 w-5 text-primary" />
                   </div>
                   <div>
                     <h1 className="text-xl font-bold text-gray-900">Kļūsti par piegādātāju</h1>
@@ -180,7 +180,7 @@ export default function ApplyPage() {
                         value={form.firstName}
                         onChange={(e) => set('firstName', e.target.value)}
                         placeholder="Jānis"
-                        className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -192,7 +192,7 @@ export default function ApplyPage() {
                         value={form.lastName}
                         onChange={(e) => set('lastName', e.target.value)}
                         placeholder="Bērziņš"
-                        className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -206,7 +206,7 @@ export default function ApplyPage() {
                       value={form.email}
                       onChange={(e) => set('email', e.target.value)}
                       placeholder="janis@uznemums.lv"
-                      className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -219,7 +219,7 @@ export default function ApplyPage() {
                       value={form.phone}
                       onChange={(e) => set('phone', e.target.value)}
                       placeholder="+371 20 000 000"
-                      className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -239,8 +239,8 @@ export default function ApplyPage() {
             {step === 2 && (
               <>
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
-                    <Building2 className="h-5 w-5 text-red-600" />
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                    <Building2 className="h-5 w-5 text-primary" />
                   </div>
                   <div>
                     <h1 className="text-xl font-bold text-gray-900">Uzņēmuma dati</h1>
@@ -258,7 +258,7 @@ export default function ApplyPage() {
                       value={form.companyName}
                       onChange={(e) => set('companyName', e.target.value)}
                       placeholder="SIA Mans Uzņēmums"
-                      className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -271,7 +271,7 @@ export default function ApplyPage() {
                         value={form.regNumber}
                         onChange={(e) => set('regNumber', e.target.value)}
                         placeholder="40000000000"
-                        className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -283,7 +283,7 @@ export default function ApplyPage() {
                         value={form.taxId}
                         onChange={(e) => set('taxId', e.target.value)}
                         placeholder="LV40000000000"
-                        className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -296,7 +296,7 @@ export default function ApplyPage() {
                       value={form.website}
                       onChange={(e) => set('website', e.target.value)}
                       placeholder="https://manuznemums.lv"
-                      className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -322,8 +322,8 @@ export default function ApplyPage() {
             {step === 3 && (
               <>
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
-                    <Package className="h-5 w-5 text-red-600" />
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                    <Package className="h-5 w-5 text-primary" />
                   </div>
                   <div>
                     <h1 className="text-xl font-bold text-gray-900">Pakalpojumi</h1>
@@ -337,7 +337,7 @@ export default function ApplyPage() {
                     onClick={() => set('appliesForSell', !form.appliesForSell)}
                     className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
                       form.appliesForSell
-                        ? 'border-red-600 bg-red-50'
+                        ? 'border-primary bg-primary/5'
                         : 'border-gray-200 hover:border-gray-300 bg-white'
                     }`}
                   >
@@ -366,7 +366,7 @@ export default function ApplyPage() {
                     onClick={() => set('appliesForTransport', !form.appliesForTransport)}
                     className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
                       form.appliesForTransport
-                        ? 'border-red-600 bg-red-50'
+                        ? 'border-primary bg-primary/5'
                         : 'border-gray-200 hover:border-gray-300 bg-white'
                     }`}
                   >
@@ -408,12 +408,12 @@ export default function ApplyPage() {
                     onChange={(e) => set('description', e.target.value)}
                     placeholder="Pastāstiet par savu uzņēmumu, floti, kapacitāti..."
                     rows={3}
-                    className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                    className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent resize-none"
                   />
                 </div>
 
                 {error && (
-                  <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-3">
+                  <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 mt-3">
                     {error}
                   </p>
                 )}

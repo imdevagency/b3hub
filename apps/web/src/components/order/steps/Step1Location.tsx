@@ -45,7 +45,7 @@ export function Step1Location({ value, onChange, onNext }: Step1Props) {
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
             autoFocus
-            className="w-full rounded-xl border-2 border-gray-200 py-4 pl-12 pr-4 text-base text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-red-50"
+            className="w-full rounded-xl border-2 border-gray-200 py-4 pl-12 pr-4 text-base text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
           />
         </div>
 

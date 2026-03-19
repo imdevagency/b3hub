@@ -122,7 +122,7 @@ export function Navbar() {
             <Button asChild variant="ghost" className="text-gray-700 hover:text-primary">
               <Link href="/login">Ieiet</Link>
             </Button>
-            <Button asChild className="bg-red-600 text-white hover:bg-red-500">
+            <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
               <Link href="/register">Sākt</Link>
             </Button>
           </div>
@@ -157,7 +157,7 @@ export function Navbar() {
               </Link>
               <Link
                 href="/apply"
-                className="px-3 py-2 text-sm font-semibold text-primary rounded-md hover:bg-red-50"
+                className="px-3 py-2 text-sm font-semibold text-primary rounded-md hover:bg-primary/10"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Kļūt par partneri →
@@ -169,7 +169,7 @@ export function Navbar() {
               </Button>
               <Button
                 asChild
-                className="w-full justify-center bg-red-600 text-white hover:bg-red-500"
+                className="w-full justify-center bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 <Link href="/register">Sākt</Link>
               </Button>

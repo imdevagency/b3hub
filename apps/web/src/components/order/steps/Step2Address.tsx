@@ -198,7 +198,7 @@ export function Step2Address({ value, onAddressChange, onNext, onBack }: Props) 
               type="text"
               defaultValue={value}
               placeholder="Iela, mājas nr., pilsēta"
-              className="w-full rounded-2xl border-2 border-gray-200 py-4 pl-12 pr-10 text-base text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-red-50"
+              className="w-full rounded-2xl border-2 border-gray-200 py-4 pl-12 pr-10 text-base text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
               onChange={(e) => setInput(e.target.value)}
             />
           ) : (
@@ -211,7 +211,7 @@ export function Step2Address({ value, onAddressChange, onNext, onBack }: Props) 
                 onChange={(e) => handleInputChange(e.target.value)}
                 onFocus={() => setShowSuggestions(suggestions.length > 0)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                className="w-full rounded-2xl border-2 border-gray-200 py-4 pl-12 pr-10 text-base text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-red-50"
+                className="w-full rounded-2xl border-2 border-gray-200 py-4 pl-12 pr-10 text-base text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
               />
               {/* Suggestions dropdown */}
               {showSuggestions && (

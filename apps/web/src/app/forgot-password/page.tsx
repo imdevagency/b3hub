@@ -72,14 +72,10 @@ export default function ForgotPasswordPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="janis@uznemums.lv"
                   required
-                  className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
                 />
               </div>
-              <Button
-                type="submit"
-                className="w-full h-11"
-                disabled={submitting || !email.trim()}
-              >
+              <Button type="submit" className="w-full h-11" disabled={submitting || !email.trim()}>
                 {submitting ? 'Sūta...' : 'Nosūtīt atjaunošanas saiti'}
               </Button>
             </form>
@@ -119,9 +115,7 @@ export default function ForgotPasswordPage() {
             )}
 
             <Link href="/login">
-              <Button className="h-11 w-full">
-                Atpakaļ uz pieteikšanos
-              </Button>
+              <Button className="h-11 w-full">Atpakaļ uz pieteikšanos</Button>
             </Link>
           </div>
         )}

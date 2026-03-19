@@ -91,6 +91,7 @@ export default function DriverLayout() {
           />
           <Tabs.Screen name="skips" options={{ href: null }} />
           <Tabs.Screen name="vehicles" options={{ href: null }} />
+          <Tabs.Screen name="schedule" options={{ href: null }} />
         </Tabs>
       </View>
       <Sidebar

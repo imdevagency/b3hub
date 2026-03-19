@@ -256,7 +256,7 @@ export default function TransporterEarningsPage() {
       </div>
 
       {/* main earnings highlight */}
-      <div className="rounded-2xl bg-linear-to-br from-red-600 to-red-500 p-6 text-white">
+      <div className="rounded-2xl bg-linear-to-br from-primary to-primary/90 p-6 text-white">
         <p className="text-sm font-medium opacity-80">{PERIOD_LABELS[period]} ienākumi</p>
         <p className="text-4xl font-extrabold mt-1 tabular-nums">{euro(periodEarnings)}</p>
         <div className="flex gap-6 mt-4 text-sm opacity-90">
@@ -273,7 +273,7 @@ export default function TransporterEarningsPage() {
           label="Šodien"
           value={euro(stats.todayEarnings)}
           icon={Banknote}
-          color="bg-red-100 text-red-700"
+          color="bg-primary/10 text-primary"
         />
         <StatCard
           label="Šonedēļ"
@@ -317,13 +317,13 @@ export default function TransporterEarningsPage() {
                   <div key={bar.label} className="flex-1 flex flex-col items-center gap-1">
                     <div className="w-full flex items-end justify-center" style={{ height: 88 }}>
                       <div
-                        className={`w-full rounded-t-md transition-all ${bar.isToday ? 'bg-red-500' : 'bg-red-200'}`}
+                        className={`w-full rounded-t-md transition-all ${bar.isToday ? 'bg-primary' : 'bg-primary/30'}`}
                         style={{ height: `${Math.max(heightPct, bar.amount > 0 ? 4 : 2)}%` }}
                         title={euro(bar.amount)}
                       />
                     </div>
                     <span
-                      className={`text-[10px] font-medium ${bar.isToday ? 'text-red-700' : 'text-muted-foreground'}`}
+                      className={`text-[10px] font-medium ${bar.isToday ? 'text-primary' : 'text-muted-foreground'}`}
                     >
                       {bar.shortLabel}
                     </span>

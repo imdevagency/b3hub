@@ -1,5 +1,5 @@
 ---
-applyTo: "apps/web/**"
+applyTo: 'apps/web/**'
 ---
 
 # Web UI Component Library (apps/web)
@@ -12,7 +12,9 @@ Icons come from `lucide-react` — never use emoji or raw SVG for icons.
 ## Layout & structure
 
 ### `<Card>` / `<CardHeader>` / `<CardTitle>` / `<CardContent>` / `<CardFooter>`
+
 White rounded panel with a shadow. Use for every content block on a page.
+
 ```tsx
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
@@ -21,13 +23,15 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
     <CardTitle>Orders</CardTitle>
   </CardHeader>
   <CardContent>...</CardContent>
-</Card>
+</Card>;
 ```
 
 ---
 
 ### `<PageHeader>` ⭐
+
 **Use this as the FIRST element of every dashboard page.** Provides a consistent title row with optional description and action button slot.
+
 ```tsx
 import { PageHeader } from '@/components/ui/page-header';
 
@@ -56,27 +60,35 @@ import { PageHeader } from '@/components/ui/page-header';
 ---
 
 ### `<EmptyState>` ⭐
+
 **Use whenever a list or data section has no items.** Never write inline empty-state divs.
+
 ```tsx
 import { EmptyState } from '@/components/ui/empty-state';
 
 // Minimal
-{orders.length === 0 && (
-  <EmptyState icon={ClipboardList} title="Nav pasūtījumu" />
-)}
+{
+  orders.length === 0 && <EmptyState icon={ClipboardList} title="Nav pasūtījumu" />;
+}
 
 // Full
 <EmptyState
   icon={Package}
   title="Nav materiālu"
   description="Pievienojiet pirmo materiālu, lai sāktu saņemt pasūtījumus"
-  action={<Button onClick={openForm}><Plus className="h-4 w-4 mr-1.5" />Pievienot materiālu</Button>}
-/>
+  action={
+    <Button onClick={openForm}>
+      <Plus className="h-4 w-4 mr-1.5" />
+      Pievienot materiālu
+    </Button>
+  }
+/>;
 ```
 
 ---
 
 ### `<PageAnimate>` (internal — already wired in layout)
+
 Triggers a fade+rise animation on every route change. It lives in `dashboard/layout.tsx` and wraps all dashboard `{children}`.
 **Do NOT add `animate-in` classes to page root elements** — the layout already handles it.
 
@@ -85,6 +97,7 @@ Triggers a fade+rise animation on every route change. It lives in `dashboard/lay
 ## Buttons
 
 ### `<Button>`
+
 ```tsx
 import { Button } from '@/components/ui/button';
 
@@ -102,44 +115,59 @@ import { Button } from '@/components/ui/button';
 ## Form elements
 
 ### `<Input>`
+
 ```tsx
 import { Input } from '@/components/ui/input';
 <Input placeholder="Search..." value={v} onChange={...} />
 ```
 
 ### `<Textarea>`
+
 ```tsx
 import { Textarea } from '@/components/ui/textarea';
 ```
 
 ### `<Label>`
+
 ```tsx
 import { Label } from '@/components/ui/label';
-<Label htmlFor="email">Email</Label>
+<Label htmlFor="email">Email</Label>;
 ```
 
 ### `<Select>` / `<SelectTrigger>` / `<SelectContent>` / `<SelectItem>`
+
 ```tsx
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 
 <Select value={v} onValueChange={setV}>
-  <SelectTrigger><SelectValue placeholder="Choose..." /></SelectTrigger>
+  <SelectTrigger>
+    <SelectValue placeholder="Choose..." />
+  </SelectTrigger>
   <SelectContent>
     <SelectItem value="a">Option A</SelectItem>
   </SelectContent>
-</Select>
+</Select>;
 ```
 
 ### `<Form>` + react-hook-form integration
+
 Use the `<Form>`, `<FormField>`, `<FormItem>`, `<FormLabel>`, `<FormControl>`, `<FormMessage>` wrappers from `@/components/ui/form` with `react-hook-form`.
 
 ### `<Switch>`
+
 ```tsx
 import { Switch } from '@/components/ui/switch';
-<Switch checked={enabled} onCheckedChange={setEnabled} />
+<Switch checked={enabled} onCheckedChange={setEnabled} />;
 ```
 
 ### `<Calendar>`
+
 Radix-based date picker. Import from `@/components/ui/calendar`.
 
 ---
@@ -147,14 +175,17 @@ Radix-based date picker. Import from `@/components/ui/calendar`.
 ## Feedback & status
 
 ### `<Badge>`
+
 ```tsx
 import { Badge } from '@/components/ui/badge';
 // variants: 'default' | 'secondary' | 'destructive' | 'outline' | 'ghost' | 'link'
-<Badge variant="secondary">Pending</Badge>
+<Badge variant="secondary">Pending</Badge>;
 ```
 
 ### `<Skeleton>`
+
 Loading placeholder. Use instead of spinners inside cards.
+
 ```tsx
 import { Skeleton } from '@/components/ui/skeleton';
 <Skeleton className="h-4 w-48" />
@@ -162,13 +193,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 ```
 
 ### `<PageSpinner>`
+
 Full-section loading state. Use when the entire page content is loading.
+
 ```tsx
 import { PageSpinner } from '@/components/ui/page-spinner';
 if (loading) return <PageSpinner />;
 ```
 
 ### `<Tooltip>` / `<TooltipTrigger>` / `<TooltipContent>`
+
 ```tsx
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 ```
@@ -178,21 +212,38 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 ## Overlays
 
 ### `<Dialog>` / `<DialogTrigger>` / `<DialogContent>` / `<DialogHeader>` / `<DialogTitle>` / `<DialogFooter>`
+
 Modal dialogs. Always use this instead of custom modal implementations.
+
 ```tsx
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 ```
 
 ### `<Sheet>` / `<SheetTrigger>` / `<SheetContent>`
+
 Slide-in side panel (right or bottom). Use for settings panels and detail drawers.
+
 ```tsx
 import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
-<SheetContent side="right">...</SheetContent>
+<SheetContent side="right">...</SheetContent>;
 ```
 
 ### `<DropdownMenu>` + subcomponents
+
 ```tsx
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
 ```
 
 ---
@@ -200,14 +251,24 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 ## Navigation
 
 ### `<NavigationMenu>` + subcomponents
+
 Top-level nav bars. Import from `@/components/ui/navigation-menu`.
 
 ### `<Breadcrumb>` + subcomponents
+
 ```tsx
-import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbSeparator,
+  BreadcrumbPage,
+} from '@/components/ui/breadcrumb';
 ```
 
 ### `<Sidebar>` and `<AppSidebar>`
+
 The main sidebar layout lives in `@/components/app-sidebar.tsx` and uses the primitives from `@/components/ui/sidebar.tsx`. Do not create custom sidebars.
 
 ---
@@ -215,12 +276,15 @@ The main sidebar layout lives in `@/components/app-sidebar.tsx` and uses the pri
 ## Data display
 
 ### `<Avatar>` / `<AvatarImage>` / `<AvatarFallback>`
+
 ```tsx
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 ```
 
 ### `<Separator>`
+
 Horizontal or vertical rule. Replaces `<hr>` or inline border Views.
+
 ```tsx
 import { Separator } from '@/components/ui/separator';
 <Separator />
@@ -228,6 +292,7 @@ import { Separator } from '@/components/ui/separator';
 ```
 
 ### `<Collapsible>` / `<CollapsibleTrigger>` / `<CollapsibleContent>`
+
 Toggle-able disclosure panel. Import from `@/components/ui/collapsible`.
 
 ---
@@ -235,7 +300,9 @@ Toggle-able disclosure panel. Import from `@/components/ui/collapsible`.
 ## Address input
 
 ### `<AddressAutocomplete>`
+
 Google Maps address autocomplete input for forms.
+
 ```tsx
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 <AddressAutocomplete
@@ -250,14 +317,17 @@ import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 ## Domain components
 
 ### `<DashboardGuard>`
+
 Protects pages that require an authenticated seller/admin session.
 `@/components/dashboard-guard.tsx`
 
 ### `<NotificationBell>`
+
 Top-bar notification icon with unread count badge.
 `@/components/notification-bell.tsx`
 
 ### `<ErrorBoundary>`
+
 Wrap page sections that may throw.
 `@/components/error-boundary.tsx`
 
@@ -278,6 +348,7 @@ Wrap page sections that may throw.
 - For status badges use `<StatusBadgeHex>` / `<InvoiceStatusBadge>` from `@/lib/status-config` — never write inline `<span style={{ backgroundColor, color }}>` for a status pill.
 
 <!-- GEN:component-api -->
+
 #### `AddressAutocomplete` — `@/components/ui/AddressAutocomplete`
 
 **Exports:** `AddressAutocomplete`
@@ -297,6 +368,7 @@ Wrap page sections that may throw.
 ---
 
 #### `button` — `@/components/ui/button`
+
 - **size:** `icon-xs` | `icon-sm` | `icon-lg`
 
 ---
@@ -323,13 +395,13 @@ Wrap page sections that may throw.
 
 #### `empty-state` — `@/components/ui/empty-state`
 
-| Prop | Type | |
-|------|------|---|
-| `icon` | `LucideIcon` | **required** |
-| `title` | `string` | **required** |
-| `description` | `string` | optional |
-| `action` | `React.ReactNode` | optional |
-| `className` | `string` | optional |
+| Prop          | Type              |              |
+| ------------- | ----------------- | ------------ |
+| `icon`        | `LucideIcon`      | **required** |
+| `title`       | `string`          | **required** |
+| `description` | `string`          | optional     |
+| `action`      | `React.ReactNode` | optional     |
+| `className`   | `string`          | optional     |
 
 **Exports:** `EmptyState`
 
@@ -359,12 +431,12 @@ Wrap page sections that may throw.
 
 #### `page-header` — `@/components/ui/page-header`
 
-| Prop | Type | |
-|------|------|---|
-| `title` | `string` | **required** |
-| `description` | `string` | optional |
-| `action` | `React.ReactNode` | optional |
-| `className` | `string` | optional |
+| Prop          | Type              |              |
+| ------------- | ----------------- | ------------ |
+| `title`       | `string`          | **required** |
+| `description` | `string`          | optional     |
+| `action`      | `React.ReactNode` | optional     |
+| `className`   | `string`          | optional     |
 
 **Exports:** `PageHeader`
 
@@ -372,8 +444,8 @@ Wrap page sections that may throw.
 
 #### `page-spinner` — `@/components/ui/page-spinner`
 
-| Prop | Type | |
-|------|------|---|
+| Prop        | Type     |          |
+| ----------- | -------- | -------- |
 | `className` | `string` | optional |
 
 **Exports:** `PageSpinner`
@@ -409,4 +481,5 @@ Wrap page sections that may throw.
 ---
 
 #### `tooltip` — `@/components/ui/tooltip`
+
 <!-- END GEN -->

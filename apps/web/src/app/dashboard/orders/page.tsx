@@ -10,7 +10,13 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { fmtDate, fmtMoney } from '@/lib/format';
-import { ORDER_STATUS, JOB_STATUS, SKIP_STATUS, SKIP_SIZE_LABEL, StatusBadgeHex } from '@/lib/status-config';
+import {
+  ORDER_STATUS,
+  JOB_STATUS,
+  SKIP_STATUS,
+  SKIP_SIZE_LABEL,
+  StatusBadgeHex,
+} from '@/lib/status-config';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { PageHeader } from '@/components/ui/page-header';
 import {

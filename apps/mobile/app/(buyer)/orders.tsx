@@ -209,7 +209,14 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
         )}
         <View style={s.cardFooter}>
           <Text style={s.price}>€{order.total.toFixed(2)}</Text>
-          <ChevronRight size={16} color="#9ca3af" />
+          {(order.status === 'DELIVERED' || order.status === 'COMPLETED') && onRate ? (
+            <TouchableOpacity style={s.actionChip} onPress={onRate} activeOpacity={0.8}>
+              <Star size={12} color="#6b7280" fill="#6b7280" />
+              <Text style={s.actionChipText}>Vērtēt</Text>
+            </TouchableOpacity>
+          ) : (
+            <ChevronRight size={16} color="#9ca3af" />
+          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -443,7 +450,13 @@ export default function OrdersScreen() {
               <UnifiedCard
                 key={`${item.kind}-${item.data.id}`}
                 item={item}
-                onRate={item.kind === 'skip' ? () => setRatingSkipId(item.data.id) : undefined}
+                onRate={
+                  item.kind === 'skip'
+                    ? () => setRatingSkipId(item.data.id)
+                    : item.kind === 'material'
+                    ? () => router.push(`/review/${item.data.id}` as any)
+                    : undefined
+                }
               />
             ))
           )}

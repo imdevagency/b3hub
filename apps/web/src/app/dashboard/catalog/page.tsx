@@ -128,7 +128,7 @@ function AddToCartModal({
                   const v = parseFloat(e.target.value);
                   if (!isNaN(v) && v >= min) setQty(parseFloat(v.toFixed(2)));
                 }}
-                className="flex-1 text-center rounded-xl border px-3 py-2.5 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="flex-1 text-center rounded-xl border px-3 py-2.5 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
               <button
                 onClick={() => adjust(step)}
@@ -360,7 +360,7 @@ export default function CatalogPage() {
             placeholder="Meklēt materiālus..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full rounded-xl border bg-muted/30 pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full rounded-xl border bg-muted/30 pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
           {searchInput && (
             <button

@@ -206,7 +206,7 @@ function MaterialFormModal({
                 value={form.name}
                 onChange={set('name')}
                 required
-                className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
 
@@ -217,7 +217,7 @@ function MaterialFormModal({
                 <select
                   value={form.category}
                   onChange={set('category')}
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 >
                   {CATEGORIES.map((c) => (
                     <option key={c.value} value={c.value}>
@@ -231,7 +231,7 @@ function MaterialFormModal({
                 <select
                   value={form.unit}
                   onChange={set('unit')}
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 >
                   {UNITS.map((u) => (
                     <option key={u.value} value={u.value}>
@@ -256,7 +256,7 @@ function MaterialFormModal({
                   value={form.basePrice}
                   onChange={set('basePrice')}
                   required
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
               <div>
@@ -266,7 +266,7 @@ function MaterialFormModal({
                   placeholder="piem. 0/2 mm"
                   value={form.subCategory}
                   onChange={set('subCategory')}
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
             </div>
@@ -284,7 +284,7 @@ function MaterialFormModal({
                   placeholder="—"
                   value={form.minOrder}
                   onChange={set('minOrder')}
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
               <div>
@@ -298,7 +298,7 @@ function MaterialFormModal({
                   placeholder="—"
                   value={form.maxOrder}
                   onChange={set('maxOrder')}
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
             </div>
@@ -311,7 +311,7 @@ function MaterialFormModal({
                 placeholder="Papildu informācija par materiālu..."
                 value={form.description}
                 onChange={set('description')}
-                className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
               />
             </div>
 
@@ -323,7 +323,7 @@ function MaterialFormModal({
                 placeholder="piem. A klase, ISO 1234"
                 value={form.quality}
                 onChange={set('quality')}
-                className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
 

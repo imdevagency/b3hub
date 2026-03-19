@@ -151,7 +151,7 @@ export function Step4ContactForm({
               value={name}
               onChange={set('name')}
               required
-              className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-red-50"
+              className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
             />
           </div>
           <div>
@@ -162,7 +162,7 @@ export function Step4ContactForm({
               value={phone}
               onChange={set('phone')}
               required
-              className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-red-50"
+              className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
             />
           </div>
         </div>
@@ -175,7 +175,7 @@ export function Step4ContactForm({
             value={email}
             onChange={set('email')}
             required
-            className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-red-50"
+            className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
           />
         </div>
 
@@ -188,7 +188,7 @@ export function Step4ContactForm({
             placeholder="Piekļuves instrukcijas, vārtejas kods, kontaktpersona uz vietas..."
             value={notes}
             onChange={set('notes')}
-            className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-red-50 resize-none"
+            className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10 resize-none"
           />
         </div>
       </div>

@@ -8,7 +8,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getMyInvoices, markInvoicePaid, type ApiInvoice } from '@/lib/api';
-import { ChevronLeft, ChevronRight, ExternalLink, FileText, Loader2, Receipt, RefreshCw } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  FileText,
+  Loader2,
+  Receipt,
+  RefreshCw,
+} from 'lucide-react';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { fmtDate } from '@/lib/format';
 import { InvoiceStatusBadge } from '@/lib/status-config';

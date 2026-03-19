@@ -9,7 +9,10 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
+  Award,
   Banknote,
+  Bell,
+  Box,
   Briefcase,
   Building2,
   CalendarClock,
@@ -26,6 +29,7 @@ import {
   Package,
   PackagePlus,
   Receipt,
+  ScrollText,
   Search,
   Settings,
   ShoppingCart,
@@ -71,11 +75,15 @@ const ROLE_NAV: Record<Mode, NavItem[]> = {
     { label: 'Materiālu Katalogs', href: '/dashboard/catalog', icon: Package },
     { label: 'Grozs', href: '/dashboard/checkout', icon: ShoppingCart },
     { label: 'Mani Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
-    { label: 'Rāmjlīgumi', href: '/dashboard/buyer/projects', icon: FolderKanban },
+    { label: 'Projekti', href: '/dashboard/buyer/projects', icon: FolderKanban },
+    { label: 'Ietvarlīgumi', href: '/dashboard/framework-contracts', icon: ScrollText },
+    { label: 'Konteineri', href: '/dashboard/containers', icon: Box },
     { label: 'Cenu Pieprasījumi', href: '/dashboard/quote-requests', icon: FileQuestion },
     { label: 'Rēķini', href: '/dashboard/invoices', icon: Receipt },
     { label: 'Pasūtīt', href: '/dashboard/order', icon: PackagePlus },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
+    { label: 'Sertifikāti', href: '/dashboard/certificates', icon: Award },
+    { label: 'Pazņojumi', href: '/dashboard/notifications', icon: Bell },
     { label: 'Čats', href: '/dashboard/chat', icon: MessageSquare },
   ],
   SUPPLIER: [
@@ -85,7 +93,9 @@ const ROLE_NAV: Record<Mode, NavItem[]> = {
     { label: 'Ieņēmumi', href: '/dashboard/supplier/earnings', icon: Banknote },
     { label: 'Pieprasījumu Tirgus', href: '/dashboard/quote-requests/open', icon: Search },
     { label: 'Atsauksmes', href: '/dashboard/reviews', icon: Star },
+    { label: 'Sertifikāti', href: '/dashboard/certificates', icon: Award },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
+    { label: 'Pazņojumi', href: '/dashboard/notifications', icon: Bell },
   ],
   CARRIER: [
     { label: 'Informācijas Panelis', href: '/dashboard/transporter', icon: LayoutDashboard },
@@ -95,6 +105,7 @@ const ROLE_NAV: Record<Mode, NavItem[]> = {
     { label: 'Ienākumi', href: '/dashboard/transporter/earnings', icon: Banknote },
     { label: 'Darba Grafiks', href: '/dashboard/schedule', icon: CalendarClock },
     { label: 'Utilizācijas Centri', href: '/dashboard/recycling-centers', icon: MapPin },
+    { label: 'Pazņojumi', href: '/dashboard/notifications', icon: Bell },
     { label: 'Čats', href: '/dashboard/chat', icon: MessageSquare },
     { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
   ],

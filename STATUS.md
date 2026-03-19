@@ -9,12 +9,12 @@
 
 ## Legend
 
-| Symbol | Meaning |
-|--------|---------|
-| ✅ | Fully implemented, connected end-to-end |
-| 🚧 | Partially implemented — see Notes |
-| ❌ | Not built |
-| 📵 | Not applicable for this platform |
+| Symbol | Meaning                                 |
+| ------ | --------------------------------------- |
+| ✅     | Fully implemented, connected end-to-end |
+| 🚧     | Partially implemented — see Notes       |
+| ❌     | Not built                               |
+| 📵     | Not applicable for this platform        |
 
 ---
 
@@ -25,42 +25,42 @@ Each row is a product feature domain.
 **Web** = Next.js page exists and fetches real data.  
 **Mobile** = Expo screen exists and fetches real data.
 
-| Feature | Backend | Web | Mobile | Notes |
-|---------|---------|-----|--------|-------|
-| **Auth — Login / Register** | ✅ `auth/` | ✅ `/login`, `/register` | ✅ `(auth)/login`, `register` | Supabase Auth JWT |
-| **Auth — Password reset** | ✅ Supabase | ✅ `/forgot-password`, `/reset-password` | ✅ `forgot-password`, `change-password` | |
-| **Auth — Provider application** | ✅ `provider-applications/` | ✅ `/apply` | ✅ `(auth)/apply-role` | Admin reviews at `/admin/applications` |
-| **Materials / Catalog** | ✅ `materials/` | ✅ `/dashboard/catalog`, `/dashboard/materials` | ✅ `(buyer)/catalog`, `(seller)/catalog` | Supplier manages listings; buyer browses |
-| **Orders — Create** | ✅ `orders/` | ✅ `/order` | ✅ `order-request` | Multi-step order form |
-| **Orders — List & Detail** | ✅ `orders/` | ✅ `/dashboard/orders`, `/orders/[id]` | ✅ `(buyer)/orders`, `order/[id]` | Full status timeline |
-| **Orders — Seller incoming** | ✅ `orders/` | ✅ `/dashboard/supplier` | ✅ `(seller)/incoming` | Seller confirms / rejects |
-| **Transport Jobs — Driver** | ✅ `transport-jobs/` | ✅ `/dashboard/jobs`, `/dashboard/active` | ✅ `(driver)/jobs`, `(driver)/active` | GPS tracking, delivery proof |
-| **Transport Jobs — Buyer view** | ✅ `transport-jobs/` | 📵 | ✅ `(buyer)/transport-job/[id]` | Buyer tracks live job |
-| **Delivery Proof** | ✅ `documents/` | ✅ `/dashboard/documents` | ✅ `delivery-proof` | Photo capture + signature |
-| **Skip Hire — Ordering** | ✅ `skip-hire/` | ✅ `/dashboard/skip-hire`, `/order/skip-hire` | ✅ `(buyer)/skip-order/[id]` | |
-| **Skip Hire — Driver (skips)** | ✅ `skip-hire/` | 📵 | ✅ `(driver)/skips` | Driver manages skip pickups/drops |
-| **Containers** | ✅ `containers/` | ❌ No web page | ✅ `(buyer)/containers` | **Web page missing** |
-| **Quote Requests (RFQ)** | ✅ `quote-requests/` | ✅ `/dashboard/quote-requests`, `/open` | ✅ `(buyer)/rfq/[id]`, `(seller)/quotes` | Buyer requests quotes; seller responds |
-| **Framework Contracts** | ✅ `framework-contracts/` | ❌ No web page | ✅ `(buyer)/framework-contracts`, `[id]` | Long-term supply contracts with call-offs. **Web page missing** |
-| **Invoices** | ✅ `invoices/` | ✅ `/dashboard/invoices` | ✅ `(buyer)/invoices` | Auto-generated from completed orders |
-| **Vehicles** | ✅ `vehicles/` | ✅ `/dashboard/garage`, `/dashboard/fleet` | ✅ `(driver)/vehicles` | |
-| **Driver Schedule** | ✅ `driver-schedule/` | ✅ `/dashboard/schedule` | ❌ No mobile screen | **Mobile schedule view missing** |
-| **Carrier Settings** | ✅ `carrier-settings/` | ✅ `/dashboard/transporter` | 📵 | Company-level transport settings |
-| **Earnings — Supplier** | ✅ (from orders) | ✅ `/dashboard/supplier/earnings` | ✅ `(seller)/earnings` | |
-| **Earnings — Carrier** | ✅ (from transport) | ✅ `/dashboard/transporter/earnings` | ✅ `(driver)/earnings` | |
-| **Company & Team** | ✅ `company/`, `company-members/` | ✅ `/dashboard/company`, `/company/team` | ✅ `(buyer)/team` | Roles: OWNER, MANAGER, DRIVER, MEMBER |
-| **Chat** | ✅ `chat/` | ✅ `/dashboard/chat` | ✅ `chat/[jobId]`, `messages` | WebSocket-based; per-job threads |
-| **Notifications** | ✅ `notifications/` | ❌ No web page | ✅ `notifications` | Push via Expo; **web notification page missing** |
-| **Reviews** | ✅ `reviews/` | ✅ `/dashboard/reviews` | ❌ No mobile screen | Buyers rate orders. **Mobile review screen missing** |
-| **Recycling Centers / Disposal** | ✅ `recycling-centers/` | ✅ `/dashboard/recycling-centers` | ✅ `disposal/index` | Waste disposal booking |
-| **Projects** | (via orders) | ✅ `/dashboard/buyer/projects`, `/[id]` | ✅ `(buyer)/projects`, `project/[id]` | Client-side grouping of orders |
-| **Certificates** | (via documents) | ❌ | ✅ `(buyer)/certificates` | Supplier certificates. **Web page missing** |
-| **Admin — Dashboard** | ✅ `admin/` | ✅ `/dashboard/admin` | 📵 | Web-only |
-| **Admin — Users** | ✅ `admin/` | ✅ `/dashboard/admin/users` | 📵 | |
-| **Admin — Applications** | ✅ `provider-applications/` | ✅ `/dashboard/admin/applications` | 📵 | |
-| **Email Notifications** | ✅ `email/` (Resend) | 📵 | 📵 | Welcome, order confirmation, quotes. Falls back to `console.log` in dev when `RESEND_API_KEY` absent |
-| **Payment / Stripe** | ❌ Not built | ❌ | ❌ | Planned future feature |
-| **Settings** | (user profile) | ✅ `/dashboard/settings` | ✅ `settings` | |
+| Feature                          | Backend                           | Web                                             | Mobile                                   | Notes                                                                                                |
+| -------------------------------- | --------------------------------- | ----------------------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Auth — Login / Register**      | ✅ `auth/`                        | ✅ `/login`, `/register`                        | ✅ `(auth)/login`, `register`            | Supabase Auth JWT                                                                                    |
+| **Auth — Password reset**        | ✅ Supabase                       | ✅ `/forgot-password`, `/reset-password`        | ✅ `forgot-password`, `change-password`  |                                                                                                      |
+| **Auth — Provider application**  | ✅ `provider-applications/`       | ✅ `/apply`                                     | ✅ `(auth)/apply-role`                   | Admin reviews at `/admin/applications`                                                               |
+| **Materials / Catalog**          | ✅ `materials/`                   | ✅ `/dashboard/catalog`, `/dashboard/materials` | ✅ `(buyer)/catalog`, `(seller)/catalog` | Supplier manages listings; buyer browses                                                             |
+| **Orders — Create**              | ✅ `orders/`                      | ✅ `/order`                                     | ✅ `order-request`                       | Multi-step order form                                                                                |
+| **Orders — List & Detail**       | ✅ `orders/`                      | ✅ `/dashboard/orders`, `/orders/[id]`          | ✅ `(buyer)/orders`, `order/[id]`        | Full status timeline                                                                                 |
+| **Orders — Seller incoming**     | ✅ `orders/`                      | ✅ `/dashboard/supplier`                        | ✅ `(seller)/incoming`                   | Seller confirms / rejects                                                                            |
+| **Transport Jobs — Driver**      | ✅ `transport-jobs/`              | ✅ `/dashboard/jobs`, `/dashboard/active`       | ✅ `(driver)/jobs`, `(driver)/active`    | GPS tracking, delivery proof                                                                         |
+| **Transport Jobs — Buyer view**  | ✅ `transport-jobs/`              | 📵                                              | ✅ `(buyer)/transport-job/[id]`          | Buyer tracks live job                                                                                |
+| **Delivery Proof**               | ✅ `documents/`                   | ✅ `/dashboard/documents`                       | ✅ `delivery-proof`                      | Photo capture + signature                                                                            |
+| **Skip Hire — Ordering**         | ✅ `skip-hire/`                   | ✅ `/dashboard/skip-hire`, `/order/skip-hire`   | ✅ `(buyer)/skip-order/[id]`             |                                                                                                      |
+| **Skip Hire — Driver (skips)**   | ✅ `skip-hire/`                   | 📵                                              | ✅ `(driver)/skips`                      | Driver manages skip pickups/drops                                                                    |
+| **Containers**                   | ✅ `containers/`                  | ✅ `/dashboard/containers`                     | ✅ `(buyer)/containers`                  | Web page added this session                                                                          |
+| **Quote Requests (RFQ)**         | ✅ `quote-requests/`              | ✅ `/dashboard/quote-requests`, `/open`         | ✅ `(buyer)/rfq/[id]`, `(seller)/quotes` | Buyer requests quotes; seller responds                                                               |
+| **Framework Contracts**          | ✅ `framework-contracts/`         | ✅ `/dashboard/framework-contracts`            | ✅ `(buyer)/framework-contracts`, `[id]` | Long-term supply contracts with call-offs. Web page added this session                               |
+| **Invoices**                     | ✅ `invoices/`                    | ✅ `/dashboard/invoices`                        | ✅ `(buyer)/invoices`                    | Auto-generated from completed orders                                                                 |
+| **Vehicles**                     | ✅ `vehicles/`                    | ✅ `/dashboard/garage`, `/dashboard/fleet`      | ✅ `(driver)/vehicles`                   |                                                                                                      |
+| **Driver Schedule**              | ✅ `driver-schedule/`             | ✅ `/dashboard/schedule`                        | ✅ `(driver)/schedule`                   | Mobile schedule + online toggle added this session                                                   |
+| **Carrier Settings**             | ✅ `carrier-settings/`            | ✅ `/dashboard/transporter`                     | 📵                                       | Company-level transport settings                                                                     |
+| **Earnings — Supplier**          | ✅ (from orders)                  | ✅ `/dashboard/supplier/earnings`               | ✅ `(seller)/earnings`                   |                                                                                                      |
+| **Earnings — Carrier**           | ✅ (from transport)               | ✅ `/dashboard/transporter/earnings`            | ✅ `(driver)/earnings`                   |                                                                                                      |
+| **Company & Team**               | ✅ `company/`, `company-members/` | ✅ `/dashboard/company`, `/company/team`        | ✅ `(buyer)/team`                        | Roles: OWNER, MANAGER, DRIVER, MEMBER                                                                |
+| **Chat**                         | ✅ `chat/`                        | ✅ `/dashboard/chat`                            | ✅ `chat/[jobId]`, `messages`            | WebSocket-based; per-job threads                                                                     |
+| **Notifications**                | ✅ `notifications/`               | ✅ `/dashboard/notifications`                  | ✅ `notifications`                       | Push via Expo; web page added this session                                                           |
+| **Reviews**                      | ✅ `reviews/`                     | ✅ `/dashboard/reviews`                         | ✅ `review/[orderId]`, orders.tsx chip   | Standalone review screen + rate button on completed orders added this session                        |
+| **Recycling Centers / Disposal** | ✅ `recycling-centers/`           | ✅ `/dashboard/recycling-centers`               | ✅ `disposal/index`                      | Waste disposal booking                                                                               |
+| **Projects**                     | (via orders)                      | ✅ `/dashboard/buyer/projects`, `/[id]`         | ✅ `(buyer)/projects`, `project/[id]`    | Client-side grouping of orders                                                                       |
+| **Certificates**                 | (via documents)                   | ✅ `/dashboard/certificates`                   | ✅ `(buyer)/certificates`                | Web page added this session                                                                          |
+| **Admin — Dashboard**            | ✅ `admin/`                       | ✅ `/dashboard/admin`                           | 📵                                       | Web-only                                                                                             |
+| **Admin — Users**                | ✅ `admin/`                       | ✅ `/dashboard/admin/users`                     | 📵                                       |                                                                                                      |
+| **Admin — Applications**         | ✅ `provider-applications/`       | ✅ `/dashboard/admin/applications`              | 📵                                       |                                                                                                      |
+| **Email Notifications**          | ✅ `email/` (Resend)              | 📵                                              | 📵                                       | Welcome, order confirmation, quotes. Falls back to `console.log` in dev when `RESEND_API_KEY` absent |
+| **Payment / Stripe**             | ❌ Not built                      | ❌                                              | ❌                                       | Planned future feature                                                                               |
+| **Settings**                     | (user profile)                    | ✅ `/dashboard/settings`                        | ✅ `settings`                            |                                                                                                      |
 
 ---
 
@@ -68,24 +68,18 @@ Each row is a product feature domain.
 
 These are confirmed missing pieces — good first-task candidates.
 
-| Gap | Impact | Area |
-|-----|--------|------|
-| No web page for Containers | Buyers can't manage containers from web | Web |
-| No web page for Framework Contracts | Contract management is mobile-only | Web |
-| No web page for Certificates | Suppliers can't upload certs from web | Web |
-| No web notification page | Users can't read notifications on web | Web |
-| No mobile driver schedule screen | Drivers can't view their schedule on mobile | Mobile |
-| No mobile review submission screen | Buyers/drivers can't review jobs on mobile | Mobile |
-| Stripe payment integration missing | No payment flow | Backend + all |
+| Gap                                | Impact                                      | Area          |
+| ---------------------------------- | ------------------------------------------- | ------------- |
+| Stripe payment integration missing | No payment flow                             | Backend + all |
 
 ---
 
 ## Known Stale Documentation
 
-| File | Problem |
-|------|---------|
+| File                               | Problem                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | `UserType` enum shows `BUYER\|SUPPLIER\|CARRIER\|DRIVER\|RECYCLER\|ADMIN` — **wrong**. Actual values are only `BUYER` and `ADMIN`. DB schema snippets are also outdated. Treat [prisma/schema.prisma](apps/backend/prisma/schema.prisma) and the auto-generated [backend-schema.instructions.md](.github/instructions/backend-schema.instructions.md) as the source of truth. |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Payment section describes Stripe as planned — it has not been started. |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Payment section describes Stripe as planned — it has not been started.                                                                                                                                                                                                                                                                                                        |
 
 ---
 
@@ -96,6 +90,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Backend Modules
 
 <!-- GEN:status-backend-modules -->
+
 - admin
 - auth
 - carrier-settings
@@ -123,6 +118,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Web Pages
 
 <!-- GEN:status-web-pages -->
+
 - (auth)/login
 - (auth)/register
 - (root)
@@ -169,6 +165,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Mobile Screens
 
 <!-- GEN:status-mobile-screens -->
+
 - (auth)/apply-role
 - (auth)/forgot-password
 - (auth)/login
@@ -222,19 +219,19 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 
 ## Architecture Quick-Reference
 
-| Concern | Solution | File(s) |
-|---------|----------|---------|
-| DB schema | Prisma | `apps/backend/prisma/schema.prisma` |
-| DB schema for AI | Auto-generated | `.github/instructions/backend-schema.instructions.md` |
-| Auth | Supabase JWT | `apps/backend/src/auth/` |
-| File storage | Supabase Storage | `apps/backend/src/supabase/` |
-| Real-time | WebSockets | `apps/backend/src/chat/` |
-| Design tokens | NativeWind / tokens.js | `apps/mobile/lib/tokens.js` |
-| Screen transitions | Centralized presets | `apps/mobile/lib/transitions.ts` |
-| Mobile API client | Barrel export | `apps/mobile/lib/api.ts` |
-| Email | Resend SDK | `apps/backend/src/email/email.service.ts` |
-| Rate limiting | ThrottlerModule (120/min) | `apps/backend/src/app.module.ts` |
+| Concern            | Solution                  | File(s)                                               |
+| ------------------ | ------------------------- | ----------------------------------------------------- |
+| DB schema          | Prisma                    | `apps/backend/prisma/schema.prisma`                   |
+| DB schema for AI   | Auto-generated            | `.github/instructions/backend-schema.instructions.md` |
+| Auth               | Supabase JWT              | `apps/backend/src/auth/`                              |
+| File storage       | Supabase Storage          | `apps/backend/src/supabase/`                          |
+| Real-time          | WebSockets                | `apps/backend/src/chat/`                              |
+| Design tokens      | NativeWind / tokens.js    | `apps/mobile/lib/tokens.js`                           |
+| Screen transitions | Centralized presets       | `apps/mobile/lib/transitions.ts`                      |
+| Mobile API client  | Barrel export             | `apps/mobile/lib/api.ts`                              |
+| Email              | Resend SDK                | `apps/backend/src/email/email.service.ts`             |
+| Rate limiting      | ThrottlerModule (120/min) | `apps/backend/src/app.module.ts`                      |
 
 ---
 
-*Last reviewed: March 2026*
+_Last reviewed: March 2026_

@@ -64,9 +64,7 @@ export function PageHeader({ title, description, action, className = '' }: PageH
           <p className="mt-0.5 text-sm text-muted-foreground leading-snug">{description}</p>
         )}
       </div>
-      {action && (
-        <div className="shrink-0 flex items-center gap-2">{action}</div>
-      )}
+      {action && <div className="shrink-0 flex items-center gap-2">{action}</div>}
     </div>
   );
 }

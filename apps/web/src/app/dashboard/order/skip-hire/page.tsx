@@ -41,8 +41,8 @@ export default function SkipHirePage() {
           const Icon = b.icon;
           return (
             <div key={b.label} className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-100">
-                <Icon className="h-4 w-4 text-red-600" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+                <Icon className="h-4 w-4 text-primary" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-800">{b.label}</p>

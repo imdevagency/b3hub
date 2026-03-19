@@ -159,7 +159,7 @@ export function NotificationBell() {
           <div className="max-h-96 overflow-y-auto divide-y">
             {loading ? (
               <div className="flex h-24 items-center justify-center">
-                <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-red-600" />
+                <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-primary" />
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-center">

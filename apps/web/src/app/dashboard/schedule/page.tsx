@@ -421,7 +421,7 @@ export default function DriverSchedulePage() {
             value={maxJobs}
             onChange={(e) => setMaxJobs(e.target.value === '' ? '' : Number(e.target.value))}
             placeholder="—"
-            className="w-20 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-red-300"
+            className="w-20 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
       </div>
@@ -456,14 +456,14 @@ export default function DriverSchedulePage() {
             value={blockDate}
             min={new Date().toISOString().slice(0, 10)}
             onChange={(e) => setBlockDate(e.target.value)}
-            className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+            className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           <input
             type="text"
             value={blockReason}
             onChange={(e) => setBlockReason(e.target.value)}
             placeholder="Iemesls (nav obligāts)"
-            className="flex-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+            className="flex-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           <button
             onClick={handleBlockDate}

@@ -289,10 +289,7 @@ export default function SkipHirePage() {
                   Pasūtiet konteineru atkritumu vai celtniecības materiālu izvešanai.
                 </p>
               </div>
-              <Button
-                className="gap-2"
-                onClick={() => setTab('new')}
-              >
+              <Button className="gap-2" onClick={() => setTab('new')}>
                 <Plus className="h-4 w-4" />
                 Pasūtīt konteineru
               </Button>
@@ -434,7 +431,7 @@ export default function SkipHirePage() {
                         onClick={() => setForm((p) => ({ ...p, skipSize: sz.value }))}
                         className={`text-left p-4 rounded-xl border-2 transition-all ${
                           form.skipSize === sz.value
-                            ? 'border-red-600 bg-red-50'
+                            ? 'border-primary bg-primary/5'
                             : 'border-gray-200 hover:border-gray-300 bg-white'
                         }`}
                       >
@@ -463,11 +460,7 @@ export default function SkipHirePage() {
                     <Button variant="outline" className="h-11" onClick={() => setTab('orders')}>
                       <ArrowLeft className="h-4 w-4 mr-1" /> Atpakaļ
                     </Button>
-                    <Button
-                      className="h-11"
-                      disabled={!form.skipSize}
-                      onClick={() => setStep(2)}
-                    >
+                    <Button className="h-11" disabled={!form.skipSize} onClick={() => setStep(2)}>
                       Turpināt <ArrowRight className="h-4 w-4 ml-1" />
                     </Button>
                   </div>
@@ -491,7 +484,7 @@ export default function SkipHirePage() {
                             onClick={() => setForm((p) => ({ ...p, wasteCategory: cat.value }))}
                             className={`p-2.5 rounded-lg border text-left text-xs font-medium transition-all ${
                               form.wasteCategory === cat.value
-                                ? 'border-red-600 bg-red-50 text-red-700'
+                                ? 'border-primary bg-primary/5 text-primary'
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
@@ -511,7 +504,7 @@ export default function SkipHirePage() {
                         value={form.location}
                         onChange={(e) => set('location', e.target.value)}
                         placeholder="Brīvības iela 1, Rīga"
-                        className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -524,7 +517,7 @@ export default function SkipHirePage() {
                         value={form.deliveryDate}
                         onChange={(e) => set('deliveryDate', e.target.value)}
                         min={new Date().toISOString().split('T')[0]}
-                        className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -536,7 +529,7 @@ export default function SkipHirePage() {
                         onChange={(e) => set('notes', e.target.value)}
                         placeholder="Piekļuves instrukcijas, īpašas prasības..."
                         rows={2}
-                        className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                        className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent resize-none"
                       />
                     </div>
                   </div>
@@ -598,7 +591,7 @@ export default function SkipHirePage() {
                         value={form.contactName}
                         onChange={(e) => set('contactName', e.target.value)}
                         placeholder="Jānis Bērziņš"
-                        className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -612,7 +605,7 @@ export default function SkipHirePage() {
                           value={form.contactPhone}
                           onChange={(e) => set('contactPhone', e.target.value)}
                           placeholder="+371 20 000 000"
-                          className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                          className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -625,7 +618,7 @@ export default function SkipHirePage() {
                           value={form.contactEmail}
                           onChange={(e) => set('contactEmail', e.target.value)}
                           placeholder="janis@piemers.lv"
-                          className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                          className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
                         />
                       </div>
                     </div>

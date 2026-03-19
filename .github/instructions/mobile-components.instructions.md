@@ -1,5 +1,5 @@
 ---
-applyTo: "apps/mobile/**"
+applyTo: 'apps/mobile/**'
 ---
 
 # Mobile UI Component Library (apps/mobile)
@@ -15,40 +15,45 @@ Styling uses **NativeWind** (Tailwind class names via `className`). Avoid `Style
 All tokens are defined in `apps/mobile/lib/tokens.js` (CommonJS, required by Tailwind) and re-exported from `@/lib/theme` (typed TypeScript). **NativeWind class names are available everywhere — no import needed.**
 
 ### Colour classes (`bg-*`, `text-*`, `border-*`)
-| Class | Token | Usage |
-|---|---|---|
-| `bg-screen` | `#F4F5F7` | Every screen background |
-| `bg-card` | `#FFFFFF` | Cards, list items, panels |
-| `bg-subtle` | `#F9FAFB` | Subtle fill sections |
-| `bg-muted` | `#EFF1F5` | Input backgrounds, disabled states |
-| `bg-primary` | `#00A878` | Primary action backgrounds |
-| `text-text-primary` | `#111827` | Body text |
-| `text-text-secondary` | `#374151` | Secondary labels |
-| `text-text-muted` | `#6B7280` | Captions, placeholders |
-| `text-text-disabled` | `#9CA3AF` | Disabled text |
-| `border-border` | `#E5E7EB` | Default borders/dividers |
-| `border-border-focus` | `#00A878` | Focused inputs |
-| `bg-success-bg` / `text-success-text` | green pair | Status badges |
-| `bg-warning-bg` / `text-warning-text` | amber pair | Status badges |
-| `bg-danger-bg` / `text-danger-text` | red pair | Status badges |
+
+| Class                                 | Token      | Usage                              |
+| ------------------------------------- | ---------- | ---------------------------------- |
+| `bg-screen`                           | `#F4F5F7`  | Every screen background            |
+| `bg-card`                             | `#FFFFFF`  | Cards, list items, panels          |
+| `bg-subtle`                           | `#F9FAFB`  | Subtle fill sections               |
+| `bg-muted`                            | `#EFF1F5`  | Input backgrounds, disabled states |
+| `bg-primary`                          | `#00A878`  | Primary action backgrounds         |
+| `text-text-primary`                   | `#111827`  | Body text                          |
+| `text-text-secondary`                 | `#374151`  | Secondary labels                   |
+| `text-text-muted`                     | `#6B7280`  | Captions, placeholders             |
+| `text-text-disabled`                  | `#9CA3AF`  | Disabled text                      |
+| `border-border`                       | `#E5E7EB`  | Default borders/dividers           |
+| `border-border-focus`                 | `#00A878`  | Focused inputs                     |
+| `bg-success-bg` / `text-success-text` | green pair | Status badges                      |
+| `bg-warning-bg` / `text-warning-text` | amber pair | Status badges                      |
+| `bg-danger-bg` / `text-danger-text`   | red pair   | Status badges                      |
 
 ### Spacing classes (`p-*`, `m-*`, `gap-*`, `px-*`, …)
-| Class | Value |
-|---|---|
-| `p-xs` / `gap-xs` | 4 px |
-| `p-sm` / `gap-sm` | 8 px |
-| `p-md` / `gap-md` | 12 px |
+
+| Class                 | Value |
+| --------------------- | ----- |
+| `p-xs` / `gap-xs`     | 4 px  |
+| `p-sm` / `gap-sm`     | 8 px  |
+| `p-md` / `gap-md`     | 12 px |
 | `p-base` / `gap-base` | 16 px |
-| `p-lg` / `gap-lg` | 20 px |
-| `p-xl` / `gap-xl` | 24 px |
-| `p-2xl` / `gap-2xl` | 32 px |
-| `p-3xl` / `gap-3xl` | 48 px |
+| `p-lg` / `gap-lg`     | 20 px |
+| `p-xl` / `gap-xl`     | 24 px |
+| `p-2xl` / `gap-2xl`   | 32 px |
+| `p-3xl` / `gap-3xl`   | 48 px |
 
 ### Border-radius classes
+
 `rounded-sm` (6), `rounded-md` (10), `rounded-lg` (14), `rounded-xl` (20), `rounded-full` (9999)
 
 ### When to use StyleSheet instead of className
+
 Only use `StyleSheet.create` + `@/lib/theme` imports for values that are **not expressible as Tailwind classes**: exact pixel offsets in transforms, shadow objects, dynamic computed values. Import like:
+
 ```tsx
 import { colors, spacing, radius, fontSizes, shadows } from '@/lib/theme';
 // colors.textMuted, spacing.base, radius.lg, shadows.card …
@@ -61,7 +66,9 @@ import { colors, spacing, radius, fontSizes, shadows } from '@/lib/theme';
 ## Screen structure
 
 ### `<ScreenContainer>`
+
 **Mandatory wrapper for every screen.** Handles safe area insets and a fade-in animation.
+
 ```tsx
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 
@@ -78,7 +85,9 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 ```
 
 ### `<ScreenHeader>`
+
 Back-navigation header for standalone/detail screens.
+
 ```tsx
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
@@ -90,6 +99,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 ```
 
 ### `<TopBar>`
+
 The main app navigation bar (included automatically by the tab layout). Do not add a second TopBar in individual screens.
 
 ---
@@ -97,7 +107,9 @@ The main app navigation bar (included automatically by the tab layout). Do not a
 ## Content blocks
 
 ### `<InfoSection>`
+
 White rounded card with an icon + uppercase title header. **Use for every named section on detail screens.** Replaces hand-rolled `sectionHeader` / `sectionTitle` Views.
+
 ```tsx
 import { InfoSection } from '@/components/ui/InfoSection';
 import { DetailRow } from '@/components/ui/DetailRow';
@@ -116,7 +128,9 @@ import { DetailRow } from '@/components/ui/DetailRow';
 ```
 
 ### `<DetailRow>`
+
 Label + value pair inside an `InfoSection`. Renders nothing when value is falsy.
+
 ```tsx
 import { DetailRow } from '@/components/ui/DetailRow';
 
@@ -133,6 +147,7 @@ import { DetailRow } from '@/components/ui/DetailRow';
 ## Buttons & interactivity
 
 ### `<Button>`
+
 ```tsx
 import { Button } from '@/components/ui/button';
 
@@ -152,7 +167,9 @@ import { Button } from '@/components/ui/button';
 ## Typography
 
 ### `<Text>`
+
 Typed text primitive with `variant` and `size` props. Prefer over raw `<Text>` from react-native.
+
 ```tsx
 import { Text } from '@/components/ui/text';
 
@@ -170,7 +187,9 @@ import { Text } from '@/components/ui/text';
 ## Status & labels
 
 ### `<StatusPill>`
+
 Coloured status badge. Use everywhere a status needs to be visualized.
+
 ```tsx
 import { StatusPill } from '@/components/ui/StatusPill';
 
@@ -183,7 +202,9 @@ import { StatusPill } from '@/components/ui/StatusPill';
 ```
 
 ### `<SectionLabel>`
+
 Uppercase grey section header text used above list groups and form sections.
+
 ```tsx
 import { SectionLabel } from '@/components/ui/SectionLabel';
 
@@ -198,7 +219,9 @@ import { SectionLabel } from '@/components/ui/SectionLabel';
 ## Separators & spacing
 
 ### `<Divider>`
+
 Thin horizontal rule. Replaces `<View style={{ height:1, backgroundColor:'#e5e7eb' }}>`.
+
 ```tsx
 import { Divider } from '@/components/ui/Divider';
 
@@ -213,7 +236,9 @@ import { Divider } from '@/components/ui/Divider';
 ## Empty & loading states
 
 ### `<EmptyState>`
+
 Centered placeholder for zero-data lists and pages.
+
 ```tsx
 import { EmptyState } from '@/components/ui/EmptyState';
 import { FileText } from 'lucide-react-native';
@@ -224,13 +249,15 @@ import { FileText } from 'lucide-react-native';
   title="No orders yet"
   subtitle="Your orders will appear here once placed."
   action={<Button onPress={goCreate}>Place first order</Button>}
-/>
+/>;
 
 // Props: title, icon?, subtitle?, action?
 ```
 
 ### `<Skeleton>`
+
 Loading placeholder for content areas while data fetches.
+
 ```tsx
 import { Skeleton } from '@/components/ui/Skeleton';
 
@@ -243,25 +270,25 @@ import { Skeleton } from '@/components/ui/Skeleton';
 ## Overlays
 
 ### `<BottomSheet>`
+
 Slide-up modal panel. Use instead of custom Modal implementations.
+
 ```tsx
 import { BottomSheet } from '@/components/ui/BottomSheet';
 
-<BottomSheet
-  visible={open}
-  onClose={() => setOpen(false)}
-  title="Filter orders"
->
+<BottomSheet visible={open} onClose={() => setOpen(false)} title="Filter orders">
   {/* filter controls */}
-</BottomSheet>
+</BottomSheet>;
 
 // Props: visible, onClose, title?, subtitle?, hideHandle?, scrollable?, maxHeightPct?, children
 ```
 
 ### `<Toast>`
+
 Imperative toast notifications. Import from `@/components/ui/Toast`.
 
 ### `<RatingModal>`
+
 Order/driver rating flow. Import from `@/components/ui/RatingModal`.
 
 ---
@@ -269,7 +296,9 @@ Order/driver rating flow. Import from `@/components/ui/RatingModal`.
 ## Address input
 
 ### `<AddressPicker>`
+
 Full-screen address picker with map + autocomplete. Use on any form that needs a delivery or pickup location.
+
 ```tsx
 import { AddressPicker } from '@/components/ui/AddressPicker';
 
@@ -279,9 +308,12 @@ import { AddressPicker } from '@/components/ui/AddressPicker';
   initialAddress={address}
   initialLat={lat}
   initialLng={lng}
-  onConfirm={({ address, lat, lng }) => { setAddress(address); setOpen(false); }}
+  onConfirm={({ address, lat, lng }) => {
+    setAddress(address);
+    setOpen(false);
+  }}
   onClose={() => setOpen(false)}
-/>
+/>;
 
 // Props: visible, onClose, onConfirm, title?, initialAddress?, initialLat?, initialLng?
 ```
@@ -291,9 +323,11 @@ import { AddressPicker } from '@/components/ui/AddressPicker';
 ## Navigation & chrome
 
 ### `<AnimatedTabBar>`
+
 Custom bottom tab bar registered in the tab navigator layout. Do not instantiate it directly in screens.
 
 ### `<ModeSwitcher>`
+
 Buyer / Driver / Seller role switcher in the TopBar. Do not duplicate this logic in screens.
 
 ---
@@ -301,15 +335,19 @@ Buyer / Driver / Seller role switcher in the TopBar. Do not duplicate this logic
 ## Domain components (non-ui/)
 
 ### `components/driver/`
+
 Driver-specific list items and job cards. Check this folder before building new driver UI.
 
 ### `components/order/`
+
 Order card, order status row, and related components.
 
 ### `components/wizard/`
+
 Multi-step form wizard primitives used by order creation and skip-hire flows.
 
 ### `components/map/`
+
 `<BaseMap>`, `<JobRouteMap>`, `useGeocode()` — always use these for any map rendering.
 
 ---
@@ -332,18 +370,19 @@ Multi-step form wizard primitives used by order creation and skip-hire flows.
 - Translations: use `t.xxx` from `@/lib/translations` for all user-visible strings.
 
 <!-- GEN:component-api -->
+
 #### `AddressPicker` — `@/components/ui/AddressPicker`
 
-| Prop | Type | |
-|------|------|---|
-| `visible` | `boolean` | **required** |
-| `title` | `string` | optional |
-| `initialAddress` | `string` | optional |
-| `initialLat` | `number` | optional |
-| `initialLng` | `number` | optional |
-| `onConfirm` | `(loc: PickedLocation) => void` | **required** |
-| `onClose` | `() => void` | **required** |
-| `pinColor` | `string` | optional |
+| Prop             | Type                            |              |
+| ---------------- | ------------------------------- | ------------ |
+| `visible`        | `boolean`                       | **required** |
+| `title`          | `string`                        | optional     |
+| `initialAddress` | `string`                        | optional     |
+| `initialLat`     | `number`                        | optional     |
+| `initialLng`     | `number`                        | optional     |
+| `onConfirm`      | `(loc: PickedLocation) => void` | **required** |
+| `onClose`        | `() => void`                    | **required** |
+| `pinColor`       | `string`                        | optional     |
 
 **Exports:** `AddressPicker`
 
@@ -351,9 +390,9 @@ Multi-step form wizard primitives used by order creation and skip-hire flows.
 
 #### `AnimatedTabBar` — `@/components/ui/AnimatedTabBar`
 
-| Prop | Type | |
-|------|------|---|
-| `activeTint` | `string` | optional |
+| Prop           | Type     |          |
+| -------------- | -------- | -------- |
+| `activeTint`   | `string` | optional |
 | `inactiveTint` | `string` | optional |
 
 **Exports:** `AnimatedTabBar`
@@ -362,16 +401,16 @@ Multi-step form wizard primitives used by order creation and skip-hire flows.
 
 #### `BottomSheet` — `@/components/ui/BottomSheet`
 
-| Prop | Type | |
-|------|------|---|
-| `visible` | `boolean` | **required** |
-| `onClose` | `() => void` | **required** |
-| `title` | `string` | optional |
-| `subtitle` | `string` | optional |
-| `hideHandle` | `boolean` | optional |
-| `scrollable` | `boolean` | optional |
-| `maxHeightPct` | `number` | optional |
-| `children` | `React.ReactNode` | **required** |
+| Prop           | Type              |              |
+| -------------- | ----------------- | ------------ |
+| `visible`      | `boolean`         | **required** |
+| `onClose`      | `() => void`      | **required** |
+| `title`        | `string`          | optional     |
+| `subtitle`     | `string`          | optional     |
+| `hideHandle`   | `boolean`         | optional     |
+| `scrollable`   | `boolean`         | optional     |
+| `maxHeightPct` | `number`          | optional     |
+| `children`     | `React.ReactNode` | **required** |
 
 **Exports:** `BottomSheet`
 
@@ -379,11 +418,11 @@ Multi-step form wizard primitives used by order creation and skip-hire flows.
 
 #### `DetailRow` — `@/components/ui/DetailRow`
 
-| Prop | Type | |
-|------|------|---|
-| `label` | `string` | **required** |
-| `value` | `string | null` | optional |
-| `last` | `boolean` | optional |
+| Prop    | Type      |              |
+| ------- | --------- | ------------ | -------- |
+| `label` | `string`  | **required** |
+| `value` | `string   | null`        | optional |
+| `last`  | `boolean` | optional     |
 
 **Exports:** `DetailRow`
 
@@ -391,9 +430,9 @@ Multi-step form wizard primitives used by order creation and skip-hire flows.
 
 #### `Divider` — `@/components/ui/Divider`
 
-| Prop | Type | |
-|------|------|---|
-| `color` | `string` | optional |
+| Prop      | Type     |          |
+| --------- | -------- | -------- |
+| `color`   | `string` | optional |
 | `marginV` | `number` | optional |
 
 **Exports:** `Divider`
@@ -402,18 +441,19 @@ Multi-step form wizard primitives used by order creation and skip-hire flows.
 
 #### `EmptyState` — `@/components/ui/EmptyState`
 
-| Prop | Type | |
-|------|------|---|
-| `icon` | `React.ReactNode` | optional |
-| `title` | `string` | **required** |
-| `subtitle` | `string` | optional |
-| `action` | `React.ReactNode` | optional |
+| Prop       | Type              |              |
+| ---------- | ----------------- | ------------ |
+| `icon`     | `React.ReactNode` | optional     |
+| `title`    | `string`          | **required** |
+| `subtitle` | `string`          | optional     |
+| `action`   | `React.ReactNode` | optional     |
 
 **Exports:** `EmptyState`
 
 ---
 
 #### `ErrorBoundary` — `@/components/ui/ErrorBoundary`
+
 _No props interface — check source file._
 
 **Exports:** `ErrorBoundary`
@@ -422,13 +462,13 @@ _No props interface — check source file._
 
 #### `FadeInView` — `@/components/ui/FadeInView`
 
-| Prop | Type | |
-|------|------|---|
-| `children` | `React.ReactNode` | **required** |
-| `variant` | `FadeInVariant` | optional |
-| `index` | `number` | optional |
-| `delay` | `number` | optional |
-| `style` | `StyleProp<ViewStyle>` | optional |
+| Prop       | Type                   |              |
+| ---------- | ---------------------- | ------------ |
+| `children` | `React.ReactNode`      | **required** |
+| `variant`  | `FadeInVariant`        | optional     |
+| `index`    | `number`               | optional     |
+| `delay`    | `number`               | optional     |
+| `style`    | `StyleProp<ViewStyle>` | optional     |
 
 **Exports:** `FadeInView`
 
@@ -436,12 +476,12 @@ _No props interface — check source file._
 
 #### `InfoSection` — `@/components/ui/InfoSection`
 
-| Prop | Type | |
-|------|------|---|
-| `icon` | `React.ReactNode` | optional |
-| `title` | `string` | **required** |
-| `right` | `React.ReactNode` | optional |
-| `children` | `React.ReactNode` | optional |
+| Prop       | Type              |              |
+| ---------- | ----------------- | ------------ |
+| `icon`     | `React.ReactNode` | optional     |
+| `title`    | `string`          | **required** |
+| `right`    | `React.ReactNode` | optional     |
+| `children` | `React.ReactNode` | optional     |
 
 **Exports:** `InfoSection`
 
@@ -449,22 +489,23 @@ _No props interface — check source file._
 
 #### `JobRouteMap` — `@/components/ui/JobRouteMap`
 
-| Prop | Type | |
-|------|------|---|
-| `pickup` | `MapPin` | **required** |
-| `delivery` | `MapPin` | **required** |
-| `current` | `MapPin | null` | optional |
-| `extras` | `ExtraPin[]` | optional |
-| `height` | `number` | optional |
-| `borderRadius` | `number` | optional |
-| `style` | `ViewStyle` | optional |
-| `showToPickupLeg` | `boolean` | optional |
+| Prop              | Type         |              |
+| ----------------- | ------------ | ------------ | -------- |
+| `pickup`          | `MapPin`     | **required** |
+| `delivery`        | `MapPin`     | **required** |
+| `current`         | `MapPin      | null`        | optional |
+| `extras`          | `ExtraPin[]` | optional     |
+| `height`          | `number`     | optional     |
+| `borderRadius`    | `number`     | optional     |
+| `style`           | `ViewStyle`  | optional     |
+| `showToPickupLeg` | `boolean`    | optional     |
 
 **Exports:** `JobRouteMap`
 
 ---
 
 #### `ModeSwitcher` — `@/components/ui/ModeSwitcher`
+
 _No props interface — check source file._
 
 **Exports:** `ModeSwitcher`
@@ -472,6 +513,7 @@ _No props interface — check source file._
 ---
 
 #### `RatingModal` — `@/components/ui/RatingModal`
+
 _No props interface — check source file._
 
 **Exports:** `RatingModal`
@@ -480,14 +522,14 @@ _No props interface — check source file._
 
 #### `ScreenContainer` — `@/components/ui/ScreenContainer`
 
-| Prop | Type | |
-|------|------|---|
-| `children` | `React.ReactNode` | **required** |
-| `bg` | `string` | optional |
-| `standalone` | `boolean` | optional |
-| `topInset` | `number` | optional |
-| `style` | `ViewStyle` | optional |
-| `noAnimation` | `boolean` | optional |
+| Prop          | Type              |              |
+| ------------- | ----------------- | ------------ |
+| `children`    | `React.ReactNode` | **required** |
+| `bg`          | `string`          | optional     |
+| `standalone`  | `boolean`         | optional     |
+| `topInset`    | `number`          | optional     |
+| `style`       | `ViewStyle`       | optional     |
+| `noAnimation` | `boolean`         | optional     |
 
 **Exports:** `ScreenContainer`
 
@@ -495,19 +537,20 @@ _No props interface — check source file._
 
 #### `ScreenHeader` — `@/components/ui/ScreenHeader`
 
-| Prop | Type | |
-|------|------|---|
-| `title` | `string` | **required** |
-| `onBack` | `() => void` | optional |
-| `rightSlot` | `React.ReactNode` | optional |
-| `style` | `ViewStyle` | optional |
-| `withTopInset` | `boolean` | optional |
+| Prop           | Type              |              |
+| -------------- | ----------------- | ------------ |
+| `title`        | `string`          | **required** |
+| `onBack`       | `() => void`      | optional     |
+| `rightSlot`    | `React.ReactNode` | optional     |
+| `style`        | `ViewStyle`       | optional     |
+| `withTopInset` | `boolean`         | optional     |
 
 **Exports:** `ScreenHeader`
 
 ---
 
 #### `SectionLabel` — `@/components/ui/SectionLabel`
+
 _No props interface — check source file._
 
 **Exports:** `SectionLabel`
@@ -516,12 +559,12 @@ _No props interface — check source file._
 
 #### `Sidebar` — `@/components/ui/Sidebar`
 
-| Prop | Type | |
-|------|------|---|
-| `visible` | `boolean` | **required** |
-| `onClose` | `() => void` | **required** |
-| `role` | `Role` | **required** |
-| `accentColor` | `string` | **required** |
+| Prop          | Type         |              |
+| ------------- | ------------ | ------------ |
+| `visible`     | `boolean`    | **required** |
+| `onClose`     | `() => void` | **required** |
+| `role`        | `Role`       | **required** |
+| `accentColor` | `string`     | **required** |
 
 **Exports:** `Sidebar`
 
@@ -529,12 +572,12 @@ _No props interface — check source file._
 
 #### `Skeleton` — `@/components/ui/Skeleton`
 
-| Prop | Type | |
-|------|------|---|
-| `width` | `number | `${number}%`` | optional |
-| `height` | `number` | optional |
-| `radius` | `number` | optional |
-| `style` | `ViewStyle` | optional |
+| Prop     | Type        |               |
+| -------- | ----------- | ------------- | -------- |
+| `width`  | `number     | `${number}%`` | optional |
+| `height` | `number`    | optional      |
+| `radius` | `number`    | optional      |
+| `style`  | `ViewStyle` | optional      |
 
 **Exports:** `Skeleton`, `SkeletonCard`, `SkeletonHome`, `SkeletonDetail`, `SkeletonJobRow`
 
@@ -542,18 +585,19 @@ _No props interface — check source file._
 
 #### `StatusPill` — `@/components/ui/StatusPill`
 
-| Prop | Type | |
-|------|------|---|
+| Prop    | Type     |              |
+| ------- | -------- | ------------ | -------- |
 | `label` | `string` | **required** |
-| `bg` | `string` | **required** |
+| `bg`    | `string` | **required** |
 | `color` | `string` | **required** |
-| `size` | `'sm' | 'md'` | optional |
+| `size`  | `'sm'    | 'md'`        | optional |
 
 **Exports:** `StatusPill`
 
 ---
 
 #### `Toast` — `@/components/ui/Toast`
+
 _No props interface — check source file._
 
 **Exports:** `useToast`, `ToastProvider`
@@ -562,12 +606,12 @@ _No props interface — check source file._
 
 #### `TopBar` — `@/components/ui/TopBar`
 
-| Prop | Type | |
-|------|------|---|
-| `title` | `string` | optional |
-| `accentColor` | `string` | **required** |
+| Prop          | Type         |              |
+| ------------- | ------------ | ------------ |
+| `title`       | `string`     | optional     |
+| `accentColor` | `string`     | **required** |
 | `onMenuPress` | `() => void` | **required** |
-| `unreadCount` | `number` | optional |
+| `unreadCount` | `number`     | optional     |
 
 **Exports:** `TopBar`
 
@@ -575,17 +619,18 @@ _No props interface — check source file._
 
 #### `button` — `@/components/ui/button`
 
-| Prop | Type | |
-|------|------|---|
-| `className` | `string` | optional |
+| Prop        | Type      |          |
+| ----------- | --------- | -------- |
+| `className` | `string`  | optional |
 | `isLoading` | `boolean` | optional |
-| `textColor` | `string` | optional |
+| `textColor` | `string`  | optional |
 
 ---
 
 #### `text` — `@/components/ui/text`
 
-| Prop | Type | |
-|------|------|---|
+| Prop        | Type     |          |
+| ----------- | -------- | -------- |
 | `className` | `string` | optional |
+
 <!-- END GEN -->

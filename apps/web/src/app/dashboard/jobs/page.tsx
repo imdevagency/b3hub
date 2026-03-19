@@ -465,11 +465,7 @@ export default function JobsPage() {
               <RefreshCw className={`h-4 w-4 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
               Atjaunot
             </Button>
-            <Button
-              variant={panelOpen ? 'default' : 'outline'}
-              size="sm"
-              onClick={togglePanel}
-            >
+            <Button variant={panelOpen ? 'default' : 'outline'} size="sm" onClick={togglePanel}>
               <SlidersHorizontal className="h-4 w-4 mr-1.5" />
               Filtri
               {activeFilter && !panelOpen && (
@@ -534,10 +530,7 @@ export default function JobsPage() {
               <X className="h-3.5 w-3.5 mr-1" />
               Atiestatīt
             </Button>
-            <Button
-              size="sm"
-              onClick={handleApply}
-            >
+            <Button size="sm" onClick={handleApply}>
               Lietot filtru
             </Button>
             <div className="flex-1" />
@@ -566,11 +559,7 @@ export default function JobsPage() {
                   onKeyDown={(e) => e.key === 'Enter' && handleSave()}
                   autoFocus
                 />
-                <Button
-                  size="sm"
-                  onClick={handleSave}
-                  disabled={!saveName.trim()}
-                >
+                <Button size="sm" onClick={handleSave} disabled={!saveName.trim()}>
                   Saglabāt
                 </Button>
                 <Button

@@ -163,10 +163,7 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <PageHeader
-        title="Iestatījumi"
-        description="Pārvaldiet sava konta informāciju un drošību."
-      />
+      <PageHeader title="Iestatījumi" description="Pārvaldiet sava konta informāciju un drošību." />
 
       <Separator />
 
@@ -223,10 +220,7 @@ export default function SettingsPage() {
             </div>
             <StatusFeedback status={profileStatus} errMsg={profileErr} />
             <div className="flex justify-end">
-              <Button
-                type="submit"
-                disabled={profileStatus === 'saving'}
-              >
+              <Button type="submit" disabled={profileStatus === 'saving'}>
                 {profileStatus === 'saving' ? 'Saglabā...' : 'Saglabāt izmaiņas'}
               </Button>
             </div>

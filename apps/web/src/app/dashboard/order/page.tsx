@@ -37,15 +37,15 @@ export default function OrderHubPage() {
       {/* Service cards */}
       <div className="grid gap-6 sm:grid-cols-2">
         {/* ── Materials card ──────────────────────────────────────────── */}
-        <div className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-red-200 transition-all duration-200 overflow-hidden">
+        <div className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-200 overflow-hidden">
           {/* Top accent */}
-          <div className="h-1.5 w-full bg-gradient-to-r from-red-500 to-red-400" />
+          <div className="h-1.5 w-full bg-gradient-to-r from-primary to-primary/80" />
 
           <div className="flex flex-col flex-1 p-6">
             {/* Icon + title */}
             <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-50 group-hover:bg-red-100 transition-colors">
-                <Package className="h-6 w-6 text-red-600" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                <Package className="h-6 w-6 text-primary" />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-gray-900">Materiāli</h2>

@@ -34,13 +34,13 @@ import { entering as E } from '@/lib/transitions';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type FadeInVariant =
-  | 'fadeSlideUp'   // default — fades + rises 12 px; good for page sections
+  | 'fadeSlideUp' // default — fades + rises 12 px; good for page sections
   | 'fadeSlideDown' // dropdowns, toasts, pull-down content
-  | 'slideRight'    // mirrors push screen transition for inner panels
-  | 'fade'          // plain fade — overlays, dialogs, skeletons
-  | 'slideUp'       // slides up from off-screen — modal / bottom-sheet content
-  | 'card'          // stagger-aware; use with index prop
-  | 'pop';          // scale + fade — avatars, badges, icons
+  | 'slideRight' // mirrors push screen transition for inner panels
+  | 'fade' // plain fade — overlays, dialogs, skeletons
+  | 'slideUp' // slides up from off-screen — modal / bottom-sheet content
+  | 'card' // stagger-aware; use with index prop
+  | 'pop'; // scale + fade — avatars, badges, icons
 
 export interface FadeInViewProps {
   children: React.ReactNode;
@@ -72,13 +72,20 @@ export function FadeInView({
 }: FadeInViewProps) {
   const animation = (() => {
     switch (variant) {
-      case 'fadeSlideUp':   return E.fadeSlideUp(index);
-      case 'fadeSlideDown': return E.fadeSlideDown(index);
-      case 'slideRight':    return E.slideRight(index);
-      case 'fade':          return E.fade(delay);
-      case 'slideUp':       return E.slideUp(delay || 80);
-      case 'card':          return E.card(index);
-      case 'pop':           return E.pop(delay);
+      case 'fadeSlideUp':
+        return E.fadeSlideUp(index);
+      case 'fadeSlideDown':
+        return E.fadeSlideDown(index);
+      case 'slideRight':
+        return E.slideRight(index);
+      case 'fade':
+        return E.fade(delay);
+      case 'slideUp':
+        return E.slideUp(delay || 80);
+      case 'card':
+        return E.card(index);
+      case 'pop':
+        return E.pop(delay);
     }
   })();
 

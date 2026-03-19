@@ -21,3 +21,4 @@ export * from './chat';
 export * from './reviews';
 export * from './recycling-centers';
 export * from './framework-contracts';
+export * from './containers';

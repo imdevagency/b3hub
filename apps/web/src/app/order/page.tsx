@@ -48,14 +48,14 @@ export default function OrderPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-linear-to-b from-red-50 via-white to-white">
+      <main className="min-h-screen bg-linear-to-b from-primary/5 via-white to-white">
         {/* Page hero */}
         <section className="mx-auto max-w-4xl px-6 pb-4 pt-16 text-center">
-          <span className="inline-block rounded-full bg-red-100 px-4 py-1.5 text-sm font-semibold text-red-600 mb-4">
+          <span className="inline-block rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary mb-4">
             📦 Konteinera Noma Tiešsaistē
           </span>
           <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
-            Pasūtīiet Savu Konteineru <span className="text-red-600">4 Vienkiršos Soļos</span>
+            Pasūtīiet Savu Konteineru <span className="text-primary">4 Vienkiršos Soļos</span>
           </h1>
           <p className="mt-4 text-lg text-gray-500 max-w-2xl mx-auto">
             No atkritumu veida izvēles līdz piegādes datuma noteikšanai — mēs padarām konteinera
@@ -68,8 +68,8 @@ export default function OrderPage() {
               const Icon = b.icon;
               return (
                 <div key={b.label} className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
-                    <Icon className="h-5 w-5 text-red-600" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                    <Icon className="h-5 w-5 text-primary" />
                   </div>
                   <div className="text-left">
                     <p className="text-sm font-semibold text-gray-800">{b.label}</p>

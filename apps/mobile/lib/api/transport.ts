@@ -91,6 +91,31 @@ export interface ApiVehicle {
   createdAt: string;
 }
 
+// ─── Driver Schedule ──────────────────────────────────────────────────────
+
+export interface DriverWeeklySlot {
+  id: string;
+  dayOfWeek: number; // 0 = Sun, 1 = Mon … 6 = Sat
+  startTime: string; // 'HH:MM'
+  endTime: string;   // 'HH:MM'
+  isActive: boolean;
+}
+
+export interface DriverDateBlock {
+  id: string;
+  blockedDate: string; // ISO date string
+  reason?: string | null;
+}
+
+export interface DriverAvailability {
+  isOnline: boolean;
+  effectiveOnline: boolean;
+  autoSchedule: boolean;
+  maxJobsPerDay: number | null;
+  weeklySchedule: DriverWeeklySlot[];
+  dateBlocks: DriverDateBlock[];
+}
+
 // ─── API ──────────────────────────────────────────────────────────────────
 
 export const transportApi = {
@@ -221,9 +246,9 @@ export const transportApi = {
   },
 
   driverSchedule: {
-    /** Returns the driver's current availability state including isOnline. */
+    /** Returns the driver's full availability profile including weekly schedule. */
     getStatus: (token: string) =>
-      apiFetch<{ isOnline: boolean; effectiveOnline: boolean }>('/driver-schedule', {
+      apiFetch<DriverAvailability>('/driver-schedule', {
         headers: { Authorization: `Bearer ${token}` },
       }),
 

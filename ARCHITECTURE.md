@@ -1,5 +1,16 @@
 # B3Hub - Construction Marketplace Platform Architecture
 
+> ⚠️ **This file is partially stale.** Known inaccuracies:
+>
+> - `UserType` enum shown here lists `BUYER | SUPPLIER | CARRIER | DRIVER | RECYCLER | ADMIN` — **the real enum is only `BUYER | ADMIN`**. Business roles are controlled by capability flags (`canSell`, `canTransport`, `canSkipHire`) and `CompanyType`.
+> - Some Prisma model snippets do not match the current schema.
+>
+> **Authoritative sources:**
+>
+> - DB schema → `apps/backend/prisma/schema.prisma`
+> - AI-ready schema reference → `.github/instructions/backend-schema.instructions.md`
+> - Feature status → `STATUS.md`
+
 ## Overview
 
 B3Hub is a digital marketplace platform connecting construction companies, material suppliers, waste management companies, carriers, and drivers for efficient construction site supply, disposal, and circular economy management.

@@ -66,10 +66,7 @@ function ResetPasswordForm() {
         <p className="text-sm text-muted-foreground mb-6">
           Jūsu parole ir veiksmīgi atjaunota. Varat pieteikties ar jauno paroli.
         </p>
-        <Button
-          className="h-11 w-full"
-          onClick={() => router.push('/login')}
-        >
+        <Button className="h-11 w-full" onClick={() => router.push('/login')}>
           Doties uz pieteikšanos
         </Button>
       </div>
@@ -105,7 +102,7 @@ function ResetPasswordForm() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Vismaz 8 rakstzīmes"
-              className="w-full px-3 py-2.5 pr-10 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              className="w-full px-3 py-2.5 pr-10 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
             />
             <button
               type="button"
@@ -129,18 +126,14 @@ function ResetPasswordForm() {
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             placeholder="Atkārtojiet paroli"
-            className={`w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+            className={`w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent ${
               mismatch ? 'border-red-400' : ''
             }`}
           />
           {mismatch && <p className="text-xs text-red-500 mt-1">Paroles nesakrīt</p>}
         </div>
 
-        <Button
-          type="submit"
-          className="w-full h-11"
-          disabled={!valid || submitting}
-        >
+        <Button type="submit" className="w-full h-11" disabled={!valid || submitting}>
           {submitting ? 'Saglabā...' : 'Atjaunot paroli'}
         </Button>
       </form>

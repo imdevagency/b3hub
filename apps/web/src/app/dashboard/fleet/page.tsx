@@ -227,7 +227,7 @@ export default function FleetPage() {
   if (isLoading || !user) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-red-600" />
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
       </div>
     );
   }
@@ -264,7 +264,12 @@ export default function FleetPage() {
                 Karte
               </button>
             </div>
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing || loading}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing || loading}
+            >
               <RefreshCw className={`h-4 w-4 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
               Atjaunot
             </Button>
@@ -372,7 +377,7 @@ export default function FleetPage() {
           </div>
         ) : loading && jobs.length === 0 ? (
           <div className="flex h-40 items-center justify-center">
-            <div className="h-7 w-7 animate-spin rounded-full border-b-2 border-red-600" />
+            <div className="h-7 w-7 animate-spin rounded-full border-b-2 border-primary" />
           </div>
         ) : filtered.length === 0 ? (
           <div className="rounded-xl border border-dashed p-12 text-center">

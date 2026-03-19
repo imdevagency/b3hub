@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import {
   Bell,
   Box,
+  CalendarDays,
   ChevronRight,
   FileText,
   FolderOpen,
@@ -68,6 +69,11 @@ function buildItems(role: Role): MenuItem[] {
       icon: (c) => <Truck size={20} color={c} />,
       label: 'Transportlīdzekļi',
       route: '/(driver)/vehicles',
+    });
+    items.push({
+      icon: (c) => <CalendarDays size={20} color={c} />,
+      label: 'Grafiks',
+      route: '/(driver)/schedule',
     });
   }
   if (role === 'buyer') {

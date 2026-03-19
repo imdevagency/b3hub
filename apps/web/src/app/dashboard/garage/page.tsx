@@ -196,7 +196,7 @@ export default function GaragePage() {
   if (isLoading || loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-red-600" />
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
       </div>
     );
   }
@@ -211,7 +211,13 @@ export default function GaragePage() {
         description={`${vehicles.length} transportlīdzekļ${vehicles.length === 1 ? 'is' : 'i'} reģistrēt${vehicles.length === 1 ? 's' : 'i'}`}
         action={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={refresh} disabled={refreshing} className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refresh}
+              disabled={refreshing}
+              className="gap-2"
+            >
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               Atjaunot
             </Button>
@@ -338,7 +344,7 @@ export default function GaragePage() {
             <div className="flex flex-col gap-1.5">
               <Label>Transportlīdzekļa veids *</Label>
               <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 value={form.vehicleType}
                 onChange={(e) => patch('vehicleType', e.target.value as VehicleType)}
               >
@@ -448,7 +454,7 @@ export default function GaragePage() {
               <div className="flex flex-col gap-1.5">
                 <Label>Piedziņa</Label>
                 <select
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   value={form.driveType ?? ''}
                   onChange={(e) => patch('driveType', e.target.value || undefined)}
                 >
@@ -466,7 +472,7 @@ export default function GaragePage() {
             <div className="flex flex-col gap-1.5">
               <Label>Statuss</Label>
               <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 value={form.status ?? 'ACTIVE'}
                 onChange={(e) => patch('status', e.target.value as VehicleStatus)}
               >

@@ -158,7 +158,14 @@ export default function AdminUsersPage() {
         title="Lietotāji"
         description={`${users.length} reģistrēti lietotāji`}
         action={
-          <Button variant="outline" size="sm" onClick={() => { setLoading(true); fetchUsers(); }}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setLoading(true);
+              fetchUsers();
+            }}
+          >
             <RefreshCw className="h-4 w-4 mr-1.5" />
             Atjaunot
           </Button>
@@ -173,7 +180,7 @@ export default function AdminUsersPage() {
           placeholder="Meklēt pēc vārda, e-pasta, uzņēmuma..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
         />
       </div>
 
