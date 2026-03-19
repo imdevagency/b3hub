@@ -376,7 +376,7 @@ export default function CheckoutPage() {
               <button
                 type="submit"
                 disabled={saving || items.length === 0}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3 font-bold text-white hover:bg-red-700 disabled:opacity-50 transition-colors mt-2"
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors mt-2"
               >
                 {saving ? (
                   <Loader2 className="size-4 animate-spin" />

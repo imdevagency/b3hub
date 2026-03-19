@@ -19,6 +19,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 
 // ── types ─────────────────────────────────────────────────────────────────────
 
@@ -224,18 +225,18 @@ export default function TransporterEarningsPage() {
         : stats.monthEarnings;
 
   return (
-    <div className="space-y-6 p-6 max-w-5xl">
+    <div className="space-y-6 max-w-5xl">
       {/* header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Ienākumi</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Transporta darbu ienākumu pārskats</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing}>
-          <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
-          Atjaunināt
-        </Button>
-      </div>
+      <PageHeader
+        title="Ienākumi"
+        description="Transporta darbu ienākumu pārskats"
+        action={
+          <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing}>
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
+            Atjaunināt
+          </Button>
+        }
+      />
 
       {/* period tabs */}
       <div className="flex gap-1 bg-muted rounded-lg p-1 w-fit">
@@ -255,7 +256,7 @@ export default function TransporterEarningsPage() {
       </div>
 
       {/* main earnings highlight */}
-      <div className="rounded-2xl bg-gradient-to-br from-red-600 to-red-500 p-6 text-white">
+      <div className="rounded-2xl bg-linear-to-br from-red-600 to-red-500 p-6 text-white">
         <p className="text-sm font-medium opacity-80">{PERIOD_LABELS[period]} ienākumi</p>
         <p className="text-4xl font-extrabold mt-1 tabular-nums">{euro(periodEarnings)}</p>
         <div className="flex gap-6 mt-4 text-sm opacity-90">

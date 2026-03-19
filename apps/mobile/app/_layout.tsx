@@ -9,6 +9,7 @@ import { AuthProvider } from '@/lib/auth-context';
 import { ModeProvider } from '@/lib/mode-context';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { SCREEN } from '@/lib/transitions';
 import React, { useEffect, useRef } from 'react';
 import { Text, TextInput, View } from 'react-native';
 import { useFonts } from 'expo-font';
@@ -101,22 +102,26 @@ export default function RootLayout() {
                 <Stack
                   screenOptions={{
                     headerShown: false,
-                    animation: 'slide_from_right',
-                    animationDuration: 200,
+                    ...SCREEN.push,
                   }}
                 >
                   {/* Booking wizard flows enter from the bottom — Uber-style */}
                   <Stack.Screen
                     name="order-request"
-                    options={{ animation: 'fade_from_bottom', animationDuration: 320 }}
+                    options={SCREEN.modal}
                   />
                   <Stack.Screen
                     name="disposal"
-                    options={{ animation: 'fade_from_bottom', animationDuration: 320 }}
+                    options={SCREEN.modal}
                   />
                   <Stack.Screen
                     name="transport"
-                    options={{ animation: 'fade_from_bottom', animationDuration: 320 }}
+                    options={SCREEN.modal}
+                  />
+                  {/* Auth redirect — instant, no animation */}
+                  <Stack.Screen
+                    name="(auth)"
+                    options={SCREEN.fade}
                   />
                 </Stack>
               </ToastProvider>

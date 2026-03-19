@@ -23,7 +23,7 @@ const roles = [
   {
     icon: Package,
     color: 'bg-red-50',
-    iconColor: 'text-red-600',
+    iconColor: 'text-primary',
     title: 'Pārdevējs',
     tagline: 'Karjeru un izgāztuvju operatori',
     steps: [
@@ -57,7 +57,7 @@ export function HowItWorks() {
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         {/* Header */}
         <div className="mx-auto max-w-2xl text-center mb-16">
-          <h2 className="text-base font-semibold leading-7 text-red-600 uppercase tracking-wide">
+          <h2 className="text-base font-semibold leading-7 text-primary uppercase tracking-wide">
             Kā tas darbojas
           </h2>
           <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
@@ -81,7 +81,7 @@ export function HowItWorks() {
             >
               {role.featured && (
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                  <span className="rounded-full bg-red-600 px-4 py-1 text-xs font-bold text-white shadow">
+                  <span className="rounded-full bg-primary px-4 py-1 text-xs font-bold text-white shadow">
                     Populārākais
                   </span>
                 </div>
@@ -117,8 +117,8 @@ export function HowItWorks() {
                 href={role.cta.href}
                 className={`block w-full text-center rounded-xl px-5 py-3 text-sm font-semibold transition-colors ${
                   role.featured
-                    ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'border border-gray-300 text-gray-700 hover:border-red-400 hover:text-red-600'
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    : 'border border-gray-300 text-gray-700 hover:border-primary/50 hover:text-primary'
                 }`}
               >
                 {role.cta.label}

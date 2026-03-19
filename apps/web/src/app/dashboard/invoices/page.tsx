@@ -6,65 +6,21 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/lib/auth-context';
-import { getMyInvoices, markInvoicePaid, type ApiInvoice, type PaymentStatus } from '@/lib/api';
-import {
-  ChevronLeft,
-  ChevronRight,
-  ExternalLink,
-  FileText,
-  Loader2,
-  Receipt,
-  RefreshCw,
-} from 'lucide-react';
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const STATUS_META: Record<PaymentStatus, { label: string; className: string }> = {
-  PENDING: {
-    label: 'Gaida apmaksu',
-    className: 'bg-amber-50 text-amber-700 border border-amber-200',
-  },
-  PAID: {
-    label: 'Apmaksāts',
-    className: 'bg-green-50 text-green-700 border border-green-200',
-  },
-  OVERDUE: {
-    label: 'Kavēts',
-    className: 'bg-red-50 text-red-700 border border-red-200',
-  },
-  CANCELLED: {
-    label: 'Atcelts',
-    className: 'bg-gray-100 text-gray-500 border border-gray-200',
-  },
-};
-
-function fmt(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('lv-LV', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-}
-
-function StatusBadge({ status }: { status: PaymentStatus }) {
-  const meta = STATUS_META[status];
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${meta.className}`}
-    >
-      {meta.label}
-    </span>
-  );
-}
+import { getMyInvoices, markInvoicePaid, type ApiInvoice } from '@/lib/api';
+import { ChevronLeft, ChevronRight, ExternalLink, FileText, Loader2, Receipt, RefreshCw } from 'lucide-react';
+import { useRequireAuth } from '@/hooks/use-require-auth';
+import { fmtDate } from '@/lib/format';
+import { InvoiceStatusBadge } from '@/lib/status-config';
+import { PageSpinner } from '@/components/ui/page-spinner';
+import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
 
 // ── Invoices page ─────────────────────────────────────────────────────────────
 
 export default function InvoicesPage() {
-  const { token, isLoading } = useAuth();
-  const router = useRouter();
+  const { token } = useRequireAuth();
 
   const [invoices, setInvoices] = useState<ApiInvoice[]>([]);
   const [page, setPage] = useState(1);
@@ -73,10 +29,6 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState<string | null>(null);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (!isLoading && !token) router.push('/');
-  }, [token, isLoading, router]);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -113,26 +65,17 @@ export default function InvoicesPage() {
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6">
+    <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Receipt className="size-6 text-red-600" />
-            Rēķini
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Jūsu pasūtījumu rēķini un maksājumu statuss
-          </p>
-        </div>
-        <button
-          onClick={load}
-          disabled={loading}
-          className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
-        >
-          <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
+      <PageHeader
+        title="Rēķini"
+        description="Jūsu pasūtījumu rēķini un maksājumu statuss"
+        action={
+          <Button variant="outline" size="icon" onClick={load} disabled={loading}>
+            <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+        }
+      />
 
       {error && (
         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
@@ -142,24 +85,21 @@ export default function InvoicesPage() {
 
       {/* Table */}
       {loading ? (
-        <div className="py-24 text-center flex flex-col items-center gap-3">
-          <Loader2 className="size-8 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Ielādē rēķinus...</p>
-        </div>
+        <PageSpinner className="py-24" />
       ) : invoices.length === 0 ? (
-        <div className="py-24 text-center space-y-3">
-          <FileText className="mx-auto size-12 text-muted-foreground/30" />
-          <p className="font-semibold text-muted-foreground">Nav rēķinu</p>
-          <p className="text-sm text-muted-foreground">
-            Rēķini parādīsies pēc pasūtījumu iesniegšanas
-          </p>
-          <Link
-            href="/dashboard/catalog"
-            className="inline-flex items-center gap-1.5 text-sm text-red-600 hover:underline"
-          >
-            Apskatīt katalogu
-          </Link>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title="Nav rēķinu"
+          description="Rēķini parādīsies pēc pasūtījumu iesniegšanas"
+          action={
+            <Link
+              href="/dashboard/catalog"
+              className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+            >
+              Apskatīt katalogu
+            </Link>
+          }
+        />
       ) : (
         <>
           {/* Desktop table */}
@@ -194,7 +134,7 @@ export default function InvoicesPage() {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Izveidots {fmt(inv.createdAt)}
+                        Izveidots {fmtDate(inv.createdAt)}
                       </p>
                     </td>
                     <td className="px-5 py-3.5">
@@ -212,11 +152,11 @@ export default function InvoicesPage() {
                           inv.paymentStatus === 'OVERDUE' ? 'text-red-600 font-medium' : ''
                         }
                       >
-                        {fmt(inv.dueDate)}
+                        {fmtDate(inv.dueDate)}
                       </span>
                       {inv.paidDate && (
                         <p className="text-xs text-green-600 mt-0.5">
-                          Apmaksāts {fmt(inv.paidDate)}
+                          Apmaksāts {fmtDate(inv.paidDate)}
                         </p>
                       )}
                     </td>
@@ -227,7 +167,7 @@ export default function InvoicesPage() {
                       </p>
                     </td>
                     <td className="px-5 py-3.5 text-center">
-                      <StatusBadge status={inv.paymentStatus} />
+                      <InvoiceStatusBadge status={inv.paymentStatus} />
                     </td>
                     <td className="px-5 py-3.5 text-right">
                       {inv.paymentStatus === 'PENDING' && (
@@ -254,9 +194,9 @@ export default function InvoicesPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-semibold">{inv.invoiceNumber}</p>
-                    <p className="text-xs text-muted-foreground">{fmt(inv.createdAt)}</p>
+                    <p className="text-xs text-muted-foreground">{fmtDate(inv.createdAt)}</p>
                   </div>
-                  <StatusBadge status={inv.paymentStatus} />
+                  <InvoiceStatusBadge status={inv.paymentStatus} />
                 </div>
                 <div className="text-sm space-y-1">
                   <div className="flex justify-between">
@@ -273,7 +213,7 @@ export default function InvoicesPage() {
                     <span
                       className={inv.paymentStatus === 'OVERDUE' ? 'text-red-600 font-medium' : ''}
                     >
-                      {fmt(inv.dueDate)}
+                      {fmtDate(inv.dueDate)}
                     </span>
                   </div>
                   <div className="flex justify-between">

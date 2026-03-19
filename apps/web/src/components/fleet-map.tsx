@@ -197,7 +197,7 @@ export function FleetMap({ jobs }: FleetMapProps) {
                   )}
                   <button
                     onClick={() => router.push(`/dashboard/orders/${selected.id}`)}
-                    className="mt-1 w-full rounded-md bg-red-600 text-white text-xs font-semibold py-1.5 hover:bg-red-700 transition-colors"
+                    className="mt-1 w-full rounded-md bg-primary text-primary-foreground text-xs font-semibold py-1.5 hover:bg-primary/90 transition-colors"
                   >
                     Skatīt Detaļas →
                   </button>

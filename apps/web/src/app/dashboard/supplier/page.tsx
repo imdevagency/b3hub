@@ -22,6 +22,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 
 type Stat = { label: string; value: string; icon: LucideIcon; hint?: string };
 type Action = {
@@ -175,17 +176,15 @@ export default function SupplierDashboardPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Sveiki, {user.firstName}! 👋</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Pārvaldiet savus sludinājumus un apstrādājiet ienākošos pasūtījumus.
-          </p>
-        </div>
-        <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-          📦 Piegādātājs
-        </span>
-      </div>
+      <PageHeader
+        title={`Sveiki, ${user.firstName}! 👋`}
+        description="Pārvaldiet savus sludiņājumus un apstrādājiet ienākošos pasūtījumus."
+        action={
+          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+            📦 Piegādātājs
+          </span>
+        }
+      />
 
       {/* Hero */}
       <div className="rounded-2xl bg-linear-to-br from-emerald-600 to-teal-700 p-6 text-white shadow-sm">

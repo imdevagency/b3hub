@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshCw, MessageSquare, MapPin, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { useAuth } from '@/lib/auth-context';
 import {
   getOpenQuoteRequests,
@@ -16,6 +17,7 @@ import {
   type MaterialUnit,
   type CreateQuoteResponseInput,
 } from '@/lib/api';
+import { fmtDate } from '@/lib/format';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -40,14 +42,6 @@ const UNIT_LV: Record<MaterialUnit, string> = {
 };
 
 const UNITS: MaterialUnit[] = ['TONNE', 'M3', 'PIECE', 'LOAD'];
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('lv-LV', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
 
 // ── Respond slide-over ────────────────────────────────────────────────────────
 
@@ -318,18 +312,16 @@ export default function OpenQuoteRequestsPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Atvērtie Pieprasījumi</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Iesniedziet cenu piedāvājumus pasūtītājiem
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
-          Atjaunot
-        </Button>
-      </div>
+      <PageHeader
+        title="Atvērtie Pieprasījumi"
+        description="Iesniedziet cenu piedāvājumus pasūtītājiem"
+        action={
+          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+            Atjaunot
+          </Button>
+        }
+      />
 
       {/* Success toast */}
       {successId && (

@@ -19,6 +19,10 @@ import {
   type UpdateMaterialInput,
 } from '@/lib/api';
 import { Check, Loader2, Package, Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { PageSpinner } from '@/components/ui/page-spinner';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -185,9 +189,9 @@ function MaterialFormModal({
           <h2 className="font-bold text-lg">
             {editing ? 'Rediģēt materiālu' : 'Pievienot materiālu'}
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+          <Button variant="ghost" size="icon-sm" onClick={onClose}>
             <X className="size-5" />
-          </button>
+          </Button>
         </div>
 
         {/* Body */}
@@ -370,7 +374,7 @@ function MaterialFormModal({
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
               {saving ? <Loader2 className="size-4 animate-spin" /> : null}
               {editing ? 'Saglabāt' : 'Pievienot'}
@@ -438,7 +442,7 @@ function DeleteConfirm({
           <button
             onClick={handleDelete}
             disabled={deleting}
-            className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-red-600 text-white text-sm font-bold px-4 py-2.5 hover:bg-red-700 disabled:opacity-50 transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-destructive text-destructive-foreground text-sm font-bold px-4 py-2.5 hover:bg-destructive/90 disabled:opacity-50 transition-colors"
           >
             {deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
             Dzēst
@@ -528,38 +532,28 @@ export default function MyMaterialsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6">
+    <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Package className="size-6 text-red-600" />
-            Mani Materiāli
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Pārvaldiet savas cenas un pieejamību — pircēji redzēs šo informāciju katalogā
-          </p>
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <button
-            onClick={load}
-            disabled={loading}
-            className="rounded-xl border px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          <button
-            onClick={() => {
-              setEditing(null);
-              setShowForm(true);
-            }}
-            className="flex items-center gap-1.5 rounded-xl bg-red-600 text-white px-4 py-2 text-sm font-bold hover:bg-red-700 transition-colors"
-          >
-            <Plus className="size-4" />
-            Pievienot
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Mani Materiāli"
+        description="Pārvaldiet savas cenas un pieejamību — pircēji redzēs šo informāciju katalogā"
+        action={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={load} disabled={loading}>
+              <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setShowForm(true);
+              }}
+            >
+              <Plus className="size-4 mr-1.5" />
+              Pievienot
+            </Button>
+          </div>
+        }
+      />
 
       {error && (
         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
@@ -569,30 +563,24 @@ export default function MyMaterialsPage() {
 
       {/* Content */}
       {loading ? (
-        <div className="py-24 text-center flex flex-col items-center gap-3">
-          <Loader2 className="size-8 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Ielādē materiālus...</p>
-        </div>
+        <PageSpinner />
       ) : materials.length === 0 ? (
-        <div className="py-24 text-center space-y-4">
-          <Package className="mx-auto size-14 text-muted-foreground/30" />
-          <div>
-            <p className="font-semibold text-muted-foreground">Vēl nav materiālu</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Pievienojiet pirmo materiālu, lai pircēji varētu to redzēt un pasūtīt
-            </p>
-          </div>
-          <button
-            onClick={() => {
-              setEditing(null);
-              setShowForm(true);
-            }}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 text-white px-5 py-2.5 text-sm font-bold hover:bg-red-700 transition-colors"
-          >
-            <Plus className="size-4" />
-            Pievienot materiālu
-          </button>
-        </div>
+        <EmptyState
+          icon={Package}
+          title="Vēl nav materiālu"
+          description="Pievienojiet pirmo materiālu, lai pircēji varētu to redzet un pasūtīt"
+          action={
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setShowForm(true);
+              }}
+            >
+              <Plus className="size-4 mr-1.5" />
+              Pievienot materiālu
+            </Button>
+          }
+        />
       ) : (
         <>
           <p className="text-xs text-muted-foreground -mt-3">
@@ -649,21 +637,24 @@ export default function MyMaterialsPage() {
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex gap-2 justify-end">
-                        <button
+                        <Button
+                          variant="outline"
+                          size="icon"
                           onClick={() => {
                             setEditing(m);
                             setShowForm(true);
                           }}
-                          className="rounded-lg border p-1.5 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                         >
                           <Pencil className="size-4" />
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
                           onClick={() => setDeleting(m)}
-                          className="rounded-lg border p-1.5 hover:bg-red-50 hover:border-red-200 transition-colors text-muted-foreground hover:text-red-600"
+                          className="hover:bg-red-50 hover:border-red-200 hover:text-red-600"
                         >
                           <Trash2 className="size-4" />
-                        </button>
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -708,22 +699,25 @@ export default function MyMaterialsPage() {
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <button
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => {
                         setEditing(m);
                         setShowForm(true);
                       }}
-                      className="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted transition-colors flex items-center gap-1"
                     >
                       <Pencil className="size-3.5" />
                       Rediģēt
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
                       onClick={() => setDeleting(m)}
-                      className="rounded-lg border px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors"
+                      className="hover:bg-red-50 hover:border-red-200 hover:text-red-600"
                     >
                       <Trash2 className="size-3.5" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

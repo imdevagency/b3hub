@@ -21,6 +21,9 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageSpinner } from '@/components/ui/page-spinner';
 
 type Stat = { label: string; value: string; icon: LucideIcon; hint?: string };
 type Action = {
@@ -101,11 +104,7 @@ export default function BuyerDashboardPage() {
   }, [user, token]);
 
   if (isLoading || !user) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600" />
-      </div>
-    );
+    return <PageSpinner />;
   }
 
   const stats: Stat[] = [
@@ -162,24 +161,22 @@ export default function BuyerDashboardPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Sveiki, {user.firstName}! 👋</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Pasūtiet materiālus, konteinerus un sekojiet savām piegādēm.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-            🛒 Pasūtītājs
-          </span>
-          {user.isCompany && (
-            <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
-              🏢 Uzņēmums
+      <PageHeader
+        title={`Sveiki, ${user.firstName}!`}
+        description="Pasūtiet materiālus, konteinerus un sekojiet savām piegādēm."
+        action={
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+              🛒 Pasūtītājs
             </span>
-          )}
-        </div>
-      </div>
+            {user.isCompany && (
+              <span className="inline-flex items-center rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+                🏢 Uzņēmums
+              </span>
+            )}
+          </div>
+        }
+      />
 
       {/* Hero */}
       <div className="rounded-2xl bg-linear-to-br from-blue-600 to-blue-700 p-6 text-white shadow-sm">
@@ -232,12 +229,12 @@ export default function BuyerDashboardPage() {
           Pēdējā aktivitāte
         </p>
         <Card className="shadow-none border-border/50">
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <Inbox className="mb-3 h-10 w-10 text-muted-foreground/25" />
-            <p className="text-sm font-medium text-muted-foreground">Nav pēdējās aktivitātes</p>
-            <p className="mt-1 text-xs text-muted-foreground/60">
-              Jūsu pasūtījumi parādīsīsies šeit.
-            </p>
+          <CardContent className="p-0">
+            <EmptyState
+              icon={Inbox}
+              title="Nav pēdējās aktivitātes"
+              description="Jūsu pasūtījumi parādīsīsies šeit."
+            />
           </CardContent>
         </Card>
       </div>

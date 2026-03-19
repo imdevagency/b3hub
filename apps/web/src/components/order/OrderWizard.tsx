@@ -161,9 +161,9 @@ export function OrderWizard({ token }: { token?: string } = {}) {
                       className={cn(
                         'flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300',
                         done
-                          ? 'border-red-500 bg-red-500 cursor-pointer hover:bg-red-600'
+                          ? 'border-primary bg-red-500 cursor-pointer hover:bg-primary'
                           : active
-                            ? 'border-red-500 bg-white ring-4 ring-red-100'
+                            ? 'border-primary bg-white ring-4 ring-red-100'
                             : 'border-gray-300 bg-white cursor-default',
                       )}
                     >
@@ -171,14 +171,14 @@ export function OrderWizard({ token }: { token?: string } = {}) {
                         <Check className="h-5 w-5 text-white" />
                       ) : (
                         <Icon
-                          className={cn('h-4 w-4', active ? 'text-red-600' : 'text-gray-400')}
+                          className={cn('h-4 w-4', active ? 'text-primary' : 'text-gray-400')}
                         />
                       )}
                     </button>
                     <span
                       className={cn(
                         'text-xs font-semibold whitespace-nowrap transition-colors hidden sm:block',
-                        done ? 'text-red-600' : active ? 'text-gray-900' : 'text-gray-400',
+                        done ? 'text-primary' : active ? 'text-gray-900' : 'text-gray-400',
                       )}
                     >
                       {s.label}

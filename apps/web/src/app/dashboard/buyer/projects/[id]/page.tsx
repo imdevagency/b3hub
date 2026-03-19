@@ -35,17 +35,9 @@ import {
   Plus,
 } from 'lucide-react';
 import Link from 'next/link';
+import { fmtDate } from '@/lib/format';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
-
-function fmtDate(iso: string | null | undefined) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('lv-LV', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
 
 const STATUS_META: Record<
   FrameworkContractStatus,

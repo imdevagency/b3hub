@@ -85,7 +85,7 @@ export function Step4ContactForm({
 
       {/* Order summary card */}
       <div className="rounded-2xl border-2 border-gray-100 bg-gray-50 overflow-hidden">
-        <div className="bg-red-600 px-4 py-3">
+        <div className="bg-primary px-4 py-3">
           <p className="text-sm font-bold text-white">Pasūtījuma kopsavilkums</p>
         </div>
         <div className="divide-y divide-gray-100">
@@ -129,7 +129,7 @@ export function Step4ContactForm({
               </div>
             </div>
             <div className="text-right shrink-0">
-              <span className="text-xl font-extrabold text-red-600">€{summary.offerPrice}</span>
+              <span className="text-xl font-extrabold text-primary">€{summary.offerPrice}</span>
               <p className="text-xs text-gray-400">iekļ. PVN</p>
             </div>
           </div>
@@ -151,7 +151,7 @@ export function Step4ContactForm({
               value={name}
               onChange={set('name')}
               required
-              className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-50"
+              className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-red-50"
             />
           </div>
           <div>
@@ -162,7 +162,7 @@ export function Step4ContactForm({
               value={phone}
               onChange={set('phone')}
               required
-              className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-50"
+              className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-red-50"
             />
           </div>
         </div>
@@ -175,7 +175,7 @@ export function Step4ContactForm({
             value={email}
             onChange={set('email')}
             required
-            className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-50"
+            className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-red-50"
           />
         </div>
 
@@ -188,13 +188,13 @@ export function Step4ContactForm({
             placeholder="Piekļuves instrukcijas, vārtejas kods, kontaktpersona uz vietas..."
             value={notes}
             onChange={set('notes')}
-            className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-50 resize-none"
+            className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-red-50 resize-none"
           />
         </div>
       </div>
 
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+        <p className="text-sm text-primary bg-red-50 border border-red-200 rounded-xl px-4 py-3">
           {error}
         </p>
       )}
@@ -211,7 +211,7 @@ export function Step4ContactForm({
         <button
           onClick={onSubmit}
           disabled={!canSubmit || submitting}
-          className="flex-2 flex items-center justify-center gap-2 rounded-2xl bg-red-600 py-3.5 text-base font-bold text-white shadow-md transition-all hover:bg-red-700 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
+          className="flex-2 flex items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-base font-bold text-white shadow-md transition-all hover:bg-primary/90 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
         >
           {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
           {submitting ? 'Apstiprina...' : 'Apstiprināt pasūtījumu'}

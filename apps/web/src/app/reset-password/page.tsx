@@ -67,7 +67,7 @@ function ResetPasswordForm() {
           Jūsu parole ir veiksmīgi atjaunota. Varat pieteikties ar jauno paroli.
         </p>
         <Button
-          className="bg-red-600 hover:bg-red-700 text-white h-11 w-full"
+          className="h-11 w-full"
           onClick={() => router.push('/login')}
         >
           Doties uz pieteikšanos
@@ -138,7 +138,7 @@ function ResetPasswordForm() {
 
         <Button
           type="submit"
-          className="w-full bg-red-600 hover:bg-red-700 text-white h-11"
+          className="w-full h-11"
           disabled={!valid || submitting}
         >
           {submitting ? 'Saglabā...' : 'Atjaunot paroli'}
@@ -161,7 +161,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-linear-to-b from-red-50 to-white px-4 py-12">
       <Link href="/" className="flex items-center gap-2 mb-8">
-        <Building2 className="h-8 w-8 text-red-600" />
+        <Building2 className="h-8 w-8 text-primary" />
         <span className="text-2xl font-bold text-gray-900">B3Hub</span>
       </Link>
       <div className="w-full max-w-md bg-white border rounded-2xl shadow-sm p-8">

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PageHeader } from '@/components/ui/page-header';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth-context';
 import {
@@ -195,8 +196,8 @@ function RadiusChips({ selected, onChange }: { selected: number; onChange: (v: n
         onClick={() => onChange(0)}
         className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
           selected === 0
-            ? 'bg-red-600 border-red-600 text-white'
-            : 'bg-muted border-border text-muted-foreground hover:border-red-400 hover:text-red-600'
+            ? 'bg-primary border-primary text-primary-foreground'
+            : 'bg-muted border-border text-muted-foreground hover:border-primary/50 hover:text-primary'
         }`}
       >
         Jebkur
@@ -208,8 +209,8 @@ function RadiusChips({ selected, onChange }: { selected: number; onChange: (v: n
           onClick={() => onChange(r)}
           className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
             selected === r
-              ? 'bg-red-600 border-red-600 text-white'
-              : 'bg-muted border-border text-muted-foreground hover:border-red-400 hover:text-red-600'
+              ? 'bg-primary border-primary text-primary-foreground'
+              : 'bg-muted border-border text-muted-foreground hover:border-primary/50 hover:text-primary'
           }`}
         >
           {r} km
@@ -451,41 +452,38 @@ export default function JobsPage() {
   return (
     <div className="space-y-6">
       {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Job Board</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Pieejamie transporta darbi · {filteredJobs.length} rezultāti
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-1.5" />
-            Izveidot Darbu
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw className={`h-4 w-4 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
-            Atjaunot
-          </Button>
-          <Button
-            variant={panelOpen ? 'default' : 'outline'}
-            size="sm"
-            onClick={togglePanel}
-            className={panelOpen ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' : ''}
-          >
-            <SlidersHorizontal className="h-4 w-4 mr-1.5" />
-            Filtri
-            {activeFilter && !panelOpen && (
-              <span className="ml-1.5 h-2 w-2 rounded-full bg-amber-400 inline-block" />
-            )}
-            {panelOpen ? (
-              <ChevronUp className="h-4 w-4 ml-1.5" />
-            ) : (
-              <ChevronDown className="h-4 w-4 ml-1.5" />
-            )}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Job Board"
+        description={`Pieejamie transporta darbi · ${filteredJobs.length} rezultāti`}
+        action={
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4 mr-1.5" />
+              Izveidot Darbu
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+              <RefreshCw className={`h-4 w-4 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
+              Atjaunot
+            </Button>
+            <Button
+              variant={panelOpen ? 'default' : 'outline'}
+              size="sm"
+              onClick={togglePanel}
+            >
+              <SlidersHorizontal className="h-4 w-4 mr-1.5" />
+              Filtri
+              {activeFilter && !panelOpen && (
+                <span className="ml-1.5 h-2 w-2 rounded-full bg-amber-400 inline-block" />
+              )}
+              {panelOpen ? (
+                <ChevronUp className="h-4 w-4 ml-1.5" />
+              ) : (
+                <ChevronDown className="h-4 w-4 ml-1.5" />
+              )}
+            </Button>
+          </div>
+        }
+      />
 
       {/* Collapsible filter panel */}
       {panelOpen && (
@@ -539,7 +537,6 @@ export default function JobsPage() {
             <Button
               size="sm"
               onClick={handleApply}
-              className="bg-red-600 hover:bg-red-700 text-white"
             >
               Lietot filtru
             </Button>
@@ -573,7 +570,6 @@ export default function JobsPage() {
                   size="sm"
                   onClick={handleSave}
                   disabled={!saveName.trim()}
-                  className="bg-red-600 hover:bg-red-700 text-white"
                 >
                   Saglabāt
                 </Button>
@@ -614,14 +610,14 @@ export default function JobsPage() {
                     <button
                       type="button"
                       onClick={() => handleApplySaved(s)}
-                      className="text-xs font-semibold text-foreground hover:text-red-600 transition-colors"
+                      className="text-xs font-semibold text-foreground hover:text-primary transition-colors"
                     >
                       {s.name}
                     </button>
                     <button
                       type="button"
                       onClick={() => setSavedSearches((prev) => prev.filter((x) => x.id !== s.id))}
-                      className="h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:bg-red-100 hover:text-red-600 transition-colors ml-0.5"
+                      className="h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors ml-0.5"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -696,7 +692,7 @@ export default function JobsPage() {
                 <button
                   type="button"
                   onClick={() => setPanelOpen(true)}
-                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-red-600 hover:text-red-700 transition-colors"
+                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
                 >
                   Iestatīt rādiusu →
                 </button>
@@ -776,7 +772,7 @@ export default function JobsPage() {
                     </div>
                     <div className="w-px h-4 bg-gray-200 ml-1.5" />
                     <div className="flex items-center gap-3">
-                      <div className="w-2.5 h-2.5 rounded-full bg-red-600 border-2 border-red-200 shrink-0" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-primary border-2 border-primary/20 shrink-0" />
                       <div>
                         <p className="font-semibold text-sm text-gray-900">{job.toCity}</p>
                         <p className="text-xs text-muted-foreground">{job.toAddress}</p>
@@ -797,7 +793,7 @@ export default function JobsPage() {
                       </span>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-extrabold text-red-600">
+                      <p className="text-lg font-extrabold text-primary">
                         {job.priceTotal.toFixed(2)} {job.currency}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -822,7 +818,7 @@ export default function JobsPage() {
                     )}
                     {(!user?.isCompany || !user?.canTransport) && (
                       <Button
-                        className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                        className="flex-1"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleAccept(job.id);
@@ -893,7 +889,7 @@ export default function JobsPage() {
                   </div>
                   <div className="w-px h-4 bg-gray-200 ml-1.5" />
                   <div className="flex items-start gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-600 border-2 border-red-200 mt-1 shrink-0" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-primary border-2 border-primary/20 mt-1 shrink-0" />
                     <div>
                       <p className="font-semibold text-sm text-gray-900">{dispatchJob.toCity}</p>
                       <p className="text-xs text-muted-foreground">{dispatchJob.toAddress}</p>
@@ -906,7 +902,7 @@ export default function JobsPage() {
                   <Ruler className="h-3.5 w-3.5" />
                   <span>{dispatchJob.distanceKm} km</span>
                   <span className="text-gray-300">·</span>
-                  <span className="font-bold text-red-600">
+                  <span className="font-bold text-primary">
                     {dispatchJob.priceTotal.toFixed(2)} {dispatchJob.currency}
                   </span>
                 </div>
@@ -978,7 +974,7 @@ export default function JobsPage() {
                   Atcelt
                 </Button>
                 <Button
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  className="flex-1"
                   onClick={handleAssign}
                   disabled={assigning || !dispatchVehicleId || !dispatchDriverId || assignSuccess}
                 >

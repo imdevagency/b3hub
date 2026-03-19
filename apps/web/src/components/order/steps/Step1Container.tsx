@@ -99,12 +99,12 @@ export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, o
               className={cn(
                 'relative flex flex-col gap-2 rounded-2xl border-2 p-4 text-left transition-all hover:shadow-md focus:outline-none',
                 selected
-                  ? 'border-red-500 bg-red-50 shadow-md ring-4 ring-red-100'
+                  ? 'border-primary bg-red-50 shadow-md ring-4 ring-red-100'
                   : 'border-gray-200 bg-white hover:border-gray-300',
               )}
             >
               {s.popular && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-red-600 px-3 py-0.5 text-xs font-bold text-white whitespace-nowrap">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-bold text-white whitespace-nowrap">
                   POPULĀRĀKAIS
                 </span>
               )}
@@ -142,7 +142,7 @@ export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, o
               <p
                 className={cn(
                   'text-sm font-bold mt-auto',
-                  selected ? 'text-red-600' : 'text-gray-800',
+                  selected ? 'text-primary' : 'text-gray-800',
                 )}
               >
                 No €{s.priceFrom}
@@ -162,7 +162,7 @@ export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, o
             <span>
               Atkritumu veids
               {wasteType && (
-                <span className="ml-2 text-red-600">
+                <span className="ml-2 text-primary">
                   — {WASTE_TYPES.find((w) => w.id === wasteType)?.emoji}{' '}
                   {WASTE_TYPES.find((w) => w.id === wasteType)?.label}
                 </span>
@@ -181,7 +181,7 @@ export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, o
                   className={cn(
                     'flex items-center gap-2 rounded-xl border-2 px-3 py-2.5 text-sm text-left transition-all',
                     selected
-                      ? 'border-red-500 bg-red-50 text-red-700 font-semibold'
+                      ? 'border-primary bg-red-50 text-red-700 font-semibold'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300',
                   )}
                 >
@@ -197,7 +197,7 @@ export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, o
       <button
         onClick={onNext}
         disabled={!canProceed}
-        className="w-full rounded-2xl bg-red-600 py-4 text-base font-bold text-white shadow-md transition-all hover:bg-red-700 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
+        className="w-full rounded-2xl bg-primary py-4 text-base font-bold text-white shadow-md transition-all hover:bg-primary/90 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
       >
         Turpināt
       </button>

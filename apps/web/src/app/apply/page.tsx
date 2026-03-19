@@ -132,7 +132,7 @@ export default function ApplyPage() {
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
                         s < step
-                          ? 'bg-red-600 text-white'
+                          ? 'bg-primary text-primary-foreground'
                           : s === step
                             ? 'bg-red-100 text-red-700 border-2 border-red-600'
                             : 'bg-gray-100 text-gray-400'
@@ -141,7 +141,7 @@ export default function ApplyPage() {
                       {s < step ? <CheckCircle className="h-4 w-4" /> : s}
                     </div>
                     {s < 3 && (
-                      <div className={`flex-1 h-0.5 ${s < step ? 'bg-red-600' : 'bg-gray-200'}`} />
+                      <div className={`flex-1 h-0.5 ${s < step ? 'bg-primary' : 'bg-gray-200'}`} />
                     )}
                   </div>
                 ))}
@@ -225,7 +225,7 @@ export default function ApplyPage() {
                 </div>
 
                 <Button
-                  className="w-full mt-6 bg-red-600 hover:bg-red-700 text-white h-11"
+                  className="w-full mt-6 bg-primary hover:bg-primary/90 text-primary-foreground h-11"
                   onClick={() => setStep(2)}
                   disabled={!step1Valid}
                 >
@@ -307,7 +307,7 @@ export default function ApplyPage() {
                     Atpakaļ
                   </Button>
                   <Button
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white h-11"
+                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground h-11"
                     onClick={() => setStep(3)}
                     disabled={!step2Valid}
                   >
@@ -342,7 +342,7 @@ export default function ApplyPage() {
                     }`}
                   >
                     <div
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${form.appliesForSell ? 'bg-red-600' : 'bg-gray-100'}`}
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${form.appliesForSell ? 'bg-primary' : 'bg-gray-100'}`}
                     >
                       <Package
                         className={`h-5 w-5 ${form.appliesForSell ? 'text-white' : 'text-gray-400'}`}
@@ -355,7 +355,7 @@ export default function ApplyPage() {
                       </p>
                     </div>
                     <div
-                      className={`ml-auto w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${form.appliesForSell ? 'border-red-600 bg-red-600' : 'border-gray-300'}`}
+                      className={`ml-auto w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${form.appliesForSell ? 'border-primary bg-primary' : 'border-gray-300'}`}
                     >
                       {form.appliesForSell && <CheckCircle className="h-3.5 w-3.5 text-white" />}
                     </div>
@@ -371,7 +371,7 @@ export default function ApplyPage() {
                     }`}
                   >
                     <div
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${form.appliesForTransport ? 'bg-red-600' : 'bg-gray-100'}`}
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${form.appliesForTransport ? 'bg-primary' : 'bg-gray-100'}`}
                     >
                       <Truck
                         className={`h-5 w-5 ${form.appliesForTransport ? 'text-white' : 'text-gray-400'}`}
@@ -384,7 +384,7 @@ export default function ApplyPage() {
                       </p>
                     </div>
                     <div
-                      className={`ml-auto w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${form.appliesForTransport ? 'border-red-600 bg-red-600' : 'border-gray-300'}`}
+                      className={`ml-auto w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${form.appliesForTransport ? 'border-primary bg-primary' : 'border-gray-300'}`}
                     >
                       {form.appliesForTransport && (
                         <CheckCircle className="h-3.5 w-3.5 text-white" />
@@ -424,7 +424,7 @@ export default function ApplyPage() {
                     Atpakaļ
                   </Button>
                   <Button
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white h-11"
+                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground h-11"
                     onClick={handleSubmit}
                     disabled={!step3Valid || submitting}
                   >
@@ -452,7 +452,7 @@ export default function ApplyPage() {
                     Ieiet sistēmā
                   </Button>
                   <Button
-                    className="bg-red-600 hover:bg-red-700 text-white h-11"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground h-11"
                     onClick={() => router.push('/')}
                   >
                     Uz sākumlapu

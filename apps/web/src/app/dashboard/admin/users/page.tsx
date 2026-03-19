@@ -19,6 +19,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 
 // ── Capability badge ──────────────────────────────────────────────────────────
 
@@ -153,25 +154,16 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Lietotāji</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {users.length} reģistrēti lietotāji
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setLoading(true);
-            fetchUsers();
-          }}
-        >
-          <RefreshCw className="h-4 w-4 mr-1.5" />
-          Atjaunot
-        </Button>
-      </div>
+      <PageHeader
+        title="Lietotāji"
+        description={`${users.length} reģistrēti lietotāji`}
+        action={
+          <Button variant="outline" size="sm" onClick={() => { setLoading(true); fetchUsers(); }}>
+            <RefreshCw className="h-4 w-4 mr-1.5" />
+            Atjaunot
+          </Button>
+        }
+      />
 
       {/* Search */}
       <div className="relative">

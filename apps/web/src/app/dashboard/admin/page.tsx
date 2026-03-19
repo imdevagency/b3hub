@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { Users, ClipboardList, Truck, BarChart3, RefreshCw, ArrowRight } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 
 // ── Admin stats ───────────────────────────────────────────────────────────────
 
@@ -96,10 +97,7 @@ export default function AdminOverviewPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Administrācija</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Pārskats par platformas darbību</p>
-      </div>
+      <PageHeader title="Administrācija" description="Pārskats par platformas darbību" />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
@@ -146,11 +144,11 @@ export default function AdminOverviewPage() {
           className="flex items-center justify-between bg-white border rounded-2xl p-5 shadow-sm hover:border-gray-300 transition-colors group"
         >
           <div className="flex items-center gap-3">
-            <ClipboardList className="h-5 w-5 text-red-600" />
+            <ClipboardList className="h-5 w-5 text-primary" />
             <div>
               <span className="font-semibold text-gray-900">Piegādātāju pieteikumi</span>
               {!!stats?.pendingApplications && (
-                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-600 text-white text-xs font-bold">
+                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold">
                   {stats.pendingApplications}
                 </span>
               )}

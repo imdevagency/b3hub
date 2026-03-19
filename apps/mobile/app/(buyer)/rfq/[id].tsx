@@ -23,7 +23,10 @@ import { api } from '@/lib/api';
 import type { QuoteRequest, QuoteResponse } from '@/lib/api';
 import { CATEGORY_LABELS, UNIT_SHORT } from '@/lib/materials';
 import { formatDateShort } from '@/lib/format';
-import { ChevronLeft, MapPin, Package, Clock, CheckCircle, Star } from 'lucide-react-native';
+import { MapPin, Package, Clock, CheckCircle, Star } from 'lucide-react-native';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { haptics } from '@/lib/haptics';
 
 // ── Status helpers ─────────────────────────────────────────────
@@ -108,20 +111,24 @@ export default function RfqDetailScreen() {
 
   if (loading) {
     return (
-      <View style={[ss.center, { paddingTop: insets.top }]}>
-        <ActivityIndicator color="#111827" />
-      </View>
+      <ScreenContainer standalone>
+        <View style={ss.center}>
+          <ActivityIndicator color="#111827" />
+        </View>
+      </ScreenContainer>
     );
   }
 
   if (!rfq) {
     return (
-      <View style={[ss.center, { paddingTop: insets.top }]}>
-        <Text style={ss.emptyText}>Pieprasījums nav atrasts</Text>
-        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
-          <Text style={ss.link}>← Atpakaļ</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenContainer standalone>
+        <View style={ss.center}>
+          <Text style={ss.emptyText}>Pieprasījums nav atrasts</Text>
+          <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
+            <Text style={ss.link}>← Atpakaļ</Text>
+          </TouchableOpacity>
+        </View>
+      </ScreenContainer>
     );
   }
 
@@ -131,21 +138,11 @@ export default function RfqDetailScreen() {
   const sortedResponses = [...rfq.responses].sort((a, b) => a.totalPrice - b.totalPrice);
 
   return (
-    <View style={[ss.root, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={ss.header}>
-        <TouchableOpacity style={ss.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-          <ChevronLeft size={22} color="#111827" />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={ss.headerTitle} numberOfLines={1}>
-            Pieprasījums #{rfq.requestNumber}
-          </Text>
-          <View style={[ss.statusPill, { backgroundColor: st.bg }]}>
-            <Text style={[ss.statusPillText, { color: st.color }]}>{st.label}</Text>
-          </View>
-        </View>
-      </View>
+    <ScreenContainer standalone>
+      <ScreenHeader
+        title={`Pieprasījums #${rfq.requestNumber}`}
+        rightSlot={<StatusPill label={st.label} bg={st.bg} color={st.color} size="sm" />}
+      />
 
       <ScrollView
         contentContainerStyle={[ss.scroll, { paddingBottom: insets.bottom + 32 }]}
@@ -266,7 +263,7 @@ export default function RfqDetailScreen() {
           </View>
         ))}
       </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }
 

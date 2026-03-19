@@ -16,6 +16,8 @@ import {
 } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
+import { fmtDate, fmtMoney } from '@/lib/format';
 import {
   Trash2,
   Plus,
@@ -88,18 +90,6 @@ const STATUS: Record<string, { label: string; bg: string; text: string }> = {
   COMPLETED: { label: 'Pabeigts', bg: '#f0fdf4', text: '#166534' },
   CANCELLED: { label: 'Atcelts', bg: '#fee2e2', text: '#b91c1c' },
 };
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('lv-LV', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-function fmtMoney(n: number, currency = 'EUR') {
-  return new Intl.NumberFormat('lv-LV', { style: 'currency', currency }).format(n);
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -214,24 +204,21 @@ export default function SkipHirePage() {
   return (
     <div className="space-y-6">
       {/* Page header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Konteineru noma</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Pasūtiet konteineru atkritumu izvešanai uz jūsu objektu
-          </p>
-        </div>
-        <Button
-          className="bg-red-600 hover:bg-red-700 text-white gap-2"
-          onClick={() => {
-            setTab('new');
-            setStep(1);
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          Jauns pasūtījums
-        </Button>
-      </div>
+      <PageHeader
+        title="Konteineru noma"
+        description="Pasūtīiet konteineru atkritumu izvešanai uz jūsu objektu"
+        action={
+          <Button
+            onClick={() => {
+              setTab('new');
+              setStep(1);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            Jauns pasūtījums
+          </Button>
+        }
+      />
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -266,7 +253,7 @@ export default function SkipHirePage() {
             onClick={() => setTab(key)}
             className={`pb-2 px-1 text-sm font-semibold border-b-2 transition-colors ${
               tab === key
-                ? 'border-red-600 text-red-600'
+                ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -303,7 +290,7 @@ export default function SkipHirePage() {
                 </p>
               </div>
               <Button
-                className="bg-red-600 hover:bg-red-700 text-white gap-2"
+                className="gap-2"
                 onClick={() => setTab('new')}
               >
                 <Plus className="h-4 w-4" />
@@ -395,7 +382,7 @@ export default function SkipHirePage() {
                   Skatīt pasūtījumus
                 </Button>
                 <Button
-                  className="bg-red-600 hover:bg-red-700 text-white h-11"
+                  className="h-11"
                   onClick={() => {
                     setForm(INITIAL_FORM);
                     setStep(1);
@@ -415,16 +402,16 @@ export default function SkipHirePage() {
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
                         s < step
-                          ? 'bg-red-600 text-white'
+                          ? 'bg-primary text-primary-foreground'
                           : s === step
-                            ? 'bg-red-100 text-red-700 border-2 border-red-600'
+                            ? 'bg-primary/10 text-primary border-2 border-primary'
                             : 'bg-gray-100 text-gray-400'
                       }`}
                     >
                       {s < step ? <CheckCircle className="h-4 w-4" /> : s}
                     </div>
                     {s < 3 && (
-                      <div className={`flex-1 h-0.5 ${s < step ? 'bg-red-600' : 'bg-gray-200'}`} />
+                      <div className={`flex-1 h-0.5 ${s < step ? 'bg-primary' : 'bg-gray-200'}`} />
                     )}
                   </div>
                 ))}
@@ -453,14 +440,14 @@ export default function SkipHirePage() {
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div
-                            className={`w-10 h-10 rounded-lg flex items-center justify-center ${form.skipSize === sz.value ? 'bg-red-600' : 'bg-gray-100'}`}
+                            className={`w-10 h-10 rounded-lg flex items-center justify-center ${form.skipSize === sz.value ? 'bg-primary' : 'bg-gray-100'}`}
                           >
                             <Trash2
                               className={`h-5 w-5 ${form.skipSize === sz.value ? 'text-white' : 'text-gray-400'}`}
                             />
                           </div>
                           <span
-                            className={`text-sm font-bold ${form.skipSize === sz.value ? 'text-red-600' : 'text-gray-500'}`}
+                            className={`text-sm font-bold ${form.skipSize === sz.value ? 'text-primary' : 'text-gray-500'}`}
                           >
                             {sz.price}
                           </span>
@@ -477,7 +464,7 @@ export default function SkipHirePage() {
                       <ArrowLeft className="h-4 w-4 mr-1" /> Atpakaļ
                     </Button>
                     <Button
-                      className="bg-red-600 hover:bg-red-700 text-white h-11"
+                      className="h-11"
                       disabled={!form.skipSize}
                       onClick={() => setStep(2)}
                     >
@@ -558,7 +545,7 @@ export default function SkipHirePage() {
                       <ArrowLeft className="h-4 w-4 mr-1" /> Atpakaļ
                     </Button>
                     <Button
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white h-11"
+                      className="flex-1 h-11"
                       disabled={!step2Valid}
                       onClick={() => setStep(3)}
                     >
@@ -594,7 +581,7 @@ export default function SkipHirePage() {
                     </div>
                     <div className="border-t pt-2 flex justify-between font-bold">
                       <span>Orientējošā cena</span>
-                      <span className="text-red-600">
+                      <span className="text-primary">
                         {SKIP_SIZES.find((s) => s.value === form.skipSize)?.price}
                       </span>
                     </div>
@@ -658,7 +645,7 @@ export default function SkipHirePage() {
                       <ArrowLeft className="h-4 w-4 mr-1" /> Atpakaļ
                     </Button>
                     <Button
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white h-11"
+                      className="flex-1 h-11"
                       disabled={!step3Valid || submitting}
                       onClick={handleSubmit}
                     >

@@ -16,6 +16,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { useAuth } from '@/lib/auth-context';
 import {
   getMyQuoteRequests,
@@ -27,6 +28,7 @@ import {
   type MaterialUnit,
   type CreateQuoteRequestInput,
 } from '@/lib/api';
+import { fmtDate } from '@/lib/format';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -85,14 +87,6 @@ const STATUS_CFG: Record<
     bg: 'bg-slate-50 border-slate-200',
   },
 };
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('lv-LV', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
 
 function fmtEur(n: number) {
   return new Intl.NumberFormat('lv-LV', { style: 'currency', currency: 'EUR' }).format(n);
@@ -461,24 +455,22 @@ export default function QuoteRequestsPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Cenu Pieprasījumi</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Pieprasiet cenas no piegādātājiem un salīdziniet piedāvājumus
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
-            Atjaunot
-          </Button>
-          <Button size="sm" onClick={() => setShowModal(true)}>
-            <Plus className="h-4 w-4 mr-1.5" />
-            Jauns Pieprasījums
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Cenu Pieprasījumi"
+        description="Pieprasiet cenas no piegādātājiem un salīdziniet piedāvājumus"
+        action={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+              Atjaunot
+            </Button>
+            <Button size="sm" onClick={() => setShowModal(true)}>
+              <Plus className="h-4 w-4 mr-1.5" />
+              Jauns Pieprasījums
+            </Button>
+          </div>
+        }
+      />
 
       {/* Stats */}
       {requests.length > 0 && (

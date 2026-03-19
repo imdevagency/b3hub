@@ -81,20 +81,20 @@ export function Step3Size({ value, onChange, onNext, onBack }: Step3Props) {
               className={cn(
                 'relative flex flex-col gap-3 rounded-xl border-2 p-5 text-left transition-all duration-200 hover:shadow-md focus:outline-none',
                 selected
-                  ? 'border-red-500 bg-red-50 shadow-md ring-4 ring-red-100'
+                  ? 'border-primary bg-red-50 shadow-md ring-4 ring-red-100'
                   : 'border-gray-200 bg-white hover:border-gray-300',
               )}
             >
               {/* Popular badge */}
               {size.popular && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-red-600 px-3 py-0.5 text-xs font-bold text-white shadow">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-bold text-white shadow">
                   POPULĀRĀKAIS
                 </span>
               )}
 
               {/* Selected check */}
               {selected && (
-                <span className="absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded-full bg-red-600">
+                <span className="absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
                   <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 12 12">
                     <path
                       d="M10 3L5 8.5 2 5.5"
@@ -147,7 +147,7 @@ export function Step3Size({ value, onChange, onNext, onBack }: Step3Props) {
                   <span className="font-medium">Piemērots:</span> {size.bestFor}
                 </p>
                 <p
-                  className={cn('text-base font-bold', selected ? 'text-red-600' : 'text-gray-900')}
+                  className={cn('text-base font-bold', selected ? 'text-primary' : 'text-gray-900')}
                 >
                   {size.price}
                 </p>
@@ -168,7 +168,7 @@ export function Step3Size({ value, onChange, onNext, onBack }: Step3Props) {
         <button
           onClick={onNext}
           disabled={!value}
-          className="flex-1 rounded-xl bg-red-600 py-3.5 text-base font-semibold text-white shadow-md transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
+          className="flex-1 rounded-xl bg-primary py-3.5 text-base font-semibold text-white shadow-md transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
         >
           Turpināt →
         </button>

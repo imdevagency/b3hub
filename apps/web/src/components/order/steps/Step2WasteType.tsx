@@ -92,13 +92,13 @@ export function Step2WasteType({ value, onChange, onNext, onBack }: Step2Props) 
               className={cn(
                 'group relative flex flex-col items-start gap-3 rounded-xl border-2 p-5 text-left transition-all duration-200 hover:shadow-md focus:outline-none',
                 selected
-                  ? 'border-red-500 bg-red-50 shadow-md ring-4 ring-red-100'
+                  ? 'border-primary bg-red-50 shadow-md ring-4 ring-red-100'
                   : 'border-gray-200 bg-white hover:border-gray-300',
               )}
             >
               {/* Selected indicator */}
               {selected && (
-                <span className="absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded-full bg-red-600">
+                <span className="absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
                   <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 12 12">
                     <path
                       d="M10 3L5 8.5 2 5.5"
@@ -116,7 +116,7 @@ export function Step2WasteType({ value, onChange, onNext, onBack }: Step2Props) 
               <div
                 className={cn(
                   'flex h-12 w-12 items-center justify-center rounded-lg border-2 transition-colors',
-                  selected ? 'bg-red-100 text-red-600 border-red-200' : type.color,
+                  selected ? 'bg-red-100 text-primary border-red-200' : type.color,
                 )}
               >
                 <Icon className="h-6 w-6" />
@@ -144,7 +144,7 @@ export function Step2WasteType({ value, onChange, onNext, onBack }: Step2Props) 
         <button
           onClick={onNext}
           disabled={!value}
-          className="flex-1 rounded-xl bg-red-600 py-3.5 text-base font-semibold text-white shadow-md transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
+          className="flex-1 rounded-xl bg-primary py-3.5 text-base font-semibold text-white shadow-md transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
         >
           Turpināt →
         </button>

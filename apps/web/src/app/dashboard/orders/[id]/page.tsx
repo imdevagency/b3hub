@@ -20,16 +20,10 @@ import {
   type TransportJobLocation,
   type TransportJobStatus,
 } from '@/lib/api';
-import {
-  ArrowLeft,
-  CheckCircle2,
-  Circle,
-  Clock,
-  Phone,
-  RefreshCw,
-  Truck,
-  User,
-} from 'lucide-react';
+import { fmtDate } from '@/lib/format';
+import { ArrowLeft, CheckCircle2, Circle, Clock, Phone, Truck, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { PageSpinner } from '@/components/ui/page-spinner';
 
 // ── Status timeline config ─────────────────────────────────────────────────────
 
@@ -74,15 +68,6 @@ function statusIndex(s: TransportJobStatus) {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-
-function fmtDate(iso: string | null | undefined) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('lv-LV', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-}
 
 function fmtTime(iso: string | null | undefined) {
   if (!iso) return '';
@@ -162,20 +147,16 @@ export default function OrderDetailPage() {
   }, [loadJob, pollLocation]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <RefreshCw className="h-6 w-6 animate-spin text-slate-400" />
-      </div>
-    );
+    return <PageSpinner className="min-h-[60vh]" />;
   }
 
   if (error || !job) {
     return (
       <div className="p-8 text-center text-slate-500">
         <p className="mb-4">{error ?? 'Pasūtījums nav atrasts'}</p>
-        <button onClick={() => router.back()} className="text-sm text-slate-600 underline">
+        <Button variant="link" onClick={() => router.back()} className="text-sm">
           ← Atpakaļ
-        </button>
+        </Button>
       </div>
     );
   }
@@ -188,12 +169,9 @@ export default function OrderDetailPage() {
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
       {/* ── Header ── */}
       <div className="flex items-center gap-3">
-        <button
-          onClick={() => router.back()}
-          className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
-        >
+        <Button variant="ghost" size="icon" onClick={() => router.back()}>
           <ArrowLeft className="h-5 w-5 text-slate-600" />
-        </button>
+        </Button>
         <div>
           <h1 className="text-xl font-bold text-slate-900">{job.jobNumber}</h1>
           <p className="text-sm text-slate-500">

@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -529,20 +530,18 @@ export default function CompanyTeamPage() {
 
   return (
     <div className="max-w-4xl space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Komanda</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Pārvaldiet uzņēmuma darbiniekus un to atļaujas.
-          </p>
-        </div>
-        {canManage && (
-          <Button onClick={() => setInviteOpen(true)} className="gap-2">
-            <UserPlus className="h-4 w-4" />
-            Pievienot darbinieku
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Komanda"
+        description="Pārvaldiet uzņēmuma darbiniekus un to atļaujas."
+        action={
+          canManage ? (
+            <Button onClick={() => setInviteOpen(true)} className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Pievienot darbinieku
+            </Button>
+          ) : undefined
+        }
+      />
 
       <Separator />
 

@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { getRecyclingCenters, getMyRecyclingCenters } from '@/lib/api';
 import { Building2, MapPin, Recycle } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 
 interface RecyclingCenterCompany {
   id: string;
@@ -87,15 +88,11 @@ export default function RecyclingCentersPage() {
   const displayCenters = tab === 'mine' ? mineCenters : centers;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Utilizācijas Centri</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Reģistrētie atkritumu utilizācijas centri Latvijā
-          </p>
-        </div>
-      </div>
+    <div className="max-w-5xl mx-auto space-y-6">
+      <PageHeader
+        title="Utilizācijas Centri"
+        description="Reģistrētie atkritumu utilizācijas centri Latvijā"
+      />
 
       {/* Tabs */}
       {isCarrier && (

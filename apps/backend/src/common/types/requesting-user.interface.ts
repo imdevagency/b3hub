@@ -4,10 +4,11 @@ export interface RequestingUser {
   id: string;
   userId: string;
   email?: string;
-  userType: string; // 'BUYER' | 'SUPPLIER' | 'CARRIER' | 'ADMIN'
+  userType: string; // 'BUYER' | 'ADMIN'  (UserType enum — all non-admin users are BUYER regardless of business role)
   isCompany: boolean;
   canSell: boolean; // approved seller — can list materials, see incoming orders
   canTransport: boolean; // approved driver — can accept & execute transport jobs
+  canSkipHire: boolean; // approved to manage skip hire fleet
   companyId?: string; // linked Company id, if any
   companyRole?: string; // 'OWNER' | 'MANAGER' | 'DRIVER' | 'MEMBER'
   // Fine-grained company member permissions

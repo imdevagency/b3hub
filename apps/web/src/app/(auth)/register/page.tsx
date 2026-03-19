@@ -104,7 +104,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-linear-to-b from-red-50 to-white px-4 py-12">
       {/* Logo */}
       <Link href="/" className="flex items-center gap-2 mb-8">
-        <Building2 className="h-8 w-8 text-red-600" />
+        <Building2 className="h-8 w-8 text-primary" />
         <span className="text-2xl font-bold text-gray-900">B3Hub</span>
       </Link>
 
@@ -113,7 +113,7 @@ export default function RegisterPage() {
           <CardTitle className="text-2xl font-bold">Izveidot kontu</CardTitle>
           <CardDescription>
             Jau ir konts?{' '}
-            <Link href="/login" className="text-red-600 hover:underline font-medium">
+            <Link href="/login" className="text-primary hover:underline font-medium">
               Ieiet
             </Link>
           </CardDescription>
@@ -284,7 +284,7 @@ export default function RegisterPage() {
 
               <Button
                 type="submit"
-                className="w-full bg-red-600 hover:bg-red-500 text-white"
+                className="w-full"
                 disabled={form.formState.isSubmitting}
               >
                 {form.formState.isSubmitting ? (

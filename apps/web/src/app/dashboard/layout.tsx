@@ -10,6 +10,7 @@ import { CartProvider } from '@/lib/cart-context';
 import { ModeProvider } from '@/lib/mode-context';
 import { DashboardGuard } from '@/components/dashboard-guard';
 import { NotificationBell } from '@/components/notification-bell';
+import { PageAnimate } from '@/components/ui/page-animate';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -31,7 +32,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
               {/* Page content */}
               <div className="flex flex-1 flex-col gap-6 p-6 bg-muted/20 min-h-[calc(100vh-3.5rem)]">
-                {children}
+                <PageAnimate>
+                  {children}
+                </PageAnimate>
               </div>
             </SidebarInset>
           </SidebarProvider>

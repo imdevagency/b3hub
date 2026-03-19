@@ -213,7 +213,7 @@ export function Step3DateOffers({
                     className={cn(
                       'rounded-lg border-2 py-1.5 text-sm font-semibold transition-all',
                       active
-                        ? 'border-red-500 bg-red-50 text-red-700'
+                        ? 'border-primary bg-red-50 text-red-700'
                         : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300',
                     )}
                   >
@@ -296,7 +296,7 @@ export function Step3DateOffers({
                   setRange(undefined);
                   onDeliveryDateChange('');
                 }}
-                className="flex items-center gap-1.5 text-sm text-red-600 hover:underline"
+                className="flex items-center gap-1.5 text-sm text-primary hover:underline"
               >
                 <X className="size-3.5" />
                 Mainīt datumu
@@ -315,12 +315,12 @@ export function Step3DateOffers({
                     className={cn(
                       'w-full text-left rounded-2xl border-2 p-4 transition-all hover:shadow-md relative',
                       sel
-                        ? 'border-red-500 bg-red-50 shadow-md ring-4 ring-red-100'
+                        ? 'border-primary bg-red-50 shadow-md ring-4 ring-red-100'
                         : 'border-gray-200 bg-white hover:border-gray-300',
                     )}
                   >
                     {offer.badge && (
-                      <span className="absolute -top-3 left-4 rounded-full bg-red-600 px-2.5 py-0.5 text-xs font-bold text-white">
+                      <span className="absolute -top-3 left-4 rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-white">
                         {offer.badge}
                       </span>
                     )}
@@ -349,13 +349,13 @@ export function Step3DateOffers({
                         <p
                           className={cn(
                             'text-xl font-bold',
-                            sel ? 'text-red-600' : 'text-gray-900',
+                            sel ? 'text-primary' : 'text-gray-900',
                           )}
                         >
                           €{offer.price}
                         </p>
                         <p className="text-xs text-gray-500">iekļ. PVN</p>
-                        {sel && <CheckCircle2 className="size-5 text-red-600 mt-1 ml-auto" />}
+                        {sel && <CheckCircle2 className="size-5 text-primary mt-1 ml-auto" />}
                       </div>
                     </div>
                   </button>
@@ -410,7 +410,7 @@ export function Step3DateOffers({
                     </div>
                     <div className="flex justify-between items-baseline">
                       <span className="text-sm text-gray-500">Kopā</span>
-                      <span className="text-2xl font-bold text-red-600">€{o.price}</span>
+                      <span className="text-2xl font-bold text-primary">€{o.price}</span>
                     </div>
                     <p className="text-xs text-gray-400 text-right">iekļ. PVN</p>
                   </div>
@@ -434,7 +434,7 @@ export function Step3DateOffers({
         <button
           onClick={onNext}
           disabled={!canProceed}
-          className="flex-2 rounded-2xl bg-red-600 py-3.5 text-base font-bold text-white shadow-md transition-all hover:bg-red-700 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
+          className="flex-2 rounded-2xl bg-primary py-3.5 text-base font-bold text-white shadow-md transition-all hover:bg-primary/90 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
         >
           Turpināt
         </button>

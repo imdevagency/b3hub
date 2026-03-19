@@ -52,7 +52,7 @@ export function Navbar() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <Building2 className="h-7 w-7 text-red-600" />
+            <Building2 className="h-7 w-7 text-primary" />
             <span className="text-xl font-bold text-gray-900">B3Hub</span>
           </Link>
 
@@ -61,7 +61,7 @@ export function Navbar() {
             <NavigationMenu>
               <NavigationMenuList>
                 <NavigationMenuItem>
-                  <NavigationMenuTrigger className="text-sm font-medium text-gray-700 hover:text-red-600">
+                  <NavigationMenuTrigger className="text-sm font-medium text-gray-700 hover:text-primary">
                     Produkts
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
@@ -80,7 +80,7 @@ export function Navbar() {
                     <NavigationMenuLink
                       className={cn(
                         navigationMenuTriggerStyle(),
-                        'text-sm font-medium text-gray-700 hover:text-red-600',
+                        'text-sm font-medium text-gray-700 hover:text-primary',
                       )}
                     >
                       Funkcijas
@@ -93,7 +93,7 @@ export function Navbar() {
                     <NavigationMenuLink
                       className={cn(
                         navigationMenuTriggerStyle(),
-                        'text-sm font-medium text-gray-700 hover:text-red-600',
+                        'text-sm font-medium text-gray-700 hover:text-primary',
                       )}
                     >
                       Kā tas darbojas
@@ -106,7 +106,7 @@ export function Navbar() {
                     <NavigationMenuLink
                       className={cn(
                         navigationMenuTriggerStyle(),
-                        'text-sm font-semibold text-red-600 hover:text-red-700',
+                        'text-sm font-semibold text-primary hover:text-primary/90',
                       )}
                     >
                       Kļūt par partneri
@@ -119,7 +119,7 @@ export function Navbar() {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex md:items-center md:gap-3">
-            <Button asChild variant="ghost" className="text-gray-700 hover:text-red-600">
+            <Button asChild variant="ghost" className="text-gray-700 hover:text-primary">
               <Link href="/login">Ieiet</Link>
             </Button>
             <Button asChild className="bg-red-600 text-white hover:bg-red-500">
@@ -143,21 +143,21 @@ export function Navbar() {
             <nav className="flex flex-col gap-2">
               <Link
                 href="#features"
-                className="px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-red-600"
+                className="px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-primary"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Funkcijas
               </Link>
               <Link
                 href="#how-it-works"
-                className="px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-red-600"
+                className="px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-primary"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Kā tas darbojas
               </Link>
               <Link
                 href="/apply"
-                className="px-3 py-2 text-sm font-semibold text-red-600 rounded-md hover:bg-red-50"
+                className="px-3 py-2 text-sm font-semibold text-primary rounded-md hover:bg-red-50"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Kļūt par partneri →

@@ -29,6 +29,7 @@ import {
   Star,
   X,
 } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -154,7 +155,7 @@ function AddToCartModal({
             onClick={handleAdd}
             disabled={added}
             className={`w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-bold text-white transition-all ${
-              added ? 'bg-green-600' : 'bg-red-600 hover:bg-red-700'
+              added ? 'bg-green-600' : 'bg-primary hover:bg-primary/90'
             }`}
           >
             <ShoppingCart className="size-4" />
@@ -181,7 +182,7 @@ function CartBar() {
       <span className="font-bold">€{total.toFixed(2)}</span>
       <Link
         href="/dashboard/checkout"
-        className="flex items-center gap-1.5 rounded-xl bg-red-600 hover:bg-red-700 px-3 py-1.5 font-bold text-white transition-colors ml-2"
+        className="flex items-center gap-1.5 rounded-xl bg-primary hover:bg-primary/90 px-3 py-1.5 font-bold text-primary-foreground transition-colors ml-2"
       >
         Norēķināties
         <ArrowRight className="size-3.5" />
@@ -275,7 +276,7 @@ function MaterialCard({
             <button
               onClick={() => onOrder(material)}
               className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-white transition-colors ${
-                cartQty ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                cartQty ? 'bg-green-600 hover:bg-green-700' : 'bg-primary hover:bg-primary/90'
               }`}
             >
               <ShoppingCart className="size-3.5" />
@@ -342,17 +343,12 @@ export default function CatalogPage() {
   }, [searchInput]);
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6 pb-24">
+    <div className="flex flex-col gap-6 pb-24">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Package className="size-6 text-red-600" />
-          Materiālu Katalogs
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Smiltis, grants, akmens un citi celtniecības materiāli — pasūtini ar pāris klikšķiem
-        </p>
-      </div>
+      <PageHeader
+        title="Materiālu Katalogs"
+        description="Smiltis, grants, akmens un citi celtniecības materiāli — pasūtīni ar pāris klikšķiem"
+      />
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
@@ -385,7 +381,7 @@ export default function CatalogPage() {
             onClick={() => setCategory('')}
             className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${
               category === ''
-                ? 'bg-red-600 text-white'
+                ? 'bg-primary text-primary-foreground'
                 : 'bg-muted text-muted-foreground hover:bg-muted/70'
             }`}
           >
@@ -397,7 +393,7 @@ export default function CatalogPage() {
               onClick={() => setCategory(c === category ? '' : c)}
               className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${
                 category === c
-                  ? 'bg-red-600 text-white'
+                  ? 'bg-primary text-primary-foreground'
                   : 'bg-muted text-muted-foreground hover:bg-muted/70'
               }`}
             >

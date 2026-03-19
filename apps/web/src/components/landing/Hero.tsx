@@ -10,7 +10,7 @@ export function Hero() {
       <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-            Sakārtojiet Savus Materiālu Pasūtījumus ar <span className="text-red-600">B3Hub</span>
+            Sakārtojiet Savus Materiālu Pasūtījumus ar <span className="text-primary">B3Hub</span>
           </h1>
           <p className="mt-6 text-lg leading-8 text-gray-600">
             Savienojiet piegādātājus, klientus un vadītājus vienā jaudīgā platformā. Pārvaldiet
@@ -19,19 +19,19 @@ export function Hero() {
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link
               href="/register"
-              className="rounded-md bg-red-600 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-red-500 transition-colors"
+              className="rounded-md bg-primary px-6 py-3 text-base font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
             >
               Sākt bez maksas →
             </Link>
             <Link
               href="/apply"
-              className="rounded-md border-2 border-gray-300 px-6 py-3 text-base font-semibold text-gray-900 hover:border-red-500 hover:text-red-600 transition-colors"
+              className="rounded-md border-2 border-gray-300 px-6 py-3 text-base font-semibold text-gray-900 hover:border-primary/50 hover:text-primary transition-colors"
             >
               Kļūt par piegādātāju
             </Link>
             <Link
               href="#how-it-works"
-              className="text-base font-semibold leading-7 text-gray-900 hover:text-red-600 transition-colors"
+              className="text-base font-semibold leading-7 text-gray-900 hover:text-primary transition-colors"
             >
               Kā tas darbojas <span aria-hidden="true">↓</span>
             </Link>

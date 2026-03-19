@@ -26,7 +26,7 @@ export function Stats() {
             {stats.map((stat) => (
               <div key={stat.id} className="flex flex-col bg-white p-8">
                 <dt className="text-sm font-semibold leading-6 text-gray-600">{stat.name}</dt>
-                <dd className="order-first text-3xl font-semibold tracking-tight text-red-600">
+                <dd className="order-first text-3xl font-semibold tracking-tight text-primary">
                   {stat.value}
                 </dd>
               </div>

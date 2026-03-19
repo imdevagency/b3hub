@@ -85,7 +85,7 @@ export default function OrderHubPage() {
             <div className="mt-auto pt-6">
               <Link
                 href="/dashboard/catalog"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-red-700 transition-colors"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
               >
                 Skatīt Katalogu
                 <ArrowRight className="h-4 w-4" />

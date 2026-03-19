@@ -18,7 +18,6 @@ import {
   TextInput,
 } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import {
   api,
@@ -31,7 +30,6 @@ import { formatDate, formatDateShort } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import {
-  ArrowLeft,
   Package,
   Truck,
   Trash2,
@@ -42,6 +40,9 @@ import {
   ChevronRight,
   Clock,
 } from 'lucide-react-native';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { StatusPill } from '@/components/ui/StatusPill';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -83,7 +84,6 @@ export default function FrameworkContractDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
 
   const [contract, setContract] = useState<ApiFrameworkContract | null>(null);
   const [loading, setLoading] = useState(true);
@@ -185,20 +185,24 @@ export default function FrameworkContractDetailScreen() {
 
   if (loading) {
     return (
-      <View style={[s.center, { paddingTop: insets.top }]}>
-        <ActivityIndicator color="#111827" size="large" />
-      </View>
+      <ScreenContainer standalone>
+        <View style={s.center}>
+          <ActivityIndicator color="#111827" size="large" />
+        </View>
+      </ScreenContainer>
     );
   }
 
   if (!contract) {
     return (
-      <View style={[s.center, { paddingTop: insets.top }]}>
-        <Text style={s.emptyText}>Līgums nav atrasts</Text>
-        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
-          <Text style={s.link}>← Atpakaļ</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenContainer standalone>
+        <View style={s.center}>
+          <Text style={s.emptyText}>Līgums nav atrasts</Text>
+          <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
+            <Text style={s.link}>← Atpakaļ</Text>
+          </TouchableOpacity>
+        </View>
+      </ScreenContainer>
     );
   }
 
@@ -207,27 +211,11 @@ export default function FrameworkContractDetailScreen() {
   const canRelease = contract.status === 'ACTIVE';
 
   return (
-    <View style={[s.root, { paddingTop: insets.top }]}>
-      {/* ── Back header ── */}
-      <View style={s.topBar}>
-        <TouchableOpacity
-          style={s.backBtn}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-          hitSlop={8}
-        >
-          <ArrowLeft size={20} color="#111827" strokeWidth={2} />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={s.contractNum}>{contract.contractNumber}</Text>
-          <Text style={s.contractTitle} numberOfLines={1}>
-            {contract.title}
-          </Text>
-        </View>
-        <View style={[s.statusPill, { backgroundColor: st.bg }]}>
-          <Text style={[s.statusText, { color: st.color }]}>{st.label}</Text>
-        </View>
-      </View>
+    <ScreenContainer standalone>
+      <ScreenHeader
+        title={`${contract.contractNumber} · ${contract.title}`}
+        rightSlot={<StatusPill label={st.label} bg={st.bg} color={st.color} size="sm" />}
+      />
 
       <ScrollView
         contentContainerStyle={s.scroll}
@@ -492,7 +480,7 @@ export default function FrameworkContractDetailScreen() {
           </TouchableOpacity>
         </View>
       </BottomSheet>
-    </View>
+    </ScreenContainer>
   );
 }
 

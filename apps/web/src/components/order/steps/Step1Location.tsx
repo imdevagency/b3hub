@@ -23,7 +23,7 @@ export function Step1Location({ value, onChange, onNext }: Step1Props) {
     <div className="flex flex-col items-center text-center space-y-8">
       {/* Icon */}
       <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
-        <MapPin className="h-10 w-10 text-red-600" />
+        <MapPin className="h-10 w-10 text-primary" />
       </div>
 
       {/* Heading */}
@@ -45,14 +45,14 @@ export function Step1Location({ value, onChange, onNext }: Step1Props) {
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
             autoFocus
-            className="w-full rounded-xl border-2 border-gray-200 py-4 pl-12 pr-4 text-base text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-50"
+            className="w-full rounded-xl border-2 border-gray-200 py-4 pl-12 pr-4 text-base text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-red-50"
           />
         </div>
 
         <button
           onClick={onNext}
           disabled={!isValid}
-          className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-600 py-4 text-base font-semibold text-white shadow-md transition-all hover:bg-red-700 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-4 text-base font-semibold text-white shadow-md transition-all hover:bg-primary/90 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
         >
           Pārbaudīt Pieejamību
           <ArrowRight className="h-5 w-5" />

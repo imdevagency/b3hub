@@ -16,7 +16,8 @@
     "lint": "npm run lint --workspaces --if-present",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "android": "expo run:android",
-    "ios": "expo run:ios"
+    "ios": "expo run:ios",
+    "docs:generate": "node scripts/generate-instructions.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

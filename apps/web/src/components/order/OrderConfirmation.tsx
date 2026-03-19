@@ -78,7 +78,7 @@ export function OrderConfirmation({
 
       {/* Order summary card */}
       <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white shadow-sm text-left overflow-hidden">
-        <div className="bg-red-600 px-6 py-4">
+        <div className="bg-primary px-6 py-4">
           <p className="text-sm font-semibold text-red-100">Pasūtījuma Kopsavilkums</p>
           <p className="text-xs text-red-200 mt-0.5">Pasūtījums #{orderNumber}</p>
         </div>
@@ -138,7 +138,7 @@ export function OrderConfirmation({
         {/* Total */}
         <div className="flex items-center justify-between bg-gray-50 px-6 py-4 border-t border-gray-200">
           <p className="text-sm font-semibold text-gray-700">Kopā (iekļ. savakšana)</p>
-          <p className="text-xl font-bold text-red-600">
+          <p className="text-xl font-bold text-primary">
             {currency} {price}
           </p>
         </div>
@@ -154,7 +154,7 @@ export function OrderConfirmation({
         </button>
         <Link
           href={authenticated ? '/dashboard/orders' : '/dashboard'}
-          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-red-600 py-3.5 text-base font-semibold text-white shadow-md transition-all hover:bg-red-700"
+          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-base font-semibold text-white shadow-md transition-all hover:bg-primary/90"
         >
           {authenticated ? 'Mani Pasūtījumi' : 'Uz Informācijas Paneli'}
           <ArrowRight className="h-5 w-5" />

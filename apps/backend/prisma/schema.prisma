@@ -1,4 +1,6 @@
 // B3Hub Construction Marketplace Platform - Prisma Schema
+// After ANY change to this file run: npm run prisma:generate
+// (that also regenerates .github/instructions/backend-schema.instructions.md)
 
 generator client {
   provider = "prisma-client-js"

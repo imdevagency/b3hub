@@ -13,6 +13,7 @@ import {
   type ProviderApplication,
 } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -240,26 +241,23 @@ export default function AdminApplicationsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <PageHeader
+        title="Piegādātāju pieteikumi"
+        description="Pārskatiet un apstipriniet vai noraidiet pieteikumus."
+        action={
           <div className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-muted-foreground" />
-            <h1 className="text-2xl font-bold tracking-tight">Piegādātāju pieteikumi</h1>
             {pending > 0 && (
-              <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold text-white">
+              <span className="rounded-full bg-destructive px-2.5 py-1 text-xs font-bold text-destructive-foreground">
                 {pending}
               </span>
             )}
+            <Button variant="outline" size="sm" onClick={() => load(filter)} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+              Atjaunot
+            </Button>
           </div>
-          <p className="text-muted-foreground text-sm mt-1">
-            Pārskatiet un apstipriniet vai noraidiet pieteikumus.
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => load(filter)} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
-          Atjaunot
-        </Button>
-      </div>
+        }
+      />
 
       <Separator />
 
@@ -272,7 +270,7 @@ export default function AdminApplicationsPage() {
             onClick={() => setFilter(value)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium border transition-colors ${
               filter === value
-                ? 'bg-red-600 text-white border-red-600'
+                ? 'bg-primary text-primary-foreground border-primary'
                 : 'bg-background border-border text-muted-foreground hover:text-foreground'
             }`}
           >

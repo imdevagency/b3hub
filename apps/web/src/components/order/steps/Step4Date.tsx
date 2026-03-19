@@ -81,7 +81,7 @@ export function Step4Date({ value, onChange, onNext, onBack, submitting = false 
                   className={cn(
                     'rounded-xl border-2 py-3 text-sm font-semibold transition-all duration-200',
                     selected
-                      ? 'border-red-500 bg-red-50 text-red-700 ring-4 ring-red-100'
+                      ? 'border-primary bg-red-50 text-red-700 ring-4 ring-red-100'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50',
                   )}
                 >
@@ -111,8 +111,8 @@ export function Step4Date({ value, onChange, onNext, onBack, submitting = false 
             className={cn(
               'w-full rounded-xl border-2 py-4 pl-12 pr-4 text-base text-gray-900 outline-none transition-all',
               value
-                ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-4 focus:ring-red-100'
-                : 'border-gray-200 bg-white focus:border-red-500 focus:ring-4 focus:ring-red-50',
+                ? 'border-primary bg-red-50 focus:border-primary focus:ring-4 focus:ring-red-100'
+                : 'border-gray-200 bg-white focus:border-primary focus:ring-4 focus:ring-red-50',
             )}
           />
         </div>
@@ -161,7 +161,7 @@ export function Step4Date({ value, onChange, onNext, onBack, submitting = false 
         <button
           onClick={onNext}
           disabled={!value || submitting}
-          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-red-600 py-3.5 text-base font-semibold text-white shadow-md transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
+          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-base font-semibold text-white shadow-md transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
         >
           {submitting ? (
             <>

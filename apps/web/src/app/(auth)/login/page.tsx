@@ -57,7 +57,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-linear-to-b from-red-50 to-white px-4 py-12">
       {/* Logo */}
       <Link href="/" className="flex items-center gap-2 mb-8">
-        <Building2 className="h-8 w-8 text-red-600" />
+        <Building2 className="h-8 w-8 text-primary" />
         <span className="text-2xl font-bold text-gray-900">B3Hub</span>
       </Link>
 
@@ -66,7 +66,7 @@ export default function LoginPage() {
           <CardTitle className="text-2xl font-bold">Laipni atgriezties</CardTitle>
           <CardDescription>
             Nav konta?{' '}
-            <Link href="/register" className="text-red-600 hover:underline font-medium">
+            <Link href="/register" className="text-primary hover:underline font-medium">
               Reģistrēties bez maksas
             </Link>
           </CardDescription>
@@ -104,7 +104,7 @@ export default function LoginPage() {
                       <FormLabel>Parole</FormLabel>
                       <Link
                         href="/forgot-password"
-                        className="text-xs text-red-600 hover:underline"
+                        className="text-xs text-primary hover:underline"
                       >
                         Aizmirsāt paroli?
                       </Link>
@@ -119,7 +119,7 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full bg-red-600 hover:bg-red-500 text-white"
+                className="w-full"
                 disabled={form.formState.isSubmitting}
               >
                 {form.formState.isSubmitting ? (

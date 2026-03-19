@@ -16,6 +16,8 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -29,17 +31,9 @@ import {
 } from '@/components/ui/select';
 import { Plus, ChevronRight, RefreshCw, Layers, CalendarDays, Package } from 'lucide-react';
 import Link from 'next/link';
+import { fmtDate } from '@/lib/format';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
-
-function fmtDate(iso: string | null | undefined) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('lv-LV', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
 
 const STATUS_META: Record<
   FrameworkContractStatus,
@@ -419,24 +413,22 @@ export default function BuyerProjectsPage() {
   const rest = contracts.filter((c) => c.status !== 'ACTIVE');
 
   return (
-    <div className="space-y-6 p-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl">
       {/* header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Rāmjlīgumi</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Ilgtermiņa piegādes līgumi ar atsaukšanas darba uzdevumiem
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing}>
-            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-          </Button>
-          <Button size="sm" onClick={() => setShowCreate(true)}>
-            <Plus className="h-3.5 w-3.5 mr-1.5" /> Jauns līgums
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Rāmjlīgumi"
+        description="Ilgtermiņa piegādes līgumi ar atsaukšanas darba uzdevumiem"
+        action={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing}>
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button size="sm" onClick={() => setShowCreate(true)}>
+              <Plus className="h-3.5 w-3.5 mr-1.5" /> Jauns līgums
+            </Button>
+          </div>
+        }
+      />
 
       {loading ? (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -445,18 +437,16 @@ export default function BuyerProjectsPage() {
           ))}
         </div>
       ) : contracts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted mb-4">
-            <Package className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <p className="font-medium">Nav rāmjlīgumu</p>
-          <p className="text-sm text-muted-foreground mt-1 mb-4">
-            Izveidojiet pirmo rāmjlīgumu, lai pārvaldītu ilgtermiņa piegādes
-          </p>
-          <Button onClick={() => setShowCreate(true)}>
-            <Plus className="h-4 w-4 mr-1.5" /> Jauns rāmjlīgums
-          </Button>
-        </div>
+        <EmptyState
+          icon={Package}
+          title="Nav rāmjlīgumu"
+          description="Izveidojiet pirmo rāmjlīgumu, lai pārvaldītu ilgtermiņa piegādes"
+          action={
+            <Button onClick={() => setShowCreate(true)}>
+              <Plus className="h-4 w-4 mr-1.5" /> Jauns rāmjlīgums
+            </Button>
+          }
+        />
       ) : (
         <>
           {active.length > 0 && (

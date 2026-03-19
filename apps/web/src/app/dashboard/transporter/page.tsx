@@ -24,6 +24,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 
 type Stat = { label: string; value: string; icon: LucideIcon; hint?: string };
 type Action = {
@@ -65,7 +66,7 @@ function ActionCard({ action }: { action: Action }) {
           <div className="flex items-center gap-3">
             <div
               className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${
-                action.primary ? 'bg-red-600 text-white' : 'bg-muted text-muted-foreground'
+                action.primary ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
               }`}
             >
               <action.icon className="h-4 w-4" />
@@ -227,26 +228,26 @@ export default function TransporterDashboardPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Sveiki, {user.firstName}! 👋</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {isDispatcher
-              ? 'Uzraugiet floti, piešķiriet šoferus un pārvaldiet aktīvos darbus.'
-              : 'Skatiet savus darbus, pārvaldiet grafiku un izsekojiet maršrutus.'}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
-            🚛 {isDispatcher ? 'Dispečers' : 'Pārvadātājs'}
-          </span>
-          {isDispatcher && (
-            <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
-              🏢 Uzņēmums
+      <PageHeader
+        title={`Sveiki, ${user.firstName}! 👋`}
+        description={
+          isDispatcher
+            ? 'Uzraugiet floti, piešķiriet šoferus un pārvaldiet aktīvos darbus.'
+            : 'Skatiet savus darbus, pārvaldiet grafiku un izsekojiet maršrutus.'
+        }
+        action={
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+              🚛 {isDispatcher ? 'Dispečers' : 'Pārvadātājs'}
             </span>
-          )}
-        </div>
-      </div>
+            {isDispatcher && (
+              <span className="inline-flex items-center rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+                🏢 Uzņēmums
+              </span>
+            )}
+          </div>
+        }
+      />
 
       {/* Hero */}
       <div

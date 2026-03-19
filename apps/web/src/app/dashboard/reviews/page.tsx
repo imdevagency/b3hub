@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { getCompanyReviews } from '@/lib/api';
 import { Star, User } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 
 interface Review {
   id: string;
@@ -63,8 +64,8 @@ export default function ReviewsPage() {
   if (!companyId) {
     return (
       <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4">Atsauksmes</h1>
-        <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
+        <PageHeader title="Atsauksmes" />
+        <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground mt-6">
           Atsauksmes ir pieejamas tikai uzņēmumiem. Vispirms izveidojiet savu uzņēmuma profilu.
         </div>
       </div>
@@ -72,8 +73,8 @@ export default function ReviewsPage() {
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Atsauksmes par uzņēmumu</h1>
+    <div className="max-w-3xl mx-auto space-y-6">
+      <PageHeader title="Atsauksmes par uzņēmumu" />
 
       {/* Summary card */}
       {reviews.length > 0 && (

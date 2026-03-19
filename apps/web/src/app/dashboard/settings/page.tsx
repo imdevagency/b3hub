@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   CheckCircle,
   AlertCircle,
@@ -162,12 +163,10 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-extrabold tracking-tight">Iestatījumi</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Pārvaldiet sava konta informāciju un drošību.
-        </p>
-      </div>
+      <PageHeader
+        title="Iestatījumi"
+        description="Pārvaldiet sava konta informāciju un drošību."
+      />
 
       <Separator />
 
@@ -227,7 +226,6 @@ export default function SettingsPage() {
               <Button
                 type="submit"
                 disabled={profileStatus === 'saving'}
-                className="bg-red-600 hover:bg-red-700 text-white"
               >
                 {profileStatus === 'saving' ? 'Saglabā...' : 'Saglabāt izmaiņas'}
               </Button>
@@ -325,7 +323,6 @@ export default function SettingsPage() {
                   !pwForm.newPassword ||
                   !pwForm.confirmPassword
                 }
-                className="bg-red-600 hover:bg-red-700 text-white"
               >
                 {pwStatus === 'saving' ? 'Saglabā...' : 'Nomainīt paroli'}
               </Button>
@@ -349,7 +346,7 @@ export default function SettingsPage() {
               label: 'Konta veids',
               node: (
                 <span className="flex items-center gap-1.5 text-sm font-semibold">
-                  <BadgeCheck className="h-3.5 w-3.5 text-red-600" />
+                  <BadgeCheck className="h-3.5 w-3.5 text-primary" />
                   {userTypeLabel}
                 </span>
               ),

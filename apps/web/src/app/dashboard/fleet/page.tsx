@@ -22,6 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
 import { getAllTransportJobs, type ApiTransportJob } from '@/lib/api';
+import { PageHeader } from '@/components/ui/page-header';
 
 const FleetMap = dynamic(
   () => import('@/components/fleet-map').then((m) => ({ default: m.FleetMap })),
@@ -234,55 +235,46 @@ export default function FleetPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dispečera Panelis</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Pārskata visi transporta darbi · reāllaikā
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* View toggle */}
-          <div className="flex rounded-lg border border-input overflow-hidden">
-            <button
-              onClick={() => setViewMode('list')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-background text-muted-foreground hover:bg-muted'
-              }`}
-            >
-              <List className="h-3.5 w-3.5" />
-              Saraksts
-            </button>
-            <button
-              onClick={() => setViewMode('map')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-l border-input ${
-                viewMode === 'map'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-background text-muted-foreground hover:bg-muted'
-              }`}
-            >
-              <Map className="h-3.5 w-3.5" />
-              Karte
-            </button>
+      <PageHeader
+        title="Dispečera Panelis"
+        description="Pārskata visi transporta darbi · reāllaikā"
+        action={
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg border border-input overflow-hidden">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-background text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                <List className="h-3.5 w-3.5" />
+                Saraksts
+              </button>
+              <button
+                onClick={() => setViewMode('map')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-l border-input ${
+                  viewMode === 'map'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-background text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                <Map className="h-3.5 w-3.5" />
+                Karte
+              </button>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing || loading}>
+              <RefreshCw className={`h-4 w-4 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
+              Atjaunot
+            </Button>
+            <Button size="sm" onClick={() => router.push('/dashboard/jobs')}>
+              <Package className="h-4 w-4 mr-1.5" />
+              Job Board
+            </Button>
           </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={refreshing || loading}
-          >
-            <RefreshCw className={`h-4 w-4 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
-            Atjaunot
-          </Button>
-          <Button size="sm" onClick={() => router.push('/dashboard/jobs')}>
-            <Package className="h-4 w-4 mr-1.5" />
-            Job Board
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -339,7 +331,7 @@ export default function FleetPage() {
                 onClick={() => setStatusFilter(f.key)}
                 className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
                   statusFilter === f.key
-                    ? 'bg-red-600 text-white'
+                    ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground hover:bg-muted/70'
                 }`}
               >

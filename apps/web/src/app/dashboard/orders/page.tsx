@@ -4,11 +4,15 @@
  */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
+import { useRequireAuth } from '@/hooks/use-require-auth';
+import { fmtDate, fmtMoney } from '@/lib/format';
+import { ORDER_STATUS, JOB_STATUS, SKIP_STATUS, SKIP_SIZE_LABEL, StatusBadgeHex } from '@/lib/status-config';
+import { PageSpinner } from '@/components/ui/page-spinner';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   updateTransportJobStatus,
   submitDeliveryProof,
@@ -41,74 +45,6 @@ import {
   Weight,
   X,
 } from 'lucide-react';
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
-function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('lv-LV', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-}
-
-function fmtMoney(n: number): string {
-  return `€${Math.round(n).toLocaleString('lv-LV')}`;
-}
-
-// ── Status config ──────────────────────────────────────────────────────────────
-
-const ORDER_STATUS: Record<string, { label: string; bg: string; text: string }> = {
-  PENDING: { label: 'Gaidā', bg: '#fef3c7', text: '#b45309' },
-  CONFIRMED: { label: 'Apstiprināts', bg: '#dbeafe', text: '#1d4ed8' },
-  PROCESSING: { label: 'Apstrādē', bg: '#e0e7ff', text: '#4338ca' },
-  LOADING: { label: 'Iekraušana', bg: '#fce7f3', text: '#be185d' },
-  DISPATCHED: { label: 'Nosūtīts', bg: '#dcfce7', text: '#15803d' },
-  DELIVERING: { label: 'Piegāde', bg: '#dcfce7', text: '#15803d' },
-  DELIVERED: { label: 'Piegādāts', bg: '#f0fdf4', text: '#166534' },
-  COMPLETED: { label: 'Pabeigts', bg: '#f0fdf4', text: '#166534' },
-  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', text: '#b91c1c' },
-};
-
-const JOB_STATUS: Record<string, { label: string; bg: string; text: string }> = {
-  AVAILABLE: { label: 'Pieejams', bg: '#f0fdf4', text: '#166534' },
-  ASSIGNED: { label: 'Piešķirts', bg: '#e0e7ff', text: '#4338ca' },
-  ACCEPTED: { label: 'Pieņemts', bg: '#dbeafe', text: '#1d4ed8' },
-  EN_ROUTE_PICKUP: { label: 'Brauc uz Iek.', bg: '#fef3c7', text: '#b45309' },
-  AT_PICKUP: { label: 'Uz vietas', bg: '#fce7f3', text: '#be185d' },
-  LOADED: { label: 'Iekrauts', bg: '#e0e7ff', text: '#4338ca' },
-  EN_ROUTE_DELIVERY: { label: 'Piegādē', bg: '#fef3c7', text: '#b45309' },
-  AT_DELIVERY: { label: 'Atvedis', bg: '#dbeafe', text: '#1d4ed8' },
-  DELIVERED: { label: 'Piegādāts', bg: '#f0fdf4', text: '#166534' },
-  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', text: '#b91c1c' },
-};
-
-const SKIP_STATUS: Record<string, { label: string; bg: string; text: string }> = {
-  PENDING: { label: 'Gaidā', bg: '#fef3c7', text: '#b45309' },
-  CONFIRMED: { label: 'Apst.', bg: '#dbeafe', text: '#1d4ed8' },
-  DELIVERED: { label: 'Piegādāts', bg: '#dcfce7', text: '#15803d' },
-  COLLECTED: { label: 'Savākts', bg: '#f0fdf4', text: '#166534' },
-  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', text: '#b91c1c' },
-};
-
-const SKIP_SIZE_LABEL: Record<string, string> = {
-  MINI: 'Mini 2 m³',
-  MIDI: 'Midi 4 m³',
-  BUILDERS: 'Celtn. 6 m³',
-  LARGE: 'Liels 8 m³',
-};
-
-function StatusBadge({ cfg }: { cfg: { label: string; bg: string; text: string } }) {
-  return (
-    <span
-      style={{ backgroundColor: cfg.bg, color: cfg.text }}
-      className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap"
-    >
-      {cfg.label}
-    </span>
-  );
-}
 
 // ── Active-job status progression ─────────────────────────────────────────────
 
@@ -206,7 +142,7 @@ function ActiveProgressBar({ currentStatus }: { currentStatus: JobStatus }) {
           key={step}
           title={STATUS_LABEL[step]}
           className={`h-2 flex-1 rounded-full transition-colors ${
-            i < currentIndex ? 'bg-red-600' : i === currentIndex ? 'bg-red-300' : 'bg-gray-200'
+            i < currentIndex ? 'bg-primary' : i === currentIndex ? 'bg-primary/40' : 'bg-muted'
           }`}
         />
       ))}
@@ -292,11 +228,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-32">
-        <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <PageSpinner className="py-32" />;
   }
 
   return (
@@ -463,7 +395,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
             <p className="text-sm text-muted-foreground mt-1">Pieņemiet darbu no darbu saraksta</p>
           </div>
           <button
-            className="mt-2 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl px-4 py-2.5 text-sm transition-colors"
+            className="mt-2 flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl px-4 py-2.5 text-sm transition-colors"
             onClick={() => router.push('/dashboard/jobs')}
           >
             <MapPin className="h-4 w-4" />
@@ -491,7 +423,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                     {STATUS_LABEL[currentStatus]}
                   </span>
-                  <span className="text-xl font-extrabold text-red-600">
+                  <span className="text-xl font-extrabold text-primary">
                     €{(job.rate ?? 0).toFixed(2)}
                   </span>
                 </div>
@@ -523,7 +455,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
                 </h3>
                 {/* Pickup */}
                 <div className="flex items-start gap-3">
-                  <div className="w-3 h-3 rounded-full bg-red-600 border-2 border-red-200 mt-1 shrink-0" />
+                  <div className="w-3 h-3 rounded-full bg-primary border-2 border-primary/20 mt-1 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
                       Iekraušana
@@ -614,7 +546,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
               <div className="flex flex-col sm:flex-row gap-3 pb-4">
                 {nextStatus && (
                   <Button
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white h-12 text-base font-bold"
+                    className="flex-1 h-12 text-base font-bold"
                     onClick={handleAdvance}
                     disabled={advancing}
                   >
@@ -701,7 +633,7 @@ function CarrierHistoryView({ token }: { token: string }) {
             onClick={() => setFilter(f)}
             className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
               filter === f
-                ? 'bg-red-600 text-white'
+                ? 'bg-primary text-primary-foreground'
                 : 'bg-muted text-muted-foreground hover:bg-muted/70'
             }`}
           >
@@ -735,7 +667,7 @@ function CarrierHistoryView({ token }: { token: string }) {
           </div>
           <Link
             href="/dashboard/jobs"
-            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl px-5 py-2.5 text-sm transition-colors"
+            className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl px-5 py-2.5 text-sm transition-colors"
           >
             <Search className="h-4 w-4" />
             Meklēt darbus
@@ -779,7 +711,7 @@ function CarrierHistoryView({ token }: { token: string }) {
                       <p className="text-muted-foreground text-xs mt-0.5">{job.jobType}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <StatusBadge cfg={st} />
+                      <StatusBadgeHex cfg={st} />
                     </td>
                     <td className="px-4 py-3">
                       <p className="font-medium">{job.cargoType}</p>
@@ -857,7 +789,7 @@ function CarrierView({ token }: { token: string }) {
             onClick={() => setTab(t)}
             className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
               tab === t
-                ? 'bg-red-600 text-white'
+                ? 'bg-primary text-primary-foreground'
                 : 'bg-muted text-muted-foreground hover:bg-muted/70'
             }`}
           >
@@ -1010,7 +942,7 @@ function SupplierView({ token }: { token: string }) {
                       </p>
                     </td>
                     <td className="px-4 py-3">
-                      <StatusBadge cfg={st} />
+                      <StatusBadgeHex cfg={st} />
                     </td>
                     <td className="px-4 py-3">
                       <p className="font-medium">{item?.material?.name ?? '—'}</p>
@@ -1149,7 +1081,7 @@ function BuyerView({ token }: { token: string }) {
             onClick={() => setTab(key as 'skip' | 'material')}
             className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
               tab === key
-                ? 'bg-red-600 text-white'
+                ? 'bg-primary text-primary-foreground'
                 : 'bg-muted text-muted-foreground hover:bg-muted/70'
             }`}
           >
@@ -1217,7 +1149,7 @@ function BuyerView({ token }: { token: string }) {
                         <p className="font-mono font-semibold text-xs">#{o.orderNumber}</p>
                       </td>
                       <td className="px-4 py-3">
-                        <StatusBadge cfg={st} />
+                        <StatusBadgeHex cfg={st} />
                       </td>
                       <td className="px-4 py-3 font-medium">
                         {SKIP_SIZE_LABEL[o.skipSize] ?? o.skipSize}
@@ -1299,7 +1231,7 @@ function BuyerView({ token }: { token: string }) {
                       <p className="font-mono font-semibold text-xs">#{o.orderNumber}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <StatusBadge cfg={st} />
+                      <StatusBadgeHex cfg={st} />
                     </td>
                     <td className="px-4 py-3 font-medium">{item?.material?.name ?? '—'}</td>
                     <td className="px-4 py-3 text-xs">
@@ -1368,12 +1300,7 @@ function BuyerView({ token }: { token: string }) {
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function OrdersPage() {
-  const { user, token } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!token) router.push('/');
-  }, [token, router]);
+  const { user, token } = useRequireAuth();
 
   if (!token || !user) {
     return <div className="p-8 text-center text-muted-foreground text-sm">Ielādē...</div>;
@@ -1391,17 +1318,9 @@ export default function OrdersPage() {
       : 'Jūsu konteineru un materiālu pasūtījumi reāllaikā';
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6">
+    <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <ClipboardList className="size-6 text-red-600" />
-            {title}
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">{subtitle}</p>
-        </div>
-      </div>
+      <PageHeader title={title} description={subtitle} />
 
       {/* Role-aware content */}
       {isCarrier ? (

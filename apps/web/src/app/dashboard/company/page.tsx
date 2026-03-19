@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Building2, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 
 type FormState = {
   name: string;
@@ -126,24 +127,20 @@ export default function CompanyPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Uzņēmuma profils</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Pārvaldiet uzņēmuma informāciju un kontaktdatus.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 mt-1">
-          {company.verified ? (
+      <PageHeader
+        title="Uzņēmuma profils"
+        description="Pārvaldiet uzņēmuma informāciju un kontaktdatus."
+        action={
+          company.verified ? (
             <Badge variant="default" className="bg-green-600 hover:bg-green-700">
               <CheckCircle className="h-3 w-3 mr-1" />
               Verificēts
             </Badge>
           ) : (
             <Badge variant="secondary">Nav verificēts</Badge>
-          )}
-        </div>
-      </div>
+          )
+        }
+      />
 
       <Separator />
 

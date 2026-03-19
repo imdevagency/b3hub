@@ -31,6 +31,8 @@ import {
   XCircle,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { PageHeader } from '@/components/ui/page-header';
+import { fmtDate } from '@/lib/format';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -100,15 +102,6 @@ function buildDefaultSchedule(existing: DriverScheduleDay[]): DriverScheduleDay[
         endTime: DEFAULT_END,
       }
     );
-  });
-}
-
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('lv-LV', {
-    weekday: 'short',
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
   });
 }
 
@@ -315,17 +308,12 @@ export default function DriverSchedulePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6">
       {/* ── Header ── */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-          <Clock className="h-6 w-6 text-red-600" />
-          Darba grafiks
-        </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Pārvaldiet savu pieejamību, darba laiku un brīvdienas
-        </p>
-      </div>
+      <PageHeader
+        title="Darba grafiks"
+        description="Pārvaldiet savu pieejamību, darba laiku un brīvdienas"
+      />
 
       {/* ── Online/Offline toggle ── */}
       <OnlineToggle
@@ -442,7 +430,7 @@ export default function DriverSchedulePage() {
       <button
         onClick={handleSaveSchedule}
         disabled={saving}
-        className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold py-3 text-sm transition-colors"
+        className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 text-sm transition-colors"
       >
         {saving ? (
           <Loader2 className="h-4 w-4 animate-spin" />

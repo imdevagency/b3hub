@@ -24,6 +24,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { DocumentCard } from '@/components/documents/DocumentCard';
 import { DocumentViewer } from '@/components/documents/DocumentViewer';
 import { useAuth } from '@/lib/auth-context';
@@ -286,28 +287,16 @@ export default function DocumentsPage() {
           <span className="text-gray-700 font-medium">Dokumenti</span>
         </div>
 
-        <div className="flex items-start justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <FolderOpen className="h-7 w-7 text-red-600" />
-              Mani Dokumenti
-            </h1>
-            <p className="text-gray-500 mt-1 text-sm">
-              Visi jūsu rēķini, svēršanas lapas, piegādes apstiprinājumi un sertifikāti — bez
-              papīra, vienā vietā.
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchDocs}
-            disabled={fetching}
-            className="text-gray-600 hover:text-red-600"
-          >
-            <RefreshCw className={`h-4 w-4 mr-1.5 ${fetching ? 'animate-spin' : ''}`} />
-            Atjaunot
-          </Button>
-        </div>
+        <PageHeader
+          title="Mani Dokumenti"
+          description="Visi jūsu rēķini, svēršanas lapas, piegādes apstiprinājumi un sertifikāti — bez papīra, vienā vietā."
+          action={
+            <Button variant="outline" size="sm" onClick={fetchDocs} disabled={fetching}>
+              <RefreshCw className={`h-4 w-4 mr-1.5 ${fetching ? 'animate-spin' : ''}`} />
+              Atjaunot
+            </Button>
+          }
+        />
 
         {/* ── Stats row ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
@@ -359,8 +348,8 @@ export default function DocumentsPage() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                     activeTab === tab.id
-                      ? 'bg-red-600 text-white shadow-sm'
-                      : 'bg-white border border-gray-200 text-gray-600 hover:border-red-300 hover:text-red-600'
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-white border border-gray-200 text-gray-600 hover:border-primary/30 hover:text-primary'
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -370,7 +359,7 @@ export default function DocumentsPage() {
                       className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
                         activeTab === tab.id
                           ? 'bg-white/20 text-white'
-                          : 'bg-gray-100 text-gray-500'
+                          : 'bg-muted text-muted-foreground'
                       }`}
                     >
                       {count}
