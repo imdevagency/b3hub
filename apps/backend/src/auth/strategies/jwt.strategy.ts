@@ -16,6 +16,7 @@ interface JwtPayload {
   isCompany?: boolean;
   canSell?: boolean;
   canTransport?: boolean;
+  canSkipHire?: boolean;
   companyId?: string;
   companyRole?: string;
   permCreateContracts?: boolean;
@@ -44,6 +45,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       isCompany: payload.isCompany ?? false,
       canSell: payload.canSell ?? false,
       canTransport: payload.canTransport ?? false,
+      canSkipHire: payload.canSkipHire ?? false,
       companyId: payload.companyId,
       companyRole: payload.companyRole,
       permCreateContracts: payload.permCreateContracts ?? false,

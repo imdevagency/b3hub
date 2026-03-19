@@ -80,6 +80,7 @@ export class AuthService {
         isCompany: true,
         canSell: true,
         canTransport: true,
+        canSkipHire: true,
         companyRole: true,
         status: true,
         company: {
@@ -118,6 +119,7 @@ export class AuthService {
       user.isCompany,
       user.canSell,
       user.canTransport,
+      user.canSkipHire,
       user.company?.id,
       user.companyRole ?? undefined,
     );
@@ -175,6 +177,7 @@ export class AuthService {
       user.isCompany,
       user.canSell,
       user.canTransport,
+      user.canSkipHire,
       user.company?.id,
       user.companyRole ?? undefined,
       {
@@ -452,6 +455,7 @@ export class AuthService {
         isCompany: boolean;
         canSell: boolean;
         canTransport: boolean;
+        canSkipHire: boolean;
         companyId: string | null;
         companyRole: string | null;
         permCreateContracts: boolean;
@@ -462,7 +466,7 @@ export class AuthService {
         refreshTokenExpiry: Date | null;
       }[]
     >`
-      SELECT id, email, "userType", "isCompany", "canSell", "canTransport",
+      SELECT id, email, "userType", "isCompany", "canSell", "canTransport", "canSkipHire",
              "companyId", "companyRole",
              "permCreateContracts", "permReleaseCallOffs", "permManageOrders",
              "permViewFinancials", "permManageTeam", "refreshTokenExpiry"
@@ -487,6 +491,7 @@ export class AuthService {
       user.isCompany,
       user.canSell,
       user.canTransport,
+      user.canSkipHire,
       user.companyId ?? undefined,
       user.companyRole ?? undefined,
       {
@@ -516,6 +521,7 @@ export class AuthService {
     isCompany: boolean,
     canSell: boolean,
     canTransport: boolean,
+    canSkipHire: boolean,
     companyId?: string,
     companyRole?: string,
     permissions?: {
@@ -533,6 +539,7 @@ export class AuthService {
       isCompany,
       canSell,
       canTransport,
+      canSkipHire,
       companyId,
       companyRole,
       permCreateContracts: permissions?.permCreateContracts ?? false,
