@@ -203,26 +203,50 @@ export interface TransportDocumentReadiness {
   missing: string[];
 }
 
+interface PaginatedTransportJobsResponse {
+  data?: ApiTransportJob[];
+}
+
+function normalizeTransportJobsPayload(
+  payload: ApiTransportJob[] | PaginatedTransportJobsResponse,
+): ApiTransportJob[] {
+  if (Array.isArray(payload)) return payload;
+  if (payload && Array.isArray(payload.data)) return payload.data;
+  return [];
+}
+
 // ─── Functions ─────────────────────────────────────────────────────────────
 
 export async function getAvailableTransportJobs(token: string): Promise<ApiTransportJob[]> {
-  return apiFetch<ApiTransportJob[]>('/transport-jobs', {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const payload = await apiFetch<ApiTransportJob[] | PaginatedTransportJobsResponse>(
+    '/transport-jobs',
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  return normalizeTransportJobsPayload(payload);
 }
 
 export async function getAllTransportJobs(token: string): Promise<ApiTransportJob[]> {
-  return apiFetch<ApiTransportJob[]>('/transport-jobs/fleet', {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const payload = await apiFetch<ApiTransportJob[] | PaginatedTransportJobsResponse>(
+    '/transport-jobs/fleet',
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  return normalizeTransportJobsPayload(payload);
 }
 
 export async function getSlaOverdueTransportJobs(
   token: string,
 ): Promise<ApiTransportJob[]> {
-  return apiFetch<ApiTransportJob[]>('/transport-jobs/sla-overdue', {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const payload = await apiFetch<ApiTransportJob[] | PaginatedTransportJobsResponse>(
+    '/transport-jobs/sla-overdue',
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  return normalizeTransportJobsPayload(payload);
 }
 
 export async function getOpenTransportExceptions(
@@ -241,9 +265,13 @@ export async function acceptTransportJob(id: string, token: string): Promise<Api
 }
 
 export async function getMyTransportJobs(token: string): Promise<ApiTransportJob[]> {
-  return apiFetch<ApiTransportJob[]>('/transport-jobs/my-jobs', {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const payload = await apiFetch<ApiTransportJob[] | PaginatedTransportJobsResponse>(
+    '/transport-jobs/my-jobs',
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  return normalizeTransportJobsPayload(payload);
 }
 
 export async function getMyActiveTransportJob(

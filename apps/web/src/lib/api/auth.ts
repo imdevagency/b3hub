@@ -26,6 +26,11 @@ export interface User {
   avatar?: string;
   emailVerified: boolean;
   companyRole?: CompanyRole;
+  permCreateContracts?: boolean;
+  permReleaseCallOffs?: boolean;
+  permManageOrders?: boolean;
+  permViewFinancials?: boolean;
+  permManageTeam?: boolean;
   availableModes: Mode[];
   notifPush?: boolean;
   notifOrderUpdates?: boolean;

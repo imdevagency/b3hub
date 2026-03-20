@@ -184,9 +184,10 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      {/* ── Live Mapbox Map ── */}
+      {/* ── Live Map ── */}
       <div>
         <TrackingMap
+          token={token ?? undefined}
           pickupLat={location?.pickupLat ?? job.pickupLat}
           pickupLng={location?.pickupLng ?? job.pickupLng}
           pickupAddress={job.pickupAddress}

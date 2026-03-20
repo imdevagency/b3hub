@@ -9,7 +9,9 @@
  * fallback (straight-line or original order) so the map never hard-crashes.
  */
 
-const GOOGLE_KEY = 'AIzaSyBNIZk1VBorD3kU02BNjz_2m4Dlek_gsx8';
+import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
+
+const GOOGLE_KEY = getGoogleMapsPublicKey();
 const DIRECTIONS_BASE = 'https://maps.googleapis.com/maps/api/directions/json';
 
 // ── Types ─────────────────────────────────────────────────────────────────────

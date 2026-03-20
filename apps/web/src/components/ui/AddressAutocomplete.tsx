@@ -5,6 +5,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 
 // ── Script loader (singleton — loads the script once) ────────────────────────
 
@@ -73,7 +74,7 @@ export function AddressAutocomplete({
   onSelectRef.current = onSelect;
 
   useEffect(() => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
+    const apiKey = getGoogleMapsPublicKey();
     if (!apiKey || !inputRef.current) return;
 
     loadGoogleMapsScript(apiKey, () => {

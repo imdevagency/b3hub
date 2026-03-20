@@ -4,15 +4,13 @@
  */
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import dynamic from 'next/dynamic';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ChevronDown,
   ChevronUp,
   MapPin,
   Truck,
-  Clock,
   Ruler,
   X,
   Bookmark,
@@ -20,6 +18,8 @@ import {
   RefreshCw,
   SlidersHorizontal,
   Plus,
+  AlertTriangle,
+  Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,23 +37,12 @@ import { useAvailableJobs } from '@/hooks/use-available-jobs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { CalendarDays, Users, CircleCheck } from 'lucide-react';
 
-// Dynamic import — Mapbox needs browser
-const TransportJobsMapDynamic = dynamic(() => import('@/components/tracking/TransportJobsMap'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-full items-center justify-center rounded-xl bg-zinc-800 text-zinc-500 text-sm">
-      Karte ielādējas…
-    </div>
-  ),
-});
-
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 interface TransportJob {
   id: string;
   jobNumber: string;
   vehicleType: string;
-  vehicleEmoji: string;
   payload: string;
   weightTonnes: number;
   fromCity: string;
@@ -147,23 +136,12 @@ function filterJobs(jobs: TransportJob[], filter: SearchFilter | null): Transpor
 
 // ── API helpers ────────────────────────────────────────────────────────────────
 
-const VEHICLE_EMOJI: Partial<Record<string, string>> = {
-  DUMP_TRUCK: '🚚',
-  FLATBED_TRUCK: '🚛',
-  SEMI_TRAILER: '🚛',
-  HOOK_LIFT: '🚜',
-  SKIP_LOADER: '🚛',
-  TANKER: '🛢️',
-  VAN: '🚐',
-};
-
 function mapApiJob(j: ApiTransportJob): TransportJob {
   const d = new Date(j.pickupDate);
   return {
     id: j.id,
     jobNumber: j.jobNumber,
     vehicleType: j.requiredVehicleType ?? j.requiredVehicleEnum ?? 'Kravas auto',
-    vehicleEmoji: VEHICLE_EMOJI[j.requiredVehicleEnum ?? ''] ?? '🚛',
     payload: j.cargoType,
     weightTonnes: j.cargoWeight ?? 0,
     fromCity: j.pickupCity,
@@ -186,41 +164,6 @@ function mapApiJob(j: ApiTransportJob): TransportJob {
 const RADIUS_OPTIONS = [25, 50, 100, 150, 200];
 const LS_KEY = 'b3hub_web_saved_job_searches';
 
-// ── Radius chips ───────────────────────────────────────────────────────────────
-
-function RadiusChips({ selected, onChange }: { selected: number; onChange: (v: number) => void }) {
-  return (
-    <div className="flex flex-wrap gap-2 mt-2">
-      <button
-        type="button"
-        onClick={() => onChange(0)}
-        className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-          selected === 0
-            ? 'bg-primary border-primary text-primary-foreground'
-            : 'bg-muted border-border text-muted-foreground hover:border-primary/50 hover:text-primary'
-        }`}
-      >
-        Jebkur
-      </button>
-      {RADIUS_OPTIONS.map((r) => (
-        <button
-          key={r}
-          type="button"
-          onClick={() => onChange(r)}
-          className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-            selected === r
-              ? 'bg-primary border-primary text-primary-foreground'
-              : 'bg-muted border-border text-muted-foreground hover:border-primary/50 hover:text-primary'
-          }`}
-        >
-          {r} km
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// ── Main page ──────────────────────────────────────────────────────────────────
 
 export default function JobsPage() {
   const { user, token, isLoading } = useAuth();
@@ -235,7 +178,7 @@ export default function JobsPage() {
     error: jobError,
     reload,
   } = useAvailableJobs(token);
-  const allJobs = apiJobs.map(mapApiJob);
+  const allJobs = Array.isArray(apiJobs) ? apiJobs.map(mapApiJob) : [];
   const [activeFilter, setActiveFilter] = useState<SearchFilter | null>(null);
   const [draft, setDraft] = useState<SearchFilter>({
     fromLocation: '',
@@ -269,10 +212,7 @@ export default function JobsPage() {
   const setField = (k: keyof CreateTransportJobInput, v: string | number) =>
     setCreateForm((p) => ({ ...p, [k]: v }));
 
-  // Map selection state
-  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-  const [mobileView, setMobileView] = useState<'list' | 'map'>('list');
-  const jobCardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
@@ -421,18 +361,6 @@ export default function JobsPage() {
     setPanelOpen((v) => !v);
   };
 
-  const handleCardSelect = useCallback((id: string) => {
-    setSelectedJobId((prev) => (prev === id ? null : id));
-  }, []);
-
-  const handleMapSelect = useCallback((id: string | null) => {
-    setSelectedJobId(id);
-    if (id) {
-      const el = jobCardRefs.current.get(id);
-      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  }, []);
-
   const filterLabel = () => {
     const parts: string[] = [];
     if (activeFilter?.fromLocation)
@@ -486,41 +414,71 @@ export default function JobsPage() {
         <div className="rounded-xl border bg-card shadow-sm p-5 space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* From */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5 text-gray-400" />
+            <div className="space-y-2">
+              <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 ml-1">
                 Iekraušanas vieta
               </Label>
-              <Input
-                value={draft.fromLocation}
-                onChange={(e) => setDraft((d) => ({ ...d, fromLocation: e.target.value }))}
-                placeholder="Pilsēta vai pasta indekss..."
-                className="h-10"
-              />
-              <p className="text-xs text-muted-foreground">Rādiuss ap iekraušanas vietu:</p>
-              <RadiusChips
-                selected={draft.fromRadius}
-                onChange={(v) => setDraft((d) => ({ ...d, fromRadius: v }))}
-              />
+              <div className="flex bg-slate-100 border border-transparent hover:bg-slate-200/50 transition-colors rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-black/5 focus-within:border-black/10 focus-within:bg-white items-center relative">
+                <div className="pl-4 pr-1 flex items-center justify-center">
+                  <div className="w-[8px] h-[8px] rounded-full bg-foreground"></div>
+                </div>
+                <input
+                  type="text"
+                  value={draft.fromLocation}
+                  onChange={(e) => setDraft((d) => ({ ...d, fromLocation: e.target.value }))}
+                  placeholder="Pilsēta vai pasta indekss..."
+                  className="flex-1 bg-transparent px-2 py-3.5 text-[15px] outline-none placeholder:text-muted-foreground font-medium"
+                />
+                <div className="flex items-center border-l border-slate-200/80 pr-2">
+                  <div className="relative flex items-center">
+                    <select
+                      value={draft.fromRadius}
+                      onChange={(e) => setDraft((d) => ({ ...d, fromRadius: Number(e.target.value) }))}
+                      className="appearance-none bg-transparent pl-4 pr-8 py-3.5 text-sm font-semibold outline-none cursor-pointer text-slate-700"
+                    >
+                      <option value={0}>+ 0 km</option>
+                      {RADIUS_OPTIONS.map((r) => (
+                        <option key={r} value={r}>+ {r} km</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="h-4 w-4 absolute right-3 pointer-events-none text-slate-400" />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* To */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5 text-red-500" />
+            <div className="space-y-2">
+              <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 ml-1">
                 Izkraušanas vieta
               </Label>
-              <Input
-                value={draft.toLocation}
-                onChange={(e) => setDraft((d) => ({ ...d, toLocation: e.target.value }))}
-                placeholder="Pilsēta vai pasta indekss..."
-                className="h-10"
-              />
-              <p className="text-xs text-muted-foreground">Rādiuss ap izkraušanas vietu:</p>
-              <RadiusChips
-                selected={draft.toRadius}
-                onChange={(v) => setDraft((d) => ({ ...d, toRadius: v }))}
-              />
+              <div className="flex bg-slate-100 border border-transparent hover:bg-slate-200/50 transition-colors rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-black/5 focus-within:border-black/10 focus-within:bg-white items-center relative">
+                <div className="pl-4 pr-1 flex items-center justify-center">
+                  <div className="w-[8px] h-[8px] rounded-[1px] bg-foreground"></div>
+                </div>
+                <input
+                  type="text"
+                  value={draft.toLocation}
+                  onChange={(e) => setDraft((d) => ({ ...d, toLocation: e.target.value }))}
+                  placeholder="Pilsēta vai pasta indekss..."
+                  className="flex-1 bg-transparent px-2 py-3.5 text-[15px] outline-none placeholder:text-muted-foreground font-medium"
+                />
+                <div className="flex items-center border-l border-slate-200/80 pr-2">
+                  <div className="relative flex items-center">
+                    <select
+                      value={draft.toRadius}
+                      onChange={(e) => setDraft((d) => ({ ...d, toRadius: Number(e.target.value) }))}
+                      className="appearance-none bg-transparent pl-4 pr-8 py-3.5 text-sm font-semibold outline-none cursor-pointer text-slate-700"
+                    >
+                      <option value={0}>+ 0 km</option>
+                      {RADIUS_OPTIONS.map((r) => (
+                        <option key={r} value={r}>+ {r} km</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="h-4 w-4 absolute right-3 pointer-events-none text-slate-400" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -634,56 +592,24 @@ export default function JobsPage() {
         </div>
       )}
 
-      {/* ── Mobile view toggle ───────────────────────────────────────────── */}
-      <div className="flex md:hidden gap-1 rounded-lg bg-muted p-1">
-        <button
-          type="button"
-          onClick={() => setMobileView('list')}
-          className={`flex-1 rounded-md py-2 text-sm font-semibold transition-colors ${
-            mobileView === 'list'
-              ? 'bg-white shadow text-gray-900'
-              : 'text-muted-foreground hover:text-gray-900'
-          }`}
-        >
-          📋 Saraksts
-        </button>
-        <button
-          type="button"
-          onClick={() => setMobileView('map')}
-          className={`flex-1 rounded-md py-2 text-sm font-semibold transition-colors ${
-            mobileView === 'map'
-              ? 'bg-white shadow text-gray-900'
-              : 'text-muted-foreground hover:text-gray-900'
-          }`}
-        >
-          🗺️ Karte
-        </button>
-      </div>
-
-      {/* ── Split-pane: job list (40%) + map (60%) ───────────────────────── */}
-      <div className="flex flex-col gap-4 overflow-hidden md:flex-row md:h-[calc(100vh-200px)]">
-        {/* LEFT: banner + job cards */}
-        <div
-          className={`flex flex-col gap-4 md:w-[40%] md:overflow-y-auto md:pr-1 ${
-            mobileView === 'map' ? 'hidden md:flex' : 'flex'
-          }`}
-        >
+      {/* ── Single-column Feed ───────────────────────── */}
+      <div className="max-w-3xl mx-auto w-full">
+        <div className="flex flex-col gap-4 w-full">
           {/* "Drive wherever you want" banner */}
           {!activeFilter && !panelOpen && (
-            <div className="flex gap-4 bg-white border-l-4 border-l-red-600 border rounded-xl p-5 shadow-sm">
-              <span className="text-3xl mt-0.5">🗺️</span>
+            <div className="flex gap-4 bg-muted/40 border-none rounded-2xl p-5 shadow-none">
+              <MapPin className="h-6 w-6 text-foreground shrink-0 mt-0.5" />
               <div className="flex-1 space-y-1">
-                <p className="font-bold text-base text-gray-900">Braukā kur vēlies!</p>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Tu izlemj, kādā rādiusā vēlies pieņemt darbus. Iestatiet rādiusu ap savu uzņēmumu
-                  vai jebkuru citu vietu, un mēs parādīsim tikai atbilstošos maršrutus.
+                <p className="font-semibold tracking-tight text-foreground">Braukā kur vēlies</p>
+                <p className="text-xs font-medium text-muted-foreground leading-relaxed">
+                  Iestati rādiusu, lai redzētu tikai tos maršrutus, kas ietilpst tavā darba zonā.
                 </p>
                 <button
                   type="button"
                   onClick={() => setPanelOpen(true)}
-                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                  className="mt-2 text-xs font-bold text-foreground hover:text-foreground/70 transition-colors uppercase tracking-widest inline-flex items-center"
                 >
-                  Iestatīt rādiusu →
+                  Iestatīt filtru →
                 </button>
               </div>
             </div>
@@ -696,7 +622,7 @@ export default function JobsPage() {
             </div>
           ) : jobError ? (
             <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
-              <span className="text-5xl">⚠️</span>
+              <AlertTriangle className="h-10 w-10 text-muted-foreground" />
               <p className="text-base font-semibold text-foreground">Kļūda ielādējot darbus</p>
               <p className="text-sm text-muted-foreground">{jobError}</p>
               <Button variant="outline" size="sm" onClick={handleRefresh}>
@@ -705,7 +631,7 @@ export default function JobsPage() {
             </div>
           ) : filteredJobs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
-              <span className="text-5xl">🔍</span>
+              <Search className="h-10 w-10 text-muted-foreground" />
               <p className="text-base font-semibold text-foreground">Nav atrasts neviens darbs</p>
               <p className="text-sm text-muted-foreground">Mēģiniet mainīt filtra iestatījumus</p>
               <Button variant="outline" size="sm" onClick={handleReset}>
@@ -717,104 +643,80 @@ export default function JobsPage() {
               {filteredJobs.map((job) => (
                 <div
                   key={job.id}
-                  ref={(el) => {
-                    if (el) jobCardRefs.current.set(job.id, el);
-                  }}
-                  onClick={() => handleCardSelect(job.id)}
-                  className={`cursor-pointer rounded-xl border shadow-sm p-5 space-y-4 transition-all hover:shadow-md ${
-                    selectedJobId === job.id
-                      ? 'border-blue-400 ring-2 ring-blue-400 bg-blue-50/40'
-                      : 'bg-white'
-                  }`}
+                  className="group cursor-pointer relative overflow-hidden rounded-2xl bg-white p-5 transition-all hover:bg-slate-50/50 ring-1 ring-black/[0.06] shadow-sm hover:ring-black/[0.12] hover:shadow-md"
                 >
-                  {/* Card header */}
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-0.5">
-                      <p className="text-xs font-mono text-muted-foreground tracking-wider">
-                        {job.jobNumber}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">{job.vehicleEmoji}</span>
-                        <span className="font-bold text-base text-gray-900">{job.vehicleType}</span>
-                      </div>
-                    </div>
-                    <span className="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full border border-green-200">
-                      Pieejams
-                    </span>
-                  </div>
-
-                  {/* Payload pill */}
-                  <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2.5 border">
-                    <span className="text-sm font-bold text-gray-900">{job.weightTonnes} t</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-400 inline-block" />
-                    <span className="text-sm text-gray-700">{job.payload}</span>
-                  </div>
-
-                  {/* Route */}
-                  <div className="space-y-1 pl-1">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2.5 h-2.5 rounded-full bg-gray-400 border-2 border-gray-200 shrink-0" />
-                      <div>
-                        <p className="font-semibold text-sm text-gray-900">{job.fromCity}</p>
-                        <p className="text-xs text-muted-foreground">{job.fromAddress}</p>
-                      </div>
-                    </div>
-                    <div className="w-px h-4 bg-gray-200 ml-1.5" />
-                    <div className="flex items-center gap-3">
-                      <div className="w-2.5 h-2.5 rounded-full bg-primary border-2 border-primary/20 shrink-0" />
-                      <div>
-                        <p className="font-semibold text-sm text-gray-900">{job.toCity}</p>
-                        <p className="text-xs text-muted-foreground">{job.toAddress}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Meta row */}
-                  <div className="flex items-center justify-between pt-3 border-t">
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5" />
-                        {job.date} · {job.time}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Ruler className="h-3.5 w-3.5" />
-                        {job.distanceKm} km
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-extrabold text-primary">
+                  {/* PRICE & META TOP ROW */}
+                  <div className="flex justify-between items-start mb-6">
+                    <div>
+                      <h3 className="text-2xl font-semibold tracking-tight text-foreground">
                         {job.priceTotal.toFixed(2)} {job.currency}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {job.pricePerTonne.toFixed(2)} {job.currency} / t
-                      </p>
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1 text-sm text-muted-foreground/80">
+                        <span>{job.distanceKm} km</span>
+                        <span>•</span>
+                        <span>{job.weightTonnes}t {job.payload}</span>
+                        {job.pricePerTonne > 0 && (
+                          <>
+                            <span>•</span>
+                            <span>{job.pricePerTonne.toFixed(2)} {job.currency}/t</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center bg-muted/50 text-muted-foreground px-3 py-1.5 rounded-full text-xs font-medium">
+                      {job.vehicleType}
                     </div>
                   </div>
 
-                  {/* Action buttons */}
-                  <div className="flex gap-2">
-                    {user?.canTransport && user?.isCompany && (
+                  {/* ROUTE TIMELINE */}
+                  <div className="relative mt-2 mb-6 ml-1">
+                    {/* The connecting vertical line */}
+                    <div className="absolute left-[3.5px] top-[16px] bottom-[16px] w-[1px] bg-foreground/20" />
+                    
+                    {/* Pickup */}
+                    <div className="relative flex gap-4 mb-5">
+                      <div className="mt-[6px] h-[8px] w-[8px] shrink-0 rounded-full bg-foreground z-10" />
+                      <div>
+                        <p className="font-medium text-foreground text-[15px] leading-tight">{job.fromCity}</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          {job.date} • {job.time}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Delivery */}
+                    <div className="relative flex gap-4">
+                      <div className="mt-[6px] h-[8px] w-[8px] shrink-0 bg-foreground z-10" />
+                      <div>
+                        <p className="font-medium text-foreground text-[15px] leading-tight">{job.toCity}</p>
+                        <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1 pr-4">
+                          {job.toAddress}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ACTION FOOTER */}
+                  <div className="pt-2 flex gap-3 border-t border-border/40 mt-2">
+                    {user?.canTransport && user?.isCompany ? (
                       <Button
-                        className="flex-1 bg-gray-900 hover:bg-gray-800 text-white"
+                        className="w-full rounded-xl h-[46px] mt-4 text-[15px] font-medium bg-foreground text-background hover:bg-foreground/90 transition-all shadow-none"
                         onClick={(e) => {
                           e.stopPropagation();
                           openDispatch(job);
                         }}
                       >
-                        <CalendarDays className="h-4 w-4 mr-2" />
                         Plānot darbu
                       </Button>
-                    )}
-                    {(!user?.isCompany || !user?.canTransport) && (
+                    ) : (!user?.isCompany || !user?.canTransport) && (
                       <Button
-                        className="flex-1"
+                        className="w-full rounded-xl h-[46px] mt-4 text-[15px] font-medium bg-foreground text-background hover:bg-foreground/90 transition-all shadow-none"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleAccept(job.id);
                         }}
                       >
-                        <Truck className="h-4 w-4 mr-2" />
-                        Pieņemt darbu
+                        Pieņemt
                       </Button>
                     )}
                   </div>
@@ -822,19 +724,6 @@ export default function JobsPage() {
               ))}
             </div>
           )}
-        </div>
-
-        {/* RIGHT: Map panel */}
-        <div
-          className={`rounded-xl overflow-hidden h-[70vw] md:h-auto min-h-75 shrink-0 md:w-[60%] ${
-            mobileView === 'list' ? 'hidden md:block' : 'block'
-          }`}
-        >
-          <TransportJobsMapDynamic
-            jobs={filteredJobs}
-            selectedId={selectedJobId}
-            onSelect={handleMapSelect}
-          />
         </div>
       </div>
 
@@ -852,7 +741,6 @@ export default function JobsPage() {
               <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
                 {/* Cargo pill */}
                 <div className="flex items-center gap-3 bg-gray-50 border rounded-xl px-4 py-3">
-                  <span className="text-2xl">{dispatchJob.vehicleEmoji}</span>
                   <div>
                     <p className="font-bold text-sm text-gray-900">
                       {dispatchJob.weightTonnes} t · {dispatchJob.payload}

@@ -34,6 +34,7 @@ import { RecyclingCentersModule } from './recycling-centers/recycling-centers.mo
 import { EmailModule } from './email/email.module';
 import { FrameworkContractsModule } from './framework-contracts/framework-contracts.module';
 import { CompanyMembersModule } from './company-members/company-members.module';
+import { MapsModule } from './maps/maps.module';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { CompanyMembersModule } from './company-members/company-members.module';
     EmailModule,
     FrameworkContractsModule,
     CompanyMembersModule,
+    MapsModule,
   ],
   controllers: [AppController],
   providers: [

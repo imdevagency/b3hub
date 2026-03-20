@@ -76,6 +76,12 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   SUPABASE_ANON_KEY?: string;
+
+  // ── Google Maps (server-side only key) ──────────────────────────────────
+
+  @IsString()
+  @IsOptional()
+  GOOGLE_MAPS_SERVER_API_KEY?: string;
 }
 
 /**

@@ -5,9 +5,13 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshCw, MessageSquare, MapPin, Package } from 'lucide-react';
+import { RefreshCw, MessageSquare, MapPin, Package, Clock3, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/lib/auth-context';
 import {
   getOpenQuoteRequests,
@@ -42,6 +46,24 @@ const UNIT_LV: Record<MaterialUnit, string> = {
 };
 
 const UNITS: MaterialUnit[] = ['TONNE', 'M3', 'PIECE', 'LOAD'];
+type QuickFilter = 'ALL' | 'NEW' | 'NO_OFFERS' | 'WITH_NOTES';
+
+const NEW_REQUEST_WINDOW_HOURS = 24;
+
+const hoursSince = (dateIso: string) => {
+  const diffMs = Date.now() - new Date(dateIso).getTime();
+  return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
+};
+
+const getRelativeRequestedLabel = (dateIso: string) => {
+  const h = hoursSince(dateIso);
+  if (h < 1) return 'pirms mazāk nekā 1h';
+  if (h < 24) return `pirms ${h}h`;
+  const d = Math.floor(h / 24);
+  return `pirms ${d} d.`;
+};
+
+const isNewRequest = (request: QuoteRequest) => hoursSince(request.createdAt) <= NEW_REQUEST_WINDOW_HOURS;
 
 // ── Respond slide-over ────────────────────────────────────────────────────────
 
@@ -226,29 +248,38 @@ interface OpenRequestCardProps {
 
 function OpenRequestCard({ request, onRespond }: OpenRequestCardProps) {
   const responseCount = request.responses.length;
+  const isNew = isNewRequest(request);
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-5">
-      <div className="flex items-start justify-between gap-4">
+    <Card className="border-border/60 bg-card py-0 shadow-none transition-all hover:-translate-y-0.5 hover:border-border hover:shadow-sm">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="font-mono text-xs text-muted-foreground">{request.requestNumber}</span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 px-2 py-0.5 text-xs font-medium">
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            <Badge variant="outline" className="font-mono text-[11px]">
+              {request.requestNumber}
+            </Badge>
+            <Badge variant="secondary" className="text-[11px]">
               <Package className="h-3 w-3" />
               {CATEGORY_LV[request.materialCategory]}
-            </span>
+            </Badge>
+            {isNew && (
+              <Badge className="text-[11px] bg-emerald-600 text-white hover:bg-emerald-600">
+                <Sparkles className="h-3 w-3" /> Jauns
+              </Badge>
+            )}
             {responseCount > 0 && (
-              <span className="text-xs text-slate-500">
+              <Badge variant="outline" className="text-[11px]">
                 {responseCount} piedāvājum{responseCount === 1 ? 's' : 'i'}
-              </span>
+              </Badge>
             )}
           </div>
 
-          <p className="text-sm font-semibold text-slate-900">
+          <p className="text-base font-semibold text-slate-900 leading-tight">
             {request.quantity} {UNIT_LV[request.unit]} {request.materialName}
           </p>
 
-          <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
             <MapPin className="h-3 w-3 shrink-0" />
             {request.deliveryAddress}, {request.deliveryCity}
           </div>
@@ -257,19 +288,42 @@ function OpenRequestCard({ request, onRespond }: OpenRequestCardProps) {
             <p className="text-xs text-slate-500 mt-1 italic">&quot;{request.notes}&quot;</p>
           )}
 
-          <p className="text-[11px] text-muted-foreground/60 mt-2">
-            Pieprasīts {fmtDate(request.createdAt)}
+          <p className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground/70">
+            <Clock3 className="h-3 w-3" />
+            Pieprasīts {fmtDate(request.createdAt)} ({getRelativeRequestedLabel(request.createdAt)})
           </p>
         </div>
 
-        <div className="shrink-0">
-          <Button size="sm" onClick={() => onRespond(request)}>
+        <div className="shrink-0 flex items-center">
+          <Button size="sm" className="min-w-32" onClick={() => onRespond(request)}>
             <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
             Piedāvāt Cenu
           </Button>
         </div>
       </div>
-    </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function RequestCardSkeleton() {
+  return (
+    <Card className="border-border/60 py-0 shadow-none">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 space-y-3">
+            <div className="flex gap-2">
+              <Skeleton className="h-5 w-20 rounded-full" />
+              <Skeleton className="h-5 w-24 rounded-full" />
+            </div>
+            <Skeleton className="h-5 w-72" />
+            <Skeleton className="h-4 w-80" />
+            <Skeleton className="h-4 w-44" />
+          </div>
+          <Skeleton className="h-8 w-32 rounded-md" />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -282,6 +336,7 @@ export default function OpenQuoteRequestsPage() {
   const [error, setError] = useState<string | null>(null);
   const [responding, setResponding] = useState<QuoteRequest | null>(null);
   const [successId, setSuccessId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<QuickFilter>('ALL');
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -310,9 +365,20 @@ export default function OpenQuoteRequestsPage() {
   };
 
   const safeRequests = Array.isArray(requests) ? requests : [];
+  const newRequestsCount = safeRequests.filter((r) => isNewRequest(r)).length;
+  const noOfferCount = safeRequests.filter((r) => r.responses.length === 0).length;
+
+  const filteredRequests = safeRequests
+    .filter((r) => {
+      if (filter === 'NEW') return isNewRequest(r);
+      if (filter === 'NO_OFFERS') return r.responses.length === 0;
+      if (filter === 'WITH_NOTES') return Boolean(r.notes?.trim());
+      return true;
+    })
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-5xl">
       {/* Header */}
       <PageHeader
         title="Atvērtie Pieprasījumi"
@@ -332,10 +398,48 @@ export default function OpenQuoteRequestsPage() {
         </div>
       )}
 
+      {!loading && !error && safeRequests.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-card p-3">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="xs"
+              variant={filter === 'ALL' ? 'default' : 'outline'}
+              onClick={() => setFilter('ALL')}
+            >
+              Visi ({safeRequests.length})
+            </Button>
+            <Button
+              size="xs"
+              variant={filter === 'NEW' ? 'default' : 'outline'}
+              onClick={() => setFilter('NEW')}
+            >
+              Jaunie ({newRequestsCount})
+            </Button>
+            <Button
+              size="xs"
+              variant={filter === 'NO_OFFERS' ? 'default' : 'outline'}
+              onClick={() => setFilter('NO_OFFERS')}
+            >
+              Bez piedāvājumiem ({noOfferCount})
+            </Button>
+            <Button
+              size="xs"
+              variant={filter === 'WITH_NOTES' ? 'default' : 'outline'}
+              onClick={() => setFilter('WITH_NOTES')}
+            >
+              Ar piezīmēm
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">Rādām {filteredRequests.length} pieprasījumus</p>
+        </div>
+      )}
+
       {/* Content */}
       {loading ? (
-        <div className="flex h-40 items-center justify-center">
-          <div className="h-7 w-7 animate-spin rounded-full border-b-2 border-primary" />
+        <div className="space-y-3">
+          <RequestCardSkeleton />
+          <RequestCardSkeleton />
+          <RequestCardSkeleton />
         </div>
       ) : error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-700">
@@ -344,17 +448,20 @@ export default function OpenQuoteRequestsPage() {
             Mēģināt vēlreiz
           </Button>
         </div>
-      ) : safeRequests.length === 0 ? (
-        <div className="rounded-xl border border-dashed p-12 text-center">
-          <MessageSquare className="mx-auto mb-3 h-10 w-10 text-muted-foreground/25" />
-          <p className="text-sm font-medium text-muted-foreground">Nav atvērtu pieprasījumu</p>
-          <p className="mt-1 text-xs text-muted-foreground/60">
-            Kad pasūtītāji izveidos jaunus pieprasījumus, tie parādīsies šeit.
-          </p>
-        </div>
+      ) : filteredRequests.length === 0 ? (
+        <EmptyState
+          icon={MessageSquare}
+          title="Nav pieprasījumu šim filtram"
+          description="Pamēģiniet citu filtru vai atjaunojiet datus, lai redzētu jaunākos pieprasījumus."
+          action={
+            <Button variant="outline" size="sm" onClick={() => setFilter('ALL')}>
+              Rādīt visus
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-3">
-          {safeRequests.map((r) => (
+          {filteredRequests.map((r) => (
             <OpenRequestCard key={r.id} request={r} onRespond={setResponding} />
           ))}
         </div>

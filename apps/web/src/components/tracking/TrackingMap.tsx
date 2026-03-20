@@ -6,15 +6,16 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Map, { Layer, Marker, Source, type MapRef } from 'react-map-gl/mapbox';
+import { GoogleMap, MarkerF, PolylineF, useJsApiLoader } from '@react-google-maps/api';
+import { apiFetch } from '@/lib/api/common';
+import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
-const GOOGLE_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
+const GOOGLE_KEY = getGoogleMapsPublicKey();
 
 // ── Google encoded-polyline decoder ───────────────────────────────────────────
-// Returns [lng, lat] pairs (GeoJSON order)
-function decodePolyline(encoded: string): [number, number][] {
-  const result: [number, number][] = [];
+// Returns Google lat/lng pairs
+function decodePolyline(encoded: string): google.maps.LatLngLiteral[] {
+  const result: google.maps.LatLngLiteral[] = [];
   let index = 0;
   let lat = 0;
   let lng = 0;
@@ -41,7 +42,7 @@ function decodePolyline(encoded: string): [number, number][] {
     const dLng = result5 & 1 ? ~(result5 >> 1) : result5 >> 1;
     lng += dLng;
 
-    result.push([lng / 1e5, lat / 1e5]); // [lng, lat] for GeoJSON
+    result.push({ lat: lat / 1e5, lng: lng / 1e5 });
   }
   return result;
 }
@@ -52,25 +53,23 @@ async function fetchRoutePolyline(
   originLng: number,
   destLat: number,
   destLng: number,
-): Promise<[number, number][] | null> {
-  if (!GOOGLE_KEY) return null;
+  token?: string,
+): Promise<google.maps.LatLngLiteral[] | null> {
+  if (!token) return null;
   try {
-    const res = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+    const data = await apiFetch<{ encodedPolyline?: string }>('/maps/route-polyline', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': GOOGLE_KEY,
-        'X-Goog-FieldMask': 'routes.polyline.encodedPolyline',
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        origin: { location: { latLng: { latitude: originLat, longitude: originLng } } },
-        destination: { location: { latLng: { latitude: destLat, longitude: destLng } } },
-        travelMode: 'DRIVE',
-        routingPreference: 'TRAFFIC_AWARE',
+        originLat,
+        originLng,
+        destLat,
+        destLng,
       }),
     });
-    const data = await res.json();
-    const encoded = data?.routes?.[0]?.polyline?.encodedPolyline;
+    const encoded = data?.encodedPolyline;
     return encoded ? decodePolyline(encoded) : null;
   } catch {
     return null;
@@ -90,6 +89,7 @@ function getBearing(from: { lat: number; lng: number }, to: { lat: number; lng: 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface TrackingMapProps {
+  token?: string;
   pickupLat: number | null;
   pickupLng: number | null;
   pickupAddress: string;
@@ -100,112 +100,10 @@ export interface TrackingMapProps {
   isLive: boolean;
 }
 
-// ── Pin components ────────────────────────────────────────────────────────────
-
-function PickupPin({ label }: { label: string }) {
-  return (
-    <div
-      title={label}
-      style={{
-        width: 32,
-        height: 32,
-        borderRadius: '50% 50% 50% 0',
-        transform: 'rotate(-45deg)',
-        backgroundColor: '#22c55e',
-        border: '2px solid #fff',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <span
-        style={{
-          transform: 'rotate(45deg)',
-          color: '#fff',
-          fontSize: 11,
-          fontWeight: 700,
-          lineHeight: 1,
-        }}
-      >
-        P
-      </span>
-    </div>
-  );
-}
-
-function DeliveryPin({ label }: { label: string }) {
-  return (
-    <div
-      title={label}
-      style={{
-        width: 32,
-        height: 32,
-        borderRadius: '50% 50% 50% 0',
-        transform: 'rotate(-45deg)',
-        backgroundColor: '#ef4444',
-        border: '2px solid #fff',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <span
-        style={{
-          transform: 'rotate(45deg)',
-          color: '#fff',
-          fontSize: 11,
-          fontWeight: 700,
-          lineHeight: 1,
-        }}
-      >
-        D
-      </span>
-    </div>
-  );
-}
-
-function TruckPin({ isLive }: { isLive: boolean }) {
-  return (
-    <div
-      style={{
-        width: 40,
-        height: 40,
-        borderRadius: '50%',
-        backgroundColor: isLive ? '#3b82f6' : '#94a3b8',
-        border: '3px solid #fff',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.35)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 18,
-        position: 'relative',
-      }}
-    >
-      🚚
-      {isLive && (
-        <span
-          style={{
-            position: 'absolute',
-            top: -2,
-            right: -2,
-            width: 10,
-            height: 10,
-            borderRadius: '50%',
-            backgroundColor: '#22c55e',
-            border: '2px solid #fff',
-            animation: 'pulse 1.5s ease-in-out infinite',
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function TrackingMap({
+  token,
   pickupLat,
   pickupLng,
   pickupAddress,
@@ -215,11 +113,15 @@ export default function TrackingMap({
   truckPos,
   isLive,
 }: TrackingMapProps) {
-  const mapRef = useRef<MapRef>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
   const prevTruckPos = useRef<{ lat: number; lng: number } | null>(null);
-  const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(null);
+  const [routeCoords, setRouteCoords] = useState<google.maps.LatLngLiteral[] | null>(null);
   const [truckBearing, setTruckBearing] = useState(0);
   const routeFetched = useRef(false);
+  const { isLoaded } = useJsApiLoader({
+    id: 'b3hub-google-maps',
+    googleMapsApiKey: GOOGLE_KEY,
+  });
 
   // Initial lat/lng: prefer pickup, fall back to Riga city center
   const initialLng = pickupLng ?? 24.1052;
@@ -230,23 +132,17 @@ export default function TrackingMap({
     if (routeFetched.current || !pickupLat || !pickupLng || !deliveryLat || !deliveryLng) return;
     routeFetched.current = true;
 
-    fetchRoutePolyline(pickupLat, pickupLng, deliveryLat, deliveryLng).then((coords) => {
+    fetchRoutePolyline(pickupLat, pickupLng, deliveryLat, deliveryLng, token).then((coords) => {
       if (coords) setRouteCoords(coords);
     });
-  }, [pickupLat, pickupLng, deliveryLat, deliveryLng]);
+  }, [pickupLat, pickupLng, deliveryLat, deliveryLng, token]);
 
   // Fit map to route once it's loaded
   const handleRouteReady = useCallback(() => {
     if (!routeCoords || !mapRef.current) return;
-    const lngs = routeCoords.map((c) => c[0]);
-    const lats = routeCoords.map((c) => c[1]);
-    mapRef.current.fitBounds(
-      [
-        [Math.min(...lngs), Math.min(...lats)],
-        [Math.max(...lngs), Math.max(...lats)],
-      ],
-      { padding: 80, duration: 1200, maxZoom: 14 },
-    );
+    const bounds = new window.google.maps.LatLngBounds();
+    routeCoords.forEach((coord) => bounds.extend(coord));
+    mapRef.current.fitBounds(bounds, 80);
   }, [routeCoords]);
 
   useEffect(() => {
@@ -261,33 +157,34 @@ export default function TrackingMap({
     if (prevTruckPos.current) {
       const bearing = getBearing(prevTruckPos.current, truckPos);
       setTruckBearing(bearing);
-      map?.easeTo({
-        center: [truckPos.lng, truckPos.lat],
-        duration: 800,
-        zoom: 14,
-      });
+      map?.panTo(truckPos);
+      map?.setZoom(14);
     } else if (map) {
       // First truck fix — jump there
-      map.flyTo({ center: [truckPos.lng, truckPos.lat], zoom: 14, duration: 1000 });
+      map.panTo(truckPos);
+      map.setZoom(14);
     }
     prevTruckPos.current = truckPos;
   }, [truckPos]);
 
-  const routeGeoJSON = routeCoords
-    ? {
-        type: 'Feature' as const,
-        properties: {},
-        geometry: { type: 'LineString' as const, coordinates: routeCoords },
-      }
-    : null;
-
-  if (!MAPBOX_TOKEN) {
+  if (!GOOGLE_KEY) {
     return (
       <div
         style={{ height: 360 }}
         className="rounded-2xl border border-dashed border-slate-200 flex items-center justify-center text-slate-400 text-sm"
       >
-        Pievieno NEXT_PUBLIC_MAPBOX_TOKEN .env.local failā
+        Pievieno NEXT_PUBLIC_GOOGLE_MAPS_API_KEY .env.local failā
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div
+        style={{ height: 360 }}
+        className="rounded-2xl border border-dashed border-slate-200 flex items-center justify-center text-slate-400 text-sm"
+      >
+        Karte tiek ielādēta...
       </div>
     );
   }
@@ -301,64 +198,82 @@ export default function TrackingMap({
         }
       `}</style>
 
-      <Map
-        ref={mapRef}
-        mapboxAccessToken={MAPBOX_TOKEN}
-        mapStyle="mapbox://styles/mapbox/streets-v12"
-        initialViewState={{
-          longitude: initialLng,
-          latitude: initialLat,
-          zoom: 10,
+      <GoogleMap
+        mapContainerStyle={{ width: '100%', height: 360 }}
+        center={{ lat: initialLat, lng: initialLng }}
+        zoom={10}
+        onLoad={(map) => {
+          mapRef.current = map;
         }}
-        style={{ width: '100%', height: 360 }}
-        attributionControl={false}
+        onUnmount={() => {
+          mapRef.current = null;
+        }}
+        options={{
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: false,
+        }}
       >
-        {/* ── Route line (Google routing data, Mapbox rendering) ── */}
-        {routeGeoJSON && (
-          <Source id="route" type="geojson" data={routeGeoJSON}>
-            {/* Shadow layer */}
-            <Layer
-              id="route-shadow"
-              type="line"
-              layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-              paint={{ 'line-color': '#1e3a8a', 'line-width': 8, 'line-opacity': 0.2 }}
-            />
-            {/* Main route line */}
-            <Layer
-              id="route-line"
-              type="line"
-              layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-              paint={{ 'line-color': '#3b82f6', 'line-width': 4, 'line-opacity': 0.9 }}
-            />
-          </Source>
+        {routeCoords && (
+          <PolylineF
+            path={routeCoords}
+            options={{
+              geodesic: true,
+              strokeColor: '#3b82f6',
+              strokeOpacity: 0.95,
+              strokeWeight: 4,
+            }}
+          />
         )}
 
         {/* ── Pickup pin (green) ── */}
         {pickupLat != null && pickupLng != null && (
-          <Marker longitude={pickupLng} latitude={pickupLat} anchor="bottom">
-            <PickupPin label={pickupAddress} />
-          </Marker>
+          <MarkerF
+            position={{ lat: pickupLat, lng: pickupLng }}
+            title={pickupAddress}
+            icon={{
+              path: window.google.maps.SymbolPath.CIRCLE,
+              fillColor: '#22c55e',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 2,
+              scale: 7,
+            }}
+          />
         )}
 
         {/* ── Delivery pin (red) ── */}
         {deliveryLat != null && deliveryLng != null && (
-          <Marker longitude={deliveryLng} latitude={deliveryLat} anchor="bottom">
-            <DeliveryPin label={deliveryAddress} />
-          </Marker>
+          <MarkerF
+            position={{ lat: deliveryLat, lng: deliveryLng }}
+            title={deliveryAddress}
+            icon={{
+              path: window.google.maps.SymbolPath.CIRCLE,
+              fillColor: '#ef4444',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 2,
+              scale: 7,
+            }}
+          />
         )}
 
         {/* ── Live truck marker ── */}
         {truckPos && (
-          <Marker
-            longitude={truckPos.lng}
-            latitude={truckPos.lat}
-            anchor="center"
-            rotation={truckBearing}
-          >
-            <TruckPin isLive={isLive} />
-          </Marker>
+          <MarkerF
+            position={truckPos}
+            icon={{
+              path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+              fillColor: isLive ? '#3b82f6' : '#94a3b8',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 2,
+              scale: 6,
+              rotation: truckBearing,
+            }}
+          />
         )}
-      </Map>
+      </GoogleMap>
 
       {/* ── Legend ── */}
       <div className="flex items-center gap-4 px-4 py-2 bg-slate-50 text-xs text-slate-500">

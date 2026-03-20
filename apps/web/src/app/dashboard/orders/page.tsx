@@ -18,7 +18,7 @@ import {
   StatusBadgeHex,
 } from '@/lib/status-config';
 import { PageSpinner } from '@/components/ui/page-spinner';
-import { PageHeader } from '@/components/ui/page-header';
+
 import {
   listTransportJobExceptions,
   reportTransportJobException,
@@ -38,11 +38,9 @@ import { useBuyerOrders } from '@/hooks/use-buyer-orders';
 import {
   ArrowRight,
   AlertTriangle,
-  Banknote,
   CalendarDays,
   CheckCircle,
   ClipboardCheck,
-  ClipboardList,
   ExternalLink,
   Map,
   MapPin,
@@ -54,9 +52,9 @@ import {
   Trash2,
   Truck,
   User,
-  Weight,
   X,
 } from 'lucide-react';
+import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 
 // ── Active-job status progression ─────────────────────────────────────────────
 
@@ -117,7 +115,7 @@ function StaticMapEmbed({
   deliveryLng: number;
   deliveryLabel: string;
 }) {
-  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
+  const key = getGoogleMapsPublicKey();
   const origin = `${pickupLat},${pickupLng}`;
   const destination = `${deliveryLat},${deliveryLng}`;
   const src = `https://www.google.com/maps/embed/v1/directions?key=${key}&origin=${origin}&destination=${destination}&mode=driving`;
@@ -181,6 +179,16 @@ function formatSlaStage(stage: string | null | undefined): string {
   if (stage === 'PICKUP_DELAY') return 'Kavēta iekraušana';
   if (stage === 'DELIVERY_DELAY') return 'Kavēta piegāde';
   return 'Grafikā';
+}
+
+
+function QuickStat({ value, label, alert }: { value: string; label: string; alert?: boolean }) {
+  return (
+    <div className="flex flex-col">
+      <span className={`text-3xl sm:text-4xl font-semibold tracking-tight ${alert ? 'text-amber-600' : 'text-foreground'}`}>{value}</span>
+      <span className="text-[11px] sm:text-xs font-medium text-muted-foreground mt-1 uppercase tracking-wider">{label}</span>
+    </div>
+  );
 }
 
 function formatDocCode(code: string): string {
@@ -383,7 +391,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
       {/* Delivery Success Modal */}
       {deliveredJob && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+          <div className="bg-background w-full max-w-md rounded-3xl shadow-xl border overflow-hidden">
             {/* Success header */}
             <div className="bg-green-50 px-6 py-8 flex flex-col items-center gap-3">
               <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
@@ -436,7 +444,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
       {/* Delivery Proof Modal */}
       {showProofModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+          <div className="bg-background w-full max-w-md rounded-3xl shadow-xl border overflow-hidden">
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center">
@@ -565,7 +573,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
           return (
             <>
               {/* Status card */}
-              <div className="bg-white border rounded-2xl p-5 space-y-4 shadow-sm">
+              <div className="bg-muted/20 border-0 rounded-3xl p-5 space-y-4 shadow-sm">
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm font-bold rounded-full px-3 py-1.5">
                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
@@ -634,7 +642,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
                 )}
 
               {/* Route detail card */}
-              <div className="bg-white border rounded-2xl p-5 space-y-4 shadow-sm">
+              <div className="bg-muted/20 border-0 rounded-3xl p-5 space-y-4 shadow-sm">
                 <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide">
                   Maršruts
                 </h3>
@@ -698,7 +706,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
               </div>
 
               {/* Cargo details */}
-              <div className="bg-white border rounded-2xl px-5 py-4 shadow-sm flex flex-wrap gap-6">
+              <div className="bg-muted/20 border-0 rounded-3xl px-5 py-4 shadow-sm flex flex-wrap gap-6">
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
                     Krava
@@ -728,7 +736,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
               </div>
 
               {/* Exceptions widget */}
-              <div className="bg-white border border-amber-200 rounded-2xl p-5 space-y-4 shadow-sm">
+              <div className="bg-amber-50/50 border border-amber-200/50 rounded-3xl p-5 space-y-4 shadow-sm">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 text-amber-700" />
@@ -899,26 +907,12 @@ function CarrierHistoryView({ token }: { token: string }) {
 
   return (
     <div className="space-y-4">
-      {/* Summary strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Kopā darbi', value: String(jobs.length), icon: ClipboardList },
-          {
-            label: 'Aktīvie',
-            value: String(jobs.filter((j) => ACTIVE.includes(j.status)).length),
-            icon: Truck,
-          },
-          { label: 'Tonnas tranzītā', value: `${totalTonnes.toFixed(1)} t`, icon: Weight },
-          { label: 'Nopelnīts (pabeigts)', value: fmtMoney(totalEarnings), icon: Banknote },
-        ].map(({ label, value, icon: Icon }) => (
-          <div key={label} className="rounded-xl border bg-card p-4">
-            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <Icon className="size-4" />
-              {label}
-            </div>
-            <p className="text-xl font-bold">{value}</p>
-          </div>
-        ))}
+      {/* QUICK STATS */}
+      <div className="flex items-center gap-8 sm:gap-12 py-2 overflow-x-auto no-scrollbar">
+        <QuickStat value={String(jobs.length)} label="Kopā darbi" />
+        <QuickStat value={String(jobs.filter((j) => ACTIVE.includes(j.status)).length)} label="Aktīvie" />
+        <QuickStat value={`${totalTonnes.toFixed(1)} t`} label="Tonnas tranzītā" />
+        <QuickStat value={fmtMoney(totalEarnings)} label="Nopelnīts" />
       </div>
 
       {/* Filter + refresh */}
@@ -975,97 +969,87 @@ function CarrierHistoryView({ token }: { token: string }) {
           <p className="text-muted-foreground text-sm">Nav darbu šajā kategorijā</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
-                <th className="px-4 py-3 text-left font-medium">Darbs</th>
-                <th className="px-4 py-3 text-left font-medium">Statuss</th>
-                <th className="px-4 py-3 text-left font-medium">Krava</th>
-                <th className="px-4 py-3 text-left font-medium">Svars</th>
-                <th className="px-4 py-3 text-left font-medium">Maršruts</th>
-                <th className="px-4 py-3 text-left font-medium">Datums</th>
-                <th className="px-4 py-3 text-left font-medium">Transportlīdzeklis</th>
-                <th className="px-4 py-3 text-right font-medium">Cena</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {filtered.map((job) => {
-                const st = JOB_STATUS[job.status] ?? {
-                  label: job.status,
-                  bg: '#f3f4f6',
-                  text: '#374151',
-                };
-                const weightTStr = job.cargoWeight
-                  ? `${(job.cargoWeight / 1000).toFixed(2)} t`
-                  : '—';
-                return (
-                  <tr key={job.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3">
-                      <p className="font-mono font-semibold text-xs">#{job.jobNumber}</p>
-                      <p className="text-muted-foreground text-xs mt-0.5">{job.jobType}</p>
-                    </td>
-                    <td className="px-4 py-3">
+        <div className="flex flex-col gap-4">
+          {filtered.map((job) => {
+            const st = JOB_STATUS[job.status] ?? {
+              label: job.status,
+              bg: '#f3f4f6',
+              text: '#374151',
+            };
+            const weightTStr = job.cargoWeight
+              ? `${(job.cargoWeight / 1000).toFixed(2)} t`
+              : '—';
+            return (
+              <Link
+                key={job.id}
+                href={`/dashboard/orders/${job.id}`}
+                className="group block relative rounded-2xl bg-transparent hover:bg-muted/40 active:bg-muted/60 transition-all duration-200 py-4 sm:p-5 -mx-2 sm:-mx-4"
+              >
+                {/* Meta Top Row */}
+                <div className="flex justify-between items-start mb-5">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <p className="font-mono font-bold text-[11px] text-muted-foreground border bg-muted/30 rounded px-1.5 py-0.5 uppercase tracking-wide">#{job.jobNumber}</p>
                       <StatusBadgeHex cfg={st} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="font-medium">{job.cargoType}</p>
-                      {job.requiredVehicleType && (
-                        <p className="text-muted-foreground text-xs">{job.requiredVehicleType}</p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 font-medium tabular-nums">{weightTStr}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5 text-xs">
-                        <span className="font-medium">{job.pickupCity}</span>
-                        <ArrowRight className="size-3 text-muted-foreground shrink-0" />
-                        <span className="font-medium">{job.deliveryCity}</span>
-                      </div>
-                      {job.distanceKm && (
-                        <p className="text-muted-foreground text-xs mt-0.5">{job.distanceKm} km</p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      <p>{fmtDate(job.pickupDate)}</p>
-                    </td>
-                    <td className="px-4 py-3 text-xs">
-                      {job.vehicle ? (
-                        <>
-                          <p className="font-medium">{job.vehicle.licensePlate}</p>
-                          <p className="text-muted-foreground">{job.vehicle.vehicleType}</p>
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold tabular-nums">
+                    </div>
+                    <h3 className="text-xl font-bold tracking-tight text-foreground">
                       {fmtMoney(job.rate ?? 0)}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/dashboard/orders/${job.id}`}
-                        className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors whitespace-nowrap"
-                      >
-                        <Truck className="size-3" />
-                        Sekot
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot>
-              <tr className="border-t bg-muted/40 text-xs font-semibold">
-                <td colSpan={8} className="px-4 py-2 text-muted-foreground">
-                  {filtered.length} ieraksti
-                </td>
-                <td className="px-4 py-2 text-right tabular-nums">
-                  {fmtMoney(filtered.reduce((s, j) => s + (j.rate ?? 0), 0))}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-sm text-muted-foreground/90 font-medium">
+                      <span>{job.cargoType}</span>
+                      <span>•</span>
+                      <span>{weightTStr}</span>
+                      {job.distanceKm && (
+                        <>
+                          <span>•</span>
+                          <span>{job.distanceKm} km</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Timeline Route */}
+                <div className="flex items-start my-5 bg-muted/20 rounded-xl p-4 border border-border/30">
+                  <div className="flex flex-col items-center mr-4 mt-[6px]">
+                    <div className="w-[8px] h-[8px] rounded-full bg-foreground z-10 shrink-0" />
+                    <div className="w-[1px] h-[22px] bg-foreground opacity-20 shrink-0" />
+                    <div className="w-[8px] h-[8px] rounded-[1px] bg-foreground z-10 shrink-0" />
+                  </div>
+                  <div className="flex flex-col gap-[12px] flex-1">
+                    <div className="flex items-center justify-between">
+                       <p className="text-[15px] font-semibold leading-none">{job.pickupCity}</p>
+                       <span className="text-xs font-semibold text-muted-foreground bg-white border shadow-sm rounded-md px-2 py-1">{fmtDate(job.pickupDate)}</span>
+                    </div>
+                    <p className="text-[15px] font-semibold leading-none text-muted-foreground">{job.deliveryCity}</p>
+                  </div>
+                </div>
+
+                {/* Vehicle & assignment footer */}
+                {job.vehicle && (
+                   <div className="pt-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2 bg-muted/50 rounded-full px-3 py-1.5 border border-border/50">
+                      <Truck className="size-3.5 text-muted-foreground" />
+                      <span className="text-xs font-bold text-foreground">{job.vehicle.licensePlate}</span>
+                      <span className="text-[11px] font-medium text-muted-foreground uppercase">{job.vehicle.vehicleType}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[13px] font-semibold text-primary">
+                      Sekot darbam
+                      <ArrowRight className="size-3.5" />
+                    </div>
+                  </div>
+                )}
+                {!job.vehicle && (
+                  <div className="pt-2 flex items-center justify-end">
+                    <div className="flex items-center gap-1 text-[13px] font-semibold text-primary group-hover:underline">
+                      Sekot darbam
+                      <ArrowRight className="size-3.5" />
+                    </div>
+                  </div>
+                )}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
@@ -1146,29 +1130,11 @@ function SupplierView({ token }: { token: string }) {
 
   return (
     <div className="space-y-4">
-      {/* Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {[
-          { label: 'Kopā pasūtījumi', value: String(orders.length), icon: ClipboardList },
-          {
-            label: 'Gaida apstiprinājumu',
-            value: String(pending),
-            icon: Package,
-            alert: pending > 0,
-          },
-          { label: 'Kopā ieņēmumi', value: fmtMoney(revenue), icon: Banknote },
-        ].map(({ label, value, icon: Icon, alert }) => (
-          <div
-            key={label}
-            className={`rounded-xl border p-4 ${alert ? 'border-amber-300 bg-amber-50' : 'bg-card'}`}
-          >
-            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <Icon className={`size-4 ${alert ? 'text-amber-600' : ''}`} />
-              {label}
-            </div>
-            <p className={`text-xl font-bold ${alert ? 'text-amber-700' : ''}`}>{value}</p>
-          </div>
-        ))}
+      {/* QUICK STATS */}
+      <div className="flex items-center gap-8 sm:gap-12 py-2 overflow-x-auto no-scrollbar">
+        <QuickStat value={String(orders.length)} label="Kopā pasūtījumi" />
+        <QuickStat value={String(pending)} label="Gaida apstiprinājumu" alert={pending > 0} />
+        <QuickStat value={fmtMoney(revenue)} label="Kopā ieņēmumi" />
       </div>
 
       <div className="flex justify-end">
@@ -1205,133 +1171,158 @@ function SupplierView({ token }: { token: string }) {
           </Link>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
-                <th className="px-4 py-3 text-left font-medium">Pasūtījums</th>
-                <th className="px-4 py-3 text-left font-medium">Statuss</th>
-                <th className="px-4 py-3 text-left font-medium">Materiāls</th>
-                <th className="px-4 py-3 text-left font-medium">Svars</th>
-                <th className="px-4 py-3 text-left font-medium">Pircējs</th>
-                <th className="px-4 py-3 text-left font-medium">Piegādes adrese</th>
-                <th className="px-4 py-3 text-left font-medium">Datums</th>
-                <th className="px-4 py-3 text-right font-medium">Summa</th>
-                <th className="px-4 py-3 text-center font-medium">Darbības</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {orders.map((order) => {
-                const st = ORDER_STATUS[order.status] ?? {
-                  label: order.status,
-                  bg: '#f3f4f6',
-                  text: '#374151',
-                };
-                const item = order.items?.[0];
-                const busy = actioning === order.id;
-                return (
-                  <tr key={order.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3">
-                      <p className="font-mono font-semibold text-xs">#{order.orderNumber}</p>
-                      <p className="text-muted-foreground text-xs mt-0.5">
-                        {fmtDate(order.createdAt)}
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
+            <span>{orders.length} pasūtījumi</span>
+            <span className="font-medium text-foreground">Kopā: {fmtMoney(orders.reduce((s, o) => s + o.total, 0))}</span>
+          </div>
+          {orders.map((order) => {
+            const st = ORDER_STATUS[order.status] ?? {
+              label: order.status,
+              bg: '#f3f4f6',
+              text: '#374151',
+            };
+            const item = order.items?.[0];
+            const busy = actioning === order.id;
+
+            return (
+              <div
+                key={order.id}
+                className="group block relative rounded-2xl bg-transparent hover:bg-muted/40 active:bg-muted/60 transition-all duration-200 py-1 sm:p-2 -mx-2 sm:-mx-4"
+              >
+                {/* Header row */}
+                <div className="flex items-center justify-between px-4 py-2 sm:px-5 pb-1">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
+                      #{order.orderNumber}
+                    </span>
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {fmtDate(order.createdAt)}
+                    </span>
+                  </div>
+                  <div
+                    className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                    style={{ backgroundColor: st.bg, color: st.text }}
+                  >
+                    {st.label}
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-black/[0.04] p-4 sm:p-5 gap-4 sm:gap-6">
+                  {/* Material Info */}
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-baseline justify-between mb-2">
+                      <h3 className="font-medium text-base">
+                        {item?.material?.name ?? '—'}
+                      </h3>
+                      {item && (
+                        <span className="text-sm font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md">
+                          {item.quantity} {item.unit}
+                        </span>
+                      )}
+                    </div>
+                    {item?.material?.category && (
+                      <p className="text-sm text-muted-foreground">
+                        {item.material.category}
                       </p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadgeHex cfg={st} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="font-medium">{item?.material?.name ?? '—'}</p>
-                      {item?.material?.category && (
-                        <p className="text-muted-foreground text-xs">{item.material.category}</p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 font-medium tabular-nums">
-                      {item ? `${item.quantity} ${item.unit}` : '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      {order.buyer ? (
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-1.5 text-xs font-medium">
-                            <User className="size-3 text-muted-foreground" />
-                            {order.buyer.firstName} {order.buyer.lastName}
+                    )}
+                  </div>
+
+                  {/* Route & Contact Timeline */}
+                  <div className="flex-[1.5] space-y-4">
+                    <div className="relative pl-6">
+                      <div className="absolute left-[11px] top-2 bottom-[-16px] w-[1px] bg-black/10" />
+
+                      {/* Buyer */}
+                      <div className="relative mb-4">
+                        <div className="absolute left-[-24px] top-1.5 size-2 rounded-full bg-blue-500 ring-4 ring-white" />
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">Pircējs</p>
+                        {order.buyer ? (
+                          <div>
+                            <p className="text-sm font-medium text-foreground">
+                              {order.buyer.firstName} {order.buyer.lastName}
+                            </p>
+                            {order.buyer.phone && (
+                              <div
+                                className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 mt-1 cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.location.href = `tel:${order.buyer?.phone}`;
+                                }}
+                              >
+                                <Phone className="size-3.5" />
+                                {order.buyer.phone}
+                              </div>
+                            )}
                           </div>
-                          {order.buyer.phone && (
-                            <a
-                              href={`tel:${order.buyer.phone}`}
-                              className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline"
-                            >
-                              <Phone className="size-3" />
-                              {order.buyer.phone}
-                            </a>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-start gap-1.5 text-xs">
-                        <MapPin className="size-3 text-muted-foreground mt-0.5 shrink-0" />
-                        <span>{order.deliveryAddress || order.deliveryCity || '—'}</span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">—</span>
+                        )}
                       </div>
-                      {order.siteContactPhone && (
-                        <a
-                          href={`tel:${order.siteContactPhone}`}
-                          className="mt-1 flex items-center gap-1 text-xs text-blue-600 hover:underline"
-                          title={order.siteContactName ?? 'Objekta kontakts'}
+
+                      {/* Delivery */}
+                      <div className="relative">
+                        <div className="absolute left-[-24px] top-1.5 size-2 rounded-full border-2 border-emerald-500 bg-white ring-4 ring-white shadow-sm" />
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">Piegāde • {fmtDate(order.deliveryDate)}</p>
+                        <p className="text-sm font-medium text-foreground pr-8">
+                          {order.deliveryAddress || order.deliveryCity || '—'}
+                        </p>
+                        {order.siteContactPhone && (
+                          <div
+                            className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 mt-1 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.location.href = `tel:${order.siteContactPhone}`;
+                            }}
+                          >
+                            <Phone className="size-3.5" />
+                            {order.siteContactName ?? 'Objekta'}, {order.siteContactPhone}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Financials & Actions */}
+                  <div className="flex-1 flex flex-col justify-between pt-4 sm:pt-0">
+                    <div className="flex flex-row sm:flex-col justify-between sm:justify-start items-center sm:items-end gap-1 mb-4">
+                      <span className="text-sm text-muted-foreground sm:text-right">Summa</span>
+                      <span className="text-lg font-bold tabular-nums">
+                        {fmtMoney(order.total)}
+                      </span>
+                    </div>
+
+                    {order.status === 'PENDING' && (
+                      <div className="flex flex-col gap-2 mt-auto">
+                        <button
+                          disabled={busy}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleConfirm(order.id);
+                          }}
+                          className="flex items-center justify-center w-full gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors"
                         >
-                          <Phone className="size-3" />
-                          {order.siteContactName ?? order.siteContactPhone}
-                        </a>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {fmtDate(order.deliveryDate)}
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold tabular-nums">
-                      {fmtMoney(order.total)}
-                    </td>
-                    <td className="px-4 py-3">
-                      {order.status === 'PENDING' ? (
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            disabled={busy}
-                            onClick={() => handleConfirm(order.id)}
-                            className="flex items-center gap-1 rounded-md bg-green-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
-                          >
-                            <CheckCircle className="size-3" />
-                            Apstiprināt
-                          </button>
-                          <button
-                            disabled={busy}
-                            onClick={() => handleCancel(order.id)}
-                            className="flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
-                          >
-                            <X className="size-3" />
-                            Noraidīt
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="block text-center text-xs text-muted-foreground">—</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot>
-              <tr className="border-t bg-muted/40 text-xs font-semibold">
-                <td colSpan={7} className="px-4 py-2 text-muted-foreground">
-                  {orders.length} pasūtījumi
-                </td>
-                <td className="px-4 py-2 text-right tabular-nums">
-                  {fmtMoney(orders.reduce((s, o) => s + o.total, 0))}
-                </td>
-                <td />
-              </tr>
-            </tfoot>
-          </table>
+                          <CheckCircle className="size-4" />
+                          Apstiprināt
+                        </button>
+                        <button
+                          disabled={busy}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleCancel(order.id);
+                          }}
+                          className="flex items-center justify-center w-full gap-2 rounded-xl border border-red-200 bg-red-50 text-red-700 px-4 py-2.5 text-sm font-semibold hover:bg-red-100 disabled:opacity-50 transition-colors"
+                        >
+                          <X className="size-4" />
+                          Noraidīt
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -1349,21 +1340,11 @@ function BuyerView({ token }: { token: string }) {
 
   return (
     <div className="space-y-4">
-      {/* Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {[
-          { label: 'Konteineri', value: String(skipOrders.length), icon: Trash2 },
-          { label: 'Materiālu pasūtījumi', value: String(matOrders.length), icon: Package },
-          { label: 'Kopā iztērēts', value: fmtMoney(totalSpent), icon: Banknote },
-        ].map(({ label, value, icon: Icon }) => (
-          <div key={label} className="rounded-xl border bg-card p-4">
-            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <Icon className="size-4" />
-              {label}
-            </div>
-            <p className="text-xl font-bold">{value}</p>
-          </div>
-        ))}
+      {/* QUICK STATS */}
+      <div className="flex items-center gap-8 sm:gap-12 py-2 overflow-x-auto no-scrollbar">
+        <QuickStat value={String(skipOrders.length)} label="Konteineri" />
+        <QuickStat value={String(matOrders.length)} label="Materiāli" />
+        <QuickStat value={fmtMoney(totalSpent)} label="Kopā iztērēts" />
       </div>
 
       {/* Tabs + refresh */}
@@ -1419,63 +1400,81 @@ function BuyerView({ token }: { token: string }) {
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
-                  <th className="px-4 py-3 text-left font-medium">Pasūtījums</th>
-                  <th className="px-4 py-3 text-left font-medium">Statuss</th>
-                  <th className="px-4 py-3 text-left font-medium">Konteiners</th>
-                  <th className="px-4 py-3 text-left font-medium">Atkritumu veids</th>
-                  <th className="px-4 py-3 text-left font-medium">Adrese</th>
-                  <th className="px-4 py-3 text-left font-medium">Piegādes datums</th>
-                  <th className="px-4 py-3 text-right font-medium">Cena</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {skipOrders.map((o) => {
-                  const st = SKIP_STATUS[o.status] ?? {
-                    label: o.status,
-                    bg: '#f3f4f6',
-                    text: '#374151',
-                  };
-                  return (
-                    <tr key={o.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3">
-                        <p className="font-mono font-semibold text-xs">#{o.orderNumber}</p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadgeHex cfg={st} />
-                      </td>
-                      <td className="px-4 py-3 font-medium">
-                        {SKIP_SIZE_LABEL[o.skipSize] ?? o.skipSize}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {o.wasteCategory.replace(/_/g, ' ')}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-start gap-1.5 text-xs">
-                          <MapPin className="size-3 text-muted-foreground mt-0.5 shrink-0" />
-                          <span>{o.location}</span>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
+              <span>{skipOrders.length} konteineri</span>
+            </div>
+            {skipOrders.map((o) => {
+              const st = SKIP_STATUS[o.status] ?? {
+                label: o.status,
+                bg: '#f3f4f6',
+                text: '#374151',
+              };
+              return (
+                <div
+                  key={o.id}
+                  className="group block relative rounded-2xl bg-transparent hover:bg-muted/40 active:bg-muted/60 transition-all duration-200 py-1 sm:p-2 -mx-2 sm:-mx-4"
+                >
+                  {/* Header row */}
+                  <div className="flex items-center justify-between px-4 py-2 sm:px-5 pb-1">
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
+                        #{o.orderNumber}
+                      </span>
+                    </div>
+                    <div
+                      className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                      style={{ backgroundColor: st.bg, color: st.text }}
+                    >
+                      {st.label}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-black/[0.04] p-4 sm:p-5 gap-4 sm:gap-6">
+                    {/* Skip Info */}
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-baseline justify-between mb-2">
+                        <h3 className="font-medium text-base">
+                          {SKIP_SIZE_LABEL[o.skipSize] ?? o.skipSize}
+                        </h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground capitalize">
+                        {o.wasteCategory.replace(/_/g, ' ').toLowerCase()}
+                      </p>
+                    </div>
+
+                    {/* Timeline */}
+                    <div className="flex-[1.5] space-y-4">
+                      <div className="relative pl-6">
+                        <div className="absolute left-[11px] top-2 bottom-2 w-[1px] bg-black/10" />
+                        
+                        {/* Delivery */}
+                        <div className="relative">
+                          <div className="absolute left-[-24px] top-1.5 size-2 rounded-full border-2 border-emerald-500 bg-white ring-4 ring-white shadow-sm" />
+                          <p className="text-xs font-medium text-muted-foreground mb-0.5">Adrese • {fmtDate(o.deliveryDate)}</p>
+                          <p className="text-sm font-medium text-foreground pr-8">
+                            {o.location || '—'}
+                          </p>
                         </div>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1.5">
-                          <CalendarDays className="size-3" />
-                          {fmtDate(o.deliveryDate)}
+                      </div>
+                    </div>
+
+                    {/* Financials */}
+                    <div className="flex-1 flex flex-col justify-between pt-4 sm:pt-0">
+                      <div className="flex flex-row sm:flex-col justify-between sm:justify-start items-center sm:items-end gap-1">
+                        <span className="text-sm text-muted-foreground sm:text-right">Cena</span>
+                        <div className="text-lg font-bold tabular-nums">
+                          €{o.price}{' '}
+                          <span className="text-sm font-normal text-muted-foreground">
+                            {o.currency}
+                          </span>
                         </div>
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold tabular-nums">
-                        €{o.price}{' '}
-                        <span className="text-xs font-normal text-muted-foreground">
-                          {o.currency}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )
       ) : /* Material orders table */
@@ -1500,93 +1499,108 @@ function BuyerView({ token }: { token: string }) {
           </Link>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
-                <th className="px-4 py-3 text-left font-medium">Pasūtījums</th>
-                <th className="px-4 py-3 text-left font-medium">Statuss</th>
-                <th className="px-4 py-3 text-left font-medium">Materiāls</th>
-                <th className="px-4 py-3 text-left font-medium">Daudzums</th>
-                <th className="px-4 py-3 text-left font-medium">Piegādes adrese</th>
-                <th className="px-4 py-3 text-left font-medium">Datums</th>
-                <th className="px-4 py-3 text-right font-medium">Summa</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {matOrders.map((o) => {
-                const st = ORDER_STATUS[o.status] ?? {
-                  label: o.status,
-                  bg: '#f3f4f6',
-                  text: '#374151',
-                };
-                const item = o.items?.[0];
-                return (
-                  <tr key={o.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3">
-                      <p className="font-mono font-semibold text-xs">#{o.orderNumber}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadgeHex cfg={st} />
-                    </td>
-                    <td className="px-4 py-3 font-medium">{item?.material?.name ?? '—'}</td>
-                    <td className="px-4 py-3 text-xs">
-                      {item ? `${item.quantity} ${item.unit}` : '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-start gap-1.5 text-xs">
-                        <MapPin className="size-3 text-muted-foreground mt-0.5 shrink-0" />
-                        <span>{o.deliveryAddress || o.deliveryCity || '—'}</span>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
+            <span>{matOrders.length} pasūtījumi</span>
+          </div>
+          {matOrders.map((o) => {
+            const st = ORDER_STATUS[o.status] ?? {
+              label: o.status,
+              bg: '#f3f4f6',
+              text: '#374151',
+            };
+            const item = o.items?.[0];
+            return (
+              <div
+                key={o.id}
+                className="group block relative rounded-2xl bg-transparent hover:bg-muted/40 active:bg-muted/60 transition-all duration-200 py-1 sm:p-2 -mx-2 sm:-mx-4"
+              >
+                {/* Header row */}
+                <div className="flex items-center justify-between px-4 py-2 sm:px-5 pb-1">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
+                      #{o.orderNumber}
+                    </span>
+                  </div>
+                  <div
+                    className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                    style={{ backgroundColor: st.bg, color: st.text }}
+                  >
+                    {st.label}
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-black/[0.04] p-4 sm:p-5 gap-4 sm:gap-6">
+                  {/* Material Info */}
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-baseline justify-between mb-2">
+                      <h3 className="font-medium text-base">
+                        {item?.material?.name ?? '—'}
+                      </h3>
+                      {item && (
+                        <span className="text-sm font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md">
+                          {item.quantity} {item.unit}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Timeline */}
+                  <div className="flex-[1.5] space-y-4">
+                    <div className="relative pl-6">
+                      <div className="absolute left-[11px] top-2 bottom-2 w-[1px] bg-black/10" />
+                      
+                      {/* Delivery */}
+                      <div className="relative">
+                        <div className="absolute left-[-24px] top-1.5 size-2 rounded-full border-2 border-emerald-500 bg-white ring-4 ring-white shadow-sm" />
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">Adrese • {fmtDate(o.deliveryDate)}</p>
+                        <p className="text-sm font-medium text-foreground pr-8">
+                          {o.deliveryAddress || o.deliveryCity || '—'}
+                        </p>
+                        {(() => {
+                          const driver = o.transportJobs?.find(
+                            (j) =>
+                              j.status === 'EN_ROUTE_DELIVERY' ||
+                              j.status === 'AT_DELIVERY' ||
+                              j.status === 'LOADED',
+                          )?.driver;
+                          if (!driver) return null;
+                          return (
+                            <div className="mt-2 flex items-center gap-1.5">
+                              <User className="size-3 text-blue-500 shrink-0" />
+                              <span className="text-xs text-blue-700 font-medium">
+                                {driver.firstName} {driver.lastName}
+                              </span>
+                              {driver.phone && (
+                                <a
+                                  href={`tel:${driver.phone}`}
+                                  className="flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-100 transition-colors"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Phone className="size-3" />
+                                  Zvanīt
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
-                      {/* Driver contact when in transit */}
-                      {(() => {
-                        const driver = o.transportJobs?.find(
-                          (j) =>
-                            j.status === 'EN_ROUTE_DELIVERY' ||
-                            j.status === 'AT_DELIVERY' ||
-                            j.status === 'LOADED',
-                        )?.driver;
-                        if (!driver) return null;
-                        return (
-                          <div className="mt-1.5 flex items-center gap-1.5">
-                            <User className="size-3 text-blue-500 shrink-0" />
-                            <span className="text-xs text-blue-700 font-medium">
-                              {driver.firstName} {driver.lastName}
-                            </span>
-                            {driver.phone && (
-                              <a
-                                href={`tel:${driver.phone}`}
-                                className="flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-100 transition-colors"
-                              >
-                                <Phone className="size-3" />
-                                Zvanīt
-                              </a>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {fmtDate(o.deliveryDate)}
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold tabular-nums">
-                      {fmtMoney(o.total)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot>
-              <tr className="border-t bg-muted/40 text-xs font-semibold">
-                <td colSpan={6} className="px-4 py-2 text-muted-foreground">
-                  {matOrders.length} pasūtījumi
-                </td>
-                <td className="px-4 py-2 text-right tabular-nums">
-                  {fmtMoney(matOrders.reduce((s, o) => s + o.total, 0))}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
+                    </div>
+                  </div>
+
+                  {/* Financials */}
+                  <div className="flex-1 flex flex-col justify-between pt-4 sm:pt-0">
+                    <div className="flex flex-row sm:flex-col justify-between sm:justify-start items-center sm:items-end gap-1">
+                      <span className="text-sm text-muted-foreground sm:text-right">Summa</span>
+                      <div className="text-lg font-bold tabular-nums">
+                        {fmtMoney(o.total)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -1614,9 +1628,12 @@ export default function OrdersPage() {
       : 'Jūsu konteineru un materiālu pasūtījumi reāllaikā';
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="w-full h-full p-4 sm:p-6 lg:p-8 pb-20 space-y-8 max-w-[1400px] mx-auto">
       {/* Header */}
-      <PageHeader title={title} description={subtitle} />
+      <div>
+        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">{title}</h1>
+        <p className="text-muted-foreground mt-2 text-sm sm:text-base max-w-xl">{subtitle}</p>
+      </div>
 
       {/* Role-aware content */}
       {isCarrier ? (

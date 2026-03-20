@@ -5,13 +5,12 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Map, { Marker, Popup } from 'react-map-gl/mapbox';
-import type { MapRef } from '@vis.gl/react-mapbox';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import { GoogleMap, InfoWindowF, MarkerF, useJsApiLoader } from '@react-google-maps/api';
 import { useRouter } from 'next/navigation';
 import { type ApiTransportJob } from '@/lib/api';
+import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 
-const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
+const GOOGLE_KEY = getGoogleMapsPublicKey();
 
 // Pin color by status
 const STATUS_PIN: Record<string, string> = {
@@ -66,7 +65,11 @@ interface FleetMapProps {
 export function FleetMap({ jobs }: FleetMapProps) {
   const router = useRouter();
   const [selected, setSelected] = useState<ApiTransportJob | null>(null);
-  const mapRef = useRef<MapRef | null>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const { isLoaded } = useJsApiLoader({
+    id: 'b3hub-google-maps',
+    googleMapsApiKey: GOOGLE_KEY,
+  });
 
   const mappable = useMemo(
     () =>
@@ -79,30 +82,26 @@ export function FleetMap({ jobs }: FleetMapProps) {
 
   // Auto-fit bounds when jobs change
   useEffect(() => {
-    if (!mapRef.current || mappable.length === 0) return;
-    const map = mapRef.current.getMap();
-    if (!map) return;
+    if (!isLoaded || !mapRef.current || mappable.length === 0) return;
+    const bounds = new window.google.maps.LatLngBounds();
+    mappable.forEach(({ coord }) => bounds.extend(coord));
+    mapRef.current.fitBounds(bounds, 80);
+  }, [isLoaded, mappable]);
 
-    try {
-      // Dynamic import to avoid ssr issues
-      import('mapbox-gl').then(({ LngLatBounds }) => {
-        const bounds = new LngLatBounds();
-        mappable.forEach(({ coord }) => bounds.extend([coord.lng, coord.lat]));
-        if (!bounds.isEmpty()) {
-          map.fitBounds(bounds, { padding: 80, maxZoom: 12, duration: 800 });
-        }
-      });
-    } catch {
-      // ignore
-    }
-  }, [mappable]);
-
-  if (!TOKEN) {
+  if (!GOOGLE_KEY) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center h-96">
         <p className="text-sm text-muted-foreground">
-          Mapbox API atslēga nav konfigurēta (<code>NEXT_PUBLIC_MAPBOX_TOKEN</code>)
+          Google Maps API atslēga nav konfigurēta (<code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code>)
         </p>
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center h-96">
+        <p className="text-sm text-muted-foreground">Karte tiek ielādēta...</p>
       </div>
     );
   }
@@ -116,46 +115,44 @@ export function FleetMap({ jobs }: FleetMapProps) {
   }
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-slate-200" style={{ height: 520 }}>
-      <Map
-        ref={mapRef}
-        initialViewState={{ longitude: 24.1, latitude: 56.95, zoom: 6 }}
-        style={{ width: '100%', height: '100%' }}
-        mapStyle="mapbox://styles/mapbox/light-v11"
-        mapboxAccessToken={TOKEN}
+    <div className="relative rounded-2xl overflow-hidden border border-slate-200" style={{ height: 520 }}>
+      <GoogleMap
+        mapContainerStyle={{ width: '100%', height: '100%' }}
+        center={{ lat: 56.95, lng: 24.1 }}
+        zoom={6}
+        onLoad={(map) => {
+          mapRef.current = map;
+        }}
+        onUnmount={() => {
+          mapRef.current = null;
+        }}
         onClick={() => setSelected(null)}
+        options={{
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: false,
+        }}
       >
         {mappable.map(({ job, coord }) => (
-          <Marker
+          <MarkerF
             key={job.id}
-            longitude={coord.lng}
-            latitude={coord.lat}
-            anchor="center"
+            position={coord}
             onClick={(e) => {
-              e.originalEvent.stopPropagation();
+              e.domEvent?.stopPropagation();
               setSelected(job);
             }}
+            icon={{
+              path: window.google.maps.SymbolPath.CIRCLE,
+              fillColor: STATUS_PIN[job.status] ?? '#64748b',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 2.5,
+              scale: 8,
+            }}
+            title={`${job.jobNumber} · ${STATUS_LV[job.status] ?? job.status}`}
           >
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: '50%',
-                backgroundColor: STATUS_PIN[job.status] ?? '#64748b',
-                border: '2.5px solid white',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-                transition: 'transform 0.15s',
-              }}
-              title={`${job.jobNumber} · ${STATUS_LV[job.status] ?? job.status}`}
-            >
-              🚛
-            </div>
-          </Marker>
+            <span />
+          </MarkerF>
         ))}
 
         {selected &&
@@ -163,13 +160,10 @@ export function FleetMap({ jobs }: FleetMapProps) {
             const coord = jobCoord(selected);
             if (!coord) return null;
             return (
-              <Popup
-                longitude={coord.lng}
-                latitude={coord.lat}
-                anchor="bottom"
-                onClose={() => setSelected(null)}
-                closeOnClick={false}
-                maxWidth="240px"
+              <InfoWindowF
+                position={coord}
+                onCloseClick={() => setSelected(null)}
+                options={{ maxWidth: 240 }}
               >
                 <div className="p-1 space-y-1.5">
                   <div className="flex items-center gap-2">
@@ -202,10 +196,10 @@ export function FleetMap({ jobs }: FleetMapProps) {
                     Skatīt Detaļas →
                   </button>
                 </div>
-              </Popup>
+              </InfoWindowF>
             );
           })()}
-      </Map>
+      </GoogleMap>
 
       {/* Legend */}
       <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 px-3 py-2 shadow-sm">

@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "config": {
-        "googleMapsApiKey": "AIzaSyBNIZk1VBorD3kU02BNjz_2m4Dlek_gsx8"
+        "googleMapsApiKey": ""
       },
       "infoPlist": {
         "NSAppTransportSecurity": {
@@ -33,7 +33,7 @@
     "android": {
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyBNIZk1VBorD3kU02BNjz_2m4Dlek_gsx8"
+          "apiKey": ""
         }
       },
       "adaptiveIcon": {

@@ -50,13 +50,14 @@ import type { CameraRefHandle } from '@/components/map';
 import { Marker } from 'react-native-maps';
 import { t } from '@/lib/translations';
 import { formatDateNumeric } from '@/lib/format';
+import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const ACCENT = '#111827';
 const RIGA: [number, number] = [24.1052, 56.9496];
 const SCREEN_H = Dimensions.get('window').height;
-const GOOGLE_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
+const GOOGLE_KEY = getGoogleMapsPublicKey();
 
 const cs = t.carrierSkips;
 

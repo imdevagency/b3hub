@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, LocateFixed, MapPin, X } from 'lucide-react';
+import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 
 // ── Latvian city suggestions for fallback autocomplete ─────────────────────────
 
@@ -62,7 +63,7 @@ export function Step2Address({ value, onAddressChange, onNext, onBack }: Props) 
   const googleInputRef = useRef<HTMLInputElement>(null);
 
   // ── Google Places Autocomplete (if API key is available) ────────────────────
-  const googleKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
+  const googleKey = getGoogleMapsPublicKey();
 
   // Declared before the effect below to satisfy no-use-before-define
   function initAutocomplete() {

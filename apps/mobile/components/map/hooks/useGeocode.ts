@@ -14,8 +14,9 @@
  *   const suggestions = await forwardGeocode('Brīvības iela');
  */
 import { useState, useCallback } from 'react';
+import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 
-const GOOGLE_KEY = 'AIzaSyBNIZk1VBorD3kU02BNjz_2m4Dlek_gsx8';
+const GOOGLE_KEY = getGoogleMapsPublicKey();
 const GEOCODE_BASE = 'https://maps.googleapis.com/maps/api/geocode/json';
 const AUTOCOMPLETE_BASE = 'https://maps.googleapis.com/maps/api/place/autocomplete/json';
 const PLACE_DETAILS_BASE = 'https://maps.googleapis.com/maps/api/place/details/json';

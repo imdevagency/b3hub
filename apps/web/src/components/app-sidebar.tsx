@@ -17,7 +17,6 @@ import {
   Building2,
   CalendarClock,
   Car,
-  ChevronRight,
   ClipboardList,
   Clock3,
   FileQuestion,
@@ -50,7 +49,6 @@ import {
 } from '@/lib/api';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   Sidebar,
   SidebarContent,
@@ -61,9 +59,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
 
@@ -77,11 +72,6 @@ type NavSection = {
 
 const MAX_RECENT_ITEMS = 4;
 
-const ROLE_HOME: Record<Mode, string> = {
-  BUYER: '/dashboard/buyer',
-  SUPPLIER: '/dashboard/supplier',
-  CARRIER: '/dashboard/transporter',
-};
 
 const ROLE_NAV: Record<Mode, NavSection[]> = {
   BUYER: [
@@ -92,8 +82,6 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       items: [
         { label: 'Informācijas Panelis', href: '/dashboard/buyer', icon: LayoutDashboard },
         { label: 'Materiālu Katalogs', href: '/dashboard/catalog', icon: Package },
-        { label: 'Pasūtīt', href: '/dashboard/order', icon: PackagePlus },
-        { label: 'Grozs', href: '/dashboard/checkout', icon: ShoppingCart },
       ],
     },
     {
@@ -110,21 +98,12 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
     },
     {
       id: 'buyer-finance',
-      label: 'Finanses un Dokumenti',
+      label: 'Dokumenti un Finanses',
       icon: FolderOpen,
       items: [
         { label: 'Rēķini', href: '/dashboard/invoices', icon: Receipt },
         { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
         { label: 'Sertifikāti', href: '/dashboard/certificates', icon: Award },
-      ],
-    },
-    {
-      id: 'buyer-comms',
-      label: 'Saziņa',
-      icon: Bell,
-      items: [
-        { label: 'Pazņojumi', href: '/dashboard/notifications', icon: Bell },
-        { label: 'Čats', href: '/dashboard/chat', icon: MessageSquare },
       ],
     },
   ],
@@ -150,13 +129,12 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
     },
     {
       id: 'supplier-business',
-      label: 'Bizness',
+      label: 'Bizness un Saziņa',
       icon: Banknote,
       items: [
         { label: 'Ieņēmumi', href: '/dashboard/supplier/earnings', icon: Banknote },
         { label: 'Atsauksmes', href: '/dashboard/reviews', icon: Star },
         { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
-        { label: 'Pazņojumi', href: '/dashboard/notifications', icon: Bell },
       ],
     },
   ],
@@ -183,12 +161,10 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
     },
     {
       id: 'carrier-business',
-      label: 'Finanses un Saziņa',
+      label: 'Finanses un Dokumenti',
       icon: Banknote,
       items: [
         { label: 'Ienākumi', href: '/dashboard/transporter/earnings', icon: Banknote },
-        { label: 'Pazņojumi', href: '/dashboard/notifications', icon: Bell },
-        { label: 'Čats', href: '/dashboard/chat', icon: MessageSquare },
         { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
       ],
     },
@@ -262,25 +238,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     return sections;
   }, [activeMode, user]);
 
-  const [openSections, setOpenSections] = React.useState<Record<string, boolean>>({});
   const [recentHrefs, setRecentHrefs] = React.useState<string[]>([]);
-
-  React.useEffect(() => {
-    setOpenSections((previous) => {
-      const next = { ...previous };
-      for (const section of navSections) {
-        const hasActiveItem = section.items.some((item) => isRouteActive(item.href));
-        if (hasActiveItem) {
-          next[section.id] = true;
-          continue;
-        }
-        if (next[section.id] === undefined) {
-          next[section.id] = false;
-        }
-      }
-      return next;
-    });
-  }, [navSections, isRouteActive]);
 
   const navLookup = React.useMemo(() => {
     const map = new Map<string, NavItem>();
@@ -434,14 +392,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     };
   }, [activeMode, token, user?.companyRole, user?.permManageOrders, user?.userType]);
 
-  const sectionBadgeCountById = React.useMemo<Record<string, number>>(() => {
-    return {
-      'buyer-comms': badgeCounts.notifications,
-      'supplier-workspace': badgeCounts.openRfqs,
-      'carrier-jobs': badgeCounts.activeJobs,
-    };
-  }, [badgeCounts.activeJobs, badgeCounts.notifications, badgeCounts.openRfqs]);
-
   const itemBadgeCountByHref = React.useMemo<Record<string, number>>(() => {
     const map: Record<string, number> = {
       '/dashboard/notifications': badgeCounts.notifications,
@@ -495,183 +445,184 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
-        {recentItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Nesen Atvērtais</SidebarGroupLabel>
-            <SidebarMenu>
-              {recentItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    tooltip={item.label}
-                    isActive={isRouteActive(item.href)}
-                  >
-                    <Link href={item.href}>
-                      <Clock3 />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroup>
-        )}
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Izvēlne</SidebarGroupLabel>
-          <SidebarMenu>
-            {navSections.map((section) => {
-              const hasActiveItem = section.items.some((item) => isRouteActive(item.href));
-              return (
-                <Collapsible
-                  key={section.id}
-                  open={Boolean(openSections[section.id])}
-                  onOpenChange={(isOpen) =>
-                    setOpenSections((previous) => ({
-                      ...previous,
-                      [section.id]: isOpen,
-                    }))
-                  }
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton
-                        tooltip={section.label}
-                        isActive={hasActiveItem}
-                        aria-label={section.label}
-                      >
-                        <section.icon />
-                        <span>{section.label}</span>
-                        {renderBadge(sectionBadgeCountById[section.id] ?? 0)}
-                        <ChevronRight className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {section.items.map((item) => (
-                          <SidebarMenuSubItem key={item.label}>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={isRouteActive(item.href)}
-                              aria-label={item.label}
-                            >
-                              <Link href={item.href}>
-                                <item.icon />
-                                <span>{item.label}</span>
-                                {renderBadge(itemBadgeCountByHref[item.href] ?? 0)}
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
-              );
-            })}
-          </SidebarMenu>
-        </SidebarGroup>
-
-        {/* Company management */}
-        {user?.isCompany && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Uzņēmums</SidebarGroupLabel>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  tooltip="Uzņēmuma profils"
-                  isActive={pathname === '/dashboard/company'}
-                >
-                  <Link href="/dashboard/company">
-                    <Building2 />
-                    <span>Uzņēmuma profils</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              {(user.companyRole === 'OWNER' || user.companyRole === 'MANAGER') && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    tooltip="Komanda"
-                    isActive={pathname === '/dashboard/company/team'}
-                  >
-                    <Link href="/dashboard/company/team">
-                      <Users />
-                      <span>Komanda</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-            </SidebarMenu>
-          </SidebarGroup>
-        )}
-
-        {/* Admin section */}
-        {user?.userType === 'ADMIN' && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Administrācija</SidebarGroupLabel>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  tooltip="Pārskats"
-                  isActive={pathname === '/dashboard/admin'}
-                >
-                  <Link href="/dashboard/admin">
-                    <LayoutDashboard />
-                    <span>Pārskats</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  tooltip="Lietotāji"
-                  isActive={pathname === '/dashboard/admin/users'}
-                >
-                  <Link href="/dashboard/admin/users">
-                    <Users />
-                    <span>Lietotāji</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  tooltip="Piegādātāju pieteikumi"
-                  isActive={pathname === '/dashboard/admin/applications'}
-                >
-                  <Link href="/dashboard/admin/applications">
-                    <ShieldCheck />
-                    <span>Pieteikumi</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroup>
-        )}
-
-        {/* Settings */}
-        <SidebarGroup className="mt-auto">
-          <SidebarMenu>
-            <SidebarMenuItem>
+              <SidebarContent>
+          <div className="px-3 pt-4 pb-2 space-y-4">
+            {/* Primary Actions based on Mode */}
+            {activeMode === 'BUYER' && (
               <SidebarMenuButton
                 asChild
-                tooltip="Iestatījumi"
-                isActive={pathname === '/dashboard/settings'}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground w-full justify-center shadow font-semibold h-10"
               >
-                <Link href="/dashboard/settings">
-                  <Settings />
-                  <span>Iestatījumi</span>
+                <Link href="/dashboard/order">
+                  <PackagePlus className="mr-2 size-4" />
+                  Jauns Pasūtījums
                 </Link>
               </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroup>
-      </SidebarContent>
+            )}
+            
+            {activeMode === 'SUPPLIER' && (
+              <SidebarMenuButton
+                asChild
+                className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground w-full justify-center shadow font-semibold h-10"
+              >
+                <Link href="/dashboard/materials/new">
+                  <PackagePlus className="mr-2 size-4" />
+                  Pievienot Materiālu
+                </Link>
+              </SidebarMenuButton>
+            )}
+
+            {/* Global Actions (Quick Access) */}
+            <div className="flex items-center gap-1">
+              <SidebarMenuButton
+                asChild
+                tooltip="Paziņojumi"
+                className="flex-1 justify-center relative bg-muted/30 hover:bg-muted/60 h-10"
+                isActive={pathname === '/dashboard/notifications'}
+              >
+                <Link href="/dashboard/notifications">
+                  <Bell className="size-4 text-muted-foreground" />
+                  <span className="sr-only">Paziņojumi</span>
+                  {badgeCounts.notifications > 0 && (
+                    <Badge variant="destructive" className="absolute top-1 right-2 size-4 p-0 flex items-center justify-center text-[9px]">
+                      {badgeCounts.notifications}
+                    </Badge>
+                  )}
+                </Link>
+              </SidebarMenuButton>
+
+              {activeMode === 'BUYER' && (
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Grozs"
+                  className="flex-1 justify-center bg-muted/30 hover:bg-muted/60 h-10"
+                  isActive={pathname === '/dashboard/checkout'}
+                >
+                  <Link href="/dashboard/checkout">
+                    <ShoppingCart className="size-4 text-muted-foreground" />
+                    <span className="sr-only">Grozs</span>
+                  </Link>
+                </SidebarMenuButton>
+              )}
+
+              <SidebarMenuButton
+                asChild
+                tooltip="Čats"
+                className="flex-1 justify-center bg-muted/30 hover:bg-muted/60 h-10"
+                isActive={pathname === '/dashboard/chat'}
+              >
+                <Link href="/dashboard/chat">
+                  <MessageSquare className="size-4 text-muted-foreground" />
+                  <span className="sr-only">Čats</span>
+                </Link>
+              </SidebarMenuButton>
+            </div>
+          </div>
+
+          {recentItems.length > 0 && (
+            <SidebarGroup className="pt-0">
+              <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-muted-foreground/60 tracking-wider">Nesen Atvērtais</SidebarGroupLabel>
+              <SidebarMenu>
+                {recentItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip={item.label}
+                      isActive={isRouteActive(item.href)}
+                      className="font-medium text-muted-foreground hover:text-foreground"
+                    >
+                      <Link href={item.href}>
+                        <Clock3 className="size-4 shrink-0" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroup>
+          )}
+
+          {navSections.map((section) => (
+            <SidebarGroup key={section.id} className="pt-2">
+              <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-muted-foreground/60 tracking-wider pb-1">
+                {section.label}
+              </SidebarGroupLabel>
+              <SidebarMenu>
+                {section.items.map((item) => {
+                  const isActive = isRouteActive(item.href);
+                  return (
+                    <SidebarMenuItem key={item.label}>
+                      <SidebarMenuButton
+                        asChild
+                        tooltip={item.label}
+                        isActive={isActive}
+                        className="font-medium text-muted-foreground hover:text-foreground"
+                      >
+                        <Link href={item.href}>
+                          <item.icon className="size-4 shrink-0" />
+                          <span>{item.label}</span>
+                          {renderBadge(itemBadgeCountByHref[item.href] ?? 0)}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroup>
+          ))}
+
+          {/* Admin section */}
+          {user?.userType === 'ADMIN' && (
+            <SidebarGroup className="pt-2">
+              <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-destructive/80 tracking-wider">Administrācija</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Pārskats" isActive={pathname === '/dashboard/admin'}>
+                    <Link href="/dashboard/admin"><LayoutDashboard className="size-4 shrink-0" /><span>Pārskats</span></Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Lietotāji" isActive={pathname === '/dashboard/admin/users'}>
+                    <Link href="/dashboard/admin/users"><Users className="size-4 shrink-0" /><span>Lietotāji</span></Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Pieteikumi" isActive={pathname === '/dashboard/admin/applications'}>
+                    <Link href="/dashboard/admin/applications"><ShieldCheck className="size-4 shrink-0" /><span>Pieteikumi</span></Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroup>
+          )}
+
+          {/* Unified Settings & Company */}
+          <SidebarGroup className="mt-auto pt-4 pb-2">
+            <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-muted-foreground/60 tracking-wider pb-1">Konta Pārvaldība</SidebarGroupLabel>
+            <SidebarMenu>
+              {user?.isCompany && (
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Uzņēmuma profils" isActive={pathname === '/dashboard/company'}>
+                      <Link href="/dashboard/company"><Building2 className="size-4 shrink-0" /><span>Uzņēmuma profils</span></Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  {(user.companyRole === 'OWNER' || user.companyRole === 'MANAGER') && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild tooltip="Komanda" isActive={pathname === '/dashboard/company/team'}>
+                        <Link href="/dashboard/company/team"><Users className="size-4 shrink-0" /><span>Uzņēmuma komanda</span></Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+                </>
+              )}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Iestatījumi" isActive={pathname === '/dashboard/settings'}>
+                  <Link href="/dashboard/settings"><Settings className="size-4 shrink-0" /><span>Personīgie Iestatījumi</span></Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
+        </SidebarContent>
 
       {/* User + sign out */}
       <SidebarFooter>
