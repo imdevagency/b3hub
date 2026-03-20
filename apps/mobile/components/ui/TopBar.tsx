@@ -48,19 +48,19 @@ function titleFromPath(pathname: string): string {
 
 // ── Role config ───────────────────────────────────────────────────────────────
 
-const ROLE_CFG: Record<AppMode, { icon: React.ReactNode; label: string; desc: string }> = {
+const ROLE_CFG: Record<AppMode, { Icon: React.ElementType; label: string; desc: string }> = {
   buyer: {
-    icon: <ShoppingCart size={20} color="#111827" strokeWidth={2} />,
+    Icon: ShoppingCart,
     label: 'Pircējs',
     desc: 'Pasūtīt materiālus un piegādes',
   },
   seller: {
-    icon: <Store size={20} color="#111827" strokeWidth={2} />,
+    Icon: Store,
     label: 'Pārdevējs',
     desc: 'Pārdot materiālus, cenu piedāvājumi',
   },
   driver: {
-    icon: <Truck size={20} color="#111827" strokeWidth={2} />,
+    Icon: Truck,
     label: 'Vadītājs',
     desc: 'Piegādes darbi un maršruti',
   },
@@ -150,7 +150,7 @@ function RoleSheet({ visible, onClose }: { visible: boolean; onClose: () => void
                 activeOpacity={0.7}
               >
                 <View style={[styles.roleIconWrap, isActive && styles.roleIconWrapActive]}>
-                  {cfg.icon}
+                  <cfg.Icon size={20} color={isActive ? '#ffffff' : '#111827'} strokeWidth={2} />
                 </View>
                 <View style={styles.roleText}>
                   <Text style={[styles.roleLabel, isActive && styles.roleLabelActive]}>
