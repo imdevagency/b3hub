@@ -171,20 +171,24 @@ export interface DriverAvailability {
 
 export const transportApi = {
   transportJobs: {
-    available: (token: string) =>
-      apiFetch<ApiTransportJob[]>('/transport-jobs', {
+    available: async (token: string): Promise<ApiTransportJob[]> => {
+      const res = await apiFetch<{ data: ApiTransportJob[]; pagination: any }>('/transport-jobs', {
         headers: { Authorization: `Bearer ${token}` },
-      }),
+      });
+      return res.data;
+    },
 
     myActive: (token: string) =>
       apiFetch<ApiTransportJob | null>('/transport-jobs/my-active', {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
-    myJobs: (token: string) =>
-      apiFetch<ApiTransportJob[]>('/transport-jobs/my-jobs', {
+    myJobs: async (token: string): Promise<ApiTransportJob[]> => {
+      const res = await apiFetch<{ data: ApiTransportJob[]; pagination: any }>('/transport-jobs/my-jobs', {
         headers: { Authorization: `Bearer ${token}` },
-      }),
+      });
+      return res.data;
+    },
 
     /** Buyer: returns all disposal & freight jobs the current user requested. */
     myRequests: async (token: string): Promise<ApiTransportJob[]> => {
