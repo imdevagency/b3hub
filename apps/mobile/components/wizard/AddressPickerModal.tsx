@@ -32,6 +32,7 @@ import {
   Dimensions,
   Platform,
   KeyboardAvoidingView,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -52,6 +53,12 @@ export type PickedAddress = {
 type Props = {
   visible: boolean;
   title?: string;
+  /** Optional context label describing what we're selecting (e.g. "Iekraušanas vieta" or "Piegādes vieta") */
+  contextLabel?: string;
+  /** Optional icon type: 'from', 'to', or undefined */
+  contextIcon?: 'from' | 'to';
+  /** Optional address to show as context (e.g., previously selected location) */
+  contextAddress?: PickedAddress | null;
   onClose: () => void;
   onConfirm: (result: PickedAddress) => void;
   /** Pre-populate with a previous selection. */
@@ -72,7 +79,16 @@ const RIGA_REGION = {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function AddressPickerModal({ visible, title, onClose, onConfirm, initial }: Props) {
+export function AddressPickerModal({
+  visible,
+  title,
+  contextLabel,
+  contextIcon,
+  contextAddress,
+  onClose,
+  onConfirm,
+  initial,
+}: Props) {
   const insets = useSafeAreaInsets();
   const {
     forwardGeocode,
@@ -82,10 +98,12 @@ export function AddressPickerModal({ visible, title, onClose, onConfirm, initial
   } = useGeocode();
   const mapRef = useRef<MapView>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeSearchText = useRef<string>('');
 
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
   const [showSugs, setShowSugs] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [pin, setPin] = useState<{ latitude: number; longitude: number } | null>(null);
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
@@ -116,6 +134,7 @@ export function AddressPickerModal({ visible, title, onClose, onConfirm, initial
     }
     setSuggestions([]);
     setShowSugs(false);
+    setSearching(false);
   }, [visible, initial]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -140,16 +159,23 @@ export function AddressPickerModal({ visible, title, onClose, onConfirm, initial
   const handleQueryChange = useCallback(
     (text: string) => {
       setQuery(text);
+      activeSearchText.current = text;
+
       if (searchTimer.current) clearTimeout(searchTimer.current);
       if (!text.trim()) {
         setSuggestions([]);
         setShowSugs(false);
+        setSearching(false);
         return;
       }
+      setShowSugs(true);
       searchTimer.current = setTimeout(async () => {
+        setSearching(true);
         const results = await forwardGeocode(text);
+        if (activeSearchText.current !== text) return;
         setSuggestions(results);
-        setShowSugs(results.length > 0);
+        setShowSugs(true);
+        setSearching(false);
       }, 350);
     },
     [forwardGeocode],
@@ -158,6 +184,8 @@ export function AddressPickerModal({ visible, title, onClose, onConfirm, initial
   const handleSuggestionSelect = useCallback(
     async (sug: GeocodeSuggestion) => {
       Keyboard.dismiss();
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+      activeSearchText.current = '';
       setShowSugs(false);
       setResolving(true);
       try {
@@ -233,6 +261,39 @@ export function AddressPickerModal({ visible, title, onClose, onConfirm, initial
           <View style={apm.iconBtn} />
         </View>
 
+        {/* Context card — show what we're selecting FOR */}
+        {(contextLabel || contextAddress) && (
+          <View style={apm.contextCard}>
+            {contextAddress && (
+              <View style={apm.contextSection}>
+                <View style={apm.contextIconWrap}>
+                  {contextIcon === 'from' && <MapPin size={14} color="#059669" />}
+                  {contextIcon === 'to' && <MapPin size={14} color="#dc2626" />}
+                  {!contextIcon && <MapPin size={14} color="#6b7280" />}
+                </View>
+                <View style={apm.contextTextWrap}>
+                  <Text style={apm.contextHint}>
+                    {contextIcon === 'from'
+                      ? 'No šejienes'
+                      : contextIcon === 'to'
+                        ? 'Uz šejieni'
+                        : 'Jau izvēlēts'}
+                  </Text>
+                  <Text style={apm.contextAddressText} numberOfLines={2}>
+                    {contextAddress.address}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {contextLabel && (
+              <View style={apm.contextAction}>
+                <Text style={apm.contextActionText}>{contextLabel}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Map */}
         <View style={{ height: MAP_H }}>
           <MapView
@@ -266,13 +327,6 @@ export function AddressPickerModal({ visible, title, onClose, onConfirm, initial
               <Navigation size={18} color="#fff" />
             )}
           </TouchableOpacity>
-
-          {/* Resolving overlay */}
-          {(resolving || geoLoading) && (
-            <View style={apm.resolveOverlay} pointerEvents="none">
-              <ActivityIndicator color="#111827" />
-            </View>
-          )}
         </View>
 
         {/* Search bar */}
@@ -287,7 +341,6 @@ export function AddressPickerModal({ visible, title, onClose, onConfirm, initial
               onChangeText={handleQueryChange}
               returnKeyType="search"
               autoCorrect={false}
-              onFocus={() => suggestions.length > 0 && setShowSugs(true)}
             />
             {query.length > 0 && (
               <TouchableOpacity
@@ -304,21 +357,36 @@ export function AddressPickerModal({ visible, title, onClose, onConfirm, initial
           </View>
 
           {/* Autocomplete suggestions */}
-          {showSugs && (
+          {showSugs && query.trim().length > 0 && (
             <View style={apm.sugBox}>
-              {suggestions.map((s, i) => (
-                <TouchableOpacity
-                  key={s.id}
-                  style={[apm.sugRow, i < suggestions.length - 1 && apm.sugBorder]}
-                  onPress={() => handleSuggestionSelect(s)}
-                  activeOpacity={0.7}
-                >
-                  <MapPin size={12} color="#6b7280" style={{ marginTop: 2, flexShrink: 0 }} />
-                  <Text style={apm.sugText} numberOfLines={2}>
-                    {s.place_name}
+              {searching ? (
+                <View style={apm.sugStatusRow}>
+                  <ActivityIndicator size="small" color="#6b7280" />
+                  <Text style={apm.sugStatusText}>Meklēju adreses...</Text>
+                </View>
+              ) : suggestions.length === 0 ? (
+                <View style={apm.sugStatusRow}>
+                  <Text style={apm.sugStatusText}>
+                    Adreses netika atrastas. Pamēģini precīzāku ievadi.
                   </Text>
-                </TouchableOpacity>
-              ))}
+                </View>
+              ) : (
+                <ScrollView keyboardShouldPersistTaps="always" style={apm.sugScroll}>
+                  {suggestions.map((s, i) => (
+                    <TouchableOpacity
+                      key={s.id}
+                      style={[apm.sugRow, i < suggestions.length - 1 && apm.sugBorder]}
+                      onPress={() => handleSuggestionSelect(s)}
+                      activeOpacity={0.7}
+                    >
+                      <MapPin size={12} color="#6b7280" style={{ marginTop: 2, flexShrink: 0 }} />
+                      <Text style={apm.sugText} numberOfLines={2}>
+                        {s.place_name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
             </View>
           )}
         </View>
@@ -365,12 +433,66 @@ const apm = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: 52,
-    paddingHorizontal: 4,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f3f4f6',
+    paddingHorizontal: 8,
   },
   iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, fontSize: 16, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: '#111827', letterSpacing: -0.3 },
+
+  // context card — shows what address we're selecting for
+  contextCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  contextSection: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 6,
+  },
+  contextIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+    flexShrink: 0,
+  },
+  contextTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  contextHint: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  contextAddressText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+    lineHeight: 18,
+  },
+  contextAction: {
+    paddingTop: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#e5e7eb',
+  },
+  contextActionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#111827',
+  },
 
   // map overlay buttons
   gpsBtn: {
@@ -389,48 +511,67 @@ const apm = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 5,
   },
-  resolveOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 
   // search
   searchWrap: { paddingHorizontal: 16, paddingTop: 14 },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 14, color: '#111827', padding: 0 },
+  searchBoxFocused: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    paddingVertical: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  searchInput: { flex: 1, fontSize: 15, color: '#111827', padding: 0 },
   sugBox: {
     marginTop: 4,
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     overflow: 'hidden',
+    maxHeight: 240,
     shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
+  },
+  sugScroll: {
+    maxHeight: 240,
   },
   sugRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 13,
     gap: 8,
   },
+  sugStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  sugStatusText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#6b7280',
+    lineHeight: 18,
+  },
   sugBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#f3f4f6' },
-  sugText: { flex: 1, fontSize: 13, color: '#374151', lineHeight: 18 },
+  sugText: { flex: 1, fontSize: 14, color: '#374151', lineHeight: 20 },
 
   // selected address display
   addressCard: {
@@ -439,29 +580,30 @@ const apm = StyleSheet.create({
     gap: 8,
     marginHorizontal: 16,
     marginTop: 12,
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 14,
+    padding: 14,
   },
-  addressText: { flex: 1, fontSize: 13, color: '#374151', lineHeight: 18 },
+  addressText: { flex: 1, fontSize: 14, color: '#374151', lineHeight: 20, fontWeight: '500' },
 
   // footer
   footer: {
     marginTop: 'auto',
     paddingHorizontal: 20,
     paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#f3f4f6',
   },
   confirmBtn: {
     backgroundColor: '#111827',
-    borderRadius: 14,
-    paddingVertical: 16,
+    borderRadius: 100,
+    paddingVertical: 17,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  confirmBtnDisabled: { backgroundColor: '#f3f4f6' },
-  confirmText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  confirmBtnDisabled: { backgroundColor: '#f3f4f6', shadowOpacity: 0, elevation: 0 },
+  confirmText: { fontSize: 16, fontWeight: '700', color: '#fff', letterSpacing: 0.1 },
   confirmTextDisabled: { color: '#9ca3af' },
 });

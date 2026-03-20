@@ -38,6 +38,15 @@ export interface ApiTransportJob {
   pricePerTonne: number | null;
   currency: string;
   status: TransportJobStatus;
+  acceptedAt?: string | null;
+  statusUpdatedAt?: string | null;
+  slaEscalatedAt?: string | null;
+  slaEscalationStage?: string | null;
+  sla?: {
+    stage: string | null;
+    overdueMinutes: number;
+    isOverdue: boolean;
+  };
   actualWeightKg: number | null;
   pickupPhotoUrl: string | null;
   driverId: string | null;
@@ -68,6 +77,48 @@ export interface JobLocation {
   deliveryLng: number | null;
   deliveryAddress: string | null;
   estimatedArrival: string | null;
+}
+
+export type TransportExceptionType =
+  | 'DRIVER_NO_SHOW'
+  | 'SUPPLIER_NOT_READY'
+  | 'WRONG_MATERIAL'
+  | 'PARTIAL_DELIVERY'
+  | 'REJECTED_DELIVERY'
+  | 'SITE_CLOSED'
+  | 'OVERWEIGHT'
+  | 'OTHER';
+
+export type TransportExceptionStatus = 'OPEN' | 'RESOLVED';
+
+export interface ApiTransportJobException {
+  id: string;
+  transportJobId: string;
+  type: TransportExceptionType;
+  status: TransportExceptionStatus;
+  notes: string;
+  photoUrls: string[];
+  reportedById: string;
+  resolvedById: string | null;
+  resolution: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+export interface TransportDocumentReadiness {
+  transportJobId: string;
+  status: TransportJobStatus;
+  requires: {
+    deliveryProof: boolean;
+    weighingSlip: boolean;
+  };
+  has: {
+    deliveryProof: boolean;
+    weighingSlip: boolean;
+    deliveryNote: boolean;
+  };
+  canMarkDelivered: boolean;
+  missing: string[];
 }
 
 /** Extends ApiTransportJob with a precomputed distance from the anchor coords */
@@ -136,10 +187,12 @@ export const transportApi = {
       }),
 
     /** Buyer: returns all disposal & freight jobs the current user requested. */
-    myRequests: (token: string) =>
-      apiFetch<ApiTransportJob[]>('/transport-jobs/my-requests', {
+    myRequests: async (token: string): Promise<ApiTransportJob[]> => {
+      const res = await apiFetch<{ data: ApiTransportJob[]; pagination: any }>('/transport-jobs/my-requests', {
         headers: { Authorization: `Bearer ${token}` },
-      }),
+      });
+      return res.data || [];
+    },
 
     getOne: (id: string, token: string) =>
       apiFetch<ApiTransportJob>(`/transport-jobs/${id}`, {
@@ -205,6 +258,14 @@ export const transportApi = {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
+    documentReadiness: (id: string, token: string) =>
+      apiFetch<TransportDocumentReadiness>(
+        `/transport-jobs/${id}/document-readiness`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      ),
+
     /** LoadingDock — seller confirms driver has loaded (AT_PICKUP → LOADED). */
     loadingDock: (id: string, token: string, weightKg?: number) =>
       apiFetch<ApiTransportJob>(`/transport-jobs/${id}/loading-dock`, {
@@ -212,6 +273,42 @@ export const transportApi = {
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ...(weightKg != null ? { weightKg } : {}) }),
       }),
+
+    listExceptions: (id: string, token: string) =>
+      apiFetch<ApiTransportJobException[]>(`/transport-jobs/${id}/exceptions`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    reportException: (
+      id: string,
+      dto: {
+        type: TransportExceptionType;
+        notes: string;
+        photoUrls?: string[];
+        requiresDispatchAction?: boolean;
+      },
+      token: string,
+    ) =>
+      apiFetch<ApiTransportJobException>(`/transport-jobs/${id}/exceptions`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(dto),
+      }),
+
+    resolveException: (
+      id: string,
+      exceptionId: string,
+      resolution: string,
+      token: string,
+    ) =>
+      apiFetch<ApiTransportJobException>(
+        `/transport-jobs/${id}/exceptions/${exceptionId}/resolve`,
+        {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ resolution }),
+        },
+      ),
   },
 
   vehicles: {

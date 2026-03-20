@@ -28,6 +28,14 @@ import {
   Trash2,
   AlertTriangle,
   Check,
+  User,
+  Phone,
+  AlignLeft,
+  CreditCard,
+  Weight,
+  Box,
+  Truck,
+  Building2,
   type LucideIcon,
 } from 'lucide-react-native';
 import { useDisposal } from '@/lib/disposal-context';
@@ -69,7 +77,7 @@ const VOLUME_PRESETS: Array<{
   key: string;
   label: string;
   sublabel: string;
-  emoji: string;
+  icon: LucideIcon;
   truckType: DisposalTruckType;
   truckCount: number;
   fromPrice: number;
@@ -78,7 +86,7 @@ const VOLUME_PRESETS: Array<{
     key: 'xs',
     label: 'Neliela',
     sublabel: '~5 m³ / ~4 t',
-    emoji: '🧺',
+    icon: Package,
     truckType: 'TIPPER_SMALL',
     truckCount: 1,
     fromPrice: 89,
@@ -87,7 +95,7 @@ const VOLUME_PRESETS: Array<{
     key: 'sm',
     label: 'Vidēja',
     sublabel: '~10 m³ / ~8 t',
-    emoji: '🏗️',
+    icon: Box,
     truckType: 'TIPPER_SMALL',
     truckCount: 1,
     fromPrice: 89,
@@ -96,7 +104,7 @@ const VOLUME_PRESETS: Array<{
     key: 'md',
     label: 'Liela',
     sublabel: '~18 m³ / ~14 t',
-    emoji: '🚛',
+    icon: Truck,
     truckType: 'TIPPER_LARGE',
     truckCount: 1,
     fromPrice: 149,
@@ -105,7 +113,7 @@ const VOLUME_PRESETS: Array<{
     key: 'lg',
     label: 'Ļoti liela',
     sublabel: '~36 m³ / ~26 t',
-    emoji: '🏭',
+    icon: Building2,
     truckType: 'ARTICULATED_TIPPER',
     truckCount: 2,
     fromPrice: 219,
@@ -149,6 +157,7 @@ export default function DisposalWizard() {
     setTruckCount,
     setDescription,
     setRequestedDate,
+    setConfirmedDisposal,
     reset,
   } = useDisposal();
   const { user, token } = useAuth();
@@ -165,7 +174,23 @@ export default function DisposalWizard() {
         }
       : null,
   );
-  const [selectedWaste, setSelectedWaste] = useState<WasteType | null>(state.wasteType);
+  const [selectedWastes, setSelectedWastes] = useState<WasteType[]>(
+    state.wasteType ? [state.wasteType] : []
+  );
+
+  const toggleWaste = (id: WasteType) => {
+    setSelectedWastes((prev) => {
+      let next;
+      if (prev.includes(id)) {
+        next = prev.filter((x) => x !== id);
+      } else {
+        next = [...prev, id];
+      }
+      const resolvedType = next.length > 1 ? 'MIXED' : (next[0] || null);
+      if (resolvedType) setWasteType(resolvedType);
+      return next;
+    });
+  };
   const [volumeKey, setVolumeKey] = useState<string>('sm');
   const [desc, setDesc] = useState('');
   const today = new Date();
@@ -185,13 +210,15 @@ export default function DisposalWizard() {
     (p: PickedAddress) => {
       setPicked(p);
       setLocation(p.address, p.city, p.lat, p.lng);
-      setStep(2);
     },
     [setLocation],
   );
 
   const goBack = useCallback(() => {
-    if (step === 1) router.back();
+    if (step === 1) {
+      if (router.canGoBack()) router.back();
+      else router.replace('/(buyer)/home' as never);
+    }
     else setStep((s) => (s - 1) as Step);
   }, [step, router]);
 
@@ -229,6 +256,16 @@ export default function DisposalWizard() {
         token,
       );
       const jn = result?.jobNumber ?? '';
+      // Store confirmed disposal in context for access in confirmation screen
+      setConfirmedDisposal({
+        jobNumber: jn,
+        pickupAddress: state.location ?? '',
+        wasteType: state.wasteType,
+        truckType: preset.truckType,
+        truckCount: preset.truckCount,
+        requestedDate: toISO(date),
+        estimatedWeight: truck.capacity * preset.truckCount,
+      });
       reset();
       router.replace({
         pathname: '/disposal/confirmation' as never,
@@ -262,13 +299,12 @@ export default function DisposalWizard() {
     setTruckType,
     setTruckCount,
     setDescription,
-    setRequestedDate,
-    reset,
+    setRequestedDate,    setConfirmedDisposal,    reset,
   ]);
 
   const ctaDisabled =
     (step === 1 && !picked) ||
-    (step === 2 && !selectedWaste) ||
+    (step === 2 && selectedWastes.length === 0) ||
     (step === 3 && !volumeKey) ||
     loading;
 
@@ -281,19 +317,19 @@ export default function DisposalWizard() {
       return;
     }
     if (step === 2) {
-      if (selectedWaste === 'HAZARDOUS') {
+      if (selectedWastes.includes('HAZARDOUS')) {
         Alert.alert('Bīstami atkritumi', 'Sazinieties ar mums tieši.', [{ text: 'Sapratu' }]);
         return;
       }
     }
     setStep((s) => (s + 1) as Step);
-  }, [step, selectedWaste, handleSubmit]);
+  }, [step, selectedWastes, handleSubmit]);
 
   const STEP_TITLES: Record<Step, string> = {
-    1: 'Kur atrodas atkritumi?',
-    2: 'Ko nodot?',
-    3: 'Cik materiāla ir jāizved?',
-    4: 'Kad braukt?',
+    1: 'Kur paņemt atkritumus?',
+    2: 'Kas jāizved?',
+    3: 'Kāds ir apjoms?',
+    4: 'Apstiprini izvešanu',
   };
 
   return (
@@ -303,14 +339,22 @@ export default function DisposalWizard() {
         step={step}
         totalSteps={4}
         onBack={goBack}
-        onClose={() => router.back()}
+        onClose={() => {
+          if (router.canGoBack()) router.back();
+          else router.replace('/(buyer)/home' as never);
+        }}
         ctaLabel={ctaLabel}
         onCTA={onCTA}
         ctaDisabled={ctaDisabled}
         ctaLoading={loading}
       >
         {/* ── Step 1: Location ── */}
-        {step === 1 && <InlineAddressStep picked={picked} onPick={handlePickConfirm} />}
+        {step === 1 && (
+          <InlineAddressStep 
+            picked={picked} 
+            onPick={handlePickConfirm}
+          />
+        )}
 
         {/* ── Step 2: Waste type ── */}
         {step === 2 && (
@@ -321,35 +365,29 @@ export default function DisposalWizard() {
             keyboardShouldPersistTaps="handled"
           >
             <Text style={s.stepSub}>Izvēlieties galveno atkritumu veidu.</Text>
-            <View style={s.wasteGrid}>
+            <View style={s.wasteList}>
               {WASTE_OPTIONS.map((opt) => {
-                const isSel = selectedWaste === opt.id;
+                const isSel = selectedWastes.includes(opt.id);
                 const WasteIcon = opt.Icon;
                 return (
                   <TouchableOpacity
                     key={opt.id}
-                    style={[s.wasteCard, isSel && s.wasteCardSel]}
-                    onPress={() => {
-                      setSelectedWaste(opt.id);
-                      setWasteType(opt.id);
-                      setTimeout(() => setStep(3), 180);
-                    }}
+                    style={[s.wasteRow, isSel && s.wasteRowSel]}
+                    onPress={() => toggleWaste(opt.id)}
                     activeOpacity={0.7}
                   >
-                    {isSel && (
-                      <View style={s.checkBadge}>
-                        <Check size={11} color="#fff" />
-                      </View>
-                    )}
-                    <WasteIcon
-                      size={26}
-                      color={isSel ? '#fff' : '#6b7280'}
-                      style={{ marginBottom: 6 }}
-                    />
-                    <Text style={[s.wasteLabel, isSel && s.wasteLabelSel]}>{opt.label}</Text>
-                    <Text style={[s.wasteDesc, isSel && s.wasteDescSel]} numberOfLines={2}>
-                      {opt.desc}
-                    </Text>
+                    <View style={{ marginRight: 16 }}>
+                      <WasteIcon size={24} color={isSel ? '#111827' : '#6b7280'} strokeWidth={1.5} />
+                    </View>
+                    
+                    <View style={s.wasteInfo}>
+                      <Text style={[s.wasteLabel, isSel && { color: '#000' }]}>{opt.label}</Text>
+                      <Text style={[s.wasteDesc, isSel && { color: '#4b5563' }]}>{opt.desc}</Text>
+                    </View>
+
+                    <View style={[s.checkboxOuter, isSel && s.checkboxOuterSel]}>
+                      {isSel && <Check size={14} color="#fff" strokeWidth={3} />}
+                    </View>
                   </TouchableOpacity>
                 );
               })}
@@ -365,40 +403,42 @@ export default function DisposalWizard() {
             showsVerticalScrollIndicator={false}
           >
             <Text style={s.stepSub}>Izvēlieties aptuvenu apjomu.</Text>
-            {selectedWaste === 'HAZARDOUS' && (
+            {selectedWastes.includes('HAZARDOUS') && (
               <View style={s.hazardRow}>
                 <AlertTriangle size={14} color="#b91c1c" />
                 <Text style={s.hazardText}>Bīstamu atkritumu nodošana jāsaskaņo atsevišķi!</Text>
               </View>
             )}
-            <View style={s.volGrid}>
+            <View style={s.volList}>
               {VOLUME_PRESETS.map((p) => {
                 const isSel = volumeKey === p.key;
+                const Icon = p.icon;
                 return (
                   <TouchableOpacity
                     key={p.key}
-                    style={[s.volCard, isSel && s.volCardSel]}
+                    style={[s.volRow, isSel && s.volRowSel]}
                     onPress={() => setVolumeKey(p.key)}
                     activeOpacity={0.7}
                   >
-                    {isSel && (
-                      <View style={s.checkBadge}>
-                        <Check size={11} color="#fff" />
-                      </View>
-                    )}
-                    <Text style={s.volEmoji}>{p.emoji}</Text>
-                    <Text style={[s.volLabel, isSel && s.volLabelSel]}>{p.label}</Text>
-                    <Text style={s.volSub}>{p.sublabel}</Text>
-                    <Text style={[s.volPrice, isSel && s.volPriceSel]}>
+                    <View style={s.volRowIconBadge}>
+                      <Icon size={24} color={isSel ? "#111827" : "#6b7280"} strokeWidth={1.5} />
+                    </View>
+                    
+                    <View style={s.volRowInfo}>
+                      <Text style={[s.volRowLabel, isSel && s.volRowLabelSel]}>{p.label}</Text>
+                      <Text style={[s.volRowSub, isSel && s.volRowSubSel]}>{p.sublabel}</Text>
+                    </View>
+
+                    <Text style={[s.volRowPrice, isSel && s.volRowPriceSel]}>
                       no €{p.fromPrice * p.truckCount}
                     </Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
-            <Text style={s.sectionLabel}>Papildu informācija (neobligāti)</Text>
+            <Text style={[s.sectionLabel, { textTransform: 'none', color: '#6b7280', fontSize: 13, marginLeft: 4, marginTop: 12 }]}>Papildu informācija (neobligāti)</Text>
             <TextInput
-              style={[s.input, s.inputMulti]}
+              style={[s.uberInput, s.uberInputMulti, { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1.5, borderColor: '#f3f4f6', paddingHorizontal: 16 }]}
               placeholder="piem., Z0 Grunts, asfalta segums..."
               placeholderTextColor="#9ca3af"
               value={desc}
@@ -446,54 +486,69 @@ export default function DisposalWizard() {
 
             <Text style={s.sectionLabel}>Kopsavilkums</Text>
             <View style={s.summaryCard}>
-              <SumRow icon="📍" label="Adrese" value={picked?.address ?? state.location ?? '—'} />
-              <SumRow
-                icon="♻️"
+              <View style={s.addressRow}>
+                <MapPin size={18} color="#111827" />
+                <Text style={s.addressValue} numberOfLines={2}>
+                  {picked?.address ?? state.location ?? '—'}
+                </Text>
+              </View>
+              <DetailRow
+                icon={Trash2}
                 label="Atkritumu veids"
-                value={selectedWaste ? WASTE_LABELS[selectedWaste] : '—'}
+                value={selectedWastes.length ? selectedWastes.map(w => WASTE_LABELS[w]).join(', ') : '—'}
               />
-              <SumRow
-                icon="🚛"
-                label="Transports"
-                value={`${preset.truckCount} × ${truck.label}`}
+              <DetailRow 
+                icon={Truck}
+                label="Transports" 
+                value={`${preset.truckCount} × ${truck.label}`} 
               />
-              <SumRow
-                icon="📦"
+              <DetailRow
+                icon={Weight}
                 label="Apjoms"
                 value={`${truck.capacity * preset.truckCount} t ≈ ${truck.volume * preset.truckCount} m³`}
               />
-              <SumRow
-                icon="💰"
+              <DetailRow
+                icon={CreditCard}
                 label="Orientējošā cena"
                 value={`no €${preset.fromPrice * preset.truckCount} + PVN 21%`}
+                isLast
               />
             </View>
 
             <Text style={[s.sectionLabel, { marginTop: 20 }]}>Kontaktinformācija</Text>
-            <View style={{ gap: 10, marginBottom: 8 }}>
-              <TextInput
-                style={s.input}
-                placeholder="Kontaktpersona"
-                placeholderTextColor="#9ca3af"
-                value={contactName}
-                onChangeText={setContactName}
-              />
-              <TextInput
-                style={s.input}
-                placeholder="Tālrunis"
-                placeholderTextColor="#9ca3af"
-                keyboardType="phone-pad"
-                value={contactPhone}
-                onChangeText={setContactPhone}
-              />
-              <TextInput
-                style={[s.input, s.inputMulti]}
-                placeholder="Piezīmes un norādījumi (neobligāti)"
-                placeholderTextColor="#9ca3af"
-                multiline
-                value={notes}
-                onChangeText={setNotes}
-              />
+            <View style={{ marginBottom: 8 }}>
+              <View style={s.uberInputWrapper}>
+                <User size={20} color="#9ca3af" style={s.uberInputIcon} />
+                <TextInput
+                  style={s.uberInput}
+                  placeholder="Kontaktpersona"
+                  placeholderTextColor="#9ca3af"
+                  value={contactName}
+                  onChangeText={setContactName}
+                />
+              </View>
+              <View style={s.uberInputWrapper}>
+                <Phone size={20} color="#9ca3af" style={s.uberInputIcon} />
+                <TextInput
+                  style={s.uberInput}
+                  placeholder="Tālrunis"
+                  placeholderTextColor="#9ca3af"
+                  keyboardType="phone-pad"
+                  value={contactPhone}
+                  onChangeText={setContactPhone}
+                />
+              </View>
+              <View style={[s.uberInputWrapper, { alignItems: 'flex-start' }]}>
+                <AlignLeft size={20} color="#9ca3af" style={[s.uberInputIcon, { marginTop: 16 }]} />
+                <TextInput
+                  style={[s.uberInput, s.uberInputMulti]}
+                  placeholder="Piezīmes un norādījumi (neobligāti)"
+                  placeholderTextColor="#9ca3af"
+                  multiline
+                  value={notes}
+                  onChangeText={setNotes}
+                />
+              </View>
             </View>
             <View style={{ height: 16 }} />
           </ScrollView>
@@ -504,16 +559,16 @@ export default function DisposalWizard() {
 }
 
 // ── Summary helper ────────────────────────────────────────────────
-function SumRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+function DetailRow({ label, value, icon: Icon, isLast }: { label: string; value: string; icon?: React.ElementType; isLast?: boolean }) {
   return (
-    <View style={s.sumRow}>
-      <Text style={s.sumIcon}>{icon}</Text>
-      <View style={{ flex: 1 }}>
-        <Text style={s.sumLabel}>{label}</Text>
-        <Text style={s.sumValue} numberOfLines={2}>
-          {value}
-        </Text>
+    <View style={[s.detailRow, isLast && { borderBottomWidth: 0, paddingBottom: 0 }]}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        {Icon && <Icon size={16} color="#6b7280" />}
+        <Text style={s.detailLabel}>{label}</Text>
       </View>
+      <Text style={s.detailValue} numberOfLines={2}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -545,53 +600,110 @@ const s = StyleSheet.create({
   },
 
   // Waste grid
-  wasteGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 8 },
-  wasteCard: {
-    width: '47%',
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-    padding: 14,
-    alignItems: 'flex-start',
-    position: 'relative',
+  // Waste list styles
+  wasteList: {
+    gap: 12,
+    marginBottom: 24,
   },
-  wasteCardSel: { backgroundColor: '#111827', borderColor: '#111827' },
-  wasteLabel: { fontSize: 13, fontWeight: '700', color: '#111827', marginBottom: 2 },
-  wasteLabelSel: { color: '#fff' },
-  wasteDesc: { fontSize: 11, color: '#9ca3af', lineHeight: 15 },
-  wasteDescSel: { color: '#d1d5db' },
-  checkBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#22c55e',
+  wasteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#f3f4f6',
+    padding: 16,
+  },
+  wasteRowSel: {
+    borderColor: '#000',
+    backgroundColor: '#fafafa',
+  },
+  wasteInfo: {
+    flex: 1,
+    paddingRight: 16,
+  },
+  wasteLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  wasteDesc: {
+    fontSize: 14,
+    color: '#6b7280',
+    lineHeight: 20,
+  },
+  checkboxOuter: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  checkboxOuterSel: {
+    backgroundColor: '#000',
+    borderColor: '#000',
   },
 
-  // Volume grid
-  volGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
-  volCard: {
-    width: '47%',
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-    padding: 14,
-    alignItems: 'center',
-    position: 'relative',
+  // Volume list styles
+  volList: {
+    gap: 12,
+    marginBottom: 24,
   },
-  volCardSel: { backgroundColor: '#111827', borderColor: '#111827' },
-  volEmoji: { fontSize: 28, marginBottom: 6 },
-  volLabel: { fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 2 },
-  volLabelSel: { color: '#fff' },
-  volSub: { fontSize: 11, color: '#9ca3af', marginBottom: 4 },
-  volPrice: { fontSize: 13, fontWeight: '700', color: '#111827' },
-  volPriceSel: { color: '#fff' },
+  volRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: '#f3f4f6', 
+  },
+  volRowSel: {
+    borderColor: '#111827',
+    backgroundColor: '#f8fafc',
+  },
+  volRowIconBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  volRowInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  volRowLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    lineHeight: 22,
+  },
+  volRowLabelSel: {
+    color: '#111827',
+  },
+  volRowSub: {
+    fontSize: 13,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  volRowSubSel: {
+    color: '#4b5563',
+  },
+  volRowPrice: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#374151',
+  },
+  volRowPriceSel: {
+    color: '#111827',
+  },
 
   // Hazard
   hazardRow: {
@@ -608,52 +720,84 @@ const s = StyleSheet.create({
   // Day chips
   dayChip: {
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 24,
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-    marginRight: 8,
+    borderColor: '#f3f4f6',
+    marginRight: 10,
     backgroundColor: '#fff',
-    minWidth: 54,
+    minWidth: 70,
   },
   dayChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  dayDow: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
-  dayNum: { fontSize: 20, fontWeight: '700', color: '#111827', marginVertical: 2 },
-  dayMon: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
+  dayDow: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
+  dayNum: { fontSize: 24, fontWeight: '700', color: '#111827', marginVertical: 4 },
+  dayMon: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
   dayActive: { color: '#fff' },
   dayActiveSub: { color: '#d1d5db' },
 
   // Summary card
   summaryCard: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    borderWidth: 1,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1.5,
     borderColor: '#f3f4f6',
     overflow: 'hidden',
+    padding: 16,
   },
-  sumRow: {
+  addressRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 14,
-    borderBottomWidth: 1,
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+    paddingBottom: 16,
+    borderBottomWidth: 1.5,
     borderBottomColor: '#f3f4f6',
+  },
+  addressValue: { flex: 1, fontSize: 15, color: '#111827', fontWeight: '600', lineHeight: 22 },
+  detailRow: {
+    paddingVertical: 12,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#f3f4f6',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 12,
   },
-  sumIcon: { fontSize: 18, marginTop: 1 },
-  sumLabel: { fontSize: 11, color: '#9ca3af', fontWeight: '500', marginBottom: 2 },
-  sumValue: { fontSize: 14, color: '#111827', fontWeight: '600' },
+  detailLabel: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
+  detailValue: {
+    flex: 1,
+    textAlign: 'right',
+    fontSize: 15,
+    color: '#111827',
+    fontWeight: '600',
+  },
 
-  // Inputs
-  input: {
-    backgroundColor: '#f9fafb',
+  uberInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderColor: '#f3f4f6',
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  uberInputWrapFocus: {
+    borderColor: '#000',
+  },
+  uberInputIcon: {
+    marginRight: 12,
+  },
+  uberInput: {
+    flex: 1,
+    paddingVertical: 16,
     fontSize: 15,
     color: '#111827',
   },
-  inputMulti: { height: 80, textAlignVertical: 'top' },
+  uberInputMulti: {
+    height: 100,
+    textAlignVertical: 'top',
+    paddingTop: 16,
+  },
 });

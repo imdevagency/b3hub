@@ -72,6 +72,7 @@ export default function SellerLayout() {
             name="catalog"
             options={{
               title: t.tabs.catalog,
+              href: null,
               tabBarIcon: ({ color }) => <LayoutGrid size={22} color={color} />,
             }}
           />
@@ -79,6 +80,7 @@ export default function SellerLayout() {
             name="earnings"
             options={{
               title: t.tabs.earnings,
+              href: null,
               tabBarIcon: ({ color }) => <Wallet size={22} color={color} />,
             }}
           />

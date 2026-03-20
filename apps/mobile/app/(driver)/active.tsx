@@ -20,7 +20,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { useToast } from '@/components/ui/Toast';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
-import { api, ApiTransportJob, ApiReturnTripJob } from '@/lib/api';
+import {
+  api,
+  ApiTransportJob,
+  ApiReturnTripJob,
+  ApiTransportJobException,
+  TransportExceptionType,
+} from '@/lib/api';
 import { startLocationTracking, stopLocationTracking } from '@/lib/location-task';
 import { JobRouteMap } from '@/components/ui/JobRouteMap';
 import { haptics } from '@/lib/haptics';
@@ -37,6 +43,8 @@ import {
   Camera,
   CheckCircle,
   MessageCircle,
+  AlertTriangle,
+  Clock,
 } from 'lucide-react-native';
 
 // ── Status progression ────────────────────────────────────────────────────────
@@ -65,6 +73,31 @@ const NEXT_STATUS: Record<JobStatus, JobStatus | null> = {
 // Statuses in which return trip suggestions are contextually relevant
 const RETURN_TRIP_STATUSES: JobStatus[] = ['EN_ROUTE_DELIVERY', 'AT_DELIVERY'];
 
+const EXCEPTION_TYPE_OPTIONS: Array<{ value: TransportExceptionType; label: string }> = [
+  { value: 'DRIVER_NO_SHOW', label: 'Šoferis neieradās' },
+  { value: 'SUPPLIER_NOT_READY', label: 'Piegādātājs nav gatavs' },
+  { value: 'WRONG_MATERIAL', label: 'Nepareizs materiāls' },
+  { value: 'PARTIAL_DELIVERY', label: 'Daļēja piegāde' },
+  { value: 'REJECTED_DELIVERY', label: 'Piegāde atteikta' },
+  { value: 'SITE_CLOSED', label: 'Objekts slēgts' },
+  { value: 'OVERWEIGHT', label: 'Pārsniegts svars' },
+  { value: 'OTHER', label: 'Cits' },
+];
+
+const SLA_STAGE_LABEL: Record<string, string> = {
+  PICKUP_DELAY: 'Kavēta iekraušana',
+  DELIVERY_DELAY: 'Kavēta piegāde',
+};
+
+const DOC_LABELS: Record<string, string> = {
+  DELIVERY_PROOF: 'Piegādes apliecinājums',
+  WEIGHING_SLIP: 'Svēršanas biļete',
+};
+
+function formatDocCode(code: string): string {
+  return DOC_LABELS[code] ?? code.replaceAll('_', ' ').toLowerCase();
+}
+
 export default function ActiveJobScreen() {
   const router = useRouter();
   const { token } = useAuth();
@@ -81,6 +114,15 @@ export default function ActiveJobScreen() {
   const [returnTripsLoading, setReturnTripsLoading] = React.useState(false);
   const [returnDismissed, setReturnDismissed] = React.useState(false);
   const [acceptingReturnId, setAcceptingReturnId] = React.useState<string | null>(null);
+  const [deliveryBlockers, setDeliveryBlockers] = React.useState<string[]>([]);
+  const [readinessLoading, setReadinessLoading] = React.useState(false);
+  const [exceptions, setExceptions] = React.useState<ApiTransportJobException[]>([]);
+  const [exceptionsLoading, setExceptionsLoading] = React.useState(false);
+  const [exceptionType, setExceptionType] = React.useState<TransportExceptionType>('OTHER');
+  const [exceptionNotes, setExceptionNotes] = React.useState('');
+  const [reportingException, setReportingException] = React.useState(false);
+  const [resolvingExceptionId, setResolvingExceptionId] = React.useState<string | null>(null);
+  const [resolutionById, setResolutionById] = React.useState<Record<string, string>>({});
 
   // ── Weight ticket modal ──────────────────────────────────────
   const [weightModalVisible, setWeightModalVisible] = React.useState(false);
@@ -123,6 +165,113 @@ export default function ActiveJobScreen() {
       })
       .finally(() => setReturnTripsLoading(false));
   }, [token, job?.status, job?.deliveryLat, job?.deliveryLng]);
+
+  // ── Readiness check before AT_DELIVERY → DELIVERED ───────────
+  useEffect(() => {
+    let active = true;
+    if (!token || !job?.id || job.status !== 'AT_DELIVERY') {
+      setDeliveryBlockers([]);
+      setReadinessLoading(false);
+      return;
+    }
+    setReadinessLoading(true);
+    api.transportJobs
+      .documentReadiness(job.id, token)
+      .then((readiness) => {
+        if (!active) return;
+        setDeliveryBlockers(readiness.missing.filter((doc) => doc !== 'DELIVERY_PROOF'));
+      })
+      .catch(() => {
+        if (!active) return;
+        setDeliveryBlockers([]);
+      })
+      .finally(() => {
+        if (active) setReadinessLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [token, job?.id, job?.status]);
+
+  useEffect(() => {
+    let active = true;
+    if (!token || !job?.id) {
+      setExceptions([]);
+      setExceptionsLoading(false);
+      return;
+    }
+
+    setExceptionsLoading(true);
+    api.transportJobs
+      .listExceptions(job.id, token)
+      .then((data) => {
+        if (!active) return;
+        setExceptions(data);
+      })
+      .catch(() => {
+        if (!active) return;
+        setExceptions([]);
+      })
+      .finally(() => {
+        if (active) setExceptionsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [token, job?.id]);
+
+  const handleReportException = async () => {
+    if (!token || !job) return;
+    const trimmed = exceptionNotes.trim();
+    if (!trimmed) {
+      Alert.alert('Norādiet piezīmes', 'Lūdzu aprakstiet situāciju pirms iesniegšanas.');
+      return;
+    }
+
+    setReportingException(true);
+    try {
+      const created = await api.transportJobs.reportException(
+        job.id,
+        {
+          type: exceptionType,
+          notes: trimmed,
+        },
+        token,
+      );
+      setExceptions((prev) => [created, ...prev]);
+      setExceptionNotes('');
+      haptics.success();
+    } catch (err: unknown) {
+      haptics.error();
+      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās iesniegt izņēmumu');
+    } finally {
+      setReportingException(false);
+    }
+  };
+
+  const handleResolveException = async (exceptionId: string) => {
+    if (!token || !job) return;
+    const resolution = resolutionById[exceptionId]?.trim() || 'Atrisināts aktīvā darba ekrānā';
+    setResolvingExceptionId(exceptionId);
+    try {
+      const resolved = await api.transportJobs.resolveException(
+        job.id,
+        exceptionId,
+        resolution,
+        token,
+      );
+      setExceptions((prev) => prev.map((item) => (item.id === exceptionId ? resolved : item)));
+      setResolutionById((prev) => ({ ...prev, [exceptionId]: '' }));
+      haptics.success();
+    } catch (err: unknown) {
+      haptics.error();
+      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās atrisināt izņēmumu');
+    } finally {
+      setResolvingExceptionId(null);
+    }
+  };
 
   const handleAcceptReturnTrip = (tripId: string, fromCity: string, toCity: string) => {
     if (!token) return;
@@ -241,6 +390,21 @@ export default function ActiveJobScreen() {
   const currentStatus = job.status as JobStatus;
   const currentIndex = STATUS_STEPS.indexOf(currentStatus);
   const nextStatus = NEXT_STATUS[currentStatus];
+  const openExceptions = exceptions.filter((ex) => ex.status === 'OPEN');
+
+  const slaTone = job.sla?.isOverdue
+    ? {
+        bg: '#fef2f2',
+        border: '#fecaca',
+        title: '#991b1b',
+        body: '#7f1d1d',
+      }
+    : {
+        bg: '#eff6ff',
+        border: '#bfdbfe',
+        title: '#1d4ed8',
+        body: '#1e40af',
+      };
 
   const phaseColor =
     currentStatus === 'DELIVERED'
@@ -324,6 +488,19 @@ export default function ActiveJobScreen() {
 
     // AT_DELIVERY → DELIVERED requires delivery proof (photo + signature)
     if (currentStatus === 'AT_DELIVERY') {
+      if (readinessLoading) {
+        Alert.alert('Lūdzu uzgaidiet', 'Pārbaudām dokumentu gatavību.');
+        return;
+      }
+      if (deliveryBlockers.length > 0) {
+        Alert.alert(
+          'Trūkst obligāti dokumenti',
+          `Pirms piegādes apstiprināšanas augšupielādējiet: ${deliveryBlockers
+            .map(formatDocCode)
+            .join(', ')}`,
+        );
+        return;
+      }
       router.push({ pathname: '/delivery-proof', params: { jobId: job.id } });
       return;
     }
@@ -494,6 +671,23 @@ export default function ActiveJobScreen() {
           </View>
         </View>
 
+        {/* SLA widget */}
+        <View style={[styles.slaCard, { backgroundColor: slaTone.bg, borderColor: slaTone.border }]}>
+          <View style={styles.slaHeader}>
+            <View style={styles.slaIconWrap}>
+              <Clock size={16} color={slaTone.title} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.slaTitle, { color: slaTone.title }]}>SLA statuss</Text>
+              <Text style={[styles.slaBody, { color: slaTone.body }]}> 
+                {job.sla?.isOverdue
+                  ? `${SLA_STAGE_LABEL[job.sla.stage ?? ''] ?? 'Kavējums'} · ${job.sla.overdueMinutes} min`
+                  : 'Grafikā, kavējums nav konstatēts'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
         {/* Job details */}
         <View style={styles.detailsCard}>
           <Text style={styles.detailsTitle}>
@@ -630,7 +824,118 @@ export default function ActiveJobScreen() {
             </View>
           )}
 
+        {/* Exceptions widget */}
+        <View style={styles.exceptionCard}>
+          <View style={styles.exceptionHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <AlertTriangle size={17} color="#b45309" />
+              <Text style={styles.exceptionTitle}>Izņēmumi</Text>
+            </View>
+            <View style={styles.exceptionCountPill}>
+              <Text style={styles.exceptionCountPillText}>{openExceptions.length} atvērti</Text>
+            </View>
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.exceptionTypeRow}>
+            {EXCEPTION_TYPE_OPTIONS.map((option) => {
+              const selected = option.value === exceptionType;
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[styles.exceptionTypeChip, selected && styles.exceptionTypeChipActive]}
+                  onPress={() => setExceptionType(option.value)}
+                >
+                  <Text style={[styles.exceptionTypeChipText, selected && styles.exceptionTypeChipTextActive]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          <TextInput
+            style={styles.exceptionInput}
+            multiline
+            value={exceptionNotes}
+            onChangeText={setExceptionNotes}
+            placeholder="Aprakstiet situāciju dispečeram un klientam"
+            placeholderTextColor="#9ca3af"
+          />
+          <TouchableOpacity
+            style={[styles.exceptionReportBtn, reportingException && { opacity: 0.65 }]}
+            onPress={handleReportException}
+            disabled={reportingException}
+          >
+            {reportingException ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.exceptionReportBtnText}>Ziņot par izņēmumu</Text>
+            )}
+          </TouchableOpacity>
+
+          {exceptionsLoading ? (
+            <ActivityIndicator size="small" color="#6b7280" style={{ marginTop: 8 }} />
+          ) : exceptions.length === 0 ? (
+            <Text style={styles.exceptionEmptyText}>Pašlaik nav reģistrētu izņēmumu.</Text>
+          ) : (
+            <View style={styles.exceptionList}>
+              {exceptions.map((item) => {
+                const isOpen = item.status === 'OPEN';
+                return (
+                  <View key={item.id} style={styles.exceptionItem}>
+                    <View style={styles.exceptionItemHead}>
+                      <Text style={styles.exceptionItemType}>{item.type}</Text>
+                      <Text style={[styles.exceptionItemStatus, isOpen ? styles.exceptionOpen : styles.exceptionResolved]}>
+                        {isOpen ? 'ATVĒRTS' : 'ATRISINĀTS'}
+                      </Text>
+                    </View>
+                    <Text style={styles.exceptionItemNotes}>{item.notes}</Text>
+                    {isOpen && (
+                      <>
+                        <TextInput
+                          style={styles.exceptionResolutionInput}
+                          value={resolutionById[item.id] ?? ''}
+                          onChangeText={(value) =>
+                            setResolutionById((prev) => ({ ...prev, [item.id]: value }))
+                          }
+                          placeholder="Atrisinājuma komentārs"
+                          placeholderTextColor="#9ca3af"
+                        />
+                        <TouchableOpacity
+                          style={[
+                            styles.exceptionResolveBtn,
+                            resolvingExceptionId === item.id && { opacity: 0.65 },
+                          ]}
+                          onPress={() => handleResolveException(item.id)}
+                          disabled={resolvingExceptionId === item.id}
+                        >
+                          {resolvingExceptionId === item.id ? (
+                            <ActivityIndicator size="small" color="#111827" />
+                          ) : (
+                            <Text style={styles.exceptionResolveBtnText}>Atzīmēt kā atrisinātu</Text>
+                          )}
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
         {/* Actions */}
+        {currentStatus === 'AT_DELIVERY' && deliveryBlockers.length > 0 && (
+          <View style={styles.readinessWarning}>
+            <Text style={styles.readinessWarningTitle}>Trūkst obligāti dokumenti</Text>
+            <Text style={styles.readinessWarningText}>
+              Piegādi nevar pabeigt, kamēr nav iesniegti visi dokumenti.
+            </Text>
+            <Text style={styles.readinessWarningList}>
+              {deliveryBlockers.map(formatDocCode).join(' • ')}
+            </Text>
+          </View>
+        )}
         <View style={styles.actionsRow}>
           <TouchableOpacity style={styles.navigateBtn} onPress={handleNavigate}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -831,9 +1136,9 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     backgroundColor: '#111827',
     borderWidth: 3,
-    borderColor: '#fecaca',
+    borderColor: '#e5e7eb',
   },
-  routeDotEnd: { backgroundColor: '#111827', borderColor: '#bbf7d0' },
+  routeDotEnd: { backgroundColor: '#111827', borderColor: '#111827' },
   routeLine: { width: 2, height: 20, backgroundColor: '#e5e7eb', marginLeft: 6 },
   routeInfo: { flex: 1 },
   routeLabel: { fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5 },
@@ -849,6 +1154,124 @@ const styles = StyleSheet.create({
   },
   callBtnActive: { backgroundColor: '#111827' },
   callBtnText: { fontSize: 18 },
+
+  slaCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 12,
+  },
+  slaHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  slaIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+  slaTitle: { fontSize: 13, fontWeight: '700' },
+  slaBody: { fontSize: 12, marginTop: 2 },
+
+  exceptionCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    gap: 10,
+  },
+  exceptionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  exceptionTitle: { fontSize: 15, fontWeight: '700', color: '#92400e' },
+  exceptionCountPill: {
+    backgroundColor: '#fef3c7',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  exceptionCountPillText: { fontSize: 11, color: '#92400e', fontWeight: '700' },
+  exceptionTypeRow: { gap: 8, paddingRight: 4 },
+  exceptionTypeChip: {
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#fffbeb',
+  },
+  exceptionTypeChipActive: {
+    backgroundColor: '#f59e0b',
+    borderColor: '#f59e0b',
+  },
+  exceptionTypeChipText: { fontSize: 11, color: '#92400e', fontWeight: '600' },
+  exceptionTypeChipTextActive: { color: '#ffffff' },
+  exceptionInput: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 78,
+    textAlignVertical: 'top',
+    fontSize: 13,
+    color: '#111827',
+    backgroundColor: '#ffffff',
+  },
+  exceptionReportBtn: {
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#b45309',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exceptionReportBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  exceptionEmptyText: { fontSize: 12, color: '#6b7280' },
+  exceptionList: { gap: 10 },
+  exceptionItem: {
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+    borderRadius: 12,
+    padding: 10,
+    gap: 8,
+    backgroundColor: '#fafafa',
+  },
+  exceptionItemHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  exceptionItemType: { fontSize: 12, fontWeight: '700', color: '#111827' },
+  exceptionItemStatus: { fontSize: 10, fontWeight: '800' },
+  exceptionOpen: { color: '#b45309' },
+  exceptionResolved: { color: '#15803d' },
+  exceptionItemNotes: { fontSize: 12, color: '#374151' },
+  exceptionResolutionInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 12,
+    color: '#111827',
+    backgroundColor: '#fff',
+  },
+  exceptionResolveBtn: {
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: '#fef3c7',
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exceptionResolveBtnText: { fontSize: 12, color: '#92400e', fontWeight: '700' },
+
+  readinessWarning: {
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    backgroundColor: '#fef2f2',
+    borderRadius: 14,
+    padding: 12,
+    gap: 4,
+  },
+  readinessWarningTitle: { fontSize: 13, fontWeight: '700', color: '#991b1b' },
+  readinessWarningText: { fontSize: 12, color: '#7f1d1d' },
+  readinessWarningList: { fontSize: 12, color: '#7f1d1d', fontWeight: '600' },
 
   actionsRow: { gap: 10 },
   navigateBtn: {
@@ -883,11 +1306,11 @@ const styles = StyleSheet.create({
 
   // Return trips strip
   returnStrip: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 16,
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
+    borderWidth: 1.5,
+    borderColor: '#111827',
     gap: 2,
   },
   returnStripHeader: {

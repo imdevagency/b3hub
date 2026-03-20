@@ -18,7 +18,7 @@ import {
   TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { MapPin, CheckCircle } from 'lucide-react-native';
+import { CheckCircle, MapPin } from 'lucide-react-native';
 import { useOrder } from '@/lib/order-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -76,7 +76,6 @@ export default function OrderWizard() {
     (p: PickedAddress) => {
       setPicked(p);
       setLocationWithCoords(p.address, p.lat, p.lng);
-      setStep(2);
     },
     [setLocationWithCoords],
   );
@@ -85,7 +84,6 @@ export default function OrderWizard() {
     (waste: SkipWasteCategory) => {
       setSelectedWasteState(waste);
       setWasteCategory(waste);
-      setTimeout(() => setStep(3), 180);
     },
     [setWasteCategory],
   );
@@ -94,13 +92,15 @@ export default function OrderWizard() {
     (size: SkipSize) => {
       setSelectedSizeState(size);
       setSkipSize(size);
-      setTimeout(() => setStep(4), 180);
     },
     [setSkipSize],
   );
 
   const goBack = useCallback(() => {
-    if (step === 1) router.back();
+    if (step === 1) {
+      if (router.canGoBack()) router.back();
+      else router.replace('/(buyer)/home' as never);
+    }
     else setStep((s) => (s - 1) as Step);
   }, [step, router]);
 
@@ -195,14 +195,22 @@ export default function OrderWizard() {
         step={step}
         totalSteps={4}
         onBack={goBack}
-        onClose={() => router.back()}
+        onClose={() => {
+          if (router.canGoBack()) router.back();
+          else router.replace('/(buyer)/home' as never);
+        }}
         ctaLabel={ctaLabel}
         onCTA={onCTA}
         ctaDisabled={ctaDisabled}
         ctaLoading={submitting}
       >
         {/* ── Step 1: Location ── */}
-        {step === 1 && <InlineAddressStep picked={picked} onPick={handlePickConfirm} />}
+        {step === 1 && (
+          <InlineAddressStep
+            picked={picked}
+            onPick={handlePickConfirm}
+          />
+        )}
 
         {/* ── Step 2: Waste type ── */}
         {step === 2 && (
@@ -253,9 +261,13 @@ export default function OrderWizard() {
             {/* Summary */}
             <Text style={[s.sectionLabel, { marginTop: 20 }]}>Kopsavilkums</Text>
             <View style={s.summaryCard}>
-              <SumRow icon="📍" label="Adrese" value={picked?.address ?? state.location ?? '—'} />
-              <SumRow
-                icon="♻️"
+              <View style={s.addressRow}>
+                <MapPin size={14} color="#374151" />
+                <Text style={s.addressValue} numberOfLines={2}>
+                  {picked?.address ?? state.location ?? '—'}
+                </Text>
+              </View>
+              <DetailRow
                 label="Atkritumu veids"
                 value={
                   selectedWaste
@@ -263,14 +275,13 @@ export default function OrderWizard() {
                     : '—'
                 }
               />
-              <SumRow
-                icon="📦"
+              <DetailRow
                 label="Konteinera izmērs"
                 value={
                   selectedSize ? (t.skipHire.step3.sizes[selectedSize]?.label ?? selectedSize) : '—'
                 }
               />
-              <SumRow icon="💰" label="Cena" value={`€${price} + PVN`} />
+              <DetailRow label="Cena" value={`€${price} + PVN`} />
             </View>
 
             {/* Contact */}
@@ -309,16 +320,13 @@ export default function OrderWizard() {
 }
 
 // ── Summary helper ────────────────────────────────────────────────
-function SumRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <View style={s.sumRow}>
-      <Text style={s.sumIcon}>{icon}</Text>
-      <View style={{ flex: 1 }}>
-        <Text style={s.sumLabel}>{label}</Text>
-        <Text style={s.sumValue} numberOfLines={2}>
-          {value}
-        </Text>
-      </View>
+    <View style={s.detailRow}>
+      <Text style={s.detailLabel}>{label}</Text>
+      <Text style={s.detailValue} numberOfLines={2}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -350,13 +358,13 @@ const s = StyleSheet.create({
   dayStrip: { flexGrow: 0 },
   dayChip: {
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 11,
     paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: 1.5,
+    borderRadius: 12,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
     marginRight: 8,
-    backgroundColor: '#fff',
+    backgroundColor: '#f9fafb',
     minWidth: 54,
   },
   dayChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
@@ -367,27 +375,44 @@ const s = StyleSheet.create({
   dayActiveSub: { color: '#9ca3af' },
   summaryCard: {
     backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#f3f4f6',
+    borderColor: '#e5e7eb',
     overflow: 'hidden',
+    padding: 12,
   },
-  sumRow: {
+  addressRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: 14,
-    borderBottomWidth: 1,
+    gap: 8,
+    marginBottom: 10,
+    paddingBottom: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e5e7eb',
+  },
+  addressValue: { flex: 1, fontSize: 14, color: '#111827', fontWeight: '600', lineHeight: 20 },
+  detailRow: {
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#f3f4f6',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 12,
   },
-  sumIcon: { fontSize: 18, marginTop: 1 },
-  sumLabel: { fontSize: 11, color: '#9ca3af', fontWeight: '500', marginBottom: 2 },
-  sumValue: { fontSize: 14, color: '#111827', fontWeight: '600' },
+  detailLabel: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
+  detailValue: {
+    flex: 1,
+    textAlign: 'right',
+    fontSize: 14,
+    color: '#111827',
+    fontWeight: '700',
+  },
   input: {
     backgroundColor: '#f9fafb',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,

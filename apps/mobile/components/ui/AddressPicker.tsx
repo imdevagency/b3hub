@@ -80,6 +80,7 @@ export function AddressPicker({
   const [searchText, setSearchText] = useState('');
   const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeSearchText = useRef<string>('');
 
   // Fly the map camera to given coords
   const flyTo = (newLat: number, newLng: number) => {
@@ -110,13 +111,20 @@ export function AddressPicker({
 
   const onSearchChange = (text: string) => {
     setSearchText(text);
+    activeSearchText.current = text;
     if (searchTimer.current) clearTimeout(searchTimer.current);
     searchTimer.current = setTimeout(() => {
-      forwardGeocode(text).then(setSuggestions);
+      forwardGeocode(text).then((res) => {
+        if (activeSearchText.current === text) {
+          setSuggestions(res);
+        }
+      });
     }, 350);
   };
 
   const onSelectSuggestion = (item: GeocodeSuggestion) => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    activeSearchText.current = '';
     const [pLng, pLat] = item.center;
     setAddress(item.place_name);
     setSearchText(item.place_name);

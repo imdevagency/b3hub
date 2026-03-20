@@ -367,7 +367,7 @@ export default function ProjectDetailScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer standalone topInset={0}>
+      <ScreenContainer standalone bg="#ffffff">
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#111827" />
         </View>
@@ -377,7 +377,7 @@ export default function ProjectDetailScreen() {
 
   if (!contract) {
     return (
-      <ScreenContainer standalone topInset={0}>
+      <ScreenContainer standalone bg="#ffffff">
         <View style={styles.center}>
           <Text style={{ color: '#6b7280' }}>Projekts nav atrasts</Text>
         </View>
@@ -390,7 +390,7 @@ export default function ProjectDetailScreen() {
   const fillColor = pct >= 90 ? '#ef4444' : pct >= 60 ? '#f59e0b' : '#22c55e';
 
   return (
-    <ScreenContainer standalone topInset={0}>
+    <ScreenContainer standalone bg="#ffffff">
       {/* back header */}
       <View style={styles.topBar}>
         <TouchableOpacity

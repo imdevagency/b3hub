@@ -286,7 +286,7 @@ export default function FrameworkContractDetailScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer standalone topInset={0}>
+      <ScreenContainer standalone bg="#ffffff">
         <View style={s.center}>
           <ActivityIndicator color="#111827" size="large" />
         </View>
@@ -296,7 +296,7 @@ export default function FrameworkContractDetailScreen() {
 
   if (!contract) {
     return (
-      <ScreenContainer standalone topInset={0}>
+      <ScreenContainer standalone bg="#ffffff">
         <EmptyState
           icon={<TrendingUp size={28} color="#9ca3af" />}
           title="Līgums nav atrasts"
@@ -319,7 +319,7 @@ export default function FrameworkContractDetailScreen() {
   }`;
 
   return (
-    <ScreenContainer standalone topInset={0}>
+    <ScreenContainer standalone bg="#ffffff">
       <ScreenHeader
         title={contract.title}
         rightSlot={<StatusPill label={status.label} bg={status.bg} color={status.color} size="sm" />}

@@ -18,7 +18,7 @@ import {
   TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { MapPin, Check, ArrowRight, Truck, Weight } from 'lucide-react-native';
+import { Check, Truck, Weight } from 'lucide-react-native';
 import { useTransport } from '@/lib/transport-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -112,7 +112,6 @@ export default function TransportWizard() {
       setPickupPicked(p);
       setPickupStop({ lat: p.lat, lng: p.lng });
       setPickup(p.address, p.city, p.lat, p.lng);
-      setStep(2);
     },
     [setPickup],
   );
@@ -122,13 +121,15 @@ export default function TransportWizard() {
       setDropoffPicked(p);
       setDropoffStop({ lat: p.lat, lng: p.lng });
       setDropoff(p.address, p.city, p.lat, p.lng);
-      setStep(3);
     },
     [setDropoff],
   );
 
   const goBack = useCallback(() => {
-    if (step === 1) router.back();
+    if (step === 1) {
+      if (router.canGoBack()) router.back();
+      else router.replace('/(buyer)/home' as never);
+    }
     else setStep((s) => (s - 1) as Step);
   }, [step, router]);
 
@@ -218,10 +219,10 @@ export default function TransportWizard() {
   }, [step, handleSubmit]);
 
   const STEP_TITLES: Record<Step, string> = {
-    1: 'No kurienes ielādēt?',
-    2: 'Kur izkraut?',
-    3: 'Kāds transportlīdzeklis?',
-    4: 'Kad pārvadāt?',
+    1: 'Kur paņemt kravu?',
+    2: 'Kur piegādāt?',
+    3: 'Izvēlies transportu',
+    4: 'Apstiprini pasūtījumu',
   };
 
   return (
@@ -231,30 +232,30 @@ export default function TransportWizard() {
         step={step}
         totalSteps={4}
         onBack={goBack}
-        onClose={() => router.back()}
+        onClose={() => {
+          if (router.canGoBack()) router.back();
+          else router.replace('/(buyer)/home' as never);
+        }}
         ctaLabel={ctaLabel}
         onCTA={onCTA}
         ctaDisabled={ctaDisabled}
         ctaLoading={submitting}
       >
         {/* ── Step 1: Pickup ── */}
-        {step === 1 && <InlineAddressStep picked={pickupPicked} onPick={handlePickupConfirm} />}
+        {step === 1 && (
+          <InlineAddressStep 
+            picked={pickupPicked} 
+            onPick={handlePickupConfirm}
+          />
+        )}
 
         {/* ── Step 2: Dropoff ── */}
         {step === 2 && (
           <InlineAddressStep
             picked={dropoffPicked}
             onPick={handleDropoffConfirm}
-            banner={
-              pickupPicked ? (
-                <View style={s.refRow}>
-                  <View style={s.refDot} />
-                  <Text style={s.refLabel} numberOfLines={1}>
-                    {pickupPicked.address}
-                  </Text>
-                </View>
-              ) : undefined
-            }
+            contextAddress={pickupPicked ?? undefined}
+            contextIcon="from"
           />
         )}
 
@@ -266,6 +267,18 @@ export default function TransportWizard() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
+            <View style={s.routeLiteCard}>
+              <RouteStops
+                pickup={pickupPicked?.address ?? 'Iekraušanas adrese nav izvēlēta'}
+                dropoff={dropoffPicked?.address ?? 'Izkraušanas adrese nav izvēlēta'}
+              />
+              {route && (
+                <Text style={s.routeMeta}>
+                  {route.distanceKm.toFixed(1)} km · {route.durationLabel}
+                </Text>
+              )}
+            </View>
+
             <Text style={s.sectionLabel}>Transportlīdzekļa veids</Text>
             <View style={{ gap: 10, marginBottom: 20 }}>
               {VEHICLE_OPTIONS.map((v) => {
@@ -292,7 +305,11 @@ export default function TransportWizard() {
                     <Text style={[s.vehiclePrice, isSel && s.vehiclePriceSel]}>
                       no €{v.fromPrice}
                     </Text>
-                    {isSel && <Check size={16} color="#fff" style={{ marginLeft: 8 }} />}
+                    {isSel && (
+                      <View style={s.vehicleCheckBadge}>
+                        <Check size={12} color="#fff" />
+                      </View>
+                    )}
                   </TouchableOpacity>
                 );
               })}
@@ -377,23 +394,28 @@ export default function TransportWizard() {
 
             <Text style={s.sectionLabel}>Maršruts</Text>
             <View style={s.summaryCard}>
-              <SumRow icon="📍" label="Ielāde" value={pickupPicked?.address ?? '—'} />
-              <SumRow icon="🏁" label="Izkraušana" value={dropoffPicked?.address ?? '—'} />
+              <RouteStops
+                pickup={pickupPicked?.address ?? '—'}
+                dropoff={dropoffPicked?.address ?? '—'}
+              />
               {route && (
-                <SumRow
-                  icon="🛣"
-                  label="Distance"
-                  value={`${route.distanceKm.toFixed(1)} km · ${route.durationLabel}`}
-                />
+                <View style={s.summaryMetaRow}>
+                  <Text style={s.summaryMetaText}>
+                    {route.distanceKm.toFixed(1)} km · {route.durationLabel}
+                  </Text>
+                </View>
               )}
-              <SumRow
-                icon="🚛"
+            </View>
+
+            <Text style={[s.sectionLabel, { marginTop: 20 }]}>Pasūtījuma detaļas</Text>
+            <View style={s.detailCard}>
+              <DetailRow
                 label="Auto"
                 value={VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle)?.label ?? '—'}
               />
-              <SumRow icon="📦" label="Krava" value={activeDesc || '—'} />
+              <DetailRow label="Krava" value={activeDesc || '—'} />
               {currentVehiclePrice && (
-                <SumRow icon="💰" label="Orientējošā cena" value={`no €${currentVehiclePrice}`} />
+                <DetailRow label="Orientējošā cena" value={`no €${currentVehiclePrice}`} />
               )}
             </View>
 
@@ -432,16 +454,35 @@ export default function TransportWizard() {
 }
 
 // ── Summary helper ────────────────────────────────────────────────
-function SumRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+function RouteStops({ pickup, dropoff }: { pickup: string; dropoff: string }) {
   return (
-    <View style={s.sumRow}>
-      <Text style={s.sumIcon}>{icon}</Text>
-      <View style={{ flex: 1 }}>
-        <Text style={s.sumLabel}>{label}</Text>
-        <Text style={s.sumValue} numberOfLines={2}>
-          {value}
+    <View style={s.routeStack}>
+      <View style={s.routeRow}>
+        <View style={[s.routeDot, s.routeDotPickup]} />
+        <Text style={s.routeLabel}>Ielāde</Text>
+        <Text style={s.routeValue} numberOfLines={1}>
+          {pickup}
         </Text>
       </View>
+      <View style={s.routeLine} />
+      <View style={s.routeRow}>
+        <View style={[s.routeDot, s.routeDotDropoff]} />
+        <Text style={s.routeLabel}>Izkraušana</Text>
+        <Text style={s.routeValue} numberOfLines={1}>
+          {dropoff}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={s.detailRow}>
+      <Text style={s.detailLabel}>{label}</Text>
+      <Text style={s.detailValue} numberOfLines={2}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -458,6 +499,24 @@ const s = StyleSheet.create({
     letterSpacing: 0.6,
     textTransform: 'uppercase',
     marginBottom: 10,
+  },
+
+  routeLiteCard: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    padding: 12,
+    marginBottom: 18,
+  },
+  routeMeta: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '600',
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#e5e7eb',
   },
 
   // Address cards
@@ -483,32 +542,41 @@ const s = StyleSheet.create({
   vehicleCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    borderWidth: 1.5,
+    backgroundColor: '#fff',
+    borderWidth: 1,
     borderColor: '#e5e7eb',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 14,
   },
   vehicleCardSel: { backgroundColor: '#111827', borderColor: '#111827' },
-  vehicleLabel: { fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 2 },
+  vehicleLabel: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2 },
   vehicleLabelSel: { color: '#fff' },
-  vehicleSub: { fontSize: 12, color: '#9ca3af' },
+  vehicleSub: { fontSize: 12, color: '#9ca3af', fontWeight: '500' },
   vehicleSubSel: { color: '#d1d5db' },
-  vehiclePrice: { fontSize: 13, fontWeight: '700', color: '#111827' },
+  vehiclePrice: { fontSize: 14, fontWeight: '700', color: '#111827' },
   vehiclePriceSel: { color: '#fff' },
+  vehicleCheckBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.24)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
 
   // Cargo chips
   cargoChip: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1.5,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
     marginRight: 8,
-    backgroundColor: '#fff',
+    backgroundColor: '#f9fafb',
   },
   cargoChipSel: { backgroundColor: '#111827', borderColor: '#111827' },
-  cargoText: { fontSize: 13, color: '#374151', fontWeight: '500' },
+  cargoText: { fontSize: 13, color: '#374151', fontWeight: '600' },
   cargoTextSel: { color: '#fff' },
 
   // Weight input
@@ -516,11 +584,11 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f9fafb',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   weightInput: { flex: 1, fontSize: 15, color: '#111827', paddingVertical: 0 },
   weightUnit: { fontSize: 13, color: '#6b7280', marginLeft: 8 },
@@ -528,13 +596,13 @@ const s = StyleSheet.create({
   // Day chips
   dayChip: {
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 11,
     paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: 1.5,
+    borderRadius: 12,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
     marginRight: 8,
-    backgroundColor: '#fff',
+    backgroundColor: '#f9fafb',
     minWidth: 54,
   },
   dayChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
@@ -547,29 +615,95 @@ const s = StyleSheet.create({
   // Summary card
   summaryCard: {
     backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#f3f4f6',
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
+    padding: 12,
+  },
+  routeStack: {
+    gap: 8,
+  },
+  routeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  routeDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  routeDotPickup: { backgroundColor: '#16a34a' },
+  routeDotDropoff: { backgroundColor: '#dc2626' },
+  routeLabel: {
+    width: 68,
+    fontSize: 11,
+    color: '#9ca3af',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  routeValue: {
+    flex: 1,
+    fontSize: 14,
+    color: '#111827',
+    fontWeight: '600',
+  },
+  routeLine: {
+    width: 1,
+    height: 16,
+    backgroundColor: '#d1d5db',
+    marginLeft: 4,
+  },
+  summaryMetaRow: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#e5e7eb',
+  },
+  summaryMetaText: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '600',
+  },
+
+  detailCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
     overflow: 'hidden',
   },
-  sumRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 14,
-    borderBottomWidth: 1,
+  detailRow: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#f3f4f6',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 12,
   },
-  sumIcon: { fontSize: 18, marginTop: 1 },
-  sumLabel: { fontSize: 11, color: '#9ca3af', fontWeight: '500', marginBottom: 2 },
-  sumValue: { fontSize: 14, color: '#111827', fontWeight: '600' },
+  detailLabel: {
+    fontSize: 13,
+    color: '#6b7280',
+    fontWeight: '600',
+  },
+  detailValue: {
+    flex: 1,
+    textAlign: 'right',
+    fontSize: 14,
+    color: '#111827',
+    fontWeight: '700',
+  },
 
   // Inputs
   input: {
     backgroundColor: '#f9fafb',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,

@@ -1157,14 +1157,7 @@ export default function OrderRequestScreen() {
                 coordinate={pin}
                 draggable={step === 'map'}
                 onDragEnd={step === 'map' ? onPinDragEnd : undefined}
-              >
-                <View style={sa.markerWrap}>
-                  <View style={sa.markerOuter}>
-                    <View style={sa.markerInner} />
-                  </View>
-                  <View style={sa.markerStem} />
-                </View>
-              </Marker>
+              />
             )}
           </BaseMap>
         </View>
@@ -1257,6 +1250,8 @@ export default function OrderRequestScreen() {
         <AddressPickerModal
           visible={showLocationPicker}
           title="Piegādes vieta"
+          contextLabel="Materiālu piegādes vieta"
+          contextIcon="to"
           onClose={() => {
             if (!address) router.back();
             else setShowLocationPicker(false);

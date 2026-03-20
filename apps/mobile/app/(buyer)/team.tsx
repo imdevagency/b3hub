@@ -652,14 +652,14 @@ const styles = StyleSheet.create({
   permToggleText: { fontSize: 12, color: '#6b7280', fontWeight: '500' },
   permChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: '#f3f4f6',
     borderWidth: 1,
-    borderColor: '#bbf7d0',
+    borderColor: '#e5e7eb',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 12,
   },
-  chipText: { fontSize: 11, fontWeight: '600', color: '#15803d' },
+  chipText: { fontSize: 10, fontWeight: '600', color: '#4b5563' },
   permSection: {
     fontSize: 12,
     fontWeight: '700',

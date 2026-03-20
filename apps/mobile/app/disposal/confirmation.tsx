@@ -1,7 +1,8 @@
 import { useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { useDisposal } from '@/lib/disposal-context';
 import { CheckCircle2, Recycle, MapPin, CalendarDays, Truck } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 
@@ -30,15 +31,7 @@ const TRUCK_LABELS: Record<string, string> = {
 
 export default function DisposalConfirmation() {
   const router = useRouter();
-  const { jobNumber, pickupAddress, wasteType, truckType, truckCount, requestedDate } =
-    useLocalSearchParams<{
-      jobNumber: string;
-      pickupAddress: string;
-      wasteType: string;
-      truckType: string;
-      truckCount: string;
-      requestedDate: string;
-    }>();
+  const { confirmedDisposal } = useDisposal();
 
   const iconScale = useRef(new Animated.Value(0)).current;
   const iconOpacity = useRef(new Animated.Value(0)).current;
@@ -87,7 +80,21 @@ export default function DisposalConfirmation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const truckCnt = truckCount ? parseInt(truckCount, 10) : 1;
+  // Fallback if context is not set (shouldn't happen in normal flow)
+  if (!confirmedDisposal) {
+    return (
+      <ScreenContainer standalone bg="#fff">
+        <View style={s.center}>
+          <Text style={s.centerText}>Nav pieprasījuma informācijas.</Text>
+          <TouchableOpacity onPress={() => router.replace('/(buyer)/home')} style={s.centerLink}>
+            <Text style={s.centerLinkText}>Atpakaļ uz sākumu</Text>
+          </TouchableOpacity>
+        </View>
+      </ScreenContainer>
+    );
+  }
+
+  const { jobNumber, pickupAddress, wasteType, truckType, truckCount, requestedDate } = confirmedDisposal;
 
   return (
     <ScreenContainer standalone bg="#fff">
@@ -146,7 +153,7 @@ export default function DisposalConfirmation() {
             <View style={{ flex: 1, marginLeft: 8 }}>
               <Text style={s.rowLabel}>Transports</Text>
               <Text style={s.rowValue}>
-                {truckCnt} × {TRUCK_LABELS[truckType] ?? truckType}
+                {truckCount} × {TRUCK_LABELS[truckType] ?? truckType}
               </Text>
             </View>
           </View>
@@ -219,14 +226,14 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: '#ffffff',
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderWidth: 1,
-    borderColor: '#bbf7d0',
+    borderColor: '#e5e7eb',
   },
-  refText: { fontSize: 13, fontWeight: '600', color: '#059669' },
+  refText: { fontSize: 13, fontWeight: '600', color: '#111827' },
 
   card: {
     marginHorizontal: 20,
@@ -258,4 +265,9 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   btnSecondaryText: { color: '#374151', fontSize: 15, fontWeight: '600' },
+
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
+  centerText: { fontSize: 16, color: '#6b7280' },
+  centerLink: { paddingVertical: 8 },
+  centerLinkText: { color: '#111827', fontWeight: '600' },
 });

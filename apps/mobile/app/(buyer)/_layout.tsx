@@ -26,6 +26,8 @@ export default function BuyerLayout() {
 
   // Home tab is full-screen map — no TopBar or status-bar padding
   const isHome = pathname === '/(buyer)/home' || pathname === '/home';
+  const isDetailScreen = pathname.includes('/rfq/') || pathname.includes('/project/') || pathname.includes('/transport-job/') || pathname.includes('/framework-contract/') || pathname.includes('/skip-order/');
+  const hideTopBar = isHome || isDetailScreen;
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -44,8 +46,8 @@ export default function BuyerLayout() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: isHome ? 0 : insets.top }}>
-      {!isHome && (
+    <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: hideTopBar ? 0 : insets.top }}>
+      {!hideTopBar && (
         <TopBar
           accentColor={ACCENT}
           onMenuPress={() => setSidebarOpen(true)}

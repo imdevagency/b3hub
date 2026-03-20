@@ -1,0 +1,58 @@
+
+  const renderReview = () => {
+    const total = (selectedMaterial?.basePrice ?? 0) * quantity;
+    return (
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+        {/* Address */}
+        <View style={s.reviewCard}>
+          <Text style={s.reviewLabel}>Piegādes adrese</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 8 }}>
+            <MapPin size={15} color="#374151" style={{ marginTop: 1 }} />
+            <Text style={s.reviewValue}>{pickedAddress?.address}</Text>
+          </View>
+        </View>
+        {/* Material */}
+        <View style={s.reviewCard}>
+          <Text style={s.reviewLabel}>Materiāls</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 }}>
+            <Text style={{ fontSize: 28 }}>
+              {CATEGORY_ICON[selectedMaterial?.category || ''] || '\uD83D\uDCE6'}
+            </Text>
+            <View style={{ flex: 1 }}>
+              <Text style={s.reviewValue}>{selectedMaterial?.name}</Text>
+              <Text style={s.matDesc}>Frakcija: {fraction}</Text>
+            </View>
+          </View>
+          <View style={s.reviewRow}>
+            <Text style={s.matDesc}>
+              {quantity} {UNIT_SHORT[selectedMaterial?.unit ?? 'TONNE']} x {'\u20AC'}
+              {selectedMaterial?.basePrice.toFixed(2)}
+            </Text>
+            <Text style={s.reviewPrice}>
+              {'\u20AC'}
+              {total.toFixed(2)}
+            </Text>
+          </View>
+        </View>
+        {/* Total */}
+        <View style={s.priceCard}>
+          <View>
+            <Text style={s.priceLabel}>Kopā (bez PVN)</Text>
+            <Text style={s.priceSub}>PVN 21% tiks pievienots rēķinam</Text>
+          </View>
+          <Text style={s.priceValue}>
+            {'\u20AC'}
+            {total.toFixed(2)}
+          </Text>
+        </View>
+      </ScrollView>
+    );
+  };
+
+  // \u2500\u2500 Layout \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+  return (
+    <WizardLayout
+      title={STEP_TITLES[step]}
+      step={stepIndex + 1}
+      totalSteps={STEPS.length}

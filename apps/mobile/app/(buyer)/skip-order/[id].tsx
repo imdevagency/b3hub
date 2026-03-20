@@ -144,7 +144,7 @@ export default function SkipOrderDetailScreen() {
   useEffect(() => {
     if (error) {
       Alert.alert('Kļūda', 'Neizdevās ielādēt pasūtījumu.');
-      router.back();
+      router.canGoBack() ? router.back() : router.replace('/(buyer)/orders' as any);
     }
   }, [error, router]);
 

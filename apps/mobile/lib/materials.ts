@@ -64,42 +64,42 @@ export const CATEGORY_ICON: Record<string, string> = {
 
 export const MAT_STATUS: Record<string, { label: string; bg: string; color: string }> = {
   PENDING:    { label: 'Gaida',        bg: '#f3f4f6', color: '#6b7280' },
-  CONFIRMED:  { label: 'Apstipr\u0101n\u0101ts',  bg: '#f3f4f6', color: '#374151' },
-  PROCESSING: { label: 'Apstr\u0101d\u0101',      bg: '#f3f4f6', color: '#374151' },
-  SHIPPED:    { label: 'Ce\u013c\u0101',           bg: '#fef3c7', color: '#92400e' },
-  DELIVERED:  { label: 'Pieg\u0101d\u0101ts',     bg: '#dcfce7', color: '#15803d' },
-  CANCELLED:  { label: 'Atcelts',      bg: '#fee2e2', color: '#b91c1c' },
+  CONFIRMED:  { label: 'Apstiprināts',  bg: '#e5e7eb', color: '#111827' },
+  PROCESSING: { label: 'Apstrādā',      bg: '#e5e7eb', color: '#111827' },
+  SHIPPED:    { label: 'Ceļā',           bg: '#e5e7eb', color: '#111827' },
+  DELIVERED:  { label: 'Piegādāts',     bg: '#111827', color: '#f9fafb' },
+  CANCELLED:  { label: 'Atcelts',      bg: '#f9fafb', color: '#9ca3af' },
 };
 
 export const TJB_STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  AVAILABLE:         { label: 'Gaida p\u0101rvad\u0101t\u0101ju',  bg: '#f3f4f6', color: '#6b7280' },
-  ASSIGNED:          { label: 'P\u0101rvad\u0101t\u0101js atrasts', bg: '#f3f4f6', color: '#374151' },
-  ACCEPTED:          { label: 'Apstipr\u0101n\u0101ts',            bg: '#f3f4f6', color: '#374151' },
-  EN_ROUTE_PICKUP:   { label: 'Brauc uz iekrau\u0161anu',          bg: '#fef3c7', color: '#92400e' },
-  AT_PICKUP:         { label: 'Iekraujas',                          bg: '#fef3c7', color: '#92400e' },
-  LOADED:            { label: 'Iekrauts',                           bg: '#fef3c7', color: '#92400e' },
-  EN_ROUTE_DELIVERY: { label: 'Ce\u013c\u0101',                     bg: '#dcfce7', color: '#15803d' },
-  AT_DELIVERY:       { label: 'Pieg\u0101d\u0101',                  bg: '#dcfce7', color: '#15803d' },
-  DELIVERED:         { label: 'Piegādāts',                          bg: '#f0fdf4', color: '#15803d' },
-  CANCELLED:         { label: 'Atcelts',                            bg: '#fee2e2', color: '#b91c1c' },
+  AVAILABLE:         { label: 'Gaida pārvadātāju',  bg: '#f3f4f6', color: '#6b7280' },
+  ASSIGNED:          { label: 'Pārvadātājs atrasts', bg: '#e5e7eb', color: '#111827' },
+  ACCEPTED:          { label: 'Apstiprināts',            bg: '#e5e7eb', color: '#111827' },
+  EN_ROUTE_PICKUP:   { label: 'Brauc uz iekraušanu',          bg: '#e5e7eb', color: '#111827' },
+  AT_PICKUP:         { label: 'Iekraujas',                          bg: '#e5e7eb', color: '#111827' },
+  LOADED:            { label: 'Iekrauts',                           bg: '#e5e7eb', color: '#111827' },
+  EN_ROUTE_DELIVERY: { label: 'Ceļā',                     bg: '#e5e7eb', color: '#111827' },
+  AT_DELIVERY:       { label: 'Piegādā',                  bg: '#e5e7eb', color: '#111827' },
+  DELIVERED:         { label: 'Piegādāts',                          bg: '#111827', color: '#f9fafb' },
+  CANCELLED:         { label: 'Atcelts',                            bg: '#f9fafb', color: '#9ca3af' },
 };
 
 export const CONTAINER_STATUS: Record<string, { label: string; bg: string; color: string }> = {
   PENDING:         { label: 'Gaida',            bg: '#f3f4f6', color: '#6b7280' },
-  CONFIRMED:       { label: 'Apstiprānāts',    bg: '#dbeafe', color: '#1d4ed8' },
-  DELIVERED:       { label: 'Nogādāts',         bg: '#d1fae5', color: '#059669' },
-  AWAITING_PICKUP: { label: 'Gaida izņemšanu', bg: '#fef3c7', color: '#d97706' },
-  COLLECTED:       { label: 'Savākts',          bg: '#e0e7ff', color: '#4338ca' },
-  COMPLETED:       { label: 'Pabeigts',          bg: '#dcfce7', color: '#15803d' },
-  CANCELLED:       { label: 'Atcelts',           bg: '#fee2e2', color: '#b91c1c' },
+  CONFIRMED:       { label: 'Apstiprināts',    bg: '#e5e7eb', color: '#111827' },
+  DELIVERED:       { label: 'Nogādāts',         bg: '#e5e7eb', color: '#111827' },
+  AWAITING_PICKUP: { label: 'Gaida izņemšanu', bg: '#e5e7eb', color: '#111827' },
+  COLLECTED:       { label: 'Savākts',          bg: '#e5e7eb', color: '#111827' },
+  COMPLETED:       { label: 'Pabeigts',          bg: '#111827', color: '#f9fafb' },
+  CANCELLED:       { label: 'Atcelts',           bg: '#f9fafb', color: '#9ca3af' },
 };
 
 /** Seller-side incoming order statuses (PENDING → DISPATCHED pipeline). */
 export const SELLER_ORDER_STATUS: Record<string, { label: string; bg: string; color: string }> = {
   PENDING:    { label: 'Jauns',        bg: '#f3f4f6', color: '#6b7280' },
-  CONFIRMED:  { label: 'Apstiprānāts', bg: '#f3f4f6', color: '#111827' },
-  LOADING:    { label: 'Iekraušana',   bg: '#f3f4f6', color: '#374151' },
-  DISPATCHED: { label: 'Nosūtīts',    bg: '#dcfce7', color: '#111827' },
+  CONFIRMED:  { label: 'Apstiprināts', bg: '#e5e7eb', color: '#111827' },
+  LOADING:    { label: 'Iekraušana',   bg: '#e5e7eb', color: '#111827' },
+  DISPATCHED: { label: 'Nosūtīts',    bg: '#111827', color: '#f9fafb' },
 };
 
 /** User account status labels (profile screens). */

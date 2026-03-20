@@ -20,6 +20,7 @@ import {
   FileText,
   FolderOpen,
   LogOut,
+  LayoutGrid,
   MessageCircle,
   Receipt,
   Settings,
@@ -28,6 +29,7 @@ import {
   Truck,
   User,
   Users,
+  Wallet,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { haptics } from '@/lib/haptics';
@@ -58,6 +60,19 @@ interface MenuItem {
 
 function buildItems(role: Role): MenuItem[] {
   const items: MenuItem[] = [];
+
+  if (role === 'seller') {
+    items.push({
+      icon: (c) => <LayoutGrid size={20} color={c} />,
+      label: 'Katalogs',
+      route: '/(seller)/catalog',
+    });
+    items.push({
+      icon: (c) => <Wallet size={20} color={c} />,
+      label: 'Peļņa',
+      route: '/(seller)/earnings',
+    });
+  }
 
   if (role === 'driver') {
     items.push({

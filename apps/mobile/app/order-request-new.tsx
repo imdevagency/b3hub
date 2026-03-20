@@ -24,7 +24,19 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { UNIT_SHORT, CATEGORY_ICON } from '@/lib/materials';
 import type { MaterialCategory, MaterialUnit, ApiMaterial } from '@/lib/api';
-import { MapPin, Check } from 'lucide-react-native';
+import { MapPin, Check, Truck, CreditCard, Calendar, Layers, Mountain, Leaf, Box, Hexagon } from 'lucide-react-native';
+
+const MaterialIcon = ({ category, color, size }: { category: string, color: string, size: number }) => {
+  switch (category) {
+    case 'GRAVEL': return <Mountain size={size} color={color} />;
+    case 'SAND': return <Layers size={size} color={color} />;
+    case 'SOIL': return <Leaf size={size} color={color} />;
+    case 'STONE': return <Hexagon size={size} color={color} />;
+    case 'CONCRETE': return <Box size={size} color={color} />;
+    case 'ASPHALT': return <Layers size={size} color={color} />;
+    default: return <Box size={size} color={color} />;
+  }
+};
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
@@ -95,7 +107,8 @@ export default function OrderRequestWizard() {
   // ── Navigation ──────────────────────────────────────────────────────
   const goBack = useCallback(() => {
     if (stepIndex === 0) {
-      router.back();
+      if (router.canGoBack()) router.back();
+      else router.replace('/(buyer)/home' as never);
       return;
     }
     setStep(STEPS[stepIndex - 1]);
@@ -114,16 +127,15 @@ export default function OrderRequestWizard() {
   const ctaLabel = step === 'review' ? 'Apstiprināt pasūtījumu' : 'Turpināt';
 
   const STEP_TITLES: Record<Step, string> = {
-    address: 'Kur piegādāt?',
-    material: 'Kādu materiālu vajag?',
-    configure: 'Cik daudz vajag?',
-    review: 'Pārbaudīt pasūtījumu',
+    address: 'Kur piegādāt materiālu?',
+    material: 'Izvēlies materiālu',
+    configure: 'Norādi daudzumu',
+    review: 'Apstiprini pasūtījumu',
   };
 
   // ── Address handler ──────────────────────────────────────────────────
   const handlePickConfirm = useCallback((picked: PickedAddress) => {
     setPickedAddress(picked);
-    setTimeout(() => setStep('material'), 200);
   }, []);
 
   // ── Submit ───────────────────────────────────────────────────────────
@@ -193,13 +205,15 @@ export default function OrderRequestWizard() {
   // \u2500\u2500 Step renders \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
   const renderAddress = () => (
-    <InlineAddressStep picked={pickedAddress} onPick={handlePickConfirm} />
+    <InlineAddressStep
+      picked={pickedAddress}
+      onPick={handlePickConfirm}
+    />
   );
 
   const renderMaterial = () => (
     <View style={{ flex: 1 }}>
       <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
-        <Text style={s.stepSub}>Grants, smiltis, betons un citi būvmateriāli</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -237,27 +251,27 @@ export default function OrderRequestWizard() {
               return (
                 <TouchableOpacity
                   key={mat.id}
-                  style={[s.matCard, active && s.matCardActive]}
+                  style={[s.uberMatCard, active && s.uberMatCardActive]}
                   onPress={() => setSelectedMaterial(mat)}
                   activeOpacity={0.8}
                 >
-                  <Text style={s.matEmoji}>{CATEGORY_ICON[mat.category] || '\uD83D\uDCE6'}</Text>
+                  <View style={[s.uberMatIconBg, active && s.uberMatIconBgActive]}>
+                    <MaterialIcon category={mat.category} color={active ? '#111827' : '#6b7280'} size={24} />
+                  </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={s.matName}>{mat.name}</Text>
-                    {mat.description ? <Text style={s.matDesc}>{mat.description}</Text> : null}
+                    <Text style={[s.uberMatName, active && s.uberMatNameActive]}>{mat.name}</Text>
+                    {mat.description ? <Text style={s.uberMatDesc} numberOfLines={1}>{mat.description}</Text> : null}
                     {mat.supplier?.city ? (
-                      <Text style={[s.matDesc, { color: '#9ca3af' }]}>
-                        {mat.supplier.name} · {mat.supplier.city}
+                      <Text style={[s.uberMatDesc, { marginTop: 2 }]}>
+                        {mat.supplier.name} • {mat.supplier.city}
                       </Text>
                     ) : null}
-                    <Text style={s.matPrice}>
-                      {'\u20AC'}
-                      {mat.basePrice.toFixed(2)}
-                      <Text style={s.matUnit}> / {UNIT_SHORT[mat.unit]}</Text>
-                    </Text>
                   </View>
-                  <View style={[s.matCheckCircle, active && s.matCheckCircleActive]}>
-                    {active && <Check size={14} color="#fff" strokeWidth={3} />}
+                  <View style={s.uberMatRight}>
+                    <Text style={[s.uberMatPrice, active && s.uberMatPriceActive]}>
+                      {'\u20AC'}{mat.basePrice.toFixed(2)}
+                    </Text>
+                    <Text style={s.uberMatUnit}>/ {UNIT_SHORT[mat.unit]}</Text>
                   </View>
                 </TouchableOpacity>
               );
@@ -273,75 +287,96 @@ export default function OrderRequestWizard() {
     const stepAmt = unit === 'M3' ? 1 : 5;
     const quickValues = unit === 'M3' ? [1, 5, 10, 20] : [5, 10, 20, 50];
     return (
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 20 }}>
-        <Text style={s.stepSub}>Norādiet daudzumu un frakciju</Text>
-        {/* Selected material summary */}
-        <View style={s.summaryCard}>
-          <Text style={s.matEmoji}>
-            {CATEGORY_ICON[selectedMaterial?.category || ''] || '\uD83D\uDCE6'}
-          </Text>
-          <View style={{ flex: 1 }}>
-            <Text style={s.matName}>{selectedMaterial?.name}</Text>
-            <Text style={s.matDesc}>{selectedMaterial?.description}</Text>
-          </View>
-        </View>
-        {/* Fraction */}
-        <View>
-          <Text style={s.sectionLabel}>Frakcija</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8, paddingTop: 8 }}
-          >
-            {FRACTIONS.map((f) => (
-              <TouchableOpacity
-                key={f}
-                style={[s.chip, fraction === f && s.chipActive]}
-                onPress={() => setFraction(f)}
-              >
-                <Text style={[s.chipText, fraction === f && s.chipTextActive]}>{f}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-        {/* Quantity stepper */}
-        <View>
-          <Text style={s.sectionLabel}>Daudzums</Text>
-          <View style={s.stepper}>
-            <TouchableOpacity
-              style={s.stepperBtn}
-              onPress={() => setQuantity((q) => Math.max(1, q - stepAmt))}
-            >
-              <Text style={s.stepperBtnText}>{'\u2212'}</Text>
-            </TouchableOpacity>
-            <View style={{ alignItems: 'center', minWidth: 80 }}>
-              <Text style={s.stepperValue}>{quantity}</Text>
-              <Text style={s.stepperUnit}>{UNIT_SHORT[unit]}</Text>
+      <ScrollView contentContainerStyle={{ padding: 16 }}>
+        <Text style={[s.stepSub, { marginBottom: 16 }]}>Norādiet daudzumu un frakciju</Text>
+
+        <View style={s.uberCard}>
+          {/* Selected material summary */}
+          <View style={s.uberRow}>
+            <View style={[s.uberIconBg, { backgroundColor: '#fef3c7' }]}>
+              <MaterialIcon category={selectedMaterial?.category || ''} color="#d97706" size={24} />
             </View>
-            <TouchableOpacity style={s.stepperBtn} onPress={() => setQuantity((q) => q + stepAmt)}>
-              <Text style={s.stepperBtnText}>+</Text>
-            </TouchableOpacity>
+            <View style={s.uberRowContent}>
+              <Text style={s.uberRowLabel}>Izvēlētais materiāls</Text>
+              <Text style={s.uberRowValue}>{selectedMaterial?.name}</Text>
+              <Text style={[s.matDesc, { marginTop: 2 }]} numberOfLines={2}>
+                {selectedMaterial?.description}
+              </Text>
+            </View>
           </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 10 }}>
-            {quickValues.map((n) => (
+
+          <View style={[s.uberDivider, { marginLeft: 0 }]} />
+
+          {/* Fraction */}
+          <View style={{ paddingVertical: 8 }}>
+            <Text style={[s.uberRowLabel, { marginBottom: 12 }]}>Frakcija</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8 }}
+            >
+              {FRACTIONS.map((f) => (
+                <TouchableOpacity
+                  key={f}
+                  style={[s.uberChip, fraction === f && s.uberChipActive]}
+                  onPress={() => setFraction(f)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[s.uberChipText, fraction === f && s.uberChipTextActive]}>{f}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          <View style={[s.uberDivider, { marginLeft: 0 }]} />
+
+          {/* Quantity stepper */}
+          <View style={{ paddingVertical: 8 }}>
+            <Text style={[s.uberRowLabel, { marginBottom: 12 }]}>Daudzums</Text>
+            <View style={s.uberStepper}>
               <TouchableOpacity
-                key={n}
-                style={[s.quickBtn, quantity === n && s.quickBtnActive]}
-                onPress={() => setQuantity(n)}
+                style={s.uberStepperBtn}
+                onPress={() => setQuantity((q) => Math.max(1, q - stepAmt))}
+                activeOpacity={0.8}
               >
-                <Text style={[s.quickBtnText, quantity === n && s.quickBtnTextActive]}>
-                  {n} {UNIT_SHORT[unit]}
-                </Text>
+                <Text style={s.uberStepperIcon}>{'\u2212'}</Text>
               </TouchableOpacity>
-            ))}
+              <View style={s.uberStepperValueWrap}>
+                <Text style={s.uberStepperValue}>{quantity}</Text>
+                <Text style={s.uberStepperUnit}>{UNIT_SHORT[unit]}</Text>
+              </View>
+              <TouchableOpacity
+                style={s.uberStepperBtn}
+                onPress={() => setQuantity((q) => q + stepAmt)}
+                activeOpacity={0.8}
+              >
+                <Text style={s.uberStepperIcon}>+</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={s.quickRow}>
+              {quickValues.map((n) => (
+                <TouchableOpacity
+                  key={n}
+                  style={[s.quickBtn, quantity === n && s.quickBtnActive]}
+                  onPress={() => setQuantity(n)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[s.quickBtnText, quantity === n && s.quickBtnTextActive]}>
+                    {n} {UNIT_SHORT[unit]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </View>
+
         {/* Price preview */}
         <View style={s.priceCard}>
           <View>
-            <Text style={s.priceLabel}>Orientējoša summa</Text>
+            <Text style={s.priceLabel}>Orientējošā summa</Text>
             <Text style={s.priceSub}>
-              {quantity} {UNIT_SHORT[unit]} \u00d7 {'\u20AC'}
+              {quantity} {UNIT_SHORT[unit]} x {'\u20AC'}
               {selectedMaterial?.basePrice.toFixed(2)}
             </Text>
           </View>
@@ -356,50 +391,85 @@ export default function OrderRequestWizard() {
 
   const renderReview = () => {
     const total = (selectedMaterial?.basePrice ?? 0) * quantity;
+    const vat = total * 0.21;
+    const finalTotal = total + vat;
+    const unit = selectedMaterial?.unit ?? 'TONNE';
+
     return (
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-        <Text style={s.stepSub}>Pārbaudiet visu pirms apstiprināšanas</Text>
-        {/* Address */}
-        <View style={s.reviewCard}>
-          <Text style={s.reviewLabel}>Piegādes adrese</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 8 }}>
-            <MapPin size={15} color="#374151" style={{ marginTop: 1 }} />
-            <Text style={s.reviewValue}>{pickedAddress?.address}</Text>
-          </View>
-        </View>
-        {/* Material */}
-        <View style={s.reviewCard}>
-          <Text style={s.reviewLabel}>Materiāls</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 }}>
-            <Text style={{ fontSize: 28 }}>
-              {CATEGORY_ICON[selectedMaterial?.category || ''] || '\uD83D\uDCE6'}
-            </Text>
-            <View style={{ flex: 1 }}>
-              <Text style={s.reviewValue}>{selectedMaterial?.name}</Text>
-              <Text style={s.matDesc}>Frakcija: {fraction}</Text>
+      <ScrollView contentContainerStyle={{ padding: 16 }}>
+        <View style={s.uberCard}>
+          {/* Address */}
+          <View style={s.uberRow}>
+            <View style={s.uberIconBg}>
+              <MapPin size={22} color="#111827" />
+            </View>
+            <View style={s.uberRowContent}>
+              <Text style={s.uberRowLabel}>Piegādes adrese</Text>
+              <Text style={s.uberRowValue}>{pickedAddress?.address}</Text>
             </View>
           </View>
-          <View style={s.reviewRow}>
-            <Text style={s.matDesc}>
-              {quantity} {UNIT_SHORT[selectedMaterial?.unit ?? 'TONNE']} \u00d7 {'\u20AC'}
-              {selectedMaterial?.basePrice.toFixed(2)}
-            </Text>
-            <Text style={s.reviewPrice}>
-              {'\u20AC'}
-              {total.toFixed(2)}
-            </Text>
+
+          <View style={s.uberDivider} />
+
+          {/* Material */}
+          <View style={s.uberRow}>
+            <View style={[s.uberIconBg, { backgroundColor: '#fef3c7' }]}>
+              <Truck size={22} color="#d97706" />
+            </View>
+            <View style={s.uberRowContent}>
+              <Text style={s.uberRowLabel}>Materiāls & Daudzums</Text>
+              <Text style={s.uberRowValue}>
+                {quantity} {UNIT_SHORT[unit]} • {selectedMaterial?.name} ({fraction})
+              </Text>
+            </View>
+            <View style={s.uberRowRight}>
+              <Text style={s.uberRowPrice}>
+                {'\u20AC'}{total.toFixed(2)}
+              </Text>
+            </View>
+          </View>
+
+          <View style={s.uberDivider} />
+
+          {/* Payment */}
+          <View style={s.uberRow}>
+            <View style={s.uberIconBg}>
+              <CreditCard size={22} color="#111827" />
+            </View>
+            <View style={s.uberRowContent}>
+              <Text style={s.uberRowLabel}>Maksājuma veids</Text>
+              <Text style={s.uberRowValue}>Pēcapmaksa (Rēķins)</Text>
+            </View>
+          </View>
+
+          <View style={s.uberDivider} />
+
+          {/* Delivery Date */}
+          <View style={s.uberRow}>
+            <View style={s.uberIconBg}>
+              <Calendar size={22} color="#111827" />
+            </View>
+            <View style={s.uberRowContent}>
+              <Text style={s.uberRowLabel}>Piegādes laiks</Text>
+              <Text style={s.uberRowValue}>Sazināsimies</Text>
+            </View>
           </View>
         </View>
-        {/* Total */}
-        <View style={s.priceCard}>
-          <View>
-            <Text style={s.priceLabel}>Kopā (bez PVN)</Text>
-            <Text style={s.priceSub}>PVN 21% tiks pievienots rēķinam</Text>
+
+        {/* Totals */}
+        <View style={s.uberTotals}>
+          <View style={s.uberTotalRow}>
+            <Text style={s.uberTotalLabel}>Starpsumma</Text>
+            <Text style={s.uberTotalValue}>{'\u20AC'}{total.toFixed(2)}</Text>
           </View>
-          <Text style={s.priceValue}>
-            {'\u20AC'}
-            {total.toFixed(2)}
-          </Text>
+          <View style={s.uberTotalRow}>
+            <Text style={s.uberTotalLabel}>PVN (21%)</Text>
+            <Text style={s.uberTotalValue}>{'\u20AC'}{vat.toFixed(2)}</Text>
+          </View>
+          <View style={[s.uberTotalRow, s.uberFinalRow]}>
+            <Text style={s.uberFinalLabel}>Kopā</Text>
+            <Text style={s.uberFinalValue}>{'\u20AC'}{finalTotal.toFixed(2)}</Text>
+          </View>
         </View>
       </ScrollView>
     );
@@ -413,7 +483,10 @@ export default function OrderRequestWizard() {
       step={stepIndex + 1}
       totalSteps={STEPS.length}
       onBack={goBack}
-      onClose={() => router.back()}
+      onClose={() => {
+        if (router.canGoBack()) router.back();
+        else router.replace('/(buyer)/home' as never);
+      }}
       ctaLabel={ctaLabel}
       onCTA={step === 'review' ? handleSubmit : goNext}
       ctaDisabled={!canProceed || submitting}
@@ -435,29 +508,88 @@ const s = StyleSheet.create({
   // Address step (styles kept for layout reference)
 
   // Shared text
-  stepSub: { fontSize: 13, color: '#6b7280', marginTop: 3 },
+  stepSub: { fontSize: 16, color: '#4b5563', marginTop: 2, lineHeight: 22, fontWeight: '500' },
   sectionLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: '#6b7280',
     textTransform: 'uppercase',
-    letterSpacing: 0.7,
+    letterSpacing: 0.8,
+  },
+
+  // Configure content
+  configureContent: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, gap: 14 },
+  configureCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    padding: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
 
   // Category + fraction chips
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
+    minWidth: 62,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 999,
     backgroundColor: '#f3f4f6',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: 'transparent',
+    alignItems: 'center',
   },
   chipActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  chipText: { fontSize: 13, fontWeight: '500', color: '#6b7280' },
+  chipText: { fontSize: 17, fontWeight: '600', color: '#6b7280' },
   chipTextActive: { color: '#fff', fontWeight: '700' },
+  fractionRow: { gap: 8, paddingTop: 10, paddingBottom: 2 },
 
   // Material list cards
+  uberMatCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+    gap: 14,
+  },
+  uberMatCardActive: {
+    borderColor: '#111827',
+    borderWidth: 1.5,
+    backgroundColor: '#f8fafc',
+    padding: 15.5, // Match padding to offset borderWidth 1.5 vs 1
+  },
+  uberMatIconBg: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uberMatIconBgActive: {
+    backgroundColor: '#111827',
+  },
+  uberMatName: { fontSize: 16, fontWeight: '700', color: '#374151' },
+  uberMatNameActive: { color: '#111827' },
+  uberMatDesc: { fontSize: 13, color: '#6b7280', marginTop: 1 },
+  uberMatRight: { alignItems: 'flex-end' },
+  uberMatPrice: { fontSize: 16, fontWeight: '800', color: '#374151' },
+  uberMatPriceActive: { color: '#111827' },
+  uberMatUnit: { fontSize: 12, color: '#9ca3af', fontWeight: '500', marginTop: 1 },
+
+  // Legacy (used optionally)
   matCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -489,46 +621,68 @@ const s = StyleSheet.create({
   // Configure
   summaryCard: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
     padding: 14,
     borderWidth: 1,
     borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  summaryIconWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  summaryLabel: {
+    fontSize: 11,
+    color: '#9ca3af',
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     backgroundColor: '#f9fafb',
-    borderRadius: 14,
-    padding: 12,
-    marginTop: 8,
+    borderRadius: 16,
+    padding: 14,
+    marginTop: 10,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   stepperBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     backgroundColor: '#e5e7eb',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepperBtnText: { fontSize: 24, color: '#111827', lineHeight: 28 },
-  stepperValue: { fontSize: 36, fontWeight: '800', color: '#111827' },
-  stepperUnit: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+  stepperBtnText: { fontSize: 30, color: '#111827', lineHeight: 34, fontWeight: '500' },
+  stepperValueWrap: { alignItems: 'center', minWidth: 88 },
+  stepperValue: { fontSize: 56, fontWeight: '800', color: '#111827', lineHeight: 58 },
+  stepperUnit: { fontSize: 15, color: '#6b7280', marginTop: 2, fontWeight: '600' },
+  quickRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 12 },
   quickBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 999,
     backgroundColor: '#f3f4f6',
     borderWidth: 1,
     borderColor: 'transparent',
   },
   quickBtnActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  quickBtnText: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
+  quickBtnText: { fontSize: 16, color: '#6b7280', fontWeight: '600' },
   quickBtnTextActive: { color: '#fff', fontWeight: '700' },
 
   // Price card (configure + review)
@@ -537,38 +691,152 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#111827',
-    borderRadius: 16,
-    padding: 18,
+    borderRadius: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
   },
-  priceLabel: { fontSize: 14, color: '#d1d5db', fontWeight: '600' },
-  priceSub: { fontSize: 11, color: '#6b7280', marginTop: 3 },
-  priceValue: { fontSize: 26, fontWeight: '800', color: '#fff' },
+  priceLabel: { fontSize: 14, color: '#d1d5db', fontWeight: '700' },
+  priceSub: { fontSize: 12, color: '#9ca3af', marginTop: 4, fontWeight: '500' },
+  priceValue: { fontSize: 48, fontWeight: '800', color: '#fff', letterSpacing: -0.6 },
 
   // Review
-  reviewCard: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 16,
+  uberCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#e5e7eb',
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
-  reviewLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#9ca3af',
+  uberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  uberIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uberRowContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  uberRowRight: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  uberRowLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '600',
+    marginBottom: 2,
     textTransform: 'uppercase',
-    letterSpacing: 0.7,
+    letterSpacing: 0.5,
   },
-  reviewValue: { flex: 1, fontSize: 14, fontWeight: '600', color: '#111827' },
-  reviewRow: {
+  uberRowValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  uberRowPrice: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  uberDivider: {
+    height: 1,
+    backgroundColor: '#f3f4f6',
+    marginVertical: 14,
+    marginLeft: 58,
+  },
+  uberTotals: {
+    paddingHorizontal: 8,
+    gap: 12,
+  },
+  uberTotalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#f3f4f6',
   },
-  reviewPrice: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  uberTotalLabel: {
+    fontSize: 15,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  uberTotalValue: {
+    fontSize: 16,
+    color: '#374151',
+    fontWeight: '600',
+  },
+  uberFinalRow: {
+    marginTop: 8,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  uberFinalLabel: {
+    fontSize: 20,
+    color: '#111827',
+    fontWeight: '800',
+  },
+  uberFinalValue: {
+    fontSize: 24,
+    color: '#111827',
+    fontWeight: '800',
+  },
+
+  // Redesigned Configure Inputs
+  uberChip: {
+    minWidth: 62,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  uberChipActive: { backgroundColor: '#111827' },
+  uberChipText: { fontSize: 15, fontWeight: '600', color: '#6b7280' },
+  uberChipTextActive: { color: '#ffffff' },
+
+  uberStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f9fafb',
+    borderRadius: 16,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  uberStepperBtn: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  uberStepperIcon: { fontSize: 24, color: '#111827', fontWeight: '500' },
+  uberStepperValueWrap: { alignItems: 'center', minWidth: 80 },
+  uberStepperValue: { fontSize: 36, fontWeight: '800', color: '#111827', lineHeight: 40 },
+  uberStepperUnit: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
 
 });

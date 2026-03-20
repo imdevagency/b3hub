@@ -933,7 +933,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#111827',
     borderWidth: 2.5,
-    borderColor: '#bbf7d0',
+    borderColor: '#e5e7eb',
   },
   routeDotTo: {
     width: 12,

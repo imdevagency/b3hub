@@ -154,10 +154,12 @@ export const ordersApi = {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
-    myOrders: (token: string) =>
-      apiFetch<ApiOrder[]>('/orders', {
+    myOrders: async (token: string): Promise<ApiOrder[]> => {
+      const res = await apiFetch<{ data: ApiOrder[]; pagination: any }>('/orders', {
         headers: { Authorization: `Bearer ${token}` },
-      }),
+      });
+      return res.data || [];
+    },
 
     getOne: (id: string, token: string) =>
       apiFetch<ApiOrder>(`/orders/${id}`, {

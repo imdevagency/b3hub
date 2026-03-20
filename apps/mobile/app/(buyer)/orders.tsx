@@ -78,32 +78,31 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
         }}
         activeOpacity={0.88}
       >
-        {item.isActive && <View style={s.activeStrip} />}
         <View style={s.cardInner}>
           <View style={s.cardTop}>
-            <View style={[s.typeTag, s.typeTagSkip]}>
-              <Trash2 size={11} color="#2563eb" />
-              <Text style={[s.typeTagText, { color: '#2563eb' }]}>Konteiners</Text>
+            <View style={s.typeTag}>
+              <Trash2 size={12} color="#475569" />
+              <Text style={[s.typeTagText, { color: '#475569', fontSize: 12 }]}>Konteiners</Text>
             </View>
             <StatusPill label={status.label} bg={status.bg} color={status.color} />
           </View>
           <Text style={s.orderTitle}>{SIZE_LABEL[order.skipSize] ?? order.skipSize}</Text>
           <Text style={s.orderRef}>{order.orderNumber}</Text>
           <View style={s.metaRow}>
-            <MapPin size={13} color="#6b7280" />
+            <MapPin size={14} color="#64748b" />
             <Text style={s.metaText} numberOfLines={1}>
               {order.location}
             </Text>
           </View>
           <View style={s.metaRow}>
-            <CalendarDays size={13} color="#6b7280" />
+            <CalendarDays size={14} color="#64748b" />
             <Text style={s.metaText}>{formatDateShort(order.deliveryDate)}</Text>
           </View>
           <View style={s.cardFooter}>
             <Text style={s.price}>€{order.price}</Text>
             {canRate && onRate ? (
               <TouchableOpacity style={s.actionChip} onPress={onRate} activeOpacity={0.8}>
-                <Star size={12} color="#6b7280" fill="#6b7280" />
+                <Star size={12} color="#64748b" fill="#64748b" />
                 <Text style={s.actionChipText}>Vērtēt</Text>
               </TouchableOpacity>
             ) : null}
@@ -148,12 +147,11 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
       }}
       activeOpacity={0.88}
     >
-      {item.isActive && <View style={s.activeStrip} />}
       <View style={s.cardInner}>
         <View style={s.cardTop}>
-          <View style={[s.typeTag, s.typeTagMaterial]}>
-            <Truck size={11} color="#d97706" />
-            <Text style={[s.typeTagText, { color: '#d97706' }]}>Materiāli</Text>
+          <View style={s.typeTag}>
+            <Truck size={12} color="#475569" />
+            <Text style={[s.typeTagText, { color: '#475569', fontSize: 12 }]}>Materiāli</Text>
           </View>
           <StatusPill label={st.label} bg={st.bg} color={st.color} />
         </View>
@@ -165,7 +163,7 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
         <Text style={s.orderRef}>{order.orderNumber}</Text>
         {driver && activeJob && (
           <View style={s.driverRow}>
-            <User size={13} color="#059669" />
+            <User size={14} color="#475569" />
             <Text style={s.driverName} numberOfLines={1}>
               {driver.firstName} {driver.lastName}
             </Text>
@@ -186,7 +184,7 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
         )}
         {order.deliveryAddress ? (
           <View style={s.metaRow}>
-            <MapPin size={13} color="#6b7280" />
+            <MapPin size={14} color="#64748b" />
             <Text style={s.metaText} numberOfLines={1}>
               {order.deliveryAddress}
               {order.deliveryCity ? `, ${order.deliveryCity}` : ''}
@@ -195,7 +193,7 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
         ) : null}
         {order.deliveryDate ? (
           <View style={s.metaRow}>
-            <CalendarDays size={13} color="#6b7280" />
+            <CalendarDays size={14} color="#64748b" />
             <Text style={s.metaText}>{formatDateShort(order.deliveryDate)}</Text>
           </View>
         ) : null}
@@ -211,11 +209,11 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
           <Text style={s.price}>€{order.total.toFixed(2)}</Text>
           {(order.status === 'DELIVERED' || order.status === 'COMPLETED') && onRate ? (
             <TouchableOpacity style={s.actionChip} onPress={onRate} activeOpacity={0.8}>
-              <Star size={12} color="#6b7280" fill="#6b7280" />
+              <Star size={12} color="#64748b" fill="#64748b" />
               <Text style={s.actionChipText}>Vērtēt</Text>
             </TouchableOpacity>
           ) : (
-            <ChevronRight size={16} color="#9ca3af" />
+            <ChevronRight size={16} color="#94a3b8" />
           )}
         </View>
       </View>
@@ -242,12 +240,11 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
       }}
       activeOpacity={0.88}
     >
-      {item.isActive && <View style={s.activeStrip} />}
       <View style={s.cardInner}>
         <View style={s.cardTop}>
-          <View style={[s.typeTag, s.typeTagTransport]}>
-            <Icon size={11} color="#7c3aed" />
-            <Text style={[s.typeTagText, { color: '#7c3aed' }]}>{typeLabel}</Text>
+          <View style={s.typeTag}>
+            <Icon size={12} color="#475569" />
+            <Text style={[s.typeTagText, { color: '#475569', fontSize: 12 }]}>{typeLabel}</Text>
           </View>
           <StatusPill label={st.label} bg={st.bg} color={st.color} />
         </View>
@@ -263,18 +260,18 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
         )}
         <Text style={s.orderRef}>{job.jobNumber}</Text>
         <View style={s.metaRow}>
-          <MapPin size={13} color="#6b7280" />
+          <MapPin size={14} color="#64748b" />
           <Text style={s.metaText} numberOfLines={1}>
             {job.pickupAddress}, {job.pickupCity}
           </Text>
         </View>
         <View style={s.metaRow}>
-          <CalendarDays size={13} color="#6b7280" />
+          <CalendarDays size={14} color="#64748b" />
           <Text style={s.metaText}>{job.pickupDate ? formatDateShort(job.pickupDate) : '—'}</Text>
         </View>
         {job.requiredVehicleType && (
           <View style={s.metaRow}>
-            <Truck size={13} color="#6b7280" />
+            <Truck size={14} color="#64748b" />
             <Text style={s.metaText} numberOfLines={1}>
               {job.requiredVehicleType}
             </Text>
@@ -288,11 +285,11 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
 // ── RFQ card (quote request awaiting / responding supplier) ──
 
 const RFQ_STATUS_LABEL: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING: { label: 'Gaida piedāvājumus', bg: '#fef3c7', color: '#d97706' },
-  QUOTED: { label: 'Ir piedāvājumi', bg: '#d1fae5', color: '#059669' },
-  ACCEPTED: { label: 'Pieņemts', bg: '#dcfce7', color: '#15803d' },
-  CANCELLED: { label: 'Atcelts', bg: '#f3f4f6', color: '#6b7280' },
-  EXPIRED: { label: 'Beidzies', bg: '#f3f4f6', color: '#9ca3af' },
+  PENDING: { label: 'Gaida piedāvājumus', bg: '#f1f5f9', color: '#64748b' },
+  QUOTED: { label: 'Ir piedāvājumi', bg: '#e5e7eb', color: '#111827' },
+  ACCEPTED: { label: 'Pieņemts', bg: '#f1f5f9', color: '#374151' },
+  CANCELLED: { label: 'Atcelts', bg: '#f9fafb', color: '#94a3b8' },
+  EXPIRED: { label: 'Beidzies', bg: '#f9fafb', color: '#94a3b8' },
 };
 
 function RfqCard({ item }: { item: UnifiedOrder & { kind: 'rfq' } }) {
@@ -310,12 +307,11 @@ function RfqCard({ item }: { item: UnifiedOrder & { kind: 'rfq' } }) {
       }}
       activeOpacity={0.88}
     >
-      {item.isActive && <View style={s.activeStrip} />}
       <View style={s.cardInner}>
         <View style={s.cardTop}>
-          <View style={[s.typeTag, s.typeTagRfq]}>
-            <HardHat size={11} color="#c2410c" />
-            <Text style={[s.typeTagText, { color: '#c2410c' }]}>Pieprasījums</Text>
+          <View style={s.typeTag}>
+            <HardHat size={12} color="#475569" />
+            <Text style={[s.typeTagText, { color: '#475569', fontSize: 12 }]}>Pieprasījums</Text>
           </View>
           <StatusPill label={st.label} bg={st.bg} color={st.color} />
         </View>
@@ -324,7 +320,7 @@ function RfqCard({ item }: { item: UnifiedOrder & { kind: 'rfq' } }) {
         </Text>
         <Text style={s.orderRef}>{rfq.requestNumber}</Text>
         <View style={s.metaRow}>
-          <MapPin size={13} color="#6b7280" />
+          <MapPin size={14} color="#64748b" />
           <Text style={s.metaText} numberOfLines={1}>
             {rfq.deliveryCity || rfq.deliveryAddress}
           </Text>
@@ -334,21 +330,21 @@ function RfqCard({ item }: { item: UnifiedOrder & { kind: 'rfq' } }) {
             {rfq.quantity} {UNIT_SHORT[rfq.unit] ?? rfq.unit}
           </Text>
           {responseCount > 0 && (
-            <Text style={[s.matPrice, { color: '#059669' }]}>{responseCount} pied.</Text>
+            <Text style={[s.matPrice, { color: '#475569' }]}>{responseCount} pied.</Text>
           )}
         </View>
         <View style={s.cardFooter}>
           {rfq.status === 'QUOTED' ? (
-            <Text style={[s.price, { color: '#059669', fontSize: 13 }]}>Skatīt piedāvājumus →</Text>
+            <Text style={[s.price, { color: '#111827', fontSize: 13, fontWeight: '600' }]}>Skatīt piedāvājumus →</Text>
           ) : (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Clock size={12} color="#9ca3af" />
-              <Text style={[s.price, { color: '#9ca3af', fontSize: 12, fontWeight: '500' }]}>
+              <Clock size={12} color="#94a3b8" />
+              <Text style={[s.price, { color: '#94a3b8', fontSize: 12, fontWeight: '500' }]}>
                 {rfq.status === 'PENDING' ? 'Gaidām atbildes...' : st.label}
               </Text>
             </View>
           )}
-          <ChevronRight size={16} color="#9ca3af" />
+          <ChevronRight size={16} color="#94a3b8" />
         </View>
       </View>
     </TouchableOpacity>
@@ -498,14 +494,14 @@ export default function OrdersScreen() {
               router.push('/order');
             }}
           >
-            <View style={[s.pickerIcon, { backgroundColor: '#eff6ff' }]}>
-              <Package size={22} color="#2563eb" strokeWidth={1.8} />
+            <View style={[s.pickerIcon, { backgroundColor: '#f1f5f9' }]}>
+              <Package size={22} color="#475569" strokeWidth={1.8} />
             </View>
             <View style={s.pickerOptionText}>
               <Text style={s.pickerOptionTitle}>Konteinera īre</Text>
               <Text style={s.pickerOptionDesc}>Atkritumu konteinera piegāde un savākšana</Text>
             </View>
-            <ChevronRight size={18} color="#9ca3af" />
+            <ChevronRight size={18} color="#94a3b8" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -516,14 +512,14 @@ export default function OrdersScreen() {
               router.push('/order-request-new');
             }}
           >
-            <View style={[s.pickerIcon, { backgroundColor: '#fef3c7' }]}>
-              <HardHat size={22} color="#d97706" strokeWidth={1.8} />
+            <View style={[s.pickerIcon, { backgroundColor: '#f1f5f9' }]}>
+              <HardHat size={22} color="#475569" strokeWidth={1.8} />
             </View>
             <View style={s.pickerOptionText}>
               <Text style={s.pickerOptionTitle}>Materiālu pasūtījums</Text>
               <Text style={s.pickerOptionDesc}>Smilts, grants, dolomīts un citi materiāli</Text>
             </View>
-            <ChevronRight size={18} color="#9ca3af" />
+            <ChevronRight size={18} color="#94a3b8" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -534,8 +530,8 @@ export default function OrdersScreen() {
               router.push('/disposal');
             }}
           >
-            <View style={[s.pickerIcon, { backgroundColor: '#f0fdf4' }]}>
-              <Trash2 size={22} color="#16a34a" strokeWidth={1.8} />
+            <View style={[s.pickerIcon, { backgroundColor: '#f1f5f9' }]}>
+              <Trash2 size={22} color="#475569" strokeWidth={1.8} />
             </View>
             <View style={s.pickerOptionText}>
               <Text style={s.pickerOptionTitle}>Atkritumu izvešana</Text>
@@ -543,7 +539,7 @@ export default function OrdersScreen() {
                 Celtniecības atkritumu savākšana un utilizācija
               </Text>
             </View>
-            <ChevronRight size={18} color="#9ca3af" />
+            <ChevronRight size={18} color="#94a3b8" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -554,14 +550,14 @@ export default function OrdersScreen() {
               router.push('/transport');
             }}
           >
-            <View style={[s.pickerIcon, { backgroundColor: '#faf5ff' }]}>
-              <Truck size={22} color="#7c3aed" strokeWidth={1.8} />
+            <View style={[s.pickerIcon, { backgroundColor: '#f1f5f9' }]}>
+              <Truck size={22} color="#475569" strokeWidth={1.8} />
             </View>
             <View style={s.pickerOptionText}>
               <Text style={s.pickerOptionTitle}>Transports A → B</Text>
               <Text style={s.pickerOptionDesc}>Kravu pārvadāšana uz galamērķi</Text>
             </View>
-            <ChevronRight size={18} color="#9ca3af" />
+            <ChevronRight size={18} color="#94a3b8" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -585,11 +581,11 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
+    paddingTop: 24,
+    paddingBottom: 16,
   },
-  title: { fontSize: 26, fontWeight: '700', color: '#111827' },
-  subtitle: { fontSize: 13, color: '#9ca3af', marginTop: 2 },
+  title: { fontSize: 28, fontWeight: '800', color: '#111827', letterSpacing: -0.5 },
+  subtitle: { fontSize: 14, color: '#64748b', marginTop: 2 },
   newBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -607,131 +603,25 @@ const s = StyleSheet.create({
     gap: 8,
     flexDirection: 'row',
   },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: '#ffffff',
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-  },
-  chipActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  chipText: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  chipTextActive: { color: '#ffffff' },
-  chipCount: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 5,
-  },
-  chipCountActive: { backgroundColor: 'rgba(255,255,255,0.2)' },
-  chipCountText: { fontSize: 11, fontWeight: '700', color: '#374151' },
-  chipCountTextActive: { color: '#ffffff' },
+  chip:{flexDirection:'row',alignItems:'center',gap:6,paddingHorizontal:16,paddingVertical:10,borderRadius:24,backgroundColor:'#f3f4f6',borderWidth:1,borderColor:'transparent'},chipActive:{backgroundColor:'#111827'},chipText:{fontSize:14,fontWeight:'600',color:'#374151'},chipTextActive:{color:'#ffffff'},chipCount:{backgroundColor:'#d1d5db',borderRadius:12,minWidth:20,height:20,alignItems:'center',justifyContent:'center',paddingHorizontal:6},chipCountActive:{backgroundColor:'#374151'},chipCountText:{fontSize:12,fontWeight:'700',color:'#111827'},chipCountTextActive:{color:'#ffffff'},list:{paddingHorizontal:16,gap:12},listContent:{padding:16,gap:16,paddingBottom:100},card:{backgroundColor:'#ffffff',borderRadius:16,borderWidth:1,borderColor:'#e5e7eb',marginBottom:0,flexDirection:'column'},cardActive:{borderColor:'#111827'},activeStrip:{display:'none'},cardInner:{padding:16},cardTop:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:8},typeTag:{flexDirection:'row',alignItems:'center',gap:6},typeTagText:{fontSize:13,fontWeight:'600',color:'#475569'},orderTitle:{fontSize:17,fontWeight:'700',color:'#111827',marginBottom:4,letterSpacing:-0.3},orderRef:{fontSize:13,color:'#94a3b8',marginBottom:12,fontWeight:'500'},driverRow:{flexDirection:'row',alignItems:'center',gap:8,backgroundColor:'#f8fafc',borderRadius:12,paddingHorizontal:12,paddingVertical:10,marginBottom:12},driverName:{fontSize:14,fontWeight:'700',color:'#0f172a',flex:1},callChip:{flexDirection:'row',alignItems:'center',gap:6,backgroundColor:'#111827',borderRadius:14,paddingHorizontal:12,paddingVertical:6},callText:{fontSize:13,fontWeight:'600',color:'#fff'},metaRow:{flexDirection:'row',alignItems:'center',gap:8,marginBottom:6},metaText:{fontSize:14,color:'#475569',flex:1,fontWeight:'500'},matRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',borderTopWidth:1,borderTopColor:'#f1f5f9',paddingTop:12,marginTop:12,marginBottom:4},matDetail:{fontSize:14,color:'#111827',flex:1,fontWeight:'600'},
+  matPrice: { fontSize: 13, fontWeight: '700', color: '#0f172a' },
 
-  list: { paddingHorizontal: 16, gap: 10 },
-
-  // ── Card
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    overflow: 'hidden',
-    flexDirection: 'row',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  cardActive: { backgroundColor: '#eff6ff', shadowOpacity: 0.09, shadowRadius: 12, elevation: 3 },
-  activeStrip: { width: 4, backgroundColor: '#2563eb' },
-  cardInner: { flex: 1, padding: 14 },
-
-  cardTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  typeTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    backgroundColor: '#f3f4f6',
-  },
-  typeTagText: { fontSize: 11, fontWeight: '600', color: '#6b7280' },
-  typeTagMaterial: { backgroundColor: '#fef3c7' },
-  typeTagSkip: { backgroundColor: '#eff6ff' },
-  typeTagTransport: { backgroundColor: '#faf5ff' },
-  typeTagRfq: { backgroundColor: '#fff7ed' },
-
-  orderTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2 },
-  orderRef: { fontSize: 11, color: '#9ca3af', marginBottom: 8, fontWeight: '500' },
-
-  driverRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#f0fdf4',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
-  },
-  driverName: { fontSize: 13, fontWeight: '600', color: '#059669', flex: 1 },
-  callChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#111827',
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  callText: { fontSize: 12, fontWeight: '700', color: '#fff' },
-
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 3 },
-  metaText: { fontSize: 13, color: '#374151', flex: 1 },
-
-  matRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#f3f4f6',
-    paddingTop: 8,
-    marginTop: 8,
-    marginBottom: 2,
-  },
-  matDetail: { fontSize: 12, color: '#6b7280', flex: 1 },
-  matPrice: { fontSize: 12, fontWeight: '700', color: '#111827' },
-
-  cardFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
-  price: { fontSize: 18, fontWeight: '700', color: '#111827', flex: 1 },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
+  price: { fontSize: 20, fontWeight: '800', color: '#111827', flex: 1, letterSpacing: -0.5 },
   actionChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#f1f5f9',
     borderRadius: 14,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  actionChipText: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
+  actionChipText: { fontSize: 12, fontWeight: '600', color: '#64748b' },
 
   empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },
   emptyTitle: { fontSize: 17, fontWeight: '600', color: '#111827', textAlign: 'center' },
-  emptySub: { fontSize: 14, color: '#9ca3af', textAlign: 'center' },
+  emptySub: { fontSize: 14, color: '#94a3b8', textAlign: 'center' },
   emptyBtn: {
     marginTop: 16,
     backgroundColor: '#111827',
@@ -760,13 +650,13 @@ const s = StyleSheet.create({
   },
   pickerOptionText: { flex: 1 },
   pickerOptionTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 3 },
-  pickerOptionDesc: { fontSize: 13, color: '#6b7280', lineHeight: 18 },
+  pickerOptionDesc: { fontSize: 13, color: '#64748b', lineHeight: 18 },
   pickerCancel: {
     marginTop: 4,
     alignItems: 'center',
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#f1f5f9',
   },
-  pickerCancelText: { fontSize: 15, fontWeight: '600', color: '#6b7280' },
+  pickerCancelText: { fontSize: 15, fontWeight: '600', color: '#64748b' },
 });

@@ -364,7 +364,7 @@ export default function OrderDetailScreen() {
                 )}
                 {proof.photos.length === 0 && (
                   <View style={s.proofNoPhoto}>
-                    <CheckCircle size={14} color="#15803d" />
+                    <CheckCircle size={14} color="#111827" />
                     <Text style={s.proofNoPhotoText}>Piegāde apstiprināta bez fotogrāfijas</Text>
                   </View>
                 )}
@@ -411,7 +411,7 @@ export default function OrderDetailScreen() {
           )}
           {order.status === 'DELIVERED' && (
             <View style={s.deliveredNote}>
-              <CheckCircle size={14} color="#15803d" />
+              <CheckCircle size={14} color="#111827" />
               <Text style={s.deliveredText}>Pasūtījums piegādāts!</Text>
             </View>
           )}
@@ -514,12 +514,12 @@ const s = StyleSheet.create({
   headerTitle: { fontSize: 17, fontWeight: '700', color: '#111827', flex: 1, marginHorizontal: 10 },
   content: { padding: 16, gap: 12, paddingBottom: 48 },
   driverCard: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: '#f9fafb',
     borderRadius: 14,
     padding: 14,
     gap: 10,
     borderLeftWidth: 3,
-    borderLeftColor: '#059669',
+    borderLeftColor: '#111827',
   },
   driverCardRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   driverTitle: {
@@ -594,20 +594,20 @@ const s = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     borderLeftWidth: 3,
-    borderLeftColor: '#ca8a04',
+    borderLeftColor: '#4b5563',
   },
   pendingText: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
   deliveredNote: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#dcfce7',
+    backgroundColor: '#f9fafb',
     borderRadius: 12,
     padding: 12,
     borderLeftWidth: 3,
     borderLeftColor: '#111827',
   },
-  deliveredText: { fontSize: 13, fontWeight: '600', color: '#15803d' },
+  deliveredText: { fontSize: 13, fontWeight: '600', color: '#111827' },
   cancelledNote: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -23,6 +23,7 @@ import {
   Keyboard,
   Platform,
   KeyboardAvoidingView,
+  ScrollView,
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -46,6 +47,12 @@ type Props = {
   onPick: (p: PickedAddress) => void;
   /** Optional compact banner shown above the map (e.g. pickup reference in transport step 2). */
   banner?: React.ReactNode;
+  /** Optional label describing what address we're selecting (e.g. "Piegādes vieta"). */
+  contextLabel?: string;
+  /** Optional icon type: 'from' or 'to' to indicate source vs destination. */
+  contextIcon?: 'from' | 'to';
+  /** Optional previously selected address to show as context (e.g., pickup when selecting delivery). */
+  contextAddress?: PickedAddress | null;
 };
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -59,9 +66,18 @@ const RIGA_REGION = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function InlineAddressStep({ picked, onPick, banner }: Props) {
+export function InlineAddressStep({
+  picked,
+  onPick,
+  banner,
+  contextLabel,
+  contextIcon,
+  contextAddress,
+}: Props) {
   const mapRef = useRef<MapView>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeSearchText = useRef<string>('');
+  const isSelectingRef = useRef<boolean>(false);
   const { forwardGeocode, resolvePlace, reverseGeocodeWithCity } = useGeocode();
 
   const [pin, setPin] = useState<{ latitude: number; longitude: number } | null>(
@@ -70,6 +86,7 @@ export function InlineAddressStep({ picked, onPick, banner }: Props) {
   const [query, setQuery] = useState(picked?.address ?? '');
   const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
   const [showSugs, setShowSugs] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [locating, setLocating] = useState(false);
 
@@ -77,6 +94,7 @@ export function InlineAddressStep({ picked, onPick, banner }: Props) {
 
   const applyCoords = useCallback(
     async (lat: number, lng: number) => {
+      isSelectingRef.current = true;
       setResolving(true);
       try {
         const result = await reverseGeocodeWithCity(lat, lng);
@@ -84,6 +102,9 @@ export function InlineAddressStep({ picked, onPick, banner }: Props) {
         setQuery(result.address);
       } finally {
         setResolving(false);
+        setTimeout(() => {
+          isSelectingRef.current = false;
+        }, 100);
       }
     },
     [reverseGeocodeWithCity, onPick],
@@ -93,17 +114,25 @@ export function InlineAddressStep({ picked, onPick, banner }: Props) {
 
   const handleQueryChange = useCallback(
     (text: string) => {
+      if (isSelectingRef.current) return;
       setQuery(text);
+      activeSearchText.current = text;
+
       if (searchTimer.current) clearTimeout(searchTimer.current);
       if (!text.trim()) {
         setSuggestions([]);
         setShowSugs(false);
+        setSearching(false);
         return;
       }
+      setShowSugs(true);
       searchTimer.current = setTimeout(async () => {
+        setSearching(true);
         const results = await forwardGeocode(text);
+        if (activeSearchText.current !== text) return;
         setSuggestions(results);
-        setShowSugs(results.length > 0);
+        setShowSugs(true);
+        setSearching(false);
       }, 350);
     },
     [forwardGeocode],
@@ -111,7 +140,10 @@ export function InlineAddressStep({ picked, onPick, banner }: Props) {
 
   const handleSuggestionSelect = useCallback(
     async (sug: GeocodeSuggestion) => {
+      isSelectingRef.current = true;
       Keyboard.dismiss();
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+      activeSearchText.current = '';
       setShowSugs(false);
       setResolving(true);
       try {
@@ -129,6 +161,9 @@ export function InlineAddressStep({ picked, onPick, banner }: Props) {
         setQuery(sug.place_name);
       } finally {
         setResolving(false);
+        setTimeout(() => {
+          isSelectingRef.current = false;
+        }, 100);
       }
     },
     [resolvePlace, onPick],
@@ -162,9 +197,6 @@ export function InlineAddressStep({ picked, onPick, banner }: Props) {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* Optional banner above map (e.g. pickup reference for transport step 2) */}
-      {banner}
-
       {/* Map fills all available space */}
       <View style={{ flex: 1 }}>
         <MapView
@@ -190,25 +222,31 @@ export function InlineAddressStep({ picked, onPick, banner }: Props) {
           activeOpacity={0.85}
         >
           {locating ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color="#111827" />
           ) : (
-            <Navigation size={18} color="#fff" />
+            <Navigation size={20} color="#111827" />
           )}
         </TouchableOpacity>
-
-        {/* Resolving overlay */}
-        {resolving && (
-          <View style={s.resolveOverlay} pointerEvents="none">
-            <ActivityIndicator color="#111827" />
-          </View>
-        )}
       </View>
 
       {/* Search panel */}
       <View style={s.searchPanel}>
+        {/* Optional reference address timeline */}
+        {contextAddress && (
+          <View style={s.timelineWrap}>
+            <View style={s.timelineRow}>
+              <View style={s.timelineDot} />
+              <Text style={s.timelineText} numberOfLines={1}>
+                {contextAddress.address}
+              </Text>
+            </View>
+            <View style={s.timelineLine} />
+          </View>
+        )}
+
         {/* Input */}
-        <View style={s.searchBox}>
-          <Search size={15} color="#9ca3af" />
+        <View style={[s.searchBox, showSugs && s.searchBoxFocused]}>
+          <Search size={20} color="#111827" />
           <TextInput
             style={s.searchInput}
             placeholder="Meklēt adresi..."
@@ -217,7 +255,6 @@ export function InlineAddressStep({ picked, onPick, banner }: Props) {
             onChangeText={handleQueryChange}
             returnKeyType="search"
             autoCorrect={false}
-            onFocus={() => suggestions.length > 0 && setShowSugs(true)}
           />
           {query.length > 0 && (
             <TouchableOpacity
@@ -228,27 +265,53 @@ export function InlineAddressStep({ picked, onPick, banner }: Props) {
                 setShowSugs(false);
               }}
             >
-              <X size={15} color="#9ca3af" />
+              <X size={20} color="#111827" />
             </TouchableOpacity>
           )}
         </View>
 
         {/* Autocomplete suggestions — floats above CTA */}
-        {showSugs && (
+        {showSugs && query.trim().length > 0 && (
           <View style={s.sugBox}>
-            {suggestions.map((sg, i) => (
-              <TouchableOpacity
-                key={sg.id}
-                style={[s.sugRow, i < suggestions.length - 1 && s.sugBorder]}
-                onPress={() => handleSuggestionSelect(sg)}
-                activeOpacity={0.7}
-              >
-                <MapPin size={12} color="#6b7280" style={{ marginTop: 2, flexShrink: 0 }} />
-                <Text style={s.sugText} numberOfLines={2}>
-                  {sg.place_name}
+            {searching ? (
+              <View style={s.sugStatusRow}>
+                <ActivityIndicator size="small" color="#6b7280" />
+                <Text style={s.sugStatusText}>Meklēju adreses...</Text>
+              </View>
+            ) : suggestions.length === 0 ? (
+              <View style={s.sugStatusRow}>
+                <Text style={s.sugStatusText}>
+                  Adreses netika atrastas. Pamēģini precīzāku ievadi.
                 </Text>
-              </TouchableOpacity>
-            ))}
+              </View>
+            ) : (
+              <ScrollView keyboardShouldPersistTaps="always" style={s.sugScroll}>
+                {suggestions.map((sg, i) => (
+                  <TouchableOpacity
+                    key={sg.id}
+                    style={[s.sugRow, i < suggestions.length - 1 && s.sugBorder]}
+                    onPress={() => handleSuggestionSelect(sg)}
+                    activeOpacity={0.7}
+                  >
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        backgroundColor: '#f3f4f6',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <MapPin size={16} color="#4b5563" />
+                    </View>
+                    <Text style={s.sugText} numberOfLines={2}>
+                      {sg.place_name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
           </View>
         )}
 
@@ -271,79 +334,136 @@ export function InlineAddressStep({ picked, onPick, banner }: Props) {
 const s = StyleSheet.create({
   gpsBtn: {
     position: 'absolute',
-    bottom: 14,
-    right: 14,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#111827',
+    bottom: 34,
+    right: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
     elevation: 5,
   },
-  resolveOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   searchPanel: {
     backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#f0f0f0',
-    gap: 8,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
+    gap: 12,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -20, // Overlap map
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 8,
+  },
+  timelineWrap: {
+    paddingHorizontal: 8,
+    paddingTop: 4,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  timelineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#9ca3af',
+    marginLeft: 6,
+  },
+  timelineText: {
+    flex: 1,
+    fontSize: 15,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  timelineLine: {
+    width: 2,
+    height: 16,
+    backgroundColor: '#e5e7eb',
+    marginLeft: 9,
+    marginTop: 4,
+    marginBottom: -4,
   },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    gap: 12,
+    backgroundColor: '#f3f4f6',
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
-  searchInput: { flex: 1, fontSize: 14, color: '#111827', padding: 0 },
+  searchBoxFocused: {
+    borderColor: '#111827',
+    backgroundColor: '#fff',
+  },
+  searchInput: { flex: 1, fontSize: 16, fontWeight: '500', color: '#111827', padding: 0 },
   sugBox: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderRadius: 16,
     overflow: 'hidden',
+    maxHeight: 280,
     shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+    marginTop: 8,
+  },
+  sugScroll: {
+    maxHeight: 280,
   },
   sugRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  sugStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 14,
+  },
+  sugStatusText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#6b7280',
+    lineHeight: 18,
   },
   sugBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#f3f4f6',
   },
-  sugText: { flex: 1, fontSize: 13, color: '#374151', lineHeight: 18 },
+  sugText: { flex: 1, fontSize: 15, fontWeight: '500', color: '#111827', lineHeight: 22 },
+
   confirmedChip: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    backgroundColor: '#f0fdf4',
-    borderRadius: 10,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 2,
+    borderColor: '#10b981',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
   },
-  confirmedText: { flex: 1, fontSize: 13, color: '#166534', lineHeight: 18 },
+  confirmedText: { flex: 1, fontSize: 15, color: '#111827', lineHeight: 22, fontWeight: '600' },
 });

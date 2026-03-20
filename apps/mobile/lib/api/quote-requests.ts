@@ -55,6 +55,22 @@ export interface QuoteRequest {
   createdAt: string;
 }
 
+type Paginated<T> = {
+  data?: T[];
+  pagination?: {
+    total: number;
+    limit: number;
+    skip: number;
+    hasMore: boolean;
+  };
+};
+
+function normalizeList<T>(payload: T[] | Paginated<T> | null | undefined): T[] {
+  if (Array.isArray(payload)) return payload;
+  if (payload && Array.isArray(payload.data)) return payload.data;
+  return [];
+}
+
 // ─── API ──────────────────────────────────────────────────────────────────
 
 export const quoteRequestsApi = {
@@ -85,9 +101,9 @@ export const quoteRequestsApi = {
       }),
 
     list: (token: string) =>
-      apiFetch<QuoteRequest[]>('/quote-requests', {
+      apiFetch<QuoteRequest[] | Paginated<QuoteRequest>>('/quote-requests', {
         headers: { Authorization: `Bearer ${token}` },
-      }),
+      }).then(normalizeList),
 
     accept: (id: string, responseId: string, token: string) =>
       apiFetch<{ id: string; orderNumber: string }>(`/quote-requests/${id}/accept/${responseId}`, {
@@ -97,9 +113,9 @@ export const quoteRequestsApi = {
 
     /** Supplier: list all open requests they can respond to. */
     openRequests: (token: string) =>
-      apiFetch<OpenQuoteRequest[]>('/quote-requests/open', {
+      apiFetch<OpenQuoteRequest[] | Paginated<OpenQuoteRequest>>('/quote-requests/open', {
         headers: { Authorization: `Bearer ${token}` },
-      }),
+      }).then(normalizeList),
 
     /** Supplier: submit a price proposal for a quote request. */
     respond: (

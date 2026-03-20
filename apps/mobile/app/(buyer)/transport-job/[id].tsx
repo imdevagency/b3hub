@@ -559,7 +559,7 @@ const s = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: '#16a34a',
+    backgroundColor: '#111827',
   },
   distBadge: {
     position: 'absolute',
@@ -594,9 +594,9 @@ const s = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: '#059669',
+    backgroundColor: '#111827',
   },
-  driverBadgeText: { fontSize: 13, fontWeight: '600', color: '#059669' },
+  driverBadgeText: { fontSize: 13, fontWeight: '600', color: '#111827' },
 
   // Map markers
   pinPickup: {
@@ -623,12 +623,12 @@ const s = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#059669',
+    backgroundColor: '#111827',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: '#fff',
-    shadowColor: '#059669',
+    shadowColor: '#111827',
     shadowOpacity: 0.4,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 0 },

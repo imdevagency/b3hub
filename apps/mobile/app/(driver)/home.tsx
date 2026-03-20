@@ -312,10 +312,10 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f3f4f6',
   },
-  statusChipActive: { borderColor: '#bbf7d0', backgroundColor: '#f0fdf4' },
+  statusChipActive: { borderColor: '#111827', backgroundColor: '#f9fafb' },
   statusChipIdle: {},
-  statusChipText: { fontSize: 12, fontWeight: '600', color: '#374151' },
-  statusChipTextActive: { color: '#059669' },
+  statusChipText: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
+  statusChipTextActive: { color: '#111827' },
   statusChipTextIdle: { color: '#9ca3af' },
   statusChipNum: { fontSize: 13, fontWeight: '800', color: '#111827' },
 

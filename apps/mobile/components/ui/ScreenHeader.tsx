@@ -48,7 +48,7 @@ export function ScreenHeader({
       {/* Back button */}
       <TouchableOpacity
         style={styles.backBtn}
-        onPress={onBack ?? (() => router.back())}
+        onPress={onBack ?? (() => router.canGoBack() ? router.back() : router.replace('/(buyer)/home' as any))}
         hitSlop={10}
         activeOpacity={0.7}
         accessibilityLabel="Atpakaļ"
@@ -95,7 +95,8 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   rightWrap: {
-    width: 36,
+    minWidth: 36,
+    flexShrink: 0,
     alignItems: 'flex-end',
     justifyContent: 'center',
   },

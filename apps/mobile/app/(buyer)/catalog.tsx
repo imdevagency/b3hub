@@ -16,6 +16,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import {
   Search,
   X,
+  Check,
   PackageSearch,
   Layers,
   Leaf,
@@ -31,6 +32,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
 import type { ApiMaterial, MaterialCategory, MaterialUnit } from '@/lib/api';
 import { CATEGORY_LABELS, UNIT_SHORT } from '@/lib/materials';
@@ -60,37 +62,12 @@ const CATEGORY_META: Record<MaterialCategory | 'ALL', CatMeta> = {
 
 const CATEGORIES = Object.keys(CATEGORY_LABELS) as Array<MaterialCategory | 'ALL'>;
 
-// ── Category Pill ───────────────────────────────────────────────
-
-function CategoryPill({
-  cat,
-  selected,
-  onPress,
-}: {
-  cat: MaterialCategory | 'ALL';
-  selected: boolean;
-  onPress: () => void;
-}) {
-  const meta = CATEGORY_META[cat];
-  const Icon = meta.icon;
-  return (
-    <TouchableOpacity
-      style={[s.pill, selected && { backgroundColor: meta.pillBg, borderColor: meta.pillBg }]}
-      onPress={onPress}
-      activeOpacity={0.75}
-    >
-      <Icon size={13} color={selected ? '#fff' : '#6b7280'} strokeWidth={2} />
-      <Text style={[s.pillLabel, selected && s.pillLabelSelected]}>{CATEGORY_LABELS[cat]}</Text>
-    </TouchableOpacity>
-  );
-}
-
-// ── Product Card ────────────────────────────────────────────────
+// Product Card 
 
 function ProductCard({ material, onPress }: { material: ApiMaterial; onPress: () => void }) {
   const meta = CATEGORY_META[material.category] ?? CATEGORY_META.OTHER;
   const Icon = meta.icon;
-  const imageH = Math.round(CARD_W * 0.72);
+  const imageH = Math.round(CARD_W * 0.85);
 
   return (
     <TouchableOpacity
@@ -100,25 +77,15 @@ function ProductCard({ material, onPress }: { material: ApiMaterial; onPress: ()
     >
       {/* Photo / illustration area */}
       <View style={[s.productImg, { height: imageH, backgroundColor: meta.bg }]}>
-        <Icon size={44} color={meta.accent} strokeWidth={1.2} />
-
+        <Icon size={48} color={meta.accent} strokeWidth={1} />
         {material.isRecycled && (
           <View style={s.ecoBadge}>
-            <Leaf size={9} color="#16a34a" strokeWidth={2.5} />
-            <Text style={s.ecoBadgeText}>Eco</Text>
+            <Leaf size={12} color="#16a34a" strokeWidth={2.5} />
           </View>
         )}
-
-        {/* Price chip */}
-        <View style={s.priceBadge}>
-          <Text style={s.priceBadgeAmount}>
-            {'ex \u20ac' + material.basePrice.toFixed(2) + '/' + UNIT_SHORT[material.unit]}
-          </Text>
-          <Text style={s.priceBadgeSub}>{'Franco b\u016bvlaukums'}</Text>
-        </View>
       </View>
 
-      {/* Name row */}
+      {/* Name & Info */}
       <View style={s.productBody}>
         <Text style={s.productName} numberOfLines={2}>
           {material.name}
@@ -128,12 +95,20 @@ function ProductCard({ material, onPress }: { material: ApiMaterial; onPress: ()
             {material.supplier.name}
           </Text>
         ) : null}
+
+        <View style={s.priceBox}>
+          <Text style={s.priceAmount}>
+            {'ex €' + material.basePrice.toFixed(2)}
+            <Text style={s.priceUnit}>{' / ' + UNIT_SHORT[material.unit]}</Text>
+          </Text>
+          <Text style={s.priceSub}>{'Franco būvlaukums'}</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
 }
 
-// ── Screen ──────────────────────────────────────────────────────
+// Screen 
 
 export default function CatalogScreen() {
   const { token } = useAuth();
@@ -144,6 +119,7 @@ export default function CatalogScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<MaterialCategory | 'ALL'>('ALL');
+  const [filterOpen, setFilterOpen] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const filterOpacity = useRef(new Animated.Value(1)).current;
 
@@ -219,7 +195,7 @@ export default function CatalogScreen() {
 
   return (
     <ScreenContainer bg="#f9fafb">
-      {/* ── Header ─────────────────────────────────────────── */}
+      {/*  Header  */}
       <View style={s.header}>
         <View>
           <Text style={s.headerEyebrow}>{'Materi\u0101lu katalogs'}</Text>
@@ -228,53 +204,63 @@ export default function CatalogScreen() {
         {filtering && <ActivityIndicator size="small" color="#111827" />}
       </View>
 
-      {/* ── Search bar ─────────────────────────────────────── */}
+      {/*  Search & Filters  */}
       <View style={s.searchWrap}>
-        <View style={s.searchBar}>
-          <Search size={16} color="#9ca3af" strokeWidth={2} />
-          <TextInput
-            style={s.searchInput}
-            placeholder={'Mekl\u0113t materi\u0101lus...'}
-            placeholderTextColor="#9ca3af"
-            value={search}
-            onChangeText={onSearchChange}
-            returnKeyType="search"
-            autoCorrect={false}
-          />
-          {search.length > 0 && (
+        <View style={s.searchRow}>
+          <View style={s.searchBar}>
+            <Search size={18} color="#6b7280" strokeWidth={2.5} />
+            <TextInput
+              style={s.searchInput}
+              placeholder={'Meklēt materiālus...'}
+              placeholderTextColor="#9ca3af"
+              value={search}
+              onChangeText={onSearchChange}
+              returnKeyType="search"
+              autoCorrect={false}
+            />
+            {search.length > 0 && (
+              <TouchableOpacity
+                onPress={() => {
+                  setSearch('');
+                  loadMaterials('', category, true);
+                }}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                style={s.clearBtn}
+              >
+                <X size={12} color="#fff" strokeWidth={3} />
+              </TouchableOpacity>
+            )}
+          </View>
+          <TouchableOpacity
+            style={[s.filterBtn, category !== 'ALL' && s.filterBtnActive]}
+            onPress={() => setFilterOpen(true)}
+            activeOpacity={0.8}
+          >
+            <SlidersHorizontal
+              size={20}
+              color={category !== 'ALL' ? '#fff' : '#111827'}
+              strokeWidth={2}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {category !== 'ALL' && (
+          <View style={s.activeFilterRow}>
             <TouchableOpacity
-              onPress={() => {
-                setSearch('');
-                loadMaterials('', category, true);
-              }}
-              hitSlop={12}
+              style={s.activeFilterChip}
+              onPress={() => selectCategory('ALL')}
+              activeOpacity={0.7}
             >
-              <View style={s.clearBtn}>
-                <X size={10} color="#fff" strokeWidth={3} />
+              <Text style={s.activeFilterText}>{CATEGORY_LABELS[category]}</Text>
+              <View style={s.activeFilterClear}>
+                <X size={14} color="#111827" strokeWidth={2.5} />
               </View>
             </TouchableOpacity>
-          )}
-        </View>
+          </View>
+        )}
       </View>
 
-      {/* ── Category pills ──────────────────────────────────── */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.pillsRow}
-        style={s.pillsScroll}
-      >
-        {CATEGORIES.map((cat) => (
-          <CategoryPill
-            key={cat}
-            cat={cat}
-            selected={category === cat}
-            onPress={() => selectCategory(cat)}
-          />
-        ))}
-      </ScrollView>
-
-      {/* ── Product grid ─────────────────────────────────────── */}
+      {/*  Product grid  */}
       {loading ? (
         <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
           <SkeletonCard count={4} />
@@ -349,11 +335,47 @@ export default function CatalogScreen() {
           />
         </Animated.View>
       )}
+      {/*  Filter Modal  */}
+      <BottomSheet
+        visible={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        title="Filtrēt materiālus"
+        scrollable={true}
+      >
+        <View style={s.filterContent}>
+          {CATEGORIES.map((cat) => {
+            const isSelected = category === cat;
+            const meta = CATEGORY_META[cat];
+            const Icon = meta.icon;
+            return (
+              <TouchableOpacity
+                key={cat}
+                style={[s.filterOption, isSelected && s.filterOptionSelected]}
+                activeOpacity={0.7}
+                onPress={() => {
+                  selectCategory(cat);
+                  setFilterOpen(false);
+                }}
+              >
+                <View style={s.filterOptionLeft}>
+                  <View style={[s.filterOptionIcon, { backgroundColor: meta.bg }]}>
+                    <Icon size={20} color={meta.accent} strokeWidth={1.5} />
+                  </View>
+                  <Text style={[s.filterOptionLabel, isSelected && s.filterOptionLabelSelected]}>
+                    {CATEGORY_LABELS[cat]}
+                  </Text>
+                </View>
+                {isSelected && <Check size={20} color="#111827" strokeWidth={2.5} />}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </BottomSheet>
     </ScreenContainer>
   );
 }
 
-// ── Styles ──────────────────────────────────────────────────────
+// Styles 
 
 const s = StyleSheet.create({
   header: {
@@ -381,164 +403,205 @@ const s = StyleSheet.create({
 
   searchWrap: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 16,
   },
-  searchBar: {
+  searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    paddingHorizontal: 16,
+    height: 48,
+    gap: 10,
   },
-  searchInput: { flex: 1, fontSize: 15, color: '#111827', padding: 0 },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#111827',
+    padding: 0,
+    fontWeight: '500',
+  },
   clearBtn: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: '#d1d5db',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  pillsScroll: { flexGrow: 0 },
-  pillsRow: {
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-    gap: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1.5,
+  filterBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
     backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  pillLabel: {
-    fontSize: 13,
+  filterBtnActive: {
+    backgroundColor: '#111827',
+    borderColor: '#111827',
+  },
+  activeFilterRow: {
+    flexDirection: 'row',
+    marginTop: 12,
+  },
+  activeFilterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 8,
+  },
+  activeFilterText: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#111827',
   },
-  pillLabelSelected: {
-    color: '#fff',
+  activeFilterClear: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   gridContent: {
     paddingHorizontal: 16,
     paddingTop: 4,
     paddingBottom: 40,
-    gap: 12,
+    gap: 16,
     flexGrow: 1,
   },
   gridRow: {
-    gap: 12,
+    gap: 16,
     justifyContent: 'flex-start',
   },
   listHeader: {
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
-    marginBottom: 14,
-    marginTop: 4,
+    marginBottom: 6,
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 19,
     fontWeight: '800',
     color: '#111827',
-    letterSpacing: -0.3,
+    letterSpacing: -0.5,
   },
   sectionCount: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '500',
     color: '#9ca3af',
   },
 
   productCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    backgroundColor: 'transparent',
   },
   productImg: {
     width: '100%',
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.03)',
   },
   ecoBadge: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
+    top: 10,
+    left: 10,
     backgroundColor: '#dcfce7',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-  },
-  ecoBadgeText: { fontSize: 10, fontWeight: '700', color: '#16a34a' },
-  priceBadge: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
-    right: 8,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 10,
-    paddingHorizontal: 9,
-    paddingVertical: 7,
-    alignItems: 'flex-start',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-  },
-  priceBadgeAmount: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#111827',
-    letterSpacing: -0.3,
-  },
-  priceBadgeSub: {
-    fontSize: 10,
-    color: '#9ca3af',
-    fontWeight: '400',
-    marginTop: 1,
+    borderRadius: 20,
+    padding: 6,
   },
   productBody: {
-    padding: 11,
-    gap: 3,
+    flex: 1,
   },
   productName: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: '#111827',
-    lineHeight: 18,
+    lineHeight: 20,
+    marginBottom: 2,
+    letterSpacing: -0.2,
   },
   productSupplier: {
+    fontSize: 13,
+    color: '#6b7280',
+    fontWeight: '500',
+    marginBottom: 6,
+  },
+  priceBox: {
+    marginTop: 'auto',
+    alignItems: 'flex-start',
+  },
+  priceAmount: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  priceUnit: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  priceSub: {
     fontSize: 11,
     color: '#9ca3af',
-    fontWeight: '400',
+    fontWeight: '500',
+    marginTop: 2,
+  },
+
+  filterContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+    gap: 4,
+  },
+  filterOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e5e7eb',
+  },
+  filterOptionSelected: {
+    // optional selected style
+  },
+  filterOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  filterOptionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
+  },
+  filterOptionLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  filterOptionLabelSelected: {
+    color: '#111827',
+    fontWeight: '700',
   },
 
   emptyReset: {

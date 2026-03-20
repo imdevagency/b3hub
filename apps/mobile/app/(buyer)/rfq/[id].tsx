@@ -32,11 +32,19 @@ import { haptics } from '@/lib/haptics';
 // ── Status helpers ─────────────────────────────────────────────
 
 const RFQ_STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING: { label: 'Gaida piedāvājumus', bg: '#fef3c7', color: '#d97706' },
-  QUOTED: { label: 'Ir piedāvājumi', bg: '#d1fae5', color: '#059669' },
-  ACCEPTED: { label: 'Pieņemts', bg: '#dcfce7', color: '#15803d' },
-  CANCELLED: { label: 'Atcelts', bg: '#f3f4f6', color: '#6b7280' },
-  EXPIRED: { label: 'Beidzies', bg: '#f3f4f6', color: '#9ca3af' },
+  PENDING: { label: 'Gaida piedāvājumus', bg: '#f3f4f6', color: '#6b7280' },
+  QUOTED: { label: 'Ir piedāvājumi', bg: '#e5e7eb', color: '#111827' },
+  ACCEPTED: { label: 'Pieņemts', bg: '#f3f4f6', color: '#374151' },
+  CANCELLED: { label: 'Atcelts', bg: '#f9fafb', color: '#9ca3af' },
+  EXPIRED: { label: 'Beidzies', bg: '#f9fafb', color: '#9ca3af' },
+};
+
+const RFQ_STATUS_HEADER_LABEL: Record<string, string> = {
+  PENDING: 'Gaida',
+  QUOTED: 'Piedāvājumi',
+  ACCEPTED: 'Pieņemts',
+  CANCELLED: 'Atcelts',
+  EXPIRED: 'Beidzies',
 };
 
 // ── Component ──────────────────────────────────────────────────
@@ -111,7 +119,7 @@ export default function RfqDetailScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer standalone>
+      <ScreenContainer standalone bg="#ffffff">
         <View style={ss.center}>
           <ActivityIndicator color="#111827" />
         </View>
@@ -121,7 +129,7 @@ export default function RfqDetailScreen() {
 
   if (!rfq) {
     return (
-      <ScreenContainer standalone>
+      <ScreenContainer standalone bg="#ffffff">
         <View style={ss.center}>
           <Text style={ss.emptyText}>Pieprasījums nav atrasts</Text>
           <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
@@ -138,10 +146,17 @@ export default function RfqDetailScreen() {
   const sortedResponses = [...rfq.responses].sort((a, b) => a.totalPrice - b.totalPrice);
 
   return (
-    <ScreenContainer standalone>
+    <ScreenContainer standalone bg="#ffffff">
       <ScreenHeader
         title={`Pieprasījums #${rfq.requestNumber}`}
-        rightSlot={<StatusPill label={st.label} bg={st.bg} color={st.color} size="sm" />}
+        rightSlot={
+          <StatusPill
+            label={RFQ_STATUS_HEADER_LABEL[rfq.status] ?? st.label}
+            bg={st.bg}
+            color={st.color}
+            size="sm"
+          />
+        }
       />
 
       <ScrollView
@@ -268,8 +283,8 @@ export default function RfqDetailScreen() {
 }
 
 const ss = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f2f7' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f2f2f7' },
+  root: { flex: 1, backgroundColor: '#ffffff' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' },
   emptyText: { fontSize: 15, color: '#6b7280' },
   link: { fontSize: 15, color: '#111827', fontWeight: '600' },
 
@@ -280,9 +295,9 @@ const ss = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: '#f3f4f6',
   },
   backBtn: {
     width: 36,
@@ -291,7 +306,6 @@ const ss = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
   },
   headerTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
   statusPill: {
@@ -304,44 +318,43 @@ const ss = StyleSheet.create({
   statusPillText: { fontSize: 11, fontWeight: '600' },
 
   // Scroll
-  scroll: { padding: 16, gap: 12 },
+  scroll: { padding: 16, gap: 16 }, // increased gap slightly
 
   // Summary card
   summaryCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
+    borderRadius: 20, 
+    padding: 18, // slightly more padding
+    borderWidth: 0,
   },
-  summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 },
-  summaryLabel: { fontSize: 13, color: '#6b7280', width: 80 },
-  summaryValue: { flex: 1, fontSize: 13, fontWeight: '600', color: '#111827' },
-  summaryDivider: { height: StyleSheet.hairlineWidth, backgroundColor: '#f3f4f6' },
+  summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
+  summaryLabel: { fontSize: 14, color: '#6b7280', width: 90 }, // slightly larger label
+  summaryValue: { flex: 1, fontSize: 14, fontWeight: '700', color: '#111827' },
+  summaryDivider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 4 }, // light divider
 
   // Section title
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginTop: 4 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginTop: 8 }, 
 
   // Empty responses
   emptyResponses: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
     padding: 32,
     alignItems: 'center',
-    gap: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e5e7eb',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
   },
-  emptyResponsesTitle: { fontSize: 15, fontWeight: '600', color: '#374151', textAlign: 'center' },
-  emptyResponsesDesc: { fontSize: 13, color: '#9ca3af', textAlign: 'center', lineHeight: 20 },
+  emptyResponsesTitle: { fontSize: 15, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  emptyResponsesDesc: { fontSize: 13, color: '#6b7280', textAlign: 'center', lineHeight: 20 },
 
   // Response card
   responseCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
     padding: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e5e7eb',
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
     gap: 10,
   },
   bestBadge: {
@@ -349,36 +362,37 @@ const ss = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#111827',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    backgroundColor: '#111827', // Keep black for contrast
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 4,
   },
-  bestBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700', letterSpacing: 0.2 },
+  bestBadgeText: { color: '#ffffff', fontSize: 11, fontWeight: '700', letterSpacing: 0.2 },
   responseTop: { gap: 2 },
-  supplierName: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  supplierCity: { fontSize: 12, color: '#6b7280' },
-  priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  priceMain: { fontSize: 22, fontWeight: '800', color: '#111827' },
-  priceSub: { fontSize: 12, color: '#6b7280', marginTop: 1 },
+  supplierName: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  supplierCity: { fontSize: 13, color: '#6b7280' },
+  priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+  priceMain: { fontSize: 24, fontWeight: '800', color: '#111827', letterSpacing: -0.5 },
+  priceSub: { fontSize: 13, color: '#6b7280', marginTop: 1 },
   etaChip: {
     backgroundColor: '#f3f4f6',
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
-  etaText: { fontSize: 14, fontWeight: '600', color: '#374151' },
-  respNotes: { fontSize: 13, color: '#6b7280', lineHeight: 19 },
-  validUntil: { fontSize: 11, color: '#9ca3af' },
+  etaText: { fontSize: 14, fontWeight: '700', color: '#111827' },
+  respNotes: { fontSize: 13, color: '#6b7280', lineHeight: 20, marginTop: 4 },
+  validUntil: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
   acceptBtn: {
     backgroundColor: '#111827',
-    borderRadius: 10,
-    paddingVertical: 13,
+    borderRadius: 16,
+    paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    marginTop: 4,
+    gap: 8,
+    marginTop: 8,
   },
-  acceptBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  acceptBtnText: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
 });

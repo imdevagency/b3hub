@@ -59,7 +59,7 @@ export function Step2WasteType({
           <Animated.View
             key={id}
             style={{
-              width: '47%',
+              width: '48%',
               opacity: stagger[idx],
               transform: [{ scale: scales[idx] }, { translateY }],
             }}
@@ -86,16 +86,23 @@ export function Step2WasteType({
 }
 
 const s2 = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingBottom: 20 },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 10,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
   card: {
-    width: '47%',
+    width: '100%',
     backgroundColor: '#f9fafb',
     borderRadius: 14,
     padding: 14,
     borderWidth: 2,
     borderColor: '#f3f4f6',
     position: 'relative',
-    minHeight: 100,
+    minHeight: 118,
   },
   cardSelected: { borderColor: '#111827', backgroundColor: '#111827' },
   check: {
@@ -109,8 +116,8 @@ const s2 = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  label: { fontSize: 13, fontWeight: '700', color: '#374151', lineHeight: 17 },
   labelSelected: { color: '#fff' },
-  desc: { fontSize: 11, color: '#9ca3af', marginTop: 2 },
+  desc: { fontSize: 12, color: '#9ca3af', marginTop: 3, lineHeight: 16 },
   descSelected: { color: 'rgba(255,255,255,0.6)' },
 });

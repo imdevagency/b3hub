@@ -32,6 +32,11 @@ interface GooglePrediction {
   description: string;
 }
 
+interface GoogleGeocodeResult {
+  place_id?: string;
+  formatted_address?: string;
+}
+
 interface AddressComponent {
   types: string[];
   long_name: string;
@@ -57,29 +62,66 @@ interface UseGeocodeResult {
 export function useGeocode(): UseGeocodeResult {
   const [loading, setLoading] = useState(false);
 
+  const mapPredictions = useCallback((predictions: GooglePrediction[]): GeocodeSuggestion[] => {
+    return predictions.slice(0, 8).map((p) => ({
+      id: p.place_id as string,
+      place_name: p.description as string,
+      center: [0, 0] as [number, number],
+    }));
+  }, []);
+
+  const fetchAutocomplete = useCallback(
+    async (query: string, useCountryFilter: boolean): Promise<GooglePrediction[]> => {
+      const url =
+        `${AUTOCOMPLETE_BASE}?input=${encodeURIComponent(query)}` +
+        `&language=lv&region=lv&location=56.9496,24.1052&radius=120000` +
+        `${useCountryFilter ? '&components=country:lv|country:lt|country:ee' : ''}` +
+        `&key=${GOOGLE_KEY}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (json.status === 'OK') return (json.predictions ?? []) as GooglePrediction[];
+      return [];
+    },
+    [],
+  );
+
+  const fetchAddressFallback = useCallback(async (query: string): Promise<GeocodeSuggestion[]> => {
+    const url =
+      `${GEOCODE_BASE}?address=${encodeURIComponent(query)}` +
+      `&language=lv&region=lv&key=${GOOGLE_KEY}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    if (json.status !== 'OK') return [];
+    return ((json.results ?? []) as GoogleGeocodeResult[])
+      .slice(0, 5)
+      .filter((r) => !!r.place_id && !!r.formatted_address)
+      .map((r) => ({
+        id: r.place_id as string,
+        place_name: r.formatted_address as string,
+        center: [0, 0] as [number, number],
+      }));
+  }, []);
+
   const forwardGeocode = useCallback(async (query: string): Promise<GeocodeSuggestion[]> => {
     if (!query.trim()) return [];
     setLoading(true);
     try {
-      // Places Autocomplete — works on partial text like "gulbe" or "brīvī"
-      const url =
-        `${AUTOCOMPLETE_BASE}?input=${encodeURIComponent(query)}` +
-        `&language=lv&components=country:lv|country:lt|country:ee` +
-        `&key=${GOOGLE_KEY}`;
-      const res = await fetch(url);
-      const json = await res.json();
-      if (json.status !== 'OK' && json.status !== 'ZERO_RESULTS') return [];
-      return (json.predictions ?? []).slice(0, 6).map((p: GooglePrediction) => ({
-        id: p.place_id as string,
-        place_name: p.description as string,
-        center: [0, 0] as [number, number], // resolved lazily via resolvePlace()
-      }));
+      // 1) Start with local country filter for relevance.
+      const local = await fetchAutocomplete(query, true);
+      if (local.length > 0) return mapPredictions(local);
+
+      // 2) Fallback without country filter so users can find broader POIs/addresses.
+      const global = await fetchAutocomplete(query, false);
+      if (global.length > 0) return mapPredictions(global);
+
+      // 3) Final fallback via Geocoding API for edge-case address formats.
+      return await fetchAddressFallback(query);
     } catch {
       return [];
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchAutocomplete, mapPredictions, fetchAddressFallback]);
 
   /** Resolve a place_id → [lng, lat] using Place Details API. */
   const resolvePlace = useCallback(

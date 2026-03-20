@@ -48,7 +48,10 @@ export function Step3Size({
   };
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
+    >
       {SIZES.map((size, idx) => {
         const info = t.skipHire.step3.sizes[size.id];
         const isSel = selected === size.id;

@@ -166,11 +166,9 @@ export function SkeletonJobRow({ count = 4 }: { count?: number }) {
 
 const cardStyles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 20,
+    padding: 16,
   },
   row: {
     flexDirection: 'row',

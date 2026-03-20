@@ -13,14 +13,26 @@ export interface DisposalWizardState {
   requestedDate: string;
 }
 
+export interface ConfirmedDisposal {
+  jobNumber: string;
+  pickupAddress: string;
+  wasteType: WasteType;
+  truckType: DisposalTruckType;
+  truckCount: number;
+  requestedDate: string;
+  estimatedWeight: number;
+}
+
 interface DisposalContextValue {
   state: DisposalWizardState;
+  confirmedDisposal: ConfirmedDisposal | null;
   setLocation: (address: string, city: string, lat: number, lng: number) => void;
   setWasteType: (v: WasteType) => void;
   setTruckType: (v: DisposalTruckType) => void;
   setTruckCount: (v: number) => void;
   setDescription: (v: string) => void;
   setRequestedDate: (v: string) => void;
+  setConfirmedDisposal: (disposal: ConfirmedDisposal | null) => void;
   reset: () => void;
 }
 
@@ -40,11 +52,13 @@ const DisposalContext = createContext<DisposalContextValue | null>(null);
 
 export function DisposalProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<DisposalWizardState>(INITIAL);
+  const [confirmedDisposal, setConfirmedDisposal] = useState<ConfirmedDisposal | null>(null);
 
   return (
     <DisposalContext.Provider
       value={{
         state,
+        confirmedDisposal,
         setLocation: (location, locationCity, locationLat, locationLng) =>
           setState((s) => ({ ...s, location, locationCity, locationLat, locationLng })),
         setWasteType: (wasteType) => setState((s) => ({ ...s, wasteType })),
@@ -52,7 +66,11 @@ export function DisposalProvider({ children }: { children: React.ReactNode }) {
         setTruckCount: (truckCount) => setState((s) => ({ ...s, truckCount })),
         setDescription: (description) => setState((s) => ({ ...s, description })),
         setRequestedDate: (requestedDate) => setState((s) => ({ ...s, requestedDate })),
-        reset: () => setState(INITIAL),
+        setConfirmedDisposal,
+        reset: () => {
+          setState(INITIAL);
+          setConfirmedDisposal(null);
+        },
       }}
     >
       {children}
