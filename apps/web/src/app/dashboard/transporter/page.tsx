@@ -8,8 +8,18 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
-import { getDashboardStats, type DashboardStats } from '@/lib/api';
 import {
+  getDashboardStats,
+  getSlaOverdueTransportJobs,
+  getOpenTransportExceptions,
+  reportTransportJobException,
+  resolveTransportJobException,
+  type DashboardStats,
+  type ApiTransportJob,
+  type ApiTransportJobException,
+} from '@/lib/api';
+import {
+  AlertTriangle,
   Banknote,
   CalendarClock,
   Car,
@@ -22,6 +32,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
@@ -89,6 +100,23 @@ export default function TransporterDashboardPage() {
   const { setActiveMode } = useMode();
   const router = useRouter();
   const [data, setData] = useState<DashboardStats | null>(null);
+  const [slaOverdues, setSlaOverdues] = useState<ApiTransportJob[]>([]);
+  const [openExceptions, setOpenExceptions] = useState<ApiTransportJobException[]>([]);
+  const [resolvingExceptionId, setResolvingExceptionId] = useState<string | null>(null);
+  const [reportingSlaJobId, setReportingSlaJobId] = useState<string | null>(null);
+
+  const refreshTriageQueues = async (authToken: string) => {
+    const [slaRes, exRes] = await Promise.allSettled([
+      getSlaOverdueTransportJobs(authToken),
+      getOpenTransportExceptions(authToken),
+    ]);
+    if (slaRes.status === 'fulfilled') {
+      setSlaOverdues(slaRes.value);
+    }
+    if (exRes.status === 'fulfilled') {
+      setOpenExceptions(exRes.value);
+    }
+  };
 
   // Sync sidebar mode to CARRIER when this page is active
   useEffect(() => {
@@ -100,10 +128,15 @@ export default function TransporterDashboardPage() {
   }, [user, isLoading, router]);
 
   useEffect(() => {
-    if (user && token)
-      getDashboardStats(token)
-        .then(setData)
-        .catch(() => {});
+    if (!user || !token) return;
+
+    getDashboardStats(token)
+      .then(setData)
+      .catch(() => {});
+
+    if (user.isCompany) {
+      refreshTriageQueues(token).catch(() => {});
+    }
   }, [user, token]);
 
   if (isLoading || !user) {
@@ -115,6 +148,59 @@ export default function TransporterDashboardPage() {
   }
 
   const isDispatcher = Boolean(user.isCompany);
+
+  const handleResolveException = async (item: ApiTransportJobException) => {
+    if (!token || !item.transportJobId) return;
+
+    const resolution = window.prompt(
+      'Norādiet atrisinājuma komentāru',
+      'Atrisināts dispečera panelī',
+    );
+    if (!resolution || !resolution.trim()) return;
+
+    setResolvingExceptionId(item.id);
+    try {
+      await resolveTransportJobException(
+        item.transportJobId,
+        item.id,
+        resolution.trim(),
+        token,
+      );
+      await refreshTriageQueues(token);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Neizdevās atrisināt izņēmumu');
+    } finally {
+      setResolvingExceptionId(null);
+    }
+  };
+
+  const handleEscalateSla = async (job: ApiTransportJob) => {
+    if (!token) return;
+
+    const notes = window.prompt(
+      'Aprakstiet SLA kavējuma iemeslu',
+      `SLA kavējums: ${job.pickupCity} → ${job.deliveryCity}`,
+    );
+    if (!notes || !notes.trim()) return;
+
+    setReportingSlaJobId(job.id);
+    try {
+      await reportTransportJobException(
+        job.id,
+        {
+          type: 'OTHER',
+          notes: notes.trim(),
+          requiresDispatchAction: true,
+        },
+        token,
+      );
+      await refreshTriageQueues(token);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Neizdevās izveidot izņēmumu');
+    } finally {
+      setReportingSlaJobId(null);
+    }
+  };
 
   const stats: Stat[] = [
     {
@@ -319,6 +405,126 @@ export default function TransporterDashboardPage() {
           <StatCard key={s.label} stat={s} />
         ))}
       </div>
+
+      {/* Dispatcher triage */}
+      {isDispatcher && (
+        <div>
+          <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Operatīvais Triāžas Panelis
+          </p>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card className="shadow-none border-amber-200 bg-amber-50/60">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="text-sm flex items-center gap-2 text-amber-900">
+                    <CalendarClock className="h-4 w-4" />
+                    SLA kavējumi
+                  </CardTitle>
+                  <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800">
+                    {slaOverdues.length}
+                  </span>
+                </div>
+                <CardDescription className="text-amber-800/80">
+                  Darbi, kuri pārsniedz plānoto laika logu
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {slaOverdues.length === 0 ? (
+                  <p className="text-xs text-amber-900/70">Nav aktīvu SLA kavējumu.</p>
+                ) : (
+                  slaOverdues.slice(0, 5).map((job) => (
+                    <div
+                      key={job.id}
+                      className="rounded-lg border border-amber-200 bg-white px-3 py-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <Link
+                          href={`/dashboard/orders/${job.id}`}
+                          className="text-xs font-semibold text-gray-900 hover:text-amber-700"
+                        >
+                          #{job.jobNumber}
+                        </Link>
+                        <span className="text-[11px] font-semibold text-red-700">
+                          {job.sla?.overdueMinutes ?? 0} min
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {job.pickupCity} → {job.deliveryCity}
+                      </p>
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <p className="text-[11px] text-gray-500">Nepieciešama dispečera rīcība</p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2.5 text-[11px]"
+                          onClick={() => handleEscalateSla(job)}
+                          disabled={reportingSlaJobId === job.id}
+                        >
+                          {reportingSlaJobId === job.id ? 'Saglabā...' : 'Izveidot izņēmumu'}
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-none border-red-200 bg-red-50/60">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="text-sm flex items-center gap-2 text-red-900">
+                    <AlertTriangle className="h-4 w-4" />
+                    Atvērtie izņēmumi
+                  </CardTitle>
+                  <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-800">
+                    {openExceptions.length}
+                  </span>
+                </div>
+                <CardDescription className="text-red-800/80">
+                  Situācijas, kam nepieciešama dispečera rīcība
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {openExceptions.length === 0 ? (
+                  <p className="text-xs text-red-900/70">Nav atvērto izņēmumu.</p>
+                ) : (
+                  openExceptions.slice(0, 5).map((item) => (
+                    <div
+                      key={item.id}
+                      className="rounded-lg border border-red-200 bg-white px-3 py-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <Link
+                          href={`/dashboard/orders/${item.transportJob?.id ?? ''}`}
+                          className="text-xs font-semibold text-gray-900 hover:text-red-700"
+                        >
+                          #{item.transportJob?.jobNumber ?? '—'} · {item.type}
+                        </Link>
+                        <span className="text-[11px] font-semibold text-red-700">ATVĒRTS</span>
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">{item.notes}</p>
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <p className="text-[11px] text-gray-500">
+                          {item.transportJob?.pickupCity ?? '—'} → {item.transportJob?.deliveryCity ?? '—'}
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2.5 text-[11px]"
+                          onClick={() => handleResolveException(item)}
+                          disabled={resolvingExceptionId === item.id}
+                        >
+                          {resolvingExceptionId === item.id ? 'Saglabā...' : 'Atrisināt'}
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div>

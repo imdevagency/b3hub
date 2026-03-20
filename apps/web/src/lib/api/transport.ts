@@ -59,6 +59,15 @@ export interface ApiTransportJob {
   pricePerTonne: number | null;
   currency: string;
   status: TransportJobStatus;
+  acceptedAt?: string | null;
+  statusUpdatedAt?: string | null;
+  slaEscalatedAt?: string | null;
+  slaEscalationStage?: string | null;
+  sla?: {
+    stage: string | null;
+    overdueMinutes: number;
+    isOverdue: boolean;
+  };
   driverId: string | null;
   driver: {
     id: string;
@@ -140,6 +149,60 @@ export interface DeliveryProof {
   submittedAt: string;
 }
 
+export type TransportExceptionType =
+  | 'DRIVER_NO_SHOW'
+  | 'SUPPLIER_NOT_READY'
+  | 'WRONG_MATERIAL'
+  | 'PARTIAL_DELIVERY'
+  | 'REJECTED_DELIVERY'
+  | 'SITE_CLOSED'
+  | 'OVERWEIGHT'
+  | 'OTHER';
+
+export type TransportExceptionStatus = 'OPEN' | 'RESOLVED';
+
+export interface ApiTransportJobException {
+  id: string;
+  transportJobId: string;
+  type: TransportExceptionType;
+  status: TransportExceptionStatus;
+  notes: string;
+  photoUrls: string[];
+  reportedById: string;
+  resolvedById: string | null;
+  resolution: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+  transportJob?: {
+    id: string;
+    jobNumber: string;
+    status: TransportJobStatus;
+    pickupCity: string;
+    deliveryCity: string;
+    driver: {
+      id: string;
+      firstName: string;
+      lastName: string;
+    } | null;
+  };
+}
+
+export interface TransportDocumentReadiness {
+  transportJobId: string;
+  status: TransportJobStatus;
+  requires: {
+    deliveryProof: boolean;
+    weighingSlip: boolean;
+  };
+  has: {
+    deliveryProof: boolean;
+    weighingSlip: boolean;
+    deliveryNote: boolean;
+  };
+  canMarkDelivered: boolean;
+  missing: string[];
+}
+
 // ─── Functions ─────────────────────────────────────────────────────────────
 
 export async function getAvailableTransportJobs(token: string): Promise<ApiTransportJob[]> {
@@ -150,6 +213,22 @@ export async function getAvailableTransportJobs(token: string): Promise<ApiTrans
 
 export async function getAllTransportJobs(token: string): Promise<ApiTransportJob[]> {
   return apiFetch<ApiTransportJob[]>('/transport-jobs/fleet', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function getSlaOverdueTransportJobs(
+  token: string,
+): Promise<ApiTransportJob[]> {
+  return apiFetch<ApiTransportJob[]>('/transport-jobs/sla-overdue', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function getOpenTransportExceptions(
+  token: string,
+): Promise<ApiTransportJobException[]> {
+  return apiFetch<ApiTransportJobException[]>('/transport-jobs/exceptions/open', {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
@@ -196,7 +275,7 @@ export async function getTransportDrivers(token: string): Promise<ApiDriver[]> {
 
 export async function assignTransportJob(
   id: string,
-  body: { driverId: string; vehicleId: string },
+  body: { driverId: string; vehicleId?: string },
   token: string,
 ): Promise<ApiTransportJob> {
   return apiFetch<ApiTransportJob>(`/transport-jobs/${id}/assign`, {
@@ -204,6 +283,72 @@ export async function assignTransportJob(
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+}
+
+export async function reassignTransportJob(
+  id: string,
+  body: { driverId: string; vehicleId?: string },
+  token: string,
+): Promise<ApiTransportJob> {
+  return apiFetch<ApiTransportJob>(`/transport-jobs/${id}/reassign`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function unassignTransportJob(
+  id: string,
+  reason: string | undefined,
+  token: string,
+): Promise<ApiTransportJob> {
+  return apiFetch<ApiTransportJob>(`/transport-jobs/${id}/unassign`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...(reason ? { reason } : {}) }),
+  });
+}
+
+export async function listTransportJobExceptions(
+  id: string,
+  token: string,
+): Promise<ApiTransportJobException[]> {
+  return apiFetch<ApiTransportJobException[]>(`/transport-jobs/${id}/exceptions`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function reportTransportJobException(
+  id: string,
+  dto: {
+    type: TransportExceptionType;
+    notes: string;
+    photoUrls?: string[];
+    requiresDispatchAction?: boolean;
+  },
+  token: string,
+): Promise<ApiTransportJobException> {
+  return apiFetch<ApiTransportJobException>(`/transport-jobs/${id}/exceptions`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function resolveTransportJobException(
+  id: string,
+  exceptionId: string,
+  resolution: string,
+  token: string,
+): Promise<ApiTransportJobException> {
+  return apiFetch<ApiTransportJobException>(
+    `/transport-jobs/${id}/exceptions/${exceptionId}/resolve`,
+    {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resolution }),
+    },
+  );
 }
 
 export async function getTransportJob(id: string, token: string): Promise<ApiTransportJob> {
@@ -219,6 +364,18 @@ export async function getTransportJobLocation(
   return apiFetch<TransportJobLocation>(`/transport-jobs/${id}/location`, {
     headers: { Authorization: `Bearer ${token}` },
   });
+}
+
+export async function getTransportDocumentReadiness(
+  id: string,
+  token: string,
+): Promise<TransportDocumentReadiness> {
+  return apiFetch<TransportDocumentReadiness>(
+    `/transport-jobs/${id}/document-readiness`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
 }
 
 export async function updateTransportJobLocation(

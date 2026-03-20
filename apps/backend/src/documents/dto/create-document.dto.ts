@@ -1,5 +1,31 @@
-import { IsEnum, IsOptional, IsString, IsInt, Min } from 'class-validator';
-import { DocumentType, DocumentStatus } from '@prisma/client';
+import {
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+import {
+  DocumentType,
+  DocumentStatus,
+  DocumentEntityType,
+  DocumentLinkRole,
+} from '@prisma/client';
+import { Type } from 'class-transformer';
+
+export class CreateDocumentLinkDto {
+  @IsEnum(DocumentEntityType)
+  entityType: DocumentEntityType;
+
+  @IsString()
+  entityId: string;
+
+  @IsOptional()
+  @IsEnum(DocumentLinkRole)
+  role?: DocumentLinkRole;
+}
 
 export class CreateDocumentDto {
   @IsString()
@@ -52,4 +78,10 @@ export class CreateDocumentDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateDocumentLinkDto)
+  links?: CreateDocumentLinkDto[];
 }

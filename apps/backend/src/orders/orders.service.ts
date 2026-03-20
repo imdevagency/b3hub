@@ -192,46 +192,63 @@ export class OrdersService {
     }
   }
 
-  async findAll(currentUser: RequestingUser, status?: OrderStatus) {
+  async findAll(currentUser: RequestingUser, status?: OrderStatus, limit: number = 20, skip: number = 0) {
     const where = this.buildOrderWhere(currentUser, status);
-    return this.prisma.order.findMany({
-      where,
-      include: {
-        items: {
-          include: {
-            material: {
-              select: {
-                name: true,
-                images: true,
+
+    // Execute count and data queries in parallel
+    const [data, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: {
+          items: {
+            include: {
+              material: {
+                select: {
+                  name: true,
+                  images: true,
+                },
+              },
+            },
+          },
+          buyer: {
+            select: {
+              name: true,
+            },
+          },
+          transportJobs: {
+            select: {
+              id: true,
+              status: true,
+              driver: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  phone: true,
+                  avatar: true,
+                },
               },
             },
           },
         },
-        buyer: {
-          select: {
-            name: true,
-          },
+        orderBy: {
+          createdAt: 'desc',
         },
-        transportJobs: {
-          select: {
-            id: true,
-            status: true,
-            driver: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                phone: true,
-                avatar: true,
-              },
-            },
-          },
-        },
+        take: limit,
+        skip,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        total,
+        limit,
+        skip,
+        hasMore: skip + limit < total,
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    };
   }
 
   private buildOrderWhere(currentUser: RequestingUser, status?: OrderStatus) {

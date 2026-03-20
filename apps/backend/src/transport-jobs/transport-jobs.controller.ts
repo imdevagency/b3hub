@@ -5,6 +5,7 @@
  */
 import {
   Controller,
+  ForbiddenException,
   Get,
   Post,
   Patch,
@@ -18,9 +19,27 @@ import { UpdateStatusDto } from './dto/update-status.dto';
 import { CreateTransportJobDto } from './dto/create-transport-job.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
 import { SubmitDeliveryProofDto } from './dto/submit-delivery-proof.dto';
+import {
+  AssignDispatchDto,
+  UnassignDispatchDto,
+} from './dto/assign-dispatch.dto';
+import {
+  ReportTransportExceptionDto,
+  ResolveTransportExceptionDto,
+} from './dto/report-exception.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
+
+function canDispatch(user: RequestingUser): boolean {
+  return (
+    user.userType === 'ADMIN' ||
+    !user.companyId ||
+    user.companyRole === 'OWNER' ||
+    user.companyRole === 'MANAGER' ||
+    user.permManageOrders
+  );
+}
 
 @Controller('transport-jobs')
 @UseGuards(JwtAuthGuard)
@@ -38,11 +57,16 @@ export class TransportJobsController {
 
   /**
    * GET /transport-jobs
-   * Returns all AVAILABLE jobs for the job board.
+   * Returns all AVAILABLE jobs for the job board with pagination.
    */
   @Get()
-  findAvailable() {
-    return this.service.findAvailable();
+  findAvailable(
+    @Query('limit') limit: string = '20',
+    @Query('skip') skip: string = '0',
+  ) {
+    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+    const skipNum = Math.max(parseInt(skip, 10) || 0, 0);
+    return this.service.findAvailable(limitNum, skipNum);
   }
 
   /**
@@ -56,20 +80,32 @@ export class TransportJobsController {
 
   /**
    * GET /transport-jobs/my-jobs
-   * Returns all jobs ever assigned to the logged-in driver.
+   * Returns all jobs ever assigned to the logged-in driver with pagination.
    */
   @Get('my-jobs')
-  findMyJobs(@CurrentUser() user: RequestingUser) {
-    return this.service.findMyJobs(user.userId);
+  findMyJobs(
+    @CurrentUser() user: RequestingUser,
+    @Query('limit') limit: string = '20',
+    @Query('skip') skip: string = '0',
+  ) {
+    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+    const skipNum = Math.max(parseInt(skip, 10) || 0, 0);
+    return this.service.findMyJobs(user.userId, limitNum, skipNum);
   }
 
   /**
    * GET /transport-jobs/my-requests
-   * Returns all disposal / freight jobs requested by the current user (buyer role).
+   * Returns all disposal / freight jobs requested by the current user (buyer role) with pagination.
    */
   @Get('my-requests')
-  findMyRequests(@CurrentUser() user: RequestingUser) {
-    return this.service.findMyRequests(user.userId);
+  findMyRequests(
+    @CurrentUser() user: RequestingUser,
+    @Query('limit') limit: string = '20',
+    @Query('skip') skip: string = '0',
+  ) {
+    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+    const skipNum = Math.max(parseInt(skip, 10) || 0, 0);
+    return this.service.findMyRequests(user.userId, limitNum, skipNum);
   }
 
   /**
@@ -104,6 +140,52 @@ export class TransportJobsController {
    * GET /transport-jobs/:id
    * Returns a single job by ID.
    */
+  @Get('drivers')
+  findDrivers() {
+    return this.service.findDrivers();
+  }
+
+  /**
+   * GET /transport-jobs/sla-overdue
+   * Dispatcher list of currently overdue jobs.
+   */
+  @Get('sla-overdue')
+  findSlaOverdue(@CurrentUser() user: RequestingUser) {
+    if (!canDispatch(user)) {
+      throw new ForbiddenException(
+        'You do not have permission to view SLA overdues',
+      );
+    }
+    return this.service.findSlaOverdue();
+  }
+
+  /**
+   * GET /transport-jobs/exceptions/open
+   * Dispatcher list of currently open transport exceptions.
+   */
+  @Get('exceptions/open')
+  findOpenExceptions(@CurrentUser() user: RequestingUser) {
+    if (!canDispatch(user)) {
+      throw new ForbiddenException(
+        'You do not have permission to view open transport exceptions',
+      );
+    }
+    return this.service.findOpenExceptions();
+  }
+
+  /**
+   * GET /transport-jobs/:id/document-readiness
+   * Returns required document gate state before completion.
+   */
+  @Get(':id/document-readiness')
+  getDocumentReadiness(@Param('id') id: string) {
+    return this.service.getDocumentReadiness(id);
+  }
+
+  /**
+   * GET /transport-jobs/:id
+   * Returns a single job by ID.
+   */
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);
@@ -119,24 +201,57 @@ export class TransportJobsController {
   }
 
   /**
-   * GET /transport-jobs/drivers
-   * Returns all users with canTransport=true for the dispatcher dropdown.
-   */
-  @Get('drivers')
-  findDrivers() {
-    return this.service.findDrivers();
-  }
-
-  /**
    * PATCH /transport-jobs/:id/assign
    * Dispatcher assigns a vehicle + driver to an available job.
    */
   @Patch(':id/assign')
   assign(
     @Param('id') id: string,
-    @Body() body: { driverId: string; vehicleId: string },
+    @CurrentUser() user: RequestingUser,
+    @Body() body: AssignDispatchDto,
   ) {
+    if (!canDispatch(user)) {
+      throw new ForbiddenException(
+        'You do not have permission to assign transport jobs',
+      );
+    }
     return this.service.assign(id, body);
+  }
+
+  /**
+   * PATCH /transport-jobs/:id/reassign
+   * Dispatcher reassigns a pre-dispatch job to another driver/vehicle.
+   */
+  @Patch(':id/reassign')
+  reassign(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+    @Body() body: AssignDispatchDto,
+  ) {
+    if (!canDispatch(user)) {
+      throw new ForbiddenException(
+        'You do not have permission to reassign transport jobs',
+      );
+    }
+    return this.service.reassign(id, body);
+  }
+
+  /**
+   * PATCH /transport-jobs/:id/unassign
+   * Dispatcher unassigns a job and returns it to AVAILABLE.
+   */
+  @Patch(':id/unassign')
+  unassign(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+    @Body() body: UnassignDispatchDto,
+  ) {
+    if (!canDispatch(user)) {
+      throw new ForbiddenException(
+        'You do not have permission to unassign transport jobs',
+      );
+    }
+    return this.service.unassign(id, body.reason);
   }
 
   /**
@@ -196,5 +311,49 @@ export class TransportJobsController {
   @Post(':id/loading-dock')
   loadingDock(@Param('id') id: string, @Body() body: { weightKg?: number }) {
     return this.service.loadingDock(id, body.weightKg);
+  }
+
+  /**
+   * GET /transport-jobs/:id/exceptions
+   * List all exceptions for a job.
+   */
+  @Get(':id/exceptions')
+  listExceptions(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.service.listExceptions(id, user);
+  }
+
+  /**
+   * POST /transport-jobs/:id/exceptions
+   * Report operational exception (no-show, wrong material, partial delivery, etc.).
+   */
+  @Post(':id/exceptions')
+  reportException(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+    @Body() dto: ReportTransportExceptionDto,
+  ) {
+    return this.service.reportException(id, user, dto);
+  }
+
+  /**
+   * PATCH /transport-jobs/:id/exceptions/:exceptionId/resolve
+   * Dispatcher/admin resolves an open transport exception.
+   */
+  @Patch(':id/exceptions/:exceptionId/resolve')
+  resolveException(
+    @Param('id') id: string,
+    @Param('exceptionId') exceptionId: string,
+    @CurrentUser() user: RequestingUser,
+    @Body() dto: ResolveTransportExceptionDto,
+  ) {
+    if (!canDispatch(user)) {
+      throw new ForbiddenException(
+        'You do not have permission to resolve transport exceptions',
+      );
+    }
+    return this.service.resolveException(id, exceptionId, user.userId, dto);
   }
 }

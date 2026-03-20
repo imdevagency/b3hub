@@ -83,12 +83,29 @@ export class QuoteRequestsService {
   }
 
   // ── Buyer: list their own requests ───────────────────────────
-  async findAll(userId: string) {
-    return this.prisma.quoteRequest.findMany({
-      where: { buyerId: userId },
-      include: INCLUDE_REQUEST,
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(userId: string, limit: number = 20, skip: number = 0) {
+    const [data, total] = await Promise.all([
+      this.prisma.quoteRequest.findMany({
+        where: { buyerId: userId },
+        include: INCLUDE_REQUEST,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip,
+      }),
+      this.prisma.quoteRequest.count({
+        where: { buyerId: userId },
+      }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        total,
+        limit,
+        skip,
+        hasMore: skip + limit < total,
+      },
+    };
   }
 
   // ── Buyer: accept a specific supplier response → creates order
@@ -269,17 +286,36 @@ export class QuoteRequestsService {
   }
 
   // ── Supplier: list all open requests they can respond to ─────
-  async findOpenRequests() {
-    return this.prisma.quoteRequest.findMany({
-      where: {
-        status: { in: [QuoteRequestStatus.PENDING, QuoteRequestStatus.QUOTED] },
+  async findOpenRequests(limit: number = 20, skip: number = 0) {
+    const [data, total] = await Promise.all([
+      this.prisma.quoteRequest.findMany({
+        where: {
+          status: { in: [QuoteRequestStatus.PENDING, QuoteRequestStatus.QUOTED] },
+        },
+        include: {
+          buyer: { select: { firstName: true, lastName: true } },
+          responses: { select: { supplierId: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip,
+      }),
+      this.prisma.quoteRequest.count({
+        where: {
+          status: { in: [QuoteRequestStatus.PENDING, QuoteRequestStatus.QUOTED] },
+        },
+      }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        total,
+        limit,
+        skip,
+        hasMore: skip + limit < total,
       },
-      include: {
-        buyer: { select: { firstName: true, lastName: true } },
-        responses: { select: { supplierId: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    };
   }
 
   // ─── Helpers ─────────────────────────────────────────────────

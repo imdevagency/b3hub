@@ -348,7 +348,6 @@ Wrap page sections that may throw.
 - For status badges use `<StatusBadgeHex>` / `<InvoiceStatusBadge>` from `@/lib/status-config` — never write inline `<span style={{ backgroundColor, color }}>` for a status pill.
 
 <!-- GEN:component-api -->
-
 #### `AddressAutocomplete` — `@/components/ui/AddressAutocomplete`
 
 **Exports:** `AddressAutocomplete`
@@ -368,7 +367,6 @@ Wrap page sections that may throw.
 ---
 
 #### `button` — `@/components/ui/button`
-
 - **size:** `icon-xs` | `icon-sm` | `icon-lg`
 
 ---
@@ -395,13 +393,13 @@ Wrap page sections that may throw.
 
 #### `empty-state` — `@/components/ui/empty-state`
 
-| Prop          | Type              |              |
-| ------------- | ----------------- | ------------ |
-| `icon`        | `LucideIcon`      | **required** |
-| `title`       | `string`          | **required** |
-| `description` | `string`          | optional     |
-| `action`      | `React.ReactNode` | optional     |
-| `className`   | `string`          | optional     |
+| Prop | Type | |
+|------|------|---|
+| `icon` | `LucideIcon` | **required** |
+| `title` | `string` | **required** |
+| `description` | `string` | optional |
+| `action` | `React.ReactNode` | optional |
+| `className` | `string` | optional |
 
 **Exports:** `EmptyState`
 
@@ -431,12 +429,12 @@ Wrap page sections that may throw.
 
 #### `page-header` — `@/components/ui/page-header`
 
-| Prop          | Type              |              |
-| ------------- | ----------------- | ------------ |
-| `title`       | `string`          | **required** |
-| `description` | `string`          | optional     |
-| `action`      | `React.ReactNode` | optional     |
-| `className`   | `string`          | optional     |
+| Prop | Type | |
+|------|------|---|
+| `title` | `string` | **required** |
+| `description` | `string` | optional |
+| `action` | `React.ReactNode` | optional |
+| `className` | `string` | optional |
 
 **Exports:** `PageHeader`
 
@@ -444,8 +442,8 @@ Wrap page sections that may throw.
 
 #### `page-spinner` — `@/components/ui/page-spinner`
 
-| Prop        | Type     |          |
-| ----------- | -------- | -------- |
+| Prop | Type | |
+|------|------|---|
 | `className` | `string` | optional |
 
 **Exports:** `PageSpinner`
@@ -481,5 +479,4 @@ Wrap page sections that may throw.
 ---
 
 #### `tooltip` — `@/components/ui/tooltip`
-
 <!-- END GEN -->

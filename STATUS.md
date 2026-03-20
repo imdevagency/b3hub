@@ -32,27 +32,27 @@ Each row is a product feature domain.
 | **Auth — Provider application**  | ✅ `provider-applications/`       | ✅ `/apply`                                     | ✅ `(auth)/apply-role`                   | Admin reviews at `/admin/applications`                                                               |
 | **Materials / Catalog**          | ✅ `materials/`                   | ✅ `/dashboard/catalog`, `/dashboard/materials` | ✅ `(buyer)/catalog`, `(seller)/catalog` | Supplier manages listings; buyer browses                                                             |
 | **Orders — Create**              | ✅ `orders/`                      | ✅ `/order`                                     | ✅ `order-request`                       | Multi-step order form                                                                                |
-| **Orders — List & Detail**       | ✅ `orders/`                      | ✅ `/dashboard/orders`, `/orders/[id]`          | ✅ `(buyer)/orders`, `order/[id]`        | Full status timeline                                                                                 |
+| **Orders — List & Detail**       | ✅ `orders/`                      | ✅ `/dashboard/orders`, `/orders/[id]`          | ✅ `(buyer)/orders`, `order/[id]`        | Full status timeline; list endpoints now paginated (limit/skip) |
 | **Orders — Seller incoming**     | ✅ `orders/`                      | ✅ `/dashboard/supplier`                        | ✅ `(seller)/incoming`                   | Seller confirms / rejects                                                                            |
-| **Transport Jobs — Driver**      | ✅ `transport-jobs/`              | ✅ `/dashboard/jobs`, `/dashboard/active`       | ✅ `(driver)/jobs`, `(driver)/active`    | GPS tracking, delivery proof                                                                         |
+| **Transport Jobs — Driver**      | ✅ `transport-jobs/`              | ✅ `/dashboard/jobs`, `/dashboard/active`       | ✅ `(driver)/jobs`, `(driver)/active`    | GPS tracking, delivery proof, SLA status widget, inline exceptions; list endpoints paginated |
 | **Transport Jobs — Buyer view**  | ✅ `transport-jobs/`              | 📵                                              | ✅ `(buyer)/transport-job/[id]`          | Buyer tracks live job                                                                                |
 | **Delivery Proof**               | ✅ `documents/`                   | ✅ `/dashboard/documents`                       | ✅ `delivery-proof`                      | Photo capture + signature                                                                            |
 | **Skip Hire — Ordering**         | ✅ `skip-hire/`                   | ✅ `/dashboard/skip-hire`, `/order/skip-hire`   | ✅ `(buyer)/skip-order/[id]`             |                                                                                                      |
 | **Skip Hire — Driver (skips)**   | ✅ `skip-hire/`                   | 📵                                              | ✅ `(driver)/skips`                      | Driver manages skip pickups/drops                                                                    |
 | **Containers**                   | ✅ `containers/`                  | ✅ `/dashboard/containers`                      | ✅ `(buyer)/containers`                  | Web page added this session                                                                          |
-| **Quote Requests (RFQ)**         | ✅ `quote-requests/`              | ✅ `/dashboard/quote-requests`, `/open`         | ✅ `(buyer)/rfq/[id]`, `(seller)/quotes` | Buyer requests quotes; seller responds                                                               |
+| **Quote Requests (RFQ)**         | ✅ `quote-requests/`              | ✅ `/dashboard/quote-requests`, `/open`         | ✅ `(buyer)/rfq/[id]`, `(seller)/quotes` | List endpoints now paginated (limit/skip params) |
 | **Framework Contracts**          | ✅ `framework-contracts/`         | ✅ `/dashboard/framework-contracts`             | ✅ `(buyer)/framework-contracts`, `[id]` | Long-term supply contracts with call-offs. Web page added this session                               |
 | **Invoices**                     | ✅ `invoices/`                    | ✅ `/dashboard/invoices`                        | ✅ `(buyer)/invoices`                    | Auto-generated from completed orders                                                                 |
 | **Vehicles**                     | ✅ `vehicles/`                    | ✅ `/dashboard/garage`, `/dashboard/fleet`      | ✅ `(driver)/vehicles`                   |                                                                                                      |
 | **Driver Schedule**              | ✅ `driver-schedule/`             | ✅ `/dashboard/schedule`                        | ✅ `(driver)/schedule`                   | Mobile schedule + online toggle added this session                                                   |
-| **Carrier Settings**             | ✅ `carrier-settings/`            | ✅ `/dashboard/transporter`                     | 📵                                       | Company-level transport settings                                                                     |
+| **Carrier Settings**             | ✅ `carrier-settings/`            | ✅ `/dashboard/transporter`                     | 📵                                       | Company-level transport settings + dispatcher triage panel (SLA kavējumi, atvērtie izņēmumi, inline SLA→izņēmums + resolve) |
 | **Earnings — Supplier**          | ✅ (from orders)                  | ✅ `/dashboard/supplier/earnings`               | ✅ `(seller)/earnings`                   |                                                                                                      |
 | **Earnings — Carrier**           | ✅ (from transport)               | ✅ `/dashboard/transporter/earnings`            | ✅ `(driver)/earnings`                   |                                                                                                      |
 | **Company & Team**               | ✅ `company/`, `company-members/` | ✅ `/dashboard/company`, `/company/team`        | ✅ `(buyer)/team`                        | Roles: OWNER, MANAGER, DRIVER, MEMBER                                                                |
 | **Chat**                         | ✅ `chat/`                        | ✅ `/dashboard/chat`                            | ✅ `chat/[jobId]`, `messages`            | WebSocket-based; per-job threads                                                                     |
 | **Notifications**                | ✅ `notifications/`               | ✅ `/dashboard/notifications`                   | ✅ `notifications`                       | Push via Expo; web page added this session                                                           |
 | **Reviews**                      | ✅ `reviews/`                     | ✅ `/dashboard/reviews`                         | ✅ `review/[orderId]`, orders.tsx chip   | Standalone review screen + rate button on completed orders added this session                        |
-| **Recycling Centers / Disposal** | ✅ `recycling-centers/`           | ✅ `/dashboard/recycling-centers`               | ✅ `disposal/index`                      | Waste disposal booking                                                                               |
+| **Recycling Centers / Disposal** | ✅ `recycling-centers/`           | ✅ `/dashboard/recycling-centers`               | ✅ `disposal/index`                      | Waste disposal booking; mobile confirmation now uses context (job data preserved) |
 | **Projects**                     | (via orders)                      | ✅ `/dashboard/buyer/projects`, `/[id]`         | ✅ `(buyer)/projects`, `project/[id]`    | Client-side grouping of orders                                                                       |
 | **Certificates**                 | (via documents)                   | ✅ `/dashboard/certificates`                    | ✅ `(buyer)/certificates`                | Web page added this session                                                                          |
 | **Admin — Dashboard**            | ✅ `admin/`                       | ✅ `/dashboard/admin`                           | 📵                                       | Web-only                                                                                             |
@@ -64,9 +64,17 @@ Each row is a product feature domain.
 
 ---
 
-## Known Gaps
+## Known Gaps & Recent Improvements
 
-These are confirmed missing pieces — good first-task candidates.
+### Recently Fixed (this session)
+
+| Item                                     | Status | Impact         |
+| ---------------------------------------- | ------ | -------------- |
+| Mobile disposal confirmation             | ✅     | UX consistency |
+| Backend pagination on list endpoints     | ✅     | Performance    |
+| Transport dispatcher SLA exception panel | ✅     | UX/Workflows   |
+
+### Outstanding Gaps
 
 | Gap                                | Impact          | Area          |
 | ---------------------------------- | --------------- | ------------- |
@@ -90,7 +98,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Backend Modules
 
 <!-- GEN:status-backend-modules -->
-
 - admin
 - auth
 - carrier-settings
@@ -118,7 +125,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Web Pages
 
 <!-- GEN:status-web-pages -->
-
 - (auth)/login
 - (auth)/register
 - (root)
@@ -132,16 +138,20 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/buyer/projects
 - dashboard/buyer/projects/[id]
 - dashboard/catalog
+- dashboard/certificates
 - dashboard/chat
 - dashboard/checkout
 - dashboard/company
 - dashboard/company/team
+- dashboard/containers
 - dashboard/documents
 - dashboard/fleet
+- dashboard/framework-contracts
 - dashboard/garage
 - dashboard/invoices
 - dashboard/jobs
 - dashboard/materials
+- dashboard/notifications
 - dashboard/order
 - dashboard/order/skip-hire
 - dashboard/orders
@@ -165,7 +175,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Mobile Screens
 
 <!-- GEN:status-mobile-screens -->
-
 - (auth)/apply-role
 - (auth)/forgot-password
 - (auth)/login
@@ -192,6 +201,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (driver)/home
 - (driver)/jobs
 - (driver)/profile
+- (driver)/schedule
 - (driver)/skips
 - (driver)/vehicles
 - (seller)/catalog
@@ -203,15 +213,19 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - change-password
 - chat/[jobId]
 - delivery-proof
+- disposal/confirmation
 - disposal/index
 - help
 - index
 - messages
 - notifications
 - order-request
+- order-request-new
 - order/confirmation
 - order/index
+- review/[orderId]
 - settings
+- transport/confirmation
 - transport/index
 <!-- END GEN -->
 

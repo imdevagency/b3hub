@@ -196,6 +196,22 @@ enum TransportJobStatus {
   CANCELLED        // Cancelled
 }
 
+enum TransportExceptionType {
+  DRIVER_NO_SHOW
+  SUPPLIER_NOT_READY
+  WRONG_MATERIAL
+  PARTIAL_DELIVERY
+  REJECTED_DELIVERY
+  SITE_CLOSED
+  OVERWEIGHT
+  OTHER
+}
+
+enum TransportExceptionStatus {
+  OPEN
+  RESOLVED
+}
+
 enum VehicleType {
   DUMP_TRUCK
   FLATBED_TRUCK
@@ -313,6 +329,8 @@ model User {
   reviews        Review[]
   sentMessages   ChatMessage[]
   frameworkContracts       FrameworkContract[]
+  reportedTransportExceptions TransportJobException[] @relation("ExceptionReporter")
+  resolvedTransportExceptions TransportJobException[] @relation("ExceptionResolver")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -619,6 +637,12 @@ model TransportJob {
   // Status
   status TransportJobStatus
 
+  // SLA / escalation tracking
+  acceptedAt         DateTime?
+  statusUpdatedAt    DateTime?
+  slaEscalatedAt     DateTime?
+  slaEscalationStage String?
+
   // Tracking
   currentLocation  Json?
   estimatedArrival DateTime?
@@ -630,11 +654,37 @@ model TransportJob {
   containerDeliveries ContainerOrder[] @relation("ContainerDelivery")
   containerPickups    ContainerOrder[] @relation("ContainerPickup")
   chatMessages        ChatMessage[]
+  exceptions          TransportJobException[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("transport_jobs")
+}
+
+model TransportJobException {
+  id String @id @default(cuid())
+
+  transportJob   TransportJob @relation(fields: [transportJobId], references: [id], onDelete: Cascade)
+  transportJobId String
+
+  type      TransportExceptionType
+  status    TransportExceptionStatus @default(OPEN)
+  notes     String
+  photoUrls String[]
+
+  reportedBy   User   @relation("ExceptionReporter", fields: [reportedById], references: [id])
+  reportedById String
+
+  resolvedBy   User?   @relation("ExceptionResolver", fields: [resolvedById], references: [id])
+  resolvedById String?
+  resolution   String?
+
+  createdAt  DateTime @default(now())
+  resolvedAt DateTime?
+
+  @@index([transportJobId, status])
+  @@map("transport_job_exceptions")
 }
 
 model DeliveryProof {
@@ -891,6 +941,24 @@ enum DocumentStatus {
   ARCHIVED
 }
 
+enum DocumentEntityType {
+  ORDER
+  INVOICE
+  TRANSPORT_JOB
+  WASTE_RECORD
+  SKIP_HIRE_ORDER
+  FRAMEWORK_CONTRACT
+  FRAMEWORK_POSITION
+  COMPANY
+  PROJECT
+}
+
+enum DocumentLinkRole {
+  PRIMARY
+  RELATED
+  SUPPORTING
+}
+
 model Document {
   id    String       @id @default(cuid())
   title String
@@ -918,10 +986,30 @@ model Document {
   notes       String?
   expiresAt   DateTime?
 
+  // Contextual links (one document can belong to many entities)
+  links DocumentLink[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("documents")
+}
+
+model DocumentLink {
+  id String @id @default(cuid())
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId String
+
+  entityType DocumentEntityType
+  entityId   String
+  role       DocumentLinkRole @default(RELATED)
+
+  createdAt DateTime @default(now())
+
+  @@unique([documentId, entityType, entityId, role])
+  @@index([entityType, entityId])
+  @@map("document_links")
 }
 
 // ── Public skip-hire orders (4-step wizard, no auth required) ──

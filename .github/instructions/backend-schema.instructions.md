@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (1248 lines, 30 models, 30 enums).
+Schema: `apps/backend/prisma/schema.prisma` (1336 lines, 32 models, 34 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -83,6 +83,8 @@ npm run db:seed           # reseed demo data
 | `ContainerOrderStatus` | SCHEDULED DELIVERED IN_USE PICKED_UP COMPLETED CANCELLED |
 | `TransportJobType` | MATERIAL_DELIVERY CONTAINER_DELIVERY CONTAINER_PICKUP WASTE_COLLECTION EQUIPMENT_TRANSPORT TRANSPORT |
 | `TransportJobStatus` | AVAILABLE ASSIGNED ACCEPTED EN_ROUTE_PICKUP AT_PICKUP LOADED EN_ROUTE_DELIVERY AT_DELIVERY DELIVERED CANCELLED |
+| `TransportExceptionType` | DRIVER_NO_SHOW SUPPLIER_NOT_READY WRONG_MATERIAL PARTIAL_DELIVERY REJECTED_DELIVERY SITE_CLOSED OVERWEIGHT OTHER |
+| `TransportExceptionStatus` | OPEN RESOLVED |
 | `VehicleType` | DUMP_TRUCK FLATBED_TRUCK SEMI_TRAILER HOOK_LIFT SKIP_LOADER TANKER VAN |
 | `VehicleStatus` | ACTIVE IN_USE MAINTENANCE INACTIVE |
 | `NotificationType` | ORDER_CREATED ORDER_CONFIRMED ORDER_CANCELLED ORDER_DELIVERED TRANSPORT_ASSIGNED TRANSPORT_STARTED TRANSPORT_COMPLETED PAYMENT_RECEIVED QUOTE_RECEIVED QUOTE_ACCEPTED SYSTEM_ALERT |
@@ -92,6 +94,8 @@ npm run db:seed           # reseed demo data
 | `QuoteResponseStatus` | PENDING ACCEPTED REJECTED EXPIRED |
 | `DocumentType` | INVOICE WEIGHING_SLIP DELIVERY_PROOF WASTE_CERTIFICATE DELIVERY_NOTE CONTRACT OTHER |
 | `DocumentStatus` | DRAFT ISSUED SIGNED ARCHIVED |
+| `DocumentEntityType` | ORDER INVOICE TRANSPORT_JOB WASTE_RECORD SKIP_HIRE_ORDER FRAMEWORK_CONTRACT FRAMEWORK_POSITION COMPANY PROJECT |
+| `DocumentLinkRole` | PRIMARY RELATED SUPPORTING |
 
 ---
 
@@ -100,7 +104,7 @@ npm run db:seed           # reseed demo data
 ### User — `@@map("users")`  
 **Fields:** `id`: String @id @default(cuid(), `email`: String? @unique, `phone`: String? @unique, `password`: String, `firstName`: String, `lastName`: String, `avatar`: String?, `isCompany`: Boolean @default(false), `canSell`: Boolean @default(false), `canTransport`: Boolean @default(false), `canSkipHire`: Boolean @default(false), `emailVerified`: Boolean @default(false), `phoneVerified`: Boolean @default(false), `pushToken`: String?, `resetToken`: String?, `resetTokenExpiry`: DateTime?, `refreshToken`: String?, `refreshTokenExpiry`: DateTime?, `notifPush`: Boolean @default(true), `notifOrderUpdates`: Boolean @default(true), `notifJobAlerts`: Boolean @default(true), `notifMarketing`: Boolean @default(false), `permCreateContracts`: Boolean @default(false), `permReleaseCallOffs`: Boolean @default(false), `permManageOrders`: Boolean @default(false), `permViewFinancials`: Boolean @default(false), `permManageTeam`: Boolean @default(false), `companyId`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `userType`: UserType (@default(BUYER)), `companyRole`?: CompanyRole, `status`: UserStatus (@default(ACTIVE))  
-**Relations:** → Company?, DriverProfile?, BuyerProfile?, Order, TransportJob, TransportJob, Notification, Vehicle, QuoteRequest, Review, ChatMessage, FrameworkContract
+**Relations:** → Company?, DriverProfile?, BuyerProfile?, Order, TransportJob, TransportJob, Notification, Vehicle, QuoteRequest, Review, ChatMessage, FrameworkContract, TransportJobException, TransportJobException
 
 ---
 
@@ -147,9 +151,16 @@ npm run db:seed           # reseed demo data
 ---
 
 ### TransportJob — `@@map("transport_jobs")`  
-**Fields:** `id`: String @id @default(cuid(), `jobNumber`: String @unique, `orderId`: String?, `pickupAddress`: String, `pickupCity`: String, `pickupState`: String, `pickupPostal`: String, `pickupDate`: DateTime, `pickupWindow`: String?, `deliveryAddress`: String, `deliveryCity`: String, `deliveryState`: String, `deliveryPostal`: String, `deliveryDate`: DateTime, `deliveryWindow`: String?, `cargoType`: String, `cargoWeight`: Float?, `cargoVolume`: Float?, `actualWeightKg`: Float?, `pickupPhotoUrl`: String?, `specialRequirements`: String?, `requiredVehicleType`: String?, `pickupLat`: Float?, `pickupLng`: Float?, `deliveryLat`: Float?, `deliveryLng`: Float?, `distanceKm`: Float?, `rate`: Float, `pricePerTonne`: Float?, `currency`: String @default("EUR"), `carrierId`: String?, `driverId`: String?, `vehicleId`: String?, `frameworkContractId`: String?, `frameworkPositionId`: String?, `requestedById`: String?, `currentLocation`: Json?, `estimatedArrival`: DateTime?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `jobNumber`: String @unique, `orderId`: String?, `pickupAddress`: String, `pickupCity`: String, `pickupState`: String, `pickupPostal`: String, `pickupDate`: DateTime, `pickupWindow`: String?, `deliveryAddress`: String, `deliveryCity`: String, `deliveryState`: String, `deliveryPostal`: String, `deliveryDate`: DateTime, `deliveryWindow`: String?, `cargoType`: String, `cargoWeight`: Float?, `cargoVolume`: Float?, `actualWeightKg`: Float?, `pickupPhotoUrl`: String?, `specialRequirements`: String?, `requiredVehicleType`: String?, `pickupLat`: Float?, `pickupLng`: Float?, `deliveryLat`: Float?, `deliveryLng`: Float?, `distanceKm`: Float?, `rate`: Float, `pricePerTonne`: Float?, `currency`: String @default("EUR"), `carrierId`: String?, `driverId`: String?, `vehicleId`: String?, `frameworkContractId`: String?, `frameworkPositionId`: String?, `requestedById`: String?, `acceptedAt`: DateTime?, `statusUpdatedAt`: DateTime?, `slaEscalatedAt`: DateTime?, `slaEscalationStage`: String?, `currentLocation`: Json?, `estimatedArrival`: DateTime?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `jobType`: TransportJobType, `requiredVehicleEnum`?: VehicleType, `status`: TransportJobStatus  
-**Relations:** → Order?, Company?, User?, Vehicle?, FrameworkContract?, FrameworkPosition?, User?, DeliveryProof?, ContainerOrder, ContainerOrder, ChatMessage
+**Relations:** → Order?, Company?, User?, Vehicle?, FrameworkContract?, FrameworkPosition?, User?, DeliveryProof?, ContainerOrder, ContainerOrder, ChatMessage, TransportJobException
+
+---
+
+### TransportJobException — `@@map("transport_job_exceptions")`  
+**Fields:** `id`: String @id @default(cuid(), `transportJobId`: String, `notes`: String, `photoUrls`: String, `reportedById`: String, `resolvedById`: String?, `resolution`: String?, `createdAt`: DateTime @default(now(), `resolvedAt`: DateTime?  
+**Enum fields:** `type`: TransportExceptionType, `status`: TransportExceptionStatus (@default(OPEN))  
+**Relations:** → TransportJob, User, User?
 
 ---
 
@@ -208,7 +219,15 @@ npm run db:seed           # reseed demo data
 
 ### Document — `@@map("documents")`  
 **Fields:** `id`: String @id @default(cuid(), `title`: String, `fileUrl`: String?, `mimeType`: String?, `fileSize`: Int?, `orderId`: String?, `invoiceId`: String?, `transportJobId`: String?, `wasteRecordId`: String?, `skipHireId`: String?, `ownerId`: String, `issuedBy`: String?, `isGenerated`: Boolean @default(false), `notes`: String?, `expiresAt`: DateTime?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
-**Enum fields:** `type`: DocumentType, `status`: DocumentStatus (@default(ISSUED))
+**Enum fields:** `type`: DocumentType, `status`: DocumentStatus (@default(ISSUED))  
+**Relations:** → DocumentLink
+
+---
+
+### DocumentLink — `@@map("document_links")`  
+**Fields:** `id`: String @id @default(cuid(), `documentId`: String, `entityId`: String, `createdAt`: DateTime @default(now()  
+**Enum fields:** `entityType`: DocumentEntityType, `role`: DocumentLinkRole (@default(RELATED))  
+**Relations:** → Document
 
 ---
 

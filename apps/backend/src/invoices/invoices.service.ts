@@ -54,16 +54,23 @@ export class InvoicesService {
 
   constructor(private prisma: PrismaService) {}
 
+  private buyerAccess(userId: string, companyId?: string): Prisma.OrderWhereInput {
+    return {
+      OR: [
+        ...(companyId ? [{ buyerId: companyId }] : []),
+        { createdById: userId },
+      ],
+    };
+  }
+
   /**
    * Get invoices visible to the requesting user.
    * A user can see invoices for orders where they are the buyer.
    */
-  async getMyInvoices(userId: string, page = 1, limit = 20) {
+  async getMyInvoices(userId: string, companyId?: string, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
     const where = {
-      order: {
-        buyerId: userId,
-      },
+      order: this.buyerAccess(userId, companyId),
     };
     const [invoices, total] = await Promise.all([
       this.prisma.invoice.findMany({
@@ -87,11 +94,11 @@ export class InvoicesService {
     return { data: invoices.map(mapInvoice), meta: { page, limit, total } };
   }
 
-  async getById(invoiceId: string, userId: string) {
+  async getById(invoiceId: string, userId: string, companyId?: string) {
     const invoice = await this.prisma.invoice.findFirst({
       where: {
         id: invoiceId,
-        order: { buyerId: userId },
+        order: this.buyerAccess(userId, companyId),
       },
       include: {
         order: {
@@ -110,20 +117,20 @@ export class InvoicesService {
     return mapInvoice(invoice);
   }
 
-  async getByOrder(orderId: string, userId: string) {
+  async getByOrder(orderId: string, userId: string, companyId?: string) {
     const invoices = await this.prisma.invoice.findMany({
       where: {
         orderId,
-        order: { buyerId: userId },
+        order: this.buyerAccess(userId, companyId),
       },
       orderBy: { createdAt: 'desc' },
     });
     return invoices.map(mapInvoice);
   }
 
-  async markAsPaid(invoiceId: string, userId: string) {
+  async markAsPaid(invoiceId: string, userId: string, companyId?: string) {
     const invoice = await this.prisma.invoice.findFirst({
-      where: { id: invoiceId, order: { buyerId: userId } },
+      where: { id: invoiceId, order: this.buyerAccess(userId, companyId) },
     });
     if (!invoice) throw new NotFoundException('Invoice not found');
     this.logger.log(`Invoice ${invoiceId} marked as paid by user ${userId}`);

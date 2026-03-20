@@ -12,7 +12,12 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { TransportJobStatus, OrderStatus } from '@prisma/client';
+import {
+  DocumentType,
+  TransportExceptionStatus,
+  TransportJobStatus,
+  OrderStatus,
+} from '@prisma/client';
 import {
   UpdateStatusDto,
   ALLOWED_DRIVER_STATUSES,
@@ -20,9 +25,15 @@ import {
 import { CreateTransportJobDto } from './dto/create-transport-job.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
 import { SubmitDeliveryProofDto } from './dto/submit-delivery-proof.dto';
+import { AssignDispatchDto } from './dto/assign-dispatch.dto';
+import {
+  ReportTransportExceptionDto,
+  ResolveTransportExceptionDto,
+} from './dto/report-exception.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
 import { DocumentsService } from '../documents/documents.service';
+import type { RequestingUser } from '../common/types/requesting-user.interface';
 
 // Valid next-state transitions for a driver
 const NEXT_STATUS: Partial<Record<TransportJobStatus, TransportJobStatus>> = {
@@ -34,6 +45,9 @@ const NEXT_STATUS: Partial<Record<TransportJobStatus, TransportJobStatus>> = {
   [TransportJobStatus.AT_DELIVERY]: TransportJobStatus.DELIVERED,
 };
 
+const PICKUP_SLA_BUFFER_MIN = 30;
+const DELIVERY_SLA_BUFFER_MIN = 30;
+
 @Injectable()
 export class TransportJobsService {
   private readonly logger = new Logger(TransportJobsService.name);
@@ -43,6 +57,47 @@ export class TransportJobsService {
     private readonly notifications: NotificationsService,
     private readonly documents: DocumentsService,
   ) {}
+
+  private isDispatcher(user: RequestingUser): boolean {
+    return (
+      user.userType === 'ADMIN' ||
+      !user.companyId ||
+      user.companyRole === 'OWNER' ||
+      user.companyRole === 'MANAGER' ||
+      user.permManageOrders
+    );
+  }
+
+  private async getJobAccessContext(id: string) {
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        jobNumber: true,
+        status: true,
+        driverId: true,
+        requestedById: true,
+        pickupCity: true,
+        deliveryCity: true,
+        order: {
+          select: {
+            createdById: true,
+          },
+        },
+      },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+    return job;
+  }
+
+  private canAccessExceptions(job: Awaited<ReturnType<TransportJobsService['getJobAccessContext']>>, user: RequestingUser): boolean {
+    return (
+      this.isDispatcher(user) ||
+      job.driverId === user.userId ||
+      job.requestedById === user.userId ||
+      job.order?.createdById === user.userId
+    );
+  }
 
   private jobSelect = {
     id: true,
@@ -94,6 +149,81 @@ export class TransportJobsService {
       },
     },
   } as const;
+
+  private statusSortOrder: Record<TransportJobStatus, number> = {
+    AVAILABLE: 0,
+    ASSIGNED: 1,
+    ACCEPTED: 2,
+    EN_ROUTE_PICKUP: 3,
+    AT_PICKUP: 4,
+    LOADED: 5,
+    EN_ROUTE_DELIVERY: 6,
+    AT_DELIVERY: 7,
+    DELIVERED: 8,
+    CANCELLED: 9,
+  };
+
+  private getSlaState(job: {
+    status: TransportJobStatus;
+    pickupDate: Date;
+    deliveryDate: Date;
+  }) {
+    const now = Date.now();
+    if (
+      job.status === TransportJobStatus.DELIVERED ||
+      job.status === TransportJobStatus.CANCELLED
+    ) {
+      return {
+        stage: null as null | 'PICKUP_DELAY' | 'DELIVERY_DELAY',
+        overdueMinutes: 0,
+      };
+    }
+
+    const pickupDeadline =
+      new Date(job.pickupDate).getTime() + PICKUP_SLA_BUFFER_MIN * 60_000;
+    const deliveryDeadline =
+      new Date(job.deliveryDate).getTime() + DELIVERY_SLA_BUFFER_MIN * 60_000;
+
+    const preLoaded =
+      this.statusSortOrder[job.status] < this.statusSortOrder[TransportJobStatus.LOADED];
+
+    if (preLoaded && now > pickupDeadline) {
+      return {
+        stage: 'PICKUP_DELAY' as const,
+        overdueMinutes: Math.floor((now - pickupDeadline) / 60_000),
+      };
+    }
+
+    if (!preLoaded && now > deliveryDeadline) {
+      return {
+        stage: 'DELIVERY_DELAY' as const,
+        overdueMinutes: Math.floor((now - deliveryDeadline) / 60_000),
+      };
+    }
+
+    return {
+      stage: null as null | 'PICKUP_DELAY' | 'DELIVERY_DELAY',
+      overdueMinutes: 0,
+    };
+  }
+
+  private async evaluateAndEscalateSla(jobId: string) {
+    // Compatibility mode: some environments have not yet applied SLA columns.
+    // Keep endpoints functional by skipping persistent SLA escalation writes.
+    return;
+  }
+
+  private mapWithSla<T extends { status: TransportJobStatus; pickupDate: Date; deliveryDate: Date }>(job: T) {
+    const sla = this.getSlaState(job);
+    return {
+      ...job,
+      sla: {
+        stage: sla.stage,
+        overdueMinutes: sla.overdueMinutes,
+        isOverdue: !!sla.stage,
+      },
+    };
+  }
 
   // ── Create a new transport job ────────────────────────────────
   async create(dto: CreateTransportJobDto) {
@@ -168,19 +298,39 @@ export class TransportJobsService {
 
   // ── All jobs (dispatcher fleet view) ─────────────────────────
   async findAll() {
-    return this.prisma.transportJob.findMany({
+    const jobs = await this.prisma.transportJob.findMany({
       select: this.jobSelect,
       orderBy: { pickupDate: 'asc' },
     });
+
+    await Promise.all(jobs.map((j) => this.evaluateAndEscalateSla(j.id)));
+    return jobs.map((j) => this.mapWithSla(j));
   }
 
   // ── Available jobs (job board) ─────────────────────────────────
-  async findAvailable() {
-    return this.prisma.transportJob.findMany({
-      where: { status: TransportJobStatus.AVAILABLE },
-      select: this.jobSelect,
-      orderBy: { pickupDate: 'asc' },
-    });
+  async findAvailable(limit: number = 20, skip: number = 0) {
+    const [jobs, total] = await Promise.all([
+      this.prisma.transportJob.findMany({
+        where: { status: TransportJobStatus.AVAILABLE },
+        select: this.jobSelect,
+        orderBy: { pickupDate: 'asc' },
+        take: limit,
+        skip,
+      }),
+      this.prisma.transportJob.count({
+        where: { status: TransportJobStatus.AVAILABLE },
+      }),
+    ]);
+
+    return {
+      data: jobs.map((j) => this.mapWithSla(j)),
+      pagination: {
+        total,
+        limit,
+        skip,
+        hasMore: skip + limit < total,
+      },
+    };
   }
 
   // ── My active job (in-progress job for the logged-in driver) ──
@@ -194,35 +344,76 @@ export class TransportJobsService {
       TransportJobStatus.AT_DELIVERY,
     ];
 
-    return this.prisma.transportJob.findFirst({
+    const job = await this.prisma.transportJob.findFirst({
       where: { driverId, status: { in: activeStatuses } },
       select: this.jobSelect,
       orderBy: { updatedAt: 'desc' },
     });
+
+    if (!job) return null;
+    await this.evaluateAndEscalateSla(job.id);
+    return this.mapWithSla(job);
   }
 
   // ── My completed/all jobs ─────────────────────────────────────
-  async findMyJobs(driverId: string) {
-    return this.prisma.transportJob.findMany({
-      where: { driverId },
-      select: this.jobSelect,
-      orderBy: { updatedAt: 'desc' },
-    });
+  async findMyJobs(driverId: string, limit: number = 20, skip: number = 0) {
+    const [jobs, total] = await Promise.all([
+      this.prisma.transportJob.findMany({
+        where: { driverId },
+        select: this.jobSelect,
+        orderBy: { updatedAt: 'desc' },
+        take: limit,
+        skip,
+      }),
+      this.prisma.transportJob.count({
+        where: { driverId },
+      }),
+    ]);
+
+    return {
+      data: jobs.map((j) => this.mapWithSla(j)),
+      pagination: {
+        total,
+        limit,
+        skip,
+        hasMore: skip + limit < total,
+      },
+    };
   }
 
   /**
    * Returns all WASTE_COLLECTION and TRANSPORT jobs that the given user
-   * originally requested (via the disposal or freight booking wizard).
+   * originally requested (via the disposal or freight booking wizard) with pagination.
    */
-  async findMyRequests(userId: string) {
-    return this.prisma.transportJob.findMany({
-      where: {
-        requestedById: userId,
-        jobType: { in: ['WASTE_COLLECTION', 'TRANSPORT'] },
+  async findMyRequests(userId: string, limit: number = 20, skip: number = 0) {
+    const [jobs, total] = await Promise.all([
+      this.prisma.transportJob.findMany({
+        where: {
+          requestedById: userId,
+          jobType: { in: ['WASTE_COLLECTION', 'TRANSPORT'] },
+        },
+        select: this.jobSelect,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip,
+      }),
+      this.prisma.transportJob.count({
+        where: {
+          requestedById: userId,
+          jobType: { in: ['WASTE_COLLECTION', 'TRANSPORT'] },
+        },
+      }),
+    ]);
+
+    return {
+      data: jobs.map((j) => this.mapWithSla(j)),
+      pagination: {
+        total,
+        limit,
+        skip,
+        hasMore: skip + limit < total,
       },
-      select: this.jobSelect,
-      orderBy: { createdAt: 'desc' },
-    });
+    };
   }
 
   // ── Single job ────────────────────────────────────────────────
@@ -232,7 +423,124 @@ export class TransportJobsService {
       select: this.jobSelect,
     });
     if (!job) throw new NotFoundException('Transport job not found');
-    return job;
+    await this.evaluateAndEscalateSla(job.id);
+    return this.mapWithSla(job);
+  }
+
+  async findSlaOverdue() {
+    const jobs = await this.prisma.transportJob.findMany({
+      where: {
+        status: {
+          in: [
+            TransportJobStatus.AVAILABLE,
+            TransportJobStatus.ACCEPTED,
+            TransportJobStatus.EN_ROUTE_PICKUP,
+            TransportJobStatus.AT_PICKUP,
+            TransportJobStatus.LOADED,
+            TransportJobStatus.EN_ROUTE_DELIVERY,
+            TransportJobStatus.AT_DELIVERY,
+          ],
+        },
+      },
+      select: this.jobSelect,
+      orderBy: { pickupDate: 'asc' },
+    });
+
+    await Promise.all(jobs.map((j) => this.evaluateAndEscalateSla(j.id)));
+    return jobs
+      .map((j) => this.mapWithSla(j))
+      .filter((j) => j.sla.isOverdue)
+      .sort((a, b) => b.sla.overdueMinutes - a.sla.overdueMinutes);
+  }
+
+  async findOpenExceptions() {
+    return this.prisma.transportJobException.findMany({
+      where: { status: TransportExceptionStatus.OPEN },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        reportedBy: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+        transportJob: {
+          select: {
+            id: true,
+            jobNumber: true,
+            status: true,
+            pickupCity: true,
+            deliveryCity: true,
+            driver: {
+              select: { id: true, firstName: true, lastName: true },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  async getDocumentReadiness(id: string) {
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        status: true,
+        jobType: true,
+        orderId: true,
+      },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+
+    const requiresWeighingSlip =
+      job.jobType === 'MATERIAL_DELIVERY' || job.jobType === 'WASTE_COLLECTION';
+    const requiresDeliveryProof = true;
+
+    const [deliveryProof, weighingSlip, deliveryNote] = await Promise.all([
+      this.prisma.deliveryProof.findUnique({
+        where: { transportJobId: id },
+        select: { id: true },
+      }),
+      job.orderId
+        ? this.prisma.document.findFirst({
+            where: {
+              orderId: job.orderId,
+              type: DocumentType.WEIGHING_SLIP,
+              status: { not: 'ARCHIVED' },
+            },
+            select: { id: true },
+          })
+        : Promise.resolve(null),
+      this.prisma.document.findFirst({
+        where: {
+          transportJobId: id,
+          type: DocumentType.DELIVERY_NOTE,
+          status: { not: 'ARCHIVED' },
+        },
+        select: { id: true },
+      }),
+    ]);
+
+    const hasDeliveryProof = !!deliveryProof;
+    const hasWeighingSlip = !!weighingSlip;
+    const hasDeliveryNote = !!deliveryNote;
+
+    const missing: string[] = [];
+    if (requiresDeliveryProof && !hasDeliveryProof) missing.push('DELIVERY_PROOF');
+    if (requiresWeighingSlip && !hasWeighingSlip) missing.push('WEIGHING_SLIP');
+
+    return {
+      transportJobId: id,
+      status: job.status,
+      requires: {
+        deliveryProof: requiresDeliveryProof,
+        weighingSlip: requiresWeighingSlip,
+      },
+      has: {
+        deliveryProof: hasDeliveryProof,
+        weighingSlip: hasWeighingSlip,
+        deliveryNote: hasDeliveryNote,
+      },
+      canMarkDelivered: missing.length === 0,
+      missing,
+    };
   }
 
   // ── Accept a job ──────────────────────────────────────────────
@@ -331,7 +639,7 @@ export class TransportJobsService {
   }
 
   // ── Dispatcher: assign vehicle + driver to a job ──────────────
-  async assign(id: string, body: { driverId: string; vehicleId: string }) {
+  async assign(id: string, body: AssignDispatchDto) {
     const job = await this.prisma.transportJob.findUnique({ where: { id } });
     if (!job) throw new NotFoundException('Transport job not found');
 
@@ -341,29 +649,118 @@ export class TransportJobsService {
       );
     }
 
-    const driver = await this.prisma.user.findUnique({
-      where: { id: body.driverId },
+    return this.applyAssignment(id, body.driverId, body.vehicleId);
+  }
+
+  // ── Dispatcher: reassign pre-dispatch job ─────────────────────
+  async reassign(id: string, body: AssignDispatchDto) {
+    const job = await this.prisma.transportJob.findUnique({ where: { id } });
+    if (!job) throw new NotFoundException('Transport job not found');
+
+    if (job.status !== TransportJobStatus.ACCEPTED) {
+      throw new BadRequestException(
+        'Only ACCEPTED jobs can be reassigned. In-progress jobs must be handled as exceptions.',
+      );
+    }
+
+    const updated = await this.applyAssignment(id, body.driverId, body.vehicleId);
+
+    if (job.driverId && job.driverId !== body.driverId) {
+      this.notifications
+        .create({
+          userId: job.driverId,
+          type: NotificationType.SYSTEM_ALERT,
+          title: 'ℹ️ Darbs pārdalīts',
+          message: `Darbs ${updated.jobNumber} tika pārdalīts citam šoferim`,
+          data: { jobId: updated.id },
+        })
+        .catch(() => {});
+    }
+
+    return updated;
+  }
+
+  // ── Dispatcher: unassign pre-dispatch job ─────────────────────
+  async unassign(id: string, reason?: string) {
+    const job = await this.prisma.transportJob.findUnique({ where: { id } });
+    if (!job) throw new NotFoundException('Transport job not found');
+
+    if (job.status === TransportJobStatus.AVAILABLE) {
+      return this.findOne(id);
+    }
+
+    if (job.status !== TransportJobStatus.ACCEPTED) {
+      throw new BadRequestException(
+        'Only ACCEPTED jobs can be unassigned. In-progress jobs must be handled as exceptions.',
+      );
+    }
+
+    const updated = await this.prisma.transportJob.update({
+      where: { id },
+      data: {
+        status: TransportJobStatus.AVAILABLE,
+        driverId: null,
+        vehicleId: null,
+      },
+      select: this.jobSelect,
     });
+
+    if (job.driverId) {
+      this.notifications
+        .create({
+          userId: job.driverId,
+          type: NotificationType.SYSTEM_ALERT,
+          title: 'ℹ️ Darbs noņemts',
+          message: `Darbs ${updated.jobNumber} ir noņemts no jūsu saraksta${reason ? `: ${reason}` : ''}`,
+          data: { jobId: updated.id },
+        })
+        .catch(() => {});
+    }
+
+    return updated;
+  }
+
+  private async applyAssignment(
+    id: string,
+    driverId: string,
+    vehicleId?: string,
+  ) {
+
+    const driver = await this.prisma.user.findUnique({ where: { id: driverId } });
     if (!driver || !driver.canTransport) {
       throw new BadRequestException('User is not a valid driver');
     }
 
-    const vehicle = await this.prisma.vehicle.findUnique({
-      where: { id: body.vehicleId },
-    });
-    if (!vehicle) {
-      throw new NotFoundException('Vehicle not found');
+    if (vehicleId) {
+      const vehicle = await this.prisma.vehicle.findUnique({
+        where: { id: vehicleId },
+      });
+      if (!vehicle) {
+        throw new NotFoundException('Vehicle not found');
+      }
     }
 
-    return this.prisma.transportJob.update({
+    const updated = await this.prisma.transportJob.update({
       where: { id },
       data: {
-        driverId: body.driverId,
-        vehicleId: body.vehicleId,
+        driverId,
+        vehicleId: vehicleId ?? null,
         status: TransportJobStatus.ACCEPTED,
       },
       select: this.jobSelect,
     });
+
+    this.notifications
+      .create({
+        userId: driverId,
+        type: NotificationType.TRANSPORT_ASSIGNED,
+        title: '🚚 Jums piešķirts darbs',
+        message: `${updated.jobNumber} • ${updated.pickupCity} → ${updated.deliveryCity}`,
+        data: { jobId: updated.id },
+      })
+      .catch(() => {});
+
+    return updated;
   }
 
   // ── Update status ─────────────────────────────────────────────
@@ -391,6 +788,15 @@ export class TransportJobsService {
       throw new BadRequestException(
         'Weight ticket reading (weightKg) is required when marking job as LOADED',
       );
+    }
+
+    if (dto.status === TransportJobStatus.DELIVERED) {
+      const readiness = await this.getDocumentReadiness(id);
+      if (!readiness.canMarkDelivered) {
+        throw new BadRequestException(
+          `Cannot mark DELIVERED: missing required documents (${readiness.missing.join(', ')}). Submit delivery proof first.`,
+        );
+      }
     }
 
     const updatedJob = await this.prisma.transportJob.update({
@@ -580,6 +986,16 @@ export class TransportJobsService {
       throw new BadRequestException('Job must be AT_DELIVERY to submit proof');
     }
 
+    const readiness = await this.getDocumentReadiness(id);
+    const blockingMissing = readiness.missing.filter(
+      (doc) => doc !== 'DELIVERY_PROOF',
+    );
+    if (blockingMissing.length > 0) {
+      throw new BadRequestException(
+        `Cannot submit delivery proof: missing required documents (${blockingMissing.join(', ')}).`,
+      );
+    }
+
     await this.prisma.deliveryProof.create({
       data: {
         transportJobId: id,
@@ -594,7 +1010,9 @@ export class TransportJobsService {
 
     const delivered = await this.prisma.transportJob.update({
       where: { id },
-      data: { status: TransportJobStatus.DELIVERED },
+      data: {
+        status: TransportJobStatus.DELIVERED,
+      },
       select: this.jobSelect,
     });
 
@@ -698,5 +1116,132 @@ export class TransportJobsService {
     }
 
     return updatedJob;
+  }
+
+  // ── Exception flows ──────────────────────────────────────────
+  async listExceptions(id: string, user: RequestingUser) {
+    const job = await this.getJobAccessContext(id);
+    if (!this.canAccessExceptions(job, user)) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    return this.prisma.transportJobException.findMany({
+      where: { transportJobId: id },
+      include: {
+        reportedBy: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+        resolvedBy: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async reportException(
+    id: string,
+    user: RequestingUser,
+    dto: ReportTransportExceptionDto,
+  ) {
+    const job = await this.getJobAccessContext(id);
+    if (!this.canAccessExceptions(job, user)) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    const ex = await this.prisma.transportJobException.create({
+      data: {
+        transportJobId: id,
+        type: dto.type,
+        notes: dto.notes,
+        photoUrls: dto.photoUrls ?? [],
+        reportedById: user.userId,
+      },
+      include: {
+        reportedBy: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+      },
+    });
+
+    const actorName =
+      user.email?.trim() ||
+      (user.companyId ? `Lietotājs (${user.companyId})` : `Lietotājs ${user.userId}`);
+    const msg = `Darbs ${job.jobNumber} • ${dto.type} • ${job.pickupCity} → ${job.deliveryCity}`;
+
+    const notifyIds = new Set<string>();
+    if (job.driverId && job.driverId !== user.userId) notifyIds.add(job.driverId);
+    if (job.requestedById && job.requestedById !== user.userId)
+      notifyIds.add(job.requestedById);
+    if (job.order?.createdById && job.order.createdById !== user.userId)
+      notifyIds.add(job.order.createdById);
+
+    if (notifyIds.size > 0) {
+      this.notifications
+        .createForMany(Array.from(notifyIds), {
+          type: NotificationType.SYSTEM_ALERT,
+          title: '⚠️ Ziņots izņēmuma gadījums',
+          message: `${msg} • Ziņoja: ${actorName}`,
+          data: { jobId: id, exceptionId: ex.id },
+        })
+        .catch(() => {});
+    }
+
+    return ex;
+  }
+
+  async resolveException(
+    id: string,
+    exceptionId: string,
+    resolverUserId: string,
+    dto: ResolveTransportExceptionDto,
+  ) {
+    const job = await this.getJobAccessContext(id);
+
+    const ex = await this.prisma.transportJobException.findFirst({
+      where: { id: exceptionId, transportJobId: id },
+      select: { id: true, status: true, reportedById: true },
+    });
+    if (!ex) throw new NotFoundException('Transport exception not found');
+    if (ex.status === TransportExceptionStatus.RESOLVED) {
+      throw new BadRequestException('Exception is already resolved');
+    }
+
+    const resolved = await this.prisma.transportJobException.update({
+      where: { id: exceptionId },
+      data: {
+        status: TransportExceptionStatus.RESOLVED,
+        resolvedById: resolverUserId,
+        resolvedAt: new Date(),
+        resolution: dto.resolution,
+      },
+      include: {
+        reportedBy: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+        resolvedBy: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+      },
+    });
+
+    const notifyIds = new Set<string>();
+    if (job.driverId) notifyIds.add(job.driverId);
+    if (job.requestedById) notifyIds.add(job.requestedById);
+    if (job.order?.createdById) notifyIds.add(job.order.createdById);
+    notifyIds.delete(resolverUserId);
+
+    if (notifyIds.size > 0) {
+      this.notifications
+        .createForMany(Array.from(notifyIds), {
+          type: NotificationType.SYSTEM_ALERT,
+          title: '✅ Izņēmums atrisināts',
+          message: `Darbs ${job.jobNumber} • ${dto.resolution}`,
+          data: { jobId: id, exceptionId: resolved.id },
+        })
+        .catch(() => {});
+    }
+
+    return resolved;
   }
 }

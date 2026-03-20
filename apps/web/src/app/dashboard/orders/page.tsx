@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -20,11 +20,16 @@ import {
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { PageHeader } from '@/components/ui/page-header';
 import {
+  listTransportJobExceptions,
+  reportTransportJobException,
+  resolveTransportJobException,
   updateTransportJobStatus,
+  getTransportDocumentReadiness,
   submitDeliveryProof,
   confirmOrder,
   cancelOrder,
   type ApiTransportJob,
+  type ApiTransportJobException,
 } from '@/lib/api';
 import { useActiveTransportJob } from '@/hooks/use-active-transport-job';
 import { useTransportJobs } from '@/hooks/use-transport-jobs';
@@ -32,6 +37,7 @@ import { useMaterialOrders } from '@/hooks/use-material-orders';
 import { useBuyerOrders } from '@/hooks/use-buyer-orders';
 import {
   ArrowRight,
+  AlertTriangle,
   Banknote,
   CalendarDays,
   CheckCircle,
@@ -160,6 +166,29 @@ function mapsUrl(lat: number, lng: number): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
 }
 
+const EXCEPTION_TYPE_OPTIONS = [
+  { value: 'DRIVER_NO_SHOW', label: 'Šoferis neieradās' },
+  { value: 'SUPPLIER_NOT_READY', label: 'Piegādātājs nav gatavs' },
+  { value: 'WRONG_MATERIAL', label: 'Nepareizs materiāls' },
+  { value: 'PARTIAL_DELIVERY', label: 'Daļēja piegāde' },
+  { value: 'REJECTED_DELIVERY', label: 'Piegāde atteikta' },
+  { value: 'SITE_CLOSED', label: 'Objekts slēgts' },
+  { value: 'OVERWEIGHT', label: 'Pārsniegts svars' },
+  { value: 'OTHER', label: 'Cits' },
+] as const;
+
+function formatSlaStage(stage: string | null | undefined): string {
+  if (stage === 'PICKUP_DELAY') return 'Kavēta iekraušana';
+  if (stage === 'DELIVERY_DELAY') return 'Kavēta piegāde';
+  return 'Grafikā';
+}
+
+function formatDocCode(code: string): string {
+  if (code === 'DELIVERY_PROOF') return 'Piegādes apliecinājums';
+  if (code === 'WEIGHING_SLIP') return 'Svēršanas biļete';
+  return code.replaceAll('_', ' ').toLowerCase();
+}
+
 // ── Active-job tab ─────────────────────────────────────────────────────────────
 
 function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () => void }) {
@@ -167,6 +196,15 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
   const { job, setJob, loading, reload } = useActiveTransportJob(token);
   const [refreshing, setRefreshing] = useState(false);
   const [advancing, setAdvancing] = useState(false);
+  const [deliveryBlockers, setDeliveryBlockers] = useState<string[]>([]);
+  const [readinessLoading, setReadinessLoading] = useState(false);
+  const [exceptionsLoading, setExceptionsLoading] = useState(false);
+  const [exceptions, setExceptions] = useState<ApiTransportJobException[]>([]);
+  const [exceptionType, setExceptionType] = useState<(typeof EXCEPTION_TYPE_OPTIONS)[number]['value']>('OTHER');
+  const [exceptionNotes, setExceptionNotes] = useState('');
+  const [reportingException, setReportingException] = useState(false);
+  const [resolvingExceptionId, setResolvingExceptionId] = useState<string | null>(null);
+  const [resolutionById, setResolutionById] = useState<Record<string, string>>({});
 
   // Delivery proof modal
   const [showProofModal, setShowProofModal] = useState(false);
@@ -184,10 +222,113 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
     setRefreshing(false);
   };
 
+  useEffect(() => {
+    let active = true;
+    if (!job?.id || job.status !== 'AT_DELIVERY') {
+      setDeliveryBlockers([]);
+      setReadinessLoading(false);
+      return;
+    }
+
+    setReadinessLoading(true);
+    getTransportDocumentReadiness(job.id, token)
+      .then((readiness) => {
+        if (!active) return;
+        setDeliveryBlockers(readiness.missing.filter((doc) => doc !== 'DELIVERY_PROOF'));
+      })
+      .catch(() => {
+        if (!active) return;
+        setDeliveryBlockers([]);
+      })
+      .finally(() => {
+        if (active) setReadinessLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [job?.id, job?.status, token]);
+
+  useEffect(() => {
+    let active = true;
+    if (!job?.id) {
+      setExceptions([]);
+      setExceptionsLoading(false);
+      return;
+    }
+
+    setExceptionsLoading(true);
+    listTransportJobExceptions(job.id, token)
+      .then((data) => {
+        if (!active) return;
+        setExceptions(data);
+      })
+      .catch(() => {
+        if (!active) return;
+        setExceptions([]);
+      })
+      .finally(() => {
+        if (active) setExceptionsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [job?.id, token]);
+
+  const handleReportException = async () => {
+    if (!job) return;
+    const notes = exceptionNotes.trim();
+    if (!notes) {
+      alert('Lūdzu pievienojiet izņēmuma aprakstu.');
+      return;
+    }
+
+    setReportingException(true);
+    try {
+      const created = await reportTransportJobException(
+        job.id,
+        { type: exceptionType, notes },
+        token,
+      );
+      setExceptions((prev) => [created, ...prev]);
+      setExceptionNotes('');
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Neizdevās iesniegt izņēmumu');
+    } finally {
+      setReportingException(false);
+    }
+  };
+
+  const handleResolveException = async (exceptionId: string) => {
+    if (!job) return;
+    const resolution = resolutionById[exceptionId]?.trim() || 'Atrisināts aktīvajā darbā';
+    setResolvingExceptionId(exceptionId);
+    try {
+      const resolved = await resolveTransportJobException(job.id, exceptionId, resolution, token);
+      setExceptions((prev) =>
+        prev.map((item) => (item.id === exceptionId ? resolved : item)),
+      );
+      setResolutionById((prev) => ({ ...prev, [exceptionId]: '' }));
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Neizdevās atrisināt izņēmumu');
+    } finally {
+      setResolvingExceptionId(null);
+    }
+  };
+
   const handleAdvance = async () => {
     if (!job) return;
     const current = job.status as JobStatus;
     if (current === 'AT_DELIVERY') {
+      if (readinessLoading) {
+        alert('Pārbaudām dokumentu gatavību. Lūdzu uzgaidiet brīdi.');
+        return;
+      }
+      if (deliveryBlockers.length > 0) {
+        alert(`Piegādi nevar pabeigt. Trūkst: ${deliveryBlockers.map(formatDocCode).join(', ')}`);
+        return;
+      }
       setProofRecipient('');
       setProofNotes('');
       setProofError(null);
@@ -414,6 +555,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
         (() => {
           const currentStatus = job.status as JobStatus;
           const currentIndex = STATUS_STEPS.indexOf(currentStatus);
+          const openExceptions = exceptions.filter((item) => item.status === 'OPEN');
           // Safety: if status is not a known in-progress status, show empty state
           if (currentIndex === -1 || currentStatus === 'DELIVERED') return null;
           const nextStatus = NEXT_STATUS[currentStatus];
@@ -437,6 +579,43 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
                 <p className="text-xs text-muted-foreground">
                   Solis {currentIndex + 1} no {STATUS_STEPS.length}
                 </p>
+              </div>
+
+              {/* SLA widget */}
+              <div
+                className={`rounded-2xl border p-4 ${
+                  job.sla?.isOverdue ? 'border-red-200 bg-red-50' : 'border-blue-200 bg-blue-50'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div
+                    className={`mt-0.5 rounded-full p-1.5 ${
+                      job.sla?.isOverdue ? 'bg-red-100' : 'bg-blue-100'
+                    }`}
+                  >
+                    <CalendarDays
+                      className={`h-4 w-4 ${job.sla?.isOverdue ? 'text-red-700' : 'text-blue-700'}`}
+                    />
+                  </div>
+                  <div>
+                    <p
+                      className={`text-sm font-bold ${
+                        job.sla?.isOverdue ? 'text-red-800' : 'text-blue-800'
+                      }`}
+                    >
+                      SLA statuss
+                    </p>
+                    <p
+                      className={`text-xs mt-1 ${
+                        job.sla?.isOverdue ? 'text-red-700' : 'text-blue-700'
+                      }`}
+                    >
+                      {job.sla?.isOverdue
+                        ? `${formatSlaStage(job.sla?.stage)} · ${job.sla?.overdueMinutes ?? 0} min`
+                        : 'Grafikā, kavējums nav konstatēts'}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* Map */}
@@ -548,13 +727,124 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
                 </div>
               </div>
 
+              {/* Exceptions widget */}
+              <div className="bg-white border border-amber-200 rounded-2xl p-5 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-700" />
+                    <h3 className="text-sm font-bold text-amber-800 uppercase tracking-wide">
+                      Izņēmumi
+                    </h3>
+                  </div>
+                  <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800">
+                    {openExceptions.length} atvērti
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-[220px,1fr,auto] gap-2">
+                  <select
+                    value={exceptionType}
+                    onChange={(e) =>
+                      setExceptionType(
+                        e.target.value as (typeof EXCEPTION_TYPE_OPTIONS)[number]['value'],
+                      )
+                    }
+                    className="h-10 rounded-lg border px-3 text-sm bg-white"
+                  >
+                    {EXCEPTION_TYPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={exceptionNotes}
+                    onChange={(e) => setExceptionNotes(e.target.value)}
+                    placeholder="Aprakstiet situāciju dispečeram"
+                    className="h-10 rounded-lg border px-3 text-sm"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10"
+                    onClick={handleReportException}
+                    disabled={reportingException}
+                  >
+                    {reportingException ? 'Sūta...' : 'Ziņot'}
+                  </Button>
+                </div>
+
+                {exceptionsLoading ? (
+                  <p className="text-xs text-muted-foreground">Ielādē izņēmumus...</p>
+                ) : exceptions.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Pašlaik nav reģistrētu izņēmumu.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {exceptions.map((item) => {
+                      const isOpen = item.status === 'OPEN';
+                      return (
+                        <div
+                          key={item.id}
+                          className="rounded-xl border border-gray-200 bg-gray-50 p-3 space-y-2"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs font-semibold text-gray-800">{item.type}</p>
+                            <span
+                              className={`text-[10px] font-bold ${
+                                isOpen ? 'text-amber-700' : 'text-emerald-700'
+                              }`}
+                            >
+                              {isOpen ? 'ATVĒRTS' : 'ATRISINĀTS'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-600">{item.notes}</p>
+                          {isOpen && (
+                            <div className="grid grid-cols-1 sm:grid-cols-[1fr,auto] gap-2">
+                              <input
+                                value={resolutionById[item.id] ?? ''}
+                                onChange={(e) =>
+                                  setResolutionById((prev) => ({
+                                    ...prev,
+                                    [item.id]: e.target.value,
+                                  }))
+                                }
+                                placeholder="Atrisinājuma komentārs"
+                                className="h-9 rounded-lg border px-3 text-xs"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="h-9 text-xs"
+                                onClick={() => handleResolveException(item.id)}
+                                disabled={resolvingExceptionId === item.id}
+                              >
+                                {resolvingExceptionId === item.id ? 'Saglabā...' : 'Atrisināt'}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               {/* Action */}
+              {currentStatus === 'AT_DELIVERY' && deliveryBlockers.length > 0 && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                  <p className="text-sm font-semibold text-red-700">Trūkst obligāti dokumenti</p>
+                  <p className="mt-1 text-xs text-red-700">
+                    Piegādi nevar pabeigt, kamēr nav iesniegti:{' '}
+                    {deliveryBlockers.map(formatDocCode).join(', ')}
+                  </p>
+                </div>
+              )}
               <div className="flex flex-col sm:flex-row gap-3 pb-4">
                 {nextStatus && (
                   <Button
                     className="flex-1 h-12 text-base font-bold"
                     onClick={handleAdvance}
-                    disabled={advancing}
+                    disabled={advancing || (currentStatus === 'AT_DELIVERY' && readinessLoading)}
                   >
                     {advancing ? (
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />

@@ -2,7 +2,7 @@
  * Quote requests controller — /api/v1/quote-requests
  * Endpoints to create RFQs, list open/my requests, submit offers, and accept one.
  */
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { QuoteRequestsService } from './quote-requests.service';
 import { CreateQuoteRequestDto } from './dto/create-quote-request.dto';
 import { CreateQuoteResponseDto } from './dto/create-quote-response.dto';
@@ -26,20 +26,31 @@ export class QuoteRequestsController {
     return this.service.create(dto, user.userId);
   }
 
-  /** GET /quote-requests — buyer lists their own requests */
+  /** GET /quote-requests — buyer lists their own requests with pagination */
   @Get()
-  findAll(@CurrentUser() user: RequestingUser) {
-    return this.service.findAll(user.userId);
+  findAll(
+    @CurrentUser() user: RequestingUser,
+    @Query('limit') limit: string = '20',
+    @Query('skip') skip: string = '0',
+  ) {
+    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+    const skipNum = Math.max(parseInt(skip, 10) || 0, 0);
+    return this.service.findAll(user.userId, limitNum, skipNum);
   }
 
   // ── Supplier endpoints ──────────────────────────────────────
   // NOTE: static routes MUST come before parameterised ones (@Get(':id'))
   // otherwise NestJS/Express will greedily match "open" as an :id value.
 
-  /** GET /quote-requests/open — supplier sees all open requests */
+  /** GET /quote-requests/open — supplier sees all open requests with pagination */
   @Get('open')
-  openRequests() {
-    return this.service.findOpenRequests();
+  openRequests(
+    @Query('limit') limit: string = '20',
+    @Query('skip') skip: string = '0',
+  ) {
+    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+    const skipNum = Math.max(parseInt(skip, 10) || 0, 0);
+    return this.service.findOpenRequests(limitNum, skipNum);
   }
 
   // ── Buyer endpoints (parameterised) ────────────────────────
