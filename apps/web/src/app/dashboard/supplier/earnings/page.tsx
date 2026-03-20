@@ -74,6 +74,7 @@ function computeRevenue(orders: ApiOrder[]): {
   entries: OrderEntry[];
   chart: DayBar[];
 } {
+  const safeOrders = Array.isArray(orders) ? orders : [];
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekStart = new Date(todayStart);
@@ -86,7 +87,7 @@ function computeRevenue(orders: ApiOrder[]): {
     pendingRevenue = 0;
   const entries: OrderEntry[] = [];
 
-  for (const order of orders) {
+  for (const order of safeOrders) {
     const d = new Date(order.createdAt);
     const amount = order.total ?? 0;
     if (REVENUE_STATUSES.includes(order.status)) {
@@ -121,7 +122,7 @@ function computeRevenue(orders: ApiOrder[]): {
     }
   }
 
-  const confirmedOrders = orders.filter((o) => REVENUE_STATUSES.includes(o.status));
+  const confirmedOrders = safeOrders.filter((o) => REVENUE_STATUSES.includes(o.status));
   const avgOrderValue =
     confirmedOrders.length > 0
       ? confirmedOrders.reduce((s, o) => s + (o.total ?? 0), 0) / confirmedOrders.length
@@ -132,7 +133,7 @@ function computeRevenue(orders: ApiOrder[]): {
   for (let i = 6; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
     const nextD = new Date(d.getTime() + 86_400_000);
-    const amount = orders
+    const amount = safeOrders
       .filter((o) => {
         if (!REVENUE_STATUSES.includes(o.status)) return false;
         const od = new Date(o.createdAt);

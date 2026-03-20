@@ -2,7 +2,16 @@
  * Quote requests controller — /api/v1/quote-requests
  * Endpoints to create RFQs, list open/my requests, submit offers, and accept one.
  */
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { QuoteRequestsService } from './quote-requests.service';
 import { CreateQuoteRequestDto } from './dto/create-quote-request.dto';
 import { CreateQuoteResponseDto } from './dto/create-quote-response.dto';
@@ -14,6 +23,15 @@ import type { RequestingUser } from '../common/types/requesting-user.interface';
 @UseGuards(JwtAuthGuard)
 export class QuoteRequestsController {
   constructor(private readonly service: QuoteRequestsService) {}
+
+  private assertCanRespondAsSupplier(user: RequestingUser) {
+    if (user.userType === 'ADMIN') return;
+    if (!user.canSell || !user.companyId) {
+      throw new ForbiddenException(
+        'Only approved suppliers can view open RFQs and submit responses',
+      );
+    }
+  }
 
   // ── Buyer endpoints ─────────────────────────────────────────
 
@@ -45,9 +63,11 @@ export class QuoteRequestsController {
   /** GET /quote-requests/open — supplier sees all open requests with pagination */
   @Get('open')
   openRequests(
+    @CurrentUser() user: RequestingUser,
     @Query('limit') limit: string = '20',
     @Query('skip') skip: string = '0',
   ) {
+    this.assertCanRespondAsSupplier(user);
     const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
     const skipNum = Math.max(parseInt(skip, 10) || 0, 0);
     return this.service.findOpenRequests(limitNum, skipNum);
@@ -78,6 +98,10 @@ export class QuoteRequestsController {
     @Body() dto: CreateQuoteResponseDto,
     @CurrentUser() user: RequestingUser,
   ) {
+    this.assertCanRespondAsSupplier(user);
+    if (!user.companyId) {
+      throw new ForbiddenException('Supplier company is required to submit a response');
+    }
     return this.service.addResponse(id, dto, user.companyId!);
   }
 }

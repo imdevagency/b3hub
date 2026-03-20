@@ -19,7 +19,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { SkeletonCard } from '@/components/ui/Skeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { haptics } from '@/lib/haptics';
 import { SELLER_ORDER_STATUS } from '@/lib/materials';
@@ -464,14 +463,14 @@ export default function IncomingScreen() {
 
   if (fetching) {
     return (
-      <ScreenContainer bg="#f2f2f7">
+      <ScreenContainer bg="#ffffff">
         <SkeletonCard count={4} />
       </ScreenContainer>
     );
   }
 
   return (
-    <ScreenContainer bg="#f2f2f7">
+    <ScreenContainer bg="#ffffff">
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t.incoming.title}</Text>
@@ -531,8 +530,12 @@ export default function IncomingScreen() {
       </ScrollView>
 
       {orders.length === 0 ? (
-        <View style={styles.empty}>
-          <Inbox size={48} color="#d1d5db" />
+        <View style={styles.emptyWrap}>
+          <View style={styles.emptyRing}>
+            <View style={styles.emptyIconCircle}>
+              <Inbox size={32} color="#111827" strokeWidth={1.5} />
+            </View>
+          </View>
           <Text style={styles.emptyTitle}>{t.incoming.empty}</Text>
           <Text style={styles.emptyDesc}>{t.incoming.emptyDesc}</Text>
         </View>
@@ -551,11 +554,15 @@ export default function IncomingScreen() {
           }
         >
           {visibleOrders.length === 0 && (
-            <EmptyState
-              icon={<Inbox size={36} color="#d1d5db" />}
-              title="Nav pasūtījumu"
-              subtitle="Šajā kategorijā nav pasūtījumu"
-            />
+            <View style={styles.emptyWrap}>
+              <View style={styles.emptyRing}>
+                <View style={styles.emptyIconCircle}>
+                  <Inbox size={32} color="#111827" strokeWidth={1.5} />
+                </View>
+              </View>
+              <Text style={styles.emptyTitle}>Nav pasūtījumu</Text>
+              <Text style={styles.emptyDesc}>Šajā kategorijā nav pasūtījumu</Text>
+            </View>
           )}
           {visibleOrders.map((order) => (
             <OrderCard
@@ -586,17 +593,17 @@ export default function IncomingScreen() {
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f7' },
+  container: { flex: 1, backgroundColor: '#ffffff' },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
     gap: 10,
   },
-  headerTitle: { fontSize: 24, fontWeight: '700', color: '#111827', flex: 1 },
+  headerTitle: { fontSize: 26, fontWeight: '800', color: '#111827', flex: 1, letterSpacing: -0.5 },
   pendingBadge: {
     backgroundColor: '#111827',
     borderRadius: 12,
@@ -607,7 +614,7 @@ const styles = StyleSheet.create({
 
   filterRow: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     gap: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -616,19 +623,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 999,
     backgroundColor: '#f3f4f6',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
     alignSelf: 'flex-start',
   },
   filterChipActive: {
     backgroundColor: '#111827',
-    borderColor: '#111827',
   },
-  filterChipText: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  filterChipText: { fontSize: 13, fontWeight: '600', color: '#4b5563' },
   filterChipTextActive: { color: '#fff' },
   filterChipCount: {
     backgroundColor: '#e5e7eb',
@@ -649,12 +653,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 16,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
     gap: 12,
+    marginBottom: 4,
   },
 
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -721,10 +728,44 @@ const styles = StyleSheet.create({
   },
   loadingBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
 
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
-  emptyEmoji: { fontSize: 48 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#374151' },
-  emptyDesc: { fontSize: 14, color: '#9ca3af', textAlign: 'center' },
+  emptyWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 60,
+  },
+  emptyRing: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyIconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: '#f9fafb',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptyDesc: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 21,
+  },
 });
 
 const modalStyles = StyleSheet.create({

@@ -10,6 +10,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -53,7 +54,7 @@ export class DriverScheduleController {
    * Upsert the full weekly schedule + preferences (autoSchedule, maxJobsPerDay).
    * Sends the full array of 7 days (or any subset).
    */
-  @Post()
+  @Put()
   updateSchedule(
     @CurrentUser() user: RequestingUser,
     @Body() dto: UpdateScheduleDto,

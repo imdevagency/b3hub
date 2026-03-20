@@ -96,7 +96,7 @@ export default function DriverHomeScreen() {
         .catch(() => {});
       api.transportJobs
         .available(token)
-        .then((jobs: ApiTransportJob[]) => setAvailableJobs(jobs))
+        .then((jobs: ApiTransportJob[]) => setAvailableJobs(Array.isArray(jobs) ? jobs : []))
         .catch(() => {});
       api.notifications
         .unreadCount(token)
@@ -105,14 +105,15 @@ export default function DriverHomeScreen() {
     }, [token]),
   );
 
-  const availableCount = availableJobs.length;
+  const jobsList = Array.isArray(availableJobs) ? availableJobs : [];
+  const availableCount = jobsList.length;
 
   return (
     <View style={s.root}>
       {/* ── Map — top 42% ── */}
       <View style={s.mapWrap}>
         <BaseMap cameraRef={cameraRef} zoom={12} showsUserLocation showsMyLocationButton>
-          {availableJobs
+          {jobsList
             .filter((j) => j.pickupLat != null && j.pickupLng != null)
             .map((j) => (
               <PinLayer

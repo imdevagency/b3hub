@@ -192,7 +192,12 @@ export class OrdersService {
     }
   }
 
-  async findAll(currentUser: RequestingUser, status?: OrderStatus, limit: number = 20, skip: number = 0) {
+  async findAll(
+    currentUser: RequestingUser,
+    status?: OrderStatus,
+    limit: number = 20,
+    skip: number = 0,
+  ) {
     const where = this.buildOrderWhere(currentUser, status);
 
     // Execute count and data queries in parallel
@@ -487,6 +492,48 @@ export class OrdersService {
     }
 
     return updated;
+  }
+
+  async updateStatusAsUser(
+    id: string,
+    status: OrderStatus,
+    currentUser: RequestingUser,
+  ) {
+    if (currentUser.userType === 'ADMIN') {
+      return this.updateStatus(id, status);
+    }
+
+    // Ensure the order exists and caller has base visibility.
+    await this.findOne(id, currentUser);
+
+    // Confirm/start-loading are seller-side operational actions.
+    if (status === OrderStatus.CONFIRMED || status === OrderStatus.IN_PROGRESS) {
+      const canManageSupplierOrders =
+        !!currentUser.companyId &&
+        (currentUser.canSell ||
+          currentUser.companyRole === 'OWNER' ||
+          currentUser.companyRole === 'MANAGER' ||
+          currentUser.permManageOrders);
+
+      if (!canManageSupplierOrders) {
+        throw new ForbiddenException(
+          'Only supplier operators can confirm or start loading orders',
+        );
+      }
+
+      const supplierMatchCount = await this.prisma.orderItem.count({
+        where: {
+          orderId: id,
+          material: { supplierId: currentUser.companyId! },
+        },
+      });
+
+      if (supplierMatchCount === 0) {
+        throw new ForbiddenException('This order does not belong to your supplier company');
+      }
+    }
+
+    return this.updateStatus(id, status);
   }
 
   async cancel(id: string, currentUser: RequestingUser) {

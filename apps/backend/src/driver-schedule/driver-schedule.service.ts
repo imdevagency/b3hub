@@ -71,7 +71,14 @@ export class DriverScheduleService {
     // Compute whether driver should be auto-available right now
     const effectiveOnline = this.computeEffectiveOnline(profile);
 
-    return { ...profile, effectiveOnline };
+    return {
+      ...profile,
+      effectiveOnline,
+      weeklySchedule: profile.weeklySchedule.map((s) => ({
+        ...s,
+        isActive: s.enabled,
+      })),
+    };
   }
 
   // ── Toggle online/offline immediately ─────────────────────────────────────

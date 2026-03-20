@@ -67,6 +67,18 @@ export interface CreateQuoteResponseInput {
   validUntil?: string;
 }
 
+interface PaginatedQuoteRequestsResponse {
+  data?: QuoteRequest[];
+}
+
+function normalizeQuoteRequestsPayload(
+  payload: QuoteRequest[] | PaginatedQuoteRequestsResponse,
+): QuoteRequest[] {
+  if (Array.isArray(payload)) return payload;
+  if (payload && Array.isArray(payload.data)) return payload.data;
+  return [];
+}
+
 // ─── Functions ─────────────────────────────────────────────────────────────
 
 export async function createQuoteRequest(
@@ -81,9 +93,13 @@ export async function createQuoteRequest(
 }
 
 export async function getMyQuoteRequests(token: string): Promise<QuoteRequest[]> {
-  return apiFetch<QuoteRequest[]>('/quote-requests', {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const payload = await apiFetch<QuoteRequest[] | PaginatedQuoteRequestsResponse>(
+    '/quote-requests',
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  return normalizeQuoteRequestsPayload(payload);
 }
 
 export async function getQuoteRequest(id: string, token: string): Promise<QuoteRequest> {
@@ -93,9 +109,13 @@ export async function getQuoteRequest(id: string, token: string): Promise<QuoteR
 }
 
 export async function getOpenQuoteRequests(token: string): Promise<QuoteRequest[]> {
-  return apiFetch<QuoteRequest[]>('/quote-requests/open', {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const payload = await apiFetch<QuoteRequest[] | PaginatedQuoteRequestsResponse>(
+    '/quote-requests/open',
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  return normalizeQuoteRequestsPayload(payload);
 }
 
 export async function respondToQuoteRequest(

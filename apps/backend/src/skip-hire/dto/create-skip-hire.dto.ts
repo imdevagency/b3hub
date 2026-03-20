@@ -57,5 +57,9 @@ export class CreateSkipHireDto {
 
   @IsOptional()
   @IsString()
+  unloadingPointPhotoUrl?: string;
+
+  @IsOptional()
+  @IsString()
   carrierId?: string;
 }

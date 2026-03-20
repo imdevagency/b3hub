@@ -16,8 +16,17 @@ import {
   Alert,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { BottomSheet } from '@/components/ui/BottomSheet';
-import { Users, UserPlus, Trash2, Shield, ChevronDown, ChevronUp } from 'lucide-react-native';
+import {
+  Users,
+  UserPlus,
+  Trash2,
+  Shield,
+  ChevronDown,
+  ChevronUp,
+  Building2,
+} from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import {
   api,
@@ -386,6 +395,25 @@ function MemberCard({
 export default function TeamScreen() {
   const { token, user } = useAuth();
   const { showToast } = useToast();
+
+  // Team management is only available to company accounts.
+  if (!user?.isCompany) {
+    return (
+      <ScreenContainer standalone topInset={0}>
+        <View style={styles.pageHeader}>
+          <View style={styles.pageHeaderLeft}>
+            <Users size={20} color="#111827" />
+            <Text style={styles.pageTitle}>Komanda</Text>
+          </View>
+        </View>
+        <EmptyState
+          icon={<Building2 size={40} color="#9ca3af" strokeWidth={1.4} />}
+          title="Tikai uzņēmuma kontiem"
+          subtitle="Komandas pārvaldība ir pieejama tikai uzņēmuma kontiem. Pārejiet uz uzņēmuma kontu, lai uzaicinātu kolēģus."
+        />
+      </ScreenContainer>
+    );
+  }
 
   const [members, setMembers] = useState<ApiCompanyMember[]>([]);
   const [loading, setLoading] = useState(true);

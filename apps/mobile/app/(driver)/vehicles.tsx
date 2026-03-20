@@ -102,11 +102,11 @@ function VehicleCard({
 
       <View style={s.cardActions}>
         <TouchableOpacity style={s.editBtn} onPress={() => onEdit(vehicle)} activeOpacity={0.8}>
-          <Pencil size={14} color="#111827" />
+          <Pencil size={16} color="#111827" />
           <Text style={s.editBtnText}>Labot</Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.deleteBtn} onPress={() => onDelete(vehicle)} activeOpacity={0.8}>
-          <Trash2 size={14} color="#111827" />
+          <Trash2 size={16} color="#ef4444" />
           <Text style={s.deleteBtnText}>Dzēst</Text>
         </TouchableOpacity>
       </View>
@@ -161,7 +161,7 @@ function VehicleModal({
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: '#f2f2f7' }}
+        style={{ flex: 1, backgroundColor: '#ffffff' }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={s.modalHandle}>
@@ -343,7 +343,7 @@ export default function VehiclesScreen() {
   };
 
   return (
-    <ScreenContainer bg="#f2f2f7">
+    <ScreenContainer bg="#ffffff">
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
           <ArrowLeft size={22} color="#111827" />
@@ -421,18 +421,16 @@ export default function VehiclesScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f7' },
+  container: { flex: 1, backgroundColor: '#ffffff' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#ffffff',
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
+  headerTitle: { fontSize: 24, fontWeight: '800', color: '#111827', letterSpacing: -0.5 },
   addBtn: {
     width: 36,
     height: 36,
@@ -441,15 +439,17 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  list: { padding: 16, gap: 12, flexGrow: 1 },
+  list: { padding: 16, gap: 16, flexGrow: 1, backgroundColor: '#ffffff' },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 14,
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 2,
   },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -474,10 +474,9 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#111827',
+    paddingVertical: 10,
+    borderRadius: 100,
+    backgroundColor: '#f9fafb',
   },
   editBtnText: { fontSize: 13, fontWeight: '600', color: '#111827' },
   deleteBtn: {
@@ -486,64 +485,60 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#111827',
+    paddingVertical: 10,
+    borderRadius: 100,
+    backgroundColor: '#fef2f2',
   },
-  deleteBtnText: { fontSize: 13, fontWeight: '600', color: '#111827' },
+  deleteBtnText: { fontSize: 13, fontWeight: '600', color: '#ef4444' },
   emptyAddBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     backgroundColor: '#111827',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 20,
-    marginTop: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 100,
+    marginTop: 12,
   },
   emptyAddText: { color: '#fff', fontWeight: '600', fontSize: 14 },
-  modalHandle: { paddingTop: 12, alignItems: 'center' },
+  modalHandle: { paddingTop: 16, alignItems: 'center', backgroundColor: '#ffffff' },
   handleBar: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#d1d5db' },
   modalToolbar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    backgroundColor: '#fff',
+    borderBottomColor: '#f3f4f6',
+    backgroundColor: '#ffffff',
   },
   modalTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
   cancelText: { fontSize: 15, color: '#6b7280' },
   saveText: { fontSize: 15, fontWeight: '700', color: '#111827' },
   saveTextDisabled: { color: '#9ca3af' },
   formScroll: { padding: 16, gap: 4, paddingBottom: 48 },
-  formLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginTop: 12, marginBottom: 4 },
+  formLabel: { fontSize: 13, fontWeight: '700', color: '#111827', marginTop: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   input: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
     color: '#111827',
+    fontWeight: '500',
   },
   chipRow: { marginBottom: 4 },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 100,
+    backgroundColor: '#f9fafb',
     marginRight: 8,
   },
-  chipActive: { backgroundColor: '#f3f4f6', borderColor: '#111827' },
-  chipText: { fontSize: 13, color: '#374151', fontWeight: '500' },
-  chipTextActive: { color: '#111827', fontWeight: '700' },
+  chipActive: { backgroundColor: '#111827' },
+  chipText: { fontSize: 14, color: '#6b7280', fontWeight: '600' },
+  chipTextActive: { color: '#ffffff', fontWeight: '700' },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',

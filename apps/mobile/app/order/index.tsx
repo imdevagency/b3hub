@@ -16,9 +16,12 @@ import {
   StyleSheet,
   Alert,
   TextInput,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { CheckCircle, MapPin } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { CheckCircle, MapPin, Camera, Trash2 } from 'lucide-react-native';
 import { useOrder } from '@/lib/order-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -70,6 +73,8 @@ export default function OrderWizard() {
   );
   const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
   const [notes, setNotes] = useState('');
+  const [unloadingPointPhotoUrl, setUnloadingPointPhotoUrl] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
 
   // ── Handlers ──────────────────────────────────────────────────
   const handlePickConfirm = useCallback(
@@ -100,8 +105,7 @@ export default function OrderWizard() {
     if (step === 1) {
       if (router.canGoBack()) router.back();
       else router.replace('/(buyer)/home' as never);
-    }
-    else setStep((s) => (s - 1) as Step);
+    } else setStep((s) => (s - 1) as Step);
   }, [step, router]);
 
   const price = SKIP_PRICES[state.skipSize ?? selectedSize ?? 'MIDI'] ?? 129;
@@ -131,12 +135,15 @@ export default function OrderWizard() {
       const order = await api.skipHire.create(
         {
           location: state.location,
+          ...(state.locationLat != null ? { lat: state.locationLat } : {}),
+          ...(state.locationLng != null ? { lng: state.locationLng } : {}),
           wasteCategory: state.wasteCategory,
           skipSize: state.skipSize,
           deliveryDate: selectedDay,
           contactName: contactName || undefined,
           contactPhone: contactPhone || undefined,
           notes: notes || undefined,
+          unloadingPointPhotoUrl: unloadingPointPhotoUrl || undefined,
         },
         token ?? undefined,
       );
@@ -157,10 +164,56 @@ export default function OrderWizard() {
     contactName,
     contactPhone,
     notes,
+    unloadingPointPhotoUrl,
     setDeliveryDate,
     setConfirmedOrder,
     router,
   ]);
+
+  const pickUnloadingPhoto = useCallback(async (fromCamera: boolean) => {
+    setPhotoBusy(true);
+    try {
+      let result: ImagePicker.ImagePickerResult;
+      if (fromCamera) {
+        const { granted } = await ImagePicker.requestCameraPermissionsAsync();
+        if (!granted) {
+          Alert.alert('Nav piekļuves kamerai', 'Lai pievienotu foto, atļauj piekļuvi kamerai.');
+          return;
+        }
+        result = await ImagePicker.launchCameraAsync({
+          mediaTypes: 'images',
+          quality: 0.45,
+          base64: true,
+          allowsEditing: true,
+          aspect: [4, 3],
+        });
+      } else {
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: 'images',
+          quality: 0.45,
+          base64: true,
+          allowsEditing: true,
+          aspect: [4, 3],
+        });
+      }
+
+      if (!result.canceled && result.assets?.[0]) {
+        const asset = result.assets[0];
+        const dataUri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        setUnloadingPointPhotoUrl(dataUri);
+      }
+    } finally {
+      setPhotoBusy(false);
+    }
+  }, []);
+
+  const openPhotoOptions = useCallback(() => {
+    Alert.alert('Izkraušanas punkta foto', '', [
+      { text: 'Fotografēt', onPress: () => pickUnloadingPhoto(true) },
+      { text: 'Izvēlēties no galerijas', onPress: () => pickUnloadingPhoto(false) },
+      { text: 'Atcelt', style: 'cancel' },
+    ]);
+  }, [pickUnloadingPhoto]);
 
   const STEP_TITLES: Record<Step, string> = {
     1: t.skipHire.step1.title,
@@ -205,12 +258,7 @@ export default function OrderWizard() {
         ctaLoading={submitting}
       >
         {/* ── Step 1: Location ── */}
-        {step === 1 && (
-          <InlineAddressStep
-            picked={picked}
-            onPick={handlePickConfirm}
-          />
-        )}
+        {step === 1 && <InlineAddressStep picked={picked} onPick={handlePickConfirm} />}
 
         {/* ── Step 2: Waste type ── */}
         {step === 2 && (
@@ -310,6 +358,45 @@ export default function OrderWizard() {
                 value={notes}
                 onChangeText={setNotes}
               />
+            </View>
+
+            <Text style={[s.sectionLabel, { marginTop: 20 }]}>
+              Izkraušanas punkta foto (neobligāti)
+            </Text>
+            <View style={s.photoCard}>
+              {unloadingPointPhotoUrl ? (
+                <View style={s.photoPreviewWrap}>
+                  <Image
+                    source={{ uri: unloadingPointPhotoUrl }}
+                    style={s.photoPreview}
+                    resizeMode="cover"
+                  />
+                  <TouchableOpacity
+                    style={s.photoRemoveBtn}
+                    onPress={() => setUnloadingPointPhotoUrl(null)}
+                    activeOpacity={0.85}
+                    accessibilityLabel="Noņemt izkraušanas foto"
+                  >
+                    <Trash2 size={12} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={s.photoAddBtn}
+                  onPress={openPhotoOptions}
+                  activeOpacity={0.8}
+                  accessibilityLabel="Pievienot izkraušanas foto"
+                >
+                  {photoBusy ? (
+                    <ActivityIndicator size="small" color="#374151" />
+                  ) : (
+                    <>
+                      <Camera size={18} color="#4b5563" />
+                      <Text style={s.photoAddBtnText}>Pievienot foto</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
             <View style={{ height: 16 }} />
           </ScrollView>
@@ -419,6 +506,49 @@ const s = StyleSheet.create({
     color: '#111827',
   },
   inputMulti: { height: 80, textAlignVertical: 'top' },
+  photoCard: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    padding: 10,
+  },
+  photoAddBtn: {
+    minHeight: 88,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderStyle: 'dashed',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#fff',
+  },
+  photoAddBtnText: {
+    fontSize: 13,
+    color: '#374151',
+    fontWeight: '600',
+  },
+  photoPreviewWrap: {
+    position: 'relative',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  photoPreview: {
+    width: '100%',
+    height: 160,
+  },
+  photoRemoveBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(17,24,39,0.84)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   successRoot: {
     flex: 1,
     alignItems: 'center',

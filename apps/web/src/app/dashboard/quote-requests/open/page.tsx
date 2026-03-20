@@ -309,6 +309,8 @@ export default function OpenQuoteRequestsPage() {
     setTimeout(() => setSuccessId(null), 3000);
   };
 
+  const safeRequests = Array.isArray(requests) ? requests : [];
+
   return (
     <div className="space-y-6 max-w-3xl">
       {/* Header */}
@@ -342,7 +344,7 @@ export default function OpenQuoteRequestsPage() {
             Mēģināt vēlreiz
           </Button>
         </div>
-      ) : requests.length === 0 ? (
+      ) : safeRequests.length === 0 ? (
         <div className="rounded-xl border border-dashed p-12 text-center">
           <MessageSquare className="mx-auto mb-3 h-10 w-10 text-muted-foreground/25" />
           <p className="text-sm font-medium text-muted-foreground">Nav atvērtu pieprasījumu</p>
@@ -352,7 +354,7 @@ export default function OpenQuoteRequestsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {requests.map((r) => (
+          {safeRequests.map((r) => (
             <OpenRequestCard key={r.id} request={r} onRespond={setResponding} />
           ))}
         </div>

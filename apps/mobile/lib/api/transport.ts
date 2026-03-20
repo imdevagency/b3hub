@@ -167,15 +167,23 @@ export interface DriverAvailability {
   dateBlocks: DriverDateBlock[];
 }
 
+function extractJobsList(
+  payload: ApiTransportJob[] | { data?: ApiTransportJob[] } | null | undefined,
+): ApiTransportJob[] {
+  if (Array.isArray(payload)) return payload;
+  if (payload && Array.isArray(payload.data)) return payload.data;
+  return [];
+}
+
 // ─── API ──────────────────────────────────────────────────────────────────
 
 export const transportApi = {
   transportJobs: {
     available: async (token: string): Promise<ApiTransportJob[]> => {
-      const res = await apiFetch<{ data: ApiTransportJob[]; pagination: any }>('/transport-jobs', {
+      const res = await apiFetch<ApiTransportJob[] | { data?: ApiTransportJob[] }>('/transport-jobs', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      return res.data;
+      return extractJobsList(res);
     },
 
     myActive: (token: string) =>
@@ -184,18 +192,18 @@ export const transportApi = {
       }),
 
     myJobs: async (token: string): Promise<ApiTransportJob[]> => {
-      const res = await apiFetch<{ data: ApiTransportJob[]; pagination: any }>('/transport-jobs/my-jobs', {
+      const res = await apiFetch<ApiTransportJob[] | { data?: ApiTransportJob[] }>('/transport-jobs/my-jobs', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      return res.data;
+      return extractJobsList(res);
     },
 
     /** Buyer: returns all disposal & freight jobs the current user requested. */
     myRequests: async (token: string): Promise<ApiTransportJob[]> => {
-      const res = await apiFetch<{ data: ApiTransportJob[]; pagination: any }>('/transport-jobs/my-requests', {
+      const res = await apiFetch<ApiTransportJob[] | { data?: ApiTransportJob[] }>('/transport-jobs/my-requests', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      return res.data || [];
+      return extractJobsList(res);
     },
 
     getOne: (id: string, token: string) =>
@@ -365,5 +373,23 @@ export const transportApi = {
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ isOnline }),
       }),
-  },
+    /** Upsert the entire weekly schedule */
+    updateSchedule: (
+      data: {
+        days: {
+          dayOfWeek: number;
+          enabled: boolean;
+          startTime: string;
+          endTime: string;
+        }[];
+        autoSchedule?: boolean;
+        maxJobsPerDay?: number | null;
+      },
+      token: string,
+    ) =>
+      apiFetch<DriverAvailability>('/driver-schedule', {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+      }),  },
 };

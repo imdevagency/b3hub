@@ -190,6 +190,26 @@ export function InlineAddressStep({
     }
   }, [applyCoords]);
 
+  const handleMapPress = useCallback(
+    async (event: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
+      const { latitude, longitude } = event.nativeEvent.coordinate;
+      const nextPin = { latitude, longitude };
+      setPin(nextPin);
+      await applyCoords(latitude, longitude);
+    },
+    [applyCoords],
+  );
+
+  const handleMarkerDragEnd = useCallback(
+    async (event: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
+      const { latitude, longitude } = event.nativeEvent.coordinate;
+      const nextPin = { latitude, longitude };
+      setPin(nextPin);
+      await applyCoords(latitude, longitude);
+    },
+    [applyCoords],
+  );
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -204,6 +224,7 @@ export function InlineAddressStep({
           style={{ flex: 1 }}
           provider={PROVIDER_GOOGLE}
           initialRegion={pin ? { ...pin, latitudeDelta: 0.01, longitudeDelta: 0.01 } : RIGA_REGION}
+          onPress={handleMapPress}
           scrollEnabled
           zoomEnabled
           rotateEnabled={false}
@@ -211,8 +232,14 @@ export function InlineAddressStep({
           showsUserLocation
           showsMyLocationButton={false}
         >
-          {pin && <Marker coordinate={pin} />}
+          {pin && <Marker coordinate={pin} draggable onDragEnd={handleMarkerDragEnd} />}
         </MapView>
+
+        <View style={s.mapHintWrap} pointerEvents="none">
+          <Text style={s.mapHintText}>
+            Pieskaries kartei vai velc marķieri precīzai izkraušanas vietai
+          </Text>
+        </View>
 
         {/* GPS button */}
         <TouchableOpacity
@@ -332,6 +359,22 @@ export function InlineAddressStep({
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
+  mapHintWrap: {
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    right: 14,
+    backgroundColor: 'rgba(17, 24, 39, 0.88)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  mapHintText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   gpsBtn: {
     position: 'absolute',
     bottom: 34,

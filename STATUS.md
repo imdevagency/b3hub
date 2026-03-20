@@ -25,42 +25,42 @@ Each row is a product feature domain.
 **Web** = Next.js page exists and fetches real data.  
 **Mobile** = Expo screen exists and fetches real data.
 
-| Feature                          | Backend                           | Web                                             | Mobile                                   | Notes                                                                                                |
-| -------------------------------- | --------------------------------- | ----------------------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **Auth — Login / Register**      | ✅ `auth/`                        | ✅ `/login`, `/register`                        | ✅ `(auth)/login`, `register`            | Supabase Auth JWT                                                                                    |
-| **Auth — Password reset**        | ✅ Supabase                       | ✅ `/forgot-password`, `/reset-password`        | ✅ `forgot-password`, `change-password`  |                                                                                                      |
-| **Auth — Provider application**  | ✅ `provider-applications/`       | ✅ `/apply`                                     | ✅ `(auth)/apply-role`                   | Admin reviews at `/admin/applications`                                                               |
-| **Materials / Catalog**          | ✅ `materials/`                   | ✅ `/dashboard/catalog`, `/dashboard/materials` | ✅ `(buyer)/catalog`, `(seller)/catalog` | Supplier manages listings; buyer browses                                                             |
-| **Orders — Create**              | ✅ `orders/`                      | ✅ `/order`                                     | ✅ `order-request`                       | Multi-step order form                                                                                |
-| **Orders — List & Detail**       | ✅ `orders/`                      | ✅ `/dashboard/orders`, `/orders/[id]`          | ✅ `(buyer)/orders`, `order/[id]`        | Full status timeline; list endpoints now paginated (limit/skip) |
-| **Orders — Seller incoming**     | ✅ `orders/`                      | ✅ `/dashboard/supplier`                        | ✅ `(seller)/incoming`                   | Seller confirms / rejects                                                                            |
-| **Transport Jobs — Driver**      | ✅ `transport-jobs/`              | ✅ `/dashboard/jobs`, `/dashboard/active`       | ✅ `(driver)/jobs`, `(driver)/active`    | GPS tracking, delivery proof, SLA status widget, inline exceptions; list endpoints paginated |
-| **Transport Jobs — Buyer view**  | ✅ `transport-jobs/`              | 📵                                              | ✅ `(buyer)/transport-job/[id]`          | Buyer tracks live job                                                                                |
-| **Delivery Proof**               | ✅ `documents/`                   | ✅ `/dashboard/documents`                       | ✅ `delivery-proof`                      | Photo capture + signature                                                                            |
-| **Skip Hire — Ordering**         | ✅ `skip-hire/`                   | ✅ `/dashboard/skip-hire`, `/order/skip-hire`   | ✅ `(buyer)/skip-order/[id]`             |                                                                                                      |
-| **Skip Hire — Driver (skips)**   | ✅ `skip-hire/`                   | 📵                                              | ✅ `(driver)/skips`                      | Driver manages skip pickups/drops                                                                    |
-| **Containers**                   | ✅ `containers/`                  | ✅ `/dashboard/containers`                      | ✅ `(buyer)/containers`                  | Web page added this session                                                                          |
-| **Quote Requests (RFQ)**         | ✅ `quote-requests/`              | ✅ `/dashboard/quote-requests`, `/open`         | ✅ `(buyer)/rfq/[id]`, `(seller)/quotes` | List endpoints now paginated (limit/skip params) |
-| **Framework Contracts**          | ✅ `framework-contracts/`         | ✅ `/dashboard/framework-contracts`             | ✅ `(buyer)/framework-contracts`, `[id]` | Long-term supply contracts with call-offs. Web page added this session                               |
-| **Invoices**                     | ✅ `invoices/`                    | ✅ `/dashboard/invoices`                        | ✅ `(buyer)/invoices`                    | Auto-generated from completed orders                                                                 |
-| **Vehicles**                     | ✅ `vehicles/`                    | ✅ `/dashboard/garage`, `/dashboard/fleet`      | ✅ `(driver)/vehicles`                   |                                                                                                      |
-| **Driver Schedule**              | ✅ `driver-schedule/`             | ✅ `/dashboard/schedule`                        | ✅ `(driver)/schedule`                   | Mobile schedule + online toggle added this session                                                   |
+| Feature                          | Backend                           | Web                                             | Mobile                                   | Notes                                                                                                                       |
+| -------------------------------- | --------------------------------- | ----------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Auth — Login / Register**      | ✅ `auth/`                        | ✅ `/login`, `/register`                        | ✅ `(auth)/login`, `register`            | Supabase Auth JWT                                                                                                           |
+| **Auth — Password reset**        | ✅ Supabase                       | ✅ `/forgot-password`, `/reset-password`        | ✅ `forgot-password`, `change-password`  |                                                                                                                             |
+| **Auth — Provider application**  | ✅ `provider-applications/`       | ✅ `/apply`                                     | ✅ `(auth)/apply-role`                   | Admin reviews at `/admin/applications`                                                                                      |
+| **Materials / Catalog**          | ✅ `materials/`                   | ✅ `/dashboard/catalog`, `/dashboard/materials` | ✅ `(buyer)/catalog`, `(seller)/catalog` | Supplier manages listings; buyer browses                                                                                    |
+| **Orders — Create**              | ✅ `orders/`                      | ✅ `/order`                                     | ✅ `order-request`                       | Multi-step order form                                                                                                       |
+| **Orders — List & Detail**       | ✅ `orders/`                      | ✅ `/dashboard/orders`, `/orders/[id]`          | ✅ `(buyer)/orders`, `order/[id]`        | Full status timeline; list endpoints now paginated (limit/skip)                                                             |
+| **Orders — Seller incoming**     | ✅ `orders/`                      | ✅ `/dashboard/supplier`                        | ✅ `(seller)/incoming`                   | Seller confirms / rejects                                                                                                   |
+| **Transport Jobs — Driver**      | ✅ `transport-jobs/`              | ✅ `/dashboard/jobs`, `/dashboard/active`       | ✅ `(driver)/jobs`, `(driver)/active`    | GPS tracking, delivery proof, SLA status widget, inline exceptions; list endpoints paginated                                |
+| **Transport Jobs — Buyer view**  | ✅ `transport-jobs/`              | 📵                                              | ✅ `(buyer)/transport-job/[id]`          | Buyer tracks live job                                                                                                       |
+| **Delivery Proof**               | ✅ `documents/`                   | ✅ `/dashboard/documents`                       | ✅ `delivery-proof`                      | Photo capture + signature                                                                                                   |
+| **Skip Hire — Ordering**         | ✅ `skip-hire/`                   | ✅ `/dashboard/skip-hire`, `/order/skip-hire`   | ✅ `(buyer)/skip-order/[id]`             | Precīza punkta izvēle kartē (tap/drag) + neobligāts izkraušanas punkta foto pasūtījumā                                      |
+| **Skip Hire — Driver (skips)**   | ✅ `skip-hire/`                   | 📵                                              | ✅ `(driver)/skips`                      | Driver manages skip pickups/drops                                                                                           |
+| **Containers**                   | ✅ `containers/`                  | ✅ `/dashboard/containers`                      | ✅ `(buyer)/containers`                  | Web page added this session                                                                                                 |
+| **Quote Requests (RFQ)**         | ✅ `quote-requests/`              | ✅ `/dashboard/quote-requests`, `/open`         | ✅ `(buyer)/rfq/[id]`, `(seller)/quotes` | List endpoints now paginated (limit/skip params)                                                                            |
+| **Framework Contracts**          | ✅ `framework-contracts/`         | ✅ `/dashboard/framework-contracts`             | ✅ `(buyer)/framework-contracts`, `[id]` | Long-term supply contracts with call-offs. Web page added this session                                                      |
+| **Invoices**                     | ✅ `invoices/`                    | ✅ `/dashboard/invoices`                        | ✅ `(buyer)/invoices`                    | Auto-generated from completed orders                                                                                        |
+| **Vehicles**                     | ✅ `vehicles/`                    | ✅ `/dashboard/garage`, `/dashboard/fleet`      | ✅ `(driver)/vehicles`                   |                                                                                                                             |
+| **Driver Schedule**              | ✅ `driver-schedule/`             | ✅ `/dashboard/schedule`                        | ✅ `(driver)/schedule`                   | Mobile schedule + online toggle added this session                                                                          |
 | **Carrier Settings**             | ✅ `carrier-settings/`            | ✅ `/dashboard/transporter`                     | 📵                                       | Company-level transport settings + dispatcher triage panel (SLA kavējumi, atvērtie izņēmumi, inline SLA→izņēmums + resolve) |
-| **Earnings — Supplier**          | ✅ (from orders)                  | ✅ `/dashboard/supplier/earnings`               | ✅ `(seller)/earnings`                   |                                                                                                      |
-| **Earnings — Carrier**           | ✅ (from transport)               | ✅ `/dashboard/transporter/earnings`            | ✅ `(driver)/earnings`                   |                                                                                                      |
-| **Company & Team**               | ✅ `company/`, `company-members/` | ✅ `/dashboard/company`, `/company/team`        | ✅ `(buyer)/team`                        | Roles: OWNER, MANAGER, DRIVER, MEMBER                                                                |
-| **Chat**                         | ✅ `chat/`                        | ✅ `/dashboard/chat`                            | ✅ `chat/[jobId]`, `messages`            | WebSocket-based; per-job threads                                                                     |
-| **Notifications**                | ✅ `notifications/`               | ✅ `/dashboard/notifications`                   | ✅ `notifications`                       | Push via Expo; web page added this session                                                           |
-| **Reviews**                      | ✅ `reviews/`                     | ✅ `/dashboard/reviews`                         | ✅ `review/[orderId]`, orders.tsx chip   | Standalone review screen + rate button on completed orders added this session                        |
-| **Recycling Centers / Disposal** | ✅ `recycling-centers/`           | ✅ `/dashboard/recycling-centers`               | ✅ `disposal/index`                      | Waste disposal booking; mobile confirmation now uses context (job data preserved) |
-| **Projects**                     | (via orders)                      | ✅ `/dashboard/buyer/projects`, `/[id]`         | ✅ `(buyer)/projects`, `project/[id]`    | Client-side grouping of orders                                                                       |
-| **Certificates**                 | (via documents)                   | ✅ `/dashboard/certificates`                    | ✅ `(buyer)/certificates`                | Web page added this session                                                                          |
-| **Admin — Dashboard**            | ✅ `admin/`                       | ✅ `/dashboard/admin`                           | 📵                                       | Web-only                                                                                             |
-| **Admin — Users**                | ✅ `admin/`                       | ✅ `/dashboard/admin/users`                     | 📵                                       |                                                                                                      |
-| **Admin — Applications**         | ✅ `provider-applications/`       | ✅ `/dashboard/admin/applications`              | 📵                                       |                                                                                                      |
-| **Email Notifications**          | ✅ `email/` (Resend)              | 📵                                              | 📵                                       | Welcome, order confirmation, quotes. Falls back to `console.log` in dev when `RESEND_API_KEY` absent |
-| **Payment / Stripe**             | ❌ Not built                      | ❌                                              | ❌                                       | Planned future feature                                                                               |
-| **Settings**                     | (user profile)                    | ✅ `/dashboard/settings`                        | ✅ `settings`                            |                                                                                                      |
+| **Earnings — Supplier**          | ✅ (from orders)                  | ✅ `/dashboard/supplier/earnings`               | ✅ `(seller)/earnings`                   |                                                                                                                             |
+| **Earnings — Carrier**           | ✅ (from transport)               | ✅ `/dashboard/transporter/earnings`            | ✅ `(driver)/earnings`                   |                                                                                                                             |
+| **Company & Team**               | ✅ `company/`, `company-members/` | ✅ `/dashboard/company`, `/company/team`        | ✅ `(buyer)/team`                        | Roles: OWNER, MANAGER, DRIVER, MEMBER                                                                                       |
+| **Chat**                         | ✅ `chat/`                        | ✅ `/dashboard/chat`                            | ✅ `chat/[jobId]`, `messages`            | WebSocket-based; per-job threads                                                                                            |
+| **Notifications**                | ✅ `notifications/`               | ✅ `/dashboard/notifications`                   | ✅ `notifications`                       | Push via Expo; web page added this session                                                                                  |
+| **Reviews**                      | ✅ `reviews/`                     | ✅ `/dashboard/reviews`                         | ✅ `review/[orderId]`, orders.tsx chip   | Standalone review screen + rate button on completed orders added this session                                               |
+| **Recycling Centers / Disposal** | ✅ `recycling-centers/`           | ✅ `/dashboard/recycling-centers`               | ✅ `disposal/index`                      | Waste disposal booking; mobile confirmation now uses context (job data preserved)                                           |
+| **Projects**                     | (via orders)                      | ✅ `/dashboard/buyer/projects`, `/[id]`         | ✅ `(buyer)/projects`, `project/[id]`    | Client-side grouping of orders                                                                                              |
+| **Certificates**                 | (via documents)                   | ✅ `/dashboard/certificates`                    | ✅ `(buyer)/certificates`                | Web page added this session                                                                                                 |
+| **Admin — Dashboard**            | ✅ `admin/`                       | ✅ `/dashboard/admin`                           | 📵                                       | Web-only                                                                                                                    |
+| **Admin — Users**                | ✅ `admin/`                       | ✅ `/dashboard/admin/users`                     | 📵                                       |                                                                                                                             |
+| **Admin — Applications**         | ✅ `provider-applications/`       | ✅ `/dashboard/admin/applications`              | 📵                                       |                                                                                                                             |
+| **Email Notifications**          | ✅ `email/` (Resend)              | 📵                                              | 📵                                       | Welcome, order confirmation, quotes. Falls back to `console.log` in dev when `RESEND_API_KEY` absent                        |
+| **Payment / Stripe**             | ❌ Not built                      | ❌                                              | ❌                                       | Planned future feature                                                                                                      |
+| **Settings**                     | (user profile)                    | ✅ `/dashboard/settings`                        | ✅ `settings`                            |                                                                                                                             |
 
 ---
 
@@ -73,6 +73,10 @@ Each row is a product feature domain.
 | Mobile disposal confirmation             | ✅     | UX consistency |
 | Backend pagination on list endpoints     | ✅     | Performance    |
 | Transport dispatcher SLA exception panel | ✅     | UX/Workflows   |
+| Web sidebar grouped collapsible IA       | ✅     | UX/Navigation  |
+| Web sidebar recent pages quick access    | ✅     | UX/Navigation  |
+| Web sidebar dynamic signal badges        | ✅     | UX/Navigation  |
+| Web single role switcher (topbar only)   | ✅     | UX/Navigation  |
 
 ### Outstanding Gaps
 
@@ -98,6 +102,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Backend Modules
 
 <!-- GEN:status-backend-modules -->
+
 - admin
 - auth
 - carrier-settings
@@ -125,6 +130,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Web Pages
 
 <!-- GEN:status-web-pages -->
+
 - (auth)/login
 - (auth)/register
 - (root)
@@ -175,6 +181,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Mobile Screens
 
 <!-- GEN:status-mobile-screens -->
+
 - (auth)/apply-role
 - (auth)/forgot-password
 - (auth)/login

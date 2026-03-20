@@ -11,8 +11,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
+import { useToast } from '@/components/ui/Toast';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -21,16 +21,7 @@ import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api, type DriverAvailability, type DriverWeeklySlot } from '@/lib/api';
 import { colors, spacing, radius, shadows } from '@/lib/theme';
-import {
-  CalendarDays,
-  Clock,
-  Wifi,
-  WifiOff,
-  Info,
-  ExternalLink,
-  CheckCircle2,
-  XCircle,
-} from 'lucide-react-native';
+import { CalendarDays, Clock, Wifi, WifiOff, Info, XCircle } from 'lucide-react-native';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -72,9 +63,22 @@ function StatusBadge({ online }: { online: boolean }) {
 
 // ─── Weekly day row ────────────────────────────────────────────────────────
 
-function DayRow({ slot }: { slot: DriverWeeklySlot }) {
+function DayRow({
+  slot,
+  onToggle,
+  disabled,
+}: {
+  slot: DriverWeeklySlot;
+  onToggle: () => void;
+  disabled?: boolean;
+}) {
   return (
-    <View style={[s.dayRow, !slot.isActive && s.dayRowInactive]}>
+    <TouchableOpacity
+      style={[s.dayRow, !slot.isActive && s.dayRowInactive, disabled && s.dayRowUpdating]}
+      activeOpacity={0.7}
+      onPress={onToggle}
+      disabled={disabled}
+    >
       <View style={s.dayRowLeft}>
         <View style={[s.dayDot, slot.isActive ? s.dayDotActive : s.dayDotInactive]} />
         <Text style={[s.dayLabel, !slot.isActive && s.dayLabelInactive]}>
@@ -82,20 +86,32 @@ function DayRow({ slot }: { slot: DriverWeeklySlot }) {
         </Text>
       </View>
       {slot.isActive ? (
-        <View style={s.timeRow}>
+        <View style={s.timeRow} pointerEvents="none">
           <Clock size={13} color={colors.textMuted} />
           <Text style={s.timeText}>
             {fmtTime(slot.startTime)} – {fmtTime(slot.endTime)}
           </Text>
-          <CheckCircle2 size={14} color="#059669" />
+          <Switch
+            value={slot.isActive}
+            trackColor={{ false: '#D1D5DB', true: colors.success }}
+            thumbColor="#FFFFFF"
+            ios_backgroundColor="#D1D5DB"
+            style={{ transform: [{ scale: 0.8 }], marginLeft: 4 }}
+          />
         </View>
       ) : (
-        <View style={s.timeRow}>
-          <XCircle size={14} color={colors.textDisabled} />
+        <View style={s.timeRow} pointerEvents="none">
           <Text style={s.inactiveLabel}>Brīvdiena</Text>
+          <Switch
+            value={slot.isActive}
+            trackColor={{ false: '#D1D5DB', true: colors.success }}
+            thumbColor="#FFFFFF"
+            ios_backgroundColor="#D1D5DB"
+            style={{ transform: [{ scale: 0.8 }], marginLeft: 4 }}
+          />
         </View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -103,9 +119,11 @@ function DayRow({ slot }: { slot: DriverWeeklySlot }) {
 
 export default function ScheduleScreen() {
   const { token } = useAuth();
+  const toast = useToast();
   const [profile, setProfile] = useState<DriverAvailability | null>(null);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
+  const [updatingDays, setUpdatingDays] = useState<Set<number>>(new Set());
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -114,7 +132,7 @@ export default function ScheduleScreen() {
       const data = await api.driverSchedule.getStatus(token);
       setProfile(data);
     } catch {
-      Alert.alert('Kļūda', 'Neizdevās ielādēt grafiku. Mēģiniet vēlreiz.');
+      toast.error('Neizdevās ielādēt grafiku.');
     } finally {
       setLoading(false);
     }
@@ -129,15 +147,17 @@ export default function ScheduleScreen() {
   const handleToggleOnline = async (value: boolean) => {
     if (!token || toggling) return;
     setToggling(true);
-    // Optimistic update
-    setProfile((prev) => (prev ? { ...prev, isOnline: value } : prev));
+    // Optimistic update — update both isOnline and effectiveOnline so the badge reflects immediately
+    setProfile((prev) => (prev ? { ...prev, isOnline: value, effectiveOnline: value } : prev));
     try {
       const res = await api.driverSchedule.toggleOnline(value, token);
-      setProfile((prev) => (prev ? { ...prev, isOnline: res.isOnline } : prev));
+      setProfile((prev) =>
+        prev ? { ...prev, isOnline: res.isOnline, effectiveOnline: res.isOnline } : prev,
+      );
     } catch {
       // Revert on error
-      setProfile((prev) => (prev ? { ...prev, isOnline: !value } : prev));
-      Alert.alert('Kļūda', 'Neizdevās mainīt statusu.');
+      setProfile((prev) => (prev ? { ...prev, isOnline: !value, effectiveOnline: !value } : prev));
+      toast.error('Neizdevās mainīt statusu.');
     } finally {
       setToggling(false);
     }
@@ -163,12 +183,53 @@ export default function ScheduleScreen() {
       },
   );
 
+  const handleToggleDay = async (dayOfWeek: number) => {
+    if (!token || !profile || updatingDays.has(dayOfWeek)) return;
+    const currentSlot = gridSlots.find((s) => s.dayOfWeek === dayOfWeek);
+    if (!currentSlot) return;
+
+    const newActiveState = !currentSlot.isActive;
+
+    // Optimistic update
+    const newWeeklySchedule = gridSlots.map((s) =>
+      s.dayOfWeek === dayOfWeek ? { ...s, isActive: newActiveState } : s,
+    );
+    setProfile({ ...profile, weeklySchedule: newWeeklySchedule });
+    setUpdatingDays((prev) => new Set(prev).add(dayOfWeek));
+
+    try {
+      const payload = {
+        days: newWeeklySchedule.map((s) => ({
+          dayOfWeek: s.dayOfWeek,
+          enabled: s.isActive,
+          startTime: s.startTime,
+          endTime: s.endTime,
+        })),
+        autoSchedule: profile.autoSchedule,
+        maxJobsPerDay: profile.maxJobsPerDay,
+      };
+
+      const res = await api.driverSchedule.updateSchedule(payload, token);
+      setProfile(res);
+      toast.success('Grafiks atjaunināts!');
+    } catch {
+      toast.error('Neizdevās atjaunināt grafiku.');
+      load(); // Revert on error
+    } finally {
+      setUpdatingDays((prev) => {
+        const next = new Set(prev);
+        next.delete(dayOfWeek);
+        return next;
+      });
+    }
+  };
+
   const futureBlocks = (profile?.dateBlocks ?? []).filter(
     (b) => new Date(b.blockedDate) >= new Date(new Date().toDateString()),
   );
 
   return (
-    <ScreenContainer standalone>
+    <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
       <ScreenHeader title="Grafiks" />
 
       <ScrollView
@@ -200,17 +261,16 @@ export default function ScheduleScreen() {
                   {toggling && (
                     <ActivityIndicator
                       size="small"
-                      color={colors.primary}
+                      color={colors.success}
                       style={s.spinnerInline}
                     />
                   )}
                   <Switch
                     value={profile.isOnline}
                     onValueChange={handleToggleOnline}
-                    disabled={toggling}
-                    trackColor={{ false: '#E5E7EB', true: `${colors.primary}60` }}
-                    thumbColor={profile.isOnline ? colors.primary : '#9CA3AF'}
-                    ios_backgroundColor="#E5E7EB"
+                    trackColor={{ false: '#D1D5DB', true: colors.success }}
+                    thumbColor="#FFFFFF"
+                    ios_backgroundColor="#D1D5DB"
                   />
                 </View>
               </View>
@@ -240,16 +300,14 @@ export default function ScheduleScreen() {
             <View style={s.card}>
               {gridSlots.map((slot, i) => (
                 <React.Fragment key={slot.dayOfWeek}>
-                  <DayRow slot={slot} />
+                  <DayRow
+                    slot={slot}
+                    onToggle={() => handleToggleDay(slot.dayOfWeek)}
+                    disabled={updatingDays.has(slot.dayOfWeek)}
+                  />
                   {i < gridSlots.length - 1 && <View style={s.divider} />}
                 </React.Fragment>
               ))}
-              <View style={s.editHintRow}>
-                <ExternalLink size={13} color={colors.textMuted} />
-                <Text style={s.editHint}>
-                  Rediģēt grafiku var <Text style={s.editHintBold}>B3Hub tīmekļa portālā</Text>
-                </Text>
-              </View>
             </View>
 
             {/* ── Blocked dates ──────────────────────────────────────── */}
@@ -280,7 +338,7 @@ export default function ScheduleScreen() {
           </>
         )}
       </ScrollView>
-    </ScreenContainer>
+    </View>
   );
 }
 
@@ -357,6 +415,7 @@ const s = StyleSheet.create({
     paddingVertical: 12,
   },
   dayRowInactive: { opacity: 0.55 },
+  dayRowUpdating: { opacity: 0.7 },
   dayRowLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   dayDot: { width: 8, height: 8, borderRadius: 4 },
   dayDotActive: { backgroundColor: colors.primary },
@@ -366,21 +425,9 @@ const s = StyleSheet.create({
 
   timeRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   timeText: { fontSize: 13, color: colors.textSecondary, fontWeight: '500' },
-  inactiveLabel: { fontSize: 12, color: colors.textDisabled },
+  inactiveLabel: { fontSize: 13, color: colors.textDisabled },
 
   divider: { height: 1, backgroundColor: '#F3F4F6', marginHorizontal: spacing.base },
-
-  editHintRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    padding: spacing.base,
-    backgroundColor: '#F9FAFB',
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  editHint: { fontSize: 12, color: colors.textMuted, flex: 1 },
-  editHintBold: { fontWeight: '600', color: colors.textSecondary },
 
   emptyBlocks: {
     backgroundColor: '#F9FAFB',

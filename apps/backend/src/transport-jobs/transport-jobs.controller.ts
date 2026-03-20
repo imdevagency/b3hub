@@ -34,7 +34,6 @@ import type { RequestingUser } from '../common/types/requesting-user.interface';
 function canDispatch(user: RequestingUser): boolean {
   return (
     user.userType === 'ADMIN' ||
-    !user.companyId ||
     user.companyRole === 'OWNER' ||
     user.companyRole === 'MANAGER' ||
     user.permManageOrders
@@ -51,8 +50,13 @@ export class TransportJobsController {
    * Dispatcher / admin creates a new transport job and posts it to the board.
    */
   @Post()
-  create(@Body() dto: CreateTransportJobDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreateTransportJobDto, @CurrentUser() user: RequestingUser) {
+    if (!canDispatch(user)) {
+      throw new ForbiddenException(
+        'You do not have permission to create transport jobs',
+      );
+    }
+    return this.service.createAsUser(dto, user);
   }
 
   /**
@@ -132,8 +136,13 @@ export class TransportJobsController {
    * Must come before :id route to avoid NestJS matching 'fleet' as an ID.
    */
   @Get('fleet')
-  findAll() {
-    return this.service.findAll();
+  findAll(@CurrentUser() user: RequestingUser) {
+    if (!canDispatch(user)) {
+      throw new ForbiddenException(
+        'You do not have permission to view fleet jobs',
+      );
+    }
+    return this.service.findAllAsUser(user);
   }
 
   /**
@@ -141,8 +150,11 @@ export class TransportJobsController {
    * Returns a single job by ID.
    */
   @Get('drivers')
-  findDrivers() {
-    return this.service.findDrivers();
+  findDrivers(@CurrentUser() user: RequestingUser) {
+    if (!canDispatch(user)) {
+      throw new ForbiddenException('You do not have permission to view drivers');
+    }
+    return this.service.findDriversAsUser(user);
   }
 
   /**
@@ -187,8 +199,8 @@ export class TransportJobsController {
    * Returns a single job by ID.
    */
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+    return this.service.findOneAsUser(id, user);
   }
 
   /**
@@ -285,8 +297,8 @@ export class TransportJobsController {
    * Buyer polls this endpoint for live truck position.
    */
   @Get(':id/location')
-  getLocation(@Param('id') id: string) {
-    return this.service.getLocation(id);
+  getLocation(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+    return this.service.getLocationAsUser(id, user);
   }
 
   /**
@@ -309,8 +321,12 @@ export class TransportJobsController {
    * Body: { weightKg?: number }
    */
   @Post(':id/loading-dock')
-  loadingDock(@Param('id') id: string, @Body() body: { weightKg?: number }) {
-    return this.service.loadingDock(id, body.weightKg);
+  loadingDock(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+    @Body() body: { weightKg?: number },
+  ) {
+    return this.service.loadingDockAsUser(id, user, body.weightKg);
   }
 
   /**
@@ -318,10 +334,7 @@ export class TransportJobsController {
    * List all exceptions for a job.
    */
   @Get(':id/exceptions')
-  listExceptions(
-    @Param('id') id: string,
-    @CurrentUser() user: RequestingUser,
-  ) {
+  listExceptions(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.service.listExceptions(id, user);
   }
 

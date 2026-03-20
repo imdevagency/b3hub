@@ -51,7 +51,10 @@ export class SkipHireController {
   @Post()
   @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() dto: CreateSkipHireDto, @Request() req: Express.Request & { user: RequestingUser }) {
+  create(
+    @Body() dto: CreateSkipHireDto,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
     // Attach user id if logged in (optional JWT)
     const userId: string | undefined = req.user?.userId;
     return this.skipHireService.create(dto, userId);
@@ -107,7 +110,10 @@ export class SkipHireController {
    */
   @Get(':id')
   @UseGuards(JwtAuthGuard)
-  findOne(@Param('id') id: string, @Request() req: Express.Request & { user: RequestingUser }) {
+  findOne(
+    @Param('id') id: string,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
     const isAdmin = req.user?.userType === 'ADMIN';
     return this.skipHireService.findOne(id, req.user.userId, isAdmin);
   }
@@ -147,7 +153,10 @@ export class SkipHireController {
    */
   @Post(':id/cancel')
   @UseGuards(JwtAuthGuard)
-  cancel(@Param('id') id: string, @Request() req: Express.Request & { user: RequestingUser }) {
+  cancel(
+    @Param('id') id: string,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
     const isAdmin = req.user?.userType === 'ADMIN';
     return this.skipHireService.cancel(id, req.user.userId, isAdmin);
   }

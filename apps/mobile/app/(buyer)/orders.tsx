@@ -13,7 +13,6 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { StatusPill } from '@/components/ui/StatusPill';
 import { formatDateShort } from '@/lib/format';
 import { t } from '@/lib/translations';
 import { haptics } from '@/lib/haptics';
@@ -59,6 +58,14 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: 'CANCELLED', label: 'Atcelti' },
 ];
 
+function MinimalStatus({ label }: { label: string }) {
+  return (
+    <View style={s.minimalStatus}>
+      <Text style={s.minimalStatusText}>{label}</Text>
+    </View>
+  );
+}
+
 // ── Unified card ──────────────────────────────────────────────
 
 function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void }) {
@@ -84,7 +91,7 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
               <Trash2 size={12} color="#475569" />
               <Text style={[s.typeTagText, { color: '#475569', fontSize: 12 }]}>Konteiners</Text>
             </View>
-            <StatusPill label={status.label} bg={status.bg} color={status.color} />
+            <MinimalStatus label={status.label} />
           </View>
           <Text style={s.orderTitle}>{SIZE_LABEL[order.skipSize] ?? order.skipSize}</Text>
           <Text style={s.orderRef}>{order.orderNumber}</Text>
@@ -153,7 +160,7 @@ function UnifiedCard({ item, onRate }: { item: UnifiedOrder; onRate?: () => void
             <Truck size={12} color="#475569" />
             <Text style={[s.typeTagText, { color: '#475569', fontSize: 12 }]}>Materiāli</Text>
           </View>
-          <StatusPill label={st.label} bg={st.bg} color={st.color} />
+          <MinimalStatus label={st.label} />
         </View>
         <Text style={s.orderTitle} numberOfLines={1}>
           {first
@@ -246,7 +253,7 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
             <Icon size={12} color="#475569" />
             <Text style={[s.typeTagText, { color: '#475569', fontSize: 12 }]}>{typeLabel}</Text>
           </View>
-          <StatusPill label={st.label} bg={st.bg} color={st.color} />
+          <MinimalStatus label={st.label} />
         </View>
         {!isDisposal && (
           <Text style={s.orderTitle} numberOfLines={1}>
@@ -284,12 +291,12 @@ function TransportRequestCard({ item }: { item: UnifiedOrder & { kind: 'transpor
 
 // ── RFQ card (quote request awaiting / responding supplier) ──
 
-const RFQ_STATUS_LABEL: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING: { label: 'Gaida piedāvājumus', bg: '#f1f5f9', color: '#64748b' },
-  QUOTED: { label: 'Ir piedāvājumi', bg: '#e5e7eb', color: '#111827' },
-  ACCEPTED: { label: 'Pieņemts', bg: '#f1f5f9', color: '#374151' },
-  CANCELLED: { label: 'Atcelts', bg: '#f9fafb', color: '#94a3b8' },
-  EXPIRED: { label: 'Beidzies', bg: '#f9fafb', color: '#94a3b8' },
+const RFQ_STATUS_LABEL: Record<string, { label: string }> = {
+  PENDING: { label: 'Gaida piedāvājumus' },
+  QUOTED: { label: 'Ir piedāvājumi' },
+  ACCEPTED: { label: 'Pieņemts' },
+  CANCELLED: { label: 'Atcelts' },
+  EXPIRED: { label: 'Beidzies' },
 };
 
 function RfqCard({ item }: { item: UnifiedOrder & { kind: 'rfq' } }) {
@@ -313,7 +320,7 @@ function RfqCard({ item }: { item: UnifiedOrder & { kind: 'rfq' } }) {
             <HardHat size={12} color="#475569" />
             <Text style={[s.typeTagText, { color: '#475569', fontSize: 12 }]}>Pieprasījums</Text>
           </View>
-          <StatusPill label={st.label} bg={st.bg} color={st.color} />
+          <MinimalStatus label={st.label} />
         </View>
         <Text style={s.orderTitle} numberOfLines={1}>
           {CATEGORY_LABELS[rfq.materialCategory] ?? rfq.materialCategory} · {rfq.materialName}
@@ -335,7 +342,9 @@ function RfqCard({ item }: { item: UnifiedOrder & { kind: 'rfq' } }) {
         </View>
         <View style={s.cardFooter}>
           {rfq.status === 'QUOTED' ? (
-            <Text style={[s.price, { color: '#111827', fontSize: 13, fontWeight: '600' }]}>Skatīt piedāvājumus →</Text>
+            <Text style={[s.price, { color: '#374151', fontSize: 13, fontWeight: '600' }]}>
+              Skatīt piedāvājumus →
+            </Text>
           ) : (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Clock size={12} color="#94a3b8" />
@@ -603,7 +612,114 @@ const s = StyleSheet.create({
     gap: 8,
     flexDirection: 'row',
   },
-  chip:{flexDirection:'row',alignItems:'center',gap:6,paddingHorizontal:16,paddingVertical:10,borderRadius:24,backgroundColor:'#f3f4f6',borderWidth:1,borderColor:'transparent'},chipActive:{backgroundColor:'#111827'},chipText:{fontSize:14,fontWeight:'600',color:'#374151'},chipTextActive:{color:'#ffffff'},chipCount:{backgroundColor:'#d1d5db',borderRadius:12,minWidth:20,height:20,alignItems:'center',justifyContent:'center',paddingHorizontal:6},chipCountActive:{backgroundColor:'#374151'},chipCountText:{fontSize:12,fontWeight:'700',color:'#111827'},chipCountTextActive:{color:'#ffffff'},list:{paddingHorizontal:16,gap:12},listContent:{padding:16,gap:16,paddingBottom:100},card:{backgroundColor:'#ffffff',borderRadius:16,borderWidth:1,borderColor:'#e5e7eb',marginBottom:0,flexDirection:'column'},cardActive:{borderColor:'#111827'},activeStrip:{display:'none'},cardInner:{padding:16},cardTop:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:8},typeTag:{flexDirection:'row',alignItems:'center',gap:6},typeTagText:{fontSize:13,fontWeight:'600',color:'#475569'},orderTitle:{fontSize:17,fontWeight:'700',color:'#111827',marginBottom:4,letterSpacing:-0.3},orderRef:{fontSize:13,color:'#94a3b8',marginBottom:12,fontWeight:'500'},driverRow:{flexDirection:'row',alignItems:'center',gap:8,backgroundColor:'#f8fafc',borderRadius:12,paddingHorizontal:12,paddingVertical:10,marginBottom:12},driverName:{fontSize:14,fontWeight:'700',color:'#0f172a',flex:1},callChip:{flexDirection:'row',alignItems:'center',gap:6,backgroundColor:'#111827',borderRadius:14,paddingHorizontal:12,paddingVertical:6},callText:{fontSize:13,fontWeight:'600',color:'#fff'},metaRow:{flexDirection:'row',alignItems:'center',gap:8,marginBottom:6},metaText:{fontSize:14,color:'#475569',flex:1,fontWeight:'500'},matRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',borderTopWidth:1,borderTopColor:'#f1f5f9',paddingTop:12,marginTop:12,marginBottom:4},matDetail:{fontSize:14,color:'#111827',flex:1,fontWeight:'600'},
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  chipActive: {
+    backgroundColor: '#ffffff',
+    borderColor: '#e2e8f0',
+  },
+  chipText: { fontSize: 14, fontWeight: '600', color: '#4b5563' },
+  chipTextActive: { color: '#111827' },
+  chipCount: {
+    backgroundColor: '#e5e7eb',
+    borderRadius: 12,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  chipCountActive: { backgroundColor: '#e5e7eb' },
+  chipCountText: { fontSize: 12, fontWeight: '700', color: '#374151' },
+  chipCountTextActive: { color: '#111827' },
+  list: { paddingHorizontal: 16, gap: 12 },
+  listContent: { padding: 16, gap: 16, paddingBottom: 100 },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#eef2f6',
+    marginBottom: 0,
+    flexDirection: 'column',
+  },
+  cardActive: {
+    borderColor: '#e8edf3',
+    backgroundColor: '#ffffff',
+  },
+  activeStrip: { display: 'none' },
+  cardInner: { padding: 16 },
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  typeTag: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  typeTagText: { fontSize: 13, fontWeight: '600', color: '#64748b' },
+  minimalStatus: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#f8fafc',
+  },
+  minimalStatusText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+  orderTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
+    letterSpacing: -0.3,
+  },
+  orderRef: { fontSize: 13, color: '#94a3b8', marginBottom: 12, fontWeight: '500' },
+  driverRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  driverName: { fontSize: 14, fontWeight: '700', color: '#0f172a', flex: 1 },
+  callChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#111827',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  callText: { fontSize: 13, fontWeight: '600', color: '#fff' },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  metaText: { fontSize: 14, color: '#64748b', flex: 1, fontWeight: '500' },
+  matRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    paddingTop: 12,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  matDetail: { fontSize: 14, color: '#111827', flex: 1, fontWeight: '600' },
   matPrice: { fontSize: 13, fontWeight: '700', color: '#0f172a' },
 
   cardFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
@@ -636,10 +752,12 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#fafbfc',
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#edf1f5',
   },
   pickerIcon: {
     width: 48,

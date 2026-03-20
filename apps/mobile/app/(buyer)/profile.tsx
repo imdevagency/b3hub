@@ -24,6 +24,7 @@ import {
   Phone,
   AlertCircle,
   HelpCircle,
+  MessageCircle,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -170,6 +171,17 @@ export default function ProfileScreen() {
           </View>
 
           {/* Quick links */}
+          <TouchableOpacity
+            style={s.linkRow}
+            onPress={() => router.push('/messages' as any)}
+            activeOpacity={0.8}
+          >
+            <View style={s.linkLeft}>
+              <MessageCircle size={16} color="#374151" />
+              <Text style={s.linkText}>Ziņojumi</Text>
+            </View>
+            <ChevronRight size={16} color="#9ca3af" />
+          </TouchableOpacity>
           <TouchableOpacity
             style={s.linkRow}
             onPress={() => router.push('/help' as any)}

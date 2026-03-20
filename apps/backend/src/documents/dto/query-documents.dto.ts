@@ -1,5 +1,9 @@
 import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { DocumentType, DocumentStatus, DocumentEntityType } from '@prisma/client';
+import {
+  DocumentType,
+  DocumentStatus,
+  DocumentEntityType,
+} from '@prisma/client';
 
 export class QueryDocumentsDto {
   @IsOptional()

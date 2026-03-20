@@ -290,7 +290,9 @@ export class QuoteRequestsService {
     const [data, total] = await Promise.all([
       this.prisma.quoteRequest.findMany({
         where: {
-          status: { in: [QuoteRequestStatus.PENDING, QuoteRequestStatus.QUOTED] },
+          status: {
+            in: [QuoteRequestStatus.PENDING, QuoteRequestStatus.QUOTED],
+          },
         },
         include: {
           buyer: { select: { firstName: true, lastName: true } },
@@ -302,7 +304,9 @@ export class QuoteRequestsService {
       }),
       this.prisma.quoteRequest.count({
         where: {
-          status: { in: [QuoteRequestStatus.PENDING, QuoteRequestStatus.QUOTED] },
+          status: {
+            in: [QuoteRequestStatus.PENDING, QuoteRequestStatus.QUOTED],
+          },
         },
       }),
     ]);

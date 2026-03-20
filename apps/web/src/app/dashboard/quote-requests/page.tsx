@@ -416,6 +416,7 @@ export default function QuoteRequestsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const safeRequests = Array.isArray(requests) ? requests : [];
 
   const load = useCallback(async () => {
     if (!token) return;

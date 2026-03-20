@@ -1047,6 +1047,9 @@ model SkipHireOrder {
   // Internal notes
   notes String?
 
+  // Optional unloading point photo (URL or data URI) captured during booking
+  unloadingPointPhotoUrl String?
+
   // Carrier assigned during quote selection
   carrier   Company? @relation("AssignedSkipCarrier", fields: [carrierId], references: [id])
   carrierId String?

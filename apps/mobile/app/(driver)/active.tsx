@@ -410,7 +410,7 @@ export default function ActiveJobScreen() {
     currentStatus === 'DELIVERED'
       ? { bg: '#dcfce7', border: '#86efac', text: '#15803d', phase: 'Piegādāts ✓' }
       : currentIndex >= 4
-        ? { bg: '#d1fae5', border: '#6ee7b7', text: '#059669', phase: 'Piegādes fāze' }
+        ? { bg: '#d1fae5', border: '#6ee7b7', text: '#000000', phase: 'Piegādes fāze' }
         : { bg: '#fef3c7', border: '#fde68a', text: '#d97706', phase: 'Iekraušanas fāze' };
 
   // ── Navigate — Schüttflix-style app picker ────────────────────────────────
@@ -560,28 +560,9 @@ export default function ActiveJobScreen() {
   };
 
   return (
-    <ScreenContainer bg="#f2f2f7">
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>{t.activeJob.title}</Text>
-          <TouchableOpacity
-            style={styles.chatHeaderBtn}
-            onPress={() =>
-              router.push({
-                pathname: '/chat/[jobId]',
-                params: { jobId: job.id, title: 'Pasūtītājs' },
-              })
-            }
-            activeOpacity={0.7}
-          >
-            <MessageCircle size={20} color="#111827" />
-          </TouchableOpacity>
-          <View style={styles.priceTag}>
-            <Text style={styles.price}>€{job.rate.toFixed(2)}</Text>
-          </View>
-        </View>
-
+    <ScreenContainer bg="#ffffff">
+      <View style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: 140, paddingTop: 0 }]}>
         {/* ── Interactive map ── */}
         {job.pickupLat != null &&
           job.pickupLng != null &&
@@ -605,101 +586,50 @@ export default function ActiveJobScreen() {
               }
               // Show dashed leg only when heading to pickup
               showToPickupLeg={currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP'}
-              height={240}
-              borderRadius={16}
+              height={280}
+              borderRadius={0}
               style={styles.mapCard}
             />
           )}
 
-        {/* Status card */}
-        <View style={styles.statusCard}>
-          {/* Phase badge + label */}
-          <View
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
-          >
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: phaseColor.bg, borderColor: phaseColor.border },
-              ]}
-            >
+        {/* Floating Job info */}
+        <View style={styles.floatingDetails}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <View>
+              <Text style={{ fontSize: 24, fontWeight: '700', color: '#000000', letterSpacing: -0.5 }}>#{job.jobNumber}</Text>
+              <Text style={{ fontSize: 16, color: '#6b7280', marginTop: 4, fontWeight: '500' }}>
+                {job.cargoType} · {job.cargoWeight ?? 0}t
+              </Text>
+              <View style={{ flexDirection: 'row', marginTop: 6, alignItems: 'center' }}>
+                <Text style={styles.price}>€{job.rate.toFixed(2)}</Text>
+              </View>
+            </View>
+            <View style={[styles.statusBadge, { backgroundColor: phaseColor.bg, borderColor: phaseColor.border }]}>
               <Text style={[styles.statusText, { color: phaseColor.text }]}>
                 {t.activeJob.status[currentStatus] ?? currentStatus}
               </Text>
             </View>
-            <Text style={[styles.phaseLabel, { color: phaseColor.text }]}>{phaseColor.phase}</Text>
           </View>
-
-          {/* Progress stepper — phase-colored with animated pulse on active dot */}
-          <View style={styles.progressBar}>
-            {STATUS_STEPS.map((step, i) => {
-              const isDone = i < currentIndex;
-              const isActive = i === currentIndex;
-              // Steps 0-3 = pickup phase (amber), 4-6 = delivery phase (green)
-              const dotColor = i < 4 ? '#d97706' : '#059669';
-              return (
-                <React.Fragment key={step}>
-                  {isActive ? (
-                    <Animated.View
-                      style={[
-                        styles.progressDot,
-                        styles.progressDotActive,
-                        { backgroundColor: dotColor, transform: [{ scale: pulseAnim }] },
-                      ]}
-                    />
-                  ) : (
-                    <View
-                      style={[
-                        styles.progressDot,
-                        isDone
-                          ? [styles.progressDotDone, { backgroundColor: dotColor }]
-                          : undefined,
-                      ]}
-                    />
-                  )}
-                  {i < STATUS_STEPS.length - 1 && (
-                    <View
-                      style={[
-                        styles.progressLine,
-                        isDone ? { backgroundColor: i < 3 ? '#d97706' : '#059669' } : undefined,
-                      ]}
-                    />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* SLA widget */}
-        <View style={[styles.slaCard, { backgroundColor: slaTone.bg, borderColor: slaTone.border }]}>
-          <View style={styles.slaHeader}>
-            <View style={styles.slaIconWrap}>
-              <Clock size={16} color={slaTone.title} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.slaTitle, { color: slaTone.title }]}>SLA statuss</Text>
-              <Text style={[styles.slaBody, { color: slaTone.body }]}> 
-                {job.sla?.isOverdue
-                  ? `${SLA_STAGE_LABEL[job.sla.stage ?? ''] ?? 'Kavējums'} · ${job.sla.overdueMinutes} min`
-                  : 'Grafikā, kavējums nav konstatēts'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Job details */}
-        <View style={styles.detailsCard}>
-          <Text style={styles.detailsTitle}>
-            #{job.jobNumber} · {job.cargoType} {job.cargoWeight ?? 0}t
+          
+          <Text style={[styles.phaseLabel, { color: phaseColor.text, marginTop: 4, marginBottom: 8 }]}>
+            {phaseColor.phase}
           </Text>
+
+          {/* SLA Alert only if overdue */}
+          {job.sla?.isOverdue && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fef2f2', padding: 12, borderRadius: 8, gap: 8, marginBottom: 16 }}>
+               <AlertTriangle size={16} color="#ef4444" />
+               <Text style={{ color: '#b91c1c', fontWeight: '600', fontSize: 13 }}>
+                 {SLA_STAGE_LABEL[job.sla.stage ?? ''] ?? 'Kavējums'} · {job.sla.overdueMinutes} min
+               </Text>
+            </View>
+          )}
 
           <View style={styles.routeSection}>
             {/* From */}
             <View style={styles.routeRow}>
               <View style={styles.routeDot} />
               <View style={styles.routeInfo}>
-                <Text style={styles.routeLabel}>{t.jobs.from}</Text>
                 <Text style={styles.routeValue}>
                   {job.pickupAddress}, {job.pickupCity}
                 </Text>
@@ -715,25 +645,39 @@ export default function ActiveJobScreen() {
             <View style={styles.routeRow}>
               <View style={[styles.routeDot, styles.routeDotEnd]} />
               <View style={styles.routeInfo}>
-                <Text style={styles.routeLabel}>{t.jobs.to}</Text>
                 <Text style={styles.routeValue}>
                   {job.deliveryAddress}, {job.deliveryCity}
                 </Text>
                 {job.order?.siteContactName ? (
                   <Text style={styles.siteContactName}>
-                    {t.activeJob.siteForeman}: {job.order.siteContactName}
+                    {job.order.siteContactName}
                   </Text>
                 ) : null}
               </View>
-              <TouchableOpacity
-                style={[
-                  styles.callBtn,
-                  job.order?.siteContactPhone ? styles.callBtnActive : undefined,
-                ]}
-                onPress={() => handleCall(job.order?.siteContactPhone, job.order?.siteContactName)}
-              >
-                <Phone size={18} color={job.order?.siteContactPhone ? '#ffffff' : '#374151'} />
-              </TouchableOpacity>
+              
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity
+                  style={styles.callBtn}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/chat/[jobId]',
+                      params: { jobId: job.id, title: 'Pasūtītājs' },
+                    })
+                  }
+                >
+                  <MessageCircle size={18} color="#374151" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.callBtn,
+                    job.order?.siteContactPhone ? styles.callBtnActive : undefined,
+                  ]}
+                  onPress={() => handleCall(job.order?.siteContactPhone, job.order?.siteContactName)}
+                >
+                  <Phone size={18} color={job.order?.siteContactPhone ? '#ffffff' : '#374151'} />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
@@ -745,7 +689,7 @@ export default function ActiveJobScreen() {
             <View style={styles.returnStrip}>
               <View style={styles.returnStripHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Route size={16} color="#059669" />
+                  <Route size={16} color="#000000" />
                   <Text style={styles.returnStripTitle}>{t.avoidEmptyRuns.bannerTitle}</Text>
                   {returnTrips.length > 0 && (
                     <View style={styles.returnCountPill}>
@@ -759,7 +703,7 @@ export default function ActiveJobScreen() {
               </View>
 
               {returnTripsLoading ? (
-                <ActivityIndicator size="small" color="#059669" style={{ marginVertical: 8 }} />
+                <ActivityIndicator size="small" color="#000000" style={{ marginVertical: 8 }} />
               ) : (
                 <>
                   <Text style={styles.returnStripDesc}>
@@ -774,7 +718,7 @@ export default function ActiveJobScreen() {
                     {returnTrips.slice(0, 5).map((rt) => (
                       <View key={rt.id} style={styles.returnMiniCard}>
                         <View style={styles.returnMiniKmBadge}>
-                          <Route size={10} color="#059669" />
+                          <Route size={10} color="#000000" />
                           <Text style={styles.returnMiniKmText}>{rt.returnDistanceKm} km</Text>
                         </View>
                         <View
@@ -828,7 +772,7 @@ export default function ActiveJobScreen() {
         <View style={styles.exceptionCard}>
           <View style={styles.exceptionHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <AlertTriangle size={17} color="#b45309" />
+              <AlertTriangle size={17} color="#000000" />
               <Text style={styles.exceptionTitle}>Izņēmumi</Text>
             </View>
             <View style={styles.exceptionCountPill}>
@@ -936,10 +880,11 @@ export default function ActiveJobScreen() {
             </Text>
           </View>
         )}
-        <View style={styles.actionsRow}>
+        </ScrollView>
+        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 32, backgroundColor: '#ffffff', borderTopWidth: 1, borderTopColor: '#e5e7eb', ...styles.actionsRow }}>
           <TouchableOpacity style={styles.navigateBtn} onPress={handleNavigate}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Navigation2 size={18} color="#ffffff" />
+              <Navigation2 size={18} color="#000000" />
               <Text style={styles.navigateBtnText}>{t.activeJob.navigate}</Text>
             </View>
           </TouchableOpacity>
@@ -967,7 +912,7 @@ export default function ActiveJobScreen() {
             </View>
           )}
         </View>
-      </ScrollView>
+      </View>
 
       {/* ── Weight Ticket Modal ── */}
       <BottomSheet
@@ -1046,48 +991,32 @@ export default function ActiveJobScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
+  container: { flex: 1, backgroundColor: '#ffffff' },
   scroll: { padding: 20, gap: 16 },
   mapCard: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    borderBottomWidth: 1,
+    borderColor: '#e5e7eb',
+    marginHorizontal: -20,
+    marginTop: -16,
+    overflow: 'hidden',
   },
 
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headerTitle: { fontSize: 24, fontWeight: '700', color: '#111827' },
-  priceTag: {
-    backgroundColor: '#111827',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  price: { color: '#fff', fontWeight: '800', fontSize: 18 },
+  price: { color: '#000000', fontWeight: '800', fontSize: 28, letterSpacing: -1 },
 
-  statusCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+  floatingDetails: {
+    paddingHorizontal: 0,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   statusBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#fef2f2',
+    backgroundColor: '#000000',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: '#fecaca',
   },
-  statusText: { color: '#111827', fontWeight: '700', fontSize: 14 },
-  phaseLabel: { fontSize: 12, fontWeight: '600' },
+  statusText: { color: '#ffffff', fontWeight: '700', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5 },
+  phaseLabel: { fontSize: 12, fontWeight: '600', color: '#000000', textTransform: 'uppercase', letterSpacing: 0.5 },
 
   progressBar: {
     flexDirection: 'row',
@@ -1095,353 +1024,308 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   progressDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: '#e5e7eb',
   },
   progressDotActive: {
-    backgroundColor: '#111827',
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    shadowColor: '#111827',
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 3,
+    backgroundColor: '#000000',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
-  progressDotDone: { backgroundColor: '#111827' },
+  progressDotDone: { backgroundColor: '#000000' },
   progressLine: { flex: 1, height: 2, backgroundColor: '#e5e7eb' },
-  progressLineDone: { backgroundColor: '#111827' },
+  progressLineDone: { backgroundColor: '#000000' },
 
-  detailsCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    gap: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  detailsTitle: { fontSize: 15, fontWeight: '700', color: '#111827' },
-
-  routeSection: { gap: 0 },
+  routeSection: { gap: 0, marginTop: 16 },
   routeRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
   routeDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#111827',
-    borderWidth: 3,
-    borderColor: '#e5e7eb',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: '#9ca3af',
+    backgroundColor: '#ffffff',
   },
-  routeDotEnd: { backgroundColor: '#111827', borderColor: '#111827' },
-  routeLine: { width: 2, height: 20, backgroundColor: '#e5e7eb', marginLeft: 6 },
-  routeInfo: { flex: 1 },
-  routeLabel: { fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5 },
-  routeValue: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  siteContactName: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  routeDotEnd: { 
+    width: 10,
+    height: 10,
+    backgroundColor: '#000000',
+    borderRadius: 2,
+  },
+  routeLine: { width: 2, height: 32, backgroundColor: '#e5e7eb', marginLeft: 4 },
+  routeInfo: { flex: 1, paddingLeft: 4 },
+  routeValue: { fontSize: 18, fontWeight: '700', color: '#000000', letterSpacing: -0.3 },
+  siteContactName: { fontSize: 14, color: '#6b7280', marginTop: 4, fontWeight: '500' },
   callBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  callBtnActive: { backgroundColor: '#111827' },
+  callBtnActive: { backgroundColor: '#000000' },
   callBtnText: { fontSize: 18 },
-
-  slaCard: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 12,
-  },
-  slaHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  slaIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.5)',
-  },
-  slaTitle: { fontSize: 13, fontWeight: '700' },
-  slaBody: { fontSize: 12, marginTop: 2 },
 
   exceptionCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#fde68a',
-    gap: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+    gap: 16,
+    borderTopWidth: 1,
+    borderColor: '#f3f4f6',
   },
   exceptionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  exceptionTitle: { fontSize: 15, fontWeight: '700', color: '#92400e' },
+  exceptionTitle: { fontSize: 15, fontWeight: '700', color: '#000000' },
   exceptionCountPill: {
-    backgroundColor: '#fef3c7',
-    borderRadius: 999,
+    backgroundColor: '#000000',
+    borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  exceptionCountPillText: { fontSize: 11, color: '#92400e', fontWeight: '700' },
+  exceptionCountPillText: { fontSize: 11, color: '#ffffff', fontWeight: '700' },
   exceptionTypeRow: { gap: 8, paddingRight: 4 },
   exceptionTypeChip: {
     borderWidth: 1,
-    borderColor: '#fde68a',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: '#fffbeb',
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#f9fafb',
   },
   exceptionTypeChipActive: {
-    backgroundColor: '#f59e0b',
-    borderColor: '#f59e0b',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
-  exceptionTypeChipText: { fontSize: 11, color: '#92400e', fontWeight: '600' },
+  exceptionTypeChipText: { fontSize: 12, color: '#4b5563', fontWeight: '600' },
   exceptionTypeChipTextActive: { color: '#ffffff' },
   exceptionInput: {
     borderWidth: 1,
     borderColor: '#e5e7eb',
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    minHeight: 78,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 100,
     textAlignVertical: 'top',
-    fontSize: 13,
-    color: '#111827',
-    backgroundColor: '#ffffff',
+    fontSize: 14,
+    color: '#000000',
+    backgroundColor: '#f9fafb',
   },
   exceptionReportBtn: {
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: '#b45309',
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  exceptionReportBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  exceptionEmptyText: { fontSize: 12, color: '#6b7280' },
-  exceptionList: { gap: 10 },
+  exceptionReportBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  exceptionEmptyText: { fontSize: 13, color: '#6b7280' },
+  exceptionList: { gap: 12 },
   exceptionItem: {
     borderWidth: 1,
-    borderColor: '#f3f4f6',
+    borderColor: '#e5e7eb',
     borderRadius: 12,
-    padding: 10,
-    gap: 8,
-    backgroundColor: '#fafafa',
+    padding: 16,
+    gap: 10,
+    backgroundColor: '#f9fafb',
   },
   exceptionItemHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  exceptionItemType: { fontSize: 12, fontWeight: '700', color: '#111827' },
-  exceptionItemStatus: { fontSize: 10, fontWeight: '800' },
-  exceptionOpen: { color: '#b45309' },
-  exceptionResolved: { color: '#15803d' },
-  exceptionItemNotes: { fontSize: 12, color: '#374151' },
+  exceptionItemType: { fontSize: 14, fontWeight: '700', color: '#000000' },
+  exceptionItemStatus: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  exceptionOpen: { color: '#dc2626' }, 
+  exceptionResolved: { color: '#16a34a' },
+  exceptionItemNotes: { fontSize: 14, color: '#4b5563' },
   exceptionResolutionInput: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 12,
-    color: '#111827',
-    backgroundColor: '#fff',
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#000000',
+    backgroundColor: '#ffffff',
   },
   exceptionResolveBtn: {
-    height: 34,
+    height: 40,
     borderRadius: 10,
-    backgroundColor: '#fef3c7',
-    borderWidth: 1,
-    borderColor: '#fcd34d',
+    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  exceptionResolveBtnText: { fontSize: 12, color: '#92400e', fontWeight: '700' },
+  exceptionResolveBtnText: { fontSize: 13, color: '#ffffff', fontWeight: '700' },
 
   readinessWarning: {
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    backgroundColor: '#fef2f2',
-    borderRadius: 14,
-    padding: 12,
-    gap: 4,
+    backgroundColor: '#fffbeb',
+    borderRadius: 12,
+    padding: 16,
+    gap: 8,
   },
-  readinessWarningTitle: { fontSize: 13, fontWeight: '700', color: '#991b1b' },
-  readinessWarningText: { fontSize: 12, color: '#7f1d1d' },
-  readinessWarningList: { fontSize: 12, color: '#7f1d1d', fontWeight: '600' },
+  readinessWarningTitle: { fontSize: 15, fontWeight: '700', color: '#b45309' },
+  readinessWarningText: { fontSize: 14, color: '#92400e' },
+  readinessWarningList: { fontSize: 14, color: '#b45309', fontWeight: '700' },
 
-  actionsRow: { gap: 10 },
+  actionsRow: { gap: 12 },
   navigateBtn: {
-    backgroundColor: '#374151',
-    borderRadius: 14,
-    paddingVertical: 14,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: 'center',
   },
-  navigateBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  navigateBtnText: { color: '#000000', fontWeight: '700', fontSize: 16 },
   nextBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 14,
-    paddingVertical: 14,
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: 'center',
   },
   nextBtnProof: {
-    backgroundColor: '#111827',
+    backgroundColor: '#000000',
   },
-  nextBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  nextBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
   completedBanner: {
-    backgroundColor: '#dcfce7',
-    borderRadius: 14,
-    paddingVertical: 14,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     borderWidth: 1,
-    borderColor: '#86efac',
+    borderColor: '#000000'
   },
-  completedText: { color: '#111827', fontWeight: '700', fontSize: 16 },
+  completedText: { color: '#000000', fontWeight: '700', fontSize: 16 },
 
-  // Return trips strip
   returnStrip: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1.5,
-    borderColor: '#111827',
-    gap: 2,
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+    borderTopWidth: 1,
+    borderColor: '#f3f4f6',
+    gap: 8,
   },
   returnStripHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between'
   },
-  returnStripTitle: { fontSize: 14, fontWeight: '700', color: '#065f46' },
+  returnStripTitle: { fontSize: 15, fontWeight: '700', color: '#000000' },
   returnCountPill: {
-    backgroundColor: '#059669',
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    marginLeft: 4,
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginLeft: 6,
   },
   returnCountPillText: { color: '#fff', fontSize: 11, fontWeight: '700' },
   returnStripDismiss: { fontSize: 16, color: '#9ca3af', paddingLeft: 8 },
-  returnStripDesc: { fontSize: 12, color: '#374151', marginTop: 4 },
+  returnStripDesc: { fontSize: 13, color: '#6b7280', marginTop: 4 },
   returnMiniCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#d1fae5',
-    width: 170,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 16,
+    padding: 16,
+    width: 220,
+    marginRight: 6,
   },
   returnMiniKmBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#d1fae5',
+    backgroundColor: '#f3f4f6',
     borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     alignSelf: 'flex-start',
   },
-  returnMiniKmText: { fontSize: 11, fontWeight: '700', color: '#059669' },
-  returnMiniRoute: { fontSize: 13, fontWeight: '600', color: '#111827' },
-  returnMiniWeight: { fontSize: 11, color: '#6b7280', marginTop: 4 },
-  returnMiniPrice: { fontSize: 15, fontWeight: '800', color: '#059669', marginTop: 6 },
+  returnMiniKmText: { fontSize: 12, fontWeight: '700', color: '#000000' },
+  returnMiniRoute: { fontSize: 14, fontWeight: '700', color: '#000000', marginTop: 8 },
+  returnMiniWeight: { fontSize: 13, color: '#6b7280', marginTop: 4 },
+  returnMiniPrice: { fontSize: 16, fontWeight: '800', color: '#000000', marginTop: 8 },
   returnMiniAcceptBtn: {
-    marginTop: 8,
-    backgroundColor: '#059669',
+    marginTop: 12,
+    backgroundColor: '#000000',
     borderRadius: 8,
-    paddingVertical: 7,
+    paddingVertical: 10,
     alignItems: 'center',
   },
-  returnMiniAcceptText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  returnStripCta: { marginTop: 10 },
-  returnStripCtaText: { fontSize: 13, color: '#059669', fontWeight: '600' },
+  returnMiniAcceptText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  returnStripCta: { marginTop: 12 },
+  returnStripCtaText: { fontSize: 14, color: '#000000', fontWeight: '700', textDecorationLine: 'underline' },
 
-  // Empty state
   goBtn: {
-    marginTop: 8,
+    marginTop: 12,
     paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#111827',
+    backgroundColor: '#000000',
   },
-  goBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  goBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 
-  // ── Weight Ticket Modal ────────────────────────────────────────
   weightInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#f9fafb',
-    borderRadius: 14,
-    borderWidth: 2,
+    gap: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
     paddingHorizontal: 16,
-    paddingVertical: 4,
+    paddingVertical: 8,
   },
   weightInput: {
     flex: 1,
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
-    color: '#111827',
+    color: '#000000',
     paddingVertical: 12,
   },
-  weightUnit: { fontSize: 18, fontWeight: '600', color: '#6b7280' },
-  weightHint: { fontSize: 13, color: '#9ca3af', fontStyle: 'italic' },
-  weightActions: { flexDirection: 'row', gap: 12, marginTop: 4 },
+  weightUnit: { fontSize: 18, fontWeight: '700', color: '#9ca3af' },
+  weightHint: { fontSize: 14, color: '#6b7280', marginTop: 4 },
+  weightActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
   weightCancel: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#e5e7eb',
     alignItems: 'center',
   },
-  weightCancelText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
+  weightCancelText: { fontSize: 15, fontWeight: '700', color: '#000000' },
   weightConfirm: {
     flex: 2,
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: '#111827',
+    backgroundColor: '#000000',
     alignItems: 'center',
-    shadowColor: '#111827',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
   },
   weightConfirmText: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
-  // Photo capture
+  
   photoCapture: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
     borderStyle: 'dashed',
     borderRadius: 12,
-    padding: 16,
+    padding: 20,
     alignItems: 'center',
-    marginBottom: 12,
-    backgroundColor: '#f9fafb',
+    marginBottom: 16,
+    backgroundColor: '#ffffff',
   },
   photoCaptured: {
-    borderColor: '#111827',
+    borderColor: '#000000',
     borderStyle: 'solid',
-    backgroundColor: '#f0fdf4',
   },
-  photoPicker: { alignItems: 'center', gap: 6 },
-  photoPickerText: { fontSize: 14, fontWeight: '600', color: '#374151' },
-  photoPickerHint: { fontSize: 12, color: '#9ca3af' },
-  photoPreview: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  photoThumb: { width: 72, height: 72, borderRadius: 8 },
-  photoCheck: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  photoCheckText: { fontSize: 13, fontWeight: '600', color: '#111827' },
+  photoPicker: { alignItems: 'center', gap: 8 },
+  photoPickerText: { fontSize: 15, fontWeight: '700', color: '#000000' },
+  photoPickerHint: { fontSize: 13, color: '#6b7280' },
+  photoPreview: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  photoThumb: { width: 80, height: 80, borderRadius: 8 },
+  photoCheck: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  photoCheckText: { fontSize: 14, fontWeight: '700', color: '#000000' },
   chatHeaderBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',

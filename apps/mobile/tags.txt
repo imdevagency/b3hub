@@ -1,0 +1,279 @@
+1: <ScreenContainer bg="#f2f2f7">
+2: </ScreenContainer>
+3: <ScreenContainer bg="#f2f2f7">
+4: <TouchableOpacity style={styles.goBtn} onPress={() =>
+5: <Text style={styles.goBtnText}>
+6: </Text>
+7: </TouchableOpacity>
+8: </ScreenContainer>
+9: <ScreenContainer bg="#ffffff">
+10: <View style={{ flex: 1 }}>
+11: <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: 140, paddingTop: 0 }]}>
+12: <View style={styles.floatingDetails}>
+13: <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+14: <View>
+15: <Text style={{ fontSize: 24, fontWeight: '700', color: '#000000', letterSpacing: -0.5 }}>
+16: </Text>
+17: <Text style={{ fontSize: 16, color: '#6b7280', marginTop: 4, fontWeight: '500' }}>
+18: </Text>
+19: <View style={{ flexDirection: 'row', marginTop: 6, alignItems: 'center' }}>
+20: <Text style={styles.price}>
+21: </Text>
+22: </View>
+23: </View>
+24: <View style={[styles.statusBadge, { backgroundColor: phaseColor.bg, borderColor: phaseColor.border }]}>
+25: <Text style={[styles.statusText, { color: phaseColor.text }]}>
+26: </Text>
+27: </View>
+28: </View>
+29: <Text style={[styles.phaseLabel, { color: phaseColor.text, marginTop: 4, marginBottom: 8 }]}>
+30: </Text>
+31: <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fef2f2', padding: 12, borderRadius: 8, gap: 8, marginBottom: 16 }}>
+32: <Text style={{ color: '#b91c1c', fontWeight: '600', fontSize: 13 }}>
+33: </Text>
+34: </View>
+35: <View style={styles.routeSection}>
+36: <View style={styles.routeRow}>
+37: <View style={styles.routeDot} />
+38: <View style={styles.routeInfo}>
+39: <Text style={styles.routeValue}>
+40: </Text>
+41: </View>
+42: <TouchableOpacity style={styles.callBtn} onPress={() =>
+43: </TouchableOpacity>
+44: </View>
+45: <View style={styles.routeLine} />
+46: <View style={styles.routeRow}>
+47: <View style={[styles.routeDot, styles.routeDotEnd]} />
+48: <View style={styles.routeInfo}>
+49: <Text style={styles.routeValue}>
+50: </Text>
+51: <Text style={styles.siteContactName}>
+52: </Text>
+53: </View>
+54: <View style={{ flexDirection: 'row', gap: 8 }}>
+55: <TouchableOpacity
+                  style={styles.callBtn}
+                  onPress={() =>
+56: </TouchableOpacity>
+57: <TouchableOpacity
+                  style={[
+                    styles.callBtn,
+                    job.order?.siteContactPhone ? styles.callBtnActive : undefined,
+                  ]}
+                  onPress={() =>
+58: </TouchableOpacity>
+59: </View>
+60: </View>
+61: </View>
+62: </View>
+63: <View style={styles.returnStrip}>
+64: <View style={styles.returnStripHeader}>
+65: <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+66: <Text style={styles.returnStripTitle}>
+67: </Text>
+68: <View style={styles.returnCountPill}>
+69: <Text style={styles.returnCountPillText}>
+70: </Text>
+71: </View>
+72: </View>
+73: <TouchableOpacity onPress={() =>
+74: <Text style={styles.returnStripDismiss}>
+75: </Text>
+76: </TouchableOpacity>
+77: </View>
+78: <Text style={styles.returnStripDesc}>
+79: </Text>
+80: <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={{ marginTop: 10 }}
+                    contentContainerStyle={{ gap: 10, paddingRight: 4 }}
+                  >
+81: <View key={rt.id} style={styles.returnMiniCard}>
+82: <View style={styles.returnMiniKmBadge}>
+83: <Text style={styles.returnMiniKmText}>
+84: </Text>
+85: </View>
+86: <View
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 4,
+                            marginTop: 6,
+                          }}
+                        >
+87: <Text style={styles.returnMiniRoute}>
+88: </Text>
+89: </View>
+90: <Text style={styles.returnMiniWeight}>
+91: </Text>
+92: <Text style={styles.returnMiniPrice}>
+93: </Text>
+94: <TouchableOpacity
+                          style={[
+                            styles.returnMiniAcceptBtn,
+                            acceptingReturnId === rt.id && { opacity: 0.6 },
+                          ]}
+                          onPress={() =>
+95: <Text style={styles.returnMiniAcceptText}>
+96: </Text>
+97: </TouchableOpacity>
+98: </View>
+99: </ScrollView>
+100: <TouchableOpacity
+                    style={styles.returnStripCta}
+                    onPress={() =>
+101: <Text style={styles.returnStripCtaText}>
+102: </Text>
+103: </TouchableOpacity>
+104: </View>
+105: <View style={styles.exceptionCard}>
+106: <View style={styles.exceptionHeader}>
+107: <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+108: <Text style={styles.exceptionTitle}>
+109: </Text>
+110: </View>
+111: <View style={styles.exceptionCountPill}>
+112: <Text style={styles.exceptionCountPillText}>
+113: </Text>
+114: </View>
+115: </View>
+116: <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.exceptionTypeRow}>
+117: <TouchableOpacity
+                  key={option.value}
+                  style={[styles.exceptionTypeChip, selected && styles.exceptionTypeChipActive]}
+                  onPress={() =>
+118: <Text style={[styles.exceptionTypeChipText, selected && styles.exceptionTypeChipTextActive]}>
+119: </Text>
+120: </TouchableOpacity>
+121: </ScrollView>
+122: <TextInput
+            style={styles.exceptionInput}
+            multiline
+            value={exceptionNotes}
+            onChangeText={setExceptionNotes}
+            placeholder="Aprakstiet situāciju dispečeram un klientam"
+            placeholderTextColor="#9ca3af"
+          />
+123: <TouchableOpacity
+            style={[styles.exceptionReportBtn, reportingException && { opacity: 0.65 }]}
+            onPress={handleReportException}
+            disabled={reportingException}
+          >
+124: <Text style={styles.exceptionReportBtnText}>
+125: </Text>
+126: </TouchableOpacity>
+127: <Text style={styles.exceptionEmptyText}>
+128: </Text>
+129: <View style={styles.exceptionList}>
+130: <View key={item.id} style={styles.exceptionItem}>
+131: <View style={styles.exceptionItemHead}>
+132: <Text style={styles.exceptionItemType}>
+133: </Text>
+134: <Text style={[styles.exceptionItemStatus, isOpen ? styles.exceptionOpen : styles.exceptionResolved]}>
+135: </Text>
+136: </View>
+137: <Text style={styles.exceptionItemNotes}>
+138: </Text>
+139: <TextInput
+                          style={styles.exceptionResolutionInput}
+                          value={resolutionById[item.id] ?? ''}
+                          onChangeText={(value) =>
+140: <TouchableOpacity
+                          style={[
+                            styles.exceptionResolveBtn,
+                            resolvingExceptionId === item.id && { opacity: 0.65 },
+                          ]}
+                          onPress={() =>
+141: <Text style={styles.exceptionResolveBtnText}>
+142: </Text>
+143: </TouchableOpacity>
+144: </View>
+145: </View>
+146: </View>
+147: <View style={styles.readinessWarning}>
+148: <Text style={styles.readinessWarningTitle}>
+149: </Text>
+150: <Text style={styles.readinessWarningText}>
+151: </Text>
+152: <Text style={styles.readinessWarningList}>
+153: </Text>
+154: </View>
+155: </ScrollView>
+156: <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 32, backgroundColor: '#ffffff', borderTopWidth: 1, borderTopColor: '#e5e7eb', ...styles.actionsRow }}>
+157: <TouchableOpacity style={styles.navigateBtn} onPress={handleNavigate}>
+158: <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+159: <Text style={styles.navigateBtnText}>
+160: </Text>
+161: </View>
+162: </TouchableOpacity>
+163: <TouchableOpacity
+              style={[styles.nextBtn, currentStatus === 'AT_DELIVERY' && styles.nextBtnProof]}
+              onPress={handleUpdateStatus}
+            >
+164: <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+165: <Text style={styles.nextBtnText}>
+166: </Text>
+167: </View>
+168: <Text style={styles.nextBtnText}>
+169: </Text>
+170: </TouchableOpacity>
+171: <View style={styles.completedBanner}>
+172: <Text style={styles.completedText}>
+173: </Text>
+174: </View>
+175: </View>
+176: </View>
+177: <View style={{ gap: 14, paddingBottom: 8 }}>
+178: <TouchableOpacity
+            style={[styles.photoCapture, pickupPhotoUri ? styles.photoCaptured : null]}
+            onPress={handleTakePickupPhoto}
+            activeOpacity={0.8}
+          >
+179: <View style={styles.photoPreview}>
+180: <View style={styles.photoCheck}>
+181: <Text style={styles.photoCheckText}>
+182: </Text>
+183: </View>
+184: </View>
+185: <View style={styles.photoPicker}>
+186: <Text style={styles.photoPickerText}>
+187: </Text>
+188: <Text style={styles.photoPickerHint}>
+189: </Text>
+190: </View>
+191: </TouchableOpacity>
+192: <View style={styles.weightInputRow}>
+193: <TextInput
+              style={styles.weightInput}
+              keyboardType="decimal-pad"
+              placeholder="piem. 18500"
+              placeholderTextColor="#9ca3af"
+              value={weightInput}
+              onChangeText={setWeightInput}
+              autoFocus
+            />
+194: <Text style={styles.weightUnit}>
+195: </Text>
+196: </View>
+197: <Text style={styles.weightHint}>
+198: </Text>
+199: <View style={styles.weightActions}>
+200: <TouchableOpacity
+              style={styles.weightCancel}
+              onPress={() =>
+201: <Text style={styles.weightCancelText}>
+202: </Text>
+203: </TouchableOpacity>
+204: <TouchableOpacity
+              style={[styles.weightConfirm, weightSubmitting && { opacity: 0.6 }]}
+              onPress={handleWeightConfirm}
+              disabled={weightSubmitting}
+            >
+205: <Text style={styles.weightConfirmText}>
+206: </Text>
+207: </TouchableOpacity>
+208: </View>
+209: </View>
+210: </ScreenContainer>

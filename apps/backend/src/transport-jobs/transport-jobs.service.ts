@@ -61,7 +61,6 @@ export class TransportJobsService {
   private isDispatcher(user: RequestingUser): boolean {
     return (
       user.userType === 'ADMIN' ||
-      !user.companyId ||
       user.companyRole === 'OWNER' ||
       user.companyRole === 'MANAGER' ||
       user.permManageOrders
@@ -90,7 +89,10 @@ export class TransportJobsService {
     return job;
   }
 
-  private canAccessExceptions(job: Awaited<ReturnType<TransportJobsService['getJobAccessContext']>>, user: RequestingUser): boolean {
+  private canAccessExceptions(
+    job: Awaited<ReturnType<TransportJobsService['getJobAccessContext']>>,
+    user: RequestingUser,
+  ): boolean {
     return (
       this.isDispatcher(user) ||
       job.driverId === user.userId ||
@@ -185,7 +187,8 @@ export class TransportJobsService {
       new Date(job.deliveryDate).getTime() + DELIVERY_SLA_BUFFER_MIN * 60_000;
 
     const preLoaded =
-      this.statusSortOrder[job.status] < this.statusSortOrder[TransportJobStatus.LOADED];
+      this.statusSortOrder[job.status] <
+      this.statusSortOrder[TransportJobStatus.LOADED];
 
     if (preLoaded && now > pickupDeadline) {
       return {
@@ -213,7 +216,13 @@ export class TransportJobsService {
     return;
   }
 
-  private mapWithSla<T extends { status: TransportJobStatus; pickupDate: Date; deliveryDate: Date }>(job: T) {
+  private mapWithSla<
+    T extends {
+      status: TransportJobStatus;
+      pickupDate: Date;
+      deliveryDate: Date;
+    },
+  >(job: T) {
     const sla = this.getSlaState(job);
     return {
       ...job,
@@ -226,6 +235,15 @@ export class TransportJobsService {
   }
 
   // ── Create a new transport job ────────────────────────────────
+  async createAsUser(dto: CreateTransportJobDto, user: RequestingUser) {
+    if (!this.isDispatcher(user)) {
+      throw new ForbiddenException(
+        'You do not have permission to create transport jobs',
+      );
+    }
+    return this.create(dto);
+  }
+
   async create(dto: CreateTransportJobDto) {
     const jobNumber = await this.generateJobNumber();
     const job = await this.prisma.transportJob.create({
@@ -297,6 +315,13 @@ export class TransportJobsService {
   }
 
   // ── All jobs (dispatcher fleet view) ─────────────────────────
+  async findAllAsUser(user: RequestingUser) {
+    if (!this.isDispatcher(user)) {
+      throw new ForbiddenException('You do not have permission to view fleet jobs');
+    }
+    return this.findAll();
+  }
+
   async findAll() {
     const jobs = await this.prisma.transportJob.findMany({
       select: this.jobSelect,
@@ -417,6 +442,39 @@ export class TransportJobsService {
   }
 
   // ── Single job ────────────────────────────────────────────────
+  async findOneAsUser(id: string, user: RequestingUser) {
+    const job = await this.getJobAccessContext(id);
+
+    if (!this.isDispatcher(user)) {
+      const isDirectParticipant =
+        job.driverId === user.userId ||
+        job.requestedById === user.userId ||
+        job.order?.createdById === user.userId;
+
+      let isSupplierParticipant = false;
+      if (
+        !isDirectParticipant &&
+        job.order?.id &&
+        user.companyId &&
+        (user.canSell || user.permManageOrders)
+      ) {
+        const count = await this.prisma.orderItem.count({
+          where: {
+            orderId: job.order.id,
+            material: { supplierId: user.companyId },
+          },
+        });
+        isSupplierParticipant = count > 0;
+      }
+
+      if (!isDirectParticipant && !isSupplierParticipant) {
+        throw new ForbiddenException('Access denied');
+      }
+    }
+
+    return this.findOne(id);
+  }
+
   async findOne(id: string) {
     const job = await this.prisma.transportJob.findUnique({
       where: { id },
@@ -523,7 +581,8 @@ export class TransportJobsService {
     const hasDeliveryNote = !!deliveryNote;
 
     const missing: string[] = [];
-    if (requiresDeliveryProof && !hasDeliveryProof) missing.push('DELIVERY_PROOF');
+    if (requiresDeliveryProof && !hasDeliveryProof)
+      missing.push('DELIVERY_PROOF');
     if (requiresWeighingSlip && !hasWeighingSlip) missing.push('WEIGHING_SLIP');
 
     return {
@@ -630,6 +689,13 @@ export class TransportJobsService {
   }
 
   // ── List drivers (canTransport users) ──────────────────────────
+  async findDriversAsUser(user: RequestingUser) {
+    if (!this.isDispatcher(user)) {
+      throw new ForbiddenException('You do not have permission to view drivers');
+    }
+    return this.findDrivers();
+  }
+
   async findDrivers() {
     return this.prisma.user.findMany({
       where: { canTransport: true },
@@ -663,7 +729,11 @@ export class TransportJobsService {
       );
     }
 
-    const updated = await this.applyAssignment(id, body.driverId, body.vehicleId);
+    const updated = await this.applyAssignment(
+      id,
+      body.driverId,
+      body.vehicleId,
+    );
 
     if (job.driverId && job.driverId !== body.driverId) {
       this.notifications
@@ -725,8 +795,9 @@ export class TransportJobsService {
     driverId: string,
     vehicleId?: string,
   ) {
-
-    const driver = await this.prisma.user.findUnique({ where: { id: driverId } });
+    const driver = await this.prisma.user.findUnique({
+      where: { id: driverId },
+    });
     if (!driver || !driver.canTransport) {
       throw new BadRequestException('User is not a valid driver');
     }
@@ -952,6 +1023,11 @@ export class TransportJobsService {
   }
 
   // ── Get current GPS location for a job ───────────────────────
+  async getLocationAsUser(id: string, user: RequestingUser) {
+    await this.findOneAsUser(id, user);
+    return this.getLocation(id);
+  }
+
   async getLocation(id: string) {
     const job = await this.prisma.transportJob.findUnique({
       where: { id },
@@ -1061,6 +1137,39 @@ export class TransportJobsService {
   // Called from the seller's LoadingDock screen when the driver arrives
   // at the pickup yard. Seller enters weight and confirms loading.
   // Transitions AT_PICKUP → LOADED and auto-generates WEIGHING_SLIP.
+  async loadingDockAsUser(id: string, user: RequestingUser, weightKg?: number) {
+    if (user.userType === 'ADMIN') {
+      return this.loadingDock(id, weightKg);
+    }
+
+    if (!user.companyId || !(user.canSell || user.permManageOrders)) {
+      throw new ForbiddenException(
+        'Only supplier operators can confirm loading dock actions',
+      );
+    }
+
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id },
+      select: { orderId: true },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+    if (!job.orderId) {
+      throw new ForbiddenException('Loading dock is only available for order-linked jobs');
+    }
+
+    const supplierMatchCount = await this.prisma.orderItem.count({
+      where: {
+        orderId: job.orderId,
+        material: { supplierId: user.companyId },
+      },
+    });
+    if (supplierMatchCount === 0) {
+      throw new ForbiddenException('This transport job is not linked to your supplier company');
+    }
+
+    return this.loadingDock(id, weightKg);
+  }
+
   async loadingDock(id: string, weightKg?: number) {
     const job = await this.prisma.transportJob.findUnique({ where: { id } });
     if (!job) throw new NotFoundException('Transport job not found');
@@ -1166,11 +1275,14 @@ export class TransportJobsService {
 
     const actorName =
       user.email?.trim() ||
-      (user.companyId ? `Lietotājs (${user.companyId})` : `Lietotājs ${user.userId}`);
+      (user.companyId
+        ? `Lietotājs (${user.companyId})`
+        : `Lietotājs ${user.userId}`);
     const msg = `Darbs ${job.jobNumber} • ${dto.type} • ${job.pickupCity} → ${job.deliveryCity}`;
 
     const notifyIds = new Set<string>();
-    if (job.driverId && job.driverId !== user.userId) notifyIds.add(job.driverId);
+    if (job.driverId && job.driverId !== user.userId)
+      notifyIds.add(job.driverId);
     if (job.requestedById && job.requestedById !== user.userId)
       notifyIds.add(job.requestedById);
     if (job.order?.createdById && job.order.createdById !== user.userId)

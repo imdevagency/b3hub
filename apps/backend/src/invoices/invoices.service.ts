@@ -54,7 +54,10 @@ export class InvoicesService {
 
   constructor(private prisma: PrismaService) {}
 
-  private buyerAccess(userId: string, companyId?: string): Prisma.OrderWhereInput {
+  private buyerAccess(
+    userId: string,
+    companyId?: string,
+  ): Prisma.OrderWhereInput {
     return {
       OR: [
         ...(companyId ? [{ buyerId: companyId }] : []),
@@ -67,7 +70,12 @@ export class InvoicesService {
    * Get invoices visible to the requesting user.
    * A user can see invoices for orders where they are the buyer.
    */
-  async getMyInvoices(userId: string, companyId?: string, page = 1, limit = 20) {
+  async getMyInvoices(
+    userId: string,
+    companyId?: string,
+    page = 1,
+    limit = 20,
+  ) {
     const skip = (page - 1) * limit;
     const where = {
       order: this.buyerAccess(userId, companyId),

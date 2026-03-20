@@ -59,7 +59,9 @@ describe('TransportJobsController', () => {
     const user = makeUser({ companyRole: 'DRIVER' });
 
     expect(() =>
-      controller.resolveException('job1', 'ex1', user, { resolution: 'Handled' }),
+      controller.resolveException('job1', 'ex1', user, {
+        resolution: 'Handled',
+      }),
     ).toThrow(ForbiddenException);
 
     expect((service as any).resolveException).not.toHaveBeenCalled();
@@ -67,7 +69,10 @@ describe('TransportJobsController', () => {
 
   it('allows dispatcher to resolve exception', async () => {
     const user = makeUser({ permManageOrders: true });
-    (service as any).resolveException.mockResolvedValue({ id: 'ex1', status: 'RESOLVED' });
+    (service as any).resolveException.mockResolvedValue({
+      id: 'ex1',
+      status: 'RESOLVED',
+    });
 
     const result = await controller.resolveException('job1', 'ex1', user, {
       resolution: 'Issue resolved by dispatch',

@@ -33,6 +33,12 @@ import {
   RefreshCw,
   Minus,
   Plus,
+  Leaf,
+  Box,
+  Zap,
+  Droplets,
+  Trash2,
+  Truck,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api, type OpenQuoteRequest, type MaterialUnit } from '@/lib/api';
@@ -51,17 +57,22 @@ const WARN_COLOR = '#6b7280';
 const BLUE_BG = '#f3f4f6';
 const BLUE_COLOR = '#111827';
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  SAND: '🏜️',
-  GRAVEL: '🪨',
-  STONE: '🗿',
-  CONCRETE: '🧱',
-  SOIL: '🌱',
-  RECYCLED_CONCRETE: '♻️',
-  RECYCLED_SOIL: '🌿',
-  ASPHALT: '🛣️',
-  CLAY: '🟤',
-  OTHER: '📦',
+// Material category → icon + color
+interface MaterialIcon {
+  Icon: React.ComponentType<any>;
+}
+
+const CATEGORY_ICONS: Record<string, MaterialIcon> = {
+  SAND: { Icon: Truck },
+  GRAVEL: { Icon: Box },
+  STONE: { Icon: Box },
+  CONCRETE: { Icon: Zap },
+  SOIL: { Icon: Leaf },
+  RECYCLED_CONCRETE: { Icon: Zap },
+  RECYCLED_SOIL: { Icon: Leaf },
+  ASPHALT: { Icon: Truck },
+  CLAY: { Icon: Droplets },
+  OTHER: { Icon: Package },
 };
 
 const sq = t.sellerQuotes;
@@ -129,7 +140,10 @@ function ProposalModal({ request, visible, onClose, onSuccess, token }: Proposal
         onClose();
       }, 1600);
     } catch (err: unknown) {
-      Alert.alert(sq.errorTitle, err instanceof Error ? err.message : 'Neizdevās iesniegt piedāvājumu.');
+      Alert.alert(
+        sq.errorTitle,
+        err instanceof Error ? err.message : 'Neizdevās iesniegt piedāvājumu.',
+      );
     } finally {
       setSubmitting(false);
     }
@@ -137,14 +151,13 @@ function ProposalModal({ request, visible, onClose, onSuccess, token }: Proposal
 
   const unitLabel = sq.units[request.unit] ?? request.unit;
   const categoryLabel = sq.categories[request.materialCategory] ?? request.materialCategory;
-  const emoji = CATEGORY_EMOJI[request.materialCategory] ?? '📦';
 
   return (
     <BottomSheet
       visible={visible}
       onClose={onClose}
       title={sq.modalTitle}
-      subtitle={`${emoji} ${categoryLabel} · ${request.quantity} ${unitLabel} · ${request.deliveryCity}`}
+      subtitle={`${categoryLabel} · ${request.quantity} ${unitLabel} · ${request.deliveryCity}`}
       scrollable
     >
       {done ? (
@@ -250,7 +263,7 @@ function RequestCard({ request, myCompanyId, onRespond }: RequestCardProps) {
   const alreadyResponded =
     !!myCompanyId && request.responses.some((r) => r.supplierId === myCompanyId);
   const responseCount = request.responses.length;
-  const emoji = CATEGORY_EMOJI[request.materialCategory] ?? '📦';
+  const iconConfig = CATEGORY_ICONS[request.materialCategory] ?? CATEGORY_ICONS.OTHER;
   const categoryLabel = sq.categories[request.materialCategory] ?? request.materialCategory;
   const unitLabel = sq.units[request.unit] ?? request.unit;
 
@@ -262,45 +275,59 @@ function RequestCard({ request, myCompanyId, onRespond }: RequestCardProps) {
         onPress={() => setExpanded((e) => !e)}
         activeOpacity={0.7}
       >
-        <View style={styles.categoryBadge}>
-          <Text style={styles.categoryEmoji}>{emoji}</Text>
+        {/* Icon badge */}
+        <View style={styles.iconBadge}>
+          <iconConfig.Icon size={20} color="#111827" />
         </View>
-        <View style={{ flex: 1, marginLeft: 12 }}>
-          <View style={styles.cardTitleRow}>
+
+        {/* Main content */}
+        <View style={styles.cardContent}>
+          {/* Title + quantity on one line */}
+          <View style={styles.titleRow}>
             <Text style={styles.cardTitle} numberOfLines={1}>
               {request.materialName || categoryLabel}
             </Text>
-            {/* Status badge */}
+            <Text style={styles.cardQuantity}>
+              {request.quantity} {unitLabel}
+            </Text>
+          </View>
+
+          {/* Location + time on second line */}
+          <View style={styles.metaRow}>
+            <MapPin size={12} color="#9ca3af" />
+            <Text style={styles.metaText} numberOfLines={1}>
+              {request.deliveryCity}
+            </Text>
+            <Clock size={12} color="#9ca3af" style={{ marginLeft: 8 }} />
+            <Text style={styles.metaText}>{timeAgo(request.createdAt)}</Text>
+          </View>
+
+          <View style={styles.innerDivider} />
+
+          {/* Status badge + response count */}
+          <View style={styles.statusRow}>
             {request.status === 'QUOTED' ? (
-              <View style={[styles.badge, { backgroundColor: BLUE_BG }]}>
-                <Text style={[styles.badgeText, { color: BLUE_COLOR }]}>{sq.quotedBadge}</Text>
+              <View style={styles.statusBadge}>
+                <Text style={styles.statusBadgeText}>{sq.quotedBadge}</Text>
               </View>
             ) : (
-              <View style={[styles.badge, { backgroundColor: WARN_BG }]}>
-                <Text style={[styles.badgeText, { color: WARN_COLOR }]}>{sq.openBadge}</Text>
+              <View style={styles.statusBadge}>
+                <Text style={styles.statusBadgeText}>{sq.openBadge}</Text>
+              </View>
+            )}
+            {responseCount > 0 && (
+              <View style={styles.responseMeta}>
+                <Text style={styles.responseMetaText}>{responseCount} piedāvājumi</Text>
               </View>
             )}
           </View>
-          <View style={styles.cardMeta}>
-            <Package size={13} color="#9ca3af" />
-            <Text style={styles.cardMetaText}>
-              {request.quantity} {unitLabel}
-            </Text>
-            <MapPin size={13} color="#9ca3af" style={{ marginLeft: 8 }} />
-            <Text style={styles.cardMetaText}>{request.deliveryCity}</Text>
-          </View>
-          <View style={styles.cardFooterRow}>
-            <Clock size={11} color="#9ca3af" />
-            <Text style={styles.timeText}>{timeAgo(request.createdAt)}</Text>
-            <Text style={[styles.responseCountText, responseCount > 0 && { color: ACCENT }]}>
-              {responseCount > 0 ? sq.responseCount(responseCount) : sq.noResponses}
-            </Text>
-          </View>
         </View>
+
+        {/* Chevron */}
         {expanded ? (
-          <ChevronUp size={18} color="#9ca3af" />
+          <ChevronUp size={20} color="#9ca3af" />
         ) : (
-          <ChevronDown size={18} color="#9ca3af" />
+          <ChevronDown size={20} color="#9ca3af" />
         )}
       </TouchableOpacity>
 
@@ -596,74 +623,97 @@ const styles = StyleSheet.create({
 
   // ── Card ──────────────────────────────────────────────────────
   card: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 20,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   cardResponded: {
-    backgroundColor: '#e0f2fe',
+    borderColor: '#d1d5db',
   },
   cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
+    alignItems: 'flex-start',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 12,
   },
-  categoryBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#ffffff',
+  iconBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
-  categoryEmoji: {
-    fontSize: 24,
-  },
-  cardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  cardContent: {
+    flex: 1,
     gap: 8,
-    marginBottom: 4,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#111827',
     flex: 1,
   },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  cardMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 4,
-  },
-  cardMetaText: {
+  cardQuantity: {
     fontSize: 14,
-    color: '#4b5563',
+    fontWeight: '600',
+    color: '#111827',
+    flexShrink: 0,
   },
-  cardFooterRow: {
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
-  timeText: {
-    fontSize: 12,
-    color: '#9ca3af',
-    flex: 1,
+  metaText: {
+    fontSize: 13,
+    color: '#6b7280',
   },
-  responseCountText: {
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 1,
+  },
+  innerDivider: {
+    height: 1,
+    backgroundColor: '#f3f4f6',
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#f9fafb',
+  },
+  statusBadgeText: {
     fontSize: 12,
-    color: '#9ca3af',
     fontWeight: '600',
+    color: '#374151',
+  },
+  responseMeta: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  responseMetaText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6b7280',
   },
 
   // ── Expanded ──────────────────────────────────────────────────
@@ -680,7 +730,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 0,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
   },
   detailLabel: {
     fontSize: 14,
@@ -696,7 +749,7 @@ const styles = StyleSheet.create({
   requestNumber: {
     fontSize: 12,
     color: '#9ca3af',
-    marginTop: 4,
+    marginTop: 10,
     marginBottom: 12,
   },
   alreadyRespondedBox: {

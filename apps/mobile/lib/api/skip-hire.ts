@@ -24,6 +24,8 @@ export interface SkipHireOrder {
   id: string;
   orderNumber: string;
   location: string;
+  lat?: number | null;
+  lng?: number | null;
   wasteCategory: SkipWasteCategory;
   skipSize: SkipSize;
   deliveryDate: string;
@@ -34,6 +36,7 @@ export interface SkipHireOrder {
   contactEmail?: string | null;
   contactPhone?: string | null;
   notes?: string | null;
+  unloadingPointPhotoUrl?: string | null;
   carrierId?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -41,6 +44,8 @@ export interface SkipHireOrder {
 
 export interface CreateSkipHireInput {
   location: string;
+  lat?: number;
+  lng?: number;
   wasteCategory: SkipWasteCategory;
   skipSize: SkipSize;
   deliveryDate: string;
@@ -48,6 +53,7 @@ export interface CreateSkipHireInput {
   contactEmail?: string;
   contactPhone?: string;
   notes?: string;
+  unloadingPointPhotoUrl?: string;
 }
 
 // ─── API ──────────────────────────────────────────────────────────────────

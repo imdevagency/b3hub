@@ -65,13 +65,24 @@ export interface CreateCartOrderInput {
   items: CartOrderItem[];
 }
 
+interface PaginatedOrdersResponse {
+  data?: ApiOrder[];
+}
+
+function normalizeOrdersPayload(payload: ApiOrder[] | PaginatedOrdersResponse): ApiOrder[] {
+  if (Array.isArray(payload)) return payload;
+  if (payload && Array.isArray(payload.data)) return payload.data;
+  return [];
+}
+
 // ─── Functions ─────────────────────────────────────────────────────────────
 
 export async function getMyOrders(token: string, status?: string): Promise<ApiOrder[]> {
   const qs = status ? `?status=${status}` : '';
-  return apiFetch<ApiOrder[]>(`/orders${qs}`, {
+  const payload = await apiFetch<ApiOrder[] | PaginatedOrdersResponse>(`/orders${qs}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
+  return normalizeOrdersPayload(payload);
 }
 
 export async function confirmOrder(id: string, token: string): Promise<ApiOrder> {

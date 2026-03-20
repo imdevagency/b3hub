@@ -59,7 +59,11 @@ export class InvoicesController {
         'You do not have permission to view invoices',
       );
     }
-    return this.invoicesService.getByOrder(orderId, user.userId, user.companyId);
+    return this.invoicesService.getByOrder(
+      orderId,
+      user.userId,
+      user.companyId,
+    );
   }
 
   /** GET /invoices/:id */

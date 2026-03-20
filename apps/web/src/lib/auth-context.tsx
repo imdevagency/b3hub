@@ -18,6 +18,24 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function normalizeUserModes(user: User): User {
+  if (Array.isArray(user.availableModes) && user.availableModes.length > 0) {
+    return user;
+  }
+
+  const modes: Array<'BUYER' | 'SUPPLIER' | 'CARRIER'> = [];
+  const isPureTransportIndividual = !!user.canTransport && !user.canSell && !user.isCompany;
+
+  if (user.userType === 'ADMIN' || !isPureTransportIndividual) modes.push('BUYER');
+  if (user.userType === 'ADMIN' || !!user.canSell) modes.push('SUPPLIER');
+  if (user.userType === 'ADMIN' || !!user.canTransport) modes.push('CARRIER');
+
+  return {
+    ...user,
+    availableModes: modes.length > 0 ? modes : ['BUYER'],
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -28,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (storedToken) {
       getMe(storedToken)
         .then((u) => {
-          setUser(u);
+          setUser(normalizeUserModes(u));
           setToken(storedToken);
           // Ensure cookie is synced for middleware on every page load
           document.cookie = `b3hub_token=${storedToken}; path=/; max-age=604800; samesite=lax`;
@@ -45,11 +63,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setAuth = (user: User, token: string) => {
-    setUser(user);
+    setUser(normalizeUserModes(user));
     setToken(token);
     localStorage.setItem('b3hub_token', token);
     // Mirror to a cookie so Next.js middleware can gate dashboard routes
     document.cookie = `b3hub_token=${token}; path=/; max-age=604800; samesite=lax`;
+
+    // Some endpoints return a lightweight user object. Refresh full profile for
+    // consistent role-mode switching state.
+    getMe(token)
+      .then((u) => setUser(normalizeUserModes(u)))
+      .catch(() => null);
   };
 
   const logout = () => {

@@ -11,6 +11,7 @@ import { ModeProvider } from '@/lib/mode-context';
 import { DashboardGuard } from '@/components/dashboard-guard';
 import { NotificationBell } from '@/components/notification-bell';
 import { PageAnimate } from '@/components/ui/page-animate';
+import { RoleModeSwitcher } from '@/components/role-mode-switcher';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -25,7 +26,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <SidebarTrigger className="-ml-1" />
                 <Separator orientation="vertical" className="mr-2 h-4" />
                 <span className="text-sm font-medium text-muted-foreground">Dashboard</span>
-                <div className="ml-auto">
+                <div className="ml-auto flex items-center gap-2">
+                  <RoleModeSwitcher />
                   <NotificationBell />
                 </div>
               </header>

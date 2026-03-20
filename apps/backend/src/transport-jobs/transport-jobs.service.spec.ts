@@ -84,7 +84,9 @@ describe('TransportJobsService', () => {
     });
 
     await expect(
-      service.updateStatus('job1', 'driver1', { status: TransportJobStatus.DELIVERED }),
+      service.updateStatus('job1', 'driver1', {
+        status: TransportJobStatus.DELIVERED,
+      }),
     ).rejects.toBeInstanceOf(BadRequestException);
 
     expect(prisma.transportJob.update).not.toHaveBeenCalled();
@@ -98,7 +100,9 @@ describe('TransportJobsService', () => {
     });
 
     await expect(
-      service.updateStatus('job1', 'driver1', { status: TransportJobStatus.EN_ROUTE_PICKUP }),
+      service.updateStatus('job1', 'driver1', {
+        status: TransportJobStatus.EN_ROUTE_PICKUP,
+      }),
     ).rejects.toBeInstanceOf(ForbiddenException);
 
     expect(prisma.transportJob.update).not.toHaveBeenCalled();

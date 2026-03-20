@@ -58,7 +58,7 @@ interface MenuItem {
   route: string;
 }
 
-function buildItems(role: Role): MenuItem[] {
+function buildItems(role: Role, isCompany: boolean): MenuItem[] {
   const items: MenuItem[] = [];
 
   if (role === 'seller') {
@@ -97,11 +97,13 @@ function buildItems(role: Role): MenuItem[] {
       label: 'Projekti',
       route: '/(buyer)/projects',
     });
-    items.push({
-      icon: (c) => <Users size={20} color={c} />,
-      label: 'Komanda',
-      route: '/(buyer)/team',
-    });
+    if (isCompany) {
+      items.push({
+        icon: (c) => <Users size={20} color={c} />,
+        label: 'Komanda',
+        route: '/(buyer)/team',
+      });
+    }
     items.push({
       icon: (c) => <FileText size={20} color={c} />,
       label: 'Rāmjlīgumi',
@@ -158,7 +160,7 @@ export function Sidebar({ visible, onClose, role, accentColor }: SidebarProps) {
 
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase();
   const fullName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
-  const items = buildItems(role);
+  const items = buildItems(role, user?.isCompany ?? false);
 
   useEffect(() => {
     if (visible) {

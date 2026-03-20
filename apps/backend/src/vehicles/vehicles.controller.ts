@@ -32,7 +32,10 @@ export class VehiclesController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() dto: CreateVehicleDto, @Request() req: Express.Request & { user: RequestingUser }) {
+  create(
+    @Body() dto: CreateVehicleDto,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
     return this.vehiclesService.create(dto, req.user.userId);
   }
 
@@ -61,7 +64,10 @@ export class VehiclesController {
    * Get single vehicle (must be owner or same company).
    */
   @Get(':id')
-  findOne(@Param('id') id: string, @Request() req: Express.Request & { user: RequestingUser }) {
+  findOne(
+    @Param('id') id: string,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
     return this.vehiclesService.findOne(id, req.user.userId);
   }
 
@@ -84,7 +90,10 @@ export class VehiclesController {
    */
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string, @Request() req: Express.Request & { user: RequestingUser }) {
+  remove(
+    @Param('id') id: string,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
     return this.vehiclesService.remove(id, req.user.userId);
   }
 }

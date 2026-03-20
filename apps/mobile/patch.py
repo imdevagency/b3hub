@@ -1,0 +1,403 @@
+import re
+
+with open('app/(driver)/active.tsx', 'r') as f:
+    text = f.read()
+
+styles_code = """const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#ffffff' },
+  scroll: { padding: 20, gap: 16 },
+  mapCard: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerTitle: { fontSize: 24, fontWeight: '700', color: '#000000', letterSpacing: -0.5 },
+  priceTag: {
+    backgroundColor: '#000000',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  price: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
+
+  statusCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    gap: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#000000',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  statusText: { color: '#ffffff', fontWeight: '700', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5 },
+  phaseLabel: { fontSize: 12, fontWeight: '600', color: '#000000', textTransform: 'uppercase', letterSpacing: 0.5 },
+
+  progressBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 4,
+  },
+  progressDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#e5e7eb',
+  },
+  progressDotActive: {
+    backgroundColor: '#000000',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  progressDotDone: { backgroundColor: '#000000' },
+  progressLine: { flex: 1, height: 2, backgroundColor: '#e5e7eb' },
+  progressLineDone: { backgroundColor: '#000000' },
+
+  detailsCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    gap: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  detailsTitle: { fontSize: 16, fontWeight: '700', color: '#000000' },
+
+  routeSection: { gap: 0 },
+  routeRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
+  routeDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#000000',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+  },
+  routeDotEnd: { backgroundColor: '#000', borderColor: '#000' },
+  routeLine: { width: 2, height: 24, backgroundColor: '#e5e7eb', marginLeft: 4 },
+  routeInfo: { flex: 1 },
+  routeLabel: { fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: '600' },
+  routeValue: { fontSize: 16, fontWeight: '600', color: '#000000', marginTop: 2 },
+  siteContactName: { fontSize: 13, color: '#4b5563', marginTop: 4 },
+  callBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  callBtnActive: { backgroundColor: '#000000' },
+  callBtnText: { fontSize: 18 },
+
+  slaCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
+  },
+  slaHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  slaIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  slaTitle: { fontSize: 13, fontWeight: '700', color: '#000000' },
+  slaBody: { fontSize: 13, marginTop: 4, color: '#4b5563' },
+
+  exceptionCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  exceptionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  exceptionTitle: { fontSize: 15, fontWeight: '700', color: '#000000' },
+  exceptionCountPill: {
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  exceptionCountPillText: { fontSize: 11, color: '#ffffff', fontWeight: '700' },
+  exceptionTypeRow: { gap: 8, paddingRight: 4 },
+  exceptionTypeChip: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#f9fafb',
+  },
+  exceptionTypeChipActive: {
+    backgroundColor: '#000000',
+    borderColor: '#000000',
+  },
+  exceptionTypeChipText: { fontSize: 12, color: '#4b5563', fontWeight: '600' },
+  exceptionTypeChipTextActive: { color: '#ffffff' },
+  exceptionInput: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    fontSize: 14,
+    color: '#000000',
+    backgroundColor: '#f9fafb',
+  },
+  exceptionReportBtn: {
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#000000',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exceptionReportBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  exceptionEmptyText: { fontSize: 13, color: '#6b7280' },
+  exceptionList: { gap: 12 },
+  exceptionItem: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    padding: 16,
+    gap: 10,
+    backgroundColor: '#f9fafb',
+  },
+  exceptionItemHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  exceptionItemType: { fontSize: 14, fontWeight: '700', color: '#000000' },
+  exceptionItemStatus: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  exceptionOpen: { color: '#dc2626' }, 
+  exceptionResolved: { color: '#16a34a' },
+  exceptionItemNotes: { fontSize: 14, color: '#4b5563' },
+  exceptionResolutionInput: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#000000',
+    backgroundColor: '#ffffff',
+  },
+  exceptionResolveBtn: {
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#000000',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exceptionResolveBtnText: { fontSize: 13, color: '#ffffff', fontWeight: '700' },
+
+  readinessWarning: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    gap: 8,
+  },
+  readinessWarningTitle: { fontSize: 14, fontWeight: '700', color: '#000000' },
+  readinessWarningText: { fontSize: 13, color: '#4b5563' },
+  readinessWarningList: { fontSize: 13, color: '#000000', fontWeight: '600' },
+
+  actionsRow: { gap: 12 },
+  navigateBtn: {
+    backgroundColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  navigateBtnText: { color: '#000000', fontWeight: '700', fontSize: 16 },
+  nextBtn: {
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  nextBtnProof: {
+    backgroundColor: '#000000',
+  },
+  nextBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
+  completedBanner: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#000000'
+  },
+  completedText: { color: '#000000', fontWeight: '700', fontSize: 16 },
+
+  returnStrip: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    gap: 4,
+  },
+  returnStripHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  returnStripTitle: { fontSize: 15, fontWeight: '700', color: '#000000' },
+  returnCountPill: {
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginLeft: 6,
+  },
+  returnCountPillText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  returnStripDismiss: { fontSize: 16, color: '#9ca3af', paddingLeft: 8 },
+  returnStripDesc: { fontSize: 13, color: '#6b7280', marginTop: 4 },
+  returnMiniCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    width: 200,
+  },
+  returnMiniKmBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignSelf: 'flex-start',
+  },
+  returnMiniKmText: { fontSize: 12, fontWeight: '700', color: '#000000' },
+  returnMiniRoute: { fontSize: 14, fontWeight: '700', color: '#000000', marginTop: 8 },
+  returnMiniWeight: { fontSize: 13, color: '#6b7280', marginTop: 4 },
+  returnMiniPrice: { fontSize: 16, fontWeight: '800', color: '#000000', marginTop: 8 },
+  returnMiniAcceptBtn: {
+    marginTop: 12,
+    backgroundColor: '#000000',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  returnMiniAcceptText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  returnStripCta: { marginTop: 12 },
+  returnStripCtaText: { fontSize: 14, color: '#000000', fontWeight: '700', textDecorationLine: 'underline' },
+
+  goBtn: {
+    marginTop: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#000000',
+  },
+  goBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+
+  weightInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  weightInput: {
+    flex: 1,
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#000000',
+    paddingVertical: 12,
+  },
+  weightUnit: { fontSize: 18, fontWeight: '700', color: '#9ca3af' },
+  weightHint: { fontSize: 14, color: '#6b7280', marginTop: 4 },
+  weightActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  weightCancel: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: '#e5e7eb',
+    alignItems: 'center',
+  },
+  weightCancelText: { fontSize: 15, fontWeight: '700', color: '#000000' },
+  weightConfirm: {
+    flex: 2,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: '#000000',
+    alignItems: 'center',
+  },
+  weightConfirmText: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
+  
+  photoCapture: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 16,
+    backgroundColor: '#ffffff',
+  },
+  photoCaptured: {
+    borderColor: '#000000',
+    borderStyle: 'solid',
+  },
+  photoPicker: { alignItems: 'center', gap: 8 },
+  photoPickerText: { fontSize: 15, fontWeight: '700', color: '#000000' },
+  photoPickerHint: { fontSize: 13, color: '#6b7280' },
+  photoPreview: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  photoThumb: { width: 80, height: 80, borderRadius: 8 },
+  photoCheck: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  photoCheckText: { fontSize: 14, fontWeight: '700', color: '#000000' },
+  chatHeaderBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+"""
+
+idx = text.find('const styles = StyleSheet.create({')
+if idx != -1:
+    new_text = text[:idx] + styles_code
+    
+    # Inline fixes
+    new_text = new_text.replace('#059669', '#000000')
+    new_text = new_text.replace('#b45309', '#000000')
+    new_text = new_text.replace('color="#fde68a"', 'color="#e5e7eb"')
+    new_text = new_text.replace('backgroundColor: "rgba(255,255,255,0.5)"', 'backgroundColor: "#f9fafb"')
+
+    with open('app/(driver)/active.tsx', 'w') as f:
+        f.write(new_text)
+    print("Patched!")
+else:
+    print("Not found!")

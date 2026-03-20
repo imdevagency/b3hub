@@ -49,7 +49,10 @@ export class CarrierSettingsController {
   /** DELETE /api/v1/carrier-settings/pricing/:size — remove price for a skip size */
   @Delete('pricing/:size')
   @HttpCode(HttpStatus.NO_CONTENT)
-  deletePrice(@Param('size') size: SkipSize, @Request() req: Express.Request & { user: RequestingUser }) {
+  deletePrice(
+    @Param('size') size: SkipSize,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
     return this.service.deletePrice(req.user.userId, size);
   }
 
@@ -64,14 +67,20 @@ export class CarrierSettingsController {
   /** POST /api/v1/carrier-settings/zones — add a service zone */
   @Post('zones')
   @HttpCode(HttpStatus.CREATED)
-  addZone(@Body() dto: CreateZoneDto, @Request() req: Express.Request & { user: RequestingUser }) {
+  addZone(
+    @Body() dto: CreateZoneDto,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
     return this.service.addZone(req.user.userId, dto);
   }
 
   /** DELETE /api/v1/carrier-settings/zones/:id — remove a service zone */
   @Delete('zones/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  removeZone(@Param('id') id: string, @Request() req: Express.Request & { user: RequestingUser }) {
+  removeZone(
+    @Param('id') id: string,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
     return this.service.removeZone(req.user.userId, id);
   }
 
@@ -86,14 +95,20 @@ export class CarrierSettingsController {
   /** POST /api/v1/carrier-settings/availability — block a date */
   @Post('availability')
   @HttpCode(HttpStatus.CREATED)
-  blockDate(@Body() dto: BlockDateDto, @Request() req: Express.Request & { user: RequestingUser }) {
+  blockDate(
+    @Body() dto: BlockDateDto,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
     return this.service.blockDate(req.user.userId, dto);
   }
 
   /** DELETE /api/v1/carrier-settings/availability/:id — unblock a date */
   @Delete('availability/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  unblockDate(@Param('id') id: string, @Request() req: Express.Request & { user: RequestingUser }) {
+  unblockDate(
+    @Param('id') id: string,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
     return this.service.unblockDate(req.user.userId, id);
   }
 }

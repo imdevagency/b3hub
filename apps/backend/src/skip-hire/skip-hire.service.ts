@@ -99,6 +99,7 @@ export class SkipHireService {
         contactEmail: dto.contactEmail,
         contactPhone: dto.contactPhone,
         notes: dto.notes,
+        unloadingPointPhotoUrl: dto.unloadingPointPhotoUrl,
         userId: userId ?? null,
         carrierId,
       },

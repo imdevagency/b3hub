@@ -109,10 +109,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 }
 
 // ── Banner ───────────────────────────────────────────────────────────────────
-const VARIANT_STYLE: Record<ToastVariant, { bg: string; border: string; color: string }> = {
-  success: { bg: '#111827', border: '#111827', color: '#d1d5db' },
-  error: { bg: '#450a0a', border: '#111827', color: '#f87171' },
-  info: { bg: '#0c1a2e', border: '#374151', color: '#93c5fd' },
+const VARIANT_STYLE: Record<
+  ToastVariant,
+  { bg: string; border: string; iconColor: string; accentColor: string }
+> = {
+  success: { bg: '#ffffff', border: '#d1fae5', iconColor: '#059669', accentColor: '#059669' },
+  error: { bg: '#ffffff', border: '#fee2e2', iconColor: '#dc2626', accentColor: '#dc2626' },
+  info: { bg: '#ffffff', border: '#dbeafe', iconColor: '#2563eb', accentColor: '#2563eb' },
 };
 
 const ICONS: Record<ToastVariant, React.ComponentType<{ size: number; color: string }>> = {
@@ -150,11 +153,11 @@ function ToastBanner({
         },
       ]}
     >
-      <Icon size={18} color={style.color} />
-      <Text style={[styles.message, { color: '#f9fafb' }]} numberOfLines={2}>
+      <Icon size={18} color={style.iconColor} />
+      <Text style={[styles.message, { color: '#111827' }]} numberOfLines={2}>
         {config.message}
       </Text>
-      <View style={[styles.accent, { backgroundColor: style.border }]} />
+      <View style={[styles.accent, { backgroundColor: style.accentColor }]} />
     </Animated.View>
   );
 }
@@ -175,8 +178,8 @@ const styles = StyleSheet.create({
     zIndex: 9999,
     elevation: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
     shadowRadius: 8,
   },
   message: {

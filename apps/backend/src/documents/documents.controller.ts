@@ -50,7 +50,11 @@ export class DocumentsController {
     @Param('entityType') entityType: DocumentEntityType,
     @Param('entityId') entityId: string,
   ) {
-    return this.documentsService.findByContext(user.userId, entityType, entityId);
+    return this.documentsService.findByContext(
+      user.userId,
+      entityType,
+      entityId,
+    );
   }
 
   /** GET /api/v1/documents/:id — single document */
