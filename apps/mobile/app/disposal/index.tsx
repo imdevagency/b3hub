@@ -1,8 +1,8 @@
 /**
  * Disposal wizard — full-screen step pages.
  *
- *   Step 1 – Location        (inline map)
- *   Step 2 – Waste type      (2-column grid, tap to select)
+ *   Step 1 – Waste type      (2-column grid, tap to select)
+ *   Step 2 – Location        (inline map)
  *   Step 3 – Volume          (preset cards)
  *   Step 4 – Date + confirm  (day chips + summary + contact)
  */
@@ -302,8 +302,8 @@ export default function DisposalWizard() {
   ]);
 
   const ctaDisabled =
-    (step === 1 && !picked) ||
-    (step === 2 && selectedWastes.length === 0) ||
+    (step === 1 && selectedWastes.length === 0) ||
+    (step === 2 && !picked) ||
     (step === 3 && !volumeKey) ||
     loading;
 
@@ -315,7 +315,7 @@ export default function DisposalWizard() {
       handleSubmit();
       return;
     }
-    if (step === 2) {
+    if (step === 1) {
       if (selectedWastes.includes('HAZARDOUS')) {
         Alert.alert('Bīstami atkritumi', 'Sazinieties ar mums tieši.', [{ text: 'Sapratu' }]);
         return;
@@ -325,8 +325,8 @@ export default function DisposalWizard() {
   }, [step, selectedWastes, handleSubmit]);
 
   const STEP_TITLES: Record<Step, string> = {
-    1: 'Kur paņemt atkritumus?',
-    2: 'Kas jāizved?',
+    1: 'Kas jāizved?',
+    2: 'Kur paņemt atkritumus?',
     3: 'Kāds ir apjoms?',
     4: 'Apstiprini izvešanu',
   };
@@ -347,16 +347,8 @@ export default function DisposalWizard() {
         ctaDisabled={ctaDisabled}
         ctaLoading={loading}
       >
-        {/* ── Step 1: Location ── */}
+        {/* ── Step 1: Waste type ── */}
         {step === 1 && (
-          <InlineAddressStep 
-            picked={picked} 
-            onPick={handlePickConfirm}
-          />
-        )}
-
-        {/* ── Step 2: Waste type ── */}
-        {step === 2 && (
           <ScrollView
             style={s.content}
             contentContainerStyle={s.pad}
@@ -392,6 +384,14 @@ export default function DisposalWizard() {
               })}
             </View>
           </ScrollView>
+        )}
+
+        {/* ── Step 2: Location ── */}
+        {step === 2 && (
+          <InlineAddressStep 
+            picked={picked} 
+            onPick={handlePickConfirm}
+          />
         )}
 
         {/* ── Step 3: Volume ── */}
