@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   ArrowLeft,
   RefreshCw,
@@ -123,9 +123,9 @@ function PositionCard({
   const remaining = Math.max(0, position.agreedQty - position.consumedQty);
 
   return (
-    <Card className="shadow-none border-border/50">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3 mb-3">
+    <Card className="rounded-2xl bg-white ring-1 ring-black/5 shadow-sm border-0 relative overflow-hidden">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between gap-3 mb-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
               <Package className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -242,11 +242,11 @@ function ReleaseCallOffDialog({
   const remaining = position ? Math.max(0, position.agreedQty - position.consumedQty) : 0;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Atsaukšanas darba uzdevums</DialogTitle>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="sm:max-w-md w-[90vw] sm:w-[400px] w-[90vw] sm:w-[400px]">
+        <SheetHeader>
+          <SheetTitle>Atsaukšanas darba uzdevums</SheetTitle>
+        </SheetHeader>
         {position && (
           <div className="space-y-4 mt-2">
             <div className="rounded-lg bg-muted p-3 text-sm">
@@ -300,8 +300,8 @@ function ReleaseCallOffDialog({
             </div>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -354,12 +354,12 @@ export default function BuyerProjectDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-4 max-w-4xl">
+      <div className="w-full h-full pb-20 space-y-8">
         <div className="h-8 w-48 bg-muted animate-pulse rounded" />
-        <div className="h-32 bg-muted animate-pulse rounded-xl" />
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="h-32 bg-muted animate-pulse rounded-2xl" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-40 bg-muted animate-pulse rounded-xl" />
+            <div key={i} className="h-40 bg-muted animate-pulse rounded-2xl" />
           ))}
         </div>
       </div>
@@ -371,7 +371,7 @@ export default function BuyerProjectDetailPage() {
   const meta = STATUS_META[contract.status];
 
   return (
-    <div className="space-y-6 p-6 max-w-4xl">
+    <div className="w-full h-full pb-20 space-y-8">
       {/* back + header */}
       <div>
         <Link
@@ -402,8 +402,8 @@ export default function BuyerProjectDetailPage() {
       </div>
 
       {/* summary card */}
-      <Card className="shadow-none border-border/50">
-        <CardContent className="p-5">
+      <Card className="rounded-2xl bg-white ring-1 ring-black/5 shadow-sm border-0">
+        <CardContent className="p-6">
           <div className="space-y-2 mb-4">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Kopējā izpilde</span>
@@ -431,10 +431,10 @@ export default function BuyerProjectDetailPage() {
 
       {/* positions */}
       <section>
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4 mt-8">
           Pozīcijas
         </h2>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {contract.positions.map((pos) => (
             <PositionCard key={pos.id} position={pos} onRelease={setReleasePos} />
           ))}
@@ -444,11 +444,11 @@ export default function BuyerProjectDetailPage() {
       {/* recent call-offs summary */}
       {contract.recentCallOffs.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4 mt-8">
             Pēdējās atsaukšanas
           </h2>
-          <Card className="shadow-none border-border/50">
-            <CardContent className="p-4">
+          <Card className="rounded-2xl bg-white ring-1 ring-black/5 shadow-sm border-0">
+            <CardContent className="p-2 sm:p-4">
               {contract.recentCallOffs.map((co) => (
                 <CallOffRow key={co.id} item={co} />
               ))}

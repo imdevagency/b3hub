@@ -29,8 +29,7 @@ import { t } from '@/lib/translations';
 import { ChevronLeft, Eye, EyeOff, Check } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 
-type UserType = 'BUYER' | 'SUPPLIER' | 'CARRIER';
-type RoleKey = UserType;
+type RoleKey = 'BUYER' | 'SUPPLIER' | 'CARRIER';
 
 // ── Constants ──────────────────────────────────────────────────
 const TOTAL_STEPS = 3;

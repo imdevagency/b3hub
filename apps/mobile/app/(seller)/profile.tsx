@@ -45,6 +45,10 @@ export default function ProfileScreen() {
 
   const roleLabel = t.mode[mode];
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`;
+  const accountTypeLabel =
+    user?.userType === 'ADMIN'
+      ? 'Administrators'
+      : ['Pircējs', ...(user?.canSell ? ['Piegādātājs'] : []), ...(user?.canTransport ? ['Pārvadātājs'] : [])].join(' + ');
 
   const handleLogout = () => {
     Alert.alert('Iziet', 'Vai tiešām vēlaties izrakstīties?', [
@@ -97,15 +101,7 @@ export default function ProfileScreen() {
     { label: t.profile.phone, value: user?.phone || '—' },
     {
       label: t.profile.accountType,
-      value:
-        (
-          {
-            BUYER: 'Pircējs',
-            SUPPLIER: 'Piegādātājs',
-            CARRIER: 'Pārvadātājs',
-            ADMIN: 'Administrators',
-          } as Record<string, string>
-        )[user?.userType ?? ''] ?? user?.userType,
+      value: accountTypeLabel,
     },
     {
       label: t.profile.status,

@@ -7,7 +7,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshCw, MessageSquare, MapPin, Package, Clock3, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/ui/page-header';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -85,7 +88,7 @@ function RespondPanel({ request, token, onClose, onResponded }: RespondPanelProp
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const set = (k: keyof CreateQuoteResponseInput, v: CreateQuoteResponseInput[typeof k]) =>
+  const setParams = (k: keyof CreateQuoteResponseInput, v: CreateQuoteResponseInput[typeof k]) =>
     setForm((prev) => ({ ...prev, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -114,128 +117,109 @@ function RespondPanel({ request, token, onClose, onResponded }: RespondPanelProp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <div>
-            <h2 className="text-base font-semibold">Sniegt Piedāvājumu</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
+    <Sheet open={true} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent className="flex flex-col h-full right-0 w-full sm:max-w-md border-l shadow-2xl p-0">
+        <div className="flex-1 overflow-y-auto">
+          <SheetHeader className="px-6 py-6 border-b">
+            <SheetTitle>Sniegt Piedāvājumu</SheetTitle>
+            <SheetDescription>
               {request.requestNumber} · {request.materialName}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground text-xl leading-none"
-          >
-            ×
-          </button>
-        </div>
+            </SheetDescription>
+          </SheetHeader>
 
-        {/* Request summary */}
-        <div className="px-6 py-3 bg-slate-50 text-xs text-slate-600 border-b space-y-1">
-          <p>
-            <span className="font-medium">Pieprasīts:</span> {request.quantity}{' '}
-            {UNIT_LV[request.unit]} {request.materialName}
-          </p>
-          <p>
-            <span className="font-medium">Piegāde:</span> {request.deliveryAddress},{' '}
-            {request.deliveryCity}
-          </p>
-          {request.notes && (
+          {/* Request summary */}
+          <div className="px-6 py-4 bg-muted/20 text-xs text-muted-foreground space-y-2 border-b">
             <p>
-              <span className="font-medium">Piezīmes:</span> {request.notes}
+              <span className="font-semibold text-foreground">Pieprasīts:</span> {request.quantity} {UNIT_LV[request.unit]} {request.materialName}
             </p>
-          )}
-        </div>
+            <p>
+              <span className="font-semibold text-foreground">Piegāde:</span> {request.deliveryAddress}, {request.deliveryCity}
+            </p>
+            {request.notes && (
+              <p>
+                <span className="font-semibold text-foreground">Piezīmes:</span> {request.notes}
+              </p>
+            )}
+          </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Price + unit */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">Cena (EUR) *</label>
-              <input
+          {/* Form fields */}
+          <form id="respond-form" onSubmit={handleSubmit} className="p-6 space-y-6">
+            <div className="flex gap-4">
+              <div className="flex-1 space-y-2">
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Cena par vienību (€) *</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.pricePerUnit || ''}
+                  onChange={(e) => setParams('pricePerUnit', parseFloat(e.target.value))}
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+              <div className="w-1/3 space-y-2">
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Mērvienība</label>
+                <Select value={form.unit} onValueChange={(v) => setParams('unit', v as MaterialUnit)}>
+                  <SelectTrigger className="h-11 bg-muted/40 border-transparent transition-all focus:bg-background focus:ring-1 focus:ring-black">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {UNITS.map((u) => (
+                      <SelectItem key={u} value={u}>
+                        {UNIT_LV[u]} ({u})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Piegādes laiks (dienas) *</label>
+              <Input
                 type="number"
-                min={0.01}
-                step={0.01}
-                value={form.pricePerUnit}
-                onChange={(e) => set('pricePerUnit', parseFloat(e.target.value))}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                min="1"
+                max="365"
+                value={form.etaDays || ''}
+                onChange={(e) => setParams('etaDays', parseInt(e.target.value, 10))}
+                required
               />
             </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">
-                Par mērvienību *
-              </label>
-              <select
-                value={form.unit}
-                onChange={(e) => set('unit', e.target.value as MaterialUnit)}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                {UNITS.map((u) => (
-                  <option key={u} value={u}>
-                    {UNIT_LV[u]} ({u})
-                  </option>
-                ))}
-              </select>
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Derīgums (neobligāts)</label>
+              <Input
+                type="date"
+                value={form.validUntil || ''}
+                onChange={(e) => setParams('validUntil', e.target.value)}
+              />
             </div>
-          </div>
 
-          {/* ETA */}
-          <div>
-            <label className="text-xs font-medium text-slate-600 block mb-1">
-              Piegādes laiks (dienas) *
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={365}
-              value={form.etaDays}
-              onChange={(e) => set('etaDays', parseInt(e.target.value, 10))}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
+            <div className="space-y-2">
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Piezīmes</label>
+              <Textarea
+                rows={3}
+                value={form.notes || ''}
+                onChange={(e) => setParams('notes', e.target.value)}
+                placeholder="Pieejamība, minimālais pasūtījums u.c."
+              />
+            </div>
+          </form>
+        </div>
 
-          {/* Valid until */}
-          <div>
-            <label className="text-xs font-medium text-slate-600 block mb-1">
-              Piedāvājuma derīgums (neobligāts)
-            </label>
-            <input
-              type="date"
-              value={form.validUntil ?? ''}
-              onChange={(e) => set('validUntil', e.target.value)}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label className="text-xs font-medium text-slate-600 block mb-1">
-              Piezīmes (neobligāts)
-            </label>
-            <textarea
-              rows={2}
-              value={form.notes ?? ''}
-              onChange={(e) => set('notes', e.target.value)}
-              placeholder="Pieejamība, minimālais pasūtījums u.c."
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-            />
-          </div>
-
-          {error && <p className="text-sm text-red-600">{error}</p>}
-
-          <div className="flex justify-end gap-2 pt-1">
-            <Button variant="outline" type="button" onClick={onClose}>
+        <div className="p-6 border-t shrink-0 flex justify-between items-center bg-card">
+          {error ? <p className="text-sm text-red-600 font-medium truncate pr-4">{error}</p> : <div/>}
+          <div className="flex gap-3 shrink-0">
+            <Button variant="outline" type="button" onClick={onClose} disabled={saving}>
               Atcelt
             </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? 'Sūta...' : 'Nosūtīt Piedāvājumu'}
+            <Button type="submit" form="respond-form" disabled={saving}>
+              {saving ? 'Sūta...' : 'Piedāvāt'}
             </Button>
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -251,7 +235,7 @@ function OpenRequestCard({ request, onRespond }: OpenRequestCardProps) {
   const isNew = isNewRequest(request);
 
   return (
-    <Card className="border-border/60 bg-card py-0 shadow-none transition-all hover:-translate-y-0.5 hover:border-border hover:shadow-sm">
+    <Card className="border-transparent bg-muted/40 py-0 shadow-none hover:bg-muted/60 transition-colors">
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
@@ -308,7 +292,7 @@ function OpenRequestCard({ request, onRespond }: OpenRequestCardProps) {
 
 function RequestCardSkeleton() {
   return (
-    <Card className="border-border/60 py-0 shadow-none">
+    <Card className="border-transparent bg-muted/40 py-0 shadow-none">
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 space-y-3">
@@ -378,18 +362,19 @@ export default function OpenQuoteRequestsPage() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      {/* Header */}
-      <PageHeader
-        title="Atvērtie Pieprasījumi"
-        description="Iesniedziet cenu piedāvājumus pasūtītājiem"
-        action={
-          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
-            Atjaunot
-          </Button>
-        }
-      />
+    <div className="w-full h-full pb-20 space-y-10">
+      
+      {/* HEADER SECTION */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Atvērtie Pieprasījumi</h1>
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base max-w-xl">Iesniedziet cenu piedāvājumus reāllaikā un saņemiet pasūtījumus</p>
+        </div>
+        <Button variant="default" className="w-full sm:w-auto" onClick={load} disabled={loading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Atjaunot sarakstu
+        </Button>
+      </div>
 
       {/* Success toast */}
       {successId && (
@@ -399,7 +384,7 @@ export default function OpenQuoteRequestsPage() {
       )}
 
       {!loading && !error && safeRequests.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-card p-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/40 p-2 border border-transparent">
           <div className="flex flex-wrap gap-2">
             <Button
               size="xs"

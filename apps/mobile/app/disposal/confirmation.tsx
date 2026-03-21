@@ -31,7 +31,7 @@ const TRUCK_LABELS: Record<string, string> = {
 
 export default function DisposalConfirmation() {
   const router = useRouter();
-  const { confirmedDisposal } = useDisposal();
+  const { confirmedDisposal, reset } = useDisposal();
 
   const iconScale = useRef(new Animated.Value(0)).current;
   const iconOpacity = useRef(new Animated.Value(0)).current;
@@ -86,7 +86,13 @@ export default function DisposalConfirmation() {
       <ScreenContainer standalone bg="#fff">
         <View style={s.center}>
           <Text style={s.centerText}>Nav pieprasījuma informācijas.</Text>
-          <TouchableOpacity onPress={() => router.replace('/(buyer)/home')} style={s.centerLink}>
+          <TouchableOpacity
+            onPress={() => {
+              reset();
+              router.replace('/(buyer)/home');
+            }}
+            style={s.centerLink}
+          >
             <Text style={s.centerLinkText}>Atpakaļ uz sākumu</Text>
           </TouchableOpacity>
         </View>
@@ -176,6 +182,7 @@ export default function DisposalConfirmation() {
           style={s.btnPrimary}
           onPress={() => {
             haptics.light();
+            reset();
             router.replace('/(buyer)/orders');
           }}
           activeOpacity={0.85}
@@ -186,6 +193,7 @@ export default function DisposalConfirmation() {
           style={s.btnSecondary}
           onPress={() => {
             haptics.light();
+            reset();
             router.replace('/(buyer)/home');
           }}
           activeOpacity={0.85}

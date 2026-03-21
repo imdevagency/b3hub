@@ -15,6 +15,14 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface AddItemResult {
+  ok: boolean;
+  reason?: 'mixed-supplier';
+}
+
+export const MIXED_SUPPLIER_CART_MESSAGE =
+  'Vienā pasūtījumā var būt materiāli tikai no viena piegādātāja. Pabeidziet vai notīriet esošo grozu pirms pievienojat cita piegādātāja materiālus.';
+
 interface CartContextValue {
   items: CartItem[];
   count: number; // total item lines
@@ -22,7 +30,10 @@ interface CartContextValue {
   subtotal: number; // ex-VAT
   vat: number;
   total: number;
-  addItem: (material: ApiMaterial, qty: number) => void;
+  activeSupplierId: string | null;
+  activeSupplierName: string | null;
+  hasMixedSuppliers: boolean;
+  addItem: (material: ApiMaterial, qty: number) => AddItemResult;
   updateQty: (materialId: string, qty: number) => void;
   removeItem: (materialId: string) => void;
   clearCart: () => void;
@@ -61,16 +72,31 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [items, hydrated]);
 
-  const addItem = useCallback((material: ApiMaterial, qty: number) => {
+  const addItem = useCallback((material: ApiMaterial, qty: number): AddItemResult => {
+    let result: AddItemResult = { ok: true };
+
     setItems((prev) => {
-      const existing = prev.find((i) => i.material.id === material.id);
+      const supplierIds = new Set(prev.map((item) => item.material.supplier.id));
+      const existing = prev.find((item) => item.material.id === material.id);
+
+      if (
+        supplierIds.size > 1 ||
+        (supplierIds.size === 1 && !supplierIds.has(material.supplier.id) && !existing)
+      ) {
+        result = { ok: false, reason: 'mixed-supplier' };
+        return prev;
+      }
+
       if (existing) {
-        return prev.map((i) =>
-          i.material.id === material.id ? { ...i, quantity: i.quantity + qty } : i,
+        return prev.map((item) =>
+          item.material.id === material.id ? { ...item, quantity: item.quantity + qty } : item,
         );
       }
+
       return [...prev, { material, quantity: qty }];
     });
+
+    return result;
   }, []);
 
   const updateQty = useCallback((materialId: string, qty: number) => {
@@ -93,6 +119,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const vat = subtotal * 0.21;
   const total = subtotal + vat;
   const totalQty = items.reduce((sum, i) => sum + i.quantity, 0);
+  const supplierIds = Array.from(new Set(items.map((item) => item.material.supplier.id)));
+  const hasMixedSuppliers = supplierIds.length > 1;
+  const activeSupplierId = hasMixedSuppliers ? null : supplierIds[0] ?? null;
+  const activeSupplierName =
+    hasMixedSuppliers || items.length === 0 ? null : items[0]?.material.supplier.name ?? null;
 
   return (
     <CartContext.Provider
@@ -103,6 +134,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         subtotal,
         vat,
         total,
+        activeSupplierId,
+        activeSupplierName,
+        hasMixedSuppliers,
         addItem,
         updateQty,
         removeItem,

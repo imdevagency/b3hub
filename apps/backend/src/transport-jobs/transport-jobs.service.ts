@@ -1142,7 +1142,14 @@ export class TransportJobsService {
       return this.loadingDock(id, weightKg);
     }
 
-    if (!user.companyId || !(user.canSell || user.permManageOrders)) {
+    const canManageSupplierOrders =
+      !!user.companyId &&
+      (user.canSell ||
+        user.companyRole === 'OWNER' ||
+        user.companyRole === 'MANAGER' ||
+        user.permManageOrders);
+
+    if (!canManageSupplierOrders) {
       throw new ForbiddenException(
         'Only supplier operators can confirm loading dock actions',
       );

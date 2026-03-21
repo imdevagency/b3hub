@@ -7,6 +7,7 @@ import { Controller, Get, Patch, Param, Body, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
@@ -27,17 +28,7 @@ export class AdminController {
 
   /** PATCH /admin/users/:id — toggle flags / status */
   @Patch('users/:id')
-  updateUser(
-    @Param('id') id: string,
-    @Body()
-    body: {
-      canSell?: boolean;
-      canTransport?: boolean;
-      canSkipHire?: boolean;
-      status?: string;
-      userType?: string;
-    },
-  ) {
+  updateUser(@Param('id') id: string, @Body() body: UpdateUserDto) {
     return this.service.updateUser(id, body);
   }
 }

@@ -22,10 +22,15 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { registerUser, UserType } from '@/lib/api';
+import { registerUser, RegistrationRole } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 
-const USER_TYPE_META: { value: UserType; emoji: string; label: string; description: string }[] = [
+const USER_TYPE_META: {
+  value: RegistrationRole;
+  emoji: string;
+  label: string;
+  description: string;
+}[] = [
   {
     value: 'BUYER',
     emoji: '🛒',
@@ -91,7 +96,11 @@ export default function RegisterPage() {
   const onSubmit = async (data: FormData) => {
     setError(null);
     try {
-      const { confirmPassword: _, ...payload } = data;
+      const { confirmPassword: _, userType, ...rest } = data;
+      const payload = {
+        ...rest,
+        roles: [userType],
+      };
       const res = await registerUser(payload);
       setAuth(res.user, res.token);
       router.push('/dashboard');

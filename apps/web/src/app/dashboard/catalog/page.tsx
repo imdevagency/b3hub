@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { useCart } from '@/lib/cart-context';
+import { MIXED_SUPPLIER_CART_MESSAGE, useCart } from '@/lib/cart-context';
 import {
   getMaterials,
   getMaterialCategories,
@@ -64,19 +64,28 @@ function AddToCartModal({
   onClose: () => void;
   onAdded: () => void;
 }) {
-  const { addItem, items } = useCart();
+  const { addItem, items, activeSupplierName } = useCart();
   const existing = items.find((i) => i.material.id === material.id);
   const step = material.unit === 'TONNE' || material.unit === 'M3' ? 0.5 : 1;
   const min = material.minOrder ?? step;
   const [qty, setQty] = useState<number>(existing?.quantity ?? min);
   const [added, setAdded] = useState(false);
+  const [error, setError] = useState('');
+  const conflictsWithActiveSupplier =
+    !!activeSupplierName && activeSupplierName !== material.supplier.name && !existing;
 
   function adjust(delta: number) {
     setQty((q) => Math.max(min, parseFloat((q + delta).toFixed(2))));
   }
 
   function handleAdd() {
-    addItem(material, qty);
+    const result = addItem(material, qty);
+    if (!result.ok) {
+      setError(MIXED_SUPPLIER_CART_MESSAGE);
+      return;
+    }
+
+    setError('');
     setAdded(true);
     setTimeout(() => {
       onAdded();
@@ -150,16 +159,38 @@ function AddToCartModal({
             <span className="font-bold text-lg">€{lineTotal.toFixed(2)}</span>
           </div>
 
+          {conflictsWithActiveSupplier && (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              Grozā jau ir materiāli no {activeSupplierName}. Šo preci var pievienot tikai pēc esošā groza pabeigšanas vai notīrīšanas.
+            </p>
+          )}
+
+          {error && (
+            <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </p>
+          )}
+
           {/* Add button */}
           <button
             onClick={handleAdd}
-            disabled={added}
+            disabled={added || conflictsWithActiveSupplier}
             className={`w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-bold text-white transition-all ${
-              added ? 'bg-green-600' : 'bg-primary hover:bg-primary/90'
+              added
+                ? 'bg-green-600'
+                : conflictsWithActiveSupplier
+                  ? 'bg-slate-300 cursor-not-allowed'
+                  : 'bg-primary hover:bg-primary/90'
             }`}
           >
             <ShoppingCart className="size-4" />
-            {added ? 'Pievienots!' : existing ? 'Atjaunināt grozu' : 'Pievienot grozam'}
+            {added
+              ? 'Pievienots!'
+              : conflictsWithActiveSupplier
+                ? 'Cits piegādātājs grozā'
+                : existing
+                  ? 'Atjaunināt grozu'
+                  : 'Pievienot grozam'}
           </button>
         </div>
       </div>

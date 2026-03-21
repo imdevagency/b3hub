@@ -39,9 +39,11 @@ describe('OrdersService — Error Handling', () => {
         count: jest.fn().mockResolvedValue(0),
       },
       material: {
+        findUnique: jest.fn().mockResolvedValue(null),
         count: jest.fn().mockResolvedValue(0),
       },
       orderItem: {
+        count: jest.fn().mockResolvedValue(0),
         aggregate: jest.fn().mockResolvedValue({ _sum: { total: 0 } }),
       },
     };
@@ -202,18 +204,99 @@ describe('OrdersService — Error Handling', () => {
   });
 
   describe('updateStatus — state transition validation', () => {
-    // TODO: Implement state machine validation
-    // Currently, the updateStatus method doesn't validate state transitions.
-    // These tests are placeholders for future implementation.
+    it('blocks invalid status transitions', async () => {
+      (prisma.order.findUnique as jest.Mock).mockResolvedValue({
+        id: 'order1',
+        status: OrderStatus.CONFIRMED,
+        invoices: [],
+        orderNumber: 'ORD-1',
+        createdById: 'buyer1',
+      });
 
-    it.skip('blocks invalid status transitions', async () => {
-      // Would test: CONFIRMED -> PENDING transition should fail
-      // Implementation needed in updateStatus method
+      await expect(
+        service.updateStatus('order1', OrderStatus.PENDING),
+      ).rejects.toThrow(BadRequestException);
     });
 
-    it.skip('blocks update on cancelled order', async () => {
-      // Would test: Cannot change status of cancelled order
-      // Implementation needed in updateStatus method
+    it('blocks update on cancelled order', async () => {
+      (prisma.order.findUnique as jest.Mock).mockResolvedValue({
+        id: 'order1',
+        status: OrderStatus.CANCELLED,
+        invoices: [],
+        orderNumber: 'ORD-1',
+        createdById: 'buyer1',
+      });
+
+      await expect(
+        service.updateStatus('order1', OrderStatus.CONFIRMED),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('create — supplier isolation', () => {
+    it('blocks mixed-supplier carts', async () => {
+      (prisma.material.findUnique as jest.Mock)
+        .mockResolvedValueOnce({ id: 'm1', basePrice: 10, supplierId: 'supplier-a' })
+        .mockResolvedValueOnce({ id: 'm2', basePrice: 20, supplierId: 'supplier-b' });
+
+      const user = {
+        id: 'u1',
+        userId: 'u1',
+        userType: 'BUYER' as const,
+        isCompany: true,
+        companyId: 'buyer-company',
+        canSell: false,
+        canTransport: false,
+      } as Partial<RequestingUser> as RequestingUser;
+
+      await expect(
+        service.create(
+          {
+            orderType: 'MATERIAL',
+            deliveryAddress: 'Brivibas 1',
+            deliveryCity: 'Riga',
+            deliveryState: 'LV',
+            deliveryPostal: 'LV-1010',
+            deliveryFee: 0,
+            items: [
+              { materialId: 'm1', quantity: 1, unit: 'TONNE', unitPrice: 10 },
+              { materialId: 'm2', quantity: 1, unit: 'TONNE', unitPrice: 20 },
+            ],
+          },
+          user,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('update — write permissions', () => {
+    it('blocks supplier from editing buyer-owned order details', async () => {
+      (prisma.order.findUnique as jest.Mock).mockResolvedValue({
+        id: 'order1',
+        createdById: 'buyer1',
+        items: [],
+        buyer: { id: 'buyer-company' },
+        transportJobs: [],
+        invoices: [],
+      });
+      (prisma.orderItem.count as jest.Mock).mockResolvedValue(1);
+
+      const supplier = {
+        id: 'supplier-user',
+        userId: 'supplier-user',
+        userType: 'BUYER' as const,
+        isCompany: true,
+        companyId: 'supplier-company',
+        canSell: true,
+      } as Partial<RequestingUser> as RequestingUser;
+
+      await expect(
+        service.update(
+          'order1',
+          { deliveryAddress: 'Changed 123' },
+          supplier,
+        ),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 

@@ -26,12 +26,17 @@ import {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-const USER_TYPE_LABEL: Record<string, string> = {
-  BUYER: 'Pircējs',
-  SUPPLIER: 'Pārdevējs',
-  CARRIER: 'Pārvadātājs',
-  ADMIN: 'Administrators',
-};
+function accountTypeLabel(user: {
+  userType?: string;
+  canSell?: boolean;
+  canTransport?: boolean;
+}): string {
+  if (user.userType === 'ADMIN') return 'Administrators';
+  const labels = ['Pircējs'];
+  if (user.canSell) labels.push('Pārdevējs');
+  if (user.canTransport) labels.push('Pārvadātājs');
+  return labels.join(' + ');
+}
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   ACTIVE: { label: 'Aktīvs', color: '#15803d' },
   PENDING: { label: 'Gaida apstiprinājumu', color: '#b45309' },
@@ -142,7 +147,7 @@ export default function SettingsPage() {
     }
   };
 
-  const userTypeLabel = USER_TYPE_LABEL[user?.userType ?? ''] ?? user?.userType ?? '—';
+  const userTypeLabel = user ? accountTypeLabel(user) : '—';
   const statusInfo = STATUS_LABEL[user?.status ?? ''];
 
   const pwStrength =

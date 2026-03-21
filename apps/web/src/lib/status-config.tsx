@@ -29,39 +29,39 @@ export interface TwBadgeCfg {
 // ── Order statuses ─────────────────────────────────────────────────────────────
 
 export const ORDER_STATUS: Record<string, HexBadgeCfg> = {
-  PENDING:    { label: 'Gaidā',       bg: '#fef3c7', text: '#b45309' },
-  CONFIRMED:  { label: 'Apstiprināts', bg: '#dbeafe', text: '#1d4ed8' },
-  PROCESSING: { label: 'Apstrādē',    bg: '#e0e7ff', text: '#4338ca' },
-  LOADING:    { label: 'Iekraušana',   bg: '#fce7f3', text: '#be185d' },
-  DISPATCHED: { label: 'Nosūtīts',    bg: '#dcfce7', text: '#15803d' },
-  DELIVERING: { label: 'Piegāde',     bg: '#dcfce7', text: '#15803d' },
-  DELIVERED:  { label: 'Piegādāts',   bg: '#f0fdf4', text: '#166534' },
-  COMPLETED:  { label: 'Pabeigts',    bg: '#f0fdf4', text: '#166534' },
+  PENDING:    { label: 'Gaidā',       bg: '#f1f5f9', text: '#475569' },
+  CONFIRMED:  { label: 'Apstiprināts', bg: '#ffffff', text: '#020617' },
+  PROCESSING: { label: 'Apstrādē',    bg: '#ffffff', text: '#020617' },
+  LOADING:    { label: 'Iekraušana',   bg: '#ffffff', text: '#020617' },
+  DISPATCHED: { label: 'Nosūtīts',    bg: '#ffffff', text: '#020617' },
+  DELIVERING: { label: 'Piegāde',     bg: '#ffffff', text: '#020617' },
+  DELIVERED:  { label: 'Piegādāts',   bg: '#ffffff', text: '#020617' },
+  COMPLETED:  { label: 'Pabeigts',    bg: '#ffffff', text: '#020617' },
   CANCELLED:  { label: 'Atcelts',     bg: '#fee2e2', text: '#b91c1c' },
 };
 
 // ── Transport-job statuses ─────────────────────────────────────────────────────
 
 export const JOB_STATUS: Record<string, HexBadgeCfg> = {
-  AVAILABLE:         { label: 'Pieejams',      bg: '#f0fdf4', text: '#166534' },
-  ASSIGNED:          { label: 'Piešķirts',     bg: '#e0e7ff', text: '#4338ca' },
-  ACCEPTED:          { label: 'Pieņemts',      bg: '#dbeafe', text: '#1d4ed8' },
-  EN_ROUTE_PICKUP:   { label: 'Brauc uz Iek.', bg: '#fef3c7', text: '#b45309' },
-  AT_PICKUP:         { label: 'Uz vietas',     bg: '#fce7f3', text: '#be185d' },
-  LOADED:            { label: 'Iekrauts',      bg: '#e0e7ff', text: '#4338ca' },
-  EN_ROUTE_DELIVERY: { label: 'Piegādē',       bg: '#fef3c7', text: '#b45309' },
-  AT_DELIVERY:       { label: 'Atvedis',       bg: '#dbeafe', text: '#1d4ed8' },
-  DELIVERED:         { label: 'Piegādāts',     bg: '#f0fdf4', text: '#166534' },
+  AVAILABLE:         { label: 'Pieejams',      bg: '#f1f5f9', text: '#475569' },
+  ASSIGNED:          { label: 'Piešķirts',     bg: '#f8fafc', text: '#334155' },
+  ACCEPTED:          { label: 'Pieņemts',      bg: '#ffffff', text: '#020617' },
+  EN_ROUTE_PICKUP:   { label: 'Brauc uz Iek.', bg: '#ffffff', text: '#020617' },
+  AT_PICKUP:         { label: 'Uz vietas',     bg: '#ffffff', text: '#020617' },
+  LOADED:            { label: 'Iekrauts',      bg: '#ffffff', text: '#020617' },
+  EN_ROUTE_DELIVERY: { label: 'Piegādē',       bg: '#ffffff', text: '#020617' },
+  AT_DELIVERY:       { label: 'Atvedis',       bg: '#ffffff', text: '#020617' },
+  DELIVERED:         { label: 'Piegādāts',     bg: '#ffffff', text: '#020617' },
   CANCELLED:         { label: 'Atcelts',       bg: '#fee2e2', text: '#b91c1c' },
 };
 
 // ── Skip-hire statuses ─────────────────────────────────────────────────────────
 
 export const SKIP_STATUS: Record<string, HexBadgeCfg> = {
-  PENDING:   { label: 'Gaidā',     bg: '#fef3c7', text: '#b45309' },
-  CONFIRMED: { label: 'Apst.',     bg: '#dbeafe', text: '#1d4ed8' },
-  DELIVERED: { label: 'Piegādāts', bg: '#dcfce7', text: '#15803d' },
-  COLLECTED: { label: 'Savākts',   bg: '#f0fdf4', text: '#166534' },
+  PENDING:   { label: 'Gaidā',     bg: '#f1f5f9', text: '#475569' },
+  CONFIRMED: { label: 'Apst.',     bg: '#ffffff', text: '#020617' },
+  DELIVERED: { label: 'Piegādāts', bg: '#ffffff', text: '#020617' },
+  COLLECTED: { label: 'Savākts',   bg: '#ffffff', text: '#020617' },
   CANCELLED: { label: 'Atcelts',   bg: '#fee2e2', text: '#b91c1c' },
 };
 
@@ -97,7 +97,7 @@ export const INVOICE_STATUS: Record<PaymentStatus, TwBadgeCfg> = {
 
 // ── Badge components ──────────────────────────────────────────────────────────
 
-const FALLBACK_HEX: HexBadgeCfg = { label: '—', bg: '#f3f4f6', text: '#6b7280' };
+const FALLBACK_HEX: HexBadgeCfg = { label: '—', bg: '#ffffff', text: '#020617' };
 
 /**
  * Renders a pill badge from a hex-colour config (orders / jobs / skips).
@@ -110,7 +110,7 @@ export function StatusBadgeHex({ cfg }: { cfg: HexBadgeCfg | undefined }) {
   return (
     <span
       style={{ backgroundColor: resolved.bg, color: resolved.text }}
-      className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap"
+      className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap border border-border shadow-sm"
     >
       {resolved.label}
     </span>

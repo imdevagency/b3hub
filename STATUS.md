@@ -77,12 +77,14 @@ Each row is a product feature domain.
 | Web sidebar recent pages quick access    | ✅     | UX/Navigation  |
 | Web sidebar dynamic signal badges        | ✅     | UX/Navigation  |
 | Web single role switcher (topbar only)   | ✅     | UX/Navigation  |
+| Order flow hardening                     | ✅     | Security/Ops   |
 
 ### Outstanding Gaps
 
 | Gap                                | Impact          | Area          |
 | ---------------------------------- | --------------- | ------------- |
 | Stripe payment integration missing | No payment flow | Backend + all |
+| Mixed-supplier material carts are blocked until order-group splitting is implemented | Marketplace scale | Orders |
 
 ---
 

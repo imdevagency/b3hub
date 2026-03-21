@@ -6,7 +6,7 @@
  */
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { UserStatus, UserType } from '@prisma/client';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class AdminService {
@@ -38,16 +38,7 @@ export class AdminService {
     });
   }
 
-  async updateUser(
-    id: string,
-    data: {
-      canSell?: boolean;
-      canTransport?: boolean;
-      canSkipHire?: boolean;
-      status?: string;
-      userType?: string;
-    },
-  ) {
+  async updateUser(id: string, data: UpdateUserDto) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -62,9 +53,9 @@ export class AdminService {
         ...(data.canSkipHire !== undefined && {
           canSkipHire: data.canSkipHire,
         }),
-        ...(data.status !== undefined && { status: data.status as UserStatus }),
+        ...(data.status !== undefined && { status: data.status }),
         ...(data.userType !== undefined && {
-          userType: data.userType as UserType,
+          userType: data.userType,
         }),
       },
       select: this.userSelect,

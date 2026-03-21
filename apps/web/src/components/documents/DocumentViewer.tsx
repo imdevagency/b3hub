@@ -15,10 +15,10 @@ interface DocumentViewerProps {
 }
 
 function resolveIcon(mimeType?: string) {
-  if (!mimeType) return <File className="h-10 w-10 text-gray-400" />;
+  if (!mimeType) return <File className="h-10 w-10 text-muted-foreground/80" />;
   if (mimeType === 'application/pdf') return <FileText className="h-10 w-10 text-red-500" />;
   if (mimeType.startsWith('image/')) return <ImageIcon className="h-10 w-10 text-blue-500" />;
-  return <File className="h-10 w-10 text-gray-400" />;
+  return <File className="h-10 w-10 text-muted-foreground/80" />;
 }
 
 function formatBytes(bytes?: number) {
@@ -49,21 +49,21 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6"
       onClick={(e) => {
         if (e.target === overlayRef.current) onClose();
       }}
     >
-      <div className="relative flex flex-col w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative flex flex-col w-full max-w-4xl max-h-[90vh] bg-background rounded-[2rem] shadow-2xl overflow-hidden border border-border/40">
         {/* ── Header ── */}
-        <div className="flex items-start justify-between px-6 py-4 border-b bg-gray-50">
+        <div className="flex items-start justify-between px-6 py-5 border-b border-border/40 bg-muted/40">
           <div className="flex items-center gap-3">
             {resolveIcon(document.mimeType)}
             <div>
-              <h2 className="font-semibold text-gray-900 text-lg leading-tight">
+              <h2 className="font-semibold text-foreground text-lg leading-tight">
                 {document.title}
               </h2>
-              <p className="text-sm text-gray-500 mt-0.5">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 {document.issuedBy && <span>{document.issuedBy} · </span>}
                 {new Date(document.createdAt).toLocaleDateString('lv-LV', {
                   day: 'numeric',
@@ -82,7 +82,7 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
                   variant="outline"
                   size="sm"
                   asChild
-                  className="text-gray-600 border-gray-200 hover:text-red-600 hover:border-red-300"
+                  className="text-muted-foreground border-gray-200 hover:text-red-600 hover:border-red-300"
                 >
                   <a href={document.fileUrl} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4 mr-1.5" />
@@ -93,7 +93,7 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
                   variant="outline"
                   size="sm"
                   asChild
-                  className="text-gray-600 border-gray-200 hover:text-red-600 hover:border-red-300"
+                  className="text-muted-foreground border-gray-200 hover:text-red-600 hover:border-red-300"
                 >
                   <a href={document.fileUrl} download>
                     <Download className="h-4 w-4 mr-1.5" />
@@ -104,7 +104,7 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
             )}
             <button
               onClick={onClose}
-              className="ml-2 rounded-lg p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-200 transition-colors"
+              className="ml-2 rounded-lg p-1.5 text-muted-foreground/80 hover:text-foreground hover:bg-gray-200 transition-colors"
               aria-label="Close viewer"
             >
               <X className="h-5 w-5" />
@@ -113,12 +113,12 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
         </div>
 
         {/* ── Body: document preview ── */}
-        <div className="flex-1 overflow-auto bg-gray-100 min-h-100">
+        <div className="flex-1 overflow-auto bg-muted/20 min-h-100">
           {!hasFile && (
-            <div className="flex flex-col items-center justify-center h-full py-20 gap-3 text-gray-400">
+            <div className="flex flex-col items-center justify-center h-full py-20 gap-3 text-muted-foreground/80">
               {resolveIcon(document.mimeType)}
               <p className="text-sm font-medium">Datne vēl nav pievienota</p>
-              <p className="text-xs text-gray-400 max-w-xs text-center">
+              <p className="text-xs text-muted-foreground/80 max-w-xs text-center">
                 Šis dokumenta ieraksts pastāv, bet PDF vai fails vēl nav augšupielādēts.
               </p>
             </div>
@@ -142,7 +142,7 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
           )}
 
           {hasFile && !isPdf && !isImage && (
-            <div className="flex flex-col items-center justify-center h-full py-20 gap-4 text-gray-500">
+            <div className="flex flex-col items-center justify-center h-full py-20 gap-4 text-muted-foreground">
               {resolveIcon(document.mimeType)}
               <p className="text-sm font-medium">Priekšskatījums nav pieejams</p>
               <Button variant="outline" size="sm" asChild>
@@ -157,9 +157,9 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
 
         {/* ── Footer: metadata ── */}
         {document.notes && (
-          <div className="px-6 py-3 border-t bg-gray-50">
-            <p className="text-xs text-gray-500">
-              <span className="font-medium text-gray-700">Piezīmes: </span>
+          <div className="px-6 py-4 border-t border-border/40 bg-muted/40">
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">Piezīmes: </span>
               {document.notes}
             </p>
           </div>

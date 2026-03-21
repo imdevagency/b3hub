@@ -32,6 +32,24 @@ import { NotificationType } from '../notifications/dto/create-notification.dto';
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
+  private readonly allowedStatusTransitions: Record<OrderStatus, OrderStatus[]> = {
+    [OrderStatus.DRAFT]: [OrderStatus.PENDING, OrderStatus.CANCELLED],
+    [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
+    [OrderStatus.CONFIRMED]: [
+      OrderStatus.IN_PROGRESS,
+      OrderStatus.DELIVERED,
+      OrderStatus.COMPLETED,
+      OrderStatus.CANCELLED,
+    ],
+    [OrderStatus.IN_PROGRESS]: [
+      OrderStatus.DELIVERED,
+      OrderStatus.COMPLETED,
+      OrderStatus.CANCELLED,
+    ],
+    [OrderStatus.DELIVERED]: [OrderStatus.COMPLETED],
+    [OrderStatus.COMPLETED]: [],
+    [OrderStatus.CANCELLED]: [],
+  };
 
   constructor(
     private prisma: PrismaService,
@@ -53,20 +71,39 @@ export class OrdersService {
 
     const userId = currentUser.userId;
     const { items, ...orderData } = createOrderDto;
+    const buyerCompanyId =
+      currentUser.userType === 'ADMIN'
+        ? orderData.buyerId
+        : currentUser.companyId;
+
+    if (!buyerCompanyId) {
+      throw new BadRequestException(
+        'Material orders require a buyer company linked to the authenticated user',
+      );
+    }
 
     // Generate order number
     const orderNumber = await this.generateOrderNumber();
 
     // Calculate totals
     let subtotal = 0;
+    const supplierIds = new Set<string>();
     for (const item of items) {
       const material = await this.prisma.material.findUnique({
         where: { id: item.materialId },
+        select: { id: true, basePrice: true, supplierId: true },
       });
       if (!material) {
         throw new NotFoundException(`Material ${item.materialId} not found`);
       }
       subtotal += material.basePrice * item.quantity;
+      supplierIds.add(material.supplierId);
+    }
+
+    if (supplierIds.size > 1) {
+      throw new BadRequestException(
+        'Mixed-supplier carts are not supported yet. Please place one order per supplier.',
+      );
     }
 
     const tax = subtotal * 0.19; // 19% VAT
@@ -77,7 +114,7 @@ export class OrdersService {
       data: {
         orderNumber,
         orderType: orderData.orderType,
-        buyerId: orderData.buyerId,
+        buyerId: buyerCompanyId,
         createdById: userId,
         deliveryAddress: orderData.deliveryAddress,
         deliveryCity: orderData.deliveryCity,
@@ -395,7 +432,16 @@ export class OrdersService {
     updateOrderDto: UpdateOrderDto,
     currentUser: RequestingUser,
   ) {
-    await this.findOne(id, currentUser); // Check existence and ownership
+    const order = await this.findOne(id, currentUser);
+
+    if (
+      currentUser.userType !== 'ADMIN' &&
+      order.createdById !== currentUser.userId
+    ) {
+      throw new ForbiddenException(
+        'Only the buyer who created the order can update order details',
+      );
+    }
 
     const updateData: Prisma.OrderUpdateInput = {};
 
@@ -440,6 +486,17 @@ export class OrdersService {
       include: { invoices: { select: { id: true } } },
     });
     if (!order) throw new NotFoundException(`Order ${id} not found`);
+
+    if (order.status === status) {
+      return order;
+    }
+
+    const allowedTargets = this.allowedStatusTransitions[order.status] ?? [];
+    if (!allowedTargets.includes(status)) {
+      throw new BadRequestException(
+        `Invalid order status transition: ${order.status} -> ${status}`,
+      );
+    }
 
     const updated = await this.prisma.order.update({
       where: { id },
@@ -508,12 +565,7 @@ export class OrdersService {
 
     // Confirm/start-loading are seller-side operational actions.
     if (status === OrderStatus.CONFIRMED || status === OrderStatus.IN_PROGRESS) {
-      const canManageSupplierOrders =
-        !!currentUser.companyId &&
-        (currentUser.canSell ||
-          currentUser.companyRole === 'OWNER' ||
-          currentUser.companyRole === 'MANAGER' ||
-          currentUser.permManageOrders);
+      const canManageSupplierOrders = this.canManageSupplierOrder(currentUser);
 
       if (!canManageSupplierOrders) {
         throw new ForbiddenException(
@@ -534,6 +586,16 @@ export class OrdersService {
     }
 
     return this.updateStatus(id, status);
+  }
+
+  private canManageSupplierOrder(currentUser: RequestingUser): boolean {
+    return (
+      !!currentUser.companyId &&
+      (currentUser.canSell ||
+        currentUser.companyRole === 'OWNER' ||
+        currentUser.companyRole === 'MANAGER' ||
+        currentUser.permManageOrders)
+    );
   }
 
   async cancel(id: string, currentUser: RequestingUser) {

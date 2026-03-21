@@ -35,6 +35,7 @@ import { useActiveTransportJob } from '@/hooks/use-active-transport-job';
 import { useTransportJobs } from '@/hooks/use-transport-jobs';
 import { useMaterialOrders } from '@/hooks/use-material-orders';
 import { useBuyerOrders } from '@/hooks/use-buyer-orders';
+import { useMode } from '@/lib/mode-context';
 import {
   ArrowRight,
   AlertTriangle,
@@ -181,12 +182,17 @@ function formatSlaStage(stage: string | null | undefined): string {
   return 'Grafikā';
 }
 
-
 function QuickStat({ value, label, alert }: { value: string; label: string; alert?: boolean }) {
   return (
-    <div className="flex flex-col">
-      <span className={`text-3xl sm:text-4xl font-semibold tracking-tight ${alert ? 'text-amber-600' : 'text-foreground'}`}>{value}</span>
-      <span className="text-[11px] sm:text-xs font-medium text-muted-foreground mt-1 uppercase tracking-wider">{label}</span>
+    <div
+      className={`flex flex-col justify-center bg-card border ${alert ? 'border-foreground text-foreground shadow-sm' : 'border-border'} rounded-xl p-5 hover:border-foreground/30 hover:shadow-md transition-all duration-200`}
+    >
+      <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+        {label}
+      </span>
+      <span className={`text-3xl sm:text-4xl font-bold tracking-tight text-foreground`}>
+        {value}
+      </span>
     </div>
   );
 }
@@ -208,7 +214,8 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
   const [readinessLoading, setReadinessLoading] = useState(false);
   const [exceptionsLoading, setExceptionsLoading] = useState(false);
   const [exceptions, setExceptions] = useState<ApiTransportJobException[]>([]);
-  const [exceptionType, setExceptionType] = useState<(typeof EXCEPTION_TYPE_OPTIONS)[number]['value']>('OTHER');
+  const [exceptionType, setExceptionType] =
+    useState<(typeof EXCEPTION_TYPE_OPTIONS)[number]['value']>('OTHER');
   const [exceptionNotes, setExceptionNotes] = useState('');
   const [reportingException, setReportingException] = useState(false);
   const [resolvingExceptionId, setResolvingExceptionId] = useState<string | null>(null);
@@ -314,9 +321,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
     setResolvingExceptionId(exceptionId);
     try {
       const resolved = await resolveTransportJobException(job.id, exceptionId, resolution, token);
-      setExceptions((prev) =>
-        prev.map((item) => (item.id === exceptionId ? resolved : item)),
-      );
+      setExceptions((prev) => prev.map((item) => (item.id === exceptionId ? resolved : item)));
       setResolutionById((prev) => ({ ...prev, [exceptionId]: '' }));
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : 'Neizdevās atrisināt izņēmumu');
@@ -736,20 +741,22 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
               </div>
 
               {/* Exceptions widget */}
-              <div className="bg-amber-50/50 border border-amber-200/50 rounded-3xl p-5 space-y-4 shadow-sm">
-                <div className="flex items-center justify-between gap-2">
+              <div className="pt-6 mt-6 border-t border-border">
+                <div className="flex items-center justify-between gap-2 mb-4">
                   <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-700" />
-                    <h3 className="text-sm font-bold text-amber-800 uppercase tracking-wide">
-                      Izņēmumi
+                    <AlertTriangle className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="text-base font-semibold text-foreground">
+                      Problēmas / Izņēmumi
                     </h3>
                   </div>
-                  <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800">
-                    {openExceptions.length} atvērti
-                  </span>
+                  {openExceptions.length > 0 ? (
+                    <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">
+                      {openExceptions.length} atvērti
+                    </span>
+                  ) : null}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-[220px,1fr,auto] gap-2">
+                <div className="flex flex-col sm:flex-row gap-3 mb-6">
                   <select
                     value={exceptionType}
                     onChange={(e) =>
@@ -757,7 +764,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
                         e.target.value as (typeof EXCEPTION_TYPE_OPTIONS)[number]['value'],
                       )
                     }
-                    className="h-10 rounded-lg border px-3 text-sm bg-white"
+                    className="h-11 rounded-lg border-transparent bg-muted/40 px-4 transition-all outline-none focus-visible:bg-transparent focus-visible:ring-2 focus-visible:ring-ring/50 sm:w-55 text-sm"
                   >
                     {EXCEPTION_TYPE_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -769,12 +776,12 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
                     value={exceptionNotes}
                     onChange={(e) => setExceptionNotes(e.target.value)}
                     placeholder="Aprakstiet situāciju dispečeram"
-                    className="h-10 rounded-lg border px-3 text-sm"
+                    className="h-11 flex-1 rounded-lg border-transparent bg-muted/40 px-4 transition-all outline-none focus-visible:bg-transparent focus-visible:ring-2 focus-visible:ring-ring/50 text-sm"
                   />
                   <Button
                     type="button"
-                    variant="outline"
-                    className="h-10"
+                    variant="default"
+                    className="h-11"
                     onClick={handleReportException}
                     disabled={reportingException}
                   >
@@ -783,9 +790,14 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
                 </div>
 
                 {exceptionsLoading ? (
-                  <p className="text-xs text-muted-foreground">Ielādē izņēmumus...</p>
+                  <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-border bg-muted/10">
+                    <p className="text-sm text-muted-foreground">Ielādē izņēmumus...</p>
+                  </div>
                 ) : exceptions.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">Pašlaik nav reģistrētu izņēmumu.</p>
+                  <div className="flex flex-col h-32 items-center justify-center rounded-xl border border-dashed border-border bg-muted/5 gap-2">
+                     <AlertTriangle className="h-6 w-6 text-muted-foreground/30" />
+                    <p className="text-sm text-muted-foreground">Pašlaik nav reģistrētu problēmu.</p>
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     {exceptions.map((item) => {
@@ -793,21 +805,21 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
                       return (
                         <div
                           key={item.id}
-                          className="rounded-xl border border-gray-200 bg-gray-50 p-3 space-y-2"
+                          className="rounded-xl border border-border bg-background p-4 space-y-3 shadow-sm"
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <p className="text-xs font-semibold text-gray-800">{item.type}</p>
+                            <p className="text-sm font-semibold text-foreground">{item.type}</p>
                             <span
-                              className={`text-[10px] font-bold ${
-                                isOpen ? 'text-amber-700' : 'text-emerald-700'
+                              className={`rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wider ${
+                                isOpen ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'
                               }`}
                             >
                               {isOpen ? 'ATVĒRTS' : 'ATRISINĀTS'}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-600">{item.notes}</p>
+                          <p className="text-sm text-muted-foreground">{item.notes}</p>
                           {isOpen && (
-                            <div className="grid grid-cols-1 sm:grid-cols-[1fr,auto] gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2 mt-2 pt-3 border-t border-border/50">
                               <input
                                 value={resolutionById[item.id] ?? ''}
                                 onChange={(e) =>
@@ -817,12 +829,12 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
                                   }))
                                 }
                                 placeholder="Atrisinājuma komentārs"
-                                className="h-9 rounded-lg border px-3 text-xs"
+                                className="h-10 flex-1 rounded-lg border-transparent bg-muted/40 px-3 text-sm transition-all outline-none focus-visible:bg-transparent focus-visible:ring-2 focus-visible:ring-ring/50"
                               />
                               <Button
                                 type="button"
-                                variant="outline"
-                                className="h-9 text-xs"
+                                variant="secondary"
+                                className="h-10"
                                 onClick={() => handleResolveException(item.id)}
                                 disabled={resolvingExceptionId === item.id}
                               >
@@ -908,9 +920,12 @@ function CarrierHistoryView({ token }: { token: string }) {
   return (
     <div className="space-y-4">
       {/* QUICK STATS */}
-      <div className="flex items-center gap-8 sm:gap-12 py-2 overflow-x-auto no-scrollbar">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 py-2 mt-4">
         <QuickStat value={String(jobs.length)} label="Kopā darbi" />
-        <QuickStat value={String(jobs.filter((j) => ACTIVE.includes(j.status)).length)} label="Aktīvie" />
+        <QuickStat
+          value={String(jobs.filter((j) => ACTIVE.includes(j.status)).length)}
+          label="Aktīvie"
+        />
         <QuickStat value={`${totalTonnes.toFixed(1)} t`} label="Tonnas tranzītā" />
         <QuickStat value={fmtMoney(totalEarnings)} label="Nopelnīts" />
       </div>
@@ -976,20 +991,20 @@ function CarrierHistoryView({ token }: { token: string }) {
               bg: '#f3f4f6',
               text: '#374151',
             };
-            const weightTStr = job.cargoWeight
-              ? `${(job.cargoWeight / 1000).toFixed(2)} t`
-              : '—';
+            const weightTStr = job.cargoWeight ? `${(job.cargoWeight / 1000).toFixed(2)} t` : '—';
             return (
               <Link
                 key={job.id}
                 href={`/dashboard/orders/${job.id}`}
-                className="group block relative rounded-2xl bg-transparent hover:bg-muted/40 active:bg-muted/60 transition-all duration-200 py-4 sm:p-5 -mx-2 sm:-mx-4"
+                className="group block relative bg-card border border-border rounded-xl p-4 sm:p-5 mb-3 hover:border-foreground/30 hover:shadow-sm transition-all duration-200"
               >
                 {/* Meta Top Row */}
                 <div className="flex justify-between items-start mb-5">
                   <div>
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <p className="font-mono font-bold text-[11px] text-muted-foreground border bg-muted/30 rounded px-1.5 py-0.5 uppercase tracking-wide">#{job.jobNumber}</p>
+                      <p className="font-mono font-bold text-[11px] text-muted-foreground border bg-muted/30 rounded px-1.5 py-0.5 uppercase tracking-wide">
+                        #{job.jobNumber}
+                      </p>
                       <StatusBadgeHex cfg={st} />
                     </div>
                     <h3 className="text-xl font-bold tracking-tight text-foreground">
@@ -1011,27 +1026,35 @@ function CarrierHistoryView({ token }: { token: string }) {
 
                 {/* Timeline Route */}
                 <div className="flex items-start my-5 bg-muted/20 rounded-xl p-4 border border-border/30">
-                  <div className="flex flex-col items-center mr-4 mt-[6px]">
-                    <div className="w-[8px] h-[8px] rounded-full bg-foreground z-10 shrink-0" />
-                    <div className="w-[1px] h-[22px] bg-foreground opacity-20 shrink-0" />
-                    <div className="w-[8px] h-[8px] rounded-[1px] bg-foreground z-10 shrink-0" />
+                  <div className="flex flex-col items-center mr-4 mt-1.5">
+                    <div className="w-2 h-2 rounded-full bg-foreground z-10 shrink-0" />
+                    <div className="w-px h-5.5 bg-foreground opacity-20 shrink-0" />
+                    <div className="w-2 h-2 rounded-[1px] bg-foreground z-10 shrink-0" />
                   </div>
-                  <div className="flex flex-col gap-[12px] flex-1">
+                  <div className="flex flex-col gap-3 flex-1">
                     <div className="flex items-center justify-between">
-                       <p className="text-[15px] font-semibold leading-none">{job.pickupCity}</p>
-                       <span className="text-xs font-semibold text-muted-foreground bg-white border shadow-sm rounded-md px-2 py-1">{fmtDate(job.pickupDate)}</span>
+                      <p className="text-[15px] font-semibold leading-none">{job.pickupCity}</p>
+                      <span className="text-xs font-semibold text-muted-foreground bg-white border shadow-sm rounded-md px-2 py-1">
+                        {fmtDate(job.pickupDate)}
+                      </span>
                     </div>
-                    <p className="text-[15px] font-semibold leading-none text-muted-foreground">{job.deliveryCity}</p>
+                    <p className="text-[15px] font-semibold leading-none text-muted-foreground">
+                      {job.deliveryCity}
+                    </p>
                   </div>
                 </div>
 
                 {/* Vehicle & assignment footer */}
                 {job.vehicle && (
-                   <div className="pt-2 flex items-center justify-between">
+                  <div className="pt-2 flex items-center justify-between">
                     <div className="flex items-center gap-2 bg-muted/50 rounded-full px-3 py-1.5 border border-border/50">
                       <Truck className="size-3.5 text-muted-foreground" />
-                      <span className="text-xs font-bold text-foreground">{job.vehicle.licensePlate}</span>
-                      <span className="text-[11px] font-medium text-muted-foreground uppercase">{job.vehicle.vehicleType}</span>
+                      <span className="text-xs font-bold text-foreground">
+                        {job.vehicle.licensePlate}
+                      </span>
+                      <span className="text-[11px] font-medium text-muted-foreground uppercase">
+                        {job.vehicle.vehicleType}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1 text-[13px] font-semibold text-primary">
                       Sekot darbam
@@ -1131,7 +1154,7 @@ function SupplierView({ token }: { token: string }) {
   return (
     <div className="space-y-4">
       {/* QUICK STATS */}
-      <div className="flex items-center gap-8 sm:gap-12 py-2 overflow-x-auto no-scrollbar">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 py-2 mt-4">
         <QuickStat value={String(orders.length)} label="Kopā pasūtījumi" />
         <QuickStat value={String(pending)} label="Gaida apstiprinājumu" alert={pending > 0} />
         <QuickStat value={fmtMoney(revenue)} label="Kopā ieņēmumi" />
@@ -1174,7 +1197,9 @@ function SupplierView({ token }: { token: string }) {
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
             <span>{orders.length} pasūtījumi</span>
-            <span className="font-medium text-foreground">Kopā: {fmtMoney(orders.reduce((s, o) => s + o.total, 0))}</span>
+            <span className="font-medium text-foreground">
+              Kopā: {fmtMoney(orders.reduce((s, o) => s + o.total, 0))}
+            </span>
           </div>
           {orders.map((order) => {
             const st = ORDER_STATUS[order.status] ?? {
@@ -1188,10 +1213,10 @@ function SupplierView({ token }: { token: string }) {
             return (
               <div
                 key={order.id}
-                className="group block relative rounded-2xl bg-transparent hover:bg-muted/40 active:bg-muted/60 transition-all duration-200 py-1 sm:p-2 -mx-2 sm:-mx-4"
+                className="group block relative bg-card border border-border rounded-xl p-4 sm:p-5 mb-3 hover:border-foreground/30 hover:shadow-sm transition-all duration-200"
               >
                 {/* Header row */}
-                <div className="flex items-center justify-between px-4 py-2 sm:px-5 pb-1">
+                <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/50">
                   <div className="flex items-center gap-3">
                     <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
                       #{order.orderNumber}
@@ -1208,13 +1233,11 @@ function SupplierView({ token }: { token: string }) {
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-black/[0.04] p-4 sm:p-5 gap-4 sm:gap-6">
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-2">
                   {/* Material Info */}
                   <div className="flex-1 space-y-1">
                     <div className="flex items-baseline justify-between mb-2">
-                      <h3 className="font-medium text-base">
-                        {item?.material?.name ?? '—'}
-                      </h3>
+                      <h3 className="font-medium text-base">{item?.material?.name ?? '—'}</h3>
                       {item && (
                         <span className="text-sm font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md">
                           {item.quantity} {item.unit}
@@ -1222,20 +1245,18 @@ function SupplierView({ token }: { token: string }) {
                       )}
                     </div>
                     {item?.material?.category && (
-                      <p className="text-sm text-muted-foreground">
-                        {item.material.category}
-                      </p>
+                      <p className="text-sm text-muted-foreground">{item.material.category}</p>
                     )}
                   </div>
 
                   {/* Route & Contact Timeline */}
                   <div className="flex-[1.5] space-y-4">
                     <div className="relative pl-6">
-                      <div className="absolute left-[11px] top-2 bottom-[-16px] w-[1px] bg-black/10" />
+                      <div className="absolute left-2.75 top-2 -bottom-4 w-px bg-black/10" />
 
                       {/* Buyer */}
                       <div className="relative mb-4">
-                        <div className="absolute left-[-24px] top-1.5 size-2 rounded-full bg-blue-500 ring-4 ring-white" />
+                        <div className="absolute -left-6 top-1.5 size-2 rounded-full bg-blue-500 ring-4 ring-white" />
                         <p className="text-xs font-medium text-muted-foreground mb-0.5">Pircējs</p>
                         {order.buyer ? (
                           <div>
@@ -1262,8 +1283,10 @@ function SupplierView({ token }: { token: string }) {
 
                       {/* Delivery */}
                       <div className="relative">
-                        <div className="absolute left-[-24px] top-1.5 size-2 rounded-full border-2 border-emerald-500 bg-white ring-4 ring-white shadow-sm" />
-                        <p className="text-xs font-medium text-muted-foreground mb-0.5">Piegāde • {fmtDate(order.deliveryDate)}</p>
+                        <div className="absolute -left-6 top-1.5 size-2 rounded-full border-2 border-emerald-500 bg-white ring-4 ring-white shadow-sm" />
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">
+                          Piegāde • {fmtDate(order.deliveryDate)}
+                        </p>
                         <p className="text-sm font-medium text-foreground pr-8">
                           {order.deliveryAddress || order.deliveryCity || '—'}
                         </p>
@@ -1341,7 +1364,7 @@ function BuyerView({ token }: { token: string }) {
   return (
     <div className="space-y-4">
       {/* QUICK STATS */}
-      <div className="flex items-center gap-8 sm:gap-12 py-2 overflow-x-auto no-scrollbar">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 py-2 mt-4">
         <QuickStat value={String(skipOrders.length)} label="Konteineri" />
         <QuickStat value={String(matOrders.length)} label="Materiāli" />
         <QuickStat value={fmtMoney(totalSpent)} label="Kopā iztērēts" />
@@ -1392,7 +1415,7 @@ function BuyerView({ token }: { token: string }) {
               </p>
             </div>
             <Link
-              href="/dashboard/skip-hire"
+              href="/dashboard/order/skip-hire"
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl px-5 py-2.5 text-sm transition-colors"
             >
               <Trash2 className="h-4 w-4" />
@@ -1413,10 +1436,10 @@ function BuyerView({ token }: { token: string }) {
               return (
                 <div
                   key={o.id}
-                  className="group block relative rounded-2xl bg-transparent hover:bg-muted/40 active:bg-muted/60 transition-all duration-200 py-1 sm:p-2 -mx-2 sm:-mx-4"
+                  className="group block relative bg-card border border-border rounded-xl p-4 sm:p-5 mb-3 hover:border-foreground/30 hover:shadow-sm transition-all duration-200"
                 >
                   {/* Header row */}
-                  <div className="flex items-center justify-between px-4 py-2 sm:px-5 pb-1">
+                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/50">
                     <div className="flex items-center gap-3">
                       <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
                         #{o.orderNumber}
@@ -1430,7 +1453,7 @@ function BuyerView({ token }: { token: string }) {
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-black/[0.04] p-4 sm:p-5 gap-4 sm:gap-6">
+                  <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-2">
                     {/* Skip Info */}
                     <div className="flex-1 space-y-1">
                       <div className="flex items-baseline justify-between mb-2">
@@ -1446,12 +1469,14 @@ function BuyerView({ token }: { token: string }) {
                     {/* Timeline */}
                     <div className="flex-[1.5] space-y-4">
                       <div className="relative pl-6">
-                        <div className="absolute left-[11px] top-2 bottom-2 w-[1px] bg-black/10" />
-                        
+                        <div className="absolute left-2.75 top-2 bottom-2 w-px bg-black/10" />
+
                         {/* Delivery */}
                         <div className="relative">
-                          <div className="absolute left-[-24px] top-1.5 size-2 rounded-full border-2 border-emerald-500 bg-white ring-4 ring-white shadow-sm" />
-                          <p className="text-xs font-medium text-muted-foreground mb-0.5">Adrese • {fmtDate(o.deliveryDate)}</p>
+                          <div className="absolute -left-6 top-1.5 size-2 rounded-full border-2 border-emerald-500 bg-white ring-4 ring-white shadow-sm" />
+                          <p className="text-xs font-medium text-muted-foreground mb-0.5">
+                            Adrese • {fmtDate(o.deliveryDate)}
+                          </p>
                           <p className="text-sm font-medium text-foreground pr-8">
                             {o.location || '—'}
                           </p>
@@ -1513,10 +1538,10 @@ function BuyerView({ token }: { token: string }) {
             return (
               <div
                 key={o.id}
-                className="group block relative rounded-2xl bg-transparent hover:bg-muted/40 active:bg-muted/60 transition-all duration-200 py-1 sm:p-2 -mx-2 sm:-mx-4"
+                className="group block relative bg-card border border-border rounded-xl p-4 sm:p-5 mb-3 hover:border-foreground/30 hover:shadow-sm transition-all duration-200"
               >
                 {/* Header row */}
-                <div className="flex items-center justify-between px-4 py-2 sm:px-5 pb-1">
+                <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/50">
                   <div className="flex items-center gap-3">
                     <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
                       #{o.orderNumber}
@@ -1530,13 +1555,11 @@ function BuyerView({ token }: { token: string }) {
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-black/[0.04] p-4 sm:p-5 gap-4 sm:gap-6">
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-2">
                   {/* Material Info */}
                   <div className="flex-1 space-y-1">
                     <div className="flex items-baseline justify-between mb-2">
-                      <h3 className="font-medium text-base">
-                        {item?.material?.name ?? '—'}
-                      </h3>
+                      <h3 className="font-medium text-base">{item?.material?.name ?? '—'}</h3>
                       {item && (
                         <span className="text-sm font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md">
                           {item.quantity} {item.unit}
@@ -1548,12 +1571,14 @@ function BuyerView({ token }: { token: string }) {
                   {/* Timeline */}
                   <div className="flex-[1.5] space-y-4">
                     <div className="relative pl-6">
-                      <div className="absolute left-[11px] top-2 bottom-2 w-[1px] bg-black/10" />
-                      
+                      <div className="absolute left-2.75 top-2 bottom-2 w-px bg-black/10" />
+
                       {/* Delivery */}
                       <div className="relative">
-                        <div className="absolute left-[-24px] top-1.5 size-2 rounded-full border-2 border-emerald-500 bg-white ring-4 ring-white shadow-sm" />
-                        <p className="text-xs font-medium text-muted-foreground mb-0.5">Adrese • {fmtDate(o.deliveryDate)}</p>
+                        <div className="absolute -left-6 top-1.5 size-2 rounded-full border-2 border-emerald-500 bg-white ring-4 ring-white shadow-sm" />
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">
+                          Adrese • {fmtDate(o.deliveryDate)}
+                        </p>
                         <p className="text-sm font-medium text-foreground pr-8">
                           {o.deliveryAddress || o.deliveryCity || '—'}
                         </p>
@@ -1592,9 +1617,7 @@ function BuyerView({ token }: { token: string }) {
                   <div className="flex-1 flex flex-col justify-between pt-4 sm:pt-0">
                     <div className="flex flex-row sm:flex-col justify-between sm:justify-start items-center sm:items-end gap-1">
                       <span className="text-sm text-muted-foreground sm:text-right">Summa</span>
-                      <div className="text-lg font-bold tabular-nums">
-                        {fmtMoney(o.total)}
-                      </div>
+                      <div className="text-lg font-bold tabular-nums">{fmtMoney(o.total)}</div>
                     </div>
                   </div>
                 </div>
@@ -1611,13 +1634,14 @@ function BuyerView({ token }: { token: string }) {
 
 export default function OrdersPage() {
   const { user, token } = useRequireAuth();
+  const { activeMode } = useMode();
 
   if (!token || !user) {
     return <div className="p-8 text-center text-muted-foreground text-sm">Ielādē...</div>;
   }
 
-  const isCarrier = user.canTransport || user.userType === 'CARRIER';
-  const isSupplier = user.canSell || user.userType === 'SUPPLIER';
+  const isCarrier = activeMode === 'CARRIER';
+  const isSupplier = activeMode === 'SUPPLIER';
 
   const title = isCarrier ? 'Mani Darbi' : isSupplier ? 'Ienākošie Pasūtījumi' : 'Mani Pasūtījumi';
 
@@ -1628,7 +1652,7 @@ export default function OrdersPage() {
       : 'Jūsu konteineru un materiālu pasūtījumi reāllaikā';
 
   return (
-    <div className="w-full h-full p-4 sm:p-6 lg:p-8 pb-20 space-y-8 max-w-[1400px] mx-auto">
+    <div className="w-full h-full pb-20 space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">{title}</h1>

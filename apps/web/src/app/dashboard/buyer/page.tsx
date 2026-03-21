@@ -126,7 +126,7 @@ export default function BuyerDashboardPage() {
   ];
 
   return (
-    <div className="w-full h-full p-4 sm:p-6 lg:p-8 pb-20 space-y-10">
+    <div className="w-full h-full pb-20 space-y-10">
       
       {/* HEADER SECTION */}
       <div className="space-y-6">

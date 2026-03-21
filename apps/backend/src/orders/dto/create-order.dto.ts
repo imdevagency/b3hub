@@ -31,8 +31,9 @@ export class CreateOrderDto {
   @IsEnum(OrderType)
   orderType: OrderType;
 
+  @IsOptional()
   @IsString()
-  buyerId: string;
+  buyerId?: string;
 
   @IsString()
   deliveryAddress: string;

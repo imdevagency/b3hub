@@ -21,13 +21,13 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -143,14 +143,14 @@ function InviteDialog({ open, onClose, onInvited, token, canInviteManager }: Inv
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Pievienot darbinieku</DialogTitle>
-          <DialogDescription>
+    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent className="sm:max-w-md w-[90vw] sm:w-[400px]">
+        <SheetHeader>
+          <SheetTitle>Pievienot darbinieku</SheetTitle>
+          <SheetDescription>
             Izveidojiet kontu jaunam komandas loceklim. Pagaidu parole tiks parādīta vienu reizi.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-1">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -244,7 +244,7 @@ function InviteDialog({ open, onClose, onInvited, token, canInviteManager }: Inv
             </p>
           )}
 
-          <DialogFooter>
+          <SheetFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
               Atcelt
             </Button>
@@ -252,10 +252,10 @@ function InviteDialog({ open, onClose, onInvited, token, canInviteManager }: Inv
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Pievienot
             </Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -279,21 +279,21 @@ function TempPwdDialog({ open, member, password, onClose }: TempPwdDialogProps) 
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent className="sm:sm:max-w-md w-[90vw] sm:w-[400px] w-[90vw] sm:w-[400px]">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-green-600" />
             Darbinieks pievienots!
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             Nosūtiet šo pagaidu paroli darbiniekam{' '}
             <strong>
               {member?.firstName} {member?.lastName}
             </strong>
             . Parole tiks parādīta tikai vienu reizi.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
         <div className="bg-muted rounded-md p-3 flex items-center justify-between gap-2 font-mono text-sm">
           <span className="select-all">{password}</span>
           <Button
@@ -315,11 +315,11 @@ function TempPwdDialog({ open, member, password, onClose }: TempPwdDialogProps) 
             Pieteikšanās e-pasts: <strong>{member.email}</strong>
           </p>
         )}
-        <DialogFooter>
+        <SheetFooter>
           <Button onClick={onClose}>Aizvērt</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -376,14 +376,14 @@ function EditDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Rediģēt dalībnieku</DialogTitle>
-          <DialogDescription>
+    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent className="sm:sm:max-w-md w-[90vw] sm:w-[400px] w-[90vw] sm:w-[400px]">
+        <SheetHeader>
+          <SheetTitle>Rediģēt dalībnieku</SheetTitle>
+          <SheetDescription>
             {member?.firstName} {member?.lastName}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
         <div className="space-y-4 pt-1">
           <div className="space-y-1.5">
             <Label>Loma</Label>
@@ -432,7 +432,7 @@ function EditDialog({
             </p>
           )}
         </div>
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Atcelt
           </Button>
@@ -440,9 +440,9 @@ function EditDialog({
             {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Saglabāt
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -665,25 +665,25 @@ export default function CompanyTeamPage() {
       />
 
       {/* Remove confirmation dialog */}
-      <Dialog open={!!removeTarget} onOpenChange={(v) => !v && setRemoveTarget(null)}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Noņemt no komandas?</DialogTitle>
-            <DialogDescription>
+      <Sheet open={!!removeTarget} onOpenChange={(v) => !v && setRemoveTarget(null)}>
+        <SheetContent className="sm:sm:max-w-md w-[90vw] sm:w-[400px] w-[90vw] sm:w-[400px]">
+          <SheetHeader>
+            <SheetTitle>Noņemt no komandas?</SheetTitle>
+            <SheetDescription>
               Vai tiešām vēlaties noņemt{' '}
               <strong>
                 {removeTarget?.firstName} {removeTarget?.lastName}
               </strong>{' '}
               no komandas? Viņu konts tiks deaktivizēts.
-            </DialogDescription>
-          </DialogHeader>
+            </SheetDescription>
+          </SheetHeader>
           {removeErr && (
             <p className="text-sm text-red-600 flex items-center gap-1">
               <AlertCircle className="h-4 w-4" />
               {removeErr}
             </p>
           )}
-          <DialogFooter>
+          <SheetFooter>
             <Button variant="outline" onClick={() => setRemoveTarget(null)} disabled={removing}>
               Atcelt
             </Button>
@@ -691,9 +691,9 @@ export default function CompanyTeamPage() {
               {removing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Noņemt
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

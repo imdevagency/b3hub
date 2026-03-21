@@ -11,13 +11,12 @@ export const MODE_HOME: Record<AppMode, string> = {
 
 /** Derive the best default mode from the user's role flags. */
 function defaultModeForUser(
-  user: { userType: string; canSell: boolean; canTransport: boolean } | null,
+  user: { canSell: boolean; canTransport: boolean } | null,
 ): AppMode {
   if (!user) return 'buyer';
-  // Pure carrier / driver-only user
-  if (user.userType === 'CARRIER' || (user.canTransport && !user.canSell)) return 'driver';
-  // Pure supplier / seller-only user
-  if (user.userType === 'SUPPLIER' || (user.canSell && !user.canTransport)) return 'seller';
+  // Capability flags are canonical for seller/driver access.
+  if (user.canTransport && !user.canSell) return 'driver';
+  if (user.canSell && !user.canTransport) return 'seller';
   return 'buyer';
 }
 

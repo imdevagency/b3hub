@@ -21,7 +21,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { CheckCircle, MapPin, Camera, Trash2 } from 'lucide-react-native';
+import { MapPin, Camera, Trash2 } from 'lucide-react-native';
 import { useOrder } from '@/lib/order-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -66,8 +66,6 @@ export default function OrderWizard() {
   const [selectedSize, setSelectedSizeState] = useState<SkipSize | null>(state.skipSize);
   const [selectedDay, setSelectedDay] = useState<string>(toISO(addDays(today, 1)));
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [jobNumber, setJobNumber] = useState('');
   const [contactName, setContactName] = useState(() =>
     `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
   );
@@ -221,25 +219,6 @@ export default function OrderWizard() {
     3: t.skipHire.step3.title,
     4: t.skipHire.step4.title,
   };
-
-  // ── Success screen ────────────────────────────────────────────
-  if (success) {
-    return (
-      <View style={s.successRoot}>
-        <CheckCircle size={72} color="#22c55e" />
-        <Text style={s.successTitle}>Pasūtījums pieņemts!</Text>
-        <Text style={s.successSub}>Mēs sazināsimies drīzumā</Text>
-        {jobNumber ? (
-          <View style={s.jobBadge}>
-            <Text style={s.jobBadgeText}>#{jobNumber}</Text>
-          </View>
-        ) : null}
-        <TouchableOpacity style={s.successBtn} onPress={() => router.replace('/(buyer)/orders')}>
-          <Text style={s.successBtnText}>Skatīt pasūtījumus</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
 
   return (
     <>

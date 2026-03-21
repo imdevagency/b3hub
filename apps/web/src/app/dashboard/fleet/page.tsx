@@ -30,7 +30,7 @@ const FleetMap = dynamic(
     ssr: false,
     loading: () => (
       <div
-        className="rounded-2xl border border-slate-200 bg-slate-100 animate-pulse"
+        className="rounded-2xl border border-border bg-muted animate-pulse"
         style={{ height: 520 }}
       />
     ),
@@ -42,57 +42,57 @@ const FleetMap = dynamic(
 const STATUS_CONFIG: Record<string, { label: string; dot: string; text: string; bg: string }> = {
   AVAILABLE: {
     label: 'Nepiešķirts',
-    dot: 'bg-amber-400',
-    text: 'text-amber-700',
-    bg: 'bg-amber-50  border-amber-200',
+    dot: 'bg-muted-foreground/40',
+    text: 'text-muted-foreground',
+    bg: 'bg-muted/30 border-transparent',
   },
   ACCEPTED: {
     label: 'Pieņemts',
-    dot: 'bg-blue-400',
-    text: 'text-blue-700',
-    bg: 'bg-blue-50   border-blue-200',
+    dot: 'bg-foreground',
+    text: 'text-foreground',
+    bg: 'bg-background border-border shadow-sm',
   },
   EN_ROUTE_PICKUP: {
     label: 'Brauc uz iekr.',
-    dot: 'bg-blue-500',
-    text: 'text-blue-700',
-    bg: 'bg-blue-50   border-blue-200',
+    dot: 'bg-foreground',
+    text: 'text-foreground',
+    bg: 'bg-background border-border shadow-sm',
   },
   AT_PICKUP: {
     label: 'Iekraušana',
-    dot: 'bg-orange-400',
-    text: 'text-orange-700',
-    bg: 'bg-orange-50 border-orange-200',
+    dot: 'bg-foreground',
+    text: 'text-foreground',
+    bg: 'bg-background border-border shadow-sm',
   },
   LOADED: {
     label: 'Iekrauts',
-    dot: 'bg-orange-500',
-    text: 'text-orange-700',
-    bg: 'bg-orange-50 border-orange-200',
+    dot: 'bg-foreground',
+    text: 'text-foreground',
+    bg: 'bg-background border-border shadow-sm',
   },
   EN_ROUTE_DELIVERY: {
     label: 'Ceļā',
-    dot: 'bg-green-500',
-    text: 'text-green-700',
-    bg: 'bg-green-50  border-green-200',
+    dot: 'bg-foreground',
+    text: 'text-foreground',
+    bg: 'bg-background border-border shadow-sm',
   },
   AT_DELIVERY: {
     label: 'Izkraušana',
-    dot: 'bg-green-600',
-    text: 'text-green-700',
-    bg: 'bg-green-50  border-green-200',
+    dot: 'bg-foreground',
+    text: 'text-foreground',
+    bg: 'bg-background border-border shadow-sm',
   },
   DELIVERED: {
     label: 'Piegādāts',
-    dot: 'bg-slate-400',
-    text: 'text-slate-600',
-    bg: 'bg-slate-50  border-slate-200',
+    dot: 'bg-muted-foreground/40',
+    text: 'text-muted-foreground',
+    bg: 'bg-muted/30 border-transparent',
   },
   CANCELLED: {
     label: 'Atcelts',
-    dot: 'bg-red-400',
-    text: 'text-red-700',
-    bg: 'bg-red-50    border-red-200',
+    dot: 'bg-destructive',
+    text: 'text-destructive',
+    bg: 'bg-destructive/10 border-destructive/20',
   },
 };
 
@@ -138,9 +138,9 @@ function formatDate(iso: string) {
 function StatusBadge({ status }: { status: string }) {
   const cfg = STATUS_CONFIG[status] ?? {
     label: status,
-    dot: 'bg-gray-400',
-    text: 'text-gray-600',
-    bg: 'bg-gray-50 border-gray-200',
+    dot: 'bg-muted-foreground/40',
+    text: 'text-muted-foreground',
+    bg: 'bg-muted/30 border-transparent',
   };
   return (
     <span
@@ -288,29 +288,29 @@ export default function FleetPage() {
             label: 'Kopā Darbi',
             value: stats.total,
             icon: Truck,
-            color: 'text-slate-600',
-            bg: 'bg-slate-50 border-slate-200',
+            color: 'text-foreground',
+            bg: 'bg-background border-border shadow-sm',
           },
           {
             label: 'Nepiešķirts',
             value: stats.available,
             icon: Clock,
-            color: 'text-amber-600',
-            bg: 'bg-amber-50 border-amber-200',
+            color: 'text-muted-foreground',
+            bg: 'bg-background border-border shadow-sm',
           },
           {
             label: 'Ceļā',
             value: stats.active,
             icon: MapPin,
-            color: 'text-green-600',
-            bg: 'bg-green-50 border-green-200',
+            color: 'text-foreground',
+            bg: 'bg-background border-foreground text-foreground shadow-sm',
           },
           {
             label: 'Piegādāts Šodien',
             value: stats.delivered,
             icon: CheckCircle2,
-            color: 'text-blue-600',
-            bg: 'bg-blue-50 border-blue-200',
+            color: 'text-muted-foreground',
+            bg: 'bg-background border-border shadow-sm',
           },
         ].map((s) => (
           <div key={s.label} className={`rounded-xl border p-4 ${s.bg}`}>
@@ -368,9 +368,9 @@ export default function FleetPage() {
       {/* Jobs table — list mode only */}
       {viewMode === 'list' &&
         (error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
-            <AlertCircle className="mx-auto mb-2 h-8 w-8 text-red-400" />
-            <p className="text-sm font-medium text-red-700">{error}</p>
+          <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-6 text-center">
+            <AlertCircle className="mx-auto mb-2 h-8 w-8 text-destructive" />
+            <p className="text-sm font-medium text-destructive">{error}</p>
             <Button variant="outline" size="sm" className="mt-3" onClick={fetchJobs}>
               Mēģināt vēlreiz
             </Button>
@@ -455,7 +455,7 @@ export default function FleetPage() {
                       ) : (
                         <button
                           onClick={() => router.push('/dashboard/jobs')}
-                          className="text-xs font-medium text-amber-600 hover:text-amber-700 hover:underline"
+                          className="text-xs font-semibold text-foreground underline hover:no-underline"
                         >
                           + Piešķirt šoferi
                         </button>

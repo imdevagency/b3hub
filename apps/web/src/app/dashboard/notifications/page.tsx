@@ -12,14 +12,12 @@ import {
   Truck,
   CreditCard,
   AlertCircle,
-  MessageSquare,
   RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   getNotifications,

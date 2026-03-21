@@ -16,7 +16,6 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/ui/page-header';
 import { useAuth } from '@/lib/auth-context';
 import {
   getMyQuoteRequests,
@@ -292,7 +291,7 @@ function RequestCard({ request, onAccept }: RequestCardProps) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+    <div className="bg-white rounded-2xl ring-1 ring-black/5 overflow-hidden transition-all hover:ring-black/10 hover:shadow-md">
       {/* Header */}
       <div
         className="flex items-start gap-4 p-5 cursor-pointer hover:bg-slate-50/50 transition-colors"
@@ -416,7 +415,6 @@ export default function QuoteRequestsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const safeRequests = Array.isArray(requests) ? requests : [];
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -454,28 +452,29 @@ export default function QuoteRequestsPage() {
   const pending = requests.filter((r) => r.status === 'PENDING' || r.status === 'QUOTED').length;
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      {/* Header */}
-      <PageHeader
-        title="Cenu Pieprasījumi"
-        description="Pieprasiet cenas no piegādātājiem un salīdziniet piedāvājumus"
-        action={
-          <div className="flex items-center gap-2">
+      <div className="w-full h-full pb-20 space-y-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 mb-2">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Cenu Pieprasījumi</h1>
+            <p className="text-muted-foreground mt-1">
+              Pieprasiet cenas no piegādātājiem un salīdziniet piedāvājumus
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-              <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
-              Atjaunot
+              <RefreshCw className={`h-4 w-4 mr-0 sm:mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Atjaunot</span>
             </Button>
             <Button size="sm" onClick={() => setShowModal(true)}>
               <Plus className="h-4 w-4 mr-1.5" />
               Jauns Pieprasījums
             </Button>
           </div>
-        }
-      />
-
+        </div>
       {/* Stats */}
       {requests.length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { label: 'Kopā', value: requests.length, color: 'text-slate-700' },
             { label: 'Aktīvie', value: pending, color: 'text-amber-600' },
@@ -485,15 +484,14 @@ export default function QuoteRequestsPage() {
               color: 'text-green-600',
             },
           ].map((s) => (
-            <div key={s.label} className="rounded-xl border bg-white p-4">
-              <p className="text-xs text-muted-foreground">{s.label}</p>
-              <p className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
+            <div key={s.label} className="rounded-2xl ring-1 ring-black/5 bg-white p-5 shadow-sm">
+              <p className="text-sm font-medium text-muted-foreground mb-1">{s.label}</p>
+              <p className={`text-3xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
             </div>
           ))}
         </div>
       )}
 
-      {/* List */}
       {loading ? (
         <div className="flex h-40 items-center justify-center">
           <div className="h-7 w-7 animate-spin rounded-full border-b-2 border-primary" />
@@ -518,7 +516,7 @@ export default function QuoteRequestsPage() {
           </Button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {requests.map((r) => (
             <RequestCard key={r.id} request={r} onAccept={handleAccept} />
           ))}

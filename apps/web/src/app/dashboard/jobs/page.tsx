@@ -23,7 +23,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PageHeader } from '@/components/ui/page-header';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth-context';
 import {
@@ -380,34 +379,34 @@ export default function JobsPage() {
   return (
     <div className="space-y-6">
       {/* Page header */}
-      <PageHeader
-        title="Job Board"
-        description={`Pieejamie transporta darbi · ${filteredJobs.length} rezultāti`}
-        action={
-          <div className="flex items-center gap-2">
-            <Button size="sm" onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-1.5" />
-              Izveidot Darbu
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-              <RefreshCw className={`h-4 w-4 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
-              Atjaunot
-            </Button>
-            <Button variant={panelOpen ? 'default' : 'outline'} size="sm" onClick={togglePanel}>
-              <SlidersHorizontal className="h-4 w-4 mr-1.5" />
-              Filtri
-              {activeFilter && !panelOpen && (
-                <span className="ml-1.5 h-2 w-2 rounded-full bg-amber-400 inline-block" />
-              )}
-              {panelOpen ? (
-                <ChevronUp className="h-4 w-4 ml-1.5" />
-              ) : (
-                <ChevronDown className="h-4 w-4 ml-1.5" />
-              )}
-            </Button>
-          </div>
-        }
-      />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Job Board</h1>
+          <p className="text-muted-foreground mt-1">Pieejamie transporta darbi · {filteredJobs.length} rezultāti</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Izveidot Darbu
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw className={`h-4 w-4 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
+            Atjaunot
+          </Button>
+          <Button variant={panelOpen ? 'default' : 'outline'} size="sm" onClick={togglePanel}>
+            <SlidersHorizontal className="h-4 w-4 mr-1.5" />
+            Filtri
+            {activeFilter && !panelOpen && (
+              <span className="ml-1.5 h-2 w-2 rounded-full bg-amber-400 inline-block" />
+            )}
+            {panelOpen ? (
+              <ChevronUp className="h-4 w-4 ml-1.5" />
+            ) : (
+              <ChevronDown className="h-4 w-4 ml-1.5" />
+            )}
+          </Button>
+        </div>
+      </div>
 
       {/* Collapsible filter panel */}
       {panelOpen && (

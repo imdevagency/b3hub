@@ -58,19 +58,19 @@ const TYPE_META: Record<
   CONTRACT: {
     label: 'Līgums',
     icon: ScrollText,
-    color: 'text-gray-700',
-    bg: 'bg-gray-100',
+    color: 'text-foreground',
+    bg: 'bg-muted',
   },
   OTHER: {
     label: 'Dokuments',
     icon: File,
-    color: 'text-gray-500',
+    color: 'text-muted-foreground',
     bg: 'bg-gray-50',
   },
 };
 
 const STATUS_BADGE: Record<DocumentStatus, { label: string; classes: string }> = {
-  DRAFT: { label: 'Melnraksts', classes: 'bg-gray-100 text-gray-600' },
+  DRAFT: { label: 'Melnraksts', classes: 'bg-muted text-muted-foreground' },
   ISSUED: { label: 'Izdots', classes: 'bg-blue-100 text-blue-700' },
   SIGNED: { label: 'Parakstīts', classes: 'bg-green-100 text-green-700' },
   ARCHIVED: { label: 'Arhivēts', classes: 'bg-yellow-100 text-yellow-700' },
@@ -96,16 +96,16 @@ export function DocumentCard({ document: doc, onView }: DocumentCardProps) {
   const Icon = meta.icon;
 
   return (
-    <div className="group flex items-start gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:shadow-md hover:border-gray-300">
+    <div className="group flex flex-col sm:flex-row sm:items-center gap-4 rounded-3xl border border-transparent bg-muted/40 p-4 transition-all hover:bg-muted/60 relative">
       {/* Icon badge */}
       <div className={`shrink-0 flex items-center justify-center h-11 w-11 rounded-lg ${meta.bg}`}>
         <Icon className={`h-5 w-5 ${meta.color}`} />
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 pr-4 sm:pr-0">
         <div className="flex items-start justify-between gap-2">
-          <p className="font-semibold text-gray-900 truncate text-sm leading-snug">{doc.title}</p>
+          <p className="font-semibold text-foreground truncate text-sm leading-snug">{doc.title}</p>
           <span
             className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge.classes}`}
           >
@@ -115,7 +115,7 @@ export function DocumentCard({ document: doc, onView }: DocumentCardProps) {
 
         <p className={`text-xs font-medium mt-0.5 ${meta.color}`}>{meta.label}</p>
 
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-gray-400">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-muted-foreground/80">
           <span className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
             {new Date(doc.createdAt).toLocaleDateString('lv-LV', {
@@ -127,21 +127,21 @@ export function DocumentCard({ document: doc, onView }: DocumentCardProps) {
           {doc.issuedBy && <span>{doc.issuedBy}</span>}
           {formatBytes(doc.fileSize) && <span>{formatBytes(doc.fileSize)}</span>}
           {doc.isGenerated && (
-            <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-gray-500 text-[10px]">
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-muted-foreground text-[10px]">
               Automātiski ģenerēts
             </span>
           )}
         </div>
 
-        {doc.notes && <p className="mt-1.5 text-xs text-gray-400 line-clamp-1">{doc.notes}</p>}
+        {doc.notes && <p className="mt-1.5 text-xs text-muted-foreground/80 line-clamp-1">{doc.notes}</p>}
       </div>
 
       {/* Actions */}
-      <div className="shrink-0 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-4 right-4 sm:relative sm:top-auto sm:right-auto shrink-0 flex gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
         <Button
           variant="outline"
           size="sm"
-          className="text-xs h-7 px-2 border-gray-200 hover:text-red-600 hover:border-red-300"
+          className="text-xs h-7 px-2 border-border/40 hover:text-red-600 hover:border-red-300"
           onClick={() => onView(doc)}
         >
           <Eye className="h-3 w-3 mr-1" />
@@ -151,7 +151,7 @@ export function DocumentCard({ document: doc, onView }: DocumentCardProps) {
           <Button
             variant="outline"
             size="sm"
-            className="text-xs h-7 px-2 border-gray-200 hover:text-red-600 hover:border-red-300"
+            className="text-xs h-7 px-2 border-border/40 hover:text-red-600 hover:border-red-300"
             asChild
           >
             <a href={doc.fileUrl} download>

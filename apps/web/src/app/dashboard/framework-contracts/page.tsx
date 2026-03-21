@@ -17,7 +17,6 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
-import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -89,7 +88,7 @@ function ContractCard({ contract }: { contract: ApiFrameworkContract }) {
   const pct = Math.min(contract.totalProgressPct, 100);
 
   return (
-    <Card className="shadow-none border-border/60 hover:border-border transition-colors">
+    <Card className="group cursor-pointer relative overflow-hidden rounded-2xl bg-white transition-all hover:bg-slate-50/50 ring-1 ring-black/5 shadow-sm hover:ring-black/10 hover:shadow-md border-0 h-full flex flex-col">
       <CardHeader className="pb-3 px-5 pt-5">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
           <div className="space-y-1">
@@ -111,7 +110,7 @@ function ContractCard({ contract }: { contract: ApiFrameworkContract }) {
         </div>
       </CardHeader>
 
-      <CardContent className="px-5 pb-5 space-y-4">
+      <CardContent className="flex flex-col flex-1 px-5 pb-5 space-y-4">
         {/* Progress bar */}
         <div>
           <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
@@ -172,14 +171,13 @@ function ContractCard({ contract }: { contract: ApiFrameworkContract }) {
           </div>
         )}
 
-        {/* Stats row */}
-        <div className="flex flex-wrap gap-4 pt-1 border-t border-border/40 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Layers className="h-3.5 w-3.5" />
+        <div className="mt-auto pt-4 flex flex-wrap gap-4 text-xs font-medium text-muted-foreground bg-slate-50/80 -mx-5 -mb-5 px-5 py-3 border-t border-black/5">
+          <span className="flex items-center gap-1.5">
+            <Layers className="h-3.5 w-3.5 opacity-70" />
             {contract.positions.length} pozīcijas
           </span>
-          <span className="flex items-center gap-1">
-            <ScrollText className="h-3.5 w-3.5" />
+          <span className="flex items-center gap-1.5">
+            <ScrollText className="h-3.5 w-3.5 opacity-70" />
             {contract.totalCallOffs} izsaukumi
           </span>
           {contract.recentCallOffs.length > 0 && (
@@ -223,25 +221,28 @@ export default function FrameworkContractsPage() {
   const filtered = filter === 'ALL' ? contracts : contracts.filter((c) => c.status === filter);
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Ietvarlīgumi"
-        description="Ilgtermiņa piegādes līgumi ar izsaukumu izsekošanu"
-        action={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={load}>
-              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-              Atjaunot
+    <div className="w-full h-full pb-20 space-y-8">
+      {/* header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 mb-2">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Ietvarlīgumi</h1>
+          <p className="text-muted-foreground mt-1">
+            Ilgtermiņa piegādes līgumi ar izsaukumu izsekošanu
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={load}>
+            <RefreshCw className="h-4 w-4 mr-0 sm:mr-1.5" />
+            <span className="hidden sm:inline">Atjaunot</span>
+          </Button>
+          {canCreate && (
+            <Button size="sm" disabled>
+              <Plus className="h-4 w-4 mr-1.5" />
+              Jauns līgums
             </Button>
-            {canCreate && (
-              <Button size="sm" disabled>
-                <Plus className="h-3.5 w-3.5 mr-1.5" />
-                Jauns līgums
-              </Button>
-            )}
-          </div>
-        }
-      />
+          )}
+        </div>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
@@ -266,14 +267,14 @@ export default function FrameworkContractsPage() {
       </div>
 
       {loading ? (
-        <div className="space-y-4">
-          {[1, 2].map((i) => (
-            <Card key={i} className="shadow-none">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="shadow-sm rounded-2xl border-0 ring-1 ring-black/5">
               <CardContent className="p-5 space-y-3">
                 <Skeleton className="h-5 w-1/2" />
                 <Skeleton className="h-4 w-1/4" />
                 <Skeleton className="h-2 w-full rounded-full" />
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 mt-4">
                   <Skeleton className="h-16 rounded-lg" />
                   <Skeleton className="h-16 rounded-lg" />
                 </div>
@@ -300,7 +301,7 @@ export default function FrameworkContractsPage() {
           }
         />
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((c) => (
             <ContractCard key={c.id} contract={c} />
           ))}

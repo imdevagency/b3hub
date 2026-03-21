@@ -158,7 +158,6 @@ export default function DisposalWizard() {
     setDescription,
     setRequestedDate,
     setConfirmedDisposal,
-    reset,
   } = useDisposal();
   const { user, token } = useAuth();
 
@@ -266,7 +265,6 @@ export default function DisposalWizard() {
         requestedDate: toISO(date),
         estimatedWeight: truck.capacity * preset.truckCount,
       });
-      reset();
       router.replace({
         pathname: '/disposal/confirmation' as never,
         params: {
@@ -299,7 +297,8 @@ export default function DisposalWizard() {
     setTruckType,
     setTruckCount,
     setDescription,
-    setRequestedDate,    setConfirmedDisposal,    reset,
+    setRequestedDate,
+    setConfirmedDisposal,
   ]);
 
   const ctaDisabled =

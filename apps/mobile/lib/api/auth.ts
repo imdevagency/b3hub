@@ -2,7 +2,8 @@ import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
-export type UserType = 'BUYER' | 'SUPPLIER' | 'CARRIER' | 'ADMIN';
+export type UserType = 'BUYER' | 'ADMIN';
+export type RegistrationRole = 'BUYER' | 'SUPPLIER' | 'CARRIER';
 
 export interface User {
   id: string;
@@ -46,7 +47,7 @@ export interface RegisterInput {
   firstName: string;
   lastName: string;
   /** e.g. ['BUYER'] or ['BUYER','SUPPLIER'] or ['BUYER','CARRIER'] */
-  roles?: string[];
+  roles?: RegistrationRole[];
   isCompany?: boolean;
   phone?: string;
   companyName?: string;

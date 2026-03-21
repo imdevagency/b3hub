@@ -16,12 +16,11 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -71,44 +70,48 @@ function ContractCard({ contract }: { contract: ApiFrameworkContract }) {
   const pct = contract.totalProgressPct ?? 0;
   return (
     <Link href={`/dashboard/buyer/projects/${contract.id}`}>
-      <Card className="shadow-none border-border/50 hover:border-border hover:shadow-sm transition-all cursor-pointer group">
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground font-medium">{contract.contractNumber}</p>
-              <p className="text-sm font-semibold text-foreground mt-0.5 truncate group-hover:text-primary transition-colors">
-                {contract.title}
-              </p>
+      <Card className="group cursor-pointer relative overflow-hidden rounded-2xl bg-white transition-all hover:bg-slate-50/50 ring-1 ring-black/5 shadow-sm hover:ring-black/10 hover:shadow-md border-0 h-full">
+        <CardContent className="p-5 flex flex-col h-full justify-between">
+          <div>
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground font-medium mb-1">{contract.contractNumber}</p>
+                <p className="text-base font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                  {contract.title}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge variant={meta.variant} className="text-[10px] h-5 rounded-full px-2.5 font-medium">
+                  {meta.label}
+                </Badge>
+                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Badge variant={meta.variant} className="text-[10px] h-5">
-                {meta.label}
-              </Badge>
-              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+
+            <div className="space-y-2 mb-5">
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Izpilde</span>
+                <span className="font-semibold text-foreground">{pct.toFixed(0)}%</span>
+              </div>
+              <ProgressBar pct={pct} />
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>
+                  {contract.totalConsumedQty.toFixed(1)} / {contract.totalAgreedQty.toFixed(1)}
+                </span>
+                <span className="font-medium">{contract.totalCallOffs} pasūtījumi</span>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-1.5 mb-3">
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Izpilde</span>
-              <span className="font-medium text-foreground">{pct.toFixed(0)}%</span>
-            </div>
-            <ProgressBar pct={pct} />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>
-                {contract.totalConsumedQty.toFixed(1)} / {contract.totalAgreedQty.toFixed(1)}
-              </span>
-              <span>{contract.totalCallOffs} pasūtījumi</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <CalendarDays className="h-3 w-3" />
+          <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground bg-slate-50/80 -mx-5 -mb-5 px-5 py-3 mt-4 border-t border-black/5">
+            <span className="flex items-center gap-1.5">
+              <CalendarDays className="h-3.5 w-3.5 opacity-70" />
               {fmtDate(contract.startDate)} → {fmtDate(contract.endDate)}
             </span>
-            <span className="flex items-center gap-1">
-              <Layers className="h-3 w-3" />
+            <span className="flex items-center gap-1.5">
+              <Layers className="h-3.5 w-3.5 opacity-70" />
               {contract.positions.length} pozīcijas
             </span>
           </div>
@@ -183,11 +186,11 @@ function CreateContractDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Jauns Rāmjlīgums</DialogTitle>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="sm:max-w-xl w-[90vw] sm:w-[500px] overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>Jauns Rāmjlīgums</SheetTitle>
+        </SheetHeader>
 
         <div className="space-y-4 mt-2">
           <div>
@@ -340,8 +343,8 @@ function CreateContractDialog({
             </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -412,28 +415,32 @@ export default function BuyerProjectsPage() {
   const active = contracts.filter((c) => c.status === 'ACTIVE');
   const rest = contracts.filter((c) => c.status !== 'ACTIVE');
 
-  return (
-    <div className="space-y-6 max-w-4xl">
+    return (
+    <div className="w-full h-full pb-20 space-y-8">
       {/* header */}
-      <PageHeader
-        title="Rāmjlīgumi"
-        description="Ilgtermiņa piegādes līgumi ar atsaukšanas darba uzdevumiem"
-        action={
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing}>
-              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-            </Button>
-            <Button size="sm" onClick={() => setShowCreate(true)}>
-              <Plus className="h-3.5 w-3.5 mr-1.5" /> Jauns līgums
-            </Button>
-          </div>
-        }
-      />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 mb-2">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Rāmjlīgumi</h1>
+          <p className="text-muted-foreground mt-1">
+            Ilgtermiņa piegādes līgumi ar atsaukšanas darba uzdevumiem
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing}>
+            <RefreshCw className={`h-4 w-4 mr-0 sm:mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Atjaunot</span>
+          </Button>
+          <Button size="sm" onClick={() => setShowCreate(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Jauns līgums
+          </Button>
+        </div>
+      </div>
 
       {loading ? (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-36 bg-muted animate-pulse rounded-xl" />
+            <div key={i} className="h-40 bg-muted animate-pulse rounded-2xl" />
           ))}
         </div>
       ) : contracts.length === 0 ? (
@@ -451,10 +458,10 @@ export default function BuyerProjectsPage() {
         <>
           {active.length > 0 && (
             <section>
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
                 Aktīvie
               </h2>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {active.map((c) => (
                   <ContractCard key={c.id} contract={c} />
                 ))}
@@ -462,11 +469,11 @@ export default function BuyerProjectsPage() {
             </section>
           )}
           {rest.length > 0 && (
-            <section>
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            <section className="mt-8">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
                 Citi
               </h2>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {rest.map((c) => (
                   <ContractCard key={c.id} contract={c} />
                 ))}

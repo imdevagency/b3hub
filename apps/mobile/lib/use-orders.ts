@@ -18,7 +18,15 @@ export type UnifiedOrder =
 
 const SKIP_ACTIVE = new Set(['PENDING', 'CONFIRMED', 'DELIVERED']);
 const SKIP_DONE = new Set(['COLLECTED', 'COMPLETED']);
-const MAT_ACTIVE = new Set(['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED']);
+const MAT_ACTIVE = new Set([
+  'PENDING',
+  'CONFIRMED',
+  'PROCESSING',
+  'LOADING',
+  'DISPATCHED',
+  'DELIVERING',
+  'SHIPPED',
+]);
 const TJB_ACTIVE = new Set([
   'AVAILABLE',
   'ASSIGNED',

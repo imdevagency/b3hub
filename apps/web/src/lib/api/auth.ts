@@ -7,7 +7,8 @@ import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
-export type UserType = 'BUYER' | 'SUPPLIER' | 'CARRIER' | 'ADMIN';
+export type UserType = 'BUYER' | 'ADMIN';
+export type RegistrationRole = 'BUYER' | 'SUPPLIER' | 'CARRIER';
 export type Mode = 'BUYER' | 'SUPPLIER' | 'CARRIER';
 export type CompanyRole = 'OWNER' | 'MANAGER' | 'DRIVER' | 'MEMBER';
 
@@ -54,10 +55,12 @@ export interface RegisterInput {
   password: string;
   firstName: string;
   lastName: string;
-  userType: UserType;
+  roles?: RegistrationRole[];
   isCompany?: boolean;
   phone?: string;
   companyId?: string;
+  companyName?: string;
+  regNumber?: string;
 }
 
 export interface LoginInput {

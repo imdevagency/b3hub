@@ -251,14 +251,10 @@ export default function AdminUsersPage() {
                         className={`inline-flex items-center gap-1 text-xs font-semibold rounded-full px-2 py-0.5 ${
                           u.userType === 'ADMIN'
                             ? 'bg-red-100 text-red-700'
-                            : u.userType === 'SUPPLIER'
-                              ? 'bg-blue-100 text-blue-700'
-                              : u.userType === 'CARRIER'
-                                ? 'bg-purple-100 text-purple-700'
-                                : 'bg-gray-100 text-gray-600'
+                            : 'bg-gray-100 text-gray-700'
                         }`}
                       >
-                        {u.userType}
+                        {u.userType === 'ADMIN' ? 'ADMIN' : 'BUYER'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">

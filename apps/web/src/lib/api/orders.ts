@@ -4,6 +4,7 @@
  */
 import { apiFetch } from './common';
 import type { MaterialUnit } from './materials';
+import type { WasteType } from './containers';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -54,7 +55,6 @@ export interface CartOrderItem {
 }
 
 export interface CreateCartOrderInput {
-  buyerId: string;
   deliveryAddress: string;
   deliveryCity: string;
   deliveryPostal: string;
@@ -110,7 +110,6 @@ export async function createMaterialOrder(
     deliveryPostal: string;
     deliveryDate?: string;
     notes?: string;
-    buyerId: string;
   },
   token: string,
 ): Promise<ApiOrder> {
@@ -119,7 +118,6 @@ export async function createMaterialOrder(
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       orderType: 'MATERIAL',
-      buyerId: input.buyerId,
       deliveryAddress: input.deliveryAddress,
       deliveryCity: input.deliveryCity,
       deliveryState: '',
@@ -148,7 +146,6 @@ export async function createCartOrder(
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       orderType: 'MATERIAL',
-      buyerId: input.buyerId,
       deliveryAddress: input.deliveryAddress,
       deliveryCity: input.deliveryCity,
       deliveryState: '',
@@ -160,5 +157,65 @@ export async function createCartOrder(
       siteContactPhone: input.siteContactPhone,
       items: input.items,
     }),
+  });
+}
+
+// WasteType is exported from ./containers.ts
+export type DisposalTruckType = 'TIPPER_SMALL' | 'TIPPER_LARGE' | 'ARTICULATED_TIPPER';
+export type TransportVehicleType = 'TIPPER_SMALL' | 'TIPPER_LARGE' | 'ARTICULATED_TIPPER';
+
+export interface CreateDisposalOrderInput {
+  pickupAddress: string;
+  pickupCity: string;
+  pickupLat?: number;
+  pickupLng?: number;
+  wasteType: WasteType;
+  truckType: DisposalTruckType;
+  truckCount: number;
+  estimatedWeight: number;
+  description?: string;
+  requestedDate: string;
+  siteContactName?: string;
+  siteContactPhone?: string;
+  notes?: string;
+}
+
+export interface CreateTransportOrderInput {
+  pickupAddress: string;
+  pickupCity: string;
+  pickupLat?: number;
+  pickupLng?: number;
+  dropoffAddress: string;
+  dropoffCity: string;
+  dropoffLat?: number;
+  dropoffLng?: number;
+  vehicleType: TransportVehicleType;
+  loadDescription: string;
+  estimatedWeight?: number;
+  requestedDate: string;
+  siteContactName?: string;
+  siteContactPhone?: string;
+  notes?: string;
+}
+
+export interface CreateOrderResponse {
+  id: string;
+  jobNumber?: string;
+  orderNumber?: string;
+}
+
+export async function createDisposalOrder(input: CreateDisposalOrderInput, token: string): Promise<CreateOrderResponse> {
+  return apiFetch('/orders/disposal', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function createTransportOrder(input: CreateTransportOrderInput, token: string): Promise<CreateOrderResponse> {
+  return apiFetch('/orders/freight', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
   });
 }

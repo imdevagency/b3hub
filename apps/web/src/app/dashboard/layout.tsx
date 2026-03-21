@@ -5,7 +5,6 @@
  */
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
-import { Separator } from '@/components/ui/separator';
 import { CartProvider } from '@/lib/cart-context';
 import { ModeProvider } from '@/lib/mode-context';
 import { DashboardGuard } from '@/components/dashboard-guard';
@@ -20,20 +19,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <DashboardGuard>
           <SidebarProvider>
             <AppSidebar />
-            <SidebarInset>
+            <SidebarInset className="bg-muted/10">
               {/* Top chrome */}
-              <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
-                <SidebarTrigger className="-ml-1" />
-                <Separator orientation="vertical" className="mr-2 h-4" />
-                <span className="text-sm font-medium text-muted-foreground">Dashboard</span>
-                <div className="ml-auto flex items-center gap-2">
+              <header className="flex h-14 shrink-0 items-center justify-between px-6 xl:px-8 mt-2">
+                <div className="flex items-center gap-4">
+                  <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-full" />
+                  <span className="text-sm font-semibold tracking-tight text-foreground/80 md:hidden block">B3Hub</span>
+                </div>
+                <div className="flex items-center gap-3">
                   <RoleModeSwitcher />
-                  <NotificationBell />
+                  <div className="rounded-full bg-background/50 hover:bg-muted/50 transition-colors p-1">
+                    <NotificationBell />
+                  </div>
                 </div>
               </header>
 
               {/* Page content */}
-              <div className="flex flex-1 flex-col gap-6 p-6 bg-muted/20 min-h-[calc(100vh-3.5rem)]">
+              <div className="relative flex flex-1 flex-col gap-6 p-6 xl:p-8 min-h-[calc(100vh-4rem)]">
                 <PageAnimate>{children}</PageAnimate>
               </div>
             </SidebarInset>

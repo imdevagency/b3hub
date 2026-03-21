@@ -7,11 +7,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import {
-  Building2,
-  LogOut,
-  User,
   FolderOpen,
   FileText,
   Weight,
@@ -20,11 +16,9 @@ import {
   Truck,
   ScrollText,
   Search,
-  ChevronLeft,
   RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/ui/page-header';
 import { DocumentCard } from '@/components/documents/DocumentCard';
 import { DocumentViewer } from '@/components/documents/DocumentViewer';
 import { useAuth } from '@/lib/auth-context';
@@ -143,17 +137,11 @@ const TABS: { id: FilterTab; label: string; icon: React.ElementType }[] = [
   { id: 'CONTRACT', label: 'Līgumi', icon: ScrollText },
 ];
 
-const USER_TYPE_LABEL: Record<string, string> = {
-  BUYER: 'Pasūtītājs',
-  SUPPLIER: 'Pārdevējs',
-  CARRIER: 'Pārvadātājs',
-  ADMIN: 'Administrators',
-};
 
 // ── Page ─────────────────────────────────────────────────────
 
 export default function DocumentsPage() {
-  const { user, token, logout, isLoading } = useAuth();
+  const { user, token, isLoading } = useAuth();
   const router = useRouter();
 
   const [docs, setDocs] = useState<Document[]>([]);
@@ -232,7 +220,7 @@ export default function DocumentsPage() {
   if (isLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground/20 border-t-foreground" />
       </div>
     );
   }
@@ -243,90 +231,50 @@ export default function DocumentsPage() {
     return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
   }).length;
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* ── Top bar ── */}
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Building2 className="h-6 w-6 text-red-600" />
-          <span className="font-bold text-gray-900">B3Hub</span>
+      return (
+    <div className="w-full h-full pb-20 space-y-10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Mani Dokumenti</h1>
+          <p className="text-muted-foreground mt-2 max-w-2xl text-sm">
+            Visi jūsu rēķini, svēršanas lapas, piegādes apstiprinājumi un sertifikāti — bez papīra, vienā vietā.
+          </p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <User className="h-4 w-4" />
-            <span>
-              {user.firstName} {user.lastName}
-            </span>
-            <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
-              {USER_TYPE_LABEL[user.userType] ?? user.userType}
-            </span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              logout();
-              router.push('/');
-            }}
-            className="text-gray-600 hover:text-red-600"
-          >
-            <LogOut className="h-4 w-4 mr-1" />
-            Iziet
-          </Button>
-        </div>
-      </header>
+        <Button variant="outline" size="sm" onClick={fetchDocs} disabled={fetching} className="rounded-full shadow-sm bg-background border-border/40 shrink-0">
+          <RefreshCw className={`h-4 w-4 mr-1.5 ${fetching ? 'animate-spin' : ''}`} />
+          Atjaunot
+        </Button>
+      </div>
 
-      <main className="w-full px-6 py-10">
-        {/* ── Breadcrumb + heading ── */}
-        <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
-          <Link href="/dashboard" className="hover:text-red-600 flex items-center gap-1">
-            <ChevronLeft className="h-4 w-4" />
-            Informācijas Panelis
-          </Link>
-          <span>/</span>
-          <span className="text-gray-700 font-medium">Dokumenti</span>
-        </div>
-
-        <PageHeader
-          title="Mani Dokumenti"
-          description="Visi jūsu rēķini, svēršanas lapas, piegādes apstiprinājumi un sertifikāti — bez papīra, vienā vietā."
-          action={
-            <Button variant="outline" size="sm" onClick={fetchDocs} disabled={fetching}>
-              <RefreshCw className={`h-4 w-4 mr-1.5 ${fetching ? 'animate-spin' : ''}`} />
-              Atjaunot
-            </Button>
-          }
-        />
-
-        {/* ── Stats row ── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+      {/* ── Stats row ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: 'Kopā dokumenti', value: summary?.total ?? 0, color: 'text-gray-900' },
+            { label: 'Kopā dokumenti', value: summary?.total ?? 0, color: 'text-foreground' },
             {
               label: 'Šajā mēnesī',
               value: thisMonth,
-              color: 'text-blue-600',
+              color: 'text-blue-500',
             },
             {
               label: 'Rēķini',
               value: summary?.byType?.INVOICE ?? 0,
-              color: 'text-blue-600',
+              color: 'text-blue-500',
             },
             {
               label: 'Svēršanas lapas',
               value: summary?.byType?.WEIGHING_SLIP ?? 0,
-              color: 'text-amber-600',
+              color: 'text-amber-500',
             },
           ].map((stat) => (
-            <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-4">
-              <p className="text-xs text-gray-500 mb-1">{stat.label}</p>
+            <div key={stat.label} className="bg-muted/40 rounded-2xl border border-transparent p-5">
+              <p className="text-xs text-muted-foreground mb-1">{stat.label}</p>
               <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
             </div>
           ))}
         </div>
 
         {useDemoData && (
-          <div className="mb-6 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
+          <div className="mb-6 flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-500">
             <span>
               ❆ Priekšskatījuma režīms — rāda piemēra dokumentus. Įsti dokumenti parādīsīsies šeit,
               tīklīdz jūsu pasūtījumi tiks apstrādāti.
@@ -335,7 +283,7 @@ export default function DocumentsPage() {
         )}
 
         {/* ── Filters + Search ── */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-muted/40 rounded-2xl border border-transparent p-2">
           {/* Tab pills */}
           <div className="flex flex-wrap gap-1.5">
             {TABS.map((tab) => {
@@ -346,11 +294,7 @@ export default function DocumentsPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'bg-white border border-gray-200 text-gray-600 hover:border-primary/30 hover:text-primary'
-                  }`}
+                  className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors ${activeTab === tab.id ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/50'}`}
                 >
                   <Icon className="h-3.5 w-3.5" />
                   {tab.label}
@@ -358,8 +302,8 @@ export default function DocumentsPage() {
                     <span
                       className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
                         activeTab === tab.id
-                          ? 'bg-white/20 text-white'
-                          : 'bg-muted text-muted-foreground'
+                          ? 'bg-muted text-foreground'
+                          : 'bg-background text-muted-foreground'
                       }`}
                     >
                       {count}
@@ -371,14 +315,14 @@ export default function DocumentsPage() {
           </div>
 
           {/* Search */}
-          <div className="relative sm:ml-auto w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <div className="relative w-full md:w-64 shrink-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
               placeholder="Meklēt dokumentus…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
+              className="w-full pl-9 pr-3 py-2 text-sm bg-background border border-border/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all placeholder:text-muted-foreground/60 shadow-sm"
             />
           </div>
         </div>
@@ -386,12 +330,12 @@ export default function DocumentsPage() {
         {/* ── Document list ── */}
         {fetching ? (
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground/20 border-t-foreground" />
           </div>
         ) : docs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-400">
             <FolderOpen className="h-14 w-14 text-gray-200" />
-            <p className="font-medium text-gray-500">Nav atrasts neviens dokuments</p>
+            <p className="font-medium text-muted-foreground">Nav atrasts neviens dokuments</p>
             <p className="text-sm text-center max-w-xs">
               {search
                 ? `Nav rezultātu meklējumam "${search}". Mēģiniet citu meklēšanas frazi.`
@@ -410,7 +354,7 @@ export default function DocumentsPage() {
             ))}
           </div>
         )}
-      </main>
+      
 
       {/* ── Inline document viewer ── */}
       <DocumentViewer document={viewerDoc} onClose={() => setViewerDoc(null)} />
