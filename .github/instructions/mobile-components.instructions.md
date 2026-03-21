@@ -591,6 +591,23 @@ _No props interface — check source file._
 
 ---
 
+#### `TextInputField` — `@/components/ui/TextInputField`
+
+| Prop | Type | |
+|------|------|---|
+| `label` | `string` | optional |
+| `error` | `string` | optional |
+| `hint` | `string` | optional |
+| `containerStyle` | `ViewStyle` | optional |
+| `inputStyle` | `TextStyle` | optional |
+| `required` | `boolean` | optional |
+| `accessibilityLabel` | `string` | optional |
+| `fullWidth` | `boolean` | optional |
+
+**Exports:** `TextInputField`
+
+---
+
 #### `Toast` — `@/components/ui/Toast`
 _No props interface — check source file._
 

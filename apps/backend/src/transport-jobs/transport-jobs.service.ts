@@ -80,6 +80,7 @@ export class TransportJobsService {
         deliveryCity: true,
         order: {
           select: {
+            id: true,
             createdById: true,
           },
         },

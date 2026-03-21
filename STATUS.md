@@ -104,7 +104,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Backend Modules
 
 <!-- GEN:status-backend-modules -->
-
 - admin
 - auth
 - carrier-settings
@@ -117,6 +116,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - email
 - framework-contracts
 - invoices
+- maps
 - materials
 - notifications
 - orders
@@ -132,7 +132,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Web Pages
 
 <!-- GEN:status-web-pages -->
-
 - (auth)/login
 - (auth)/register
 - (root)
@@ -161,7 +160,9 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/materials
 - dashboard/notifications
 - dashboard/order
+- dashboard/order/disposal
 - dashboard/order/skip-hire
+- dashboard/order/transport
 - dashboard/orders
 - dashboard/orders/[id]
 - dashboard/quote-requests
@@ -183,7 +184,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Mobile Screens
 
 <!-- GEN:status-mobile-screens -->
-
 - (auth)/apply-role
 - (auth)/forgot-password
 - (auth)/login

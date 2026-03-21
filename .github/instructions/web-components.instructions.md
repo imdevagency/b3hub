@@ -350,7 +350,7 @@ Wrap page sections that may throw.
 <!-- GEN:component-api -->
 #### `AddressAutocomplete` — `@/components/ui/AddressAutocomplete`
 
-**Exports:** `AddressAutocomplete`
+**Exports:** `loadGoogleMapsScript`, `AddressAutocomplete`
 
 ---
 
