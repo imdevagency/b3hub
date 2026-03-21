@@ -60,7 +60,7 @@ const MATERIAL_CATEGORIES: { id: string; label: string }[] = [
 ];
 
 const FRACTIONS = ['0/2', '0/4', '4/8', '8/16', '16/32', '0/32', '0/45'];
-const STEPS: Step[] = ['address', 'material', 'configure', 'contact', 'review'];
+const STEPS: Step[] = ['material', 'address', 'configure', 'contact', 'review'];
 
 // ── Component ────────────────────────────────────────────────────────────────────────────────
 
@@ -125,8 +125,8 @@ export default function OrderRequestWizard() {
   }, [stepIndex]);
 
   const canProceed =
-    (step === 'address' && !!pickedAddress) ||
     (step === 'material' && !!selectedMaterial) ||
+    (step === 'address' && !!pickedAddress) ||
     (step === 'configure' && quantity > 0) ||
     (step === 'contact' && contactName.length > 2 && contactPhone.length > 5) ||
     step === 'review';
@@ -548,8 +548,8 @@ export default function OrderRequestWizard() {
       ctaDisabled={!canProceed || submitting}
       ctaLoading={submitting}
     >
-      {step === 'address' && renderAddress()}
       {step === 'material' && renderMaterial()}
+      {step === 'address' && renderAddress()}
       {step === 'configure' && renderConfigure()}
       {step === 'contact' && renderContact()}
       {step === 'review' && renderReview()}
