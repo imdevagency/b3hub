@@ -173,8 +173,8 @@ export default function DisposalOrderPage() {
   );
 
   const canAdvance = () => {
-    if (step === 1) return address.length > 5;
-    if (step === 2) return wasteType !== '';
+    if (step === 1) return wasteType !== '';
+    if (step === 2) return address.length > 5;
     if (step === 3) return date !== '';
     return false;
   };
@@ -210,8 +210,8 @@ export default function DisposalOrderPage() {
   };
 
   const STEPS = [
-    { label: 'Adrese', icon: MapPin },
     { label: 'Veids', icon: Trash2 },
+    { label: 'Adrese', icon: MapPin },
     { label: 'Datums', icon: CalendarDays },
   ];
 
@@ -288,41 +288,8 @@ export default function DisposalOrderPage() {
 
                     <div className="p-0">
 
-              {/* Step 1: Address */}
+              {/* Step 1: Waste type */}
               {step === 1 && (
-                <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
-                  <div>
-                    <h2 className="text-lg font-bold">No kurienes izvest?</h2>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      Ievadiet precīzu adresi, kur atrodas atkritumi
-                    </p>
-                  </div>
-
-                  <div className="relative">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
-                    <AddressAutocomplete
-                      value={address}
-                      onChange={(v) => setAddress(v)}
-                      onSelect={handleAddressSelect}
-                      placeholder="Iela, mājas numurs, pilsēta..."
-                      className="w-full rounded-xl border bg-muted/30 pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
-                    />
-                  </div>
-
-                  {address && (
-                    <div className="flex items-start gap-2.5 p-3 rounded-xl bg-green-50 ring-1 ring-green-200">
-                      <MapPin className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-green-800">{address}</p>
-                        {city && <p className="text-xs text-green-600">{city}</p>}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Step 2: Waste type */}
-              {step === 2 && (
                 <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
                   <div>
                     <h2 className="text-lg font-bold">Ko vēlaties utilizēt?</h2>
@@ -378,6 +345,39 @@ export default function DisposalOrderPage() {
                       </span>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Step 2: Address */}
+              {step === 2 && (
+                <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+                  <div>
+                    <h2 className="text-lg font-bold">No kurienes izvest?</h2>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      Ievadiet precīzu adresi, kur atrodas atkritumi
+                    </p>
+                  </div>
+
+                  <div className="relative">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+                    <AddressAutocomplete
+                      value={address}
+                      onChange={(v) => setAddress(v)}
+                      onSelect={handleAddressSelect}
+                      placeholder="Iela, mājas numurs, pilsēta..."
+                      className="w-full rounded-xl border bg-muted/30 pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
+                    />
+                  </div>
+
+                  {address && (
+                    <div className="flex items-start gap-2.5 p-3 rounded-xl bg-green-50 ring-1 ring-green-200">
+                      <MapPin className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-green-800">{address}</p>
+                        {city && <p className="text-xs text-green-600">{city}</p>}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

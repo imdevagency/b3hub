@@ -1,12 +1,13 @@
 /**
  * order-request-new.tsx
  *
- * 4-step wizard for material ordering.
+ * 5-step wizard for material ordering.
  *
  *  Step 1 – Address   : AddressPickerModal (shared with all other wizards)
  *  Step 2 – Material  : category chips + scrollable material cards
  *  Step 3 – Configure : fraction chips, quantity stepper, price preview
- *  Step 4 – Review    : summary + confirm
+ *  Step 4 – Contact   : name and phone collection
+ *  Step 5 – Review    : summary + confirm
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -18,6 +19,7 @@ import {
   Alert,
   ActivityIndicator,
   StyleSheet,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
@@ -43,7 +45,7 @@ import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 
 // ── Types ────────────────────────────────────────────────────────────────────────────────────
 
-type Step = 'address' | 'material' | 'configure' | 'review';
+type Step = 'address' | 'material' | 'configure' | 'contact' | 'review';
 
 // ── Constants ────────────────────────────────────────────────────────────────────────────────
 
@@ -58,7 +60,7 @@ const MATERIAL_CATEGORIES: { id: string; label: string }[] = [
 ];
 
 const FRACTIONS = ['0/2', '0/4', '4/8', '8/16', '16/32', '0/32', '0/45'];
-const STEPS: Step[] = ['address', 'material', 'configure', 'review'];
+const STEPS: Step[] = ['address', 'material', 'configure', 'contact', 'review'];
 
 // ── Component ────────────────────────────────────────────────────────────────────────────────
 
@@ -81,6 +83,10 @@ export default function OrderRequestWizard() {
   // Configure step
   const [fraction, setFraction] = useState('0/4');
   const [quantity, setQuantity] = useState(10);
+
+  // Contact step
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
 
   // Submit
   const [submitting, setSubmitting] = useState(false);
@@ -122,6 +128,7 @@ export default function OrderRequestWizard() {
     (step === 'address' && !!pickedAddress) ||
     (step === 'material' && !!selectedMaterial) ||
     (step === 'configure' && quantity > 0) ||
+    (step === 'contact' && contactName.length > 2 && contactPhone.length > 5) ||
     step === 'review';
 
   const ctaLabel = step === 'review' ? 'Apstiprināt pasūtījumu' : 'Turpināt';
@@ -130,6 +137,7 @@ export default function OrderRequestWizard() {
     address: 'Kur piegādāt materiālu?',
     material: 'Izvēlies materiālu',
     configure: 'Norādi daudzumu',
+    contact: 'Kontaktinformācija',
     review: 'Apstiprini pasūtījumu',
   };
 
@@ -166,6 +174,8 @@ export default function OrderRequestWizard() {
             deliveryAddress: pickedAddress.address,
             deliveryCity: pickedAddress.city,
             deliveryDate: deliveryDate.toISOString().split('T')[0],
+            siteContactName: contactName || undefined,
+            siteContactPhone: contactPhone || undefined,
           },
           token,
         );
@@ -183,6 +193,8 @@ export default function OrderRequestWizard() {
             deliveryCity: pickedAddress.city,
             deliveryLat: pickedAddress.lat,
             deliveryLng: pickedAddress.lng,
+            siteContactName: contactName || undefined,
+            siteContactPhone: contactPhone || undefined,
           },
           token,
         );
@@ -389,6 +401,50 @@ export default function OrderRequestWizard() {
     );
   };
 
+  const renderContact = () => (
+    <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <View style={{ gap: 16 }}>
+        <View>
+          <Text style={[s.stepSub, { marginBottom: 16, fontSize: 18, fontWeight: 'bold' }]}>
+            Kontaktinformācija
+          </Text>
+        </View>
+
+        {/* Contact Name */}
+        <View>
+          <Text style={s.sectionLabel}>Kontakta vārds un uzvārds</Text>
+          <TextInput
+            style={[s.configureCard, { marginTop: 8, fontsize: 16 }]}
+            placeholder="Jānis Bērziņš"
+            placeholderTextColor="#9ca3af"
+            value={contactName}
+            onChangeText={setContactName}
+          />
+        </View>
+
+        {/* Contact Phone */}
+        <View>
+          <Text style={s.sectionLabel}>Tālrunis</Text>
+          <TextInput
+            style={[s.configureCard, { marginTop: 8, fontSize: 16 }]}
+            placeholder="+371 2X XXX XXX"
+            placeholderTextColor="#9ca3af"
+            keyboardType="phone-pad"
+            value={contactPhone}
+            onChangeText={setContactPhone}
+          />
+        </View>
+
+        {/* Info hint */}
+        <View style={{ paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#fef3c7', borderRadius: 8 }}>
+          <Text style={{ fontSize: 13, color: '#92400e', lineHeight: 18 }}>
+            Šī informācija būs pieejama šoferim uz vietas, lai aprūpētu jūsu pasūtījumu
+          </Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
+
   const renderReview = () => {
     const total = (selectedMaterial?.basePrice ?? 0) * quantity;
     const vat = total * 0.21;
@@ -495,6 +551,7 @@ export default function OrderRequestWizard() {
       {step === 'address' && renderAddress()}
       {step === 'material' && renderMaterial()}
       {step === 'configure' && renderConfigure()}
+      {step === 'contact' && renderContact()}
       {step === 'review' && renderReview()}
     </WizardLayout>
   );
