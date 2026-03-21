@@ -91,7 +91,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       items: [
         { label: 'Mani Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
         { label: 'Projekti', href: '/dashboard/buyer/projects', icon: FolderKanban },
-        { label: 'Ietvarlīgumi', href: '/dashboard/framework-contracts', icon: ScrollText },
+        { label: 'Lielumiņi', href: '/dashboard/framework-contracts', icon: ScrollText },
         { label: 'Konteineri', href: '/dashboard/containers', icon: Box },
         { label: 'Cenu Pieprasījumi', href: '/dashboard/quote-requests', icon: FileQuestion },
       ],
