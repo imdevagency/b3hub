@@ -6,7 +6,18 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Car, ChevronDown, Pencil, Plus, RefreshCw, Search, Trash2, Truck, X } from 'lucide-react';
+import {
+  Car,
+  ChevronDown,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+  Truck,
+  X,
+  Loader2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/ui/page-header';
@@ -203,6 +214,9 @@ export default function GaragePage() {
 
   // ── Render ──────────────────────────────────────────────────
 
+  const inputClasses =
+    'bg-muted/40 border-0 shadow-none h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary/30 px-4 text-[15px] transition-colors mt-1.5 focus:ring-1 focus:ring-primary/30';
+
   return (
     <div className="flex flex-col gap-6">
       {/* ── Header ── */}
@@ -330,186 +344,197 @@ export default function GaragePage() {
       )}
 
       {/* ── Add/Edit Sheet ── */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader className="px-6 pt-6 pb-4">
-            <SheetTitle className="flex items-center gap-2">
-              <Car className="h-5 w-5 text-red-600" />
-              {editingId ? 'Rediģēt transportlīdzekli' : 'Pievienot jaunu transportlīdzekli'}
-            </SheetTitle>
-          </SheetHeader>
+      <Sheet open={sheetOpen} onOpenChange={(o) => (!o && !saving ? setSheetOpen(false) : null)}>
+        <SheetContent className="sm:max-w-xl w-full overflow-hidden p-0 flex flex-col border-l shadow-2xl">
+          <div className="px-6 pt-8 pb-4">
+            <SheetHeader>
+              <SheetTitle className="text-2xl font-bold tracking-tight">
+                {editingId ? 'Rediģēt transportlīdzekli' : 'Pievienot transportlīdzekli'}
+              </SheetTitle>
+              <p className="text-[15px] text-muted-foreground leading-relaxed pt-1">
+                Aizpildiet informāciju par transportlīdzekli, lai to varētu izmantot pasūtījumu
+                izpildē.
+              </p>
+            </SheetHeader>
+          </div>
 
-          <div className="flex flex-col gap-5 px-6 pb-6">
-            {/* Vehicle type */}
-            <div className="flex flex-col gap-1.5">
-              <Label>Transportlīdzekļa veids *</Label>
-              <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                value={form.vehicleType}
-                onChange={(e) => patch('vehicleType', e.target.value as VehicleType)}
-              >
-                {(Object.entries(VEHICLE_TYPE_LABELS) as [VehicleType, string][]).map(
-                  ([k, label]) => (
-                    <option key={k} value={k}>
-                      {label}
-                    </option>
-                  ),
-                )}
-              </select>
-            </div>
+          <div className="flex-1 px-6 space-y-6 overflow-y-auto pb-32">
+            {error && (
+              <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-xl text-sm font-medium">
+                {error}
+              </div>
+            )}
 
-            {/* Make + Model */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <Label>Marka *</Label>
-                <Input
-                  placeholder="MAN, Volvo, DAF..."
-                  value={form.make}
-                  onChange={(e) => patch('make', e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label>Modelis *</Label>
-                <Input
-                  placeholder="TGX 18.500, FH16..."
-                  value={form.model}
-                  onChange={(e) => patch('model', e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Year + License plate */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <Label>Izlaiduma gads *</Label>
-                <Input
-                  type="number"
-                  min={1950}
-                  max={2100}
-                  value={form.year}
-                  onChange={(e) => patch('year', Number(e.target.value))}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label>Valsts numurzīme *</Label>
-                <Input
-                  placeholder="LV-1234"
-                  value={form.licensePlate}
-                  onChange={(e) => patch('licensePlate', e.target.value.toUpperCase())}
-                />
-              </div>
-            </div>
-
-            {/* VIN */}
-            <div className="flex flex-col gap-1.5">
-              <Label>
-                VIN numurs <span className="text-muted-foreground text-xs">(neobligāts)</span>
-              </Label>
-              <Input
-                placeholder="WDB9634031L123456"
-                value={form.vin ?? ''}
-                onChange={(e) => patch('vin', e.target.value)}
-              />
-            </div>
-
-            {/* Capacity + Max gross weight */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <Label>Kravnesība (t) *</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.1"
-                  placeholder="18.0"
-                  value={form.capacity || ''}
-                  onChange={(e) => patch('capacity', e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label>Maks. pilnmasa (t)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.1"
-                  placeholder="40.0"
-                  value={form.maxGrossWeight ?? ''}
-                  onChange={(e) => patch('maxGrossWeight', e.target.value || undefined)}
-                />
-              </div>
-            </div>
-
-            {/* Volume capacity + Drive type */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <Label>Tilpums (m³)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.1"
-                  placeholder="22.0"
-                  value={form.volumeCapacity ?? ''}
-                  onChange={(e) => patch('volumeCapacity', e.target.value || undefined)}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label>Piedziņa</Label>
+            <div className="space-y-5">
+              {/* Vehicle type */}
+              <div>
+                <Label className="text-sm font-medium ml-1">Transportlīdzekļa veids *</Label>
                 <select
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  value={form.driveType ?? ''}
-                  onChange={(e) => patch('driveType', e.target.value || undefined)}
+                  className={`w-full ${inputClasses}`}
+                  value={form.vehicleType}
+                  onChange={(e) => patch('vehicleType', e.target.value as VehicleType)}
                 >
-                  <option value="">— Nav norādīts —</option>
-                  {DRIVE_TYPES.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
+                  {(Object.entries(VEHICLE_TYPE_LABELS) as [VehicleType, string][]).map(
+                    ([k, label]) => (
+                      <option key={k} value={k}>
+                        {label}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </div>
+
+              {/* Make + Model */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium ml-1">Marka *</Label>
+                  <Input
+                    placeholder="MAN, Volvo, DAF..."
+                    value={form.make}
+                    onChange={(e) => patch('make', e.target.value)}
+                    className={inputClasses}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium ml-1">Modelis *</Label>
+                  <Input
+                    placeholder="TGX 18.500, FH16..."
+                    value={form.model}
+                    onChange={(e) => patch('model', e.target.value)}
+                    className={inputClasses}
+                  />
+                </div>
+              </div>
+
+              {/* Year + License plate */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium ml-1">Izlaiduma gads *</Label>
+                  <Input
+                    type="number"
+                    min={1950}
+                    max={2100}
+                    value={form.year}
+                    onChange={(e) => patch('year', Number(e.target.value))}
+                    className={inputClasses}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium ml-1">Valsts numurzīme *</Label>
+                  <Input
+                    placeholder="LV-1234"
+                    value={form.licensePlate}
+                    onChange={(e) => patch('licensePlate', e.target.value.toUpperCase())}
+                    className={inputClasses}
+                  />
+                </div>
+              </div>
+
+              {/* VIN */}
+              <div>
+                <Label className="text-sm font-medium ml-1">
+                  VIN numurs <span className="text-muted-foreground text-xs">(neobligāts)</span>
+                </Label>
+                <Input
+                  placeholder="WDB9634031L123456"
+                  value={form.vin ?? ''}
+                  onChange={(e) => patch('vin', e.target.value)}
+                  className={inputClasses}
+                />
+              </div>
+
+              {/* Capacity + Max gross weight */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium ml-1">Kravnesība (t) *</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.1"
+                    placeholder="18.0"
+                    value={form.capacity || ''}
+                    onChange={(e) => patch('capacity', e.target.value)}
+                    className={inputClasses}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium ml-1">Maks. pilnmasa (t)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.1"
+                    placeholder="40.0"
+                    value={form.maxGrossWeight ?? ''}
+                    onChange={(e) => patch('maxGrossWeight', e.target.value || undefined)}
+                    className={inputClasses}
+                  />
+                </div>
+              </div>
+
+              {/* Volume capacity + Drive type */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium ml-1">Tilpums (m³)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.1"
+                    placeholder="22.0"
+                    value={form.volumeCapacity ?? ''}
+                    onChange={(e) => patch('volumeCapacity', e.target.value || undefined)}
+                    className={inputClasses}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium ml-1">Piedziņa</Label>
+                  <select
+                    className={`w-full ${inputClasses}`}
+                    value={form.driveType ?? ''}
+                    onChange={(e) => patch('driveType', e.target.value || undefined)}
+                  >
+                    <option value="">— Nav norādīts —</option>
+                    {DRIVE_TYPES.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Status */}
+              <div>
+                <Label className="text-sm font-medium ml-1">Statuss</Label>
+                <select
+                  className={`w-full ${inputClasses}`}
+                  value={form.status ?? 'ACTIVE'}
+                  onChange={(e) => patch('status', e.target.value as VehicleStatus)}
+                >
+                  {(Object.entries(STATUS_CONFIG) as [VehicleStatus, { label: string }][]).map(
+                    ([k, cfg]) => (
+                      <option key={k} value={k}>
+                        {cfg.label}
+                      </option>
+                    ),
+                  )}
                 </select>
               </div>
             </div>
+          </div>
 
-            {/* Status */}
-            <div className="flex flex-col gap-1.5">
-              <Label>Statuss</Label>
-              <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                value={form.status ?? 'ACTIVE'}
-                onChange={(e) => patch('status', e.target.value as VehicleStatus)}
-              >
-                {(Object.entries(STATUS_CONFIG) as [VehicleStatus, { label: string }][]).map(
-                  ([k, cfg]) => (
-                    <option key={k} value={k}>
-                      {cfg.label}
-                    </option>
-                  ),
-                )}
-              </select>
-            </div>
-
-            {error && (
-              <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
-                {error}
-              </p>
-            )}
-
-            <div className="flex gap-3 pt-2">
-              <Button
-                className="flex-1"
-                onClick={handleSave}
-                disabled={
-                  saving || !form.make || !form.model || !form.licensePlate || !form.capacity
-                }
-              >
-                {saving
-                  ? 'Saglabā...'
-                  : editingId
-                    ? 'Saglabāt izmaiņas'
-                    : 'Pievienot transportlīdzekli'}
-              </Button>
-              <Button variant="outline" onClick={() => setSheetOpen(false)} disabled={saving}>
-                Atcelt
-              </Button>
-            </div>
+          <div className="absolute bottom-0 left-0 right-0 p-5 bg-background/90 backdrop-blur-xl border-t border-border/50">
+            <Button
+              className="w-full h-14 rounded-2xl text-[16px] font-semibold bg-foreground hover:bg-foreground/90 text-background shadow-lg transition-all"
+              onClick={handleSave}
+              disabled={saving || !form.make || !form.model || !form.licensePlate || !form.capacity}
+            >
+              {saving ? <Loader2 className="mr-2 size-5 animate-spin" /> : null}
+              {saving
+                ? 'Saglabā...'
+                : editingId
+                  ? 'Saglabāt izmaiņas'
+                  : 'Pievienot transportlīdzekli'}
+            </Button>
           </div>
         </SheetContent>
       </Sheet>

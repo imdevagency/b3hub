@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
 import { getAllTransportJobs, type ApiTransportJob } from '@/lib/api';
 import { PageHeader } from '@/components/ui/page-header';
+import { PageContainer } from '@/components/ui/page-container';
 
 const FleetMap = dynamic(
   () => import('@/components/fleet-map').then((m) => ({ default: m.FleetMap })),
@@ -44,49 +45,49 @@ const STATUS_CONFIG: Record<string, { label: string; dot: string; text: string; 
     label: 'Nepiešķirts',
     dot: 'bg-muted-foreground/40',
     text: 'text-muted-foreground',
-    bg: 'bg-muted/30 border-transparent',
+    bg: 'bg-muted/40 border-transparent',
   },
   ACCEPTED: {
     label: 'Pieņemts',
     dot: 'bg-foreground',
     text: 'text-foreground',
-    bg: 'bg-background border-border shadow-sm',
+    bg: 'bg-white dark:bg-zinc-950 border-border/40 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]',
   },
   EN_ROUTE_PICKUP: {
     label: 'Brauc uz iekr.',
     dot: 'bg-foreground',
     text: 'text-foreground',
-    bg: 'bg-background border-border shadow-sm',
+    bg: 'bg-white dark:bg-zinc-950 border-border/40 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]',
   },
   AT_PICKUP: {
     label: 'Iekraušana',
     dot: 'bg-foreground',
     text: 'text-foreground',
-    bg: 'bg-background border-border shadow-sm',
+    bg: 'bg-white dark:bg-zinc-950 border-border/40 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]',
   },
   LOADED: {
     label: 'Iekrauts',
     dot: 'bg-foreground',
     text: 'text-foreground',
-    bg: 'bg-background border-border shadow-sm',
+    bg: 'bg-white dark:bg-zinc-950 border-border/40 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]',
   },
   EN_ROUTE_DELIVERY: {
     label: 'Ceļā',
     dot: 'bg-foreground',
     text: 'text-foreground',
-    bg: 'bg-background border-border shadow-sm',
+    bg: 'bg-white dark:bg-zinc-950 border-border/40 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]',
   },
   AT_DELIVERY: {
     label: 'Izkraušana',
     dot: 'bg-foreground',
     text: 'text-foreground',
-    bg: 'bg-background border-border shadow-sm',
+    bg: 'bg-white dark:bg-zinc-950 border-border/40 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]',
   },
   DELIVERED: {
     label: 'Piegādāts',
     dot: 'bg-muted-foreground/40',
     text: 'text-muted-foreground',
-    bg: 'bg-muted/30 border-transparent',
+    bg: 'bg-muted/40 border-transparent',
   },
   CANCELLED: {
     label: 'Atcelts',
@@ -140,7 +141,7 @@ function StatusBadge({ status }: { status: string }) {
     label: status,
     dot: 'bg-muted-foreground/40',
     text: 'text-muted-foreground',
-    bg: 'bg-muted/30 border-transparent',
+    bg: 'bg-muted/40 border-transparent',
   };
   return (
     <span
@@ -233,53 +234,41 @@ export default function FleetPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <PageHeader
+    <PageContainer
         title="Dispečera Panelis"
         description="Pārskata visi transporta darbi · reāllaikā"
         action={
           <div className="flex items-center gap-2">
-            <div className="flex rounded-lg border border-input overflow-hidden">
+            <div className="flex rounded-[1.25rem] bg-muted/50 p-1">
               <button
                 onClick={() => setViewMode('list')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-background text-muted-foreground hover:bg-muted'
-                }`}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-2xl transition-all duration-200 ${viewMode === 'list' ? 'bg-white dark:bg-zinc-900 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
               >
                 <List className="h-3.5 w-3.5" />
                 Saraksts
               </button>
               <button
                 onClick={() => setViewMode('map')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-l border-input ${
-                  viewMode === 'map'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-background text-muted-foreground hover:bg-muted'
-                }`}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-2xl transition-all duration-200 ml-1 ${viewMode === 'map' ? 'bg-white dark:bg-zinc-900 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
               >
                 <Map className="h-3.5 w-3.5" />
                 Karte
               </button>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
+            <Button variant="outline" size="sm" className="rounded-xl border-border/60 hover:bg-muted/50"
               onClick={handleRefresh}
               disabled={refreshing || loading}
             >
               <RefreshCw className={`h-4 w-4 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
               Atjaunot
             </Button>
-            <Button size="sm" onClick={() => router.push('/dashboard/jobs')}>
+            <Button size="sm" className="rounded-xl shadow-md" onClick={() => router.push('/dashboard/jobs')}>
               <Package className="h-4 w-4 mr-1.5" />
               Job Board
             </Button>
           </div>
         }
-      />
+      >
 
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -289,31 +278,31 @@ export default function FleetPage() {
             value: stats.total,
             icon: Truck,
             color: 'text-foreground',
-            bg: 'bg-background border-border shadow-sm',
+            bg: 'bg-white dark:bg-zinc-950 border-border/40 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]',
           },
           {
             label: 'Nepiešķirts',
             value: stats.available,
             icon: Clock,
             color: 'text-muted-foreground',
-            bg: 'bg-background border-border shadow-sm',
+            bg: 'bg-white dark:bg-zinc-950 border-border/40 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]',
           },
           {
             label: 'Ceļā',
             value: stats.active,
             icon: MapPin,
             color: 'text-foreground',
-            bg: 'bg-background border-foreground text-foreground shadow-sm',
+            bg: 'bg-primary/5 border-primary/20 text-primary shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]',
           },
           {
             label: 'Piegādāts Šodien',
             value: stats.delivered,
             icon: CheckCircle2,
             color: 'text-muted-foreground',
-            bg: 'bg-background border-border shadow-sm',
+            bg: 'bg-white dark:bg-zinc-950 border-border/40 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]',
           },
         ].map((s) => (
-          <div key={s.label} className={`rounded-xl border p-4 ${s.bg}`}>
+          <div key={s.label} className={`rounded-[2rem] border p-5 sm:p-6 transition-all duration-300 hover:shadow-lg ${s.bg}`}>
             <div className="flex items-center justify-between mb-1">
               <p className="text-xs font-medium text-muted-foreground">{s.label}</p>
               <s.icon className={`h-4 w-4 ${s.color}`} />
@@ -334,11 +323,7 @@ export default function FleetPage() {
               <button
                 key={f.key}
                 onClick={() => setStatusFilter(f.key)}
-                className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                  statusFilter === f.key
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/70'
-                }`}
+                className={`rounded-2xl px-4 py-2 text-xs font-semibold transition-all duration-200 ${statusFilter === f.key ? 'bg-foreground text-background shadow-md' : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'}`}
               >
                 {f.label}
                 {f.key !== 'ALL' && (
@@ -360,7 +345,7 @@ export default function FleetPage() {
             placeholder="Meklēt pēc maršruta, šofera, kravas..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="ml-auto h-8 rounded-md border border-input bg-background px-3 text-xs focus:outline-none focus:ring-2 focus:ring-ring w-64"
+            className="ml-0 sm:ml-auto h-11 rounded-[1.5rem] border-0 bg-white dark:bg-zinc-950 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05)] px-5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 w-full sm:w-72 transition-shadow"
           />
         </div>
       )}
@@ -371,7 +356,7 @@ export default function FleetPage() {
           <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-6 text-center">
             <AlertCircle className="mx-auto mb-2 h-8 w-8 text-destructive" />
             <p className="text-sm font-medium text-destructive">{error}</p>
-            <Button variant="outline" size="sm" className="mt-3" onClick={fetchJobs}>
+            <Button variant="outline" size="sm" className="rounded-xl border-border/60 hover:bg-muted/50 mt-3" onClick={fetchJobs}>
               Mēģināt vēlreiz
             </Button>
           </div>
@@ -388,101 +373,94 @@ export default function FleetPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-auto rounded-xl border border-border/50">
+          <div className="overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-950 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.04)] border border-border/40 pb-2">
+            <div className="overflow-auto px-2">
             <table className="min-w-full text-sm">
-              <thead className="bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <thead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/60 border-b-2 border-border/30">
                 <tr>
-                  <th className="px-4 py-3 text-left">Darba nr.</th>
-                  <th className="px-4 py-3 text-left">Veids</th>
-                  <th className="px-4 py-3 text-left">Maršruts</th>
-                  <th className="px-4 py-3 text-left">Krava</th>
-                  <th className="px-4 py-3 text-left">Šoferis / Transports</th>
-                  <th className="px-4 py-3 text-left">Datums</th>
-                  <th className="px-4 py-3 text-left">Statuss</th>
+                  <th className="px-4 py-4 text-left">Darba nr.</th>
+                  <th className="px-4 py-4 text-left">Veids</th>
+                  <th className="px-4 py-4 text-left">Maršruts</th>
+                  <th className="px-4 py-4 text-left">Krava</th>
+                  <th className="px-4 py-4 text-left">Šoferis / Transports</th>
+                  <th className="px-4 py-4 text-left">Datums</th>
+                  <th className="px-4 py-4 text-left">Statuss</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">
                 {filtered.map((job) => (
-                  <tr key={job.id} className="bg-background hover:bg-muted/20 transition-colors">
+                  <tr key={job.id} className="group hover:bg-muted/30 transition-colors duration-300">
                     {/* Job number */}
-                    <td className="px-4 py-3 font-mono text-xs font-semibold text-muted-foreground">
+                    <td className="px-5 py-4 font-mono text-xs font-semibold text-muted-foreground/80 group-hover:text-foreground transition-colors">
                       {job.jobNumber}
                     </td>
-
-                    {/* Job type */}
-                    <td className="px-4 py-3">
-                      <span className="text-xs">{JOB_TYPE_LV[job.jobType] ?? job.jobType}</span>
+                    <td className="px-4 py-4">
+                      <span className="text-xs font-medium">{JOB_TYPE_LV[job.jobType] ?? job.jobType}</span>
                     </td>
-
-                    {/* Route */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5 font-medium">
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2 font-medium text-sm">
                         <span>{job.pickupCity}</span>
-                        <span className="text-muted-foreground">→</span>
+                        <span className="text-muted-foreground/50">→</span>
                         <span>{job.deliveryCity}</span>
                       </div>
                       {job.distanceKm && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{job.distanceKm} km</p>
+                        <p className="text-xs text-muted-foreground/70 mt-1 font-medium">{job.distanceKm} km</p>
                       )}
                     </td>
-
-                    {/* Cargo */}
-                    <td className="px-4 py-3">
-                      <p className="font-medium">{job.cargoType}</p>
+                    <td className="px-4 py-4">
+                      <p className="font-semibold text-sm">{job.cargoType}</p>
                       {job.cargoWeight && (
-                        <p className="text-xs text-muted-foreground">{job.cargoWeight} t</p>
+                        <p className="text-xs text-muted-foreground font-medium">{job.cargoWeight} t</p>
                       )}
                     </td>
-
-                    {/* Driver + vehicle */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-4">
                       {job.driver ? (
                         <div>
-                          <div className="flex items-center gap-1.5">
-                            <User className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span className="font-medium text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted">
+                              <User className="h-3 w-3 text-foreground/70" />
+                            </span>
+                            <span className="font-semibold text-sm">
                               {job.driver.firstName} {job.driver.lastName}
                             </span>
                           </div>
                           {job.vehicle && (
-                            <p className="text-xs text-muted-foreground mt-0.5 ml-5">
+                            <p className="text-xs text-muted-foreground/80 mt-1 ml-8 font-medium">
                               {VEHICLE_LV[job.vehicle.vehicleType] ?? job.vehicle.vehicleType}
-                              {' · '}
-                              {job.vehicle.licensePlate}
+                              <span className="mx-1.5 opacity-50">·</span>
+                              <span className="font-mono">{job.vehicle.licensePlate}</span>
                             </p>
                           )}
                         </div>
                       ) : (
                         <button
                           onClick={() => router.push('/dashboard/jobs')}
-                          className="text-xs font-semibold text-foreground underline hover:no-underline"
+                          className="inline-flex items-center text-xs font-bold text-primary hover:text-primary/80 transition-colors"
                         >
                           + Piešķirt šoferi
                         </button>
                       )}
                     </td>
-
-                    {/* Pickup date */}
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                    <td className="px-4 py-4 text-xs font-medium text-muted-foreground/80">
                       {formatDate(job.pickupDate)}
-                      {job.pickupWindow && <p className="text-xs">{job.pickupWindow}</p>}
+                      {job.pickupWindow && <p className="text-muted-foreground mt-0.5">{job.pickupWindow}</p>}
                     </td>
-
-                    {/* Status */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-4">
                       <StatusBadge status={job.status} />
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
 
             {/* Table footer */}
-            <div className="border-t bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
-              {filtered.length} no {jobs.length} darb{jobs.length === 1 ? 'a' : 'iem'}
+            <div className="border-t border-border/40 bg-muted/10 px-6 py-4 text-xs font-semibold text-muted-foreground/70">
+              Rāda {filtered.length} no {jobs.length} darb{jobs.length === 1 ? 'a' : 'iem'}
             </div>
           </div>
-        ))}
-    </div>
+        )
+      )}
+    </PageContainer>
   );
 }

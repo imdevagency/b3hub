@@ -7,7 +7,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { getMyTransportJobs, type ApiTransportJob } from '@/lib/api';
-import { Card, CardContent, CardHeader, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Banknote,
@@ -161,17 +160,19 @@ function StatCard({
   color: string;
 }) {
   return (
-    <Card className="shadow-none border-border/50">
-      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2 pt-4 px-4">
-        <CardDescription className="text-xs font-medium">{label}</CardDescription>
-        <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${color}`}>
-          <Icon className="h-3.5 w-3.5" />
+    <div className="rounded-2xl bg-muted/40 p-5 flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-medium text-muted-foreground">{label}</span>
+        <div
+          className={`flex h-8 w-8 items-center justify-center rounded-full bg-background shadow-sm ${color}`}
+        >
+          <Icon className="h-4 w-4" />
         </div>
-      </CardHeader>
-      <CardContent className="px-4 pb-4">
-        <p className="text-2xl font-bold tabular-nums">{value}</p>
-      </CardContent>
-    </Card>
+      </div>
+      <div>
+        <p className="text-2xl font-semibold tabular-nums tracking-tight">{value}</p>
+      </div>
+    </div>
   );
 }
 
@@ -225,29 +226,35 @@ export default function TransporterEarningsPage() {
         : stats.monthEarnings;
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-8 pb-12 w-full">
       {/* header */}
       <PageHeader
         title="Ienākumi"
         description="Transporta darbu ienākumu pārskats"
         action={
-          <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing}>
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
+          <Button
+            variant="outline"
+            className="rounded-full bg-muted/40 border-0 hover:bg-muted/80 shadow-none px-4"
+            size="sm"
+            onClick={() => load(true)}
+            disabled={refreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             Atjaunināt
           </Button>
         }
       />
 
       {/* period tabs */}
-      <div className="flex gap-1 bg-muted rounded-lg p-1 w-fit">
+      <div className="flex gap-1 bg-muted/50 rounded-xl p-1 w-fit">
         {(['today', 'week', 'month'] as Period[]).map((p) => (
           <button
             key={p}
             onClick={() => setPeriod(p)}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
               period === p
-                ? 'bg-background shadow-sm text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-background shadow-xs text-foreground'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             }`}
           >
             {PERIOD_LABELS[p]}
@@ -256,133 +263,166 @@ export default function TransporterEarningsPage() {
       </div>
 
       {/* main earnings highlight */}
-      <div className="rounded-2xl bg-linear-to-br from-primary to-primary/90 p-6 text-white">
-        <p className="text-sm font-medium opacity-80">{PERIOD_LABELS[period]} ienākumi</p>
-        <p className="text-4xl font-extrabold mt-1 tabular-nums">{euro(periodEarnings)}</p>
-        <div className="flex gap-6 mt-4 text-sm opacity-90">
-          <span>
-            <span className="font-semibold">{stats.completedJobs}</span> pabeigti darbi
-          </span>
-          <span className="text-yellow-200">{euro(stats.pendingPayout)} gaidāmie</span>
+      <div className="rounded-3xl bg-zinc-950 p-8 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+          <Banknote className="w-48 h-48" />
+        </div>
+        <div className="relative z-10">
+          <p className="text-sm font-medium text-zinc-400">{PERIOD_LABELS[period]} ienākumi</p>
+          <p className="text-5xl font-bold mt-2 tabular-nums tracking-tight">
+            {euro(periodEarnings)}
+          </p>
+          <div className="flex gap-8 mt-8 text-sm text-zinc-300">
+            <span className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-emerald-400" />
+              <span className="font-semibold text-white">{stats.completedJobs}</span> pabeigti darbi
+            </span>
+            <span className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-amber-400" />
+              <span className="font-semibold text-white">{euro(stats.pendingPayout)}</span> gaidāmie
+            </span>
+          </div>
         </div>
       </div>
 
       {/* stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
         <StatCard
           label="Šodien"
           value={euro(stats.todayEarnings)}
           icon={Banknote}
-          color="bg-primary/10 text-primary"
+          color="text-zinc-900"
         />
         <StatCard
           label="Šonedēļ"
           value={euro(stats.weekEarnings)}
           icon={TrendingUp}
-          color="bg-orange-100 text-orange-700"
+          color="text-zinc-900"
         />
         <StatCard
           label="Šomēnes"
           value={euro(stats.monthEarnings)}
           icon={BarChart3}
-          color="bg-blue-100 text-blue-700"
+          color="text-zinc-900"
         />
         <StatCard
           label="Pabeigti darbi"
           value={String(stats.completedJobs)}
           icon={CheckCircle}
-          color="bg-gray-100 text-gray-700"
+          color="text-zinc-900"
         />
         <StatCard
           label="Gaidāmie"
           value={euro(stats.pendingPayout)}
           icon={Clock}
-          color="bg-yellow-100 text-yellow-700"
+          color="text-amber-600"
         />
       </div>
 
-      {/* 7-day bar chart */}
-      <Card className="shadow-none border-border/50">
-        <CardHeader className="px-5 pt-5 pb-3">
-          <h2 className="text-sm font-semibold">Ienākumi — pēdējās 7 dienas</h2>
-        </CardHeader>
-        <CardContent className="px-5 pb-5">
-          {loading ? (
-            <div className="h-28 bg-muted animate-pulse rounded-lg" />
-          ) : (
-            <div className="flex items-end gap-2 h-28">
-              {chart.map((bar) => {
-                const heightPct = maxChart > 0 ? (bar.amount / maxChart) * 100 : 0;
-                return (
-                  <div key={bar.label} className="flex-1 flex flex-col items-center gap-1">
-                    <div className="w-full flex items-end justify-center" style={{ height: 88 }}>
-                      <div
-                        className={`w-full rounded-t-md transition-all ${bar.isToday ? 'bg-primary' : 'bg-primary/30'}`}
-                        style={{ height: `${Math.max(heightPct, bar.amount > 0 ? 4 : 2)}%` }}
-                        title={euro(bar.amount)}
-                      />
-                    </div>
-                    <span
-                      className={`text-[10px] font-medium ${bar.isToday ? 'text-primary' : 'text-muted-foreground'}`}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* 7-day bar chart */}
+        <div className="lg:col-span-1 rounded-3xl bg-muted/30 p-6 flex flex-col">
+          <div className="mb-6">
+            <h2 className="text-base font-semibold">Ienākumi (7 dienas)</h2>
+            <p className="text-sm text-muted-foreground mt-1">Sadalījums pa dienām</p>
+          </div>
+          <div className="flex-1 flex flex-col justify-end">
+            {loading ? (
+              <div className="h-32 bg-muted/50 animate-pulse rounded-xl" />
+            ) : (
+              <div className="flex items-end gap-3 h-32">
+                {chart.map((bar) => {
+                  const heightPct = maxChart > 0 ? (bar.amount / maxChart) * 100 : 0;
+                  return (
+                    <div
+                      key={bar.label}
+                      className="flex-1 flex flex-col items-center gap-2 group relative"
                     >
-                      {bar.shortLabel}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* job history */}
-      <Card className="shadow-none border-border/50">
-        <CardHeader className="px-5 pt-5 pb-3 flex flex-row items-center justify-between">
-          <h2 className="text-sm font-semibold">Darbu vēsture</h2>
-          <span className="text-xs text-muted-foreground">{history.length} ieraksti</span>
-        </CardHeader>
-        <CardContent className="px-0 pb-2">
-          {loading ? (
-            <div className="space-y-3 px-5">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-12 bg-muted animate-pulse rounded-lg" />
-              ))}
-            </div>
-          ) : history.length === 0 ? (
-            <p className="text-sm text-muted-foreground px-5 py-4">Nav darbu vēstures</p>
-          ) : (
-            <div className="divide-y divide-border">
-              {history.map((entry) => {
-                const cfg = STATUS_CONFIG[entry.status];
-                return (
-                  <div
-                    key={entry.id}
-                    className="flex items-center gap-3 px-5 py-3 hover:bg-muted/40 transition-colors"
-                  >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted shrink-0">
-                      <Truck className="h-3.5 w-3.5 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">#{entry.jobNumber}</span>
-                        <Badge variant={cfg.variant} className="text-[10px] h-4 px-1.5">
-                          {cfg.label}
-                        </Badge>
+                      <div className="w-full flex items-end justify-center h-24">
+                        <div
+                          className={`w-full rounded-md transition-all duration-500 ease-out group-hover:opacity-80 ${bar.isToday ? 'bg-zinc-900' : 'bg-zinc-200 dark:bg-zinc-800'}`}
+                          style={{ height: `${Math.max(heightPct, bar.amount > 0 ? 8 : 4)}%` }}
+                        />
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                        {entry.route} · {entry.date}
-                      </p>
+                      <span
+                        className={`text-xs font-medium ${bar.isToday ? 'text-zinc-900 font-bold' : 'text-muted-foreground'}`}
+                      >
+                        {bar.shortLabel}
+                      </span>
                     </div>
-                    <span className="text-sm font-semibold tabular-nums text-red-700 shrink-0">
-                      {euro(entry.amount)}
-                    </span>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* job history */}
+        <div className="lg:col-span-2 rounded-3xl bg-muted/30 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-base font-semibold">Darbu vēsture</h2>
+              <p className="text-sm text-muted-foreground mt-1">Pēdējie veiktie darbi</p>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <Badge variant="secondary" className="rounded-full px-3 font-medium bg-background">
+              {history.length}
+            </Badge>
+          </div>
+
+          <div className="-mx-2">
+            {loading ? (
+              <div className="space-y-4 px-2">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-16 bg-muted/50 animate-pulse rounded-2xl" />
+                ))}
+              </div>
+            ) : history.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Truck className="h-12 w-12 text-muted mb-4" />
+                <p className="text-base font-medium">Nav darbu vēstures</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Šeit parādīsies pabeigtie un aktīvie darbi
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {history.map((entry) => {
+                  const cfg = STATUS_CONFIG[entry.status];
+                  return (
+                    <div
+                      key={entry.id}
+                      className="flex items-center gap-4 px-4 py-3 hover:bg-background/80 rounded-2xl transition-colors group"
+                    >
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-background shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                        <Truck className="h-5 w-5 text-zinc-900" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-semibold text-zinc-900">
+                            #{entry.jobNumber}
+                          </span>
+                          <Badge
+                            variant={cfg.variant}
+                            className="text-[10px] uppercase tracking-wider font-bold h-5 px-2 rounded-md shadow-none"
+                          >
+                            {cfg.label}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {entry.route} <span className="opacity-50 mx-1">•</span> {entry.date}
+                        </p>
+                      </div>
+                      <span className="text-lg font-bold tabular-nums tracking-tight shrink-0">
+                        {euro(entry.amount)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

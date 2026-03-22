@@ -79,32 +79,53 @@ function NotifRow({ n, onMarkRead }: { n: AppNotification; onMarkRead: (id: stri
 
   return (
     <div
-      className={`flex items-start gap-4 px-4 py-4 rounded-xl transition-colors cursor-default ${
-        n.isRead ? 'bg-transparent' : 'bg-primary/5 border border-primary/10'
+      className={`group relative flex items-start gap-4 p-4 sm:p-5 rounded-[2rem] transition-all duration-200 border ${
+        n.isRead
+          ? 'bg-muted/10 border-transparent hover:bg-muted/30'
+          : 'bg-white dark:bg-zinc-950 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border-border/40'
       }`}
     >
       <div
-        className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${meta.bg}`}
+        className={`mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${n.isRead ? 'opacity-60 saturate-50' : ''} ${meta.bg}`}
       >
-        <Icon className={`h-4 w-4 ${meta.color}`} />
+        <Icon className={`h-5 w-5 ${meta.color}`} />
       </div>
-      <div className="flex-1 min-w-0">
-        <p
-          className={`text-sm leading-snug ${n.isRead ? 'text-foreground' : 'font-semibold text-foreground'}`}
-        >
-          {n.title}
+      
+      <div className="flex-1 min-w-0 pr-2">
+        <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 justify-between">
+          <p
+            className={`text-[15px] leading-tight ${
+              n.isRead ? 'font-medium text-foreground/70' : 'font-semibold text-foreground'
+            }`}
+          >
+            {n.title}
+            {!n.isRead && (
+              <span className="ml-2 inline-block h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+            )}
+          </p>
+          <span className="text-xs font-medium text-muted-foreground shrink-0 bg-muted/40 px-2 py-0.5 rounded-full whitespace-nowrap">
+            {fmtRelative(n.createdAt)}
+          </span>
+        </div>
+        
+        <p className={`mt-1.5 text-sm leading-relaxed ${
+          n.isRead ? 'text-muted-foreground/70' : 'text-muted-foreground'
+        }`}>
+          {n.message}
         </p>
-        <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{n.message}</p>
-        <p className="mt-1 text-[11px] text-muted-foreground/70">{fmtRelative(n.createdAt)}</p>
+
+        {!n.isRead && (
+          <div className="mt-4 flex">
+            <button
+              onClick={() => onMarkRead(n.id)}
+              className="inline-flex items-center justify-center rounded-xl bg-muted hover:bg-muted/80 px-3 py-1.5 text-xs font-semibold text-foreground transition-all duration-200"
+            >
+              <CheckCheck className="mr-1.5 h-3.5 w-3.5" />
+              Atzīmēt kā lasītu
+            </button>
+          </div>
+        )}
       </div>
-      {!n.isRead && (
-        <button
-          onClick={() => onMarkRead(n.id)}
-          className="mt-1 shrink-0 rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
-        >
-          Atzīmēt
-        </button>
-      )}
     </div>
   );
 }
@@ -120,11 +141,11 @@ function GroupSection({
 }) {
   if (items.length === 0) return null;
   return (
-    <div>
-      <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+    <div className="mb-6 last:mb-0">
+      <h3 className="mb-4 ml-1 md:ml-4 text-xs font-bold tracking-wider uppercase text-muted-foreground/60">
         {title}
-      </p>
-      <div className="space-y-1">
+      </h3>
+      <div className="space-y-3">
         {items.map((n) => (
           <NotifRow key={n.id} n={n} onMarkRead={onMarkRead} />
         ))}
@@ -182,7 +203,7 @@ export default function NotificationsPage() {
   const { today, thisWeek, older } = groupNotifications(notifs);
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="space-y-8 pb-12">
       <PageHeader
         title="Paziņojumi"
         description={
@@ -206,13 +227,16 @@ export default function NotificationsPage() {
 
       {loading ? (
         <div className="space-y-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex items-start gap-4 px-4 py-4">
-              <Skeleton className="h-9 w-9 rounded-full shrink-0" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-3 w-1/4" />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-start gap-4 p-4 sm:p-5 rounded-[2rem] bg-muted/10 border border-transparent mb-3 last:mb-0">
+              <Skeleton className="h-12 w-12 rounded-2xl shrink-0 opacity-40" />
+              <div className="flex-1 space-y-3 pt-1">
+                <div className="flex justify-between items-center">
+                  <Skeleton className="h-4 w-1/3 opacity-40 rounded-lg" />
+                  <Skeleton className="h-3 w-16 opacity-30 rounded-full" />
+                </div>
+                <Skeleton className="h-3 w-3/4 opacity-30 rounded-lg" />
+                <Skeleton className="h-3 w-1/2 opacity-30 rounded-lg" />
               </div>
             </div>
           ))}
@@ -241,3 +265,5 @@ export default function NotificationsPage() {
     </div>
   );
 }
+// force rebuild skel 2
+// build next 1774210503

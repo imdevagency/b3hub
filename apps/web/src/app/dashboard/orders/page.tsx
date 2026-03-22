@@ -185,12 +185,14 @@ function formatSlaStage(stage: string | null | undefined): string {
 function QuickStat({ value, label, alert }: { value: string; label: string; alert?: boolean }) {
   return (
     <div
-      className={`flex flex-col justify-center bg-card border ${alert ? 'border-foreground text-foreground shadow-sm' : 'border-border'} rounded-xl p-5 hover:border-foreground/30 hover:shadow-md transition-all duration-200`}
+      className={`flex flex-col justify-center rounded-3xl ${alert ? 'bg-red-50 text-red-900' : 'bg-muted/40'} p-6 transition-all duration-200`}
     >
-      <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+      <span
+        className={`text-[13px] font-medium tracking-wide mb-2 ${alert ? 'text-red-700' : 'text-muted-foreground'}`}
+      >
         {label}
       </span>
-      <span className={`text-3xl sm:text-4xl font-bold tracking-tight text-foreground`}>
+      <span className={`text-4xl font-bold tracking-tight ${alert ? '' : 'text-foreground'}`}>
         {value}
       </span>
     </div>
@@ -396,7 +398,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
       {/* Delivery Success Modal */}
       {deliveredJob && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div className="bg-background w-full max-w-md rounded-3xl shadow-xl border overflow-hidden">
+          <div className="bg-background w-full max-w-md rounded-[2rem] shadow-2xl border-0 ring-1 ring-black/5 overflow-hidden">
             {/* Success header */}
             <div className="bg-green-50 px-6 py-8 flex flex-col items-center gap-3">
               <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
@@ -449,7 +451,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
       {/* Delivery Proof Modal */}
       {showProofModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div className="bg-background w-full max-w-md rounded-3xl shadow-xl border overflow-hidden">
+          <div className="bg-background w-full max-w-md rounded-[2rem] shadow-2xl border-0 ring-1 ring-black/5 overflow-hidden">
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center">
@@ -525,9 +527,9 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-2">
         <div>
-          <h2 className="text-lg font-bold tracking-tight">Aktīvais darbs</h2>
+          <h2 className="text-xl font-bold tracking-tight">Aktīvais darbs</h2>
           {job && (
             <p className="text-sm text-muted-foreground mt-0.5">
               #{job.jobNumber} · {job.cargoType} {job.cargoWeight ?? 0} t
@@ -537,25 +539,28 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-2 rounded-full bg-muted/40 hover:bg-muted/80 px-4 py-2 text-sm font-medium text-foreground transition-colors border-0"
         >
-          <RefreshCw className={`size-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`size-4 ${refreshing ? 'animate-spin' : ''}`} />
           Atjaunot
         </button>
       </div>
 
       {/* No active job */}
       {!job && (
-        <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
-          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
-            <Truck className="h-8 w-8 text-gray-400" />
+        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-muted/20 rounded-3xl">
+          <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
+            <Truck className="h-10 w-10 text-muted-foreground/60" />
           </div>
           <div>
-            <p className="text-base font-bold text-gray-700">Nav aktīva darba</p>
-            <p className="text-sm text-muted-foreground mt-1">Pieņemiet darbu no darbu saraksta</p>
+            <p className="text-base font-bold text-foreground">Nav aktīva darba</p>
+            <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+              Jums šobrīd nav neviena aktīva pārvadājuma. Atveriet darbu sarakstu, lai atrastu un
+              pieņemtu jaunus uzdevumus.
+            </p>
           </div>
           <button
-            className="mt-2 flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl px-4 py-2.5 text-sm transition-colors"
+            className="mt-4 flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full px-6 py-3 text-sm transition-all"
             onClick={() => router.push('/dashboard/jobs')}
           >
             <MapPin className="h-4 w-4" />
@@ -578,9 +583,9 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
           return (
             <>
               {/* Status card */}
-              <div className="bg-muted/20 border-0 rounded-3xl p-5 space-y-4 shadow-sm">
+              <div className="bg-muted/40 rounded-3xl p-6 space-y-5">
                 <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm font-bold rounded-full px-3 py-1.5">
+                  <span className="inline-flex items-center gap-2 bg-red-50 border-0 text-red-700 text-sm font-bold rounded-full px-4 py-2">
                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                     {STATUS_LABEL[currentStatus]}
                   </span>
@@ -596,8 +601,8 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
 
               {/* SLA widget */}
               <div
-                className={`rounded-2xl border p-4 ${
-                  job.sla?.isOverdue ? 'border-red-200 bg-red-50' : 'border-blue-200 bg-blue-50'
+                className={`rounded-3xl border-0 p-6 ${
+                  job.sla?.isOverdue ? 'bg-red-50 text-red-900' : 'bg-blue-50/50 text-blue-900'
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -647,7 +652,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
                 )}
 
               {/* Route detail card */}
-              <div className="bg-muted/20 border-0 rounded-3xl p-5 space-y-4 shadow-sm">
+              <div className="bg-muted/40 rounded-3xl p-6 space-y-5">
                 <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide">
                   Maršruts
                 </h3>
@@ -711,7 +716,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
               </div>
 
               {/* Cargo details */}
-              <div className="bg-muted/20 border-0 rounded-3xl px-5 py-4 shadow-sm flex flex-wrap gap-6">
+              <div className="bg-muted/40 rounded-3xl p-6 flex flex-wrap gap-8">
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
                     Krava
@@ -741,7 +746,7 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
               </div>
 
               {/* Exceptions widget */}
-              <div className="pt-6 mt-6 border-t border-border">
+              <div className="pt-2 mt-4">
                 <div className="flex items-center justify-between gap-2 mb-4">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="h-5 w-5 text-muted-foreground" />
@@ -795,23 +800,24 @@ function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () 
                   </div>
                 ) : exceptions.length === 0 ? (
                   <div className="flex flex-col h-32 items-center justify-center rounded-xl border border-dashed border-border bg-muted/5 gap-2">
-                     <AlertTriangle className="h-6 w-6 text-muted-foreground/30" />
-                    <p className="text-sm text-muted-foreground">Pašlaik nav reģistrētu problēmu.</p>
+                    <AlertTriangle className="h-6 w-6 text-muted-foreground/30" />
+                    <p className="text-sm text-muted-foreground">
+                      Pašlaik nav reģistrētu problēmu.
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {exceptions.map((item) => {
                       const isOpen = item.status === 'OPEN';
                       return (
-                        <div
-                          key={item.id}
-                          className="rounded-xl border border-border bg-background p-4 space-y-3 shadow-sm"
-                        >
+                        <div key={item.id} className="rounded-2xl bg-muted/40 p-5 space-y-4">
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-sm font-semibold text-foreground">{item.type}</p>
                             <span
                               className={`rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wider ${
-                                isOpen ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'
+                                isOpen
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-emerald-100 text-emerald-800'
                               }`}
                             >
                               {isOpen ? 'ATVĒRTS' : 'ATRISINĀTS'}
@@ -931,26 +937,28 @@ function CarrierHistoryView({ token }: { token: string }) {
       </div>
 
       {/* Filter + refresh */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {(['all', 'active', 'done'] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
-              filter === f
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/70'
-            }`}
-          >
-            {f === 'all' ? 'Visi' : f === 'active' ? 'Aktīvie' : 'Pabeigti'}
-          </button>
-        ))}
+      <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
+        <div className="flex gap-1 bg-muted/50 rounded-xl p-1 w-fit">
+          {(['all', 'active', 'done'] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+                filter === f
+                  ? 'bg-background shadow-xs text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+            >
+              {f === 'all' ? 'Visi' : f === 'active' ? 'Aktīvie' : 'Pabeigti'}
+            </button>
+          ))}
+        </div>
         <button
           onClick={reload}
           disabled={loading}
-          className="ml-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-2 rounded-full bg-muted/40 hover:bg-muted/80 px-4 py-2 text-sm font-medium text-foreground transition-colors border-0"
         >
-          <RefreshCw className={`size-3.5 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
           Atjaunot
         </button>
       </div>
@@ -959,12 +967,12 @@ function CarrierHistoryView({ token }: { token: string }) {
       {loading ? (
         <div className="py-16 text-center text-muted-foreground text-sm">Ielādē...</div>
       ) : jobs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center">
-          <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center">
-            <Truck className="h-10 w-10 text-red-300" />
+        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-muted/20 rounded-3xl">
+          <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
+            <Truck className="h-10 w-10 text-muted-foreground/60" />
           </div>
           <div className="space-y-1.5">
-            <p className="text-base font-bold text-gray-800">Nav neviena darba</p>
+            <p className="text-base font-bold text-foreground">Nav neviena darba</p>
             <p className="text-sm text-muted-foreground max-w-xs">
               Vēl neesat pieņēmuši nevienu darbu. Atveriet darbu dēli, lai atrastu un pieņemtu
               jaunus kravu pārvadāšanas darbus.
@@ -972,7 +980,7 @@ function CarrierHistoryView({ token }: { token: string }) {
           </div>
           <Link
             href="/dashboard/jobs"
-            className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl px-5 py-2.5 text-sm transition-colors"
+            className="mt-2 inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full px-6 py-3 text-sm transition-all"
           >
             <Search className="h-4 w-4" />
             Meklēt darbus
@@ -996,7 +1004,7 @@ function CarrierHistoryView({ token }: { token: string }) {
               <Link
                 key={job.id}
                 href={`/dashboard/orders/${job.id}`}
-                className="group block relative bg-card border border-border rounded-xl p-4 sm:p-5 mb-3 hover:border-foreground/30 hover:shadow-sm transition-all duration-200"
+                className="group block relative bg-muted/30 rounded-3xl p-6 mb-4 hover:bg-muted/50 transition-all duration-300"
               >
                 {/* Meta Top Row */}
                 <div className="flex justify-between items-start mb-5">
@@ -1085,15 +1093,15 @@ function CarrierView({ token }: { token: string }) {
   return (
     <div className="space-y-4">
       {/* Tab switcher */}
-      <div className="flex gap-2">
+      <div className="flex gap-1 bg-muted/50 rounded-xl p-1 w-fit mb-4">
         {(['active', 'history'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+            className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
               tab === t
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/70'
+                ? 'bg-background shadow-xs text-foreground'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             }`}
           >
             {t === 'active' ? 'Aktīvais' : 'Vēsture'}
@@ -1160,13 +1168,13 @@ function SupplierView({ token }: { token: string }) {
         <QuickStat value={fmtMoney(revenue)} label="Kopā ieņēmumi" />
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end mb-4">
         <button
           onClick={reload}
           disabled={loading}
-          className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-2 rounded-full bg-muted/40 hover:bg-muted/80 px-4 py-2 text-sm font-medium text-foreground transition-colors border-0"
         >
-          <RefreshCw className={`size-3.5 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
           Atjaunot
         </button>
       </div>
@@ -1174,12 +1182,12 @@ function SupplierView({ token }: { token: string }) {
       {loading ? (
         <div className="py-16 text-center text-muted-foreground text-sm">Ielādē...</div>
       ) : orders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center">
-          <div className="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center">
-            <Package className="h-10 w-10 text-emerald-300" />
+        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-muted/20 rounded-3xl">
+          <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
+            <Package className="h-10 w-10 text-muted-foreground/60" />
           </div>
           <div className="space-y-1.5">
-            <p className="text-base font-bold text-gray-800">Nav ienākošu pasūtījumu</p>
+            <p className="text-base font-bold text-foreground">Nav ienākošu pasūtījumu</p>
             <p className="text-sm text-muted-foreground max-w-xs">
               Kad pircēji veiks pasūtījumu, tas parādīsies šeit. Pārliecinieties, ka jūsu
               piedāvājumi ir aktīvi.
@@ -1187,7 +1195,7 @@ function SupplierView({ token }: { token: string }) {
           </div>
           <Link
             href="/dashboard/materials"
-            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl px-5 py-2.5 text-sm transition-colors"
+            className="mt-2 inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full px-6 py-3 text-sm transition-all"
           >
             <Package className="h-4 w-4" />
             Pārvaldīt piedāvājumus
@@ -1213,7 +1221,7 @@ function SupplierView({ token }: { token: string }) {
             return (
               <div
                 key={order.id}
-                className="group block relative bg-card border border-border rounded-xl p-4 sm:p-5 mb-3 hover:border-foreground/30 hover:shadow-sm transition-all duration-200"
+                className="group block relative bg-muted/30 rounded-3xl p-6 mb-4 hover:bg-muted/50 transition-all duration-300"
               >
                 {/* Header row */}
                 <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/50">
@@ -1283,7 +1291,7 @@ function SupplierView({ token }: { token: string }) {
 
                       {/* Delivery */}
                       <div className="relative">
-                        <div className="absolute -left-6 top-1.5 size-2 rounded-full border-2 border-emerald-500 bg-white ring-4 ring-white shadow-sm" />
+                        <div className="absolute -left-6 top-1.5 size-3 rounded-full bg-emerald-500 ring-4 ring-background shadow-sm" />
                         <p className="text-xs font-medium text-muted-foreground mb-0.5">
                           Piegāde • {fmtDate(order.deliveryDate)}
                         </p>
@@ -1371,29 +1379,31 @@ function BuyerView({ token }: { token: string }) {
       </div>
 
       {/* Tabs + refresh */}
-      <div className="flex items-center gap-2">
-        {[
-          { key: 'skip', label: `Konteineri (${skipOrders.length})` },
-          { key: 'material', label: `Materiāli (${matOrders.length})` },
-        ].map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setTab(key as 'skip' | 'material')}
-            className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
-              tab === key
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/70'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
+        <div className="flex gap-1 bg-muted/50 rounded-xl p-1 w-fit">
+          {[
+            { key: 'skip', label: `Konteineri (${skipOrders.length})` },
+            { key: 'material', label: `Materiāli (${matOrders.length})` },
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key as 'skip' | 'material')}
+              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+                tab === key
+                  ? 'bg-background shadow-xs text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <button
           onClick={reload}
           disabled={loading}
-          className="ml-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-2 rounded-full bg-muted/40 hover:bg-muted/80 px-4 py-2 text-sm font-medium text-foreground transition-colors border-0"
         >
-          <RefreshCw className={`size-3.5 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
           Atjaunot
         </button>
       </div>
@@ -1403,12 +1413,12 @@ function BuyerView({ token }: { token: string }) {
       ) : tab === 'skip' ? (
         /* Skip-hire table */
         skipOrders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-5 text-center">
-            <div className="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center">
-              <Trash2 className="h-10 w-10 text-blue-300" />
+          <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-muted/20 rounded-3xl">
+            <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
+              <Trash2 className="h-10 w-10 text-muted-foreground/60" />
             </div>
             <div className="space-y-1.5">
-              <p className="text-base font-bold text-gray-800">Nav konteineru pasūtījumu</p>
+              <p className="text-base font-bold text-foreground">Nav konteineru pasūtījumu</p>
               <p className="text-sm text-muted-foreground max-w-xs">
                 Jums vēl nav neviena konteinera nomas pasūtījuma. Pasūtiet konteineru atkritumu
                 izvešanai.
@@ -1416,7 +1426,7 @@ function BuyerView({ token }: { token: string }) {
             </div>
             <Link
               href="/dashboard/order/skip-hire"
-              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl px-5 py-2.5 text-sm transition-colors"
+              className="mt-2 inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full px-6 py-3 text-sm transition-all"
             >
               <Trash2 className="h-4 w-4" />
               Pasūtīt konteineru
@@ -1436,7 +1446,7 @@ function BuyerView({ token }: { token: string }) {
               return (
                 <div
                   key={o.id}
-                  className="group block relative bg-card border border-border rounded-xl p-4 sm:p-5 mb-3 hover:border-foreground/30 hover:shadow-sm transition-all duration-200"
+                  className="group block relative bg-muted/30 rounded-3xl p-6 mb-4 hover:bg-muted/50 transition-all duration-300"
                 >
                   {/* Header row */}
                   <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/50">
@@ -1473,7 +1483,7 @@ function BuyerView({ token }: { token: string }) {
 
                         {/* Delivery */}
                         <div className="relative">
-                          <div className="absolute -left-6 top-1.5 size-2 rounded-full border-2 border-emerald-500 bg-white ring-4 ring-white shadow-sm" />
+                          <div className="absolute -left-6 top-1.5 size-3 rounded-full bg-emerald-500 ring-4 ring-background shadow-sm" />
                           <p className="text-xs font-medium text-muted-foreground mb-0.5">
                             Adrese • {fmtDate(o.deliveryDate)}
                           </p>
@@ -1504,12 +1514,12 @@ function BuyerView({ token }: { token: string }) {
         )
       ) : /* Material orders table */
       matOrders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center">
-          <div className="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center">
-            <Package className="h-10 w-10 text-blue-300" />
+        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-muted/20 rounded-3xl">
+          <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
+            <Package className="h-10 w-10 text-muted-foreground/60" />
           </div>
           <div className="space-y-1.5">
-            <p className="text-base font-bold text-gray-800">Nav materiālu pasūtījumu</p>
+            <p className="text-base font-bold text-foreground">Nav materiālu pasūtījumu</p>
             <p className="text-sm text-muted-foreground max-w-xs">
               Jums vēl nav neviena materiālu pasūtījuma. Apskatiet piedāvājumus un pasūtiet
               nepieciešamos materiālus.
@@ -1517,7 +1527,7 @@ function BuyerView({ token }: { token: string }) {
           </div>
           <Link
             href="/dashboard/materials"
-            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl px-5 py-2.5 text-sm transition-colors"
+            className="mt-2 inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full px-6 py-3 text-sm transition-all"
           >
             <Search className="h-4 w-4" />
             Meklēt materiālus
@@ -1538,7 +1548,7 @@ function BuyerView({ token }: { token: string }) {
             return (
               <div
                 key={o.id}
-                className="group block relative bg-card border border-border rounded-xl p-4 sm:p-5 mb-3 hover:border-foreground/30 hover:shadow-sm transition-all duration-200"
+                className="group block relative bg-muted/30 rounded-3xl p-6 mb-4 hover:bg-muted/50 transition-all duration-300"
               >
                 {/* Header row */}
                 <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/50">
@@ -1575,7 +1585,7 @@ function BuyerView({ token }: { token: string }) {
 
                       {/* Delivery */}
                       <div className="relative">
-                        <div className="absolute -left-6 top-1.5 size-2 rounded-full border-2 border-emerald-500 bg-white ring-4 ring-white shadow-sm" />
+                        <div className="absolute -left-6 top-1.5 size-3 rounded-full bg-emerald-500 ring-4 ring-background shadow-sm" />
                         <p className="text-xs font-medium text-muted-foreground mb-0.5">
                           Adrese • {fmtDate(o.deliveryDate)}
                         </p>
@@ -1670,3 +1680,5 @@ export default function OrdersPage() {
     </div>
   );
 }
+// reload
+// force next reload
