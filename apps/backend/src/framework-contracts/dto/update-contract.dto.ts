@@ -14,6 +14,10 @@ export class UpdateFrameworkContractDto {
   @IsOptional()
   notes?: string;
 
+  @IsString()
+  @IsOptional()
+  supplierId?: string;
+
   @IsEnum(FrameworkContractStatus)
   @IsOptional()
   status?: FrameworkContractStatus;

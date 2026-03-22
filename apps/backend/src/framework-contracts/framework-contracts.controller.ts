@@ -74,6 +74,20 @@ export class FrameworkContractsController {
     return this.service.update(id, dto, user.userId, user.companyId);
   }
 
+  /** PATCH /framework-contracts/:id/activate — activate (DRAFT → ACTIVE, buyer owner only) */
+  @Patch(':id/activate')
+  activate(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    if (!isOwnerOrSolo(user) && !user.permCreateContracts) {
+      throw new ForbiddenException(
+        'You do not have permission to activate framework contracts',
+      );
+    }
+    return this.service.activate(id, user.userId, user.companyId);
+  }
+
   /** POST /framework-contracts/:id/positions — add a position (OWNER or permCreateContracts) */
   @Post(':id/positions')
   addPosition(

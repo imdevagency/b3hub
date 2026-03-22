@@ -1,49 +1,16 @@
 /**
  * Step2Address — Order wizard step 2 (delivery address).
- * Google Places autocomplete input for the delivery destination.
+ * Uses the shared AddressAutocomplete component for consistent UI across flows.
  */
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Loader2, LocateFixed, MapPin, X } from 'lucide-react';
+import { useState } from 'react';
+import { Loader2, LocateFixed, MapPin } from 'lucide-react';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
-
-// ── Latvian city suggestions for fallback autocomplete ─────────────────────────
-
-const LV_CITIES = [
-  'Rīga',
-  'Daugavpils',
-  'Liepāja',
-  'Jelgava',
-  'Jūrmala',
-  'Ventspils',
-  'Rēzekne',
-  'Valmiera',
-  'Jēkabpils',
-  'Ogre',
-  'Tukums',
-  'Bauska',
-  'Kuldīga',
-  'Sigulda',
-  'Cēsis',
-  'Saldus',
-  'Talsi',
-  'Dobele',
-  'Ādaži',
-  'Mārupe',
-  'Stopiņi',
-  'Ķekava',
-  'Olaine',
-  'Salaspils',
-  'Ropažu novads',
-  'Babīte',
-  'Carnikava',
-];
-
-interface Suggestion {
-  label: string;
-  sublabel?: string;
-}
+import {
+  AddressAutocomplete,
+  type PlaceAddress,
+} from '@/components/ui/AddressAutocomplete';
 
 interface Props {
   value: string;
@@ -54,82 +21,15 @@ interface Props {
 
 export function Step2Address({ value, onAddressChange, onNext, onBack }: Props) {
   const [input, setInput] = useState(value);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<object | null>(null);
-  const googleInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Google Places Autocomplete (if API key is available) ────────────────────
   const googleKey = getGoogleMapsPublicKey();
 
-  // Declared before the effect below to satisfy no-use-before-define
-  function initAutocomplete() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (!googleInputRef.current || !(window as any).google) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ac = new (window as any).google.maps.places.Autocomplete(googleInputRef.current, {
-      types: ['address'],
-      componentRestrictions: { country: 'lv' },
-      fields: ['formatted_address', 'geometry'],
-    });
-    ac.addListener('place_changed', () => {
-      const place = ac.getPlace();
-      if (place?.formatted_address) {
-        const addr = place.formatted_address;
-        const lat = place.geometry?.location?.lat();
-        const lng = place.geometry?.location?.lng();
-        setInput(addr);
-        onAddressChange(addr, lat, lng);
-      }
-    });
-    autocompleteRef.current = ac;
-  }
-
-  useEffect(() => {
-    if (!googleKey) return;
-    // Load Google Maps script once
-    if (document.getElementById('gmap-script')) {
-      initAutocomplete();
-      return;
-    }
-    const script = document.createElement('script');
-    script.id = 'gmap-script';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${googleKey}&libraries=places&language=lv`;
-    script.async = true;
-    script.onload = initAutocomplete;
-    document.head.appendChild(script);
-  }, [googleKey]);
-
-  // ── Fallback local suggestions ───────────────────────────────────────────────
-  function handleInputChange(val: string) {
-    setInput(val);
-    if (googleKey) {
-      // Google Places handles it via the ref
-      onAddressChange(val);
-      return;
-    }
-    onAddressChange(val);
-    if (val.length < 2) {
-      setSuggestions([]);
-      return;
-    }
-    const lower = val.toLowerCase();
-    const matches = LV_CITIES.filter((c) => c.toLowerCase().includes(lower))
-      .slice(0, 6)
-      .map((c) => ({ label: c, sublabel: 'Latvija' }));
-    setSuggestions(matches);
-    setShowSuggestions(matches.length > 0);
-  }
-
-  function pickSuggestion(s: Suggestion) {
-    const addr = `${s.label}, Latvija`;
+  function handleSelect(place: PlaceAddress) {
+    const addr = [place.address, place.city].filter(Boolean).join(', ');
     setInput(addr);
-    onAddressChange(addr);
-    setSuggestions([]);
-    setShowSuggestions(false);
+    onAddressChange(addr, place.lat, place.lng);
   }
 
   // ── GPS geolocation ──────────────────────────────────────────────────────────
@@ -144,7 +44,6 @@ export function Step2Address({ value, onAddressChange, onNext, onBack }: Props) 
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
         try {
-          // Reverse geocode via Google if key available, else use coordinates
           if (googleKey) {
             const res = await fetch(
               `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googleKey}&language=lv`,
@@ -181,78 +80,37 @@ export function Step2Address({ value, onAddressChange, onNext, onBack }: Props) 
   const isValid = input.trim().length >= 4;
 
   return (
-    <div className="flex flex-col space-y-6">
-      <div className="text-center space-y-1">
-        <h2 className="text-2xl font-bold text-gray-900">Kur piegādāt konteineru?</h2>
-        <p className="text-gray-500 text-sm">Ievadiet precīzu adresi vai izmantojiet GPS</p>
+    <div className="flex flex-col space-y-5 animate-in fade-in slide-in-from-bottom-2">
+      <div>
+        <h2 className="text-lg font-bold">Kur piegādāt konteineru?</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Ievadiet precīzu adresi vai izmantojiet GPS
+        </p>
       </div>
 
-      {/* Address input */}
-      <div className="space-y-3">
+      {/* Address input — shared custom component */}
+      <div className="space-y-2">
         <div className="relative">
-          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none z-10" />
-
-          {/* Google Places input (hidden when no key) */}
-          {googleKey ? (
-            <input
-              ref={googleInputRef}
-              type="text"
-              defaultValue={value}
-              placeholder="Iela, mājas nr., pilsēta"
-              className="w-full rounded-2xl border-2 border-gray-200 py-4 pl-12 pr-10 text-base text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
-              onChange={(e) => setInput(e.target.value)}
-            />
-          ) : (
-            <>
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                placeholder="Iela, mājas nr., pilsēta vai pasta indekss"
-                onChange={(e) => handleInputChange(e.target.value)}
-                onFocus={() => setShowSuggestions(suggestions.length > 0)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                className="w-full rounded-2xl border-2 border-gray-200 py-4 pl-12 pr-10 text-base text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
-              />
-              {/* Suggestions dropdown */}
-              {showSuggestions && (
-                <div className="absolute top-full mt-1 left-0 right-0 rounded-2xl border bg-white shadow-xl z-30 overflow-hidden">
-                  {suggestions.map((s, i) => (
-                    <button
-                      key={i}
-                      onMouseDown={() => pickSuggestion(s)}
-                      className="flex items-center gap-3 w-full px-4 py-3 text-sm hover:bg-red-50 transition-colors text-left border-b last:border-0"
-                    >
-                      <MapPin className="size-4 text-gray-400 shrink-0" />
-                      <div>
-                        <p className="font-medium text-gray-900">{s.label}</p>
-                        {s.sublabel && <p className="text-xs text-gray-500">{s.sublabel}</p>}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
-          {input && (
-            <button
-              onClick={() => {
-                setInput('');
-                onAddressChange('');
-              }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 z-10"
-            >
-              <X className="size-4" />
-            </button>
-          )}
+          <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+          <AddressAutocomplete
+            id="skip-hire-address"
+            value={input}
+            onChange={(v) => {
+              setInput(v);
+              onAddressChange(v);
+            }}
+            onSelect={handleSelect}
+            placeholder="Iela, mājas numurs, pilsēta..."
+            className="w-full rounded-xl border bg-muted/30 pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
+          />
         </div>
 
         {/* GPS button */}
         <button
+          type="button"
           onClick={handleGPS}
           disabled={gpsLoading}
-          className="flex w-full items-center justify-center gap-2.5 rounded-2xl border-2 border-dashed border-gray-300 py-3.5 text-sm font-semibold text-gray-600 transition-all hover:border-red-400 hover:text-primary hover:bg-red-50 disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border py-3 text-sm font-medium text-muted-foreground transition-all hover:border-primary/40 hover:text-primary hover:bg-primary/5 disabled:opacity-60"
         >
           {gpsLoading ? (
             <Loader2 className="size-4 animate-spin" />
@@ -263,32 +121,32 @@ export function Step2Address({ value, onAddressChange, onNext, onBack }: Props) 
         </button>
 
         {gpsError && (
-          <p className="text-sm text-primary bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+          <p className="text-sm text-destructive bg-destructive/5 border border-destructive/20 rounded-xl px-4 py-2.5">
             {gpsError}
           </p>
         )}
       </div>
 
-      {/* Map preview placeholder (shown when address is set) */}
+      {/* Confirmed address pill */}
       {isValid && (
-        <div className="rounded-2xl border-2 border-gray-200 bg-gray-50 h-32 flex items-center justify-center gap-3 text-gray-500 text-sm">
-          <MapPin className="size-5 text-red-500" />
-          <span className="font-medium text-gray-700 truncate max-w-[80%]">{input}</span>
+        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-green-50 ring-1 ring-green-200">
+          <MapPin className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+          <p className="text-sm font-medium text-green-800 truncate">{input}</p>
         </div>
       )}
 
       {/* Nav buttons */}
-      <div className="flex gap-3 pt-2">
+      <div className="flex gap-3 pt-1">
         <button
           onClick={onBack}
-          className="flex-1 rounded-2xl border-2 border-gray-200 py-3.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+          className="flex-1 rounded-xl border-2 border-border py-3 text-sm font-semibold text-muted-foreground hover:bg-muted transition-colors"
         >
           Atpakaļ
         </button>
         <button
           onClick={onNext}
           disabled={!isValid}
-          className="flex-2 rounded-2xl bg-primary py-3.5 text-base font-bold text-white shadow-md transition-all hover:bg-primary/90 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
+          className="flex-[2] rounded-xl bg-primary py-3 text-sm font-bold text-white shadow transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
         >
           Rādīt piedāvājumus
         </button>

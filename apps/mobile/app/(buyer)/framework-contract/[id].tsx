@@ -49,6 +49,7 @@ const CONTRACT_STATUS: Record<
   FrameworkContractStatus,
   { label: string; bg: string; color: string }
 > = {
+  DRAFT: { label: 'Melnraksts', bg: '#fef3c7', color: '#92400e' },
   ACTIVE: { label: 'Aktīvs', bg: '#dcfce7', color: '#15803d' },
   COMPLETED: { label: 'Pabeigts', bg: '#f0f9ff', color: '#0369a1' },
   EXPIRED: { label: 'Beidzies', bg: '#f3f4f6', color: '#6b7280' },

@@ -47,6 +47,7 @@ export interface RawContract {
   endDate?: Date | null;
   notes?: string | null;
   buyer?: unknown;
+  supplier?: unknown;
   createdBy?: unknown;
   _count?: { callOffJobs?: number };
   callOffJobs?: unknown[];
@@ -88,10 +89,13 @@ export class FrameworkContractsService {
   ) {
     const contract = await this.prisma.frameworkContract.findUnique({
       where: { id: contractId },
-      select: { buyerId: true, createdById: true },
+      select: { buyerId: true, createdById: true, supplierId: true },
     });
     if (!contract) throw new NotFoundException('Framework contract not found');
-    if (contract.createdById !== userId && contract.buyerId !== companyId) {
+    const isBuyer =
+      contract.createdById === userId || contract.buyerId === companyId;
+    const isSupplier = companyId && contract.supplierId === companyId;
+    if (!isBuyer && !isSupplier) {
       throw new ForbiddenException('Access denied');
     }
     return contract;
@@ -105,6 +109,7 @@ export class FrameworkContractsService {
         OR: [
           { createdById: userId },
           ...(companyId ? [{ buyerId: companyId }] : []),
+          ...(companyId ? [{ supplierId: companyId }] : []),
         ],
       },
       include: {
@@ -123,6 +128,31 @@ export class FrameworkContractsService {
     return contracts.map((c) =>
       this.formatContract(c as unknown as RawContract),
     );
+  }
+
+  async activate(
+    contractId: string,
+    userId: string,
+    companyId?: string,
+  ) {
+    const contract = await this.assertOwner(contractId, userId, companyId);
+    // Only the buyer side can activate; supplier can view but not activate
+    if (contract.buyerId !== companyId && contract.createdById !== userId) {
+      throw new ForbiddenException('Only the buyer can activate a contract');
+    }
+    const updated = await this.prisma.frameworkContract.update({
+      where: { id: contractId },
+      data: { status: FrameworkContractStatus.ACTIVE },
+      include: {
+        positions: {
+          include: {
+            callOffs: { select: { id: true, cargoWeight: true, status: true } },
+          },
+        },
+        _count: { select: { callOffJobs: true } },
+      },
+    });
+    return this.formatContract(updated as unknown as RawContract);
   }
 
   async findOne(id: string, userId: string, companyId?: string) {
@@ -165,6 +195,7 @@ export class FrameworkContractsService {
           take: 5,
         },
         buyer: { select: { id: true, name: true } },
+        supplier: { select: { id: true, name: true } },
         createdBy: { select: { id: true, firstName: true, lastName: true } },
       },
     });
@@ -195,7 +226,8 @@ export class FrameworkContractsService {
         startDate: new Date(dto.startDate),
         endDate: dto.endDate ? new Date(dto.endDate) : null,
         notes: dto.notes,
-        status: FrameworkContractStatus.ACTIVE,
+        status: FrameworkContractStatus.DRAFT,
+        supplierId: dto.supplierId ?? null,
         positions: dto.positions?.length
           ? {
               create: dto.positions.map((p) => ({
@@ -420,6 +452,7 @@ export class FrameworkContractsService {
       endDate: c.endDate,
       notes: c.notes,
       buyer: c.buyer,
+      supplier: c.supplier,
       createdBy: c.createdBy,
       totalCallOffs: c._count?.callOffJobs ?? 0,
       totalAgreedQty: totalAgreed,

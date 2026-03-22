@@ -12,7 +12,6 @@ import {
   Award,
   Banknote,
   Bell,
-  Box,
   Briefcase,
   Building2,
   CalendarClock,
@@ -25,12 +24,11 @@ import {
   LayoutDashboard,
   LayoutGrid,
   LogOut,
-  MapPin,
   MessageSquare,
+  Recycle,
   Package,
   PackagePlus,
   Receipt,
-  ScrollText,
   Search,
   Settings,
   ShoppingCart,
@@ -72,7 +70,6 @@ type NavSection = {
 
 const MAX_RECENT_ITEMS = 4;
 
-
 const ROLE_NAV: Record<Mode, NavSection[]> = {
   BUYER: [
     {
@@ -90,9 +87,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       icon: ClipboardList,
       items: [
         { label: 'Mani Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
-        { label: 'Projekti', href: '/dashboard/buyer/projects', icon: FolderKanban },
-        { label: 'Lielumiņi', href: '/dashboard/framework-contracts', icon: ScrollText },
-        { label: 'Konteineri', href: '/dashboard/containers', icon: Box },
+        { label: 'Projekti', href: '/dashboard/framework-contracts', icon: FolderKanban },
         { label: 'Cenu Pieprasījumi', href: '/dashboard/quote-requests', icon: FileQuestion },
       ],
     },
@@ -148,16 +143,14 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
         { label: 'Darbu Tirgus', href: '/dashboard/jobs', icon: Briefcase },
         { label: 'Mani Darbi', href: '/dashboard/orders', icon: ClipboardList },
         { label: 'Darba Grafiks', href: '/dashboard/schedule', icon: CalendarClock },
+        { label: 'Utilizācijas Centri', href: '/dashboard/recycling-centers', icon: Recycle },
       ],
     },
     {
       id: 'carrier-fleet',
       label: 'Flote',
       icon: Car,
-      items: [
-        { label: 'Mans Autoparks', href: '/dashboard/garage', icon: Car },
-        { label: 'Utilizācijas Centri', href: '/dashboard/recycling-centers', icon: MapPin },
-      ],
+      items: [{ label: 'Mans Autoparks', href: '/dashboard/garage', icon: Car }],
     },
     {
       id: 'carrier-business',
@@ -445,184 +438,235 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
 
-              <SidebarContent>
-          <div className="px-3 pt-4 pb-2 space-y-4">
-            {/* Primary Actions based on Mode */}
+      <SidebarContent>
+        <div className="px-3 pt-4 pb-2 space-y-4">
+          {/* Primary Actions based on Mode */}
+          {activeMode === 'BUYER' && (
+            <SidebarMenuButton
+              asChild
+              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground w-full justify-center shadow font-semibold h-10"
+            >
+              <Link href="/dashboard/order">
+                <PackagePlus className="mr-2 size-4" />
+                Jauns Pasūtījums
+              </Link>
+            </SidebarMenuButton>
+          )}
+
+          {activeMode === 'SUPPLIER' && (
+            <SidebarMenuButton
+              asChild
+              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground w-full justify-center shadow font-semibold h-10"
+            >
+              <Link href="/dashboard/materials/new">
+                <PackagePlus className="mr-2 size-4" />
+                Pievienot Materiālu
+              </Link>
+            </SidebarMenuButton>
+          )}
+
+          {/* Global Actions (Quick Access) */}
+          <div className="flex items-center gap-1">
+            <SidebarMenuButton
+              asChild
+              tooltip="Paziņojumi"
+              className="flex-1 justify-center relative bg-muted/30 hover:bg-muted/60 h-10"
+              isActive={pathname === '/dashboard/notifications'}
+            >
+              <Link href="/dashboard/notifications">
+                <Bell className="size-4 text-muted-foreground" />
+                <span className="sr-only">Paziņojumi</span>
+                {badgeCounts.notifications > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute top-1 right-2 size-4 p-0 flex items-center justify-center text-[9px]"
+                  >
+                    {badgeCounts.notifications}
+                  </Badge>
+                )}
+              </Link>
+            </SidebarMenuButton>
+
             {activeMode === 'BUYER' && (
               <SidebarMenuButton
                 asChild
-                className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground w-full justify-center shadow font-semibold h-10"
-              >
-                <Link href="/dashboard/order">
-                  <PackagePlus className="mr-2 size-4" />
-                  Jauns Pasūtījums
-                </Link>
-              </SidebarMenuButton>
-            )}
-            
-            {activeMode === 'SUPPLIER' && (
-              <SidebarMenuButton
-                asChild
-                className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground w-full justify-center shadow font-semibold h-10"
-              >
-                <Link href="/dashboard/materials/new">
-                  <PackagePlus className="mr-2 size-4" />
-                  Pievienot Materiālu
-                </Link>
-              </SidebarMenuButton>
-            )}
-
-            {/* Global Actions (Quick Access) */}
-            <div className="flex items-center gap-1">
-              <SidebarMenuButton
-                asChild
-                tooltip="Paziņojumi"
-                className="flex-1 justify-center relative bg-muted/30 hover:bg-muted/60 h-10"
-                isActive={pathname === '/dashboard/notifications'}
-              >
-                <Link href="/dashboard/notifications">
-                  <Bell className="size-4 text-muted-foreground" />
-                  <span className="sr-only">Paziņojumi</span>
-                  {badgeCounts.notifications > 0 && (
-                    <Badge variant="destructive" className="absolute top-1 right-2 size-4 p-0 flex items-center justify-center text-[9px]">
-                      {badgeCounts.notifications}
-                    </Badge>
-                  )}
-                </Link>
-              </SidebarMenuButton>
-
-              {activeMode === 'BUYER' && (
-                <SidebarMenuButton
-                  asChild
-                  tooltip="Grozs"
-                  className="flex-1 justify-center bg-muted/30 hover:bg-muted/60 h-10"
-                  isActive={pathname === '/dashboard/checkout'}
-                >
-                  <Link href="/dashboard/checkout">
-                    <ShoppingCart className="size-4 text-muted-foreground" />
-                    <span className="sr-only">Grozs</span>
-                  </Link>
-                </SidebarMenuButton>
-              )}
-
-              <SidebarMenuButton
-                asChild
-                tooltip="Čats"
+                tooltip="Grozs"
                 className="flex-1 justify-center bg-muted/30 hover:bg-muted/60 h-10"
-                isActive={pathname === '/dashboard/chat'}
+                isActive={pathname === '/dashboard/checkout'}
               >
-                <Link href="/dashboard/chat">
-                  <MessageSquare className="size-4 text-muted-foreground" />
-                  <span className="sr-only">Čats</span>
+                <Link href="/dashboard/checkout">
+                  <ShoppingCart className="size-4 text-muted-foreground" />
+                  <span className="sr-only">Grozs</span>
                 </Link>
               </SidebarMenuButton>
-            </div>
-          </div>
+            )}
 
-          {recentItems.length > 0 && (
-            <SidebarGroup className="pt-0">
-              <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-muted-foreground/60 tracking-wider">Nesen Atvērtais</SidebarGroupLabel>
-              <SidebarMenu>
-                {recentItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
+            <SidebarMenuButton
+              asChild
+              tooltip="Čats"
+              className="flex-1 justify-center bg-muted/30 hover:bg-muted/60 h-10"
+              isActive={pathname === '/dashboard/chat'}
+            >
+              <Link href="/dashboard/chat">
+                <MessageSquare className="size-4 text-muted-foreground" />
+                <span className="sr-only">Čats</span>
+              </Link>
+            </SidebarMenuButton>
+          </div>
+        </div>
+
+        {recentItems.length > 0 && (
+          <SidebarGroup className="pt-0">
+            <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-muted-foreground/60 tracking-wider">
+              Nesen Atvērtais
+            </SidebarGroupLabel>
+            <SidebarMenu>
+              {recentItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    tooltip={item.label}
+                    isActive={isRouteActive(item.href)}
+                    className="font-medium text-muted-foreground hover:text-foreground"
+                  >
+                    <Link href={item.href}>
+                      <Clock3 className="size-4 shrink-0" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
+
+        {navSections.map((section) => (
+          <SidebarGroup key={section.id} className="pt-2">
+            <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-muted-foreground/60 tracking-wider pb-1">
+              {section.label}
+            </SidebarGroupLabel>
+            <SidebarMenu>
+              {section.items.map((item) => {
+                const isActive = isRouteActive(item.href);
+                return (
+                  <SidebarMenuItem key={item.label}>
                     <SidebarMenuButton
                       asChild
                       tooltip={item.label}
-                      isActive={isRouteActive(item.href)}
+                      isActive={isActive}
                       className="font-medium text-muted-foreground hover:text-foreground"
                     >
                       <Link href={item.href}>
-                        <Clock3 className="size-4 shrink-0" />
+                        <item.icon className="size-4 shrink-0" />
                         <span>{item.label}</span>
+                        {renderBadge(itemBadgeCountByHref[item.href] ?? 0)}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroup>
-          )}
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroup>
+        ))}
 
-          {navSections.map((section) => (
-            <SidebarGroup key={section.id} className="pt-2">
-              <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-muted-foreground/60 tracking-wider pb-1">
-                {section.label}
-              </SidebarGroupLabel>
-              <SidebarMenu>
-                {section.items.map((item) => {
-                  const isActive = isRouteActive(item.href);
-                  return (
-                    <SidebarMenuItem key={item.label}>
-                      <SidebarMenuButton
-                        asChild
-                        tooltip={item.label}
-                        isActive={isActive}
-                        className="font-medium text-muted-foreground hover:text-foreground"
-                      >
-                        <Link href={item.href}>
-                          <item.icon className="size-4 shrink-0" />
-                          <span>{item.label}</span>
-                          {renderBadge(itemBadgeCountByHref[item.href] ?? 0)}
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroup>
-          ))}
-
-          {/* Admin section */}
-          {user?.userType === 'ADMIN' && (
-            <SidebarGroup className="pt-2">
-              <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-destructive/80 tracking-wider">Administrācija</SidebarGroupLabel>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Pārskats" isActive={pathname === '/dashboard/admin'}>
-                    <Link href="/dashboard/admin"><LayoutDashboard className="size-4 shrink-0" /><span>Pārskats</span></Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Lietotāji" isActive={pathname === '/dashboard/admin/users'}>
-                    <Link href="/dashboard/admin/users"><Users className="size-4 shrink-0" /><span>Lietotāji</span></Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Pieteikumi" isActive={pathname === '/dashboard/admin/applications'}>
-                    <Link href="/dashboard/admin/applications"><ShieldCheck className="size-4 shrink-0" /><span>Pieteikumi</span></Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroup>
-          )}
-
-          {/* Unified Settings & Company */}
-          <SidebarGroup className="mt-auto pt-4 pb-2">
-            <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-muted-foreground/60 tracking-wider pb-1">Konta Pārvaldība</SidebarGroupLabel>
+        {/* Admin section */}
+        {user?.userType === 'ADMIN' && (
+          <SidebarGroup className="pt-2">
+            <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-destructive/80 tracking-wider">
+              Administrācija
+            </SidebarGroupLabel>
             <SidebarMenu>
-              {user?.isCompany && (
-                <>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Uzņēmuma profils" isActive={pathname === '/dashboard/company'}>
-                      <Link href="/dashboard/company"><Building2 className="size-4 shrink-0" /><span>Uzņēmuma profils</span></Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  {(user.companyRole === 'OWNER' || user.companyRole === 'MANAGER') && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild tooltip="Komanda" isActive={pathname === '/dashboard/company/team'}>
-                        <Link href="/dashboard/company/team"><Users className="size-4 shrink-0" /><span>Uzņēmuma komanda</span></Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                </>
-              )}
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Iestatījumi" isActive={pathname === '/dashboard/settings'}>
-                  <Link href="/dashboard/settings"><Settings className="size-4 shrink-0" /><span>Personīgie Iestatījumi</span></Link>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Pārskats"
+                  isActive={pathname === '/dashboard/admin'}
+                >
+                  <Link href="/dashboard/admin">
+                    <LayoutDashboard className="size-4 shrink-0" />
+                    <span>Pārskats</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Lietotāji"
+                  isActive={pathname === '/dashboard/admin/users'}
+                >
+                  <Link href="/dashboard/admin/users">
+                    <Users className="size-4 shrink-0" />
+                    <span>Lietotāji</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Pieteikumi"
+                  isActive={pathname === '/dashboard/admin/applications'}
+                >
+                  <Link href="/dashboard/admin/applications">
+                    <ShieldCheck className="size-4 shrink-0" />
+                    <span>Pieteikumi</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>
-        </SidebarContent>
+        )}
+
+        {/* Unified Settings & Company */}
+        <SidebarGroup className="mt-auto pt-4 pb-2">
+          <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-muted-foreground/60 tracking-wider pb-1">
+            Konta Pārvaldība
+          </SidebarGroupLabel>
+          <SidebarMenu>
+            {user?.isCompany && (
+              <>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    tooltip="Uzņēmuma profils"
+                    isActive={pathname === '/dashboard/company'}
+                  >
+                    <Link href="/dashboard/company">
+                      <Building2 className="size-4 shrink-0" />
+                      <span>Uzņēmuma profils</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                {(user.companyRole === 'OWNER' || user.companyRole === 'MANAGER') && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Komanda"
+                      isActive={pathname === '/dashboard/company/team'}
+                    >
+                      <Link href="/dashboard/company/team">
+                        <Users className="size-4 shrink-0" />
+                        <span>Uzņēmuma komanda</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+              </>
+            )}
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                tooltip="Iestatījumi"
+                isActive={pathname === '/dashboard/settings'}
+              >
+                <Link href="/dashboard/settings">
+                  <Settings className="size-4 shrink-0" />
+                  <span>Personīgie Iestatījumi</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
+      </SidebarContent>
 
       {/* User + sign out */}
       <SidebarFooter>

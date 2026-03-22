@@ -1,60 +1,383 @@
 /**
  * Skip-hire order page — /dashboard/order/skip-hire
- * Multi-step form for hiring a skip: size selection, address, and date booking.
+ * Matches the map-based split UI pattern of disposal.
  */
 'use client';
 
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { OrderWizard } from '@/components/order/OrderWizard';
-import { ArrowLeft, Recycle, ShieldCheck, Truck } from 'lucide-react';
+import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
+import { ArrowLeft, Package, MapPin, CalendarDays, ClipboardList } from 'lucide-react';
 import Link from 'next/link';
 
-const TRUST_BADGES = [
-  { icon: Truck, label: 'Piegāde nākamajā dienā', sub: 'Pasūtīiet līdz plkst. 14:00' },
-  { icon: ShieldCheck, label: 'Pilnīgi licenzēts', sub: 'Sertificēta atkritumu izvešana' },
-  { icon: Recycle, label: 'Videi draudzīgs', sub: '85% pārstrādes rādītājs' },
+// Import steps and types
+import { Step1Container } from '@/components/order/steps/Step1Container';
+import { Step2Address } from '@/components/order/steps/Step2Address';
+import { Step3DateOffers, type Offer } from '@/components/order/steps/Step3DateOffers';
+import { Step4ContactForm } from '@/components/order/steps/Step4ContactForm';
+import { OrderConfirmation } from '@/components/order/OrderConfirmation';
+import { createSkipHireOrder, mapWasteCategory, mapSkipSize, type SkipHireOrder } from '@/lib/api';
+
+// For map
+import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
+
+const DEFAULT_CENTER = { lat: 56.9496, lng: 24.1052 };
+
+const STEPS = [
+  { label: 'Konteiners', icon: Package },
+  { label: 'Adrese', icon: MapPin },
+  { label: 'Datums', icon: CalendarDays },
+  { label: 'Apstiprināt', icon: ClipboardList },
 ];
 
-export default function SkipHirePage() {
+export default function SkipHireOrderPage() {
+  const router = useRouter();
   const { token } = useAuth();
+  
+  const [step, setStep] = useState(1);
+  const [confirmedOrder, setConfirmedOrder] = useState<SkipHireOrder | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+
+  const [size, setSize] = useState('');
+  const [wasteType, setWasteType] = useState('');
+  const [address, setAddress] = useState('');
+  const [lat, setLat] = useState<number>();
+  const [lng, setLng] = useState<number>();
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [hirePeriodDays, setHirePeriodDays] = useState(14);
+  const [selectedOfferId, setSelectedOfferId] = useState('');
+  const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [notes, setNotes] = useState('');
+
+  // Map refs
+  const mapDivRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapInstanceRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const markerRef = useRef<any>(null);
+
+  // Initialize Google Map
+  useEffect(() => {
+    const apiKey = getGoogleMapsPublicKey();
+    if (!apiKey) return;
+
+    loadGoogleMapsScript(apiKey, () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const google = (window as any).google;
+      if (!google || !mapDivRef.current || mapInstanceRef.current) return;
+
+      const map = new google.maps.Map(mapDivRef.current, {
+        center: DEFAULT_CENTER,
+        zoom: 12,
+        disableDefaultUI: true,
+        zoomControl: true,
+        styles: [
+          { elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
+          { elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
+          { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f5f5' }] },
+          { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
+          { featureType: 'road.arterial', elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
+          { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c9d9e8' }] },
+          { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#9e9e9e' }] },
+          { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+          { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+        ],
+      });
+
+      mapInstanceRef.current = map;
+
+      // Centre on user's current location
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const userPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            map.panTo(userPos);
+            map.setZoom(14);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            new (window as any).google.maps.Marker({
+              position: userPos,
+              map,
+              title: 'Jūsu atrašanās vieta',
+              zIndex: 1,
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: '#3b82f6',
+                fillOpacity: 1,
+                strokeColor: '#ffffff',
+                strokeWeight: 2.5,
+              },
+            });
+          },
+          () => { /* permission denied — stay on Riga */ },
+          { timeout: 8000 },
+        );
+      }
+    });
+  }, []);
+
+  // Update marker/center when lat/lng change
+  const updateMapPin = useCallback((newLat: number, newLng: number) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const google = (window as any).google;
+    if (!google || !mapInstanceRef.current) return;
+
+    const position = { lat: newLat, lng: newLng };
+
+    if (markerRef.current) {
+      markerRef.current.setPosition(position);
+    } else {
+      markerRef.current = new google.maps.Marker({
+        position,
+        map: mapInstanceRef.current,
+        animation: google.maps.Animation.DROP,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 12,
+          fillColor: '#22c55e',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 3,
+        },
+      });
+    }
+
+    mapInstanceRef.current.panTo(position);
+    mapInstanceRef.current.setZoom(16);
+  }, []);
+
+  const handleAddressChange = (addr: string, newLat?: number, newLng?: number) => {
+    setAddress(addr);
+    if (newLat !== undefined && newLng !== undefined) {
+      setLat(newLat);
+      setLng(newLng);
+      updateMapPin(newLat, newLng);
+    }
+  };
+
+  const handleOfferSelect = (id: string, offers: Offer[]) => {
+    const found = offers.find((o) => o.id === id) ?? null;
+    setSelectedOfferId(id);
+    setSelectedOffer(found);
+  };
+
+  const handleSubmit = async () => {
+    if (!token) return;
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      const result = await createSkipHireOrder(
+        {
+          location: address,
+          wasteCategory: mapWasteCategory(wasteType),
+          skipSize: mapSkipSize(size),
+          deliveryDate,
+          carrierId: selectedOffer?.id ?? undefined,
+          contactName,
+          contactEmail,
+          contactPhone,
+          notes: notes || undefined,
+        },
+        token,
+      );
+      setConfirmedOrder(result);
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : 'Kaut kas nogāja greizi. Lūdzu, mēģiniet vēlreiz.',
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleReset = () => {
+    setConfirmedOrder(null);
+    setStep(1);
+    setSize('');
+    setWasteType('');
+    setAddress('');
+    setDeliveryDate('');
+    setSelectedOfferId('');
+    setSelectedOffer(null);
+  };
+
+  if (confirmedOrder) {
+    return (
+      <div className="mx-auto max-w-3xl pt-8">
+        <OrderConfirmation
+          orderNumber={confirmedOrder.orderNumber}
+          location={confirmedOrder.location}
+          wasteCategory={confirmedOrder.wasteCategory}
+          skipSize={confirmedOrder.skipSize}
+          deliveryDate={confirmedOrder.deliveryDate}
+          price={confirmedOrder.price}
+          currency={confirmedOrder.currency}
+          onReset={handleReset}
+          authenticated={!!token}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8">
-      {/* Back link + header */}
-      <div>
-        <Link
-          href="/dashboard/order"
-          className="mb-3 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Atpakaļ uz pasūtījumu centru
-        </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Pasūtīt Konteineru</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Pasūtījums tiks piesaistīts jūsu kontam un būs redzams pasūtījumu vēsturē.
-        </p>
+    <div className="h-[calc(100vh-100px)] w-full bg-background rounded-2xl overflow-hidden shadow-lg border flex flex-col-reverse lg:flex-row">
+      <div className="w-full lg:w-[460px] flex-shrink-0 flex flex-col bg-background z-10 relative border-t lg:border-t-0 lg:border-r">
+        <div className="p-5 border-b bg-card space-y-3">
+          <Link href="/dashboard/order" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="h-3.5 w-3.5" /> Atpakaļ
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Konteinera Noma</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Pasūtiet būvgružu konteineru un izvēlieties labāko piedāvājumu
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-5 scrollbar-thin flex flex-col space-y-6">
+          {/* Step indicators */}
+          <div className="flex gap-2 w-full shrink-0">
+            {STEPS.map((s, i) => {
+              const n = i + 1;
+              const done = step > n;
+              const active = step === n;
+              return (
+                <div key={n} className="flex-1 flex flex-col gap-2">
+                  <div
+                    className={`h-[5px] w-full rounded-full transition-all ${
+                      done
+                        ? 'bg-green-500'
+                        : active
+                        ? 'bg-primary'
+                        : 'bg-muted'
+                    }`}
+                  />
+                  <div className="flex items-center gap-1.5 opacity-80">
+                    <s.icon className={`h-3.5 w-3.5 ${done ? 'text-green-600' : active ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span
+                      className={`text-xs font-semibold ${
+                        done
+                          ? 'text-green-700'
+                          : active
+                          ? 'text-foreground'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <span className="hidden sm:inline">{s.label}</span>
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex-1">
+            {submitError && (
+              <div className="mb-4 flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                <span className="font-semibold">Kļūda:</span> {submitError}
+              </div>
+            )}
+
+            {step === 1 && (
+              <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
+                <Step1Container
+                  size={size}
+                  wasteType={wasteType}
+                  onSizeChange={(v) => setSize(v)}
+                  onWasteChange={(v) => setWasteType(v)}
+                  onNext={() => setStep(2)}
+                />
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
+                <Step2Address
+                  value={address}
+                  onAddressChange={handleAddressChange}
+                  onNext={() => setStep(3)}
+                  onBack={() => setStep(1)}
+                />
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="animate-in fade-in slide-in-from-bottom-2 pb-6 relative overflow-visible">
+                <Step3DateOffers
+                  size={size}
+                  location={address}
+                  deliveryDate={deliveryDate}
+                  hirePeriodDays={hirePeriodDays}
+                  selectedOffer={selectedOfferId}
+                  compact={true}
+                  onDeliveryDateChange={(d) => {
+                    setDeliveryDate(d);
+                    setSelectedOfferId('');
+                    setSelectedOffer(null);
+                  }}
+                  onHirePeriodChange={(d) => setHirePeriodDays(d)}
+                  onOfferSelect={handleOfferSelect}
+                  onNext={() => setStep(4)}
+                  onBack={() => setStep(2)}
+                />
+              </div>
+            )}
+
+            {step === 4 && (
+              <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
+                <Step4ContactForm
+                  name={contactName}
+                  email={contactEmail}
+                  phone={contactPhone}
+                  notes={notes}
+                  summary={{
+                    size,
+                    wasteType,
+                    address,
+                    deliveryDate,
+                    hirePeriodDays,
+                    offerCarrier: selectedOffer?.carrier ?? '',
+                    offerPrice: selectedOffer?.price ?? 0,
+                  }}
+                  onChange={(k, v) => {
+                    if (k === 'name') setContactName(v);
+                    else if (k === 'email') setContactEmail(v);
+                    else if (k === 'phone') setContactPhone(v);
+                    else if (k === 'notes') setNotes(v);
+                  }}
+                  onSubmit={handleSubmit}
+                  onBack={() => setStep(3)}
+                  submitting={submitting}
+                  error={submitError}
+                />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Trust badges */}
-      <div className="flex flex-wrap gap-6">
-        {TRUST_BADGES.map((b) => {
-          const Icon = b.icon;
-          return (
-            <div key={b.label} className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-                <Icon className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-800">{b.label}</p>
-                <p className="text-xs text-gray-500">{b.sub}</p>
-              </div>
+      <div className="relative w-full h-[300px] lg:h-auto lg:flex-1 bg-muted/30">
+        <div ref={mapDivRef} className="absolute inset-0" />
+        <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+          {address && (
+            <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-green-600" />
+              <span className="truncate max-w-[200px]">{address}</span>
             </div>
-          );
-        })}
+          )}
+          {deliveryDate && (
+            <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-blue-600" />
+              {deliveryDate}
+            </div>
+          )}
+        </div>
       </div>
-
-      {/* Wizard */}
-      <OrderWizard token={token ?? undefined} />
     </div>
   );
 }

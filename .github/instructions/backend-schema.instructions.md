@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (1339 lines, 32 models, 34 enums).
+Schema: `apps/backend/prisma/schema.prisma` (1344 lines, 32 models, 34 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -90,7 +90,7 @@ npm run db:seed           # reseed demo data
 | `VehicleStatus` | ACTIVE IN_USE MAINTENANCE INACTIVE |
 | `NotificationType` | ORDER_CREATED ORDER_CONFIRMED ORDER_CANCELLED ORDER_DELIVERED TRANSPORT_ASSIGNED TRANSPORT_STARTED TRANSPORT_COMPLETED PAYMENT_RECEIVED QUOTE_RECEIVED QUOTE_ACCEPTED SYSTEM_ALERT |
 | `QuoteRequestStatus` | PENDING QUOTED ACCEPTED CANCELLED EXPIRED |
-| `FrameworkContractStatus` | ACTIVE COMPLETED EXPIRED CANCELLED |
+| `FrameworkContractStatus` | DRAFT ACTIVE COMPLETED EXPIRED CANCELLED |
 | `FrameworkPositionType` | MATERIAL_DELIVERY WASTE_DISPOSAL FREIGHT_TRANSPORT |
 | `QuoteResponseStatus` | PENDING ACCEPTED REJECTED EXPIRED |
 | `DocumentType` | INVOICE WEIGHING_SLIP DELIVERY_PROOF WASTE_CERTIFICATE DELIVERY_NOTE CONTRACT OTHER |
@@ -112,7 +112,7 @@ npm run db:seed           # reseed demo data
 ### Company — `@@map("companies")`  
 **Fields:** `id`: String @id @default(cuid(), `name`: String, `legalName`: String, `registrationNum`: String? @unique, `taxId`: String?, `email`: String, `phone`: String, `website`: String?, `street`: String, `city`: String, `state`: String, `postalCode`: String, `country`: String @default("DE"), `description`: String?, `logo`: String?, `verified`: Boolean @default(false), `rating`: Float?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `companyType`: CompanyType  
-**Relations:** → User, Material, Container, Vehicle, Order, RecyclingCenter, TransportJob, QuoteResponse, CarrierPricing, CarrierServiceZone, CarrierAvailability, SkipHireOrder, Review, FrameworkContract
+**Relations:** → User, Material, Container, Vehicle, Order, RecyclingCenter, TransportJob, QuoteResponse, CarrierPricing, CarrierServiceZone, CarrierAvailability, SkipHireOrder, Review, FrameworkContract, FrameworkContract
 
 ---
 
@@ -303,9 +303,9 @@ npm run db:seed           # reseed demo data
 ---
 
 ### FrameworkContract — `@@map("framework_contracts")`  
-**Fields:** `id`: String @id @default(cuid(), `contractNumber`: String @unique, `title`: String, `buyerId`: String, `createdById`: String, `startDate`: DateTime, `endDate`: DateTime?, `notes`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
-**Enum fields:** `status`: FrameworkContractStatus (@default(ACTIVE))  
-**Relations:** → Company, User, FrameworkPosition, TransportJob
+**Fields:** `id`: String @id @default(cuid(), `contractNumber`: String @unique, `title`: String, `buyerId`: String, `createdById`: String, `supplierId`: String?, `startDate`: DateTime, `endDate`: DateTime?, `notes`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `status`: FrameworkContractStatus (@default(DRAFT))  
+**Relations:** → Company, User, Company?, FrameworkPosition, TransportJob
 
 ---
 

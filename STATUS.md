@@ -154,6 +154,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/documents
 - dashboard/fleet
 - dashboard/framework-contracts
+- dashboard/framework-contracts/[id]
 - dashboard/garage
 - dashboard/invoices
 - dashboard/jobs

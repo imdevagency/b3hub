@@ -103,6 +103,7 @@ interface Props {
   onOfferSelect: (id: string, offers: Offer[]) => void;
   onNext: () => void;
   onBack: () => void;
+  compact?: boolean;
 }
 
 export function Step3DateOffers({
@@ -116,6 +117,7 @@ export function Step3DateOffers({
   onOfferSelect,
   onNext,
   onBack,
+  compact,
 }: Props) {
   // Derive local DateRange from props
   const [range, setRange] = useState<DateRange | undefined>(() => {
@@ -196,7 +198,14 @@ export function Step3DateOffers({
       </div>
 
       {/* Main grid: calendar | offers | summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_260px] gap-6 items-start">
+      <div
+        className={cn(
+          'grid gap-6 items-start',
+          compact
+            ? 'grid-cols-1'
+            : 'grid-cols-1 lg:grid-cols-[auto_1fr_260px]'
+        )}
+      >
         {/* ── LEFT: Calendar ─────────────────────────────────────────────── */}
         <div className="flex flex-col gap-4">
           <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">

@@ -252,6 +252,7 @@ enum QuoteRequestStatus {
 }
 
 enum FrameworkContractStatus {
+  DRAFT
   ACTIVE
   COMPLETED
   EXPIRED
@@ -380,7 +381,8 @@ model Company {
   availabilityBlocks CarrierAvailability[] @relation("CarrierAvailability")
   assignedSkipOrders SkipHireOrder[]      @relation("AssignedSkipCarrier")
   reviews            Review[]
-  frameworkContracts FrameworkContract[]
+  frameworkContracts         FrameworkContract[] @relation("BuyerFrameworkContracts")
+  supplierFrameworkContracts  FrameworkContract[] @relation("SupplierFrameworkContracts")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1293,12 +1295,15 @@ model FrameworkContract {
   contractNumber String                  @unique
   title          String
 
-  buyer          Company                 @relation(fields: [buyerId], references: [id])
+  buyer          Company                 @relation("BuyerFrameworkContracts", fields: [buyerId], references: [id])
   buyerId        String
   createdBy      User                    @relation(fields: [createdById], references: [id])
   createdById    String
 
-  status         FrameworkContractStatus @default(ACTIVE)
+  supplier       Company?                @relation("SupplierFrameworkContracts", fields: [supplierId], references: [id])
+  supplierId     String?
+
+  status         FrameworkContractStatus @default(DRAFT)
   startDate      DateTime
   endDate        DateTime?
   notes          String?

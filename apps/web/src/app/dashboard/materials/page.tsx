@@ -23,20 +23,32 @@ import { Button } from '@/components/ui/button';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
+import { Building2, Box, Mountain, Grid3X3, Waves, Leaf, Recycle, Map, Wind } from 'lucide-react';
 
-const CATEGORIES: { value: MaterialCategory; label: string; emoji: string }[] = [
-  { value: 'SAND', label: 'Smiltis', emoji: '🟡' },
-  { value: 'GRAVEL', label: 'Grants', emoji: '⚫' },
-  { value: 'STONE', label: 'Akmens', emoji: '🪨' },
-  { value: 'CONCRETE', label: 'Betons', emoji: '🔲' },
-  { value: 'SOIL', label: 'Augsne', emoji: '🟫' },
-  { value: 'RECYCLED_CONCRETE', label: 'Recikl. Betons', emoji: '♻️' },
-  { value: 'RECYCLED_SOIL', label: 'Recikl. Augsne', emoji: '♻️' },
-  { value: 'ASPHALT', label: 'Asfalts', emoji: '🛣️' },
-  { value: 'CLAY', label: 'Māls', emoji: '🏺' },
-  { value: 'OTHER', label: 'Cits', emoji: '📦' },
+const CATEGORIES: { value: MaterialCategory; label: string; icon: React.ReactNode }[] = [
+  { value: 'SAND', label: 'Smiltis', icon: <Waves className="w-4 h-4" /> },
+  { value: 'GRAVEL', label: 'Grants', icon: <Grid3X3 className="w-4 h-4" /> },
+  { value: 'STONE', label: 'Akmens', icon: <Mountain className="w-4 h-4" /> },
+  { value: 'CONCRETE', label: 'Betons', icon: <Box className="w-4 h-4" /> },
+  { value: 'SOIL', label: 'Augsne', icon: <Leaf className="w-4 h-4" /> },
+  { value: 'RECYCLED_CONCRETE', label: 'Recikl. Betons', icon: <Recycle className="w-4 h-4" /> },
+  { value: 'RECYCLED_SOIL', label: 'Recikl. Augsne', icon: <Recycle className="w-4 h-4" /> },
+  { value: 'ASPHALT', label: 'Asfalts', icon: <Map className="w-4 h-4" /> },
+  { value: 'CLAY', label: 'Māls', icon: <Wind className="w-4 h-4" /> },
+  { value: 'OTHER', label: 'Cits', icon: <Box className="w-4 h-4" /> },
 ];
 
 const UNITS: { value: MaterialUnit; label: string }[] = [
@@ -100,33 +112,45 @@ function materialToForm(m: ApiMaterial): MaterialFormValues {
 }
 
 function MaterialFormModal({
+  open,
   supplierId,
   token,
   editing,
   onClose,
   onSaved,
 }: {
+  open: boolean;
   supplierId: string;
   token: string;
   editing: ApiMaterial | null;
   onClose: () => void;
   onSaved: (m: ApiMaterial) => void;
 }) {
-  const [form, setForm] = useState<MaterialFormValues>(
-    editing ? materialToForm(editing) : EMPTY_FORM,
-  );
+  const [form, setForm] = useState<MaterialFormValues>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // Update form when editing changes or sheet opens
+  useEffect(() => {
+    if (open) {
+      setForm(editing ? materialToForm(editing) : EMPTY_FORM);
+      setError('');
+    }
+  }, [open, editing]);
 
   const set =
     (k: keyof MaterialFormValues) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  const setSelect = (k: keyof MaterialFormValues, value: string) => {
+    setForm((f) => ({ ...f, [k]: value }));
+  };
+
   const toggle = (k: 'inStock' | 'isRecycled') => () => setForm((f) => ({ ...f, [k]: !f[k] }));
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     if (!form.name.trim()) {
       setError('Lūdzu ievadiet nosaukumu.');
       return;
@@ -181,74 +205,87 @@ function MaterialFormModal({
     }
   }
 
+  const inputClasses =
+    'bg-muted/40 border-0 shadow-none h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary/30 px-4 text-[15px] transition-colors mt-1.5 focus:ring-1 focus:ring-primary/30';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm px-4 pb-4 sm:pb-0">
-      <div className="w-full sm:max-w-xl rounded-2xl bg-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
-          <h2 className="font-bold text-lg">
-            {editing ? 'Rediģēt materiālu' : 'Pievienot materiālu'}
-          </h2>
-          <Button variant="ghost" size="icon-sm" onClick={onClose}>
-            <X className="size-5" />
-          </Button>
+    <Sheet open={open} onOpenChange={(o) => (!o && !saving ? onClose() : null)}>
+      <SheetContent className="sm:max-w-xl w-full overflow-hidden p-0 flex flex-col border-l shadow-2xl">
+        <div className="px-6 pt-8 pb-4">
+          <SheetHeader>
+            <SheetTitle className="text-2xl font-bold tracking-tight">
+              {editing ? 'Rediģēt materiālu' : 'Pievienot materiālu'}
+            </SheetTitle>
+            <p className="text-[15px] text-muted-foreground leading-relaxed pt-1">
+              Aizpildiet informāciju par materiālu, lai pircēji to redzētu jūsu katalogā.
+            </p>
+          </SheetHeader>
         </div>
 
-        {/* Body */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1">
-          <div className="p-6 space-y-4">
+        <div className="flex-1 px-6 space-y-6 overflow-y-auto pb-32">
+          {error && (
+            <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-xl text-sm font-medium">
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-5">
             {/* Name */}
             <div>
-              <label className="block text-sm font-medium mb-1.5">Nosaukums *</label>
-              <input
-                type="text"
+              <Label className="text-sm font-medium ml-1">Nosaukums *</Label>
+              <Input
                 placeholder="piem. Kvarca smiltis 0/2"
                 value={form.name}
                 onChange={set('name')}
                 required
-                className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className={inputClasses}
               />
             </div>
 
             {/* Category + Unit */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5">Kategorija *</label>
-                <select
-                  value={form.category}
-                  onChange={set('category')}
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c.value} value={c.value}>
-                      {c.emoji} {c.label}
-                    </option>
-                  ))}
-                </select>
+                <Label className="text-sm font-medium ml-1">Kategorija *</Label>
+                <Select value={form.category} onValueChange={(v) => setSelect('category', v)}>
+                  <SelectTrigger className={`w-full ${inputClasses}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-none shadow-lg">
+                    {CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value} className="rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">{c.icon}</span>
+                          <span>{c.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Mērvienība *</label>
-                <select
-                  value={form.unit}
-                  onChange={set('unit')}
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                >
-                  {UNITS.map((u) => (
-                    <option key={u.value} value={u.value}>
-                      {u.label}
-                    </option>
-                  ))}
-                </select>
+                <Label className="text-sm font-medium ml-1">Mērvienība *</Label>
+                <Select value={form.unit} onValueChange={(v) => setSelect('unit', v)}>
+                  <SelectTrigger className={`w-full ${inputClasses}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-none shadow-lg">
+                    {UNITS.map((u) => (
+                      <SelectItem key={u.value} value={u.value} className="rounded-lg">
+                        {u.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             {/* Price */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5">
+                <Label className="text-sm font-medium ml-1">
                   Cena (€ / {UNIT_SHORT[form.unit]}) *
-                </label>
-                <input
+                </Label>
+                <Input
                   type="number"
                   min="0.01"
                   step="0.01"
@@ -256,86 +293,82 @@ function MaterialFormModal({
                   value={form.basePrice}
                   onChange={set('basePrice')}
                   required
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className={inputClasses}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Apakškatgorija</label>
-                <input
-                  type="text"
+                <Label className="text-sm font-medium ml-1">Apakškategorija</Label>
+                <Input
                   placeholder="piem. 0/2 mm"
                   value={form.subCategory}
                   onChange={set('subCategory')}
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className={inputClasses}
                 />
               </div>
             </div>
 
             {/* Min / Max order */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5">
+                <Label className="text-sm font-medium ml-1">
                   Min. pasūtījums ({UNIT_SHORT[form.unit]})
-                </label>
-                <input
+                </Label>
+                <Input
                   type="number"
                   min="0"
                   step="0.5"
                   placeholder="—"
                   value={form.minOrder}
                   onChange={set('minOrder')}
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className={inputClasses}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">
+                <Label className="text-sm font-medium ml-1">
                   Maks. pasūtījums ({UNIT_SHORT[form.unit]})
-                </label>
-                <input
+                </Label>
+                <Input
                   type="number"
                   min="0"
                   step="0.5"
                   placeholder="—"
                   value={form.maxOrder}
                   onChange={set('maxOrder')}
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className={inputClasses}
                 />
               </div>
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium mb-1.5">Apraksts</label>
-              <textarea
-                rows={2}
+              <Label className="text-sm font-medium ml-1">Apraksts</Label>
+              <Textarea
+                rows={3}
                 placeholder="Papildu informācija par materiālu..."
                 value={form.description}
                 onChange={set('description')}
-                className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+                className="mt-1.5 bg-muted/40 border-0 shadow-none rounded-xl focus-visible:ring-1 focus-visible:ring-primary/30 p-4 text-[15px] resize-none transition-colors"
               />
             </div>
 
             {/* Quality */}
             <div>
-              <label className="block text-sm font-medium mb-1.5">Kvalitāte / sertifikāts</label>
-              <input
-                type="text"
+              <Label className="text-sm font-medium ml-1">Kvalitāte / sertifikāts</Label>
+              <Input
                 placeholder="piem. A klase, ISO 1234"
                 value={form.quality}
                 onChange={set('quality')}
-                className="w-full rounded-xl border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className={inputClasses}
               />
             </div>
 
             {/* Toggles */}
-            <div className="flex gap-4">
+            <div className="flex gap-4 pt-2">
               <button
                 type="button"
                 onClick={toggle('inStock')}
-                className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors ${
-                  form.inStock
-                    ? 'bg-green-50 text-green-700 border-green-200'
-                    : 'bg-muted text-muted-foreground'
+                className={`flex-1 flex items-center justify-center gap-2 rounded-xl h-12 text-[15px] font-semibold transition-all ${
+                  form.inStock ? 'bg-green-100 text-green-700' : 'bg-muted/60 text-muted-foreground'
                 }`}
               >
                 {form.inStock ? <Check className="size-4" /> : <X className="size-4" />}
@@ -344,45 +377,32 @@ function MaterialFormModal({
               <button
                 type="button"
                 onClick={toggle('isRecycled')}
-                className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-2 rounded-xl h-12 text-[15px] font-semibold transition-all ${
                   form.isRecycled
-                    ? 'bg-green-50 text-green-700 border-green-200'
-                    : 'bg-muted text-muted-foreground'
+                    ? 'bg-primary/10 text-primary'
+                    : 'bg-muted/60 text-muted-foreground'
                 }`}
               >
                 {form.isRecycled ? <Check className="size-4" /> : <X className="size-4" />}
                 Reciklēts
               </button>
             </div>
-
-            {error && (
-              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-                {error}
-              </p>
-            )}
           </div>
+        </div>
 
-          {/* Footer */}
-          <div className="flex gap-3 px-6 pb-6 pt-2 shrink-0">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors"
-            >
-              Atcelt
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
-            >
-              {saving ? <Loader2 className="size-4 animate-spin" /> : null}
-              {editing ? 'Saglabāt' : 'Pievienot'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        {/* Fixed Footer with Uber-like button */}
+        <div className="absolute bottom-0 left-0 right-0 p-5 bg-background/90 backdrop-blur-xl border-t border-border/50">
+          <Button
+            className="w-full h-14 rounded-2xl text-[16px] font-semibold bg-foreground hover:bg-foreground/90 text-background shadow-lg transition-all"
+            onClick={() => handleSubmit()}
+            disabled={saving}
+          >
+            {saving ? <Loader2 className="mr-2 size-5 animate-spin" /> : null}
+            {saving ? 'Saglabā...' : editing ? 'Saglabāt izmaiņas' : 'Pievienot materiālu'}
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -415,10 +435,10 @@ function DeleteConfirm({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl p-6 space-y-4">
+      <div className="w-full max-w-sm rounded-[24px] bg-card border border-border shadow-2xl p-6 space-y-4">
         <div className="flex items-start gap-3">
-          <div className="rounded-full bg-red-100 p-2 shrink-0">
-            <Trash2 className="size-5 text-red-600" />
+          <div className="rounded-full bg-destructive/10 p-2 shrink-0">
+            <Trash2 className="size-5 text-destructive" />
           </div>
           <div>
             <p className="font-bold">Dzēst materiālu?</p>
@@ -518,17 +538,17 @@ export default function MyMaterialsPage() {
     }
   }
 
-  const CATEGORY_EMOJI: Partial<Record<MaterialCategory, string>> = {
-    SAND: '🟡',
-    GRAVEL: '⚫',
-    STONE: '🪨',
-    CONCRETE: '🔲',
-    SOIL: '🟫',
-    RECYCLED_CONCRETE: '♻️',
-    RECYCLED_SOIL: '♻️',
-    ASPHALT: '🛣️',
-    CLAY: '🏺',
-    OTHER: '📦',
+  const CATEGORY_MAP: Record<MaterialCategory | 'OTHER', React.ReactNode> = {
+    SAND: <Mountain className="size-5 text-amber-500" />,
+    GRAVEL: <Grid3X3 className="size-5 text-zinc-600" />,
+    STONE: <Box className="size-5 text-stone-600" />,
+    CONCRETE: <Building2 className="size-5 text-neutral-400" />,
+    SOIL: <Leaf className="size-5 text-amber-800" />,
+    RECYCLED_CONCRETE: <Building2 className="size-5 text-green-600" />,
+    RECYCLED_SOIL: <Leaf className="size-5 text-green-600" />,
+    ASPHALT: <Box className="size-5 text-gray-800" />,
+    CLAY: <Box className="size-5 text-orange-600" />,
+    OTHER: <Box className="size-5 text-blue-500" />,
   };
 
   return (
@@ -539,10 +559,17 @@ export default function MyMaterialsPage() {
         description="Pārvaldiet savas cenas un pieejamību — pircēji redzēs šo informāciju katalogā"
         action={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={load} disabled={loading}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={load}
+              disabled={loading}
+              className="rounded-xl"
+            >
               <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
             <Button
+              className="rounded-xl"
               onClick={() => {
                 setEditing(null);
                 setShowForm(true);
@@ -571,6 +598,7 @@ export default function MyMaterialsPage() {
           description="Pievienojiet pirmo materiālu, lai pircēji varētu to redzet un pasūtīt"
           action={
             <Button
+              className="rounded-xl"
               onClick={() => {
                 setEditing(null);
                 setShowForm(true);
@@ -587,136 +615,96 @@ export default function MyMaterialsPage() {
             {materials.length} materiāl{materials.length === 1 ? 's' : 'i'}
           </p>
 
-          {/* Desktop table */}
-          <div className="hidden sm:block rounded-2xl border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/30 text-xs text-muted-foreground uppercase tracking-wide">
-                  <th className="text-left px-5 py-3 font-medium">Materiāls</th>
-                  <th className="text-left px-5 py-3 font-medium">Cena</th>
-                  <th className="text-left px-5 py-3 font-medium">Min. pasūt.</th>
-                  <th className="text-center px-5 py-3 font-medium">Pieejams</th>
-                  <th className="px-5 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {materials.map((m) => (
-                  <tr key={m.id} className="hover:bg-muted/20 transition-colors">
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">{CATEGORY_EMOJI[m.category] ?? '📦'}</span>
-                        <div>
-                          <p className="font-semibold">{m.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {CATEGORIES.find((c) => c.value === m.category)?.label}
-                            {m.subCategory ? ` · ${m.subCategory}` : ''}
-                            {m.isRecycled ? ' · ♻️ Recikl.' : ''}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className="font-bold text-base">€{m.basePrice.toFixed(2)}</span>
-                      <span className="text-xs text-muted-foreground"> /{UNIT_SHORT[m.unit]}</span>
-                    </td>
-                    <td className="px-5 py-3.5 text-muted-foreground">
-                      {m.minOrder ? `${m.minOrder} ${UNIT_SHORT[m.unit]}` : '—'}
-                    </td>
-                    <td className="px-5 py-3.5 text-center">
-                      <button
-                        onClick={() => toggleStock(m)}
-                        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                          m.inStock
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                        }`}
-                      >
-                        {m.inStock ? <Check className="size-3" /> : <X className="size-3" />}
-                        {m.inStock ? 'Jā' : 'Nē'}
-                      </button>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex gap-2 justify-end">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => {
-                            setEditing(m);
-                            setShowForm(true);
-                          }}
-                        >
-                          <Pencil className="size-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setDeleting(m)}
-                          className="hover:bg-red-50 hover:border-red-200 hover:text-red-600"
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile cards */}
-          <div className="sm:hidden space-y-3">
+          {/* Materials Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {materials.map((m) => (
-              <div key={m.id} className="rounded-2xl border bg-card p-4 space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{CATEGORY_EMOJI[m.category] ?? '📦'}</span>
+              <div
+                key={m.id}
+                className="group relative rounded-2xl border bg-card p-5 hover:border-foreground/20 hover:shadow-lg transition-all flex flex-col justify-between h-full"
+              >
+                {/* Header: Icon, Title, and Status inside to right */}
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="flex items-start gap-3">
+                    <div className="shrink-0 size-12 rounded-xl bg-muted/50 border flex items-center justify-center">
+                      {CATEGORY_MAP[m.category] ?? CATEGORY_MAP.OTHER}
+                    </div>
                     <div>
-                      <p className="font-semibold">{m.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <h3 className="font-semibold text-[16px] leading-tight text-foreground line-clamp-2 pr-2">
+                        {m.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-0.5">
                         {CATEGORIES.find((c) => c.value === m.category)?.label}
                         {m.subCategory ? ` · ${m.subCategory}` : ''}
                       </p>
                     </div>
                   </div>
+
+                  {/* Status Toggle Button overlaying top right */}
                   <button
-                    onClick={() => toggleStock(m)}
-                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold shrink-0 ${
-                      m.inStock ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleStock(m);
+                    }}
+                    className={`shrink-0 inline-flex items-center justify-center size-8 rounded-full transition-colors ${
+                      m.inStock
+                        ? 'bg-primary/10 text-primary hover:bg-primary/20'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     }`}
+                    title={m.inStock ? 'Pieejams' : 'Nav pieejams'}
                   >
-                    {m.inStock ? <Check className="size-3" /> : <X className="size-3" />}
-                    {m.inStock ? 'Pieejams' : 'Nav'}
+                    {m.inStock ? <Check className="size-4" /> : <X className="size-4" />}
                   </button>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="font-bold text-lg">€{m.basePrice.toFixed(2)}</span>
-                    <span className="text-xs text-muted-foreground"> /{UNIT_SHORT[m.unit]}</span>
-                    {m.minOrder && (
-                      <p className="text-xs text-muted-foreground">
-                        Min. {m.minOrder} {UNIT_SHORT[m.unit]}
+
+                {/* Footer specs & Actions */}
+                <div className="mt-auto space-y-4">
+                  {/* Price and Min Order */}
+                  <div className="flex items-end justify-between bg-muted/40 rounded-xl p-3">
+                    <div>
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
+                        Cena
                       </p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-bold text-xl leading-none">
+                          €{m.basePrice.toFixed(2)}
+                        </span>
+                        <span className="text-sm text-muted-foreground font-medium">
+                          /{UNIT_SHORT[m.unit]}
+                        </span>
+                      </div>
+                    </div>
+                    {m.minOrder && (
+                      <div className="text-right">
+                        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
+                          Min. P.
+                        </p>
+                        <span className="font-semibold text-sm">
+                          {m.minOrder} {UNIT_SHORT[m.unit]}
+                        </span>
+                      </div>
                     )}
                   </div>
+
+                  {/* Actions */}
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
-                      size="sm"
+                      className="flex-1 h-10 rounded-xl border-border bg-background hover:bg-muted font-medium transition-colors"
                       onClick={() => {
                         setEditing(m);
                         setShowForm(true);
                       }}
                     >
-                      <Pencil className="size-3.5" />
+                      <Pencil className="size-4 mr-2" />
                       Rediģēt
                     </Button>
                     <Button
                       variant="outline"
                       size="icon"
+                      className="shrink-0 h-10 w-10 border-border rounded-xl bg-background hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors"
                       onClick={() => setDeleting(m)}
-                      className="hover:bg-red-50 hover:border-red-200 hover:text-red-600"
                     >
-                      <Trash2 className="size-3.5" />
+                      <Trash2 className="size-4" />
                     </Button>
                   </div>
                 </div>
@@ -727,18 +715,17 @@ export default function MyMaterialsPage() {
       )}
 
       {/* Modals */}
-      {showForm && (
-        <MaterialFormModal
-          supplierId={supplierId}
-          token={token!}
-          editing={editing}
-          onClose={() => {
-            setShowForm(false);
-            setEditing(null);
-          }}
-          onSaved={handleSaved}
-        />
-      )}
+      <MaterialFormModal
+        open={showForm}
+        supplierId={supplierId}
+        token={token!}
+        editing={editing}
+        onClose={() => {
+          setShowForm(false);
+          setEditing(null);
+        }}
+        onSaved={handleSaved}
+      />
       {deleting && (
         <DeleteConfirm
           material={deleting}

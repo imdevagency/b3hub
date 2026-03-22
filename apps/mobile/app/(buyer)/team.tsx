@@ -49,7 +49,7 @@ const ROLE_LABEL: Record<string, string> = {
 const PERM_META: Array<{ key: keyof MemberPermissions; label: string; sub: string }> = [
   {
     key: 'permCreateContracts',
-    label: 'Ietvarlīgumi',
+    label: 'Projekti',
     sub: 'Izveidot un pārvaldīt projektu līgumus',
   },
   {

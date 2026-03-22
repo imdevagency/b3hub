@@ -40,7 +40,7 @@ export type MemberPermissions = Pick<
   | 'permManageTeam'
 >;
 
-export type FrameworkContractStatus = 'ACTIVE' | 'COMPLETED' | 'EXPIRED' | 'CANCELLED';
+export type FrameworkContractStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'EXPIRED' | 'CANCELLED';
 export type FrameworkPositionType =
   | 'MATERIAL_DELIVERY'
   | 'WASTE_DISPOSAL'

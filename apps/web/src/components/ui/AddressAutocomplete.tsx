@@ -121,7 +121,7 @@ export function AddressAutocomplete({
     const timeoutId = setTimeout(() => {
       autocompleteService.current.getPlacePredictions({
         input: value,
-        componentRestrictions: { country: ['lv', 'lt', 'ee'] },
+        componentRestrictions: { country: ['lv'] },
         types: ['address'],
         sessionToken: sessionToken.current,
       }, (results: any, status: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any

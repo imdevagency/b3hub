@@ -5,7 +5,6 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 
 // ── Container sizes ────────────────────────────────────────────────────────────
@@ -86,7 +85,7 @@ export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, o
       </div>
 
       {/* Size grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="flex flex-col gap-2">
         {SKIP_SIZES.map((s) => {
           const selected = size === s.id;
           return (
@@ -97,56 +96,47 @@ export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, o
                 if (!showWaste) setShowWaste(true);
               }}
               className={cn(
-                'relative flex flex-col gap-2 rounded-2xl border-2 p-4 text-left transition-all hover:shadow-md focus:outline-none',
+                'relative flex items-center justify-between gap-3 rounded-xl border-2 p-3 text-left transition-all',
                 selected
-                  ? 'border-primary bg-red-50 shadow-md ring-4 ring-red-100'
-                  : 'border-gray-200 bg-white hover:border-gray-300',
+                  ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
+                  : 'border-transparent bg-muted/60 hover:bg-muted'
               )}
             >
-              {s.popular && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-bold text-white whitespace-nowrap">
-                  POPULĀRĀKAIS
-                </span>
-              )}
-
-              {/* Skip visual */}
-              <div className="flex items-end gap-2">
+              <div className="flex items-center gap-4">
+                {/* Minimal icon */}
                 <div
                   className={cn(
-                    'flex items-end justify-center rounded-md border-2 h-12 transition-colors',
-                    selected ? 'border-red-400 bg-red-200' : 'border-gray-300 bg-gray-100',
-                    s.id === 'mini' && 'w-10',
-                    s.id === 'midi' && 'w-14',
-                    s.id === 'builders' && 'w-18',
-                    s.id === 'large' && 'w-20',
+                    'flex-shrink-0 flex items-center justify-center rounded border h-10 w-12 transition-colors',
+                    selected ? 'border-primary/40 text-primary bg-white shadow-sm' : 'border-gray-200 text-gray-500 bg-gray-100',
                   )}
                 >
-                  <span
-                    className={cn(
-                      'mb-1 text-xs font-bold',
-                      selected ? 'text-red-700' : 'text-gray-500',
-                    )}
-                  >
+                  <span className="text-xs font-bold">
                     {s.volume}
                   </span>
                 </div>
+                
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className={cn("font-semibold text-sm", selected ? "text-gray-900" : "text-gray-700")}>
+                      {s.label}
+                    </p>
+                    {s.popular && (
+                      <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary uppercase">
+                        Populārs
+                      </span>
+                    )}
+                  </div>
+                  {/* Minimized info */}
+                  <p className="text-xs text-muted-foreground mt-0.5">{s.bestFor}</p>
+                </div>
               </div>
 
-              <div>
-                <p className={cn('font-bold text-sm', selected ? 'text-red-700' : 'text-gray-900')}>
-                  {s.label}
+              <div className="text-right flex-shrink-0">
+                <p className="text-[10px] text-muted-foreground leading-none">No</p>
+                <p className={cn("text-sm font-bold", selected ? "text-primary" : "text-gray-900")}>
+                  €{s.priceFrom}
                 </p>
-                <p className="text-xs text-gray-500 leading-tight mt-0.5">{s.bestFor}</p>
               </div>
-
-              <p
-                className={cn(
-                  'text-sm font-bold mt-auto',
-                  selected ? 'text-primary' : 'text-gray-800',
-                )}
-              >
-                No €{s.priceFrom}
-              </p>
             </button>
           );
         })}
@@ -154,24 +144,11 @@ export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, o
 
       {/* Waste type section — expands after size is chosen */}
       {showWaste && (
-        <div className="rounded-2xl border bg-gray-50 overflow-hidden">
-          <button
-            onClick={() => setShowWaste((v) => !v)}
-            className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
-          >
-            <span>
-              Atkritumu veids
-              {wasteType && (
-                <span className="ml-2 text-primary">
-                  — {WASTE_TYPES.find((w) => w.id === wasteType)?.emoji}{' '}
-                  {WASTE_TYPES.find((w) => w.id === wasteType)?.label}
-                </span>
-              )}
-            </span>
-            {showWaste ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-          </button>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 border-t">
+        <div className="pt-2 animate-in fade-in slide-in-from-top-2">
+          <h3 className="text-sm font-bold text-gray-900 mb-3">
+            Atkritumu veids
+          </h3>
+          <div className="grid grid-cols-2 gap-2">
             {WASTE_TYPES.map((w) => {
               const selected = wasteType === w.id;
               return (
@@ -179,14 +156,14 @@ export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, o
                   key={w.id}
                   onClick={() => onWasteChange(w.id)}
                   className={cn(
-                    'flex items-center gap-2 rounded-xl border-2 px-3 py-2.5 text-sm text-left transition-all',
+                    'flex items-center gap-2 rounded-xl border-2 px-3 py-3 text-sm text-left transition-all',
                     selected
-                      ? 'border-primary bg-red-50 text-red-700 font-semibold'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300',
+                      ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
+                      : 'border-transparent bg-muted/60 hover:bg-muted'
                   )}
                 >
-                  <span className="text-base">{w.emoji}</span>
-                  <span>{w.label}</span>
+                  <span className="text-lg">{w.emoji}</span>
+                  <span className={cn("font-medium text-sm", selected ? "text-gray-900" : "text-gray-700")}>{w.label}</span>
                 </button>
               );
             })}

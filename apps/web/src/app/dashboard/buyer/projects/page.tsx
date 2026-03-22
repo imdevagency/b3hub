@@ -40,6 +40,7 @@ const STATUS_META: Record<
 > = {
   ACTIVE: { label: 'Aktīvs', variant: 'default' },
   COMPLETED: { label: 'Pabeigts', variant: 'secondary' },
+  DRAFT: { label: 'Melnraksts', variant: 'outline' },
   EXPIRED: { label: 'Beidzies', variant: 'outline' },
   CANCELLED: { label: 'Atcelts', variant: 'destructive' },
 };

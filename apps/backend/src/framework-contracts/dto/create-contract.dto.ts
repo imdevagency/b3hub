@@ -62,6 +62,10 @@ export class CreateFrameworkContractDto {
   @IsOptional()
   notes?: string;
 
+  @IsString()
+  @IsOptional()
+  supplierId?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreatePositionDto)
