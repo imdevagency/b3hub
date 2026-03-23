@@ -55,6 +55,7 @@ export type GlobalMaterial = {
   unit: MaterialUnit;
   basePrice: number;
   isRecycled: boolean;
+  imageUrl?: string;
 };
 
 export const GLOBAL_MATERIALS: GlobalMaterial[] = [

@@ -15,6 +15,10 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, 'node_modules'),
 ];
 
+// Packages hoisted to monorepo root that Metro can't find when the import
+// originates from inside another node_modules package.
+const rootHoisted = ['hoist-non-react-statics', 'memoize-one'];
+
 // Guarantee a single React instance — intercepts ALL require('react') calls
 // including those originating from inside node_modules (e.g. react-native)
 config.resolver.resolveRequest = (context, moduleName, platform) => {
@@ -25,6 +29,17 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
       path.resolve(projectRoot, moduleName.slice(2)),
       platform,
     );
+  }
+
+  // Explicitly resolve hoisted packages — works regardless of where the
+  // import originates, even from deep inside node_modules/.
+  if (rootHoisted.includes(moduleName)) {
+    return {
+      filePath: require.resolve(moduleName, {
+        paths: [path.resolve(monorepoRoot, 'node_modules')],
+      }),
+      type: 'sourceFile',
+    };
   }
 
   if (moduleName === 'react') {

@@ -54,6 +54,7 @@ const STATUS_META: Record<FrameworkContractStatus, { label: string; dot: string;
   COMPLETED: { label: 'Pabeigts', dot: '#3b82f6', bg: '#dbeafe' },
   EXPIRED: { label: 'Beidzies', dot: '#f59e0b', bg: '#fef9c3' },
   CANCELLED: { label: 'Atcelts', dot: '#9ca3af', bg: '#f3f4f6' },
+  DRAFT: { label: 'Uzmetums', dot: '#9ca3af', bg: '#f3f4f6' },
 };
 
 const POS_TYPE_LABEL: Record<string, string> = {

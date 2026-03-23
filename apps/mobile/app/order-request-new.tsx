@@ -1,13 +1,13 @@
 /**
  * order-request-new.tsx
  *
- * 5-step wizard for material ordering.
+ * Buyer material order wizard — mirrors the web WHAT → WHERE → WHEN → CONFIRM pattern.
  *
- *  Step 1 – Address   : AddressPickerModal (shared with all other wizards)
- *  Step 2 – Material  : category chips + scrollable material cards
- *  Step 3 – Configure : fraction chips, quantity stepper, price preview
- *  Step 4 – Contact   : name and phone collection
- *  Step 5 – Review    : summary + confirm
+ *  Step 1 – WHAT (material)   : category chips + scrollable material cards
+ *  Step 2 – WHAT (configure)  : fraction chips, quantity stepper, price preview
+ *  Step 3 – WHERE (address)   : delivery address picker
+ *  Step 4 – WHEN (date)       : preferred delivery date
+ *  Step 5 – CONFIRM           : contact info + order summary + VAT breakdown (matches web step 4 "Apstiprināt")
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -20,32 +20,64 @@ import {
   ActivityIndicator,
   StyleSheet,
   TextInput,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { UNIT_SHORT, CATEGORY_ICON } from '@/lib/materials';
 import type { MaterialCategory, MaterialUnit, ApiMaterial } from '@/lib/api';
-import { MapPin, Check, Truck, CreditCard, Calendar, Layers, Mountain, Leaf, Box, Hexagon } from 'lucide-react-native';
+import {
+  MapPin,
+  Check,
+  Truck,
+  CreditCard,
+  Calendar,
+  Layers,
+  Mountain,
+  Leaf,
+  Box,
+  Hexagon,
+} from 'lucide-react-native';
+import { Calendar as RNCalendar } from 'react-native-calendars';
 
-const MaterialIcon = ({ category, color, size }: { category: string, color: string, size: number }) => {
+const MaterialIcon = ({
+  category,
+  color,
+  size,
+}: {
+  category: string;
+  color: string;
+  size: number;
+}) => {
   switch (category) {
-    case 'GRAVEL': return <Mountain size={size} color={color} />;
-    case 'SAND': return <Layers size={size} color={color} />;
-    case 'SOIL': return <Leaf size={size} color={color} />;
-    case 'STONE': return <Hexagon size={size} color={color} />;
-    case 'CONCRETE': return <Box size={size} color={color} />;
-    case 'ASPHALT': return <Layers size={size} color={color} />;
-    default: return <Box size={size} color={color} />;
+    case 'GRAVEL':
+      return <Mountain size={size} color={color} />;
+    case 'SAND':
+      return <Layers size={size} color={color} />;
+    case 'SOIL':
+      return <Leaf size={size} color={color} />;
+    case 'STONE':
+      return <Hexagon size={size} color={color} />;
+    case 'CONCRETE':
+      return <Box size={size} color={color} />;
+    case 'ASPHALT':
+      return <Layers size={size} color={color} />;
+    default:
+      return <Box size={size} color={color} />;
   }
 };
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 
+import type { GlobalMaterial } from '@/components/order/order-request-types';
+
+import { GLOBAL_MATERIALS } from '@/components/order/order-request-types';
+
 // ── Types ────────────────────────────────────────────────────────────────────────────────────
 
-type Step = 'address' | 'material' | 'configure' | 'contact' | 'review';
+type Step = 'material' | 'configure' | 'address' | 'when' | 'confirm';
 
 // ── Constants ────────────────────────────────────────────────────────────────────────────────
 
@@ -60,7 +92,7 @@ const MATERIAL_CATEGORIES: { id: string; label: string }[] = [
 ];
 
 const FRACTIONS = ['0/2', '0/4', '4/8', '8/16', '16/32', '0/32', '0/45'];
-const STEPS: Step[] = ['material', 'address', 'configure', 'contact', 'review'];
+const STEPS: Step[] = ['material', 'configure', 'address', 'when', 'confirm'];
 
 // ── Component ────────────────────────────────────────────────────────────────────────────────
 
@@ -68,44 +100,33 @@ export default function OrderRequestWizard() {
   const router = useRouter();
   const { user, token } = useAuth();
 
-  const [step, setStep] = useState<Step>('address');
+  const [step, setStep] = useState<Step>('material');
   const stepIndex = STEPS.indexOf(step);
 
   // Address step
   const [pickedAddress, setPickedAddress] = useState<PickedAddress | null>(null);
 
-  // Material step — loaded from API
-  const [materials, setMaterials] = useState<ApiMaterial[]>([]);
-  const [materialsLoading, setMaterialsLoading] = useState(false);
-  const [selectedMaterial, setSelectedMaterial] = useState<ApiMaterial | null>(null);
+  // Material step — using generic global catalog to mirror web flow
+  const materials = GLOBAL_MATERIALS;
+  const materialsLoading = false;
+  const [selectedMaterial, setSelectedMaterial] = useState<GlobalMaterial | null>(null);
   const [matCategory, setMatCategory] = useState('ALL');
 
   // Configure step
   const [fraction, setFraction] = useState('0/4');
   const [quantity, setQuantity] = useState(10);
 
-  // Contact step
-  const [contactName, setContactName] = useState('');
-  const [contactPhone, setContactPhone] = useState('');
+  // Contact step — pre-populated from user profile (matches web pattern)
+  const [contactName, setContactName] = useState(() =>
+    `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
+  );
+  const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
+
+  // When step
+  const [deliveryDate, setDeliveryDate] = useState('');
 
   // Submit
   const [submitting, setSubmitting] = useState(false);
-
-  // Fetch real materials from the backend
-  useEffect(() => {
-    if (!token) return;
-    setMaterialsLoading(true);
-    api.materials
-      .getAll(token)
-      .then((data) => {
-        const list = Array.isArray(data) ? data.filter((m) => m.inStock) : [];
-        setMaterials(list);
-      })
-      .catch(() => {
-        // Silent — empty list shown, user can still create a quote request
-      })
-      .finally(() => setMaterialsLoading(false));
-  }, [token]);
 
   const filteredMaterials =
     matCategory === 'ALL' ? materials : materials.filter((m) => m.category === matCategory);
@@ -126,19 +147,19 @@ export default function OrderRequestWizard() {
 
   const canProceed =
     (step === 'material' && !!selectedMaterial) ||
-    (step === 'address' && !!pickedAddress) ||
     (step === 'configure' && quantity > 0) ||
-    (step === 'contact' && contactName.length > 2 && contactPhone.length > 5) ||
-    step === 'review';
+    (step === 'address' && !!pickedAddress) ||
+    step === 'when' || // delivery date is optional
+    (step === 'confirm' && contactName.length > 2 && contactPhone.length > 5);
 
-  const ctaLabel = step === 'review' ? 'Apstiprināt pasūtījumu' : 'Turpināt';
+  const ctaLabel = step === 'confirm' ? 'Apstiprināt pasūtījumu' : 'Turpināt';
 
   const STEP_TITLES: Record<Step, string> = {
-    address: 'Kur piegādāt materiālu?',
-    material: 'Izvēlies materiālu',
+    material: 'Ko pasūtīt?',
     configure: 'Norādi daudzumu',
-    contact: 'Kontaktinformācija',
-    review: 'Apstiprini pasūtījumu',
+    address: 'Kur piegādāt?',
+    when: 'Kad piegādāt?',
+    confirm: 'Apstiprini pasūtījumu', // matches web step 4 "Apstiprināt"
   };
 
   // ── Address handler ──────────────────────────────────────────────────
@@ -162,8 +183,8 @@ export default function OrderRequestWizard() {
       );
       if (offers.length > 0) {
         const best = offers.sort((a, b) => a.totalPrice - b.totalPrice)[0];
-        const deliveryDate = new Date();
-        deliveryDate.setDate(deliveryDate.getDate() + (best.etaDays || 1));
+        const etaDate = new Date();
+        etaDate.setDate(etaDate.getDate() + (best.etaDays || 1));
         const order = await api.materials.createOrder(
           {
             buyerId: user!.id,
@@ -173,7 +194,7 @@ export default function OrderRequestWizard() {
             unitPrice: best.basePrice,
             deliveryAddress: pickedAddress.address,
             deliveryCity: pickedAddress.city,
-            deliveryDate: deliveryDate.toISOString().split('T')[0],
+            deliveryDate: deliveryDate || etaDate.toISOString().split('T')[0],
             siteContactName: contactName || undefined,
             siteContactPhone: contactPhone || undefined,
           },
@@ -193,22 +214,16 @@ export default function OrderRequestWizard() {
             deliveryCity: pickedAddress.city,
             deliveryLat: pickedAddress.lat,
             deliveryLng: pickedAddress.lng,
-            siteContactName: contactName || undefined,
-            siteContactPhone: contactPhone || undefined,
+            notes: `Kontakti: ${contactName}, ${contactPhone}`, // store contact in notes for quotes
           },
           token,
         );
-        Alert.alert(
-          'Pieprasījums nosūtīts!',
-          'Piegādātāji sazināsies ar jums drīzumā.',
-          [{ text: 'Labi', onPress: () => router.replace('/(buyer)/orders') }],
-        );
+        Alert.alert('Pieprasījums nosūtīts!', 'Piegādātāji sazināsies ar jums drīzumā.', [
+          { text: 'Labi', onPress: () => router.replace('/(buyer)/orders') },
+        ]);
       }
     } catch (e) {
-      Alert.alert(
-        'Kļūda',
-        e instanceof Error ? e.message : 'Mēģinājiet vēlreiz',
-      );
+      Alert.alert('Kļūda', e instanceof Error ? e.message : 'Mēģinājiet vēlreiz');
     } finally {
       setSubmitting(false);
     }
@@ -217,10 +232,7 @@ export default function OrderRequestWizard() {
   // \u2500\u2500 Step renders \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
   const renderAddress = () => (
-    <InlineAddressStep
-      picked={pickedAddress}
-      onPick={handlePickConfirm}
-    />
+    <InlineAddressStep picked={pickedAddress} onPick={handlePickConfirm} />
   );
 
   const renderMaterial = () => (
@@ -268,22 +280,23 @@ export default function OrderRequestWizard() {
                   activeOpacity={0.8}
                 >
                   <View style={[s.uberMatIconBg, active && s.uberMatIconBgActive]}>
-                    <MaterialIcon category={mat.category} color={active ? '#111827' : '#6b7280'} size={24} />
+                    {mat.imageUrl ? (
+                      <Image source={{ uri: mat.imageUrl }} style={s.matImage} />
+                    ) : (
+                      <MaterialIcon
+                        category={mat.category}
+                        color={active ? '#111827' : '#6b7280'}
+                        size={24}
+                      />
+                    )}
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[s.uberMatName, active && s.uberMatNameActive]}>{mat.name}</Text>
-                    {mat.description ? <Text style={s.uberMatDesc} numberOfLines={1}>{mat.description}</Text> : null}
-                    {mat.supplier?.city ? (
-                      <Text style={[s.uberMatDesc, { marginTop: 2 }]}>
-                        {mat.supplier.name} • {mat.supplier.city}
+                    {mat.description ? (
+                      <Text style={s.uberMatDesc} numberOfLines={1}>
+                        {mat.description}
                       </Text>
                     ) : null}
-                  </View>
-                  <View style={s.uberMatRight}>
-                    <Text style={[s.uberMatPrice, active && s.uberMatPriceActive]}>
-                      {'\u20AC'}{mat.basePrice.toFixed(2)}
-                    </Text>
-                    <Text style={s.uberMatUnit}>/ {UNIT_SHORT[mat.unit]}</Text>
                   </View>
                 </TouchableOpacity>
               );
@@ -382,77 +395,140 @@ export default function OrderRequestWizard() {
             </View>
           </View>
         </View>
+      </ScrollView>
+    );
+  };
 
-        {/* Price preview */}
-        <View style={s.priceCard}>
-          <View>
-            <Text style={s.priceLabel}>Orientējošā summa</Text>
-            <Text style={s.priceSub}>
-              {quantity} {UNIT_SHORT[unit]} x {'\u20AC'}
-              {selectedMaterial?.basePrice.toFixed(2)}
-            </Text>
+  // ── WHEN: delivery date picker ───────────────────────────────────────
+  const renderWhen = () => {
+    const todayISO = new Date().toISOString().split('T')[0];
+    const isAsap = deliveryDate === '';
+
+    return (
+      <ScrollView
+        contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={s.stepSub}>Izvēlieties vēlamo piegādes datumu</Text>
+
+        <TouchableOpacity
+          style={[
+            s.uberMatCard,
+            isAsap && s.uberMatCardActive,
+            { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
+          ]}
+          onPress={() => setDeliveryDate('')}
+          activeOpacity={0.8}
+        >
+          <View style={[s.uberMatIconBg, isAsap && s.uberMatIconBgActive]}>
+            <Truck size={20} color={isAsap ? '#111827' : '#6b7280'} />
           </View>
-          <Text style={s.priceValue}>
-            {'\u20AC'}
-            {((selectedMaterial?.basePrice ?? 0) * quantity).toFixed(2)}
+          <View style={{ flex: 1 }}>
+            <Text style={[s.uberMatName, isAsap && s.uberMatNameActive]}>Cik drīz iespējams</Text>
+            <Text style={s.uberMatDesc}>Piegādātājs sazināsies par laiku</Text>
+          </View>
+          {isAsap && <Check size={18} color="#111827" />}
+        </TouchableOpacity>
+
+        <RNCalendar
+          minDate={todayISO}
+          current={deliveryDate || todayISO}
+          markedDates={
+            deliveryDate
+              ? {
+                  [deliveryDate]: {
+                    selected: true,
+                    selectedColor: '#111827',
+                    selectedTextColor: '#fff',
+                  },
+                }
+              : {}
+          }
+          onDayPress={(day: { dateString: string }) => setDeliveryDate(day.dateString)}
+          theme={{
+            calendarBackground: '#ffffff',
+            backgroundColor: '#ffffff',
+            selectedDayBackgroundColor: '#111827',
+            selectedDayTextColor: '#ffffff',
+            todayTextColor: '#6b7280',
+            dayTextColor: '#111827',
+            textDisabledColor: '#d1d5db',
+            arrowColor: '#111827',
+            monthTextColor: '#111827',
+            textDayFontWeight: '500',
+            textMonthFontWeight: '700',
+            textDayHeaderFontWeight: '600',
+            textDayFontSize: 15,
+            textMonthFontSize: 16,
+          }}
+          style={{
+            borderRadius: 16,
+            overflow: 'hidden',
+            borderWidth: 1,
+            borderColor: '#e5e7eb',
+            marginBottom: 8,
+          }}
+          enableSwipeMonths
+        />
+
+        {/* Hint */}
+        <View
+          style={{
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            backgroundColor: '#fef3c7',
+            borderRadius: 8,
+          }}
+        >
+          <Text style={{ fontSize: 13, color: '#92400e', lineHeight: 18 }}>
+            Datums ir orientējošs — piegādātājs apstiprinās precīzu laiku.
           </Text>
         </View>
       </ScrollView>
     );
   };
 
-  const renderContact = () => (
-    <ScrollView contentContainerStyle={{ padding: 16 }}>
-      <View style={{ gap: 16 }}>
-        <View>
-          <Text style={[s.stepSub, { marginBottom: 16, fontSize: 18, fontWeight: 'bold' }]}>
-            Kontaktinformācija
-          </Text>
-        </View>
+  // ── CONFIRM: combined contact form + order summary (matches web step 4 "Apstiprināt") ────
+  const renderConfirm = () => {
+    const unit = selectedMaterial?.unit ?? 'TONNE';
 
-        {/* Contact Name */}
-        <View>
-          <Text style={s.sectionLabel}>Kontakta vārds un uzvārds</Text>
+    return (
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
+        {/* ── Contact form (top, like web step 4) ── */}
+        <Text style={s.sectionLabel}>Kontaktinformācija</Text>
+        <View style={{ gap: 10, marginBottom: 20 }}>
           <TextInput
-            style={[s.configureCard, { marginTop: 8, fontsize: 16 }]}
-            placeholder="Jānis Bērziņš"
+            style={s.configureCard}
+            placeholder="Vārds, uzvārds"
             placeholderTextColor="#9ca3af"
             value={contactName}
             onChangeText={setContactName}
+            autoComplete="name"
           />
-        </View>
-
-        {/* Contact Phone */}
-        <View>
-          <Text style={s.sectionLabel}>Tālrunis</Text>
           <TextInput
-            style={[s.configureCard, { marginTop: 8, fontSize: 16 }]}
+            style={s.configureCard}
             placeholder="+371 2X XXX XXX"
             placeholderTextColor="#9ca3af"
             keyboardType="phone-pad"
             value={contactPhone}
             onChangeText={setContactPhone}
           />
+          <View
+            style={{
+              paddingVertical: 8,
+              paddingHorizontal: 12,
+              backgroundColor: '#fef3c7',
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ fontSize: 13, color: '#92400e', lineHeight: 18 }}>
+              Šī informācija būs pieejama šoferim, lai tas varētu sazināties uz vietas.
+            </Text>
+          </View>
         </View>
 
-        {/* Info hint */}
-        <View style={{ paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#fef3c7', borderRadius: 8 }}>
-          <Text style={{ fontSize: 13, color: '#92400e', lineHeight: 18 }}>
-            Šī informācija būs pieejama šoferim uz vietas, lai aprūpētu jūsu pasūtījumu
-          </Text>
-        </View>
-      </View>
-    </ScrollView>
-  );
-
-  const renderReview = () => {
-    const total = (selectedMaterial?.basePrice ?? 0) * quantity;
-    const vat = total * 0.21;
-    const finalTotal = total + vat;
-    const unit = selectedMaterial?.unit ?? 'TONNE';
-
-    return (
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+        {/* ── Order summary card (matches web "Pasūtījuma kopsavilkums") ── */}
+        <Text style={[s.sectionLabel, { marginBottom: 10 }]}>Pasūtījuma kopsavilkums</Text>
         <View style={s.uberCard}>
           {/* Address */}
           <View style={s.uberRow}>
@@ -467,7 +543,7 @@ export default function OrderRequestWizard() {
 
           <View style={s.uberDivider} />
 
-          {/* Material */}
+          {/* Material + qty */}
           <View style={s.uberRow}>
             <View style={[s.uberIconBg, { backgroundColor: '#fef3c7' }]}>
               <Truck size={22} color="#d97706" />
@@ -478,9 +554,25 @@ export default function OrderRequestWizard() {
                 {quantity} {UNIT_SHORT[unit]} • {selectedMaterial?.name} ({fraction})
               </Text>
             </View>
-            <View style={s.uberRowRight}>
-              <Text style={s.uberRowPrice}>
-                {'\u20AC'}{total.toFixed(2)}
+          </View>
+
+          <View style={s.uberDivider} />
+
+          {/* Delivery Date */}
+          <View style={s.uberRow}>
+            <View style={s.uberIconBg}>
+              <Calendar size={22} color="#111827" />
+            </View>
+            <View style={s.uberRowContent}>
+              <Text style={s.uberRowLabel}>Piegādes datums</Text>
+              <Text style={s.uberRowValue}>
+                {deliveryDate
+                  ? new Date(deliveryDate).toLocaleDateString('lv-LV', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                    })
+                  : 'Cik drīz iespējams'}
               </Text>
             </View>
           </View>
@@ -496,35 +588,6 @@ export default function OrderRequestWizard() {
               <Text style={s.uberRowLabel}>Maksājuma veids</Text>
               <Text style={s.uberRowValue}>Pēcapmaksa (Rēķins)</Text>
             </View>
-          </View>
-
-          <View style={s.uberDivider} />
-
-          {/* Delivery Date */}
-          <View style={s.uberRow}>
-            <View style={s.uberIconBg}>
-              <Calendar size={22} color="#111827" />
-            </View>
-            <View style={s.uberRowContent}>
-              <Text style={s.uberRowLabel}>Piegādes laiks</Text>
-              <Text style={s.uberRowValue}>Sazināsimies</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Totals */}
-        <View style={s.uberTotals}>
-          <View style={s.uberTotalRow}>
-            <Text style={s.uberTotalLabel}>Starpsumma</Text>
-            <Text style={s.uberTotalValue}>{'\u20AC'}{total.toFixed(2)}</Text>
-          </View>
-          <View style={s.uberTotalRow}>
-            <Text style={s.uberTotalLabel}>PVN (21%)</Text>
-            <Text style={s.uberTotalValue}>{'\u20AC'}{vat.toFixed(2)}</Text>
-          </View>
-          <View style={[s.uberTotalRow, s.uberFinalRow]}>
-            <Text style={s.uberFinalLabel}>Kopā</Text>
-            <Text style={s.uberFinalValue}>{'\u20AC'}{finalTotal.toFixed(2)}</Text>
           </View>
         </View>
       </ScrollView>
@@ -544,15 +607,15 @@ export default function OrderRequestWizard() {
         else router.replace('/(buyer)/home' as never);
       }}
       ctaLabel={ctaLabel}
-      onCTA={step === 'review' ? handleSubmit : goNext}
+      onCTA={step === 'confirm' ? handleSubmit : goNext}
       ctaDisabled={!canProceed || submitting}
       ctaLoading={submitting}
     >
       {step === 'material' && renderMaterial()}
-      {step === 'address' && renderAddress()}
       {step === 'configure' && renderConfigure()}
-      {step === 'contact' && renderContact()}
-      {step === 'review' && renderReview()}
+      {step === 'address' && renderAddress()}
+      {step === 'when' && renderWhen()}
+      {step === 'confirm' && renderConfirm()}
     </WizardLayout>
   );
 }
@@ -630,10 +693,16 @@ const s = StyleSheet.create({
   uberMatIconBg: {
     width: 46,
     height: 46,
-    borderRadius: 23,
+    borderRadius: 12,
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  matImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   uberMatIconBgActive: {
     backgroundColor: '#111827',
@@ -641,10 +710,6 @@ const s = StyleSheet.create({
   uberMatName: { fontSize: 16, fontWeight: '700', color: '#374151' },
   uberMatNameActive: { color: '#111827' },
   uberMatDesc: { fontSize: 13, color: '#6b7280', marginTop: 1 },
-  uberMatRight: { alignItems: 'flex-end' },
-  uberMatPrice: { fontSize: 16, fontWeight: '800', color: '#374151' },
-  uberMatPriceActive: { color: '#111827' },
-  uberMatUnit: { fontSize: 12, color: '#9ca3af', fontWeight: '500', marginTop: 1 },
 
   // Legacy (used optionally)
   matCard: {
@@ -742,20 +807,6 @@ const s = StyleSheet.create({
   quickBtnText: { fontSize: 16, color: '#6b7280', fontWeight: '600' },
   quickBtnTextActive: { color: '#fff', fontWeight: '700' },
 
-  // Price card (configure + review)
-  priceCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#111827',
-    borderRadius: 18,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-  },
-  priceLabel: { fontSize: 14, color: '#d1d5db', fontWeight: '700' },
-  priceSub: { fontSize: 12, color: '#9ca3af', marginTop: 4, fontWeight: '500' },
-  priceValue: { fontSize: 48, fontWeight: '800', color: '#fff', letterSpacing: -0.6 },
-
   // Review
   uberCard: {
     backgroundColor: '#ffffff',
@@ -787,10 +838,6 @@ const s = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
-  uberRowRight: {
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-  },
   uberRowLabel: {
     fontSize: 12,
     color: '#6b7280',
@@ -804,53 +851,12 @@ const s = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
   },
-  uberRowPrice: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#111827',
-  },
   uberDivider: {
     height: 1,
     backgroundColor: '#f3f4f6',
     marginVertical: 14,
     marginLeft: 58,
   },
-  uberTotals: {
-    paddingHorizontal: 8,
-    gap: 12,
-  },
-  uberTotalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  uberTotalLabel: {
-    fontSize: 15,
-    color: '#6b7280',
-    fontWeight: '500',
-  },
-  uberTotalValue: {
-    fontSize: 16,
-    color: '#374151',
-    fontWeight: '600',
-  },
-  uberFinalRow: {
-    marginTop: 8,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-  },
-  uberFinalLabel: {
-    fontSize: 20,
-    color: '#111827',
-    fontWeight: '800',
-  },
-  uberFinalValue: {
-    fontSize: 24,
-    color: '#111827',
-    fontWeight: '800',
-  },
-
   // Redesigned Configure Inputs
   uberChip: {
     minWidth: 62,
@@ -895,5 +901,4 @@ const s = StyleSheet.create({
   uberStepperValueWrap: { alignItems: 'center', minWidth: 80 },
   uberStepperValue: { fontSize: 36, fontWeight: '800', color: '#111827', lineHeight: 40 },
   uberStepperUnit: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
-
 });

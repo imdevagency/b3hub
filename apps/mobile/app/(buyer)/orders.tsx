@@ -401,57 +401,6 @@ export default function OrdersScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ── Quick service links ── */}
-        <View style={s.quickServicesRow}>
-          <TouchableOpacity
-            style={s.quickService}
-            onPress={() => {
-              haptics.light();
-              router.push('/order-request-new' as any);
-            }}
-            activeOpacity={0.8}
-          >
-            <HardHat size={16} color="#374151" />
-            <Text style={s.quickServiceLabel}>Materiāli</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={s.quickService}
-            onPress={() => {
-              haptics.light();
-              router.push('/order' as any);
-            }}
-            activeOpacity={0.8}
-          >
-            <Package size={16} color="#374151" />
-            <Text style={s.quickServiceLabel}>Konteineri</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={s.quickService}
-            onPress={() => {
-              haptics.light();
-              router.push('/disposal' as any);
-            }}
-            activeOpacity={0.8}
-          >
-            <Trash2 size={16} color="#374151" />
-            <Text style={s.quickServiceLabel}>Utilizācija</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={s.quickService}
-            onPress={() => {
-              haptics.light();
-              router.push('/transport' as any);
-            }}
-            activeOpacity={0.8}
-          >
-            <Truck size={16} color="#374151" />
-            <Text style={s.quickServiceLabel}>Transports</Text>
-          </TouchableOpacity>
-        </View>
-
         {/* ── Filter chips ── */}
         <ScrollView
           horizontal
@@ -828,32 +777,4 @@ const s = StyleSheet.create({
     backgroundColor: '#f1f5f9',
   },
   pickerCancelText: { fontSize: 15, fontWeight: '600', color: '#64748b' },
-
-  // ── Quick service links ────────────────────────────────────
-  quickServicesRow: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingBottom: 8,
-    justifyContent: 'space-between',
-  },
-  quickService: {
-    flex: 1,
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  quickServiceLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#374151',
-    textAlign: 'center',
-  },
 });

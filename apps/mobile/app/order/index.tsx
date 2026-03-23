@@ -1,10 +1,11 @@
 /**
  * Container / Skip-Hire wizard — full-screen step pages.
  *
- *   Step 1 – Location   (inline map)
- *   Step 2 – Waste type (Step2WasteType, auto-advance)
- *   Step 3 – Skip size  (Step3Size, auto-advance)
- *   Step 4 – Date + confirm
+ * Step order mirrors the web flow (Type → Where → When/Confirm):
+ *   Step 1 – Container size  (Step3Size)
+ *   Step 2 – Waste type      (Step2WasteType)
+ *   Step 3 – Delivery address (InlineAddressStep)
+ *   Step 4 – Date + Contact + Confirm
  */
 
 import React, { useState, useCallback } from 'react';
@@ -111,9 +112,9 @@ export default function OrderWizard() {
   const ctaLabel = step === 4 ? `Pasūtīt — €${price}` : 'Turpināt';
 
   const ctaDisabled =
-    (step === 1 && !picked) ||
+    (step === 1 && !selectedSize) ||
     (step === 2 && !selectedWaste) ||
-    (step === 3 && !selectedSize) ||
+    (step === 3 && !picked) ||
     submitting;
 
   const onCTA = useCallback(async () => {
@@ -214,10 +215,10 @@ export default function OrderWizard() {
   }, [pickUnloadingPhoto]);
 
   const STEP_TITLES: Record<Step, string> = {
-    1: t.skipHire.step1.title,
-    2: t.skipHire.step2.title,
-    3: t.skipHire.step3.title,
-    4: t.skipHire.step4.title,
+    1: t.skipHire.step3.title, // "Konteinera izmērs" — size first (matches web step 1)
+    2: t.skipHire.step2.title, // "Atkritumu veids" — waste second (matches web step 1 reveal)
+    3: 'Piegādes adrese', // Address third (matches web step 2 "Adrese")
+    4: 'Apstiprini pasūtījumu', // Confirm last (matches web step 4 "Apstiprināt")
   };
 
   return (
@@ -236,24 +237,24 @@ export default function OrderWizard() {
         ctaDisabled={ctaDisabled}
         ctaLoading={submitting}
       >
-        {/* ── Step 1: Location ── */}
-        {step === 1 && <InlineAddressStep picked={picked} onPick={handlePickConfirm} />}
+        {/* ── Step 1: Container size (matches web step 1 — choose container type first) ── */}
+        {step === 1 && (
+          <View style={{ flex: 1 }}>
+            <Step3Size selected={selectedSize} onSelect={handleSizeSelect} />
+          </View>
+        )}
 
-        {/* ── Step 2: Waste type ── */}
+        {/* ── Step 2: Waste type (matches web step 1 reveal — waste after size) ── */}
         {step === 2 && (
           <View style={{ flex: 1 }}>
             <Step2WasteType selected={selectedWaste} onSelect={handleWasteSelect} />
           </View>
         )}
 
-        {/* ── Step 3: Skip size ── */}
-        {step === 3 && (
-          <View style={{ flex: 1 }}>
-            <Step3Size selected={selectedSize} onSelect={handleSizeSelect} />
-          </View>
-        )}
+        {/* ── Step 3: Delivery address (matches web step 2 "Adrese") ── */}
+        {step === 3 && <InlineAddressStep picked={picked} onPick={handlePickConfirm} />}
 
-        {/* ── Step 4: Date + Contact ── */}
+        {/* ── Step 4: Date + Contact + Confirm (matches web step 4 "Apstiprināt") ── */}
         {step === 4 && (
           <ScrollView
             style={s.content}
