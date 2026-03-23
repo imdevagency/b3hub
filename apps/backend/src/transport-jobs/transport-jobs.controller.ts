@@ -36,8 +36,11 @@ function canDispatch(user: RequestingUser): boolean {
     user.userType === 'ADMIN' ||
     user.companyRole === 'OWNER' ||
     user.companyRole === 'MANAGER' ||
-    user.permManageOrders ||
-    (user.canTransport && user.isCompany) // carrier company owner without a companyRole
+    !!user.permManageOrders ||
+    // Allow canTransport company users who have no companyRole yet
+    // (e.g. first company account before member roles are assigned).
+    // Explicitly exclude DRIVER and MEMBER — they are field workers, not dispatchers.
+    (user.canTransport && user.isCompany && !user.companyRole)
   );
 }
 

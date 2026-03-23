@@ -4,6 +4,7 @@
  */
 import {
   Controller,
+  ForbiddenException,
   Get,
   Post,
   Patch,
@@ -29,6 +30,8 @@ export class VehiclesController {
   /**
    * POST /api/v1/vehicles
    * Add a new vehicle to the user's fleet.
+   * Company DRIVER and MEMBER roles cannot register vehicles — fleet management
+   * is the responsibility of company OWNER / MANAGER.
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -36,6 +39,12 @@ export class VehiclesController {
     @Body() dto: CreateVehicleDto,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
+    const role = req.user.companyRole;
+    if (req.user.isCompany && (role === 'DRIVER' || role === 'MEMBER')) {
+      throw new ForbiddenException(
+        'Company drivers and members cannot add vehicles. Contact your fleet manager.',
+      );
+    }
     return this.vehiclesService.create(dto, req.user.userId);
   }
 
@@ -81,6 +90,12 @@ export class VehiclesController {
     @Body() dto: UpdateVehicleDto,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
+    const role = req.user.companyRole;
+    if (req.user.isCompany && (role === 'DRIVER' || role === 'MEMBER')) {
+      throw new ForbiddenException(
+        'Company drivers and members cannot modify vehicles. Contact your fleet manager.',
+      );
+    }
     return this.vehiclesService.update(id, dto, req.user.userId);
   }
 
@@ -94,6 +109,12 @@ export class VehiclesController {
     @Param('id') id: string,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
+    const role = req.user.companyRole;
+    if (req.user.isCompany && (role === 'DRIVER' || role === 'MEMBER')) {
+      throw new ForbiddenException(
+        'Company drivers and members cannot remove vehicles. Contact your fleet manager.',
+      );
+    }
     return this.vehiclesService.remove(id, req.user.userId);
   }
 }

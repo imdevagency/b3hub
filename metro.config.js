@@ -15,6 +15,10 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, 'node_modules'),
 ];
 
+// Packages that need explicit resolution because Metro won't cross package
+// boundaries when resolving deps required from inside node_modules/.
+const rootHoisted = ['hoist-non-react-statics', 'memoize-one'];
+
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   // Resolve @/ path aliases to apps/mobile
   if (moduleName.startsWith('@/')) {
@@ -23,6 +27,17 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
       path.resolve(projectRoot, moduleName.slice(2)),
       platform,
     );
+  }
+
+  // Explicitly resolve packages hoisted to monorepo root that Metro can't
+  // find when the import originates from inside another node_modules package.
+  if (rootHoisted.includes(moduleName)) {
+    return {
+      filePath: require.resolve(moduleName, {
+        paths: [path.resolve(monorepoRoot, 'node_modules')],
+      }),
+      type: 'sourceFile',
+    };
   }
 
   // Guarantee a single React instance
