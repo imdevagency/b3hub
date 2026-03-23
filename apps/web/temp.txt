@@ -1,0 +1,201 @@
+208:function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () => void }) {
+209-  const router = useRouter();
+210-  const { job, setJob, loading, reload } = useActiveTransportJob(token);
+211-  const [refreshing, setRefreshing] = useState(false);
+212-  const [advancing, setAdvancing] = useState(false);
+213-  const [deliveryBlockers, setDeliveryBlockers] = useState<string[]>([]);
+214-  const [readinessLoading, setReadinessLoading] = useState(false);
+215-  const [exceptionsLoading, setExceptionsLoading] = useState(false);
+216-  const [exceptions, setExceptions] = useState<ApiTransportJobException[]>([]);
+217-  const [exceptionType, setExceptionType] =
+218-    useState<(typeof EXCEPTION_TYPE_OPTIONS)[number]['value']>('OTHER');
+219-  const [exceptionNotes, setExceptionNotes] = useState('');
+220-  const [reportingException, setReportingException] = useState(false);
+221-  const [resolvingExceptionId, setResolvingExceptionId] = useState<string | null>(null);
+222-  const [resolutionById, setResolutionById] = useState<Record<string, string>>({});
+223-
+224-  // Delivery proof modal
+225-  const [showProofModal, setShowProofModal] = useState(false);
+226-  const [proofRecipient, setProofRecipient] = useState('');
+227-  const [proofNotes, setProofNotes] = useState('');
+228-  const [proofSubmitting, setProofSubmitting] = useState(false);
+229-  const [proofError, setProofError] = useState<string | null>(null);
+230-
+231-  // Delivery success modal
+232-  const [deliveredJob, setDeliveredJob] = useState<ApiTransportJob | null>(null);
+233-
+234-  const handleRefresh = async () => {
+235-    setRefreshing(true);
+236-    await reload();
+237-    setRefreshing(false);
+238-  };
+239-
+240-  useEffect(() => {
+241-    let active = true;
+242-    if (!job?.id || job.status !== 'AT_DELIVERY') {
+243-      setDeliveryBlockers([]);
+244-      setReadinessLoading(false);
+245-      return;
+246-    }
+247-
+248-    setReadinessLoading(true);
+249-    getTransportDocumentReadiness(job.id, token)
+250-      .then((readiness) => {
+251-        if (!active) return;
+252-        setDeliveryBlockers(readiness.missing.filter((doc) => doc !== 'DELIVERY_PROOF'));
+253-      })
+254-      .catch(() => {
+255-        if (!active) return;
+256-        setDeliveryBlockers([]);
+257-      })
+258-      .finally(() => {
+259-        if (active) setReadinessLoading(false);
+260-      });
+261-
+262-    return () => {
+263-      active = false;
+264-    };
+265-  }, [job?.id, job?.status, token]);
+266-
+267-  useEffect(() => {
+268-    let active = true;
+269-    if (!job?.id) {
+270-      setExceptions([]);
+271-      setExceptionsLoading(false);
+272-      return;
+273-    }
+274-
+275-    setExceptionsLoading(true);
+276-    listTransportJobExceptions(job.id, token)
+277-      .then((data) => {
+278-        if (!active) return;
+279-        setExceptions(data);
+280-      })
+281-      .catch(() => {
+282-        if (!active) return;
+283-        setExceptions([]);
+284-      })
+285-      .finally(() => {
+286-        if (active) setExceptionsLoading(false);
+287-      });
+288-
+289-    return () => {
+290-      active = false;
+291-    };
+292-  }, [job?.id, token]);
+293-
+294-  const handleReportException = async () => {
+295-    if (!job) return;
+296-    const notes = exceptionNotes.trim();
+297-    if (!notes) {
+298-      alert('Lūdzu pievienojiet izņēmuma aprakstu.');
+299-      return;
+300-    }
+301-
+302-    setReportingException(true);
+303-    try {
+304-      const created = await reportTransportJobException(
+305-        job.id,
+306-        { type: exceptionType, notes },
+307-        token,
+308-      );
+309-      setExceptions((prev) => [created, ...prev]);
+310-      setExceptionNotes('');
+311-    } catch (e: unknown) {
+312-      alert(e instanceof Error ? e.message : 'Neizdevās iesniegt izņēmumu');
+313-    } finally {
+314-      setReportingException(false);
+315-    }
+316-  };
+317-
+318-  const handleResolveException = async (exceptionId: string) => {
+319-    if (!job) return;
+320-    const resolution = resolutionById[exceptionId]?.trim() || 'Atrisināts aktīvajā darbā';
+321-    setResolvingExceptionId(exceptionId);
+322-    try {
+323-      const resolved = await resolveTransportJobException(job.id, exceptionId, resolution, token);
+324-      setExceptions((prev) => prev.map((item) => (item.id === exceptionId ? resolved : item)));
+325-      setResolutionById((prev) => ({ ...prev, [exceptionId]: '' }));
+326-    } catch (e: unknown) {
+327-      alert(e instanceof Error ? e.message : 'Neizdevās atrisināt izņēmumu');
+328-    } finally {
+329-      setResolvingExceptionId(null);
+330-    }
+331-  };
+332-
+333-  const handleAdvance = async () => {
+334-    if (!job) return;
+335-    const current = job.status as JobStatus;
+336-    if (current === 'AT_DELIVERY') {
+337-      if (readinessLoading) {
+338-        alert('Pārbaudām dokumentu gatavību. Lūdzu uzgaidiet brīdi.');
+339-        return;
+340-      }
+341-      if (deliveryBlockers.length > 0) {
+342-        alert(`Piegādi nevar pabeigt. Trūkst: ${deliveryBlockers.map(formatDocCode).join(', ')}`);
+343-        return;
+344-      }
+345-      setProofRecipient('');
+346-      setProofNotes('');
+347-      setProofError(null);
+348-      setShowProofModal(true);
+349-      return;
+350-    }
+351-    const next = NEXT_STATUS[current];
+352-    if (!next) return;
+353-    if (!confirm(`Apstiprināt: ${STATUS_LABEL[current]} → ${STATUS_LABEL[next]}?`)) return;
+354-    setAdvancing(true);
+355-    try {
+356-      const updated = await updateTransportJobStatus(job.id, next, token);
+357-      setJob(updated);
+358-    } catch (e: unknown) {
+359-      alert(e instanceof Error ? e.message : 'Neizdevās atjaunināt statusu');
+360-    } finally {
+361-      setAdvancing(false);
+362-    }
+363-  };
+364-
+365-  const handleProofSubmit = async () => {
+366-    if (!job) return;
+367-    setProofSubmitting(true);
+368-    setProofError(null);
+369-    try {
+370-      const updated = await submitDeliveryProof(
+371-        job.id,
+372-        {
+373-          notes: proofNotes.trim() || undefined,
+374-          recipientName: proofRecipient.trim() || undefined,
+375-        },
+376-        token,
+377-      );
+378-      setJob(updated);
+379-      setShowProofModal(false);
+380-      if (updated.status === 'DELIVERED') {
+381-        setDeliveredJob(updated);
+382-      }
+383-    } catch (e: unknown) {
+384-      setProofError(e instanceof Error ? e.message : 'Neizdevās iesniegt piegādes apstiprinājumu');
+385-    } finally {
+386-      setProofSubmitting(false);
+387-    }
+388-  };
+389-
+390-  if (loading) {
+391-    return <PageSpinner className="py-32" />;
+392-  }
+393-
+394-  return (
+395-    <div className="space-y-6">
+396-      {/* Delivery Success Modal */}
+397-      {deliveredJob && (
+398-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+399-          <div className="bg-background w-full max-w-md rounded-3xl shadow-xl border overflow-hidden">
+400-            {/* Success header */}
+401-            <div className="bg-green-50 px-6 py-8 flex flex-col items-center gap-3">
+402-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+403-                <CheckCircle className="h-9 w-9 text-green-600" />
+404-              </div>
+405-              <h2 className="text-xl font-extrabold text-green-800">Piegāde pabeigta!</h2>
+406-              <p className="text-sm text-green-700 text-center">
+407-                Darbs #{deliveredJob.jobNumber} veiksmīgi pabeigts
+408-              </p>

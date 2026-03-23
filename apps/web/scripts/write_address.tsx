@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * AddressAutocomplete UI component.
  * Text input wired to the Google Places AutocompleteService API for custom address search UI.

@@ -188,7 +188,7 @@ function CreateContractDialog({
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="sm:max-w-xl w-[90vw] sm:w-[500px] overflow-y-auto">
+      <SheetContent className="sm:max-w-xl w-[90vw] sm:w-125 overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Jauns Rāmjlīgums</SheetTitle>
         </SheetHeader>

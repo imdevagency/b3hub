@@ -96,66 +96,74 @@ export function DocumentCard({ document: doc, onView }: DocumentCardProps) {
   const Icon = meta.icon;
 
   return (
-    <div className="group flex flex-col sm:flex-row sm:items-center gap-4 rounded-3xl border border-transparent bg-muted/40 p-4 transition-all hover:bg-muted/60 relative">
+    <div className="group flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 rounded-[1.5rem] bg-card p-5 transition-all hover:bg-muted/30 border border-transparent hover:border-border/60 relative shadow-sm">
       {/* Icon badge */}
-      <div className={`shrink-0 flex items-center justify-center h-11 w-11 rounded-lg ${meta.bg}`}>
-        <Icon className={`h-5 w-5 ${meta.color}`} />
+      <div className={`shrink-0 flex items-center justify-center h-14 w-14 rounded-2xl ${meta.bg}`}>
+        <Icon className={`h-6 w-6 ${meta.color}`} />
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0 pr-4 sm:pr-0">
-        <div className="flex items-start justify-between gap-2">
-          <p className="font-semibold text-foreground truncate text-sm leading-snug">{doc.title}</p>
+        <div className="flex items-start sm:items-center justify-between gap-3 mb-1">
+          <p className="font-medium text-foreground truncate text-base leading-snug">{doc.title}</p>
           <span
-            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge.classes}`}
+            className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${statusBadge.classes}`}
           >
             {statusBadge.label}
           </span>
         </div>
 
-        <p className={`text-xs font-medium mt-0.5 ${meta.color}`}>{meta.label}</p>
+        <p className={`text-sm font-medium mt-0.5 mb-2 ${meta.color}`}>{meta.label}</p>
 
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-muted-foreground/80">
-          <span className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-muted-foreground">
+          <span className="flex items-center gap-1.5 font-medium">
+            <Calendar className="h-3.5 w-3.5" />
             {new Date(doc.createdAt).toLocaleDateString('lv-LV', {
-              day: 'numeric',
+              day: '2-digit',
               month: 'short',
               year: 'numeric',
             })}
           </span>
-          {doc.issuedBy && <span>{doc.issuedBy}</span>}
-          {formatBytes(doc.fileSize) && <span>{formatBytes(doc.fileSize)}</span>}
+          {doc.issuedBy && (
+            <span className="flex items-center before:content-[''] before:block before:w-1 before:h-1 before:rounded-full before:bg-muted-foreground/30 before:mr-4">
+              {doc.issuedBy}
+            </span>
+          )}
+          {formatBytes(doc.fileSize) && (
+            <span className="flex items-center before:content-[''] before:block before:w-1 before:h-1 before:rounded-full before:bg-muted-foreground/30 before:mr-4">
+              {formatBytes(doc.fileSize)}
+            </span>
+          )}
           {doc.isGenerated && (
-            <span className="rounded-full bg-muted px-1.5 py-0.5 text-muted-foreground text-[10px]">
+            <span className="rounded-full bg-muted/60 px-2 py-0.5 text-foreground text-[11px] font-medium border border-border/50">
               Automātiski ģenerēts
             </span>
           )}
         </div>
 
-        {doc.notes && <p className="mt-1.5 text-xs text-muted-foreground/80 line-clamp-1">{doc.notes}</p>}
+        {doc.notes && <p className="mt-2.5 text-sm text-foreground/70 line-clamp-1">{doc.notes}</p>}
       </div>
 
       {/* Actions */}
-      <div className="absolute top-4 right-4 sm:relative sm:top-auto sm:right-auto shrink-0 flex gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-5 right-5 sm:relative sm:top-auto sm:right-auto shrink-0 flex gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity focus-within:opacity-100">
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
-          className="text-xs h-7 px-2 border-border/40 hover:text-red-600 hover:border-red-300"
+          className="h-9 px-3 rounded-xl border-border/60 hover:bg-background shadow-xs font-medium"
           onClick={() => onView(doc)}
         >
-          <Eye className="h-3 w-3 mr-1" />
+          <Eye className="h-4 w-4 mr-2" />
           Skatīt
         </Button>
         {doc.fileUrl && (
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="text-xs h-7 px-2 border-border/40 hover:text-red-600 hover:border-red-300"
+            className="h-9 px-3 rounded-xl border-border/60 hover:bg-background shadow-xs font-medium"
             asChild
           >
             <a href={doc.fileUrl} download>
-              <Download className="h-3 w-3 mr-1" />
+              <Download className="h-4 w-4 mr-2" />
               Saglabāt
             </a>
           </Button>

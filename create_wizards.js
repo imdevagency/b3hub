@@ -227,9 +227,9 @@ export default function DisposalOrderPage() {
     </div>
   );
 }
-\`;
+`;
 
-const transportPage = \`/**
+const transportPage = `/**
  * Transport Order page — /dashboard/order/transport
  * Mirrors the mobile Transport flow.
  */
@@ -471,7 +471,7 @@ export default function TransportOrderPage() {
     </div>
   );
 }
-\`
+`
 
 fs.writeFileSync('apps/web/src/app/dashboard/order/disposal/page.tsx', disposalPage);
 fs.writeFileSync('apps/web/src/app/dashboard/order/transport/page.tsx', transportPage);

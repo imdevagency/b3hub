@@ -5,7 +5,6 @@
  */
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
-import { CartProvider } from '@/lib/cart-context';
 import { ModeProvider } from '@/lib/mode-context';
 import { DashboardGuard } from '@/components/dashboard-guard';
 import { NotificationBell } from '@/components/notification-bell';
@@ -14,8 +13,7 @@ import { RoleModeSwitcher } from '@/components/role-mode-switcher';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <CartProvider>
-      <ModeProvider>
+    <ModeProvider>
         <DashboardGuard>
           <SidebarProvider>
             <AppSidebar />
@@ -42,6 +40,5 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </SidebarProvider>
         </DashboardGuard>
       </ModeProvider>
-    </CartProvider>
   );
 }

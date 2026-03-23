@@ -172,10 +172,10 @@ function PositionCard({
             </span>
           </span>
           {position.pickupAddress && (
-            <span className="truncate max-w-[160px]">No: {position.pickupAddress}</span>
+            <span className="truncate max-w-40">No: {position.pickupAddress}</span>
           )}
           {position.deliveryAddress && (
-            <span className="truncate max-w-[160px]">Uz: {position.deliveryAddress}</span>
+            <span className="truncate max-w-40">Uz: {position.deliveryAddress}</span>
           )}
         </div>
 
@@ -244,7 +244,7 @@ function ReleaseCallOffDialog({
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="sm:max-w-md w-[90vw] sm:w-[400px] w-[90vw] sm:w-[400px]">
+      <SheetContent className="sm:max-w-md w-[90vw] sm:w-100 w-[90vw] sm:w-100">
         <SheetHeader>
           <SheetTitle>Atsaukšanas darba uzdevums</SheetTitle>
         </SheetHeader>

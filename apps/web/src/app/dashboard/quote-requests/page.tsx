@@ -8,12 +8,17 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   Plus,
   RefreshCw,
-  MessageSquare,
   CheckCircle2,
   Clock,
   XCircle,
   ChevronDown,
   ChevronUp,
+  Package,
+  MapPin,
+  Truck,
+  Star,
+  Info,
+  Archive
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
@@ -56,22 +61,22 @@ const STATUS_CFG: Record<
   { label: string; icon: React.ElementType; color: string; bg: string }
 > = {
   PENDING: {
-    label: 'Gaida atbildes',
+    label: 'Meklē piedāvājumus',
     icon: Clock,
-    color: 'text-amber-700',
-    bg: 'bg-amber-50 border-amber-200',
+    color: 'text-slate-700',
+    bg: 'bg-slate-100 border-slate-200',
   },
   QUOTED: {
-    label: 'Ir atbildes',
-    icon: MessageSquare,
+    label: 'Saņemti piedāvājumi',
+    icon: Truck,
     color: 'text-blue-700',
     bg: 'bg-blue-50 border-blue-200',
   },
   ACCEPTED: {
-    label: 'Pieņemts',
+    label: 'Apstiprināts',
     icon: CheckCircle2,
-    color: 'text-green-700',
-    bg: 'bg-green-50 border-green-200',
+    color: 'text-emerald-700',
+    bg: 'bg-emerald-50 border-emerald-200',
   },
   CANCELLED: {
     label: 'Atcelts',
@@ -81,8 +86,8 @@ const STATUS_CFG: Record<
   },
   EXPIRED: {
     label: 'Beidzies',
-    icon: XCircle,
-    color: 'text-slate-600',
+    icon: Archive,
+    color: 'text-slate-500',
     bg: 'bg-slate-50 border-slate-200',
   },
 };
@@ -148,27 +153,30 @@ function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-base font-semibold">Jauns Cenu Pieprasījums</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 sm:p-6 transition-opacity">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Kur un ko jums vajag?</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Izveidojiet jaunu pieprasījumu</p>
+          </div>
           <button
             onClick={onClose}
-            className="text-muted-foreground hover:text-foreground text-lg leading-none"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors"
           >
             ×
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto">
           {/* Category + name */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">Kategorija *</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Materiāla Kat.</label>
               <select
                 value={form.materialCategory}
                 onChange={(e) => set('materialCategory', e.target.value as MaterialCategory)}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black transition-colors"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
@@ -177,38 +185,38 @@ function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">
-                Materiāla nosaukums *
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                Precīzs Nosaukums
               </label>
               <input
                 value={form.materialName}
                 onChange={(e) => set('materialName', e.target.value)}
-                placeholder="piem. Smalkas smiltis"
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="piem. Skalotas smiltis 0-2mm"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black transition-colors placeholder:font-normal placeholder:text-slate-400"
               />
             </div>
           </div>
 
           {/* Quantity + unit */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">Daudzums *</label>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Daudzums</label>
               <input
                 type="number"
                 min={0.1}
                 step={0.1}
                 value={form.quantity}
                 onChange={(e) => set('quantity', parseFloat(e.target.value))}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black transition-colors"
               />
             </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">Mērvienība *</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Mērvienība</label>
               <select
                 value={form.unit}
                 onChange={(e) => set('unit', e.target.value as MaterialUnit)}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black transition-colors"
               >
                 {UNITS.map((u) => (
                   <option key={u} value={u}>
@@ -220,49 +228,58 @@ function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
           </div>
 
           {/* Delivery */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">
-                Piegādes adrese *
-              </label>
-              <input
-                value={form.deliveryAddress}
-                onChange={(e) => set('deliveryAddress', e.target.value)}
-                placeholder="Iela 1"
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+          <div className="relative rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="absolute left-[27px] top-10 bottom-9 w-0.5 bg-slate-100"></div>
+            
+            <div className="relative flex items-start gap-3 mb-4">
+               <div className="mt-2.5 h-3 w-3 rounded-full bg-slate-800 shrink-0 relative z-10 box-content border-4 border-white shadow-sm" />
+               <div className="flex-1 space-y-1.5">
+                 <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Pilsēta/Novads</label>
+                 <input
+                   value={form.deliveryCity}
+                   onChange={(e) => set('deliveryCity', e.target.value)}
+                   placeholder="Rīga"
+                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black transition-colors"
+                 />
+               </div>
             </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">Pilsēta *</label>
-              <input
-                value={form.deliveryCity}
-                onChange={(e) => set('deliveryCity', e.target.value)}
-                placeholder="Rīga"
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+
+            <div className="relative flex items-start gap-3">
+               <div className="mt-2.5 h-3 w-3 rounded-sm bg-black shrink-0 relative z-10 box-content border-4 border-white shadow-sm" />
+               <div className="flex-1 space-y-1.5">
+                 <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                   Precīza Adrese
+                 </label>
+                 <input
+                   value={form.deliveryAddress}
+                   onChange={(e) => set('deliveryAddress', e.target.value)}
+                   placeholder="Brīvības iela 1"
+                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black transition-colors"
+                 />
+               </div>
             </div>
           </div>
 
           {/* Notes */}
-          <div>
-            <label className="text-xs font-medium text-slate-600 block mb-1">Piezīmes</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider text-muted-foreground flex gap-1 items-center"><Info className="h-3 w-3"/> Komentāri piegādātājam (Neobligāti)</label>
             <textarea
               rows={2}
               value={form.notes}
               onChange={(e) => set('notes', e.target.value)}
-              placeholder="Papildus prasības, termiņš u.c."
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              placeholder="Ievadiet papildus prasības vai termiņus..."
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black resize-none transition-colors"
             />
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700 font-medium">{error}</div>}
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" type="button" onClick={onClose}>
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline" type="button" onClick={onClose} className="w-1/3 rounded-xl h-12 text-sm font-bold border-slate-200 bg-white hover:bg-slate-50">
               Atcelt
             </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? 'Sūta...' : 'Nosūtīt Pieprasījumu'}
+            <Button type="submit" disabled={saving} className="w-2/3 rounded-xl h-12 text-sm font-bold bg-black text-white hover:bg-slate-800 shadow-md">
+              {saving ? 'Sūta...' : 'Pieprasīt Cenas'}
             </Button>
           </div>
         </form>
@@ -291,118 +308,141 @@ function RequestCard({ request, onAccept }: RequestCardProps) {
   };
 
   return (
-    <div className="bg-white rounded-2xl ring-1 ring-black/5 overflow-hidden transition-all hover:ring-black/10 hover:shadow-md">
-      {/* Header */}
+    <div className={`bg-white rounded-3xl border ${expanded ? 'border-slate-300 shadow-md' : 'border-slate-100 shadow-sm'} overflow-hidden transition-all hover:shadow-md hover:border-slate-200`}>
+      {/* Header (Clickable) */}
       <div
-        className="flex items-start gap-4 p-5 cursor-pointer hover:bg-slate-50/50 transition-colors"
+        className="p-5 cursor-pointer flex flex-col gap-4 relative"
         onClick={() => setExpanded((e) => !e)}
       >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono text-xs text-muted-foreground">{request.requestNumber}</span>
-            <span
-              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${cfg.bg} ${cfg.color}`}
-            >
-              <Icon className="h-3 w-3" />
-              {cfg.label}
-            </span>
-          </div>
-          <p className="text-sm font-semibold text-slate-900 mt-1">
-            {request.materialName}
-            <span className="text-muted-foreground font-normal ml-2 text-xs">
-              {CATEGORY_LV[request.materialCategory]}
-            </span>
-          </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {request.quantity} {UNIT_LV[request.unit]} · {request.deliveryCity}
-          </p>
+        <div className="flex items-start justify-between gap-4">
+           {/* Material Info */}
+           <div className="flex items-start gap-3 flex-1 min-w-0">
+              <div className="h-12 w-12 shrink-0 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-700 border border-slate-100">
+                 <Package className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                 <p className="text-base font-bold text-slate-900 truncate">{request.materialName || CATEGORY_LV[request.materialCategory]}</p>
+                 <p className="text-sm font-medium text-slate-500 mt-0.5">{request.quantity} <span className="text-xs uppercase">{UNIT_LV[request.unit]}</span> • {CATEGORY_LV[request.materialCategory]}</p>
+              </div>
+           </div>
+           
+           {/* Badge */}
+           <div className="shrink-0 text-right">
+              <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold border ${cfg.bg} ${cfg.color}`}>
+                 <Icon className="h-3 w-3" /> {cfg.label}
+              </span>
+           </div>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          {request.responses.length > 0 && (
-            <span className="text-xs font-semibold text-blue-600 bg-blue-50 rounded-full px-2 py-0.5 border border-blue-100">
-              {request.responses.length} atbild{request.responses.length === 1 ? 'e' : 'es'}
-            </span>
-          )}
-          <span className="text-xs text-muted-foreground">{fmtDate(request.createdAt)}</span>
-          {expanded ? (
-            <ChevronUp className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          )}
+
+        {/* Location / Route row */}
+        <div className="flex items-center gap-3 bg-slate-50/80 rounded-xl p-3 border border-slate-100/50">
+           <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
+           <p className="text-sm text-slate-800 font-semibold truncate leading-none">{request.deliveryCity}</p>
+           {/* separator dot */}
+           <div className="h-1 w-1 rounded-full bg-slate-300 mx-1 shrink-0"></div>
+           <p className="text-sm text-slate-500 truncate leading-none">{request.deliveryAddress}</p>
+        </div>
+
+        {/* Meta info */}
+        <div className="flex items-center justify-between mt-1">
+           <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-slate-400">ID: {request.requestNumber}</span>
+           <div className="flex items-center gap-3">
+             {request.responses.length > 0 && (
+               <span className="text-xs font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
+                 {request.responses.length} piedāvājum{request.responses.length === 1 ? 's' : 'i'}
+               </span>
+             )}
+             <span className="text-xs font-medium text-slate-400">{fmtDate(request.createdAt)}</span>
+             <div className="h-6 w-6 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100">
+               {expanded ? <ChevronUp className="h-3 w-3 text-slate-600" /> : <ChevronDown className="h-3 w-3 text-slate-600" />}
+             </div>
+           </div>
         </div>
       </div>
 
-      {/* Responses */}
+      {/* Expanded Actions & Responses */}
       {expanded && (
-        <div className="border-t border-slate-100">
+        <div className="border-t border-slate-100 bg-slate-50/50">
           {request.notes && (
-            <div className="px-5 py-3 bg-slate-50/50 text-xs text-slate-600 italic">
+            <div className="px-5 pt-4 pb-0 text-sm text-slate-600">
+              <span className="font-semibold text-xs uppercase tracking-wider text-slate-400 block mb-1">Piezīmes</span>
               &quot;{request.notes}&quot;
             </div>
           )}
 
-          {request.responses.length === 0 ? (
-            <div className="px-5 py-6 text-center text-sm text-muted-foreground">
-              Vēl nav saņemtu piedāvājumu
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-100">
-              {request.responses.map((resp) => (
-                <ResponseRow
-                  key={resp.id}
-                  response={resp}
-                  canAccept={request.status === 'PENDING' || request.status === 'QUOTED'}
-                  accepting={accepting === resp.id}
-                  onAccept={() => handleAccept(resp.id)}
-                />
-              ))}
-            </div>
-          )}
+          <div className="p-4 space-y-3">
+            {request.responses.length === 0 ? (
+              <div className="py-8 text-center bg-white rounded-2xl border border-slate-200 border-dashed">
+                <Truck className="mx-auto mb-3 h-8 w-8 text-slate-300" />
+                <p className="text-sm font-bold text-slate-700">Meklējam labākos pārvadātājus...</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Tiklīdz saņemsim cenas, tās parādīsies šeit.
+                </p>
+              </div>
+            ) : (
+              request.responses.map((resp) => (
+                <div 
+                  key={resp.id} 
+                  className={`p-4 rounded-2xl border transition-all ${
+                    resp.status === 'ACCEPTED' 
+                      ? 'border-emerald-500 bg-emerald-50 shadow-sm relative overflow-hidden' 
+                      : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
+                  }`}
+                >
+                  {resp.status === 'ACCEPTED' && (
+                    <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-bl-xl shrink-0 z-10 flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3"/> Izvēlēts
+                    </div>
+                  )}
+                  
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 bg-slate-100 border border-slate-200 rounded-full flex items-center justify-center shrink-0">
+                        <Truck className="h-5 w-5 text-slate-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                          {resp.supplier.name} 
+                          {resp.supplier.rating && (
+                            <span className="flex items-center gap-0.5 text-xs bg-slate-100 rounded-full px-1.5 py-0.5 font-semibold text-slate-700 border border-slate-200"><Star className="h-3 w-3 text-amber-500 fill-amber-500"/> {(resp.supplier.rating).toFixed(1)}</span>
+                          )}
+                        </p>
+                        <p className="text-xs font-medium text-slate-500 mt-1">Piegāde {resp.etaDays}d laikā</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between sm:justify-end gap-5">
+                      <div className="text-left sm:text-right">
+                        <p className="text-xl font-bold text-slate-900 leading-none">
+                          {fmtEur(resp.pricePerUnit)}<span className="text-sm font-medium text-slate-500">/{UNIT_LV[resp.unit]}</span>
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1 uppercase font-semibold">Cena ar piegādi</p>
+                      </div>
+                      
+                      {resp.status !== 'ACCEPTED' && (request.status === 'PENDING' || request.status === 'QUOTED') && (
+                        <Button 
+                          onClick={() => handleAccept(resp.id)} 
+                          disabled={accepting === resp.id} 
+                          className="rounded-xl h-10 px-5 bg-black text-white hover:bg-slate-800 font-bold transition-all shadow-sm"
+                        >
+                          {accepting === resp.id ? 'Pieņem...' : 'Izvēlēties'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {resp.notes && (
+                    <div className="mt-3 bg-slate-50 rounded-lg p-3 text-xs text-slate-600 border border-slate-100">
+                      <span className="font-semibold block mb-0.5">Piegādātāja komentārs:</span>
+                      {resp.notes}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
         </div>
       )}
-    </div>
-  );
-}
-
-interface ResponseRowProps {
-  response: QuoteResponse;
-  canAccept: boolean;
-  accepting: boolean;
-  onAccept: () => void;
-}
-
-function ResponseRow({ response, canAccept, accepting, onAccept }: ResponseRowProps) {
-  const isAccepted = response.status === 'ACCEPTED';
-
-  return (
-    <div className={`flex items-center gap-4 px-5 py-3 ${isAccepted ? 'bg-green-50/60' : ''}`}>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-900">
-          {fmtEur(response.pricePerUnit)} / {UNIT_LV[response.unit]}
-        </p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          {response.supplier.name} · {response.supplier.city}
-          {response.supplier.rating && ` · ⭐ ${response.supplier.rating.toFixed(1)}`}
-        </p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Piegāde {response.etaDays} d{response.etaDays === 1 ? 'ienā' : 'ienās'}
-          {response.validUntil && ` · Derīgs līdz ${fmtDate(response.validUntil)}`}
-        </p>
-        {response.notes && (
-          <p className="text-xs text-slate-500 mt-0.5 italic">&quot;{response.notes}&quot;</p>
-        )}
-      </div>
-      <div className="shrink-0">
-        {isAccepted ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-700 border border-green-200 px-2.5 py-0.5 text-xs font-semibold">
-            <CheckCircle2 className="h-3 w-3" /> Pieņemts
-          </span>
-        ) : canAccept ? (
-          <Button size="sm" onClick={onAccept} disabled={accepting} className="h-8 text-xs">
-            {accepting ? 'Pieņem...' : 'Pieņemt'}
-          </Button>
-        ) : null}
-      </div>
     </div>
   );
 }
@@ -450,73 +490,80 @@ export default function QuoteRequestsPage() {
   };
 
   const pending = requests.filter((r) => r.status === 'PENDING' || r.status === 'QUOTED').length;
+  const accepted = requests.filter((r) => r.status === 'ACCEPTED').length;
 
   return (
-      <div className="w-full h-full pb-20 space-y-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 mb-2">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Cenu Pieprasījumi</h1>
-            <p className="text-muted-foreground mt-1">
-              Pieprasiet cenas no piegādātājiem un salīdziniet piedāvājumus
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-              <RefreshCw className={`h-4 w-4 mr-0 sm:mr-1.5 ${loading ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Atjaunot</span>
-            </Button>
-            <Button size="sm" onClick={() => setShowModal(true)}>
-              <Plus className="h-4 w-4 mr-1.5" />
-              Jauns Pieprasījums
-            </Button>
-          </div>
+    <div className="w-full max-w-5xl mx-auto h-full pb-20 space-y-6 sm:space-y-8 px-4 sm:px-6 md:px-8 mt-4 sm:mt-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 border-b border-slate-200 pb-5">
+        <div>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">Cenu Pieprasījumi</h1>
+          <p className="text-sm font-medium text-slate-500 mt-2 max-w-md">
+            Iegūsti labākos piedāvājumus no piegādātājiem visām vajadzībām.
+          </p>
         </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="outline" size="sm" onClick={load} disabled={loading} className="h-11 px-4 rounded-xl border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold shadow-sm">
+            <RefreshCw className={`h-4 w-4 sm:mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Atjaunot</span>
+          </Button>
+          <Button size="sm" onClick={() => setShowModal(true)} className="h-11 px-5 rounded-xl bg-black text-white hover:bg-slate-800 font-bold shadow-md">
+            <Plus className="h-5 w-5 sm:mr-1.5" />
+            <span className="hidden sm:inline">Jauns Pieprasījums</span>
+            <span className="sm:hidden">Pieprasīt</span>
+          </Button>
+        </div>
+      </div>
+
       {/* Stats */}
-      {requests.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            { label: 'Kopā', value: requests.length, color: 'text-slate-700' },
-            { label: 'Aktīvie', value: pending, color: 'text-amber-600' },
-            {
-              label: 'Pieņemtie',
-              value: requests.filter((r) => r.status === 'ACCEPTED').length,
-              color: 'text-green-600',
-            },
-          ].map((s) => (
-            <div key={s.label} className="rounded-2xl ring-1 ring-black/5 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium text-muted-foreground mb-1">{s.label}</p>
-              <p className={`text-3xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
-            </div>
-          ))}
+      {requests.length > 0 && !error && (
+        <div className="grid grid-cols-3 gap-3 sm:gap-5">
+          <div className="rounded-3xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm">
+            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400 mb-1">Visi</p>
+            <p className="text-2xl sm:text-4xl font-bold text-slate-900">{requests.length}</p>
+          </div>
+          <div className="rounded-3xl border border-blue-100 bg-blue-50/50 p-4 sm:p-5 shadow-sm relative overflow-hidden">
+            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-blue-600/80 mb-1">Aktīvie</p>
+            <p className="text-2xl sm:text-4xl font-bold text-blue-700">{pending}</p>
+          </div>
+          <div className="rounded-3xl border border-emerald-100 bg-emerald-50/50 p-4 sm:p-5 shadow-sm">
+            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-emerald-600/80 mb-1">Izvēlētie</p>
+            <p className="text-2xl sm:text-4xl font-bold text-emerald-700">{accepted}</p>
+          </div>
         </div>
       )}
 
       {loading ? (
-        <div className="flex h-40 items-center justify-center">
-          <div className="h-7 w-7 animate-spin rounded-full border-b-2 border-primary" />
+        <div className="flex h-64 items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-black" />
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Ielādē</p>
+          </div>
         </div>
       ) : error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-700">
-          {error}
-          <Button variant="outline" size="sm" className="mt-3 block mx-auto" onClick={load}>
+        <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center shadow-sm">
+          <XCircle className="h-10 w-10 text-red-400 mx-auto mb-3" />
+          <p className="text-sm font-bold text-red-900">{error}</p>
+          <Button variant="outline" className="mt-4 rounded-xl bg-white border-red-200 hover:bg-red-100 text-red-800 font-bold" onClick={load}>
             Mēģināt vēlreiz
           </Button>
         </div>
       ) : requests.length === 0 ? (
-        <div className="rounded-xl border border-dashed p-12 text-center">
-          <MessageSquare className="mx-auto mb-3 h-10 w-10 text-muted-foreground/25" />
-          <p className="text-sm font-medium text-muted-foreground">Nav cenu pieprasījumu</p>
-          <p className="mt-1 text-xs text-muted-foreground/60">
-            Izveidojiet jaunu pieprasījumu, lai saņemtu cenas no piegādātājiem.
+        <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-12 text-center flex flex-col items-center justify-center">
+          <div className="h-20 w-20 bg-white rounded-full shadow-sm flex items-center justify-center mb-5">
+            <Package className="h-10 w-10 text-slate-300" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-900">Nekas nav pieprasīts</h3>
+          <p className="mt-2 text-sm font-medium text-slate-500 max-w-sm">
+            Izveidojiet savu pirmo cenu pieprasījumu, lai ātri un ērti saņemtu piedāvājumus no labākajiem piegādātājiem.
           </p>
-          <Button size="sm" className="mt-4" onClick={() => setShowModal(true)}>
-            <Plus className="h-4 w-4 mr-1.5" />
+          <Button className="mt-6 h-12 px-6 rounded-xl bg-black text-white hover:bg-slate-800 font-bold shadow-md" onClick={() => setShowModal(true)}>
+            <Plus className="h-5 w-5 mr-2" />
             Izveidot Pieprasījumu
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:gap-5">
           {requests.map((r) => (
             <RequestCard key={r.id} request={r} onAccept={handleAccept} />
           ))}

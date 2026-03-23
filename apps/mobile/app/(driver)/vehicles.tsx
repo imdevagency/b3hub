@@ -71,10 +71,12 @@ function VehicleCard({
   vehicle,
   onEdit,
   onDelete,
+  isReadOnly = false,
 }: {
   vehicle: ApiVehicle;
   onEdit: (v: ApiVehicle) => void;
   onDelete: (v: ApiVehicle) => void;
+  isReadOnly?: boolean;
 }) {
   return (
     <View style={s.card}>
@@ -101,14 +103,18 @@ function VehicleCard({
       )}
 
       <View style={s.cardActions}>
-        <TouchableOpacity style={s.editBtn} onPress={() => onEdit(vehicle)} activeOpacity={0.8}>
-          <Pencil size={16} color="#111827" />
-          <Text style={s.editBtnText}>Labot</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={s.deleteBtn} onPress={() => onDelete(vehicle)} activeOpacity={0.8}>
-          <Trash2 size={16} color="#ef4444" />
-          <Text style={s.deleteBtnText}>Dzēst</Text>
-        </TouchableOpacity>
+        {!isReadOnly && (
+          <>
+            <TouchableOpacity style={s.editBtn} onPress={() => onEdit(vehicle)} activeOpacity={0.8}>
+              <Pencil size={16} color="#111827" />
+              <Text style={s.editBtnText}>Labot</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.deleteBtn} onPress={() => onDelete(vehicle)} activeOpacity={0.8}>
+              <Trash2 size={16} color="#ef4444" />
+              <Text style={s.deleteBtnText}>Dzēst</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </View>
   );
@@ -263,7 +269,7 @@ function VehicleModal({
 // ── Main Screen ────────────────────────────────────────────────
 
 export default function VehiclesScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
   const [vehicles, setVehicles] = useState<ApiVehicle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -271,6 +277,12 @@ export default function VehiclesScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editing, setEditing] = useState<ApiVehicle | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Company DRIVERs and MEMBERs can view vehicles but cannot create/edit/delete them —
+  // fleet management is a dispatcher/owner task done in the web portal.
+  // Owner-operators (no company) and OWNER/MANAGER roles retain full CRUD.
+  const isReadOnly =
+    !!user?.company && (user.companyRole === 'DRIVER' || user.companyRole === 'MEMBER');
 
   const load = useCallback(
     async (refresh = false) => {
@@ -349,16 +361,18 @@ export default function VehiclesScreen() {
           <ArrowLeft size={22} color="#111827" />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Mani transportlīdzekļi</Text>
-        <TouchableOpacity
-          style={s.addBtn}
-          onPress={() => {
-            setEditing(null);
-            setModalVisible(true);
-          }}
-          activeOpacity={0.8}
-        >
-          <Plus size={18} color="#fff" />
-        </TouchableOpacity>
+        {!isReadOnly ? (
+          <TouchableOpacity
+            style={s.addBtn}
+            onPress={() => {
+              setEditing(null);
+              setModalVisible(true);
+            }}
+            activeOpacity={0.8}
+          >
+            <Plus size={18} color="#fff" />
+          </TouchableOpacity>
+        ) : <View style={{ width: 36 }} />}
       </View>
 
       {loading ? (
@@ -378,19 +392,25 @@ export default function VehiclesScreen() {
             <EmptyState
               icon={<Truck size={32} color="#9ca3af" />}
               title="Nav transportlīdzekļu"
-              subtitle="Pievienojiet savu pirmo transportlīdzekli!"
+              subtitle={
+                isReadOnly
+                  ? 'Transportlīdzekļu pārvaldība pieejama uzņēmuma portālā'
+                  : 'Pievienojiet savu pirmo transportlīdzekli!'
+              }
               action={
-                <TouchableOpacity
-                  style={s.emptyAddBtn}
-                  onPress={() => {
-                    setEditing(null);
-                    setModalVisible(true);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Plus size={16} color="#fff" />
-                  <Text style={s.emptyAddText}>Pievienot</Text>
-                </TouchableOpacity>
+                !isReadOnly ? (
+                  <TouchableOpacity
+                    style={s.emptyAddBtn}
+                    onPress={() => {
+                      setEditing(null);
+                      setModalVisible(true);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Plus size={16} color="#fff" />
+                    <Text style={s.emptyAddText}>Pievienot</Text>
+                  </TouchableOpacity>
+                ) : undefined
               }
             />
           ) : (
@@ -398,11 +418,12 @@ export default function VehiclesScreen() {
               <VehicleCard
                 key={v.id}
                 vehicle={v}
-                onEdit={(veh) => {
+                isReadOnly={isReadOnly}
+                onEdit={isReadOnly ? () => {} : (veh) => {
                   setEditing(veh);
                   setModalVisible(true);
                 }}
-                onDelete={handleDelete}
+                onDelete={isReadOnly ? () => {} : handleDelete}
               />
             ))
           )}

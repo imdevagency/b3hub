@@ -17,9 +17,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 
-function canViewFinancials(user: RequestingUser): boolean {
-  if (!user.companyId || user.companyRole === 'OWNER') return true;
-  return user.permViewFinancials;
+function canViewFinancials(_user: RequestingUser): boolean {
+  // All authenticated buyers can view and manage their own invoices.
+  // The service layer (buyerAccess) scopes results to the user's own orders only.
+  return true;
 }
 
 @Controller('invoices')

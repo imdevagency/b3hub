@@ -309,7 +309,7 @@ export default function TransportOrderPage() {
 
   return (
     <div className="h-[calc(100vh-100px)] w-full bg-background rounded-2xl overflow-hidden shadow-lg border flex flex-col-reverse lg:flex-row">
-      <div className="w-full lg:w-[420px] flex-shrink-0 flex flex-col bg-background z-10 relative border-t lg:border-t-0 lg:border-r">
+      <div className="w-full lg:w-105 shrink-0 flex flex-col bg-background z-10 relative border-t lg:border-t-0 lg:border-r">
         <div className="p-5 border-b bg-card space-y-3">
           <Link href="/dashboard/order" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-3.5 w-3.5" /> Atpakaļ
@@ -337,7 +337,7 @@ export default function TransportOrderPage() {
                     }}
                     className="group flex flex-1 flex-col gap-2 relative disabled:opacity-50 text-left outline-none"
                   >
-                    <div className={`h-[5px] w-full rounded-full transition-all duration-300 ${
+                    <div className={`h-1.25 w-full rounded-full transition-all duration-300 ${
                       active ? 'bg-[#D82B24]' : done ? 'bg-[#D82B24]/40' : 'bg-gray-200'
                     }`} />
                     <span className={`text-[11px] font-bold tracking-wider uppercase transition-colors pr-1 truncate ${
@@ -564,7 +564,7 @@ export default function TransportOrderPage() {
                 size="lg"
                 onClick={handleSubmit} 
                 disabled={!canAdvance() || loading} 
-                className="flex-[2] rounded-xl font-bold bg-black hover:bg-black/90 text-white shadow-lg gap-2"
+                className="flex-2 rounded-xl font-bold bg-black hover:bg-black/90 text-white shadow-lg gap-2"
               >
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
                 Apstiprināt
@@ -574,12 +574,12 @@ export default function TransportOrderPage() {
         </div>
       </div>
 
-      <div className="flex-1 relative bg-[#e5e3df] min-h-[400px] lg:min-h-0">
+      <div className="flex-1 relative bg-[#e5e3df] min-h-100 lg:min-h-0">
         <div ref={mapDivRef} className="w-full h-full absolute inset-0 z-0" />
-        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/10 to-transparent pointer-events-none z-10" />
+        <div className="absolute inset-x-0 top-0 h-24 bg-linear-to-b from-black/10 to-transparent pointer-events-none z-10" />
 
         {(pickupAddress || dropoffAddress) && (
-          <div className="absolute top-4 right-4 max-w-[300px] w-[calc(100%-2rem)] z-20 space-y-2 pointer-events-none animate-in fade-in slide-in-from-right-4 duration-300">
+          <div className="absolute top-4 right-4 max-w-75 w-[calc(100%-2rem)] z-20 space-y-2 pointer-events-none animate-in fade-in slide-in-from-right-4 duration-300">
             {pickupAddress && (
               <div className="bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-lg ring-1 ring-black/5 flex items-center gap-3">
                 <div className="h-6 w-6 rounded-full bg-black flex items-center justify-center shrink-0">

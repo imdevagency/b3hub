@@ -274,7 +274,7 @@ function CreateContractDialog({
             <div>
               <Label className="text-sm font-medium ml-1">Piezīmes</Label>
               <Textarea
-                className="mt-1.5 bg-muted/40 border-0 shadow-none rounded-xl focus-visible:ring-1 focus-visible:ring-primary/30 p-4 text-[15px] min-h-[100px] resize-none transition-colors"
+                className="mt-1.5 bg-muted/40 border-0 shadow-none rounded-xl focus-visible:ring-1 focus-visible:ring-primary/30 p-4 text-[15px] min-h-25 resize-none transition-colors"
                 placeholder="Papildu informācija..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}

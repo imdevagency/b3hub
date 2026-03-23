@@ -265,7 +265,7 @@ export default function CheckoutPage() {
       {hasMixedSuppliers && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
           <p className="text-sm font-semibold text-amber-900 flex items-center gap-2">
-            <AlertTriangle className="size-4 flex-shrink-0" />
+            <AlertTriangle className="size-4 shrink-0" />
             Jūsu grozs satur materiālus no vairākiem piegādātājiem
           </p>
           <p className="mt-2 text-sm text-amber-800">

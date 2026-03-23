@@ -14,12 +14,42 @@ let scriptState: 'idle' | 'loading' | 'ready' = 'idle';
 const pendingCallbacks: Array<() => void> = [];
 
 export function loadGoogleMapsScript(apiKey: string, onReady: () => void) {
+  // Already fully loaded (window.google.maps exists from any loader)
+  if (typeof window !== 'undefined' && window.google?.maps) {
+    scriptState = 'ready';
+    onReady();
+    return;
+  }
+
   if (scriptState === 'ready') {
     onReady();
     return;
   }
+
   pendingCallbacks.push(onReady);
+
   if (scriptState === 'loading') return;
+
+  // Another loader (e.g. @react-google-maps/api) may have already injected the script tag.
+  // Avoid duplicate injection — just wait for it to complete.
+  const existing = typeof document !== 'undefined'
+    ? document.querySelector<HTMLScriptElement>('script[src*="maps.googleapis.com/maps/api/js"]')
+    : null;
+
+  if (existing) {
+    scriptState = 'loading';
+    // Poll until window.google.maps becomes available
+    const poll = window.setInterval(() => {
+      if (window.google?.maps) {
+        window.clearInterval(poll);
+        scriptState = 'ready';
+        pendingCallbacks.forEach((cb) => cb());
+        pendingCallbacks.length = 0;
+      }
+    }, 50);
+    return;
+  }
+
   scriptState = 'loading';
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -212,7 +242,7 @@ export function AddressAutocomplete({
         </div>
       )}
       {isOpen && predictions.length > 0 && (
-        <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl border border-gray-100 shadow-2xl overflow-hidden z-[9999] animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl border border-gray-100 shadow-2xl overflow-hidden z-9999 animate-in fade-in slide-in-from-top-2 duration-200">
           <ul className="max-h-64 overflow-y-auto w-full divide-y divide-gray-50 flex flex-col scrollbar-thin">
             {predictions.map((p) => {
               const mainText = p.structured_formatting?.main_text || p.description;

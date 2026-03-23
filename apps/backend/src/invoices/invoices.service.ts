@@ -39,9 +39,16 @@ function mapPaymentStatus(ps: PaymentStatus): InvoiceStatus {
 }
 
 function mapInvoice(inv: InvoiceWithRelations) {
+  const status = mapPaymentStatus(inv.paymentStatus);
+  // Normalize to the frontend PaymentStatus union: PENDING | PAID | OVERDUE | CANCELLED
+  const paymentStatus =
+    status === 'PAID' ? 'PAID' :
+    status === 'OVERDUE' ? 'OVERDUE' :
+    status === 'CANCELLED' ? 'CANCELLED' : 'PENDING'; // ISSUED → PENDING
   return {
     ...inv,
-    status: mapPaymentStatus(inv.paymentStatus),
+    paymentStatus, // override raw DB enum with normalised frontend value
+    status,
     vatAmount: inv.tax,
     issuedAt: inv.createdAt.toISOString(),
     paidAt: inv.paidDate?.toISOString() ?? null,

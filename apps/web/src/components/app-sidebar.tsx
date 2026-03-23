@@ -31,10 +31,10 @@ import {
   Receipt,
   Search,
   Settings,
-  ShoppingCart,
   ShieldCheck,
   Star,
   Users,
+  X,
 } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth-context';
@@ -55,6 +55,7 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
@@ -211,21 +212,44 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       items: [...section.items],
     }));
 
-    if (activeMode === 'CARRIER' && user?.isCompany) {
-      sections = sections.map((section) => {
-        if (section.id !== 'carrier-jobs') {
-          return section;
-        }
+    if (activeMode === 'CARRIER') {
+      const isDispatcher =
+        user?.isCompany &&
+        (user.companyRole === 'OWNER' || user.companyRole === 'MANAGER');
 
-        return {
-          ...section,
-          items: [
-            section.items[0],
-            { label: 'Dispečera Panelis', href: '/dashboard/fleet', icon: LayoutGrid },
-            ...section.items.slice(1),
-          ],
-        };
-      });
+      const isCompanyDriver =
+        user?.isCompany &&
+        (user.companyRole === 'DRIVER' || user.companyRole === 'MEMBER');
+
+      if (isDispatcher) {
+        // Inject Dispatcher Panel for company owners/managers only
+        sections = sections.map((section) => {
+          if (section.id !== 'carrier-jobs') return section;
+          return {
+            ...section,
+            items: [
+              section.items[0],
+              { label: 'Dispečera Panelis', href: '/dashboard/fleet', icon: LayoutGrid },
+              ...section.items.slice(1),
+            ],
+          };
+        });
+      }
+
+      if (isCompanyDriver) {
+        // Company drivers are field workers — hide dispatcher-only management screens
+        sections = sections.map((section) => {
+          if (section.id === 'carrier-jobs') {
+            return {
+              ...section,
+              items: section.items.filter(
+                (item) => item.href !== '/dashboard/transporter',
+              ),
+            };
+          }
+          return section;
+        });
+      }
     }
 
     return sections;
@@ -334,6 +358,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     [recentHrefs, navLookup],
   );
 
+  const removeRecentItem = React.useCallback(
+    (href: string) => {
+      const next = recentHrefs.filter((h) => h !== href);
+      setRecentHrefs(next);
+      try {
+        window.localStorage.setItem(recentStorageKey, JSON.stringify(next));
+      } catch {
+        // Ignore localStorage write errors.
+      }
+    },
+    [recentHrefs, recentStorageKey],
+  );
+
   React.useEffect(() => {
     if (!token) {
       setBadgeCounts({ notifications: 0, openRfqs: 0, activeJobs: 0 });
@@ -352,7 +389,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 user?.userType === 'ADMIN' ||
                 user?.companyRole === 'OWNER' ||
                 user?.companyRole === 'MANAGER' ||
-                !!user?.permManageOrders;
+                !!user?.permManageOrders ||
+                (!!user?.canTransport && !!user?.isCompany);
 
               const jobs = canDispatchCarrierJobs
                 ? await getAllTransportJobs(token)
@@ -487,20 +525,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </Link>
             </SidebarMenuButton>
 
-            {activeMode === 'BUYER' && (
-              <SidebarMenuButton
-                asChild
-                tooltip="Grozs"
-                className="flex-1 justify-center bg-muted/30 hover:bg-muted/60 h-10"
-                isActive={pathname === '/dashboard/checkout'}
-              >
-                <Link href="/dashboard/checkout">
-                  <ShoppingCart className="size-4 text-muted-foreground" />
-                  <span className="sr-only">Grozs</span>
-                </Link>
-              </SidebarMenuButton>
-            )}
-
             <SidebarMenuButton
               asChild
               tooltip="Čats"
@@ -534,6 +558,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       <span>{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
+                  <SidebarMenuAction
+                    showOnHover
+                    title="Noņemt"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      removeRecentItem(item.href);
+                    }}
+                    className="text-muted-foreground/50 hover:text-muted-foreground"
+                  >
+                    <X className="size-3" />
+                  </SidebarMenuAction>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

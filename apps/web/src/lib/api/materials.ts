@@ -149,3 +149,39 @@ export async function deleteMaterial(id: string, token: string): Promise<void> {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ─── Marketplace offers ─────────────────────────────────────────────────────
+
+export interface SupplierOffer {
+  id: string;
+  name: string;
+  category: MaterialCategory;
+  unit: MaterialUnit;
+  basePrice: number;
+  totalPrice: number;
+  distanceKm: number | null;
+  etaDays: number;
+  isInstant: boolean;
+  deliveryRadiusKm: number | null;
+  supplier: {
+    id: string;
+    name: string;
+    city: string | null;
+    rating: number | null;
+    phone: string | null;
+  };
+}
+
+export async function getMaterialOffers(
+  token: string,
+  params: { category: MaterialCategory; quantity: number; lat?: number; lng?: number },
+): Promise<SupplierOffer[]> {
+  const qs = new URLSearchParams();
+  qs.set('category', params.category);
+  qs.set('quantity', String(params.quantity));
+  if (params.lat !== undefined) qs.set('lat', String(params.lat));
+  if (params.lng !== undefined) qs.set('lng', String(params.lng));
+  return apiFetch<SupplierOffer[]>(`/materials/offers?${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

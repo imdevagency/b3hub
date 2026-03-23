@@ -48,7 +48,7 @@ const SERVICES = [
 export default function OrderHubPage() {
   return (
     <div className="w-full h-full pb-20 space-y-8">
-      <PageHeader 
+      <PageHeader
         title="Pasūtīt"
         description="Izveidojiet jaunu pasūtījumu izvēloties pakalpojumu"
       />
@@ -57,16 +57,14 @@ export default function OrderHubPage() {
         {SERVICES.map((svc) => {
           const Icon = svc.icon;
           return (
-             <Link
+            <Link
               key={svc.id}
               href={svc.href}
               className="group relative rounded-3xl ring-1 ring-black/5 bg-white p-6 md:p-8 shadow-sm hover:shadow-md transition-all duration-200 block"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="mt-1">
-                  <h2 className="text-2xl font-semibold text-foreground">
-                    {svc.title}
-                  </h2>
+                  <h2 className="text-2xl font-semibold text-foreground">{svc.title}</h2>
                   <p className="mt-2 text-sm md:text-base text-muted-foreground">
                     {svc.description}
                   </p>

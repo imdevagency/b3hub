@@ -93,6 +93,11 @@ export default function GaragePage() {
     if (!isLoading && !user) router.push('/login');
   }, [user, isLoading, router]);
 
+  // Company drivers/members can view vehicles but cannot add, edit, or delete
+  const isReadOnly = Boolean(
+    user?.isCompany && (user.companyRole === 'DRIVER' || user.companyRole === 'MEMBER'),
+  );
+
   const load = useCallback(async () => {
     if (!token) return;
     try {
@@ -235,10 +240,12 @@ export default function GaragePage() {
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               Atjaunot
             </Button>
-            <Button size="sm" onClick={openAdd} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Pievienot Transportu
-            </Button>
+            {!isReadOnly && (
+              <Button size="sm" onClick={openAdd} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Pievienot Transportu
+              </Button>
+            )}
           </div>
         }
       />
@@ -314,7 +321,7 @@ export default function GaragePage() {
 
       {/* ── Table ── */}
       {filtered.length === 0 ? (
-        <EmptyState hasVehicles={vehicles.length > 0} onAdd={openAdd} />
+        <EmptyState hasVehicles={vehicles.length > 0} onAdd={isReadOnly ? undefined : openAdd} />
       ) : (
         <div className="rounded-xl border border-border bg-background shadow-sm overflow-hidden">
           {/* Table header */}
@@ -333,6 +340,7 @@ export default function GaragePage() {
             <VehicleRow
               key={v.id}
               vehicle={v}
+              isReadOnly={isReadOnly}
               onEdit={() => openEdit(v)}
               onDelete={() => setDeleteConfirm(v.id)}
               confirmingDelete={deleteConfirm === v.id}
@@ -546,6 +554,7 @@ export default function GaragePage() {
 
 function VehicleRow({
   vehicle: v,
+  isReadOnly,
   onEdit,
   onDelete,
   confirmingDelete,
@@ -553,6 +562,7 @@ function VehicleRow({
   onCancelDelete,
 }: {
   vehicle: Vehicle;
+  isReadOnly?: boolean;
   onEdit: () => void;
   onDelete: () => void;
   confirmingDelete: boolean;
@@ -621,7 +631,7 @@ function VehicleRow({
 
       {/* Actions */}
       <div className="flex items-center justify-end gap-1">
-        {confirmingDelete ? (
+        {isReadOnly ? null : confirmingDelete ? (
           <>
             <Button
               size="sm"
@@ -663,7 +673,7 @@ function VehicleRow({
   );
 }
 
-function EmptyState({ hasVehicles, onAdd }: { hasVehicles: boolean; onAdd: () => void }) {
+function EmptyState({ hasVehicles, onAdd }: { hasVehicles: boolean; onAdd?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-background py-20 text-center">
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
@@ -677,7 +687,7 @@ function EmptyState({ hasVehicles, onAdd }: { hasVehicles: boolean; onAdd: () =>
           ? 'Mēģiniet mainīt meklēšanas vai filtrēšanas kritērijus.'
           : 'Pievienojiet savu pirmo transportlīdzekli, lai sāktu saņemt atbilstošus pasūtījumus.'}
       </p>
-      {!hasVehicles && (
+      {!hasVehicles && onAdd && (
         <Button className="mt-6 gap-2" onClick={onAdd}>
           <Plus className="h-4 w-4" />
           Pievienot pirmo transportlīdzekli

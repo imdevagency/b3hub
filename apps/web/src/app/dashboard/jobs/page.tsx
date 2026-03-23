@@ -5,7 +5,6 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   ChevronDown,
   ChevronUp,
@@ -22,8 +21,19 @@ import {
   Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageSpinner } from '@/components/ui/page-spinner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useAuth } from '@/lib/auth-context';
 import {
   acceptTransportJob,
@@ -165,8 +175,7 @@ const LS_KEY = 'b3hub_web_saved_job_searches';
 
 
 export default function JobsPage() {
-  const { user, token, isLoading } = useAuth();
-  const router = useRouter();
+  const { user, token } = useAuth();
 
   const {
     jobs: apiJobs,
@@ -210,12 +219,6 @@ export default function JobsPage() {
   });
   const setField = (k: keyof CreateTransportJobInput, v: string | number) =>
     setCreateForm((p) => ({ ...p, [k]: v }));
-
-
-
-  useEffect(() => {
-    if (!isLoading && !user) router.push('/login');
-  }, [user, isLoading, router]);
 
   // Load saved searches from localStorage
   useEffect(() => {
@@ -273,7 +276,7 @@ export default function JobsPage() {
   };
 
   const handleAccept = async (jobId: string) => {
-    if (!token || !confirm('Pieņemt šo darbu?')) return;
+    if (!token) return;
     try {
       await acceptTransportJob(jobId, token);
       setJobs((prev) => prev.filter((j) => j.id !== jobId));
@@ -378,48 +381,47 @@ export default function JobsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Job Board</h1>
-          <p className="text-muted-foreground mt-1">Pieejamie transporta darbi · {filteredJobs.length} rezultāti</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-1.5" />
-            Izveidot Darbu
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw className={`h-4 w-4 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
-            Atjaunot
-          </Button>
-          <Button variant={panelOpen ? 'default' : 'outline'} size="sm" onClick={togglePanel}>
-            <SlidersHorizontal className="h-4 w-4 mr-1.5" />
-            Filtri
-            {activeFilter && !panelOpen && (
-              <span className="ml-1.5 h-2 w-2 rounded-full bg-amber-400 inline-block" />
-            )}
-            {panelOpen ? (
-              <ChevronUp className="h-4 w-4 ml-1.5" />
-            ) : (
-              <ChevronDown className="h-4 w-4 ml-1.5" />
-            )}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Job Board"
+        description={`Pieejamie transporta darbi · ${filteredJobs.length} rezultāti`}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4 mr-1.5" />
+              Izveidot Darbu
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+              <RefreshCw className={`h-4 w-4 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
+              Atjaunot
+            </Button>
+            <Button variant={panelOpen ? 'default' : 'outline'} size="sm" onClick={togglePanel}>
+              <SlidersHorizontal className="h-4 w-4 mr-1.5" />
+              Filtri
+              {activeFilter && !panelOpen && (
+                <span className="ml-1.5 h-2 w-2 rounded-full bg-primary/70 inline-block" />
+              )}
+              {panelOpen ? (
+                <ChevronUp className="h-4 w-4 ml-1.5" />
+              ) : (
+                <ChevronDown className="h-4 w-4 ml-1.5" />
+              )}
+            </Button>
+          </div>
+        }
+      />
 
       {/* Collapsible filter panel */}
       {panelOpen && (
-        <div className="rounded-xl border bg-card shadow-sm p-5 space-y-5">
+        <Card className="p-5 space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* From */}
             <div className="space-y-2">
               <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 ml-1">
                 Iekraušanas vieta
               </Label>
-              <div className="flex bg-slate-100 border border-transparent hover:bg-slate-200/50 transition-colors rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-black/5 focus-within:border-black/10 focus-within:bg-white items-center relative">
+              <div className="flex bg-muted/60 border border-transparent hover:bg-muted/80 transition-colors rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-ring/20 focus-within:border-border focus-within:bg-background items-center relative">
                 <div className="pl-4 pr-1 flex items-center justify-center">
-                  <div className="w-[8px] h-[8px] rounded-full bg-foreground"></div>
+                  <div className="w-2 h-2 rounded-full bg-foreground"></div>
                 </div>
                 <input
                   type="text"
@@ -428,19 +430,19 @@ export default function JobsPage() {
                   placeholder="Pilsēta vai pasta indekss..."
                   className="flex-1 bg-transparent px-2 py-3.5 text-[15px] outline-none placeholder:text-muted-foreground font-medium"
                 />
-                <div className="flex items-center border-l border-slate-200/80 pr-2">
+                <div className="flex items-center border-l border-border/60 pr-2">
                   <div className="relative flex items-center">
                     <select
                       value={draft.fromRadius}
                       onChange={(e) => setDraft((d) => ({ ...d, fromRadius: Number(e.target.value) }))}
-                      className="appearance-none bg-transparent pl-4 pr-8 py-3.5 text-sm font-semibold outline-none cursor-pointer text-slate-700"
+                      className="appearance-none bg-transparent pl-4 pr-8 py-3.5 text-sm font-semibold outline-none cursor-pointer text-foreground"
                     >
                       <option value={0}>+ 0 km</option>
                       {RADIUS_OPTIONS.map((r) => (
                         <option key={r} value={r}>+ {r} km</option>
                       ))}
                     </select>
-                    <ChevronDown className="h-4 w-4 absolute right-3 pointer-events-none text-slate-400" />
+                    <ChevronDown className="h-4 w-4 absolute right-3 pointer-events-none text-muted-foreground" />
                   </div>
                 </div>
               </div>
@@ -451,9 +453,9 @@ export default function JobsPage() {
               <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 ml-1">
                 Izkraušanas vieta
               </Label>
-              <div className="flex bg-slate-100 border border-transparent hover:bg-slate-200/50 transition-colors rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-black/5 focus-within:border-black/10 focus-within:bg-white items-center relative">
+              <div className="flex bg-muted/60 border border-transparent hover:bg-muted/80 transition-colors rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-ring/20 focus-within:border-border focus-within:bg-background items-center relative">
                 <div className="pl-4 pr-1 flex items-center justify-center">
-                  <div className="w-[8px] h-[8px] rounded-[1px] bg-foreground"></div>
+                  <div className="w-2 h-2 rounded-[1px] bg-foreground"></div>
                 </div>
                 <input
                   type="text"
@@ -462,19 +464,19 @@ export default function JobsPage() {
                   placeholder="Pilsēta vai pasta indekss..."
                   className="flex-1 bg-transparent px-2 py-3.5 text-[15px] outline-none placeholder:text-muted-foreground font-medium"
                 />
-                <div className="flex items-center border-l border-slate-200/80 pr-2">
+                <div className="flex items-center border-l border-border/60 pr-2">
                   <div className="relative flex items-center">
                     <select
                       value={draft.toRadius}
                       onChange={(e) => setDraft((d) => ({ ...d, toRadius: Number(e.target.value) }))}
-                      className="appearance-none bg-transparent pl-4 pr-8 py-3.5 text-sm font-semibold outline-none cursor-pointer text-slate-700"
+                      className="appearance-none bg-transparent pl-4 pr-8 py-3.5 text-sm font-semibold outline-none cursor-pointer text-foreground"
                     >
                       <option value={0}>+ 0 km</option>
                       {RADIUS_OPTIONS.map((r) => (
                         <option key={r} value={r}>+ {r} km</option>
                       ))}
                     </select>
-                    <ChevronDown className="h-4 w-4 absolute right-3 pointer-events-none text-slate-400" />
+                    <ChevronDown className="h-4 w-4 absolute right-3 pointer-events-none text-muted-foreground" />
                   </div>
                 </div>
               </div>
@@ -535,7 +537,7 @@ export default function JobsPage() {
 
           {/* Save success toast */}
           {saveSuccess && (
-            <p className="text-sm text-green-600 font-medium flex items-center gap-1.5">
+            <p className="text-sm text-primary font-medium flex items-center gap-1.5">
               <BookmarkCheck className="h-4 w-4" />
               Meklēšana saglabāta!
             </p>
@@ -572,18 +574,18 @@ export default function JobsPage() {
               </div>
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {/* Active filter pill */}
       {activeFilter && !panelOpen && (
-        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
-          <span className="text-xs font-bold text-amber-800">Aktīvs filtrs:</span>
-          <span className="text-xs font-medium text-amber-700 flex-1">{filterLabel()}</span>
+        <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-4 py-2.5">
+          <span className="text-xs font-bold text-primary">Aktīvs filtrs:</span>
+          <span className="text-xs font-medium text-primary/80 flex-1">{filterLabel()}</span>
           <button
             type="button"
             onClick={handleReset}
-            className="text-xs font-semibold text-amber-700 bg-amber-200 hover:bg-amber-300 rounded px-2 py-0.5 transition-colors flex items-center gap-1"
+            className="text-xs font-semibold text-primary bg-primary/15 hover:bg-primary/25 rounded px-2 py-0.5 transition-colors flex items-center gap-1"
           >
             <X className="h-3 w-3" />
             Notīrīt
@@ -616,9 +618,7 @@ export default function JobsPage() {
 
           {/* Job cards */}
           {loadingJobs ? (
-            <div className="flex items-center justify-center py-20">
-              <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
+            <PageSpinner />
           ) : jobError ? (
             <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
               <AlertTriangle className="h-10 w-10 text-muted-foreground" />
@@ -642,7 +642,7 @@ export default function JobsPage() {
               {filteredJobs.map((job) => (
                 <div
                   key={job.id}
-                  className="group cursor-pointer relative overflow-hidden rounded-2xl bg-white p-5 transition-all hover:bg-slate-50/50 ring-1 ring-black/[0.06] shadow-sm hover:ring-black/[0.12] hover:shadow-md"
+                  className="group cursor-pointer relative overflow-hidden rounded-2xl bg-card p-5 transition-all hover:bg-muted/30 ring-1 ring-black/6 shadow-sm hover:ring-black/12 hover:shadow-md"
                 >
                   {/* PRICE & META TOP ROW */}
                   <div className="flex justify-between items-start mb-6">
@@ -670,11 +670,11 @@ export default function JobsPage() {
                   {/* ROUTE TIMELINE */}
                   <div className="relative mt-2 mb-6 ml-1">
                     {/* The connecting vertical line */}
-                    <div className="absolute left-[3.5px] top-[16px] bottom-[16px] w-[1px] bg-foreground/20" />
+                    <div className="absolute left-[3.5px] top-4 bottom-4 w-px bg-foreground/20" />
                     
                     {/* Pickup */}
                     <div className="relative flex gap-4 mb-5">
-                      <div className="mt-[6px] h-[8px] w-[8px] shrink-0 rounded-full bg-foreground z-10" />
+                      <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-foreground z-10" />
                       <div>
                         <p className="font-medium text-foreground text-[15px] leading-tight">{job.fromCity}</p>
                         <p className="text-sm text-muted-foreground mt-0.5">
@@ -685,7 +685,7 @@ export default function JobsPage() {
                     
                     {/* Delivery */}
                     <div className="relative flex gap-4">
-                      <div className="mt-[6px] h-[8px] w-[8px] shrink-0 bg-foreground z-10" />
+                      <div className="mt-1.5 h-2 w-2 shrink-0 bg-foreground z-10" />
                       <div>
                         <p className="font-medium text-foreground text-[15px] leading-tight">{job.toCity}</p>
                         <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1 pr-4">
@@ -698,8 +698,9 @@ export default function JobsPage() {
                   {/* ACTION FOOTER */}
                   <div className="pt-2 flex gap-3 border-t border-border/40 mt-2">
                     {user?.canTransport && user?.isCompany ? (
+                      // Company carrier — dispatcher assigns job to a specific driver + vehicle
                       <Button
-                        className="w-full rounded-xl h-[46px] mt-4 text-[15px] font-medium bg-foreground text-background hover:bg-foreground/90 transition-all shadow-none"
+                        className="w-full rounded-xl h-11.5 mt-4 text-[15px] font-medium bg-foreground text-background hover:bg-foreground/90 transition-all shadow-none"
                         onClick={(e) => {
                           e.stopPropagation();
                           openDispatch(job);
@@ -707,9 +708,10 @@ export default function JobsPage() {
                       >
                         Plānot darbu
                       </Button>
-                    ) : (!user?.isCompany || !user?.canTransport) && (
+                    ) : (user?.canTransport && !user?.isCompany) && (
+                      // Independent owner-operator — can self-accept directly from web
                       <Button
-                        className="w-full rounded-xl h-[46px] mt-4 text-[15px] font-medium bg-foreground text-background hover:bg-foreground/90 transition-all shadow-none"
+                        className="w-full rounded-xl h-11.5 mt-4 text-[15px] font-medium bg-foreground text-background hover:bg-foreground/90 transition-all shadow-none"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleAccept(job.id);
@@ -739,9 +741,9 @@ export default function JobsPage() {
 
               <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
                 {/* Cargo pill */}
-                <div className="flex items-center gap-3 bg-gray-50 border rounded-xl px-4 py-3">
+                <div className="flex items-center gap-3 bg-muted/40 border rounded-xl px-4 py-3">
                   <div>
-                    <p className="font-bold text-sm text-gray-900">
+                    <p className="font-bold text-sm text-foreground">
                       {dispatchJob.weightTonnes} t · {dispatchJob.payload}
                     </p>
                     <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
@@ -749,7 +751,7 @@ export default function JobsPage() {
                       {dispatchJob.date} · {dispatchJob.time}
                     </p>
                   </div>
-                  <span className="ml-auto text-xs font-semibold bg-gray-200 text-gray-700 rounded px-2 py-1">
+                  <span className="ml-auto text-xs font-semibold bg-muted text-muted-foreground rounded px-2 py-1">
                     {dispatchJob.vehicleType}
                   </span>
                 </div>
@@ -757,17 +759,17 @@ export default function JobsPage() {
                 {/* Route */}
                 <div className="space-y-1 pl-1">
                   <div className="flex items-start gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-gray-400 border-2 border-gray-200 mt-1 shrink-0" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/50 border-2 border-muted mt-1 shrink-0" />
                     <div>
-                      <p className="font-semibold text-sm text-gray-900">{dispatchJob.fromCity}</p>
+                      <p className="font-semibold text-sm text-foreground">{dispatchJob.fromCity}</p>
                       <p className="text-xs text-muted-foreground">{dispatchJob.fromAddress}</p>
                     </div>
                   </div>
-                  <div className="w-px h-4 bg-gray-200 ml-1.5" />
+                  <div className="w-px h-4 bg-border ml-1.5" />
                   <div className="flex items-start gap-3">
                     <div className="w-2.5 h-2.5 rounded-full bg-primary border-2 border-primary/20 mt-1 shrink-0" />
                     <div>
-                      <p className="font-semibold text-sm text-gray-900">{dispatchJob.toCity}</p>
+                      <p className="font-semibold text-sm text-foreground">{dispatchJob.toCity}</p>
                       <p className="text-xs text-muted-foreground">{dispatchJob.toAddress}</p>
                     </div>
                   </div>
@@ -777,7 +779,7 @@ export default function JobsPage() {
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Ruler className="h-3.5 w-3.5" />
                   <span>{dispatchJob.distanceKm} km</span>
-                  <span className="text-gray-300">·</span>
+                  <span className="text-muted-foreground/40">·</span>
                   <span className="font-bold text-primary">
                     {dispatchJob.priceTotal.toFixed(2)} {dispatchJob.currency}
                   </span>
@@ -794,20 +796,20 @@ export default function JobsPage() {
                       <Truck className="h-3.5 w-3.5" />
                       Transportlīdzeklis
                     </Label>
-                    <select
-                      value={dispatchVehicleId}
-                      onChange={(e) => setDispatchVehicleId(e.target.value)}
-                      className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      <option value="">-- Izvēlieties --</option>
-                      {vehicles.map((v) => (
-                        <option key={v.id} value={v.id}>
-                          {v.licensePlate} ({v.vehicleType})
-                        </option>
-                      ))}
-                    </select>
+                    <Select value={dispatchVehicleId} onValueChange={setDispatchVehicleId}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="-- Izvēlieties --" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {vehicles.map((v) => (
+                          <SelectItem key={v.id} value={v.id}>
+                            {v.licensePlate} ({v.vehicleType})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {vehicles.length === 0 && (
-                      <p className="text-xs text-amber-600">
+                      <p className="text-xs text-destructive/70">
                         Nav reģistrētu transportlīdzekļu. Pievienojiet garāžā.
                       </p>
                     )}
@@ -819,21 +821,21 @@ export default function JobsPage() {
                       <Users className="h-3.5 w-3.5" />
                       Šoferis
                     </Label>
-                    <select
-                      value={dispatchDriverId}
-                      onChange={(e) => setDispatchDriverId(e.target.value)}
-                      className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      <option value="">-- Izvēlieties --</option>
-                      {drivers.map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.firstName} {d.lastName}
-                          {d.phone ? ` · ${d.phone}` : ''}
-                        </option>
-                      ))}
-                    </select>
+                    <Select value={dispatchDriverId} onValueChange={setDispatchDriverId}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="-- Izvēlieties --" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {drivers.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>
+                            {d.firstName} {d.lastName}
+                            {d.phone ? ` · ${d.phone}` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {drivers.length === 0 && (
-                      <p className="text-xs text-amber-600">Nav atrasts neviens šoferis.</p>
+                      <p className="text-xs text-destructive/70">Nav atrasts neviens šoferis.</p>
                     )}
                   </div>
                 </div>
@@ -879,7 +881,7 @@ export default function JobsPage() {
           </SheetHeader>
 
           {createSuccess ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-4 text-green-600">
+            <div className="flex flex-col items-center justify-center h-64 gap-4 text-primary">
               <CircleCheck className="h-12 w-12" />
               <p className="text-base font-medium">Darbs izveidots!</p>
             </div>
@@ -890,17 +892,18 @@ export default function JobsPage() {
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   Darba veids *
                 </Label>
-                <select
-                  value={createForm.jobType ?? 'MATERIAL_DELIVERY'}
-                  onChange={(e) => setField('jobType', e.target.value)}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="MATERIAL_DELIVERY">Materiālu piegāde</option>
-                  <option value="CONTAINER_DELIVERY">Konteinera piegāde</option>
-                  <option value="CONTAINER_PICKUP">Konteinera savākšana</option>
-                  <option value="WASTE_COLLECTION">Atkritumu savākšana</option>
-                  <option value="EQUIPMENT_TRANSPORT">Tehnikas pārvadāšana</option>
-                </select>
+                <Select value={createForm.jobType ?? 'MATERIAL_DELIVERY'} onValueChange={(v) => setField('jobType', v)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MATERIAL_DELIVERY">Materiālu piegāde</SelectItem>
+                    <SelectItem value="CONTAINER_DELIVERY">Konteinera piegāde</SelectItem>
+                    <SelectItem value="CONTAINER_PICKUP">Konteinera savākšana</SelectItem>
+                    <SelectItem value="WASTE_COLLECTION">Atkritumu savākšana</SelectItem>
+                    <SelectItem value="EQUIPMENT_TRANSPORT">Tehnikas pārvadāšana</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Pickup */}
@@ -1055,20 +1058,24 @@ export default function JobsPage() {
                 </legend>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Nepieciešamais transportlīdzeklis</Label>
-                  <select
-                    value={createForm.requiredVehicleEnum ?? ''}
-                    onChange={(e) => setField('requiredVehicleEnum', e.target.value)}
-                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  <Select
+                    value={createForm.requiredVehicleEnum || '_ANY_'}
+                    onValueChange={(v) => setField('requiredVehicleEnum', v === '_ANY_' ? '' : v)}
                   >
-                    <option value="">Jebkurš</option>
-                    <option value="DUMP_TRUCK">Pašizgāzējs</option>
-                    <option value="FLATBED_TRUCK">Platforma</option>
-                    <option value="SEMI_TRAILER">Piekabes kravas auto</option>
-                    <option value="HOOK_LIFT">Āķa pacēlājs</option>
-                    <option value="SKIP_LOADER">Konteineru auto</option>
-                    <option value="TANKER">Cisterna</option>
-                    <option value="VAN">Furgons</option>
-                  </select>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_ANY_">Jebkurš</SelectItem>
+                      <SelectItem value="DUMP_TRUCK">Pašizgāzējs</SelectItem>
+                      <SelectItem value="FLATBED_TRUCK">Platforma</SelectItem>
+                      <SelectItem value="SEMI_TRAILER">Piekabes kravas auto</SelectItem>
+                      <SelectItem value="HOOK_LIFT">Āķa pacēlājs</SelectItem>
+                      <SelectItem value="SKIP_LOADER">Konteineru auto</SelectItem>
+                      <SelectItem value="TANKER">Cisterna</SelectItem>
+                      <SelectItem value="VAN">Furgons</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">

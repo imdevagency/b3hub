@@ -238,7 +238,7 @@ export default function DisposalOrderPage() {
 
   return (
     <div className="h-[calc(100vh-100px)] w-full bg-background rounded-2xl overflow-hidden shadow-lg border flex flex-col-reverse lg:flex-row">
-      <div className="w-full lg:w-[420px] flex-shrink-0 flex flex-col bg-background z-10 relative border-t lg:border-t-0 lg:border-r">
+      <div className="w-full lg:w-105 shrink-0 flex flex-col bg-background z-10 relative border-t lg:border-t-0 lg:border-r">
         <div className="p-5 border-b bg-card space-y-3">
           <Link href="/dashboard/order" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-3.5 w-3.5" /> Atpakaļ
@@ -259,7 +259,7 @@ export default function DisposalOrderPage() {
               return (
                 <div key={n} className="flex-1 flex flex-col gap-2">
                   <div
-                    className={`h-[5px] w-full rounded-full transition-all ${
+                    className={`h-1.25 w-full rounded-full transition-all ${
                       done
                         ? 'bg-green-500'
                         : active
@@ -499,12 +499,12 @@ export default function DisposalOrderPage() {
           </div>
         </div>
       </div>
-      <div className="relative w-full h-[300px] lg:h-auto lg:flex-1 bg-muted/30">
+      <div className="relative w-full h-75 lg:h-auto lg:flex-1 bg-muted/30">
         <div ref={mapDivRef} className="absolute inset-0" />
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
            {address && <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
             <MapPin className="h-4 w-4 text-green-600" />
-            <span className="truncate max-w-[200px]">{address}</span>
+            <span className="truncate max-w-50">{address}</span>
           </div>}
           {date && <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
             <CalendarDays className="h-4 w-4 text-blue-600" />

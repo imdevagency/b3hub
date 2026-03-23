@@ -171,6 +171,16 @@ export default function FleetPage() {
     if (!isLoading && !user) router.push('/login');
   }, [user, isLoading, router]);
 
+  // Company drivers/members are field workers — fleet dispatch is for OWNER/MANAGER only
+  useEffect(() => {
+    if (!isLoading && user) {
+      const isCompanyDriver =
+        user.isCompany &&
+        (user.companyRole === 'DRIVER' || user.companyRole === 'MEMBER');
+      if (isCompanyDriver) router.replace('/dashboard/orders');
+    }
+  }, [user, isLoading, router]);
+
   const fetchJobs = useCallback(async () => {
     if (!token) return;
     setLoading(true);

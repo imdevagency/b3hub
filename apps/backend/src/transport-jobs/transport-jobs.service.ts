@@ -63,7 +63,8 @@ export class TransportJobsService {
       user.userType === 'ADMIN' ||
       user.companyRole === 'OWNER' ||
       user.companyRole === 'MANAGER' ||
-      user.permManageOrders
+      user.permManageOrders ||
+      (user.canTransport && user.isCompany) // carrier company owner without a companyRole
     );
   }
 

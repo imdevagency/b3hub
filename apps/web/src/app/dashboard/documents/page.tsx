@@ -232,128 +232,128 @@ export default function DocumentsPage() {
   }).length;
 
       return (
-    <div className="w-full h-full pb-20 space-y-10">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="w-full h-full pb-20 space-y-10 max-w-6xl mx-auto">
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-4 border-b border-border/40">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Mani Dokumenti</h1>
-          <p className="text-muted-foreground mt-2 max-w-2xl text-sm">
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
+            Mani Dokumenti
+          </h1>
+          <p className="text-muted-foreground mt-2 max-w-2xl text-sm sm:text-base">
             Visi jūsu rēķini, svēršanas lapas, piegādes apstiprinājumi un sertifikāti — bez papīra, vienā vietā.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={fetchDocs} disabled={fetching} className="rounded-full shadow-sm bg-background border-border/40 shrink-0">
-          <RefreshCw className={`h-4 w-4 mr-1.5 ${fetching ? 'animate-spin' : ''}`} />
-          Atjaunot
+        <Button 
+          variant="outline" 
+          onClick={fetchDocs} 
+          disabled={fetching} 
+          className="rounded-full shadow-none bg-background border-border hover:bg-muted/60 shrink-0"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${fetching ? 'animate-spin' : ''}`} />
+          Atjaunot sarakstu
         </Button>
       </div>
 
       {/* ── Stats row ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { label: 'Kopā dokumenti', value: summary?.total ?? 0, color: 'text-foreground' },
-            {
-              label: 'Šajā mēnesī',
-              value: thisMonth,
-              color: 'text-blue-500',
-            },
-            {
-              label: 'Rēķini',
-              value: summary?.byType?.INVOICE ?? 0,
-              color: 'text-blue-500',
-            },
-            {
-              label: 'Svēršanas lapas',
-              value: summary?.byType?.WEIGHING_SLIP ?? 0,
-              color: 'text-amber-500',
-            },
-          ].map((stat) => (
-            <div key={stat.label} className="bg-muted/40 rounded-2xl border border-transparent p-5">
-              <p className="text-xs text-muted-foreground mb-1">{stat.label}</p>
-              <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-            </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {[
+          { label: 'Kopā dokumenti', value: summary?.total ?? 0, color: 'text-foreground' },
+          { label: 'Šajā mēnesī', value: thisMonth, color: 'text-foreground' },
+          { label: 'Rēķini', value: summary?.byType?.INVOICE ?? 0, color: 'text-foreground' },
+          { label: 'Svēršanas lapas', value: summary?.byType?.WEIGHING_SLIP ?? 0, color: 'text-foreground' },
+        ].map((stat) => (
+          <div key={stat.label} className="bg-muted/30 rounded-2xl p-5 flex flex-col justify-center">
+            <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">{stat.label}</p>
+            <p className={`text-3xl font-medium tracking-tight ${stat.color}`}>{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {useDemoData && (
+        <div className="flex items-center gap-3 rounded-2xl bg-amber-500/10 px-5 py-4 text-sm text-amber-700/80">
+          <div className="animate-pulse bg-amber-500/20 h-2 w-2 rounded-full shrink-0" />
+          <span>
+            <strong>Priekšskatījuma režīms</strong> — šie ir piemēra dokumenti. Jūsu ištie dokumenti tiks ģenerēti šeit.
+          </span>
+        </div>
+      )}
+
+      {/* ── Filters + Search ── */}
+      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 pb-2">
+        {/* Tab pills */}
+        <div className="flex flex-wrap items-center gap-2">
+          {TABS.map((tab) => {
+            const count = tab.id === 'ALL' ? summary?.total : summary?.byType?.[tab.id as DocumentType];
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative flex items-center justify-center h-9 px-4 rounded-full text-sm font-medium transition-all duration-200 ${
+                  isActive 
+                    ? 'bg-foreground text-background shadow-md' 
+                    : 'bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+                }`}
+              >
+                {tab.label}
+                {count != null && count > 0 && (
+                  <span
+                    className={`ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-bold transition-colors ${
+                      isActive
+                        ? 'bg-background/20 text-background'
+                        : 'bg-background text-muted-foreground'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Search */}
+        <div className="relative w-full xl:w-72 shrink-0">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+          <input
+            type="text"
+            placeholder="Meklēt dokumentos…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 text-sm bg-muted/30 border-transparent rounded-full focus:outline-none focus:bg-background focus:ring-1 focus:ring-ring focus:border-border transition-all placeholder:text-muted-foreground/60"
+          />
+        </div>
+      </div>
+
+      {/* ── Document list ── */}
+      {fetching ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground/20 border-t-foreground" />
+        </div>
+      ) : docs.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-4 px-4 text-center">
+          <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-2">
+            <FolderOpen className="h-8 w-8 text-muted-foreground/40" />
+          </div>
+          <h3 className="text-xl font-semibold text-foreground">Nav atrasts neviens dokuments</h3>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            {search
+              ? `Nav rezultātu meklējumam "${search}". Mēģiniet citu meklēšanas frazi.`
+              : 'Dokumenti parādīsīsies šeit automātiski, tīklīdz jūsu pasūtījumi tiks apstiprināti un piegādes pabeigtas.'}
+          </p>
+          {search && (
+            <Button variant="outline" onClick={() => setSearch('')} className="mt-4 rounded-full">
+              Kā atcelt meklēšanu
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {docs.map((doc) => (
+            <DocumentCard key={doc.id} document={doc} onView={setViewerDoc} />
           ))}
         </div>
-
-        {useDemoData && (
-          <div className="mb-6 flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-500">
-            <span>
-              ❆ Priekšskatījuma režīms — rāda piemēra dokumentus. Įsti dokumenti parādīsīsies šeit,
-              tīklīdz jūsu pasūtījumi tiks apstrādāti.
-            </span>
-          </div>
-        )}
-
-        {/* ── Filters + Search ── */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-muted/40 rounded-2xl border border-transparent p-2">
-          {/* Tab pills */}
-          <div className="flex flex-wrap gap-1.5">
-            {TABS.map((tab) => {
-              const Icon = tab.icon;
-              const count =
-                tab.id === 'ALL' ? summary?.total : summary?.byType?.[tab.id as DocumentType];
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors ${activeTab === tab.id ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/50'}`}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {tab.label}
-                  {count != null && count > 0 && (
-                    <span
-                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                        activeTab === tab.id
-                          ? 'bg-muted text-foreground'
-                          : 'bg-background text-muted-foreground'
-                      }`}
-                    >
-                      {count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Search */}
-          <div className="relative w-full md:w-64 shrink-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Meklēt dokumentus…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm bg-background border border-border/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all placeholder:text-muted-foreground/60 shadow-sm"
-            />
-          </div>
-        </div>
-
-        {/* ── Document list ── */}
-        {fetching ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground/20 border-t-foreground" />
-          </div>
-        ) : docs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-400">
-            <FolderOpen className="h-14 w-14 text-gray-200" />
-            <p className="font-medium text-muted-foreground">Nav atrasts neviens dokuments</p>
-            <p className="text-sm text-center max-w-xs">
-              {search
-                ? `Nav rezultātu meklējumam "${search}". Mēģiniet citu meklēšanas frazi.`
-                : 'Dokumenti parādīsīsies šeit automātiski, tīklīdz jūsu pasūtījumi tiks apstiprintī un piegādes pabeigtas.'}
-            </p>
-            {search && (
-              <Button variant="outline" size="sm" onClick={() => setSearch('')}>
-                Notītīt meklēšanu
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {docs.map((doc) => (
-              <DocumentCard key={doc.id} document={doc} onView={setViewerDoc} />
-            ))}
-          </div>
-        )}
+      )}
       
 
       {/* ── Inline document viewer ── */}

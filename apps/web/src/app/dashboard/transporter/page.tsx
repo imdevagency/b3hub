@@ -135,7 +135,9 @@ export default function TransporterDashboardPage() {
     );
   }
 
-  const isDispatcher = Boolean(user.isCompany);
+  const isDispatcher =
+    Boolean(user.isCompany) &&
+    (user.companyRole === 'OWNER' || user.companyRole === 'MANAGER');
 
   const handleResolveException = async (item: ApiTransportJobException) => {
     if (!token || !item.transportJobId) return;

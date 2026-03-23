@@ -49,63 +49,73 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-4 sm:p-8"
       onClick={(e) => {
         if (e.target === overlayRef.current) onClose();
       }}
     >
-      <div className="relative flex flex-col w-full max-w-4xl max-h-[90vh] bg-background rounded-[2rem] shadow-2xl overflow-hidden border border-border/40">
+      <div className="relative flex flex-col w-full max-w-5xl h-[85vh] bg-background rounded-[2rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* ── Header ── */}
-        <div className="flex items-start justify-between px-6 py-5 border-b border-border/40 bg-muted/40">
-          <div className="flex items-center gap-3">
-            {resolveIcon(document.mimeType)}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-5 border-b border-border/40 gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center h-12 w-12 rounded-2xl bg-muted/50 text-foreground">
+              {resolveIcon(document.mimeType)}
+            </div>
             <div>
-              <h2 className="font-semibold text-foreground text-lg leading-tight">
+              <h2 className="font-semibold text-foreground text-xl tracking-tight">
                 {document.title}
               </h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {document.issuedBy && <span>{document.issuedBy} · </span>}
-                {new Date(document.createdAt).toLocaleDateString('lv-LV', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-                {formatBytes(document.fileSize) && <span> · {formatBytes(document.fileSize)}</span>}
-              </p>
+              <div className="flex items-center text-[13px] text-muted-foreground mt-1 gap-1">
+                {document.issuedBy && <span className="font-medium text-foreground">{document.issuedBy}</span>}
+                {document.issuedBy && <span className="mx-1.5 opacity-50">•</span>}
+                <span>
+                  {new Date(document.createdAt).toLocaleDateString('lv-LV', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </span>
+                {formatBytes(document.fileSize) && (
+                  <>
+                    <span className="mx-1.5 opacity-50">•</span>
+                    <span>{formatBytes(document.fileSize)}</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 ml-4 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             {hasFile && (
               <>
                 <Button
                   variant="outline"
                   size="sm"
                   asChild
-                  className="text-muted-foreground border-gray-200 hover:text-red-600 hover:border-red-300"
+                  className="rounded-xl border-border bg-background hover:bg-muted font-medium h-9"
                 >
                   <a href={document.fileUrl} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4 mr-1.5" />
-                    Atvērt
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Atvērt jaunā logā
                   </a>
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="default"
                   size="sm"
                   asChild
-                  className="text-muted-foreground border-gray-200 hover:text-red-600 hover:border-red-300"
+                  className="rounded-xl font-medium h-9"
                 >
                   <a href={document.fileUrl} download>
-                    <Download className="h-4 w-4 mr-1.5" />
-                    Lejūpielādēt
+                    <Download className="h-4 w-4 mr-2" />
+                    Lejupielādēt
                   </a>
                 </Button>
               </>
             )}
             <button
               onClick={onClose}
-              className="ml-2 rounded-lg p-1.5 text-muted-foreground/80 hover:text-foreground hover:bg-gray-200 transition-colors"
-              aria-label="Close viewer"
+              className="ml-2 rounded-xl p-2 text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+              aria-label="Aizvērt"
             >
               <X className="h-5 w-5" />
             </button>
@@ -113,13 +123,13 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
         </div>
 
         {/* ── Body: document preview ── */}
-        <div className="flex-1 overflow-auto bg-muted/20 min-h-100">
+        <div className="flex-1 overflow-auto bg-muted/10 relative">
           {!hasFile && (
-            <div className="flex flex-col items-center justify-center h-full py-20 gap-3 text-muted-foreground/80">
+            <div className="flex flex-col items-center justify-center h-full py-20 gap-3 text-muted-foreground/60">
               {resolveIcon(document.mimeType)}
-              <p className="text-sm font-medium">Datne vēl nav pievienota</p>
-              <p className="text-xs text-muted-foreground/80 max-w-xs text-center">
-                Šis dokumenta ieraksts pastāv, bet PDF vai fails vēl nav augšupielādēts.
+              <p className="text-base font-medium text-foreground">Datne vēl nav pievienota</p>
+              <p className="text-sm max-w-sm text-center">
+                Šis dokumenta ieraksts pastāv, bet PDF vai cits fails vēl nav augšupielādēts.
               </p>
             </div>
           )}
@@ -128,27 +138,28 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
             <iframe
               src={`${document.fileUrl}#toolbar=0&navpanes=0&scrollbar=1`}
               title={document.title}
-              className="w-full h-full min-h-125 border-0"
+              className="w-full h-full border-0 absolute inset-0 bg-white"
             />
           )}
 
           {hasFile && isImage && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={document.fileUrl}
-              alt={document.title}
-              className="max-w-full max-h-full object-contain mx-auto block p-4"
-            />
+            <div className="absolute inset-0 flex items-center justify-center p-8 bg-[#F9F9F9]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={document.fileUrl}
+                alt={document.title}
+                className="max-w-full max-h-full object-contain rounded-lg shadow-sm border border-border/50"
+              />
+            </div>
           )}
 
           {hasFile && !isPdf && !isImage && (
             <div className="flex flex-col items-center justify-center h-full py-20 gap-4 text-muted-foreground">
               {resolveIcon(document.mimeType)}
-              <p className="text-sm font-medium">Priekšskatījums nav pieejams</p>
-              <Button variant="outline" size="sm" asChild>
+              <p className="text-base font-medium text-foreground">Priekšskatījums nav pieejams šim formātam</p>
+              <Button variant="outline" className="rounded-xl mt-2" asChild>
                 <a href={document.fileUrl} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Atvērt datni
+                  Lejupielādēt datni
                 </a>
               </Button>
             </div>
@@ -157,8 +168,8 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
 
         {/* ── Footer: metadata ── */}
         {document.notes && (
-          <div className="px-6 py-4 border-t border-border/40 bg-muted/40">
-            <p className="text-xs text-muted-foreground">
+          <div className="px-6 py-4 bg-background border-t border-border/40">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               <span className="font-medium text-foreground">Piezīmes: </span>
               {document.notes}
             </p>

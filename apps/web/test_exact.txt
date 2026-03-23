@@ -1,0 +1,2 @@
+    <div className="fixed inset-0 z-40 flex flex-col-reverse lg:flex-row bg-background animate-in slide-in-from-right-8">
+      <div className="w-full lg:w-[480px] shrink-0 flex flex-col bg-background border-t lg:border-t-0 lg:border-r border-border/50 z-10">

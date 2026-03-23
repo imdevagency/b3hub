@@ -443,3 +443,16 @@ export async function submitDeliveryProof(
     body: JSON.stringify(data),
   });
 }
+
+interface MyTransportRequestsResponse {
+  data: ApiTransportJob[];
+  pagination: { total: number; limit: number; skip: number; hasMore: boolean };
+}
+
+/** Buyer: returns all disposal & freight transport jobs the current user requested. */
+export async function getMyTransportRequests(token: string): Promise<ApiTransportJob[]> {
+  const res = await apiFetch<MyTransportRequestsResponse>('/transport-jobs/my-requests', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return Array.isArray(res.data) ? res.data : [];
+}

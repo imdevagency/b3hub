@@ -106,7 +106,7 @@ export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, o
                 {/* Minimal icon */}
                 <div
                   className={cn(
-                    'flex-shrink-0 flex items-center justify-center rounded border h-10 w-12 transition-colors',
+                    'shrink-0 flex items-center justify-center rounded border h-10 w-12 transition-colors',
                     selected ? 'border-primary/40 text-primary bg-white shadow-sm' : 'border-gray-200 text-gray-500 bg-gray-100',
                   )}
                 >
@@ -131,7 +131,7 @@ export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, o
                 </div>
               </div>
 
-              <div className="text-right flex-shrink-0">
+              <div className="text-right shrink-0">
                 <p className="text-[10px] text-muted-foreground leading-none">No</p>
                 <p className={cn("text-sm font-bold", selected ? "text-primary" : "text-gray-900")}>
                   €{s.priceFrom}

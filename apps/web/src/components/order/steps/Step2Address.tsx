@@ -14,12 +14,18 @@ import {
 
 interface Props {
   value: string;
-  onAddressChange: (address: string, lat?: number, lng?: number) => void;
+  onAddressChange: (address: string, lat?: number, lng?: number, city?: string, postal?: string) => void;
   onNext: () => void;
   onBack: () => void;
+  /** Override the step heading (defaults to skip-hire wording) */
+  title?: string;
+  /** Override the step subtitle */
+  subtitle?: string;
+  /** Override the "Next" button label */
+  nextLabel?: string;
 }
 
-export function Step2Address({ value, onAddressChange, onNext, onBack }: Props) {
+export function Step2Address({ value, onAddressChange, onNext, onBack, title, subtitle, nextLabel }: Props) {
   const [input, setInput] = useState(value);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState('');
@@ -29,7 +35,7 @@ export function Step2Address({ value, onAddressChange, onNext, onBack }: Props) 
   function handleSelect(place: PlaceAddress) {
     const addr = [place.address, place.city].filter(Boolean).join(', ');
     setInput(addr);
-    onAddressChange(addr, place.lat, place.lng);
+    onAddressChange(addr, place.lat, place.lng, place.city, place.postal);
   }
 
   // ── GPS geolocation ──────────────────────────────────────────────────────────
@@ -82,9 +88,9 @@ export function Step2Address({ value, onAddressChange, onNext, onBack }: Props) 
   return (
     <div className="flex flex-col space-y-5 animate-in fade-in slide-in-from-bottom-2">
       <div>
-        <h2 className="text-lg font-bold">Kur piegādāt konteineru?</h2>
+        <h2 className="text-lg font-bold">{title ?? 'Kur piegādāt konteineru?'}</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Ievadiet precīzu adresi vai izmantojiet GPS
+          {subtitle ?? 'Ievadiet precīzu adresi vai izmantojiet GPS'}
         </p>
       </div>
 
@@ -146,9 +152,9 @@ export function Step2Address({ value, onAddressChange, onNext, onBack }: Props) 
         <button
           onClick={onNext}
           disabled={!isValid}
-          className="flex-[2] rounded-xl bg-primary py-3 text-sm font-bold text-white shadow transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+          className="flex-2 rounded-xl bg-primary py-3 text-sm font-bold text-white shadow transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
         >
-          Rādīt piedāvājumus
+          {nextLabel ?? 'Rādīt piedāvājumus'}
         </button>
       </div>
     </div>

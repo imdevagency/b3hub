@@ -4,8 +4,7 @@
  */
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useRequireAuth } from '@/hooks/use-require-auth';
@@ -17,35 +16,17 @@ import {
   SKIP_SIZE_LABEL,
   StatusBadgeHex,
 } from '@/lib/status-config';
-import { PageSpinner } from '@/components/ui/page-spinner';
-
 import {
-  listTransportJobExceptions,
-  reportTransportJobException,
-  resolveTransportJobException,
-  updateTransportJobStatus,
-  getTransportDocumentReadiness,
-  submitDeliveryProof,
   confirmOrder,
   cancelOrder,
-  type ApiTransportJob,
-  type ApiTransportJobException,
 } from '@/lib/api';
-import { useActiveTransportJob } from '@/hooks/use-active-transport-job';
 import { useTransportJobs } from '@/hooks/use-transport-jobs';
 import { useMaterialOrders } from '@/hooks/use-material-orders';
 import { useBuyerOrders } from '@/hooks/use-buyer-orders';
 import { useMode } from '@/lib/mode-context';
 import {
   ArrowRight,
-  AlertTriangle,
-  CalendarDays,
   CheckCircle,
-  ClipboardCheck,
-  ExternalLink,
-  Map,
-  MapPin,
-  Navigation,
   Package,
   Phone,
   RefreshCw,
@@ -55,846 +36,25 @@ import {
   User,
   X,
 } from 'lucide-react';
-import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 
-// ── Active-job status progression ─────────────────────────────────────────────
 
-const STATUS_STEPS = [
-  'ACCEPTED',
-  'EN_ROUTE_PICKUP',
-  'AT_PICKUP',
-  'LOADED',
-  'EN_ROUTE_DELIVERY',
-  'AT_DELIVERY',
-  'DELIVERED',
-] as const;
-
-type JobStatus = (typeof STATUS_STEPS)[number];
-
-const NEXT_STATUS: Record<JobStatus, JobStatus | null> = {
-  ACCEPTED: 'EN_ROUTE_PICKUP',
-  EN_ROUTE_PICKUP: 'AT_PICKUP',
-  AT_PICKUP: 'LOADED',
-  LOADED: 'EN_ROUTE_DELIVERY',
-  EN_ROUTE_DELIVERY: 'AT_DELIVERY',
-  AT_DELIVERY: 'DELIVERED',
-  DELIVERED: null,
-};
-
-const STATUS_LABEL: Record<JobStatus, string> = {
-  ACCEPTED: 'Pieņemts',
-  EN_ROUTE_PICKUP: 'Brauc uz izbraukšanu',
-  AT_PICKUP: 'Pie izbraukšanas vietas',
-  LOADED: 'Iekrauts',
-  EN_ROUTE_DELIVERY: 'Brauc uz piegādi',
-  AT_DELIVERY: 'Pie piegādes vietas',
-  DELIVERED: 'Piegādāts',
-};
-
-const NEXT_ACTION_LABEL: Record<JobStatus, string> = {
-  ACCEPTED: 'Sākt braukt uz iekraušanu',
-  EN_ROUTE_PICKUP: 'Esmu pie iekraušanas',
-  AT_PICKUP: 'Apstiprināt iekraušanu',
-  LOADED: 'Sākt piegādi',
-  EN_ROUTE_DELIVERY: 'Esmu pie piegādes',
-  AT_DELIVERY: 'Apstiprināt piegādi',
-  DELIVERED: '',
-};
-
-function StaticMapEmbed({
-  pickupLat,
-  pickupLng,
-  pickupLabel,
-  deliveryLat,
-  deliveryLng,
-  deliveryLabel,
-}: {
-  pickupLat: number;
-  pickupLng: number;
-  pickupLabel: string;
-  deliveryLat: number;
-  deliveryLng: number;
-  deliveryLabel: string;
-}) {
-  const key = getGoogleMapsPublicKey();
-  const origin = `${pickupLat},${pickupLng}`;
-  const destination = `${deliveryLat},${deliveryLng}`;
-  const src = `https://www.google.com/maps/embed/v1/directions?key=${key}&origin=${origin}&destination=${destination}&mode=driving`;
-  return (
-    <div className="w-full rounded-2xl overflow-hidden border shadow-sm" style={{ height: 280 }}>
-      {key ? (
-        <iframe
-          title={`Maršruts: ${pickupLabel} → ${deliveryLabel}`}
-          width="100%"
-          height="100%"
-          style={{ border: 0 }}
-          loading="lazy"
-          allowFullScreen
-          referrerPolicy="no-referrer-when-downgrade"
-          src={src}
-        />
-      ) : (
-        <div className="w-full h-full bg-gray-100 flex flex-col items-center justify-center gap-2 text-muted-foreground">
-          <Map className="h-10 w-10 text-gray-300" />
-          <p className="text-sm font-medium">Karte nav pieejama</p>
-          <p className="text-xs">Nav Google Maps API atslēgas</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ActiveProgressBar({ currentStatus }: { currentStatus: JobStatus }) {
-  const currentIndex = STATUS_STEPS.indexOf(currentStatus);
-  return (
-    <div className="flex items-center gap-1.5">
-      {STATUS_STEPS.map((step, i) => (
-        <div
-          key={step}
-          title={STATUS_LABEL[step]}
-          className={`h-2 flex-1 rounded-full transition-colors ${
-            i < currentIndex ? 'bg-primary' : i === currentIndex ? 'bg-primary/40' : 'bg-muted'
-          }`}
-        />
-      ))}
-    </div>
-  );
-}
-
-function mapsUrl(lat: number, lng: number): string {
-  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
-}
-
-const EXCEPTION_TYPE_OPTIONS = [
-  { value: 'DRIVER_NO_SHOW', label: 'Šoferis neieradās' },
-  { value: 'SUPPLIER_NOT_READY', label: 'Piegādātājs nav gatavs' },
-  { value: 'WRONG_MATERIAL', label: 'Nepareizs materiāls' },
-  { value: 'PARTIAL_DELIVERY', label: 'Daļēja piegāde' },
-  { value: 'REJECTED_DELIVERY', label: 'Piegāde atteikta' },
-  { value: 'SITE_CLOSED', label: 'Objekts slēgts' },
-  { value: 'OVERWEIGHT', label: 'Pārsniegts svars' },
-  { value: 'OTHER', label: 'Cits' },
-] as const;
-
-function formatSlaStage(stage: string | null | undefined): string {
-  if (stage === 'PICKUP_DELAY') return 'Kavēta iekraušana';
-  if (stage === 'DELIVERY_DELAY') return 'Kavēta piegāde';
-  return 'Grafikā';
-}
 
 function QuickStat({ value, label, alert }: { value: string; label: string; alert?: boolean }) {
   return (
-    <div
-      className={`flex flex-col justify-center rounded-3xl ${alert ? 'bg-red-50 text-red-900' : 'bg-muted/40'} p-6 transition-all duration-200`}
-    >
-      <span
-        className={`text-[13px] font-medium tracking-wide mb-2 ${alert ? 'text-red-700' : 'text-muted-foreground'}`}
-      >
+    <div className={`p-4 rounded-2xl ${alert ? 'bg-red-50 text-red-900 border border-red-100' : 'bg-muted/30 border border-transparent'} flex flex-col justify-center`}>
+      <span className={`text-xs font-semibold uppercase tracking-wider mb-1 ${alert ? 'text-red-700' : 'text-muted-foreground'}`}>
         {label}
       </span>
-      <span className={`text-4xl font-bold tracking-tight ${alert ? '' : 'text-foreground'}`}>
+      <span className={`text-2xl font-bold tracking-tight ${alert ? '' : 'text-foreground'}`}>
         {value}
       </span>
     </div>
   );
 }
 
-function formatDocCode(code: string): string {
-  if (code === 'DELIVERY_PROOF') return 'Piegādes apliecinājums';
-  if (code === 'WEIGHING_SLIP') return 'Svēršanas biļete';
-  return code.replaceAll('_', ' ').toLowerCase();
-}
+// ── Carrier history ───────────────────────────────────────────────────────────
 
-// ── Active-job tab ─────────────────────────────────────────────────────────────
-
-function ActiveJobTab({ token, onDelivered }: { token: string; onDelivered?: () => void }) {
-  const router = useRouter();
-  const { job, setJob, loading, reload } = useActiveTransportJob(token);
-  const [refreshing, setRefreshing] = useState(false);
-  const [advancing, setAdvancing] = useState(false);
-  const [deliveryBlockers, setDeliveryBlockers] = useState<string[]>([]);
-  const [readinessLoading, setReadinessLoading] = useState(false);
-  const [exceptionsLoading, setExceptionsLoading] = useState(false);
-  const [exceptions, setExceptions] = useState<ApiTransportJobException[]>([]);
-  const [exceptionType, setExceptionType] =
-    useState<(typeof EXCEPTION_TYPE_OPTIONS)[number]['value']>('OTHER');
-  const [exceptionNotes, setExceptionNotes] = useState('');
-  const [reportingException, setReportingException] = useState(false);
-  const [resolvingExceptionId, setResolvingExceptionId] = useState<string | null>(null);
-  const [resolutionById, setResolutionById] = useState<Record<string, string>>({});
-
-  // Delivery proof modal
-  const [showProofModal, setShowProofModal] = useState(false);
-  const [proofRecipient, setProofRecipient] = useState('');
-  const [proofNotes, setProofNotes] = useState('');
-  const [proofSubmitting, setProofSubmitting] = useState(false);
-  const [proofError, setProofError] = useState<string | null>(null);
-
-  // Delivery success modal
-  const [deliveredJob, setDeliveredJob] = useState<ApiTransportJob | null>(null);
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await reload();
-    setRefreshing(false);
-  };
-
-  useEffect(() => {
-    let active = true;
-    if (!job?.id || job.status !== 'AT_DELIVERY') {
-      setDeliveryBlockers([]);
-      setReadinessLoading(false);
-      return;
-    }
-
-    setReadinessLoading(true);
-    getTransportDocumentReadiness(job.id, token)
-      .then((readiness) => {
-        if (!active) return;
-        setDeliveryBlockers(readiness.missing.filter((doc) => doc !== 'DELIVERY_PROOF'));
-      })
-      .catch(() => {
-        if (!active) return;
-        setDeliveryBlockers([]);
-      })
-      .finally(() => {
-        if (active) setReadinessLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [job?.id, job?.status, token]);
-
-  useEffect(() => {
-    let active = true;
-    if (!job?.id) {
-      setExceptions([]);
-      setExceptionsLoading(false);
-      return;
-    }
-
-    setExceptionsLoading(true);
-    listTransportJobExceptions(job.id, token)
-      .then((data) => {
-        if (!active) return;
-        setExceptions(data);
-      })
-      .catch(() => {
-        if (!active) return;
-        setExceptions([]);
-      })
-      .finally(() => {
-        if (active) setExceptionsLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [job?.id, token]);
-
-  const handleReportException = async () => {
-    if (!job) return;
-    const notes = exceptionNotes.trim();
-    if (!notes) {
-      alert('Lūdzu pievienojiet izņēmuma aprakstu.');
-      return;
-    }
-
-    setReportingException(true);
-    try {
-      const created = await reportTransportJobException(
-        job.id,
-        { type: exceptionType, notes },
-        token,
-      );
-      setExceptions((prev) => [created, ...prev]);
-      setExceptionNotes('');
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Neizdevās iesniegt izņēmumu');
-    } finally {
-      setReportingException(false);
-    }
-  };
-
-  const handleResolveException = async (exceptionId: string) => {
-    if (!job) return;
-    const resolution = resolutionById[exceptionId]?.trim() || 'Atrisināts aktīvajā darbā';
-    setResolvingExceptionId(exceptionId);
-    try {
-      const resolved = await resolveTransportJobException(job.id, exceptionId, resolution, token);
-      setExceptions((prev) => prev.map((item) => (item.id === exceptionId ? resolved : item)));
-      setResolutionById((prev) => ({ ...prev, [exceptionId]: '' }));
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Neizdevās atrisināt izņēmumu');
-    } finally {
-      setResolvingExceptionId(null);
-    }
-  };
-
-  const handleAdvance = async () => {
-    if (!job) return;
-    const current = job.status as JobStatus;
-    if (current === 'AT_DELIVERY') {
-      if (readinessLoading) {
-        alert('Pārbaudām dokumentu gatavību. Lūdzu uzgaidiet brīdi.');
-        return;
-      }
-      if (deliveryBlockers.length > 0) {
-        alert(`Piegādi nevar pabeigt. Trūkst: ${deliveryBlockers.map(formatDocCode).join(', ')}`);
-        return;
-      }
-      setProofRecipient('');
-      setProofNotes('');
-      setProofError(null);
-      setShowProofModal(true);
-      return;
-    }
-    const next = NEXT_STATUS[current];
-    if (!next) return;
-    if (!confirm(`Apstiprināt: ${STATUS_LABEL[current]} → ${STATUS_LABEL[next]}?`)) return;
-    setAdvancing(true);
-    try {
-      const updated = await updateTransportJobStatus(job.id, next, token);
-      setJob(updated);
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Neizdevās atjaunināt statusu');
-    } finally {
-      setAdvancing(false);
-    }
-  };
-
-  const handleProofSubmit = async () => {
-    if (!job) return;
-    setProofSubmitting(true);
-    setProofError(null);
-    try {
-      const updated = await submitDeliveryProof(
-        job.id,
-        {
-          notes: proofNotes.trim() || undefined,
-          recipientName: proofRecipient.trim() || undefined,
-        },
-        token,
-      );
-      setJob(updated);
-      setShowProofModal(false);
-      if (updated.status === 'DELIVERED') {
-        setDeliveredJob(updated);
-      }
-    } catch (e: unknown) {
-      setProofError(e instanceof Error ? e.message : 'Neizdevās iesniegt piegādes apstiprinājumu');
-    } finally {
-      setProofSubmitting(false);
-    }
-  };
-
-  if (loading) {
-    return <PageSpinner className="py-32" />;
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Delivery Success Modal */}
-      {deliveredJob && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div className="bg-background w-full max-w-md rounded-[2rem] shadow-2xl border-0 ring-1 ring-black/5 overflow-hidden">
-            {/* Success header */}
-            <div className="bg-green-50 px-6 py-8 flex flex-col items-center gap-3">
-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle className="h-9 w-9 text-green-600" />
-              </div>
-              <h2 className="text-xl font-extrabold text-green-800">Piegāde pabeigta!</h2>
-              <p className="text-sm text-green-700 text-center">
-                Darbs #{deliveredJob.jobNumber} veiksmīgi pabeigts
-              </p>
-            </div>
-            {/* Details */}
-            <div className="px-6 py-5 space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                <MapPin className="h-4 w-4 text-gray-400 shrink-0" />
-                <span className="text-gray-700 font-medium">{deliveredJob.pickupCity}</span>
-                <ArrowRight className="h-3.5 w-3.5 text-gray-400" />
-                <span className="text-gray-700 font-medium">{deliveredJob.deliveryCity}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Truck className="h-4 w-4 text-gray-400 shrink-0" />
-                <span className="text-gray-600">{deliveredJob.cargoType}</span>
-                {deliveredJob.cargoWeight != null && (
-                  <span className="text-gray-400">· {deliveredJob.cargoWeight} t</span>
-                )}
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t">
-                <span className="text-sm text-muted-foreground">Nopelnīts</span>
-                <span className="text-2xl font-extrabold text-green-700">
-                  €{(deliveredJob.rate ?? 0).toFixed(2)}
-                </span>
-              </div>
-            </div>
-            {/* Actions */}
-            <div className="px-6 pb-6">
-              <Button
-                className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-bold text-base"
-                onClick={() => {
-                  setDeliveredJob(null);
-                  setJob(null);
-                  onDelivered?.();
-                }}
-              >
-                Skatīt vēsturi
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delivery Proof Modal */}
-      {showProofModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div className="bg-background w-full max-w-md rounded-[2rem] shadow-2xl border-0 ring-1 ring-black/5 overflow-hidden">
-            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center">
-                  <ClipboardCheck className="h-5 w-5 text-green-700" />
-                </div>
-                <div>
-                  <h2 className="font-bold text-gray-900">Piegādes apstiprinājums</h2>
-                  <p className="text-xs text-muted-foreground">Aizpildiet un iesniedziet</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowProofModal(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="px-6 py-5 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-                  Saņēmēja vārds
-                </label>
-                <input
-                  type="text"
-                  value={proofRecipient}
-                  onChange={(e) => setProofRecipient(e.target.value)}
-                  placeholder="Jānis Bērziņš"
-                  className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-                  Piezīmes (pēc izvēles)
-                </label>
-                <textarea
-                  value={proofNotes}
-                  onChange={(e) => setProofNotes(e.target.value)}
-                  placeholder="Piegāde veiksmīga, bez bojājumiem..."
-                  rows={3}
-                  className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                />
-              </div>
-              {proofError && (
-                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                  {proofError}
-                </p>
-              )}
-            </div>
-            <div className="px-6 pb-6 flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1 h-11"
-                onClick={() => setShowProofModal(false)}
-                disabled={proofSubmitting}
-              >
-                Atcelt
-              </Button>
-              <Button
-                className="flex-1 h-11 bg-green-600 hover:bg-green-700 text-white"
-                onClick={handleProofSubmit}
-                disabled={proofSubmitting}
-              >
-                {proofSubmitting ? (
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                )}
-                {proofSubmitting ? 'Sūta...' : 'Apstiprināt piegādi'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight">Aktīvais darbs</h2>
-          {job && (
-            <p className="text-sm text-muted-foreground mt-0.5">
-              #{job.jobNumber} · {job.cargoType} {job.cargoWeight ?? 0} t
-            </p>
-          )}
-        </div>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center gap-2 rounded-full bg-muted/40 hover:bg-muted/80 px-4 py-2 text-sm font-medium text-foreground transition-colors border-0"
-        >
-          <RefreshCw className={`size-4 ${refreshing ? 'animate-spin' : ''}`} />
-          Atjaunot
-        </button>
-      </div>
-
-      {/* No active job */}
-      {!job && (
-        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-muted/20 rounded-3xl">
-          <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
-            <Truck className="h-10 w-10 text-muted-foreground/60" />
-          </div>
-          <div>
-            <p className="text-base font-bold text-foreground">Nav aktīva darba</p>
-            <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-              Jums šobrīd nav neviena aktīva pārvadājuma. Atveriet darbu sarakstu, lai atrastu un
-              pieņemtu jaunus uzdevumus.
-            </p>
-          </div>
-          <button
-            className="mt-4 flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full px-6 py-3 text-sm transition-all"
-            onClick={() => router.push('/dashboard/jobs')}
-          >
-            <MapPin className="h-4 w-4" />
-            Atvērt darbu sarakstu
-          </button>
-        </div>
-      )}
-
-      {job &&
-        (() => {
-          const currentStatus = job.status as JobStatus;
-          const currentIndex = STATUS_STEPS.indexOf(currentStatus);
-          const openExceptions = exceptions.filter((item) => item.status === 'OPEN');
-          // Safety: if status is not a known in-progress status, show empty state
-          if (currentIndex === -1 || currentStatus === 'DELIVERED') return null;
-          const nextStatus = NEXT_STATUS[currentStatus];
-          const isHeadingToPickup =
-            currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP';
-
-          return (
-            <>
-              {/* Status card */}
-              <div className="bg-muted/40 rounded-3xl p-6 space-y-5">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-2 bg-red-50 border-0 text-red-700 text-sm font-bold rounded-full px-4 py-2">
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                    {STATUS_LABEL[currentStatus]}
-                  </span>
-                  <span className="text-xl font-extrabold text-primary">
-                    €{(job.rate ?? 0).toFixed(2)}
-                  </span>
-                </div>
-                <ActiveProgressBar currentStatus={currentStatus} />
-                <p className="text-xs text-muted-foreground">
-                  Solis {currentIndex + 1} no {STATUS_STEPS.length}
-                </p>
-              </div>
-
-              {/* SLA widget */}
-              <div
-                className={`rounded-3xl border-0 p-6 ${
-                  job.sla?.isOverdue ? 'bg-red-50 text-red-900' : 'bg-blue-50/50 text-blue-900'
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className={`mt-0.5 rounded-full p-1.5 ${
-                      job.sla?.isOverdue ? 'bg-red-100' : 'bg-blue-100'
-                    }`}
-                  >
-                    <CalendarDays
-                      className={`h-4 w-4 ${job.sla?.isOverdue ? 'text-red-700' : 'text-blue-700'}`}
-                    />
-                  </div>
-                  <div>
-                    <p
-                      className={`text-sm font-bold ${
-                        job.sla?.isOverdue ? 'text-red-800' : 'text-blue-800'
-                      }`}
-                    >
-                      SLA statuss
-                    </p>
-                    <p
-                      className={`text-xs mt-1 ${
-                        job.sla?.isOverdue ? 'text-red-700' : 'text-blue-700'
-                      }`}
-                    >
-                      {job.sla?.isOverdue
-                        ? `${formatSlaStage(job.sla?.stage)} · ${job.sla?.overdueMinutes ?? 0} min`
-                        : 'Grafikā, kavējums nav konstatēts'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Map */}
-              {job.pickupLat != null &&
-                job.pickupLng != null &&
-                job.deliveryLat != null &&
-                job.deliveryLng != null && (
-                  <StaticMapEmbed
-                    pickupLat={job.pickupLat}
-                    pickupLng={job.pickupLng}
-                    pickupLabel={job.pickupCity}
-                    deliveryLat={job.deliveryLat}
-                    deliveryLng={job.deliveryLng}
-                    deliveryLabel={job.deliveryCity}
-                  />
-                )}
-
-              {/* Route detail card */}
-              <div className="bg-muted/40 rounded-3xl p-6 space-y-5">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide">
-                  Maršruts
-                </h3>
-                {/* Pickup */}
-                <div className="flex items-start gap-3">
-                  <div className="w-3 h-3 rounded-full bg-primary border-2 border-primary/20 mt-1 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
-                      Iekraušana
-                    </p>
-                    <p className="font-semibold text-sm text-gray-900 mt-0.5">{job.pickupCity}</p>
-                    <p className="text-xs text-muted-foreground truncate">{job.pickupAddress}</p>
-                    {job.pickupWindow && (
-                      <p className="text-xs text-gray-500 mt-1">Logs: {job.pickupWindow}</p>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1.5 shrink-0">
-                    {isHeadingToPickup && job.pickupLat != null && job.pickupLng != null && (
-                      <a
-                        href={mapsUrl(job.pickupLat!, job.pickupLng!)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg px-3 py-1.5 transition-colors"
-                      >
-                        <Navigation className="h-3.5 w-3.5" />
-                        Navigēt
-                        <ExternalLink className="h-3 w-3 opacity-70" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-                <div className="w-px h-5 bg-gray-200 ml-1.5" />
-                {/* Delivery */}
-                <div className="flex items-start gap-3">
-                  <div className="w-3 h-3 rounded-full bg-green-600 border-2 border-green-200 mt-1 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
-                      Piegāde
-                    </p>
-                    <p className="font-semibold text-sm text-gray-900 mt-0.5">{job.deliveryCity}</p>
-                    <p className="text-xs text-muted-foreground truncate">{job.deliveryAddress}</p>
-                    {job.deliveryWindow && (
-                      <p className="text-xs text-gray-500 mt-1">Logs: {job.deliveryWindow}</p>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1.5 shrink-0">
-                    {!isHeadingToPickup && job.deliveryLat != null && job.deliveryLng != null && (
-                      <a
-                        href={mapsUrl(job.deliveryLat!, job.deliveryLng!)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg px-3 py-1.5 transition-colors"
-                      >
-                        <Navigation className="h-3.5 w-3.5" />
-                        Navigēt
-                        <ExternalLink className="h-3 w-3 opacity-70" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Cargo details */}
-              <div className="bg-muted/40 rounded-3xl p-6 flex flex-wrap gap-8">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
-                    Krava
-                  </p>
-                  <p className="font-bold text-gray-900 mt-0.5">{job.cargoType}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
-                    Svars
-                  </p>
-                  <p className="font-bold text-gray-900 mt-0.5">{job.cargoWeight ?? '—'} t</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
-                    Attālums
-                  </p>
-                  <p className="font-bold text-gray-900 mt-0.5">{job.distanceKm ?? '—'} km</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
-                    Transportl.
-                  </p>
-                  <p className="font-bold text-gray-900 mt-0.5">
-                    {job.requiredVehicleType ?? job.requiredVehicleEnum ?? '—'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Exceptions widget */}
-              <div className="pt-2 mt-4">
-                <div className="flex items-center justify-between gap-2 mb-4">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-muted-foreground" />
-                    <h3 className="text-base font-semibold text-foreground">
-                      Problēmas / Izņēmumi
-                    </h3>
-                  </div>
-                  {openExceptions.length > 0 ? (
-                    <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">
-                      {openExceptions.length} atvērti
-                    </span>
-                  ) : null}
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3 mb-6">
-                  <select
-                    value={exceptionType}
-                    onChange={(e) =>
-                      setExceptionType(
-                        e.target.value as (typeof EXCEPTION_TYPE_OPTIONS)[number]['value'],
-                      )
-                    }
-                    className="h-11 rounded-lg border-transparent bg-muted/40 px-4 transition-all outline-none focus-visible:bg-transparent focus-visible:ring-2 focus-visible:ring-ring/50 sm:w-55 text-sm"
-                  >
-                    {EXCEPTION_TYPE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    value={exceptionNotes}
-                    onChange={(e) => setExceptionNotes(e.target.value)}
-                    placeholder="Aprakstiet situāciju dispečeram"
-                    className="h-11 flex-1 rounded-lg border-transparent bg-muted/40 px-4 transition-all outline-none focus-visible:bg-transparent focus-visible:ring-2 focus-visible:ring-ring/50 text-sm"
-                  />
-                  <Button
-                    type="button"
-                    variant="default"
-                    className="h-11"
-                    onClick={handleReportException}
-                    disabled={reportingException}
-                  >
-                    {reportingException ? 'Sūta...' : 'Ziņot'}
-                  </Button>
-                </div>
-
-                {exceptionsLoading ? (
-                  <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-border bg-muted/10">
-                    <p className="text-sm text-muted-foreground">Ielādē izņēmumus...</p>
-                  </div>
-                ) : exceptions.length === 0 ? (
-                  <div className="flex flex-col h-32 items-center justify-center rounded-xl border border-dashed border-border bg-muted/5 gap-2">
-                    <AlertTriangle className="h-6 w-6 text-muted-foreground/30" />
-                    <p className="text-sm text-muted-foreground">
-                      Pašlaik nav reģistrētu problēmu.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {exceptions.map((item) => {
-                      const isOpen = item.status === 'OPEN';
-                      return (
-                        <div key={item.id} className="rounded-2xl bg-muted/40 p-5 space-y-4">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm font-semibold text-foreground">{item.type}</p>
-                            <span
-                              className={`rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wider ${
-                                isOpen
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-emerald-100 text-emerald-800'
-                              }`}
-                            >
-                              {isOpen ? 'ATVĒRTS' : 'ATRISINĀTS'}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{item.notes}</p>
-                          {isOpen && (
-                            <div className="flex flex-col sm:flex-row gap-2 mt-2 pt-3 border-t border-border/50">
-                              <input
-                                value={resolutionById[item.id] ?? ''}
-                                onChange={(e) =>
-                                  setResolutionById((prev) => ({
-                                    ...prev,
-                                    [item.id]: e.target.value,
-                                  }))
-                                }
-                                placeholder="Atrisinājuma komentārs"
-                                className="h-10 flex-1 rounded-lg border-transparent bg-muted/40 px-3 text-sm transition-all outline-none focus-visible:bg-transparent focus-visible:ring-2 focus-visible:ring-ring/50"
-                              />
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                className="h-10"
-                                onClick={() => handleResolveException(item.id)}
-                                disabled={resolvingExceptionId === item.id}
-                              >
-                                {resolvingExceptionId === item.id ? 'Saglabā...' : 'Atrisināt'}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Action */}
-              {currentStatus === 'AT_DELIVERY' && deliveryBlockers.length > 0 && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
-                  <p className="text-sm font-semibold text-red-700">Trūkst obligāti dokumenti</p>
-                  <p className="mt-1 text-xs text-red-700">
-                    Piegādi nevar pabeigt, kamēr nav iesniegti:{' '}
-                    {deliveryBlockers.map(formatDocCode).join(', ')}
-                  </p>
-                </div>
-              )}
-              <div className="flex flex-col sm:flex-row gap-3 pb-4">
-                {nextStatus && (
-                  <Button
-                    className="flex-1 h-12 text-base font-bold"
-                    onClick={handleAdvance}
-                    disabled={advancing || (currentStatus === 'AT_DELIVERY' && readinessLoading)}
-                  >
-                    {advancing ? (
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <ArrowRight className="h-4 w-4 mr-2" />
-                    )}
-                    {NEXT_ACTION_LABEL[currentStatus]}
-                  </Button>
-                )}
-                {!nextStatus && (
-                  <div className="flex-1 flex items-center justify-center gap-3 bg-green-50 border border-green-200 rounded-2xl h-14">
-                    <CheckCircle className="h-6 w-6 text-green-600" />
-                    <span className="font-bold text-green-700 text-base">Piegādāts!</span>
-                  </div>
-                )}
-              </div>
-            </>
-          );
-        })()}
-    </div>
-  );
-}
-
-// ── CARRIER view ───────────────────────────────────────────────────────────────
+// ActiveJobTab removed — drivers manage active jobs exclusively in the mobile app.
 
 function CarrierHistoryView({ token }: { token: string }) {
   const { jobs, loading, reload } = useTransportJobs(token);
@@ -980,7 +140,7 @@ function CarrierHistoryView({ token }: { token: string }) {
           </div>
           <Link
             href="/dashboard/jobs"
-            className="mt-2 inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full px-6 py-3 text-sm transition-all"
+            className="mt-2 inline-flex items-center gap-2 bg-black hover:bg-gray-800 text-white font-semibold rounded-full px-6 py-3 text-sm transition-all"
           >
             <Search className="h-4 w-4" />
             Meklēt darbus
@@ -1004,21 +164,21 @@ function CarrierHistoryView({ token }: { token: string }) {
               <Link
                 key={job.id}
                 href={`/dashboard/orders/${job.id}`}
-                className="group block relative bg-muted/30 rounded-3xl p-6 mb-4 hover:bg-muted/50 transition-all duration-300"
+                className="group block relative bg-background border border-border/50 rounded-2xl p-5 mb-3 hover:bg-muted/30 transition-all duration-300"
               >
                 {/* Meta Top Row */}
-                <div className="flex justify-between items-start mb-5">
+                <div className="flex justify-between items-start mb-4">
                   <div>
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <p className="font-mono font-bold text-[11px] text-muted-foreground border bg-muted/30 rounded px-1.5 py-0.5 uppercase tracking-wide">
+                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                      <p className="font-mono font-semibold text-[10px] text-muted-foreground uppercase tracking-widest">
                         #{job.jobNumber}
                       </p>
                       <StatusBadgeHex cfg={st} />
                     </div>
-                    <h3 className="text-xl font-bold tracking-tight text-foreground">
+                    <h3 className="text-xl font-black tracking-tight text-foreground">
                       {fmtMoney(job.rate ?? 0)}
                     </h3>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-sm text-muted-foreground/90 font-medium">
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1 text-sm text-muted-foreground font-medium">
                       <span>{job.cargoType}</span>
                       <span>•</span>
                       <span>{weightTStr}</span>
@@ -1033,20 +193,20 @@ function CarrierHistoryView({ token }: { token: string }) {
                 </div>
 
                 {/* Timeline Route */}
-                <div className="flex items-start my-5 bg-muted/20 rounded-xl p-4 border border-border/30">
-                  <div className="flex flex-col items-center mr-4 mt-1.5">
-                    <div className="w-2 h-2 rounded-full bg-foreground z-10 shrink-0" />
-                    <div className="w-px h-5.5 bg-foreground opacity-20 shrink-0" />
-                    <div className="w-2 h-2 rounded-[1px] bg-foreground z-10 shrink-0" />
+                <div className="flex items-start bg-muted/20 rounded-xl p-3 border border-transparent group-hover:border-border/50">
+                  <div className="flex flex-col items-center mr-3 mt-1.5">
+                    <div className="w-2 h-2 rounded-full bg-primary z-10 shrink-0" />
+                    <div className="w-px h-5 bg-border my-0.5 shrink-0" />
+                    <div className="w-2 h-2 rounded-[1px] bg-black z-10 shrink-0" />
                   </div>
-                  <div className="flex flex-col gap-3 flex-1">
+                  <div className="flex flex-col gap-2 flex-1">
                     <div className="flex items-center justify-between">
-                      <p className="text-[15px] font-semibold leading-none">{job.pickupCity}</p>
-                      <span className="text-xs font-semibold text-muted-foreground bg-white border shadow-sm rounded-md px-2 py-1">
+                      <p className="text-sm font-semibold leading-none">{job.pickupCity}</p>
+                      <span className="text-xs font-medium text-muted-foreground">
                         {fmtDate(job.pickupDate)}
                       </span>
                     </div>
-                    <p className="text-[15px] font-semibold leading-none text-muted-foreground">
+                    <p className="text-sm font-semibold leading-none text-muted-foreground">
                       {job.deliveryCity}
                     </p>
                   </div>
@@ -1054,27 +214,24 @@ function CarrierHistoryView({ token }: { token: string }) {
 
                 {/* Vehicle & assignment footer */}
                 {job.vehicle && (
-                  <div className="pt-2 flex items-center justify-between">
-                    <div className="flex items-center gap-2 bg-muted/50 rounded-full px-3 py-1.5 border border-border/50">
+                  <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-3">
+                    <div className="flex items-center gap-2">
                       <Truck className="size-3.5 text-muted-foreground" />
                       <span className="text-xs font-bold text-foreground">
                         {job.vehicle.licensePlate}
                       </span>
-                      <span className="text-[11px] font-medium text-muted-foreground uppercase">
-                        {job.vehicle.vehicleType}
-                      </span>
                     </div>
-                    <div className="flex items-center gap-1 text-[13px] font-semibold text-primary">
-                      Sekot darbam
-                      <ArrowRight className="size-3.5" />
+                    <div className="flex items-center gap-1 text-[12px] font-bold text-black uppercase tracking-wider group-hover:underline">
+                      Skatīt
+                      <ArrowRight className="size-3" />
                     </div>
                   </div>
                 )}
                 {!job.vehicle && (
-                  <div className="pt-2 flex items-center justify-end">
-                    <div className="flex items-center gap-1 text-[13px] font-semibold text-primary group-hover:underline">
-                      Sekot darbam
-                      <ArrowRight className="size-3.5" />
+                  <div className="mt-4 flex items-center justify-end border-t border-border/40 pt-3">
+                    <div className="flex items-center gap-1 text-[12px] font-bold text-black uppercase tracking-wider group-hover:underline">
+                      Skatīt
+                      <ArrowRight className="size-3" />
                     </div>
                   </div>
                 )}
@@ -1088,41 +245,8 @@ function CarrierHistoryView({ token }: { token: string }) {
 }
 
 function CarrierView({ token }: { token: string }) {
-  const [tab, setTab] = useState<'active' | 'history'>('active');
-  const [historyKey, setHistoryKey] = useState(0);
-  return (
-    <div className="space-y-4">
-      {/* Tab switcher */}
-      <div className="flex gap-1 bg-muted/50 rounded-xl p-1 w-fit mb-4">
-        {(['active', 'history'] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
-              tab === t
-                ? 'bg-background shadow-xs text-foreground'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
-          >
-            {t === 'active' ? 'Aktīvais' : 'Vēsture'}
-          </button>
-        ))}
-      </div>
-      {tab === 'active' ? (
-        <ActiveJobTab
-          token={token}
-          onDelivered={() => {
-            setHistoryKey((k) => k + 1);
-            setTab('history');
-          }}
-        />
-      ) : (
-        <CarrierHistoryView key={historyKey} token={token} />
-      )}
-    </div>
-  );
+  return <CarrierHistoryView token={token} />;
 }
-
 // ── SUPPLIER view ──────────────────────────────────────────────────────────────
 
 function SupplierView({ token }: { token: string }) {
@@ -1656,7 +780,7 @@ export default function OrdersPage() {
   const title = isCarrier ? 'Mani Darbi' : isSupplier ? 'Ienākošie Pasūtījumi' : 'Mani Pasūtījumi';
 
   const subtitle = isCarrier
-    ? 'Visi transporta darbi — aktīvie, pabeigti, tonnas tranzītā'
+    ? 'Pārvadājumu vēsture — pabeigti darbi, ieņēmumi, maršruti'
     : isSupplier
       ? 'Pilna pārredzamība — pircēji, materiāli, piegādes datumi, kontakti'
       : 'Jūsu konteineru un materiālu pasūtījumi reāllaikā';

@@ -6,7 +6,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ChevronDown } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 import { useMode, type Mode } from '@/lib/mode-context';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,11 +31,11 @@ const MODE_LABEL: Record<Mode, string> = {
 export function RoleModeSwitcher() {
   const router = useRouter();
   const { activeMode, setActiveMode, availableModes } = useMode();
-  const otherModes = availableModes.filter((mode) => mode !== activeMode);
 
-  if (otherModes.length === 0) return null;
+  if (availableModes.length <= 1) return null;
 
-  const onValueChange = (mode: Mode) => {
+  const onSelect = (mode: Mode) => {
+    if (mode === activeMode) return;
     setActiveMode(mode);
     router.push(ROLE_HOME[mode]);
   };
@@ -49,11 +49,20 @@ export function RoleModeSwitcher() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-40">
-        {otherModes.map((mode) => (
-          <DropdownMenuItem key={mode} className="text-xs" onClick={() => onValueChange(mode)}>
-            {MODE_LABEL[mode]}
-          </DropdownMenuItem>
-        ))}
+        {availableModes.map((mode) => {
+          const isActive = mode === activeMode;
+          return (
+            <DropdownMenuItem
+              key={mode}
+              className="text-xs justify-between"
+              disabled={isActive}
+              onClick={() => onSelect(mode)}
+            >
+              <span>{MODE_LABEL[mode]}</span>
+              {isActive && <Check className="size-3.5 text-primary" />}
+            </DropdownMenuItem>
+          );
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   );
