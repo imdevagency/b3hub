@@ -13,6 +13,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import {
   FileText,
   CheckCircle2,
@@ -268,14 +269,18 @@ export default function InvoicesScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer bg="#fff">
-        <SkeletonCard count={4} />
+      <ScreenContainer bg="#fff" standalone>
+        <ScreenHeader title="Rēķini" />
+        <View style={{ padding: 20 }}>
+          <SkeletonCard count={4} />
+        </View>
       </ScreenContainer>
     );
   }
 
   return (
-    <ScreenContainer bg="#fff">
+    <ScreenContainer bg="#fff" standalone>
+      <ScreenHeader title="Rēķini" />
       {/* ── Summary ── */}
       <View style={s.summary}>
         <View style={s.summaryMain}>

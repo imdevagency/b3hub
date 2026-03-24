@@ -11,6 +11,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { ShieldCheck, FileDown, Recycle, Clock, ExternalLink } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -165,11 +166,8 @@ export default function CertificatesScreen() {
   const pending = records.filter((r) => !r.certificateUrl);
 
   return (
-    <ScreenContainer bg="#f2f2f7">
-      <View style={s.header}>
-        <Text style={s.headerTitle}>Atkritumu sertifikāti</Text>
-        <Text style={s.headerSub}>Atkritumu apsaimniekošanas atbilstības dokumenti</Text>
-      </View>
+    <ScreenContainer bg="#f2f2f7" standalone>
+      <ScreenHeader title="Sertifikāti" />
 
       {loading ? (
         <ActivityIndicator color="#16a34a" style={{ marginTop: 40 }} />

@@ -5,8 +5,8 @@ export type AppMode = 'buyer' | 'seller' | 'driver';
 
 export const MODE_HOME: Record<AppMode, string> = {
   buyer: '/(buyer)/home',
-  seller: '/(seller)/incoming',
-  driver: '/(driver)/jobs',
+  seller: '/(seller)/home',
+  driver: '/(driver)/home',
 };
 
 /** Derive the best default mode from the user's role flags. */

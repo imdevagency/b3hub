@@ -15,6 +15,7 @@ import {
   ArrowRight,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -78,7 +79,7 @@ export default function SellerHomeScreen() {
   );
 
   return (
-    <View style={s.root}>
+    <ScreenContainer topInset={0} bg="#ffffff">
       {/* ── Top bar ── */}
       <View style={[s.topBar, { paddingTop: insets.top + 12 }]}>
         <View style={s.avatar}>
@@ -174,7 +175,7 @@ export default function SellerHomeScreen() {
           })}
         </View>
       </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }
 

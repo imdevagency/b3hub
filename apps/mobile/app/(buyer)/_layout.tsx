@@ -27,11 +27,15 @@ export default function BuyerLayout() {
   // Home tab is full-screen map — no TopBar or status-bar padding
   const isHome = pathname === '/(buyer)/home' || pathname === '/home';
   const isDetailScreen =
-    pathname.includes('/rfq/') ||
-    pathname.includes('/project/') ||
-    pathname.includes('/transport-job/') ||
-    pathname.includes('/framework-contract/') ||
-    pathname.includes('/skip-order/');
+    pathname.includes('/rfq') ||
+    pathname.includes('/project') ||
+    pathname.includes('/transport-job') ||
+    pathname.includes('/framework-contract') ||
+    pathname.includes('/skip-order') ||
+    pathname.includes('/invoices') ||
+    pathname.includes('/containers') ||
+    pathname.includes('/certificates') ||
+    pathname.includes('/team');
   const hideTopBar = isHome || isDetailScreen;
 
   useEffect(() => {
@@ -95,8 +99,6 @@ export default function BuyerLayout() {
           <Tabs.Screen name="invoices" options={{ href: null }} />
           <Tabs.Screen name="containers" options={{ href: null }} />
           <Tabs.Screen name="certificates" options={{ href: null }} />
-          <Tabs.Screen name="projects" options={{ href: null }} />
-          <Tabs.Screen name="project/[id]" options={{ href: null }} />
           <Tabs.Screen name="team" options={{ href: null }} />
           <Tabs.Screen name="transport-job/[id]" options={{ href: null }} />
           <Tabs.Screen name="framework-contracts" options={{ href: null }} />

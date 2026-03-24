@@ -32,6 +32,7 @@ import { useTransportJob, ACTIVE_STATUSES } from '@/lib/use-transport-job';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { formatDate, formatDateTime } from '@/lib/format';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { TJB_STATUS } from '@/lib/materials';
 import { BaseMap, RouteLayer, useRoute } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
@@ -256,7 +257,7 @@ export default function TransportJobDetailScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
+    <ScreenContainer standalone topInset={0} bg="#f9fafb">
       {/* ── MAP SECTION ── */}
       <View style={{ height: MAP_H, backgroundColor: '#e5e7eb' }}>
         <BaseMap
@@ -515,7 +516,7 @@ export default function TransportJobDetailScreen() {
           <View style={{ height: 40 }} />
         </ScrollView>
       )}
-    </View>
+    </ScreenContainer>
   );
 }
 

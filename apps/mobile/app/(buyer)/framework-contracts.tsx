@@ -27,16 +27,25 @@ import { Calendar, ChevronRight, FileText, Package, Plus, X } from 'lucide-react
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { Text } from '@/components/ui/text';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { colors } from '@/lib/theme';
 
 const STATUS: Record<FrameworkContractStatus, { label: string; bg: string; color: string }> = {
-  DRAFT: { label: 'Melnraksts', bg: '#fef3c7', color: '#92400e' },
-  ACTIVE: { label: 'Aktīvs', bg: '#dcfce7', color: '#15803d' },
-  COMPLETED: { label: 'Pabeigts', bg: '#f0f9ff', color: '#0369a1' },
+  DRAFT: { label: 'Melnraksts', bg: '#fffbeb', color: '#b45309' }, // amber-50 / amber-700
+  ACTIVE: { label: 'Aktīvs', bg: '#ecfdf5', color: '#047857' }, // emerald-50 / emerald-700
+  COMPLETED: { label: 'Pabeigts', bg: '#f1f5f9', color: '#475569' }, // slate-100 / slate-600
   EXPIRED: { label: 'Beidzies', bg: '#f3f4f6', color: '#6b7280' },
   CANCELLED: { label: 'Atcelts', bg: '#fef2f2', color: '#b91c1c' },
 };
+
+function getProgressColor(pct: number) {
+  if (pct >= 90) return '#ef4444'; // red-500
+  if (pct >= 60) return '#f59e0b'; // amber-500
+  return '#10b981'; // emerald-500
+}
 
 export default function FrameworkContractsScreen() {
   const { token } = useAuth();
@@ -121,32 +130,26 @@ export default function FrameworkContractsScreen() {
   };
 
   return (
-    <ScreenContainer standalone topInset={0}>
-      <View style={s.pageHeader}>
-        <View style={s.pageHeaderLeft}>
-          <FileText size={20} color="#111827" />
-          <Text style={s.pageTitle}>
-            Rāmjlīgumi
-          </Text>
-        </View>
-        <Button
-          size="sm"
-          onPress={() => {
-            haptics.light();
-            setCreateVisible(true);
-          }}
-        >
-          <View style={s.addBtnContent}>
-            <Plus size={16} color="#ffffff" />
-            <Text style={s.addBtnText}>Jauns</Text>
-          </View>
-        </Button>
-      </View>
+    <ScreenContainer standalone>
+      <ScreenHeader
+        title="Projekti"
+        rightSlot={
+          <TouchableOpacity
+            hitSlop={15}
+            onPress={() => {
+              haptics.light();
+              setCreateVisible(true);
+            }}
+          >
+            <Plus size={24} color="#111827" />
+          </TouchableOpacity>
+        }
+      />
 
       {loading ? (
-        <View style={s.center}>
-          <ActivityIndicator color="#111827" size="large" />
-        </View>
+        <ScrollView contentContainerStyle={{ padding: 16 }}>
+          <SkeletonCard count={4} />
+        </ScrollView>
       ) : (
         <ScrollView
           contentContainerStyle={contracts.length === 0 ? s.emptyScroll : s.scroll}
@@ -164,17 +167,18 @@ export default function FrameworkContractsScreen() {
         >
           {contracts.length === 0 ? (
             <EmptyState
-              icon={<FileText size={32} color="#9ca3af" />}
-              title="Nav rāmjlīgumu"
-              subtitle="Izveidojiet pirmo rāmjlīgumu, lai vēlāk varētu atbrīvot darba uzdevumus ar fiksētām cenām."
+              icon={<FileText size={32} color={colors.textDisabled} />}
+              title="Nav projektu"
+              subtitle="Izveidojiet pirmo projektu, lai varētu pasūtīt materiālus un tehniku norādītajam objektam."
               action={
                 <Button
                   onPress={() => {
                     haptics.light();
                     setCreateVisible(true);
                   }}
+                  style={{ backgroundColor: '#111827' }}
                 >
-                  Izveidot pirmo līgumu
+                  Izveidot projektu
                 </Button>
               }
             />
@@ -183,11 +187,13 @@ export default function FrameworkContractsScreen() {
               {contracts.map((contract) => {
                 const status = STATUS[contract.status] ?? STATUS.ACTIVE;
                 const pct = Math.min(100, contract.totalProgressPct);
+                const isDraft = contract.status === 'DRAFT';
+                const progColor = getProgressColor(pct);
 
                 return (
                   <TouchableOpacity
                     key={contract.id}
-                    style={s.card}
+                    style={[s.card, isDraft && s.cardDraft]}
                     onPress={() => {
                       haptics.light();
                       router.push({
@@ -222,28 +228,42 @@ export default function FrameworkContractsScreen() {
                         </Text>
                       </View>
                       <View style={s.progTrack}>
-                        <View style={[s.progFill, { width: `${pct}%` as const }]} />
+                        <View
+                          style={[
+                            s.progFill,
+                            { width: `${pct}%` as const, backgroundColor: progColor },
+                          ]}
+                        />
                       </View>
                       <Text variant="muted" size="sm" style={s.progQty}>
-                        {contract.totalConsumedQty.toFixed(1)} / {contract.totalAgreedQty.toFixed(1)} vien.
+                        {contract.totalConsumedQty.toFixed(1)} /{' '}
+                        {contract.totalAgreedQty.toFixed(1)} vien.
                       </Text>
                     </View>
 
                     <View style={s.metaRow}>
-                      <View style={s.metaChip}>
-                        <Calendar size={12} color="#6b7280" />
-                        <Text variant="muted" size="sm" style={s.metaText}>
+                      <View style={[s.metaChip, isDraft && { backgroundColor: '#fffbeb' }]}>
+                        <Calendar size={12} color={isDraft ? '#b45309' : '#6b7280'} />
+                        <Text
+                          variant="muted"
+                          size="sm"
+                          style={[s.metaText, isDraft && { color: '#b45309' }]}
+                        >
                           {formatDateShort(contract.startDate)}
                           {contract.endDate ? ` – ${formatDateShort(contract.endDate)}` : ''}
                         </Text>
                       </View>
-                      <View style={s.metaChip}>
-                        <Package size={12} color="#6b7280" />
-                        <Text variant="muted" size="sm" style={s.metaText}>
+                      <View style={[s.metaChip, isDraft && { backgroundColor: '#fffbeb' }]}>
+                        <Package size={12} color={isDraft ? '#b45309' : '#6b7280'} />
+                        <Text
+                          variant="muted"
+                          size="sm"
+                          style={[s.metaText, isDraft && { color: '#b45309' }]}
+                        >
                           {contract.totalCallOffs} darba uzd.
                         </Text>
                       </View>
-                      <ChevronRight size={16} color="#9ca3af" />
+                      <ChevronRight size={16} color={isDraft ? '#fcd34d' : '#9ca3af'} />
                     </View>
                   </TouchableOpacity>
                 );
@@ -253,14 +273,19 @@ export default function FrameworkContractsScreen() {
         </ScrollView>
       )}
 
-      <Modal visible={createVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeCreate}>
+      <Modal
+        visible={createVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeCreate}
+      >
         <ScreenContainer standalone>
           <View style={s.modalHeader}>
             <Text size="xl" style={s.modalTitle}>
-              Jauns rāmjlīgums
+              Jauns projekts
             </Text>
             <TouchableOpacity onPress={closeCreate} style={s.modalCloseBtn} activeOpacity={0.7}>
-              <X size={20} color="#6b7280" />
+              <X size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
 
@@ -304,14 +329,14 @@ export default function FrameworkContractsScreen() {
               style={[s.input, s.inputMulti]}
               value={notes}
               onChangeText={setNotes}
-              placeholder="Papildinformācija par līgumu..."
+              placeholder="Papildinformācija par projektu..."
               placeholderTextColor="#9ca3af"
               multiline
               numberOfLines={3}
             />
 
             <Button onPress={handleCreate} isLoading={creating} style={s.submitBtnSpacing}>
-              Izveidot līgumu
+              Izveidot projektu
             </Button>
           </ScrollView>
         </ScreenContainer>
@@ -349,6 +374,10 @@ const s = StyleSheet.create({
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 1 },
     elevation: 1,
+  },
+  cardDraft: {
+    backgroundColor: '#fffbeb',
+    borderColor: '#fde68a',
   },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   cardTopCopy: { flex: 1, gap: 2 },

@@ -17,6 +17,7 @@ import { useAuth } from '@/lib/auth-context';
 import { ApiChatMessage } from '@/lib/api';
 import { useChat } from '@/lib/use-chat';
 import { useState } from 'react';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 
 export default function ChatScreen() {
   const { jobId, title } = useLocalSearchParams<{ jobId: string; title?: string }>();
@@ -75,7 +76,7 @@ export default function ChatScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <ScreenContainer standalone bg="#f2f2f7">
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -146,7 +147,7 @@ export default function ChatScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 

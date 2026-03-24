@@ -19,6 +19,7 @@ import {
   Bell,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -109,7 +110,7 @@ export default function DriverHomeScreen() {
   const availableCount = jobsList.length;
 
   return (
-    <View style={s.root}>
+    <ScreenContainer topInset={0} bg="#f2f2f7">
       {/* ── Map — top 42% ── */}
       <View style={s.mapWrap}>
         <BaseMap cameraRef={cameraRef} zoom={12} showsUserLocation showsMyLocationButton>
@@ -235,7 +236,7 @@ export default function DriverHomeScreen() {
           })}
         </View>
       </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }
 

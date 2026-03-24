@@ -229,7 +229,7 @@ export default function ScheduleScreen() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
+    <ScreenContainer standalone bg="#f9fafb">
       <ScreenHeader title="Grafiks" />
 
       <ScrollView
@@ -338,7 +338,7 @@ export default function ScheduleScreen() {
           </>
         )}
       </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }
 

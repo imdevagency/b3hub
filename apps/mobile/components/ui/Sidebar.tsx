@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  Dimensions,
   Modal,
   ScrollView,
   StyleSheet,
@@ -13,29 +12,22 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
-  Bell,
   Box,
   CalendarDays,
-  ChevronRight,
   FileText,
-  FolderOpen,
   LogOut,
-  LayoutGrid,
   MessageCircle,
   Receipt,
   Settings,
   ShieldCheck,
   Trash2,
   Truck,
-  User,
   Users,
-  Wallet,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { haptics } from '@/lib/haptics';
 
 const SIDEBAR_WIDTH = 300;
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type Role = 'seller' | 'buyer' | 'driver';
 
@@ -63,14 +55,9 @@ function buildItems(role: Role, isCompany: boolean): MenuItem[] {
 
   if (role === 'seller') {
     items.push({
-      icon: (c) => <LayoutGrid size={20} color={c} />,
-      label: 'Katalogs',
-      route: '/(seller)/catalog',
-    });
-    items.push({
-      icon: (c) => <Wallet size={20} color={c} />,
-      label: 'Peļņa',
-      route: '/(seller)/earnings',
+      icon: (c) => <FileText size={20} color={c} />,
+      label: 'Piedāvājumi',
+      route: '/(seller)/quotes',
     });
   }
 
@@ -92,11 +79,6 @@ function buildItems(role: Role, isCompany: boolean): MenuItem[] {
     });
   }
   if (role === 'buyer') {
-    items.push({
-      icon: (c) => <FolderOpen size={20} color={c} />,
-      label: 'Projekti',
-      route: '/(buyer)/projects',
-    });
     if (isCompany) {
       items.push({
         icon: (c) => <Users size={20} color={c} />,
@@ -106,7 +88,7 @@ function buildItems(role: Role, isCompany: boolean): MenuItem[] {
     }
     items.push({
       icon: (c) => <FileText size={20} color={c} />,
-      label: 'Rāmjlīgumi',
+      label: 'Projekti',
       route: '/(buyer)/framework-contracts',
     });
     items.push({
@@ -130,16 +112,6 @@ function buildItems(role: Role, isCompany: boolean): MenuItem[] {
     icon: (c) => <MessageCircle size={20} color={c} />,
     label: 'Ziņojumi',
     route: '/messages',
-  });
-  items.push({
-    icon: (c) => <Bell size={20} color={c} />,
-    label: 'Paziņojumi',
-    route: '/notifications',
-  });
-  items.push({
-    icon: (c) => <User size={20} color={c} />,
-    label: 'Profils',
-    route: `/(${role})/profile` as string,
   });
   items.push({
     icon: (c) => <Settings size={20} color={c} />,

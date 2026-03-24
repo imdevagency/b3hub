@@ -16,6 +16,7 @@ import {
   Alert,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import {
@@ -399,13 +400,8 @@ export default function TeamScreen() {
   // Team management is only available to company accounts.
   if (!user?.isCompany) {
     return (
-      <ScreenContainer standalone topInset={0}>
-        <View style={styles.pageHeader}>
-          <View style={styles.pageHeaderLeft}>
-            <Users size={20} color="#111827" />
-            <Text style={styles.pageTitle}>Komanda</Text>
-          </View>
-        </View>
+      <ScreenContainer standalone>
+        <ScreenHeader title="Komanda" />
         <EmptyState
           icon={<Building2 size={40} color="#9ca3af" strokeWidth={1.4} />}
           title="Tikai uzņēmuma kontiem"
@@ -477,26 +473,24 @@ export default function TeamScreen() {
   }
 
   return (
-    <ScreenContainer standalone topInset={0}>
-      {/* header */}
-      <View style={styles.pageHeader}>
-        <View style={styles.pageHeaderLeft}>
-          <Users size={20} color="#111827" />
-          <Text style={styles.pageTitle}>Komanda</Text>
-        </View>
-        {canManage && (
-          <TouchableOpacity
-            style={styles.inviteBtn}
-            onPress={() => {
-              haptics.light();
-              setShowInvite(true);
-            }}
-          >
-            <UserPlus size={15} color="#fff" />
-            <Text style={styles.inviteBtnText}>Uzaicināt</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+    <ScreenContainer standalone>
+      <ScreenHeader
+        title="Komanda"
+        rightSlot={
+          canManage ? (
+            <TouchableOpacity
+              style={styles.inviteBtn}
+              onPress={() => {
+                haptics.light();
+                setShowInvite(true);
+              }}
+            >
+              <UserPlus size={15} color="#fff" />
+              <Text style={styles.inviteBtnText}>Uzaicināt</Text>
+            </TouchableOpacity>
+          ) : undefined
+        }
+      />
 
       {loading ? (
         <View style={styles.center}>

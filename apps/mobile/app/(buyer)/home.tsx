@@ -16,6 +16,7 @@ import {
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { Sidebar } from '@/components/ui/Sidebar';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 
 // ── Status maps ───────────────────────────────────────────────────────────
 
@@ -255,7 +256,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={s.root}>
+    <ScreenContainer topInset={0} bg="#ffffff">
       {/* ─── Top bar ─────────────────────────────────────── */}
       <View style={[s.topBar, { paddingTop: insets.top + 14 }]}>
         <TouchableOpacity
@@ -446,7 +447,7 @@ export default function HomeScreen() {
         role="buyer"
         accentColor="#111827"
       />
-    </View>
+    </ScreenContainer>
   );
 }
 

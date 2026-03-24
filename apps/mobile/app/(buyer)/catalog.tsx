@@ -12,8 +12,9 @@ import {
   Box,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { haptics } from '@/lib/haptics';
 import type { MaterialCategory } from '@/lib/api';
-import { CATEGORY_LABELS, CATEGORY_DESCRIPTIONS, MATERIAL_CATEGORIES } from '@/lib/materials';
+import { CATEGORY_LABELS, MATERIAL_CATEGORIES } from '@/lib/materials';
 
 // ── Category metadata ──────────────────────────────────────────────────────
 
@@ -40,25 +41,30 @@ function CategoryCard({ category, onPress }: { category: MaterialCategory; onPre
   const isRecycled = category.startsWith('RECYCLED');
 
   return (
-    <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.82}>
+    <TouchableOpacity
+      style={s.card}
+      onPress={() => {
+        haptics.light();
+        onPress();
+      }}
+      activeOpacity={0.7}
+    >
       {/* Icon square */}
       <View style={[s.iconWrap, { backgroundColor: meta.bg }]}>
-        <Icon size={28} color={meta.accent} strokeWidth={1.5} />
+        <Icon size={24} color={meta.accent} strokeWidth={1.8} />
       </View>
 
-      {/* Recycled badge */}
+      {/* Recycled indicator - Green leaf top right */}
       {isRecycled && (
         <View style={s.recycleBadge}>
-          <Leaf size={10} color="#16a34a" strokeWidth={2.5} />
-          <Text style={s.recycleBadgeText}>{'RECIKL.'}</Text>
+          <Leaf size={14} color="#16a34a" fill="#16a34a" />
         </View>
       )}
 
       {/* Text */}
       <View style={s.cardText}>
-        <Text style={s.cardName}>{CATEGORY_LABELS[category]}</Text>
-        <Text style={s.cardDesc} numberOfLines={2}>
-          {CATEGORY_DESCRIPTIONS[category]}
+        <Text style={s.cardName} numberOfLines={2}>
+          {CATEGORY_LABELS[category]}
         </Text>
       </View>
     </TouchableOpacity>
@@ -81,9 +87,7 @@ export default function CatalogScreen() {
     <ScreenContainer bg="#f9fafb">
       {/* Header */}
       <View style={s.header}>
-        <Text style={s.headerEyebrow}>{'Materiālu katalogs'}</Text>
-        <Text style={s.headerTitle}>{'Izvēlieties kategoriju'}</Text>
-        <Text style={s.headerSub}>{'Atlasiet materiālu veidu, lai saņemtu cenas'}</Text>
+        <Text style={s.headerTitle}>Materiāli</Text>
       </View>
 
       {/* Category grid */}
@@ -100,30 +104,15 @@ export default function CatalogScreen() {
 
 const s = StyleSheet.create({
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 20,
-  },
-  headerEyebrow: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#9ca3af',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginBottom: 4,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
   },
   headerTitle: {
-    fontSize: 26,
-    fontWeight: '800',
+    fontSize: 28,
+    fontWeight: '700',
     color: '#111827',
     letterSpacing: -0.5,
-    marginBottom: 4,
-  },
-  headerSub: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontWeight: '400',
-    lineHeight: 20,
   },
 
   grid: {
@@ -135,58 +124,41 @@ const s = StyleSheet.create({
   },
 
   card: {
-    width: '47.5%',
+    width: '48%', // Fluid 2-col grid
     backgroundColor: '#ffffff',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    padding: 18,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+    padding: 16,
     position: 'relative',
-    minHeight: 160,
+    height: 124,
+    justifyContent: 'space-between',
   },
 
   iconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
   },
 
   recycleBadge: {
     position: 'absolute',
-    top: 14,
-    right: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: 'rgba(22,163,74,0.1)',
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  recycleBadgeText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#15803d',
-    letterSpacing: 0.4,
+    top: 16,
+    right: 16,
   },
 
   cardText: {
-    marginTop: 'auto',
-    gap: 4,
+    marginTop: 8,
   },
   cardName: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '600',
     color: '#111827',
-    letterSpacing: -0.2,
-  },
-  cardDesc: {
-    fontSize: 12,
-    color: '#6b7280',
-    lineHeight: 17,
-    fontWeight: '400',
+    letterSpacing: -0.3,
   },
 });
