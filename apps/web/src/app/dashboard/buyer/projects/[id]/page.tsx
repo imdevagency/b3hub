@@ -244,7 +244,7 @@ function ReleaseCallOffDialog({
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="sm:max-w-md w-[90vw] sm:w-100 w-[90vw] sm:w-100">
+      <SheetContent className="sm:max-w-md w-[90vw] sm:w-100">
         <SheetHeader>
           <SheetTitle>Atsaukšanas darba uzdevums</SheetTitle>
         </SheetHeader>

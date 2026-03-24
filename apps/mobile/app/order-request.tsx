@@ -40,18 +40,9 @@ import type {
 } from '@/lib/api';
 import { sa } from '@/components/order/order-request-styles';
 import { FlowProgress, STEP_ORDER } from '@/components/order/FlowProgress';
-import type {
-  LatLng,
-  Step,
-  MaterialCategoryAll,
-  GlobalMaterial,
-} from '@/components/order/order-request-types';
-import {
-  CATEGORIES,
-  GLOBAL_MATERIALS,
-  FRACTIONS,
-  VEHICLES,
-} from '@/components/order/order-request-types';
+import type { LatLng, Step, MaterialCategoryAll } from '@/components/order/order-request-types';
+import { CATEGORIES, FRACTIONS, VEHICLES } from '@/components/order/order-request-types';
+import type { ApiMaterial } from '@/lib/api';
 import {
   ChevronLeft,
   MapPin,
@@ -133,8 +124,10 @@ export default function OrderRequestScreen() {
   const geoSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Material selection ────────────────────────────────────────
-  const [selectedMaterial, setSelectedMaterial] = useState<GlobalMaterial | null>(null);
-  const [materials, setMaterials] = useState<GlobalMaterial[]>(GLOBAL_MATERIALS);
+  const [selectedMaterial, setSelectedMaterial] = useState<ApiMaterial | null>(null);
+  const [allMaterials, setAllMaterials] = useState<ApiMaterial[]>([]);
+  const [materials, setMaterials] = useState<ApiMaterial[]>([]);
+  const [materialsLoading, setMaterialsLoading] = useState(false);
   const [matSearch, setMatSearch] = useState('');
   const [matCat, setMatCat] = useState<MaterialCategoryAll>('ALL');
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -189,39 +182,58 @@ export default function OrderRequestScreen() {
     if (step === 'map') setShowLocationPicker(true);
   }, [step]);
 
-  // ── Filter global material catalogue ─────────────────────────
-  const filterMaterials = useCallback((q: string, cat: MaterialCategoryAll) => {
-    let list = GLOBAL_MATERIALS;
-    if (cat !== 'ALL') list = list.filter((m) => m.category === cat);
-    if (q.trim()) {
-      const lq = q.trim().toLowerCase();
-      list = list.filter(
-        (m) => m.name.toLowerCase().includes(lq) || m.description.toLowerCase().includes(lq),
-      );
-    }
-    setMaterials(list);
-  }, []);
+  // ── Fetch + filter materials ──────────────────────────────────
+  const filterMaterials = useCallback(
+    (q: string, cat: MaterialCategoryAll, source: ApiMaterial[]) => {
+      let list = source;
+      if (cat !== 'ALL') list = list.filter((m) => m.category === cat);
+      if (q.trim()) {
+        const lq = q.trim().toLowerCase();
+        list = list.filter(
+          (m) =>
+            m.name.toLowerCase().includes(lq) || (m.description ?? '').toLowerCase().includes(lq),
+        );
+      }
+      setMaterials(list);
+    },
+    [],
+  );
 
   useEffect(() => {
-    if (step === 'material') {
-      setMatSearch('');
-      setMatCat('ALL');
-      setMaterials(GLOBAL_MATERIALS);
+    if (step !== 'material') return;
+    setMatSearch('');
+    setMatCat('ALL');
+    if (allMaterials.length > 0) {
+      setMaterials(allMaterials);
+      return;
     }
+    if (!token) return;
+    setMaterialsLoading(true);
+    api.materials
+      .getAll(token)
+      .then((data) => {
+        setAllMaterials(data);
+        setMaterials(data);
+      })
+      .catch(() => {
+        /* keep empty */
+      })
+      .finally(() => setMaterialsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
   const onMatSearch = (text: string) => {
     setMatSearch(text);
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => filterMaterials(text, matCat), 150);
+    searchTimer.current = setTimeout(() => filterMaterials(text, matCat, allMaterials), 150);
   };
 
   const onMatCategory = (cat: MaterialCategoryAll) => {
     setMatCat(cat);
-    filterMaterials(matSearch, cat);
+    filterMaterials(matSearch, cat, allMaterials);
   };
 
-  const onSelectMaterial = (mat: GlobalMaterial) => {
+  const onSelectMaterial = (mat: ApiMaterial) => {
     setSelectedMaterial(mat);
     const fl = FRACTIONS[mat.category?.toUpperCase() ?? 'DEFAULT'] ?? FRACTIONS.DEFAULT;
     setFraction(fl[0] ?? '0/45');
@@ -985,6 +997,11 @@ export default function OrderRequestScreen() {
   const renderMaterial = () => (
     <View style={{ flex: 1 }}>
       {/* Search */}
+      {materialsLoading && (
+        <View style={{ paddingVertical: 12, alignItems: 'center' }}>
+          <ActivityIndicator color="#111827" />
+        </View>
+      )}
       <View style={sa.matSearchBar}>
         <Search size={15} color="#9ca3af" />
         <TextInput
@@ -999,7 +1016,7 @@ export default function OrderRequestScreen() {
           <TouchableOpacity
             onPress={() => {
               setMatSearch('');
-              filterMaterials('', matCat);
+              filterMaterials('', matCat, allMaterials);
             }}
             hitSlop={8}
           >

@@ -19,9 +19,20 @@ config.resolver.nodeModulesPaths = [
 // originates from inside another node_modules package.
 const rootHoisted = ['hoist-non-react-statics', 'memoize-one'];
 
+// Local workspace packages — resolve directly to their source tree so
+// Metro doesn't have to follow the npm symlink.
+const workspacePackages = {
+  '@b3hub/shared': path.resolve(monorepoRoot, 'packages/shared/src/index.ts'),
+};
+
 // Guarantee a single React instance — intercepts ALL require('react') calls
 // including those originating from inside node_modules (e.g. react-native)
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+  // Resolve local workspace packages directly to their source
+  if (workspacePackages[moduleName]) {
+    return { filePath: workspacePackages[moduleName], type: 'sourceFile' };
+  }
+
   // Resolve @/ path aliases to the mobile project root
   if (moduleName.startsWith('@/')) {
     return context.resolveRequest(

@@ -236,7 +236,7 @@ export function Sidebar({ visible, onClose, role, accentColor }: SidebarProps) {
       {/* Panel */}
       <Animated.View style={[styles.panel, { transform: [{ translateX }] }]}>
         {/* Banner */}
-        <View style={[styles.banner, { backgroundColor: accentColor }]}>
+        <View style={styles.banner}>
           <View style={styles.avatar}>
             <Text style={styles.initials}>{initials || '?'}</Text>
           </View>
@@ -251,13 +251,12 @@ export function Sidebar({ visible, onClose, role, accentColor }: SidebarProps) {
           {items.map((item, idx) => (
             <TouchableOpacity
               key={idx}
-              style={[styles.row, idx < items.length - 1 && styles.rowBorder]}
+              style={styles.row}
               onPress={() => navigate(item.route)}
               activeOpacity={0.7}
             >
-              <View style={styles.rowIcon}>{item.icon('#6b7280')}</View>
+              <View style={styles.rowIcon}>{item.icon('#4b5563')}</View>
               <Text style={styles.rowLabel}>{item.label}</Text>
-              <ChevronRight size={16} color="#d1d5db" />
             </TouchableOpacity>
           ))}
 
@@ -267,9 +266,9 @@ export function Sidebar({ visible, onClose, role, accentColor }: SidebarProps) {
           {/* Logout */}
           <TouchableOpacity style={styles.row} onPress={handleLogout} activeOpacity={0.7}>
             <View style={styles.rowIcon}>
-              <LogOut size={20} color="#ef4444" />
+              <LogOut size={20} color="#4b5563" />
             </View>
-            <Text style={[styles.rowLabel, styles.logoutLabel]}>Iziet</Text>
+            <Text style={styles.rowLabel}>Iziet</Text>
           </TouchableOpacity>
         </ScrollView>
 
@@ -303,76 +302,74 @@ const styles = StyleSheet.create({
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    paddingHorizontal: 20,
-    paddingTop: 60,
+    gap: 16,
+    paddingHorizontal: 24,
+    paddingTop: 72,
     paddingBottom: 24,
+    backgroundColor: '#ffffff',
   },
   avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center',
   },
   initials: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#334155',
   },
   bannerText: {
     flex: 1,
   },
   bannerName: {
-    fontSize: 17,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#0f172a',
+    letterSpacing: -0.3,
   },
   bannerRole: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 3,
+    fontSize: 13,
+    color: '#64748b',
+    marginTop: 2,
+    fontWeight: '500',
   },
   menu: {
     flex: 1,
-    paddingTop: 8,
+    paddingTop: 12,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-  },
-  rowBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f3f4f6',
+    paddingHorizontal: 24,
+    paddingVertical: 18,
   },
   rowIcon: {
-    width: 32,
+    width: 36,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   rowLabel: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 16,
     color: '#111827',
-    fontWeight: '500',
-    marginLeft: 8,
+    fontWeight: '600',
+    marginLeft: 6,
   },
   logoutLabel: {
     color: '#ef4444',
   },
   divider: {
     height: 1,
-    backgroundColor: '#f3f4f6',
-    marginHorizontal: 20,
-    marginVertical: 8,
+    backgroundColor: '#f1f5f9',
+    marginHorizontal: 24,
+    marginVertical: 16,
   },
   footer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#f3f4f6',
+    paddingHorizontal: 24,
+    paddingVertical: 20,
   },
   footerText: {
     fontSize: 12,

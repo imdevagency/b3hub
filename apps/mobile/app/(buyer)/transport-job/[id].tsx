@@ -27,6 +27,7 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
+import { CATEGORY_LABELS } from '@/lib/materials';
 import { useTransportJob, ACTIVE_STATUSES } from '@/lib/use-transport-job';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -67,10 +68,10 @@ const CARGO_LABEL: Record<string, string> = {
   WASTE_COLLECTION: 'Atkritumu izvešana',
   MATERIAL_DELIVERY: 'Materiālu piegāde',
   GENERAL_FREIGHT: 'Vispārīgā krava',
-  SAND: 'Smiltis',
-  GRAVEL: 'Grants / Šķembas',
-  CONCRETE: 'Betons',
-  SOIL: 'Augsne',
+  SAND: CATEGORY_LABELS.SAND,
+  GRAVEL: CATEGORY_LABELS.GRAVEL,
+  CONCRETE: CATEGORY_LABELS.CONCRETE,
+  SOIL: CATEGORY_LABELS.SOIL,
   WOOD: 'Koks',
   METAL: 'Metāls',
   MIXED: 'Jaukts',

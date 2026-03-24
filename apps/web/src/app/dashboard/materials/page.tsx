@@ -38,17 +38,27 @@ import {
 // ── Constants ─────────────────────────────────────────────────────────────────
 import { Building2, Box, Mountain, Grid3X3, Waves, Leaf, Recycle, Map, Wind } from 'lucide-react';
 
+import { CATEGORY_LABELS } from '@b3hub/shared';
+
 const CATEGORIES: { value: MaterialCategory; label: string; icon: React.ReactNode }[] = [
-  { value: 'SAND', label: 'Smiltis', icon: <Waves className="w-4 h-4" /> },
-  { value: 'GRAVEL', label: 'Grants', icon: <Grid3X3 className="w-4 h-4" /> },
-  { value: 'STONE', label: 'Akmens', icon: <Mountain className="w-4 h-4" /> },
-  { value: 'CONCRETE', label: 'Betons', icon: <Box className="w-4 h-4" /> },
-  { value: 'SOIL', label: 'Augsne', icon: <Leaf className="w-4 h-4" /> },
-  { value: 'RECYCLED_CONCRETE', label: 'Recikl. Betons', icon: <Recycle className="w-4 h-4" /> },
-  { value: 'RECYCLED_SOIL', label: 'Recikl. Augsne', icon: <Recycle className="w-4 h-4" /> },
-  { value: 'ASPHALT', label: 'Asfalts', icon: <Map className="w-4 h-4" /> },
-  { value: 'CLAY', label: 'Māls', icon: <Wind className="w-4 h-4" /> },
-  { value: 'OTHER', label: 'Cits', icon: <Box className="w-4 h-4" /> },
+  { value: 'SAND', label: CATEGORY_LABELS.SAND, icon: <Waves className="w-4 h-4" /> },
+  { value: 'GRAVEL', label: CATEGORY_LABELS.GRAVEL, icon: <Grid3X3 className="w-4 h-4" /> },
+  { value: 'STONE', label: CATEGORY_LABELS.STONE, icon: <Mountain className="w-4 h-4" /> },
+  { value: 'CONCRETE', label: CATEGORY_LABELS.CONCRETE, icon: <Box className="w-4 h-4" /> },
+  { value: 'SOIL', label: CATEGORY_LABELS.SOIL, icon: <Leaf className="w-4 h-4" /> },
+  {
+    value: 'RECYCLED_CONCRETE',
+    label: CATEGORY_LABELS.RECYCLED_CONCRETE,
+    icon: <Recycle className="w-4 h-4" />,
+  },
+  {
+    value: 'RECYCLED_SOIL',
+    label: CATEGORY_LABELS.RECYCLED_SOIL,
+    icon: <Recycle className="w-4 h-4" />,
+  },
+  { value: 'ASPHALT', label: CATEGORY_LABELS.ASPHALT, icon: <Map className="w-4 h-4" /> },
+  { value: 'CLAY', label: CATEGORY_LABELS.CLAY, icon: <Wind className="w-4 h-4" /> },
+  { value: 'OTHER', label: CATEGORY_LABELS.OTHER, icon: <Box className="w-4 h-4" /> },
 ];
 
 const UNITS: { value: MaterialUnit; label: string }[] = [

@@ -7,30 +7,20 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { getMaterials, type ApiMaterial, type MaterialCategory, type MaterialUnit } from '@/lib/api';
+import {
+  getMaterials,
+  type ApiMaterial,
+  type MaterialCategory,
+  type MaterialUnit,
+} from '@/lib/api';
 import { Leaf, Loader2, Minus, Package, Plus, Search, Trash2, X } from 'lucide-react';
+import { CATEGORY_LABELS, UNIT_SHORT } from '@b3hub/shared';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const CATEGORY_LABEL: Record<MaterialCategory, string> = {
-  SAND: 'Smiltis',
-  GRAVEL: 'Grants',
-  STONE: 'Akmens',
-  CONCRETE: 'Betons',
-  SOIL: 'Augsne',
-  RECYCLED_CONCRETE: 'Recikl. Betons',
-  RECYCLED_SOIL: 'Recikl. Augsne',
-  ASPHALT: 'Asfalts',
-  CLAY: 'Māls',
-  OTHER: 'Cits',
-};
+const CATEGORY_LABEL = CATEGORY_LABELS;
 
-const UNIT_LABEL: Record<MaterialUnit, string> = {
-  TONNE: 't',
-  M3: 'm³',
-  PIECE: 'gb.',
-  LOAD: 'krāvums',
-};
+const UNIT_LABEL = UNIT_SHORT;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -149,9 +139,7 @@ export function MatStep1What({ initialMaterialId, items, onItemsChange, onNext }
             <span className="text-xs font-semibold text-primary uppercase tracking-wide">
               Pasūtījumā
             </span>
-            <span className="text-xs font-bold text-primary">
-              €{basketTotal.toFixed(2)} + PVN
-            </span>
+            <span className="text-xs font-bold text-primary">€{basketTotal.toFixed(2)} + PVN</span>
           </div>
           <div className="divide-y">
             {items.map((item) => (
@@ -215,9 +203,7 @@ export function MatStep1What({ initialMaterialId, items, onItemsChange, onNext }
           <Loader2 className="size-6 animate-spin text-muted-foreground" />
         </div>
       ) : materials.length === 0 ? (
-        <div className="py-8 text-center text-sm text-muted-foreground">
-          Nav atrastu materiālu
-        </div>
+        <div className="py-8 text-center text-sm text-muted-foreground">Nav atrastu materiālu</div>
       ) : (
         <div className="space-y-2">
           {materials.map((m) => {

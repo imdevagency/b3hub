@@ -18,7 +18,7 @@ import {
   Truck,
   Star,
   Info,
-  Archive
+  Archive,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
@@ -33,28 +33,12 @@ import {
   type CreateQuoteRequestInput,
 } from '@/lib/api';
 import { fmtDate } from '@/lib/format';
+import { CATEGORY_LABELS, UNIT_SHORT } from '@b3hub/shared';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-const CATEGORY_LV: Record<MaterialCategory, string> = {
-  SAND: 'Smiltis',
-  GRAVEL: 'Grants',
-  STONE: 'Akmens',
-  CONCRETE: 'Betons',
-  SOIL: 'Augsne',
-  RECYCLED_CONCRETE: 'Pārstrādāts betons',
-  RECYCLED_SOIL: 'Pārstrādāta augsne',
-  ASPHALT: 'Asfalt',
-  CLAY: 'Māls',
-  OTHER: 'Cits',
-};
-
-const UNIT_LV: Record<MaterialUnit, string> = {
-  TONNE: 't',
-  M3: 'm³',
-  PIECE: 'gb.',
-  LOAD: 'krava',
-};
+const CATEGORY_LV = CATEGORY_LABELS;
+const UNIT_LV = UNIT_SHORT;
 
 const STATUS_CFG: Record<
   string,
@@ -172,7 +156,9 @@ function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
           {/* Category + name */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Materiāla Kat.</label>
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                Materiāla Kat.
+              </label>
               <select
                 value={form.materialCategory}
                 onChange={(e) => set('materialCategory', e.target.value as MaterialCategory)}
@@ -201,7 +187,9 @@ function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
           {/* Quantity + unit */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Daudzums</label>
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                Daudzums
+              </label>
               <input
                 type="number"
                 min={0.1}
@@ -212,7 +200,9 @@ function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Mērvienība</label>
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                Mērvienība
+              </label>
               <select
                 value={form.unit}
                 onChange={(e) => set('unit', e.target.value as MaterialUnit)}
@@ -229,40 +219,44 @@ function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
 
           {/* Delivery */}
           <div className="relative rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="absolute left-[27px] top-10 bottom-9 w-0.5 bg-slate-100"></div>
-            
+            <div className="absolute left-6.75 top-10 bottom-9 w-0.5 bg-slate-100"></div>
+
             <div className="relative flex items-start gap-3 mb-4">
-               <div className="mt-2.5 h-3 w-3 rounded-full bg-slate-800 shrink-0 relative z-10 box-content border-4 border-white shadow-sm" />
-               <div className="flex-1 space-y-1.5">
-                 <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Pilsēta/Novads</label>
-                 <input
-                   value={form.deliveryCity}
-                   onChange={(e) => set('deliveryCity', e.target.value)}
-                   placeholder="Rīga"
-                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black transition-colors"
-                 />
-               </div>
+              <div className="mt-2.5 h-3 w-3 rounded-full bg-slate-800 shrink-0 relative z-10 box-content border-4 border-white shadow-sm" />
+              <div className="flex-1 space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  Pilsēta/Novads
+                </label>
+                <input
+                  value={form.deliveryCity}
+                  onChange={(e) => set('deliveryCity', e.target.value)}
+                  placeholder="Rīga"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black transition-colors"
+                />
+              </div>
             </div>
 
             <div className="relative flex items-start gap-3">
-               <div className="mt-2.5 h-3 w-3 rounded-sm bg-black shrink-0 relative z-10 box-content border-4 border-white shadow-sm" />
-               <div className="flex-1 space-y-1.5">
-                 <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                   Precīza Adrese
-                 </label>
-                 <input
-                   value={form.deliveryAddress}
-                   onChange={(e) => set('deliveryAddress', e.target.value)}
-                   placeholder="Brīvības iela 1"
-                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black transition-colors"
-                 />
-               </div>
+              <div className="mt-2.5 h-3 w-3 rounded-sm bg-black shrink-0 relative z-10 box-content border-4 border-white shadow-sm" />
+              <div className="flex-1 space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  Precīza Adrese
+                </label>
+                <input
+                  value={form.deliveryAddress}
+                  onChange={(e) => set('deliveryAddress', e.target.value)}
+                  placeholder="Brīvības iela 1"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black transition-colors"
+                />
+              </div>
             </div>
           </div>
 
           {/* Notes */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider text-muted-foreground flex gap-1 items-center"><Info className="h-3 w-3"/> Komentāri piegādātājam (Neobligāti)</label>
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex gap-1 items-center">
+              <Info className="h-3 w-3" /> Komentāri piegādātājam (Neobligāti)
+            </label>
             <textarea
               rows={2}
               value={form.notes}
@@ -272,13 +266,24 @@ function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
             />
           </div>
 
-          {error && <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700 font-medium">{error}</div>}
+          {error && (
+            <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700 font-medium">{error}</div>
+          )}
 
           <div className="flex gap-3 pt-2">
-            <Button variant="outline" type="button" onClick={onClose} className="w-1/3 rounded-xl h-12 text-sm font-bold border-slate-200 bg-white hover:bg-slate-50">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={onClose}
+              className="w-1/3 rounded-xl h-12 text-sm font-bold border-slate-200 bg-white hover:bg-slate-50"
+            >
               Atcelt
             </Button>
-            <Button type="submit" disabled={saving} className="w-2/3 rounded-xl h-12 text-sm font-bold bg-black text-white hover:bg-slate-800 shadow-md">
+            <Button
+              type="submit"
+              disabled={saving}
+              className="w-2/3 rounded-xl h-12 text-sm font-bold bg-black text-white hover:bg-slate-800 shadow-md"
+            >
               {saving ? 'Sūta...' : 'Pieprasīt Cenas'}
             </Button>
           </div>
@@ -308,55 +313,73 @@ function RequestCard({ request, onAccept }: RequestCardProps) {
   };
 
   return (
-    <div className={`bg-white rounded-3xl border ${expanded ? 'border-slate-300 shadow-md' : 'border-slate-100 shadow-sm'} overflow-hidden transition-all hover:shadow-md hover:border-slate-200`}>
+    <div
+      className={`bg-white rounded-3xl border ${expanded ? 'border-slate-300 shadow-md' : 'border-slate-100 shadow-sm'} overflow-hidden transition-all hover:shadow-md hover:border-slate-200`}
+    >
       {/* Header (Clickable) */}
       <div
         className="p-5 cursor-pointer flex flex-col gap-4 relative"
         onClick={() => setExpanded((e) => !e)}
       >
         <div className="flex items-start justify-between gap-4">
-           {/* Material Info */}
-           <div className="flex items-start gap-3 flex-1 min-w-0">
-              <div className="h-12 w-12 shrink-0 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-700 border border-slate-100">
-                 <Package className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                 <p className="text-base font-bold text-slate-900 truncate">{request.materialName || CATEGORY_LV[request.materialCategory]}</p>
-                 <p className="text-sm font-medium text-slate-500 mt-0.5">{request.quantity} <span className="text-xs uppercase">{UNIT_LV[request.unit]}</span> • {CATEGORY_LV[request.materialCategory]}</p>
-              </div>
-           </div>
-           
-           {/* Badge */}
-           <div className="shrink-0 text-right">
-              <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold border ${cfg.bg} ${cfg.color}`}>
-                 <Icon className="h-3 w-3" /> {cfg.label}
-              </span>
-           </div>
+          {/* Material Info */}
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className="h-12 w-12 shrink-0 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-700 border border-slate-100">
+              <Package className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-base font-bold text-slate-900 truncate">
+                {request.materialName || CATEGORY_LV[request.materialCategory]}
+              </p>
+              <p className="text-sm font-medium text-slate-500 mt-0.5">
+                {request.quantity}{' '}
+                <span className="text-xs uppercase">{UNIT_LV[request.unit]}</span> •{' '}
+                {CATEGORY_LV[request.materialCategory]}
+              </p>
+            </div>
+          </div>
+
+          {/* Badge */}
+          <div className="shrink-0 text-right">
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold border ${cfg.bg} ${cfg.color}`}
+            >
+              <Icon className="h-3 w-3" /> {cfg.label}
+            </span>
+          </div>
         </div>
 
         {/* Location / Route row */}
         <div className="flex items-center gap-3 bg-slate-50/80 rounded-xl p-3 border border-slate-100/50">
-           <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-           <p className="text-sm text-slate-800 font-semibold truncate leading-none">{request.deliveryCity}</p>
-           {/* separator dot */}
-           <div className="h-1 w-1 rounded-full bg-slate-300 mx-1 shrink-0"></div>
-           <p className="text-sm text-slate-500 truncate leading-none">{request.deliveryAddress}</p>
+          <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
+          <p className="text-sm text-slate-800 font-semibold truncate leading-none">
+            {request.deliveryCity}
+          </p>
+          {/* separator dot */}
+          <div className="h-1 w-1 rounded-full bg-slate-300 mx-1 shrink-0"></div>
+          <p className="text-sm text-slate-500 truncate leading-none">{request.deliveryAddress}</p>
         </div>
 
         {/* Meta info */}
         <div className="flex items-center justify-between mt-1">
-           <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-slate-400">ID: {request.requestNumber}</span>
-           <div className="flex items-center gap-3">
-             {request.responses.length > 0 && (
-               <span className="text-xs font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
-                 {request.responses.length} piedāvājum{request.responses.length === 1 ? 's' : 'i'}
-               </span>
-             )}
-             <span className="text-xs font-medium text-slate-400">{fmtDate(request.createdAt)}</span>
-             <div className="h-6 w-6 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100">
-               {expanded ? <ChevronUp className="h-3 w-3 text-slate-600" /> : <ChevronDown className="h-3 w-3 text-slate-600" />}
-             </div>
-           </div>
+          <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-slate-400">
+            ID: {request.requestNumber}
+          </span>
+          <div className="flex items-center gap-3">
+            {request.responses.length > 0 && (
+              <span className="text-xs font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
+                {request.responses.length} piedāvājum{request.responses.length === 1 ? 's' : 'i'}
+              </span>
+            )}
+            <span className="text-xs font-medium text-slate-400">{fmtDate(request.createdAt)}</span>
+            <div className="h-6 w-6 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100">
+              {expanded ? (
+                <ChevronUp className="h-3 w-3 text-slate-600" />
+              ) : (
+                <ChevronDown className="h-3 w-3 text-slate-600" />
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -365,7 +388,9 @@ function RequestCard({ request, onAccept }: RequestCardProps) {
         <div className="border-t border-slate-100 bg-slate-50/50">
           {request.notes && (
             <div className="px-5 pt-4 pb-0 text-sm text-slate-600">
-              <span className="font-semibold text-xs uppercase tracking-wider text-slate-400 block mb-1">Piezīmes</span>
+              <span className="font-semibold text-xs uppercase tracking-wider text-slate-400 block mb-1">
+                Piezīmes
+              </span>
               &quot;{request.notes}&quot;
             </div>
           )}
@@ -381,20 +406,20 @@ function RequestCard({ request, onAccept }: RequestCardProps) {
               </div>
             ) : (
               request.responses.map((resp) => (
-                <div 
-                  key={resp.id} 
+                <div
+                  key={resp.id}
                   className={`p-4 rounded-2xl border transition-all ${
-                    resp.status === 'ACCEPTED' 
-                      ? 'border-emerald-500 bg-emerald-50 shadow-sm relative overflow-hidden' 
+                    resp.status === 'ACCEPTED'
+                      ? 'border-emerald-500 bg-emerald-50 shadow-sm relative overflow-hidden'
                       : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
                   }`}
                 >
                   {resp.status === 'ACCEPTED' && (
                     <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-bl-xl shrink-0 z-10 flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3"/> Izvēlēts
+                      <CheckCircle2 className="h-3 w-3" /> Izvēlēts
                     </div>
                   )}
-                  
+
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 bg-slate-100 border border-slate-200 rounded-full flex items-center justify-center shrink-0">
@@ -402,35 +427,46 @@ function RequestCard({ request, onAccept }: RequestCardProps) {
                       </div>
                       <div>
                         <p className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                          {resp.supplier.name} 
+                          {resp.supplier.name}
                           {resp.supplier.rating && (
-                            <span className="flex items-center gap-0.5 text-xs bg-slate-100 rounded-full px-1.5 py-0.5 font-semibold text-slate-700 border border-slate-200"><Star className="h-3 w-3 text-amber-500 fill-amber-500"/> {(resp.supplier.rating).toFixed(1)}</span>
+                            <span className="flex items-center gap-0.5 text-xs bg-slate-100 rounded-full px-1.5 py-0.5 font-semibold text-slate-700 border border-slate-200">
+                              <Star className="h-3 w-3 text-amber-500 fill-amber-500" />{' '}
+                              {resp.supplier.rating.toFixed(1)}
+                            </span>
                           )}
                         </p>
-                        <p className="text-xs font-medium text-slate-500 mt-1">Piegāde {resp.etaDays}d laikā</p>
+                        <p className="text-xs font-medium text-slate-500 mt-1">
+                          Piegāde {resp.etaDays}d laikā
+                        </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center justify-between sm:justify-end gap-5">
                       <div className="text-left sm:text-right">
                         <p className="text-xl font-bold text-slate-900 leading-none">
-                          {fmtEur(resp.pricePerUnit)}<span className="text-sm font-medium text-slate-500">/{UNIT_LV[resp.unit]}</span>
+                          {fmtEur(resp.pricePerUnit)}
+                          <span className="text-sm font-medium text-slate-500">
+                            /{UNIT_LV[resp.unit]}
+                          </span>
                         </p>
-                        <p className="text-xs text-slate-400 mt-1 uppercase font-semibold">Cena ar piegādi</p>
+                        <p className="text-xs text-slate-400 mt-1 uppercase font-semibold">
+                          Cena ar piegādi
+                        </p>
                       </div>
-                      
-                      {resp.status !== 'ACCEPTED' && (request.status === 'PENDING' || request.status === 'QUOTED') && (
-                        <Button 
-                          onClick={() => handleAccept(resp.id)} 
-                          disabled={accepting === resp.id} 
-                          className="rounded-xl h-10 px-5 bg-black text-white hover:bg-slate-800 font-bold transition-all shadow-sm"
-                        >
-                          {accepting === resp.id ? 'Pieņem...' : 'Izvēlēties'}
-                        </Button>
-                      )}
+
+                      {resp.status !== 'ACCEPTED' &&
+                        (request.status === 'PENDING' || request.status === 'QUOTED') && (
+                          <Button
+                            onClick={() => handleAccept(resp.id)}
+                            disabled={accepting === resp.id}
+                            className="rounded-xl h-10 px-5 bg-black text-white hover:bg-slate-800 font-bold transition-all shadow-sm"
+                          >
+                            {accepting === resp.id ? 'Pieņem...' : 'Izvēlēties'}
+                          </Button>
+                        )}
                     </div>
                   </div>
-                  
+
                   {resp.notes && (
                     <div className="mt-3 bg-slate-50 rounded-lg p-3 text-xs text-slate-600 border border-slate-100">
                       <span className="font-semibold block mb-0.5">Piegādātāja komentārs:</span>
@@ -497,17 +533,29 @@ export default function QuoteRequestsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 border-b border-slate-200 pb-5">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">Cenu Pieprasījumi</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">
+            Cenu Pieprasījumi
+          </h1>
           <p className="text-sm font-medium text-slate-500 mt-2 max-w-md">
             Iegūsti labākos piedāvājumus no piegādātājiem visām vajadzībām.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" size="sm" onClick={load} disabled={loading} className="h-11 px-4 rounded-xl border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold shadow-sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={load}
+            disabled={loading}
+            className="h-11 px-4 rounded-xl border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold shadow-sm"
+          >
             <RefreshCw className={`h-4 w-4 sm:mr-2 ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Atjaunot</span>
           </Button>
-          <Button size="sm" onClick={() => setShowModal(true)} className="h-11 px-5 rounded-xl bg-black text-white hover:bg-slate-800 font-bold shadow-md">
+          <Button
+            size="sm"
+            onClick={() => setShowModal(true)}
+            className="h-11 px-5 rounded-xl bg-black text-white hover:bg-slate-800 font-bold shadow-md"
+          >
             <Plus className="h-5 w-5 sm:mr-1.5" />
             <span className="hidden sm:inline">Jauns Pieprasījums</span>
             <span className="sm:hidden">Pieprasīt</span>
@@ -519,15 +567,21 @@ export default function QuoteRequestsPage() {
       {requests.length > 0 && !error && (
         <div className="grid grid-cols-3 gap-3 sm:gap-5">
           <div className="rounded-3xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm">
-            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400 mb-1">Visi</p>
+            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400 mb-1">
+              Visi
+            </p>
             <p className="text-2xl sm:text-4xl font-bold text-slate-900">{requests.length}</p>
           </div>
           <div className="rounded-3xl border border-blue-100 bg-blue-50/50 p-4 sm:p-5 shadow-sm relative overflow-hidden">
-            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-blue-600/80 mb-1">Aktīvie</p>
+            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-blue-600/80 mb-1">
+              Aktīvie
+            </p>
             <p className="text-2xl sm:text-4xl font-bold text-blue-700">{pending}</p>
           </div>
           <div className="rounded-3xl border border-emerald-100 bg-emerald-50/50 p-4 sm:p-5 shadow-sm">
-            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-emerald-600/80 mb-1">Izvēlētie</p>
+            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-emerald-600/80 mb-1">
+              Izvēlētie
+            </p>
             <p className="text-2xl sm:text-4xl font-bold text-emerald-700">{accepted}</p>
           </div>
         </div>
@@ -544,7 +598,11 @@ export default function QuoteRequestsPage() {
         <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center shadow-sm">
           <XCircle className="h-10 w-10 text-red-400 mx-auto mb-3" />
           <p className="text-sm font-bold text-red-900">{error}</p>
-          <Button variant="outline" className="mt-4 rounded-xl bg-white border-red-200 hover:bg-red-100 text-red-800 font-bold" onClick={load}>
+          <Button
+            variant="outline"
+            className="mt-4 rounded-xl bg-white border-red-200 hover:bg-red-100 text-red-800 font-bold"
+            onClick={load}
+          >
             Mēģināt vēlreiz
           </Button>
         </div>
@@ -555,9 +613,13 @@ export default function QuoteRequestsPage() {
           </div>
           <h3 className="text-lg font-bold text-slate-900">Nekas nav pieprasīts</h3>
           <p className="mt-2 text-sm font-medium text-slate-500 max-w-sm">
-            Izveidojiet savu pirmo cenu pieprasījumu, lai ātri un ērti saņemtu piedāvājumus no labākajiem piegādātājiem.
+            Izveidojiet savu pirmo cenu pieprasījumu, lai ātri un ērti saņemtu piedāvājumus no
+            labākajiem piegādātājiem.
           </p>
-          <Button className="mt-6 h-12 px-6 rounded-xl bg-black text-white hover:bg-slate-800 font-bold shadow-md" onClick={() => setShowModal(true)}>
+          <Button
+            className="mt-6 h-12 px-6 rounded-xl bg-black text-white hover:bg-slate-800 font-bold shadow-md"
+            onClick={() => setShowModal(true)}
+          >
             <Plus className="h-5 w-5 mr-2" />
             Izveidot Pieprasījumu
           </Button>

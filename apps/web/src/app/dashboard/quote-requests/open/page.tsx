@@ -7,10 +7,22 @@
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshCw, MessageSquare, MapPin, Package, Clock3, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -25,28 +37,12 @@ import {
   type CreateQuoteResponseInput,
 } from '@/lib/api';
 import { fmtDate } from '@/lib/format';
+import { CATEGORY_LABELS, UNIT_SHORT } from '@b3hub/shared';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-const CATEGORY_LV: Record<MaterialCategory, string> = {
-  SAND: 'Smiltis',
-  GRAVEL: 'Grants',
-  STONE: 'Akmens',
-  CONCRETE: 'Betons',
-  SOIL: 'Augsne',
-  RECYCLED_CONCRETE: 'Pārstrādāts betons',
-  RECYCLED_SOIL: 'Pārstrādāta augsne',
-  ASPHALT: 'Asfalt',
-  CLAY: 'Māls',
-  OTHER: 'Cits',
-};
-
-const UNIT_LV: Record<MaterialUnit, string> = {
-  TONNE: 't',
-  M3: 'm³',
-  PIECE: 'gb.',
-  LOAD: 'krava',
-};
+const CATEGORY_LV = CATEGORY_LABELS;
+const UNIT_LV = UNIT_SHORT;
 
 const UNITS: MaterialUnit[] = ['TONNE', 'M3', 'PIECE', 'LOAD'];
 type QuickFilter = 'ALL' | 'NEW' | 'NO_OFFERS' | 'WITH_NOTES';
@@ -66,7 +62,8 @@ const getRelativeRequestedLabel = (dateIso: string) => {
   return `pirms ${d} d.`;
 };
 
-const isNewRequest = (request: QuoteRequest) => hoursSince(request.createdAt) <= NEW_REQUEST_WINDOW_HOURS;
+const isNewRequest = (request: QuoteRequest) =>
+  hoursSince(request.createdAt) <= NEW_REQUEST_WINDOW_HOURS;
 
 // ── Respond slide-over ────────────────────────────────────────────────────────
 
@@ -130,10 +127,12 @@ function RespondPanel({ request, token, onClose, onResponded }: RespondPanelProp
           {/* Request summary */}
           <div className="px-6 py-4 bg-muted/20 text-xs text-muted-foreground space-y-2 border-b">
             <p>
-              <span className="font-semibold text-foreground">Pieprasīts:</span> {request.quantity} {UNIT_LV[request.unit]} {request.materialName}
+              <span className="font-semibold text-foreground">Pieprasīts:</span> {request.quantity}{' '}
+              {UNIT_LV[request.unit]} {request.materialName}
             </p>
             <p>
-              <span className="font-semibold text-foreground">Piegāde:</span> {request.deliveryAddress}, {request.deliveryCity}
+              <span className="font-semibold text-foreground">Piegāde:</span>{' '}
+              {request.deliveryAddress}, {request.deliveryCity}
             </p>
             {request.notes && (
               <p>
@@ -146,7 +145,9 @@ function RespondPanel({ request, token, onClose, onResponded }: RespondPanelProp
           <form id="respond-form" onSubmit={handleSubmit} className="p-6 space-y-6">
             <div className="flex gap-4">
               <div className="flex-1 space-y-2">
-                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Cena par vienību (€) *</label>
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Cena par vienību (€) *
+                </label>
                 <Input
                   type="number"
                   step="0.01"
@@ -158,8 +159,13 @@ function RespondPanel({ request, token, onClose, onResponded }: RespondPanelProp
                 />
               </div>
               <div className="w-1/3 space-y-2">
-                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Mērvienība</label>
-                <Select value={form.unit} onValueChange={(v) => setParams('unit', v as MaterialUnit)}>
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Mērvienība
+                </label>
+                <Select
+                  value={form.unit}
+                  onValueChange={(v) => setParams('unit', v as MaterialUnit)}
+                >
                   <SelectTrigger className="h-11 bg-muted/40 border-transparent transition-all focus:bg-background focus:ring-1 focus:ring-black">
                     <SelectValue />
                   </SelectTrigger>
@@ -175,7 +181,9 @@ function RespondPanel({ request, token, onClose, onResponded }: RespondPanelProp
             </div>
 
             <div className="space-y-2">
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Piegādes laiks (dienas) *</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Piegādes laiks (dienas) *
+              </label>
               <Input
                 type="number"
                 min="1"
@@ -187,7 +195,9 @@ function RespondPanel({ request, token, onClose, onResponded }: RespondPanelProp
             </div>
 
             <div className="space-y-2">
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Derīgums (neobligāts)</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Derīgums (neobligāts)
+              </label>
               <Input
                 type="date"
                 value={form.validUntil || ''}
@@ -196,7 +206,9 @@ function RespondPanel({ request, token, onClose, onResponded }: RespondPanelProp
             </div>
 
             <div className="space-y-2">
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Piezīmes</label>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Piezīmes
+              </label>
               <Textarea
                 rows={3}
                 value={form.notes || ''}
@@ -208,7 +220,11 @@ function RespondPanel({ request, token, onClose, onResponded }: RespondPanelProp
         </div>
 
         <div className="p-6 border-t shrink-0 flex justify-between items-center bg-card">
-          {error ? <p className="text-sm text-red-600 font-medium truncate pr-4">{error}</p> : <div/>}
+          {error ? (
+            <p className="text-sm text-red-600 font-medium truncate pr-4">{error}</p>
+          ) : (
+            <div />
+          )}
           <div className="flex gap-3 shrink-0">
             <Button variant="outline" type="button" onClick={onClose} disabled={saving}>
               Atcelt
@@ -238,53 +254,54 @@ function OpenRequestCard({ request, onRespond }: OpenRequestCardProps) {
     <Card className="border-transparent bg-muted/40 py-0 shadow-none hover:bg-muted/60 transition-colors">
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-2">
-            <Badge variant="outline" className="font-mono text-[11px]">
-              {request.requestNumber}
-            </Badge>
-            <Badge variant="secondary" className="text-[11px]">
-              <Package className="h-3 w-3" />
-              {CATEGORY_LV[request.materialCategory]}
-            </Badge>
-            {isNew && (
-              <Badge className="text-[11px] bg-emerald-600 text-white hover:bg-emerald-600">
-                <Sparkles className="h-3 w-3" /> Jauns
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              <Badge variant="outline" className="font-mono text-[11px]">
+                {request.requestNumber}
               </Badge>
-            )}
-            {responseCount > 0 && (
-              <Badge variant="outline" className="text-[11px]">
-                {responseCount} piedāvājum{responseCount === 1 ? 's' : 'i'}
+              <Badge variant="secondary" className="text-[11px]">
+                <Package className="h-3 w-3" />
+                {CATEGORY_LV[request.materialCategory]}
               </Badge>
+              {isNew && (
+                <Badge className="text-[11px] bg-emerald-600 text-white hover:bg-emerald-600">
+                  <Sparkles className="h-3 w-3" /> Jauns
+                </Badge>
+              )}
+              {responseCount > 0 && (
+                <Badge variant="outline" className="text-[11px]">
+                  {responseCount} piedāvājum{responseCount === 1 ? 's' : 'i'}
+                </Badge>
+              )}
+            </div>
+
+            <p className="text-base font-semibold text-slate-900 leading-tight">
+              {request.quantity} {UNIT_LV[request.unit]} {request.materialName}
+            </p>
+
+            <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3 shrink-0" />
+              {request.deliveryAddress}, {request.deliveryCity}
+            </div>
+
+            {request.notes && (
+              <p className="text-xs text-slate-500 mt-1 italic">&quot;{request.notes}&quot;</p>
             )}
+
+            <p className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground/70">
+              <Clock3 className="h-3 w-3" />
+              Pieprasīts {fmtDate(request.createdAt)} (
+              {getRelativeRequestedLabel(request.createdAt)})
+            </p>
           </div>
 
-          <p className="text-base font-semibold text-slate-900 leading-tight">
-            {request.quantity} {UNIT_LV[request.unit]} {request.materialName}
-          </p>
-
-          <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-            <MapPin className="h-3 w-3 shrink-0" />
-            {request.deliveryAddress}, {request.deliveryCity}
+          <div className="shrink-0 flex items-center">
+            <Button size="sm" className="min-w-32" onClick={() => onRespond(request)}>
+              <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
+              Piedāvāt Cenu
+            </Button>
           </div>
-
-          {request.notes && (
-            <p className="text-xs text-slate-500 mt-1 italic">&quot;{request.notes}&quot;</p>
-          )}
-
-          <p className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground/70">
-            <Clock3 className="h-3 w-3" />
-            Pieprasīts {fmtDate(request.createdAt)} ({getRelativeRequestedLabel(request.createdAt)})
-          </p>
         </div>
-
-        <div className="shrink-0 flex items-center">
-          <Button size="sm" className="min-w-32" onClick={() => onRespond(request)}>
-            <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
-            Piedāvāt Cenu
-          </Button>
-        </div>
-      </div>
       </CardContent>
     </Card>
   );
@@ -363,12 +380,15 @@ export default function OpenQuoteRequestsPage() {
 
   return (
     <div className="w-full h-full pb-20 space-y-10">
-      
       {/* HEADER SECTION */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Atvērtie Pieprasījumi</h1>
-          <p className="text-muted-foreground mt-2 text-sm sm:text-base max-w-xl">Iesniedziet cenu piedāvājumus reāllaikā un saņemiet pasūtījumus</p>
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">
+            Atvērtie Pieprasījumi
+          </h1>
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base max-w-xl">
+            Iesniedziet cenu piedāvājumus reāllaikā un saņemiet pasūtījumus
+          </p>
         </div>
         <Button variant="default" className="w-full sm:w-auto" onClick={load} disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
@@ -384,7 +404,7 @@ export default function OpenQuoteRequestsPage() {
       )}
 
       {!loading && !error && safeRequests.length > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/40 p-2 border border-transparent">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/40 p-2 border border-transparent">
           <div className="flex flex-wrap gap-2">
             <Button
               size="xs"
@@ -415,7 +435,9 @@ export default function OpenQuoteRequestsPage() {
               Ar piezīmēm
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">Rādām {filteredRequests.length} pieprasījumus</p>
+          <p className="text-xs text-muted-foreground">
+            Rādām {filteredRequests.length} pieprasījumus
+          </p>
         </div>
       )}
 

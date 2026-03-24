@@ -280,7 +280,7 @@ function TempPwdDialog({ open, member, password, onClose }: TempPwdDialogProps) 
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className="sm:sm:max-w-md w-[90vw] sm:w-100 w-[90vw] sm:w-100">
+      <SheetContent className="sm:max-w-md w-[90vw] sm:w-100">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-green-600" />
@@ -377,7 +377,7 @@ function EditDialog({
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className="sm:sm:max-w-md w-[90vw] sm:w-100 w-[90vw] sm:w-100">
+      <SheetContent className="sm:max-w-md w-[90vw] sm:w-100">
         <SheetHeader>
           <SheetTitle>Rediģēt dalībnieku</SheetTitle>
           <SheetDescription>
@@ -666,7 +666,7 @@ export default function CompanyTeamPage() {
 
       {/* Remove confirmation dialog */}
       <Sheet open={!!removeTarget} onOpenChange={(v) => !v && setRemoveTarget(null)}>
-        <SheetContent className="sm:sm:max-w-md w-[90vw] sm:w-100 w-[90vw] sm:w-100">
+        <SheetContent className="sm:max-w-md w-[90vw] sm:w-100">
           <SheetHeader>
             <SheetTitle>Noņemt no komandas?</SheetTitle>
             <SheetDescription>

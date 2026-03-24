@@ -17,7 +17,13 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
 import {
@@ -48,6 +54,15 @@ import {
   Star,
   Truck,
   X,
+  Mountain,
+  MountainSnow,
+  Box,
+  Hexagon,
+  Droplets,
+  Sprout,
+  Recycle,
+  Map,
+  Layers,
   Zap,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
@@ -55,82 +70,94 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Step2Address } from '@/components/order/steps/Step2Address';
 import { MatStep3When } from '@/components/order/steps/MatStep3When';
+import {
+  CATEGORY_LABELS,
+  CATEGORY_DESCRIPTIONS,
+  DEFAULT_MATERIAL_NAMES,
+  UNIT_SHORT as SHARED_UNIT_SHORT,
+} from '@b3hub/shared';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const CATEGORY_META: Record<
   MaterialCategory,
-  { label: string; description: string; defaultUnit: MaterialUnit; defaultName: string; image: string }
+  {
+    label: string;
+    description: string;
+    defaultUnit: MaterialUnit;
+    defaultName: string;
+    icon: React.ElementType;
+  }
 > = {
   SAND: {
-    label: 'Smiltis',
-    description: 'Uzbēruma, celtnieku un filtrācijas smiltis',
+    label: CATEGORY_LABELS.SAND,
+    description: CATEGORY_DESCRIPTIONS.SAND,
     defaultUnit: 'TONNE',
-    defaultName: 'Uzbēruma smiltis',
-    image: 'https://images.unsplash.com/photo-1621644784423-d2dcf35198e3?q=80&w=600&auto=format&fit=crop',
+    defaultName: DEFAULT_MATERIAL_NAMES.SAND,
+    icon: Droplets,
   },
   GRAVEL: {
-    label: 'Grants',
-    description: 'Ceļu grants, drenāžas grants, šķembas',
+    label: CATEGORY_LABELS.GRAVEL,
+    description: CATEGORY_DESCRIPTIONS.GRAVEL,
     defaultUnit: 'TONNE',
-    defaultName: 'Ceļu grants',
-    image: 'https://images.unsplash.com/photo-1541624602-5ee3f3127599?q=80&w=600&auto=format&fit=crop',
+    defaultName: DEFAULT_MATERIAL_NAMES.GRAVEL,
+    icon: Mountain,
   },
   STONE: {
-    label: 'Akmens',
-    description: 'Drupināts akmens, bruģakmens, laukakmens',
+    label: CATEGORY_LABELS.STONE,
+    description: CATEGORY_DESCRIPTIONS.STONE,
     defaultUnit: 'TONNE',
-    defaultName: 'Drupināts akmens',
-    image: 'https://images.unsplash.com/photo-1518709268805-4e904baf370d?q=80&w=600&auto=format&fit=crop',
+    defaultName: DEFAULT_MATERIAL_NAMES.STONE,
+    icon: MountainSnow,
   },
   CONCRETE: {
-    label: 'Betons',
-    description: 'Gatavs betona maisījums, betona bloki',
+    label: CATEGORY_LABELS.CONCRETE,
+    description: CATEGORY_DESCRIPTIONS.CONCRETE,
     defaultUnit: 'M3',
-    defaultName: 'Gatavs betons',
-    image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?q=80&w=600&auto=format&fit=crop',
+    defaultName: DEFAULT_MATERIAL_NAMES.CONCRETE,
+    icon: Box,
   },
   SOIL: {
-    label: 'Augsne',
-    description: 'Tīrā augsne, melnzeme, dārza zeme',
+    label: CATEGORY_LABELS.SOIL,
+    description: CATEGORY_DESCRIPTIONS.SOIL,
     defaultUnit: 'TONNE',
-    defaultName: 'Augsne uzbēršanai',
-    image: 'https://images.unsplash.com/photo-1581454536647-79282b0e6df2?q=80&w=600&auto=format&fit=crop',
+    defaultName: DEFAULT_MATERIAL_NAMES.SOIL,
+    icon: Sprout,
   },
   RECYCLED_CONCRETE: {
-    label: 'Recikl. Betons',
-    description: 'Sasmalcināts betons no nojaukšanas darbiem',
+    label: CATEGORY_LABELS.RECYCLED_CONCRETE,
+    description: CATEGORY_DESCRIPTIONS.RECYCLED_CONCRETE,
     defaultUnit: 'TONNE',
-    defaultName: 'Reciklēts betons',
-    image: 'https://images.unsplash.com/photo-1602741548650-620ee80206f3?q=80&w=600&auto=format&fit=crop',
+    defaultName: DEFAULT_MATERIAL_NAMES.RECYCLED_CONCRETE,
+    icon: Recycle,
   },
   RECYCLED_SOIL: {
-    label: 'Recikl. Augsne',
-    description: 'Pārstrādāta augsne celtniecības vajadzībām',
+    label: CATEGORY_LABELS.RECYCLED_SOIL,
+    description: CATEGORY_DESCRIPTIONS.RECYCLED_SOIL,
     defaultUnit: 'TONNE',
-    defaultName: 'Reciklēta augsne',
-    image: 'https://images.unsplash.com/photo-1589139599557-6101c56ceeed?q=80&w=600&auto=format&fit=crop',
+    defaultName: DEFAULT_MATERIAL_NAMES.RECYCLED_SOIL,
+    icon: Recycle,
   },
   ASPHALT: {
-    label: 'Asfalts',
-    description: 'Asfalts ceļiem un stāvvietām',
+    label: CATEGORY_LABELS.ASPHALT,
+    description: CATEGORY_DESCRIPTIONS.ASPHALT,
     defaultUnit: 'TONNE',
-    defaultName: 'Asfalta maisījums',
-    image: 'https://images.unsplash.com/photo-1627911677322-83b6f0e27f12?q=80&w=600&auto=format&fit=crop',
+    defaultName: DEFAULT_MATERIAL_NAMES.ASPHALT,
+    icon: Map,
   },
   CLAY: {
-    label: 'Māls',
-    description: 'Māls hidroizolācijai un uzbērumiem',
+    label: CATEGORY_LABELS.CLAY,
+    description: CATEGORY_DESCRIPTIONS.CLAY,
     defaultUnit: 'TONNE',
-    defaultName: 'Māls',
-    image: 'https://images.unsplash.com/photo-1616886616016-1f7c0a6b8c9d?q=80&w=600&auto=format&fit=crop',
+    defaultName: DEFAULT_MATERIAL_NAMES.CLAY,
+    icon: Layers,
   },
   OTHER: {
-    label: 'Citi',
-    description: 'Citi celtniecības pieprasījumi',
+    label: CATEGORY_LABELS.OTHER,
+    description: CATEGORY_DESCRIPTIONS.OTHER,
     defaultUnit: 'TONNE',
-    defaultName: '',
-    image: 'https://images.unsplash.com/photo-1541888086925-eb26bc361664?q=80&w=600&auto=format&fit=crop',
+    defaultName: DEFAULT_MATERIAL_NAMES.OTHER,
+    icon: Hexagon,
   },
 };
 
@@ -141,12 +168,7 @@ const UNIT_LABEL: Record<MaterialUnit, string> = {
   LOAD: 'krāvums',
 };
 
-const UNIT_SHORT: Record<MaterialUnit, string> = {
-  TONNE: 't',
-  M3: 'm³',
-  PIECE: 'gb.',
-  LOAD: 'krv.',
-};
+const UNIT_SHORT = SHARED_UNIT_SHORT;
 
 const UNITS: MaterialUnit[] = ['TONNE', 'M3', 'PIECE', 'LOAD'];
 
@@ -161,38 +183,33 @@ const WIZARD_STEPS = [
 
 // ── Category card ──────────────────────────────────────────────────────────────
 
-function CategoryCard({
-  category,
-  onClick,
-}: {
-  category: MaterialCategory;
-  onClick: () => void;
-}) {
+function CategoryCard({ category, onClick }: { category: MaterialCategory; onClick: () => void }) {
   const meta = CATEGORY_META[category];
   const isRecycled = category.startsWith('RECYCLED');
 
   return (
     <button
       onClick={onClick}
-      className="group relative flex flex-col text-left transition-transform active:scale-[0.98] w-full"
+      className="group relative flex flex-col text-left transition-transform active:scale-[0.98] w-full rounded-2xl border border-border/50 bg-card p-5 hover:border-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]"
     >
-      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-muted/40">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img 
-          src={meta.image} 
-          alt={meta.label}
-          className="h-full w-full object-cover transition-transform duration-500 will-change-transform ease-out group-hover:scale-105"
-        />
-        {isRecycled && (
-          <div className="absolute top-3 right-3 flex items-center gap-1 rounded bg-background/90 backdrop-blur-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-green-700 shadow-sm">
-            <Leaf className="size-3" /> Recikl.
-          </div>
-        )}
+      <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-slate-50 text-slate-600 transition-colors group-hover:bg-slate-100 group-hover:text-black">
+        <meta.icon className="h-7 w-7" strokeWidth={1.5} />
       </div>
-      
-      <div className="mt-3 flex flex-col gap-0.5 px-0.5">
-        <p className="font-semibold text-[15px] sm:text-base text-foreground tracking-tight">{meta.label}</p>
-        <p className="text-[13px] text-muted-foreground line-clamp-1">{meta.description}</p>
+
+      {isRecycled && (
+        <div className="absolute top-5 right-5 flex items-center gap-1.5 rounded-full bg-green-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-green-700">
+          <Leaf className="size-3" strokeWidth={2.5} />
+          <span>Recikl.</span>
+        </div>
+      )}
+
+      <div className="mt-auto flex flex-col gap-1.5">
+        <p className="font-semibold text-[16px] text-foreground tracking-tight transition-colors group-hover:text-black">
+          {meta.label}
+        </p>
+        <p className="text-[13px] text-muted-foreground line-clamp-2 leading-relaxed">
+          {meta.description}
+        </p>
       </div>
     </button>
   );
@@ -423,9 +440,9 @@ function WizardInline({
   const currentStepIndex = stepIndex[step];
 
   return (
-    <div className="flex flex-col lg:flex-row bg-background border sm:rounded-[24px] shadow-sm overflow-hidden animate-in fade-in zoom-in-95 duration-300 xl:h-[750px] min-h-[600px] mb-12">
+    <div className="flex flex-col lg:flex-row bg-background border sm:rounded-[24px] shadow-sm overflow-hidden animate-in fade-in zoom-in-95 duration-300 xl:h-187.5 min-h-150 mb-12">
       {/* Left panel */}
-      <div className="w-full lg:w-[460px] shrink-0 flex flex-col bg-background border-t lg:border-t-0 lg:border-r border-border/50 z-10">
+      <div className="w-full lg:w-115 shrink-0 flex flex-col bg-background border-t lg:border-t-0 lg:border-r border-border/50 z-10">
         {/* Header */}
         <div className="p-5 border-b border-border/50 bg-background space-y-4">
           <button
@@ -503,7 +520,7 @@ function WizardInline({
                       });
                     }}
                   >
-                    <SelectTrigger className="w-full rounded-2xl h-[52px] bg-muted/40 border-0 px-4 text-[15px] font-medium focus:ring-2 focus:ring-foreground/10 transition-shadow data-[state=open]:bg-muted/60">
+                    <SelectTrigger className="w-full rounded-2xl h-13 bg-muted/40 border-0 px-4 text-[15px] font-medium focus:ring-2 focus:ring-foreground/10 transition-shadow data-[state=open]:bg-muted/60">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
@@ -520,13 +537,15 @@ function WizardInline({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Frakcija / Precizējums</label>
+                  <label className="text-sm font-semibold text-foreground">
+                    Frakcija / Precizējums
+                  </label>
                   <input
                     type="text"
                     value={form.materialName}
                     onChange={(e) => patch({ materialName: e.target.value })}
-                    placeholder={meta.defaultName || "Piem., 16-32 mm"}
-                    className="w-full rounded-2xl border-0 bg-muted/40 px-4 h-[52px] text-[15px] font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-shadow"
+                    placeholder={meta.defaultName || 'Piem., 16-32 mm'}
+                    className="w-full rounded-2xl border-0 bg-muted/40 px-4 h-13 text-[15px] font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-shadow"
                   />
                 </div>
               </div>
@@ -538,7 +557,9 @@ function WizardInline({
                       patch({
                         quantity: Math.max(
                           0.5,
-                          parseFloat((form.quantity - (form.unit === 'PIECE' ? 1 : 0.5)).toFixed(2)),
+                          parseFloat(
+                            (form.quantity - (form.unit === 'PIECE' ? 1 : 0.5)).toFixed(2),
+                          ),
                         ),
                       })
                     }
@@ -709,8 +730,8 @@ function WizardInline({
                 </p>
               </div>
               <p className="text-sm text-muted-foreground max-w-xs">
-                Piegādātāji jūsu rajonā saņēma paziņojumu. Kad kāds atbildēs ar cenu, jūs
-                saņemsiet paziņojumu.
+                Piegādātāji jūsu rajonā saņēma paziņojumu. Kad kāds atbildēs ar cenu, jūs saņemsiet
+                paziņojumu.
               </p>
               <div className="w-full space-y-3 pt-2">
                 <Button
@@ -719,7 +740,11 @@ function WizardInline({
                 >
                   <ReceiptText className="size-4 mr-1.5" /> Skatīt pieprasījumus
                 </Button>
-                <Button variant="outline" onClick={onClose} className="w-full rounded-2xl h-12 font-semibold">
+                <Button
+                  variant="outline"
+                  onClick={onClose}
+                  className="w-full rounded-2xl h-12 font-semibold"
+                >
                   Turpināt iepirkties
                 </Button>
               </div>
@@ -741,7 +766,9 @@ function WizardInline({
               <div className="w-full rounded-2xl bg-muted/40 divide-y divide-border/50 text-[15px]">
                 <div className="flex items-center gap-3 px-5 py-4 text-muted-foreground">
                   <Package className="size-4 shrink-0 text-foreground" />
-                  <span>{form.quantity} {UNIT_SHORT[form.unit]} {form.materialName}</span>
+                  <span>
+                    {form.quantity} {UNIT_SHORT[form.unit]} {form.materialName}
+                  </span>
                 </div>
                 <div className="flex items-center gap-3 px-5 py-4 text-muted-foreground">
                   <MapPin className="size-4 shrink-0 text-foreground" />
@@ -767,7 +794,11 @@ function WizardInline({
                 >
                   <ReceiptText className="size-4 mr-1.5" /> Skatīt pasūtījumus
                 </Button>
-                <Button variant="outline" onClick={onClose} className="w-full rounded-2xl h-12 font-semibold">
+                <Button
+                  variant="outline"
+                  onClick={onClose}
+                  className="w-full rounded-2xl h-12 font-semibold"
+                >
                   Turpināt iepirkties
                 </Button>
               </div>
@@ -822,7 +853,9 @@ function OfferCard({
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <p className="font-bold text-[15px] text-foreground truncate">{offer.supplier.name}</p>
+              <p className="font-bold text-[15px] text-foreground truncate">
+                {offer.supplier.name}
+              </p>
               {isCheapest && (
                 <span className="shrink-0 flex items-center gap-0.5 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green-800">
                   <Star className="size-3" /> Labākais
@@ -866,7 +899,9 @@ function OfferCard({
           {submitting ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
-            <>Izvēlēties šo piedāvājumu <ArrowRight className="size-4 ml-1.5" /></>
+            <>
+              Izvēlēties šo piedāvājumu <ArrowRight className="size-4 ml-1.5" />
+            </>
           )}
         </Button>
       </div>
@@ -897,8 +932,8 @@ function RFQPanel({
           <div>
             <p className="font-bold text-foreground">Nosūtīt cenu pieprasījumu</p>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Jūsu pieprasījums tiks nosūtīts visiem atbilstošajiem piegādātājiem jūsu rajonā.
-              Viņi atbildēs ar savām cenām, un jūs izvēlēsieties labāko.
+              Jūsu pieprasījums tiks nosūtīts visiem atbilstošajiem piegādātājiem jūsu rajonā. Viņi
+              atbildēs ar savām cenām, un jūs izvēlēsieties labāko.
             </p>
           </div>
         </div>
@@ -951,7 +986,7 @@ export default function CatalogPage() {
 
   if (activeCategory && token) {
     return (
-      <div className="pb-12 max-w-[1400px] mx-auto w-full">
+      <div className="pb-12 max-w-350 mx-auto w-full">
         <WizardInline
           initialCategory={activeCategory}
           token={token}
@@ -962,7 +997,7 @@ export default function CatalogPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 pb-24 max-w-[1400px] mx-auto w-full">
+    <div className="flex flex-col gap-6 pb-24 max-w-350 mx-auto w-full">
       <PageHeader
         title="Būvmateriāli"
         description="Izvēlieties materiāla kategoriju, lai atrastu labākos piedāvājumus."
@@ -981,11 +1016,7 @@ export default function CatalogPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 xl:gap-8 mt-4">
         {filteredCategories.map((cat) => (
-          <CategoryCard
-            key={cat}
-            category={cat}
-            onClick={() => setActiveCategory(cat)}
-          />
+          <CategoryCard key={cat} category={cat} onClick={() => setActiveCategory(cat)} />
         ))}
         {filteredCategories.length === 0 && (
           <div className="col-span-full py-12 text-center text-muted-foreground">

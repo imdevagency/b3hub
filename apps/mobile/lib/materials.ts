@@ -1,32 +1,22 @@
 /**
- * Shared constants for material data used across catalog, order-request, and orders screens.
- * Single source of truth — update here to affect all screens.
+ * Mobile material constants.
+ * CATEGORY_LABELS and UNIT_SHORT are re-exported from @b3hub/shared — the
+ * monorepo's single source of truth for these values.
+ * Update packages/shared/src/materials.ts to change labels across all apps.
  */
 
-// ── Unit labels ────────────────────────────────────────────────
-
-export const UNIT_SHORT: Record<string, string> = {
-  TONNE: 't',
-  M3: 'm\u00b3',
-  PIECE: 'gab.',
-  LOAD: 'krava',
-};
-
-// ── Category labels ────────────────────────────────────────────
-
-export const CATEGORY_LABELS: Record<string, string> = {
-  ALL: 'Visi',
-  SAND: 'Smiltis',
-  GRAVEL: '\u0160\u0137embas',
-  STONE: 'Akmens',
-  CONCRETE: 'Betons',
-  SOIL: 'Zeme',
-  RECYCLED_CONCRETE: 'Rec. betons',
-  RECYCLED_SOIL: 'Rec. zeme',
-  ASPHALT: 'Asfalta gran.',
-  CLAY: 'M\u0101ls',
-  OTHER: 'Cits',
-};
+export {
+  CATEGORY_LABELS,
+  CATEGORY_DESCRIPTIONS,
+  DEFAULT_MATERIAL_NAMES,
+  UNIT_SHORT,
+  UNIT_LONG,
+  MATERIAL_CATEGORIES,
+  MATERIAL_UNITS,
+  type MaterialCategory,
+  type MaterialCategoryAll,
+  type MaterialUnit,
+} from '@b3hub/shared';
 
 // ── Category accent colors (used for icon tints, pill highlights) ──
 

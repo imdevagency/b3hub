@@ -413,7 +413,7 @@ export function Step3DateOffers({
                   <div className="space-y-1">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Pārvadātājs</span>
-                      <span className="font-semibold truncate max-w-[130px] text-right">
+                      <span className="font-semibold truncate max-w-32.5 text-right">
                         {o.carrier}
                       </span>
                     </div>

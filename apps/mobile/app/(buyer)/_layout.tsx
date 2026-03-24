@@ -4,7 +4,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
-import { Home, ClipboardList, User, ShoppingBag } from 'lucide-react-native';
+import { Home, ClipboardList, User } from 'lucide-react-native';
 import { TopBar } from '@/components/ui/TopBar';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
@@ -26,7 +26,12 @@ export default function BuyerLayout() {
 
   // Home tab is full-screen map — no TopBar or status-bar padding
   const isHome = pathname === '/(buyer)/home' || pathname === '/home';
-  const isDetailScreen = pathname.includes('/rfq/') || pathname.includes('/project/') || pathname.includes('/transport-job/') || pathname.includes('/framework-contract/') || pathname.includes('/skip-order/');
+  const isDetailScreen =
+    pathname.includes('/rfq/') ||
+    pathname.includes('/project/') ||
+    pathname.includes('/transport-job/') ||
+    pathname.includes('/framework-contract/') ||
+    pathname.includes('/skip-order/');
   const hideTopBar = isHome || isDetailScreen;
 
   useEffect(() => {
@@ -74,8 +79,7 @@ export default function BuyerLayout() {
           <Tabs.Screen
             name="catalog"
             options={{
-              title: 'Katalogs',
-              tabBarIcon: ({ color }) => <ShoppingBag size={22} color={color} />,
+              href: null,
             }}
           />
           <Tabs.Screen

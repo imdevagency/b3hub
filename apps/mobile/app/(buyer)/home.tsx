@@ -67,7 +67,7 @@ const SERVICES = [
     icon: HardHat,
     label: 'Materi\u0101li',
     sub: 'Smiltis, grants, \u0161\u0137embas',
-    route: '/order-request-new',
+    route: '/(buyer)/catalog',
   },
   {
     id: 'container',
@@ -526,7 +526,13 @@ const s = StyleSheet.create({
   dot: { width: 10, height: 10, borderRadius: 5 },
   dotRing: { position: 'absolute', width: 10, height: 10, borderRadius: 5, opacity: 0.35 },
   activeTag: { fontSize: 12, color: '#9ca3af', fontWeight: '500', marginBottom: 4 },
-  activeNum: { fontSize: 18, fontWeight: '800', color: '#ffffff', lineHeight: 22, letterSpacing: -0.4 },
+  activeNum: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#ffffff',
+    lineHeight: 22,
+    letterSpacing: -0.4,
+  },
   activeSub: { fontSize: 13, color: '#9ca3af', marginTop: 4 },
   activeArrow: {
     width: 32,
@@ -542,17 +548,17 @@ const s = StyleSheet.create({
   serviceCard: {
     width: '48%',
     flexGrow: 1,
-    backgroundColor: '#f3f4f6', 
+    backgroundColor: '#f3f4f6',
     borderRadius: 20,
     padding: 16,
-    gap: 12, 
-    borderWidth: 0, 
+    gap: 12,
+    borderWidth: 0,
   },
   serviceIconBox: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#ffffff', 
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
@@ -566,7 +572,7 @@ const s = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: '#e5e7eb', 
+    borderColor: '#e5e7eb',
   },
   recentRow: {
     flexDirection: 'row',
@@ -579,7 +585,7 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f3f4f6', 
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -599,7 +605,7 @@ const s = StyleSheet.create({
     borderWidth: 0,
   },
   allBtnText: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  
+
   // Empty state
   empty: { alignItems: 'center', paddingVertical: 32, gap: 10 },
   emptyIcon: {

@@ -18,7 +18,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useFocusEffect } from 'expo-router';
 import { Plus, Pencil, Trash2, Leaf, PackageSearch, ChevronDown, Check } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
-import { CATEGORY_LABELS, UNIT_SHORT } from '@/lib/materials';
+import { CATEGORY_LABELS, DEFAULT_MATERIAL_NAMES, UNIT_SHORT } from '@/lib/materials';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -60,7 +60,7 @@ interface ListingForm {
 }
 
 const BLANK_FORM: ListingForm = {
-  name: '',
+  name: DEFAULT_MATERIAL_NAMES['SAND'],
   description: '',
   category: 'SAND',
   unit: 'TONNE',
@@ -322,7 +322,15 @@ function ListingModal({
                     key={cat}
                     style={s.catRow}
                     onPress={() => {
-                      set('category')(cat);
+                      setForm((f) => {
+                        const prevDefault = DEFAULT_MATERIAL_NAMES[f.category] ?? '';
+                        const shouldFill = f.name === '' || f.name === prevDefault;
+                        return {
+                          ...f,
+                          category: cat,
+                          name: shouldFill ? (DEFAULT_MATERIAL_NAMES[cat] ?? f.name) : f.name,
+                        };
+                      });
                       setCatSheetOpen(false);
                     }}
                     activeOpacity={0.7}

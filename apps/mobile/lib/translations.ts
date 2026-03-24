@@ -1,3 +1,5 @@
+import { CATEGORY_LABELS, UNIT_SHORT } from '@b3hub/shared';
+
 export const lv = {
   welcome: {
     title: 'Laipni lūgti B3Hub',
@@ -458,24 +460,8 @@ export const lv = {
     successMsg: 'Pircējs saņems paziņojumu par jūsu piedāvājumu.',
     errorTitle: 'Kļūda',
     errorInvalidPrice: 'Lūdzu, ievadiet derīgu cenu',
-    categories: {
-      SAND: 'Smiltis',
-      GRAVEL: 'Šķembas',
-      STONE: 'Akmens',
-      CONCRETE: 'Betons',
-      SOIL: 'Zeme',
-      RECYCLED_CONCRETE: 'Rec. betons',
-      RECYCLED_SOIL: 'Rec. zeme',
-      ASPHALT: 'Asfalta gran.',
-      CLAY: 'Māls',
-      OTHER: 'Cits',
-    } as Record<string, string>,
-    units: {
-      TONNE: 't',
-      M3: 'm³',
-      PIECE: 'gab.',
-      LOAD: 'krava',
-    } as Record<string, string>,
+    categories: CATEGORY_LABELS as Record<string, string>,
+    units: UNIT_SHORT as Record<string, string>,
   },
 
   placeOrder: {
