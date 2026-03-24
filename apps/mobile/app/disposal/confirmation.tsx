@@ -100,7 +100,8 @@ export default function DisposalConfirmation() {
     );
   }
 
-  const { jobNumber, pickupAddress, wasteType, truckType, truckCount, requestedDate } = confirmedDisposal;
+  const { jobNumber, pickupAddress, wasteType, truckType, truckCount, requestedDate } =
+    confirmedDisposal;
 
   return (
     <ScreenContainer standalone bg="#fff">

@@ -48,7 +48,11 @@ export default function ProfileScreen() {
   const accountTypeLabel =
     user?.userType === 'ADMIN'
       ? 'Administrators'
-      : ['Pircējs', ...(user?.canSell ? ['Piegādātājs'] : []), ...(user?.canTransport ? ['Pārvadātājs'] : [])].join(' + ');
+      : [
+          'Pircējs',
+          ...(user?.canSell ? ['Piegādātājs'] : []),
+          ...(user?.canTransport ? ['Pārvadātājs'] : []),
+        ].join(' + ');
 
   const handleLogout = () => {
     Alert.alert('Iziet', 'Vai tiešām vēlaties izrakstīties?', [

@@ -99,7 +99,7 @@ export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, o
                 'relative flex items-center justify-between gap-3 rounded-xl border-2 p-3 text-left transition-all',
                 selected
                   ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
-                  : 'border-transparent bg-muted/60 hover:bg-muted'
+                  : 'border-transparent bg-muted/60 hover:bg-muted',
               )}
             >
               <div className="flex items-center gap-4">
@@ -107,17 +107,22 @@ export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, o
                 <div
                   className={cn(
                     'shrink-0 flex items-center justify-center rounded border h-10 w-12 transition-colors',
-                    selected ? 'border-primary/40 text-primary bg-white shadow-sm' : 'border-gray-200 text-gray-500 bg-gray-100',
+                    selected
+                      ? 'border-primary/40 text-primary bg-white shadow-sm'
+                      : 'border-gray-200 text-gray-500 bg-gray-100',
                   )}
                 >
-                  <span className="text-xs font-bold">
-                    {s.volume}
-                  </span>
+                  <span className="text-xs font-bold">{s.volume}</span>
                 </div>
-                
+
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className={cn("font-semibold text-sm", selected ? "text-gray-900" : "text-gray-700")}>
+                    <p
+                      className={cn(
+                        'font-semibold text-sm',
+                        selected ? 'text-gray-900' : 'text-gray-700',
+                      )}
+                    >
                       {s.label}
                     </p>
                     {s.popular && (
@@ -133,7 +138,7 @@ export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, o
 
               <div className="text-right shrink-0">
                 <p className="text-[10px] text-muted-foreground leading-none">No</p>
-                <p className={cn("text-sm font-bold", selected ? "text-primary" : "text-gray-900")}>
+                <p className={cn('text-sm font-bold', selected ? 'text-primary' : 'text-gray-900')}>
                   €{s.priceFrom}
                 </p>
               </div>
@@ -145,9 +150,7 @@ export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, o
       {/* Waste type section — expands after size is chosen */}
       {showWaste && (
         <div className="pt-2 animate-in fade-in slide-in-from-top-2">
-          <h3 className="text-sm font-bold text-gray-900 mb-3">
-            Atkritumu veids
-          </h3>
+          <h3 className="text-sm font-bold text-gray-900 mb-3">Atkritumu veids</h3>
           <div className="grid grid-cols-2 gap-2">
             {WASTE_TYPES.map((w) => {
               const selected = wasteType === w.id;
@@ -159,11 +162,18 @@ export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, o
                     'flex items-center gap-2 rounded-xl border-2 px-3 py-3 text-sm text-left transition-all',
                     selected
                       ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
-                      : 'border-transparent bg-muted/60 hover:bg-muted'
+                      : 'border-transparent bg-muted/60 hover:bg-muted',
                   )}
                 >
                   <span className="text-lg">{w.emoji}</span>
-                  <span className={cn("font-medium text-sm", selected ? "text-gray-900" : "text-gray-700")}>{w.label}</span>
+                  <span
+                    className={cn(
+                      'font-medium text-sm',
+                      selected ? 'text-gray-900' : 'text-gray-700',
+                    )}
+                  >
+                    {w.label}
+                  </span>
                 </button>
               );
             })}

@@ -66,7 +66,9 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
                 {document.title}
               </h2>
               <div className="flex items-center text-[13px] text-muted-foreground mt-1 gap-1">
-                {document.issuedBy && <span className="font-medium text-foreground">{document.issuedBy}</span>}
+                {document.issuedBy && (
+                  <span className="font-medium text-foreground">{document.issuedBy}</span>
+                )}
                 {document.issuedBy && <span className="mx-1.5 opacity-50">•</span>}
                 <span>
                   {new Date(document.createdAt).toLocaleDateString('lv-LV', {
@@ -99,12 +101,7 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
                     Atvērt jaunā logā
                   </a>
                 </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  asChild
-                  className="rounded-xl font-medium h-9"
-                >
+                <Button variant="default" size="sm" asChild className="rounded-xl font-medium h-9">
                   <a href={document.fileUrl} download>
                     <Download className="h-4 w-4 mr-2" />
                     Lejupielādēt
@@ -156,7 +153,9 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
           {hasFile && !isPdf && !isImage && (
             <div className="flex flex-col items-center justify-center h-full py-20 gap-4 text-muted-foreground">
               {resolveIcon(document.mimeType)}
-              <p className="text-base font-medium text-foreground">Priekšskatījums nav pieejams šim formātam</p>
+              <p className="text-base font-medium text-foreground">
+                Priekšskatījums nav pieejams šim formātam
+              </p>
               <Button variant="outline" className="rounded-xl mt-2" asChild>
                 <a href={document.fileUrl} target="_blank" rel="noopener noreferrer">
                   Lejupielādēt datni

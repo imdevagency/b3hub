@@ -35,15 +35,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { Text } from '@/components/ui/text';
-import {
-  Calendar,
-  Clock,
-  Package,
-  Send,
-  Trash2,
-  TrendingUp,
-  Truck,
-} from 'lucide-react-native';
+import { Calendar, Clock, Package, Send, Trash2, TrendingUp, Truck } from 'lucide-react-native';
 
 const CONTRACT_STATUS: Record<
   FrameworkContractStatus,
@@ -82,7 +74,11 @@ function ProgressBar({ pct, complete = false }: { pct: number; complete?: boolea
   return (
     <View style={s.progTrack}>
       <View
-        style={[s.progFill, complete && s.progFillDone, { width: `${Math.min(100, pct)}%` as const }]}
+        style={[
+          s.progFill,
+          complete && s.progFillDone,
+          { width: `${Math.min(100, pct)}%` as const },
+        ]}
       />
     </View>
   );
@@ -141,7 +137,7 @@ function PositionSection({
           value={
             position.pickupCity && position.deliveryCity
               ? `${position.pickupCity} → ${position.deliveryCity}`
-              : position.pickupCity ?? position.deliveryCity ?? null
+              : (position.pickupCity ?? position.deliveryCity ?? null)
           }
         />
         <DetailRow label="Darba uzdevumi" value={String(callOffCount)} last={callOffCount === 0} />
@@ -323,7 +319,9 @@ export default function FrameworkContractDetailScreen() {
     <ScreenContainer standalone bg="#ffffff">
       <ScreenHeader
         title={contract.title}
-        rightSlot={<StatusPill label={status.label} bg={status.bg} color={status.color} size="sm" />}
+        rightSlot={
+          <StatusPill label={status.label} bg={status.bg} color={status.color} size="sm" />
+        }
       />
 
       <ScrollView
@@ -398,7 +396,10 @@ export default function FrameworkContractDetailScreen() {
               {contract.recentCallOffs.map((callOff, index) => (
                 <View
                   key={callOff.id}
-                  style={[s.recentRow, index < contract.recentCallOffs.length - 1 && s.recentRowBorder]}
+                  style={[
+                    s.recentRow,
+                    index < contract.recentCallOffs.length - 1 && s.recentRowBorder,
+                  ]}
                 >
                   <View style={s.recentCopy}>
                     <Text size="sm" style={s.callOffNumber}>

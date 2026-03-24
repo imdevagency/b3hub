@@ -31,10 +31,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": [
-    "node_modules",
-    "scripts",
-    "*.js",
-    "*.mjs"
-  ]
+  "exclude": ["node_modules", "scripts", "*.js", "*.mjs"]
 }

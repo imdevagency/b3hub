@@ -15,7 +15,15 @@ import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
 import { createCartOrder, type ApiOrder } from '@/lib/api';
 
-import { ArrowLeft, CalendarDays, CheckCircle2, ClipboardList, Layers, MapPin, ReceiptText } from 'lucide-react';
+import {
+  ArrowLeft,
+  CalendarDays,
+  CheckCircle2,
+  ClipboardList,
+  Layers,
+  MapPin,
+  ReceiptText,
+} from 'lucide-react';
 
 import { MatStep1What, type SelectedItem } from '@/components/order/steps/MatStep1What';
 import { Step2Address } from '@/components/order/steps/Step2Address';
@@ -58,8 +66,7 @@ function MaterialsConfirmation({
           </div>
           <h1 className="text-2xl font-bold text-white">Pasūtījums veikts!</h1>
           <p className="mt-1 text-sm text-white/80">
-            Pasūtījuma numurs:{' '}
-            <span className="font-bold">{order.orderNumber}</span>
+            Pasūtījuma numurs: <span className="font-bold">{order.orderNumber}</span>
           </p>
         </div>
 
@@ -67,7 +74,10 @@ function MaterialsConfirmation({
         <div className="p-6 space-y-4">
           <div className="rounded-2xl border bg-muted/30 divide-y overflow-hidden">
             {items.map((item) => (
-              <div key={item.material.id} className="flex items-center justify-between px-4 py-3 text-sm">
+              <div
+                key={item.material.id}
+                className="flex items-center justify-between px-4 py-3 text-sm"
+              >
                 <div>
                   <p className="font-semibold">{item.material.name}</p>
                   <p className="text-xs text-muted-foreground">{item.material.supplier.name}</p>
@@ -340,11 +350,7 @@ function MaterialsOrderWizard() {
   // ── Confirmation screen ───────────────────────────────────────────────────
   if (confirmedOrder) {
     return (
-      <MaterialsConfirmation
-        order={confirmedOrder}
-        items={confirmedItems}
-        onReset={handleReset}
-      />
+      <MaterialsConfirmation order={confirmedOrder} items={confirmedItems} onReset={handleReset} />
     );
   }
 
@@ -387,11 +393,7 @@ function MaterialsOrderWizard() {
                   <div className="flex items-center gap-1.5 opacity-80">
                     <s.icon
                       className={`h-3.5 w-3.5 ${
-                        done
-                          ? 'text-green-600'
-                          : active
-                            ? 'text-primary'
-                            : 'text-muted-foreground'
+                        done ? 'text-green-600' : active ? 'text-primary' : 'text-muted-foreground'
                       }`}
                     />
                     <span

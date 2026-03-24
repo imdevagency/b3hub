@@ -10,9 +10,7 @@ export const MODE_HOME: Record<AppMode, string> = {
 };
 
 /** Derive the best default mode from the user's role flags. */
-function defaultModeForUser(
-  user: { canSell: boolean; canTransport: boolean } | null,
-): AppMode {
+function defaultModeForUser(user: { canSell: boolean; canTransport: boolean } | null): AppMode {
   if (!user) return 'buyer';
   // Capability flags are canonical for seller/driver access.
   if (user.canTransport && !user.canSell) return 'driver';

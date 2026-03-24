@@ -219,12 +219,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     if (activeMode === 'CARRIER') {
       const isDispatcher =
-        user?.isCompany &&
-        (user.companyRole === 'OWNER' || user.companyRole === 'MANAGER');
+        user?.isCompany && (user.companyRole === 'OWNER' || user.companyRole === 'MANAGER');
 
       const isCompanyDriver =
-        user?.isCompany &&
-        (user.companyRole === 'DRIVER' || user.companyRole === 'MEMBER');
+        user?.isCompany && (user.companyRole === 'DRIVER' || user.companyRole === 'MEMBER');
 
       if (isDispatcher) {
         // Inject Dispatcher Panel for company owners/managers only
@@ -247,9 +245,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           if (section.id === 'carrier-jobs') {
             return {
               ...section,
-              items: section.items.filter(
-                (item) => item.href !== '/dashboard/transporter',
-              ),
+              items: section.items.filter((item) => item.href !== '/dashboard/transporter'),
             };
           }
           return section;

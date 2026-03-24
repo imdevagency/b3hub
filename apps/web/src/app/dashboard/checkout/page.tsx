@@ -182,8 +182,8 @@ export default function CheckoutPage() {
               Grozs satur vairākus piegādātājus
             </DialogTitle>
             <DialogDescription>
-              Vienu pasūtījumu var iesniegt tikai vienam piegādātājam. Izvēlieties piegādātāju,
-              ar kuru vēlaties turpināt. Citu piegādātāju materiāli tiks noņemti no šī pasūtījuma.
+              Vienu pasūtījumu var iesniegt tikai vienam piegādātājam. Izvēlieties piegādātāju, ar
+              kuru vēlaties turpināt. Citu piegādātāju materiāli tiks noņemti no šī pasūtījuma.
             </DialogDescription>
           </DialogHeader>
 
@@ -211,8 +211,7 @@ export default function CheckoutPage() {
                   <ul className="text-xs text-muted-foreground space-y-1 max-h-20 overflow-y-auto">
                     {supplierItems.map((item) => (
                       <li key={item.material.id}>
-                        • {item.material.name} ({item.quantity}{' '}
-                        {UNIT_LABEL[item.material.unit]})
+                        • {item.material.name} ({item.quantity} {UNIT_LABEL[item.material.unit]})
                       </li>
                     ))}
                   </ul>
@@ -231,7 +230,10 @@ export default function CheckoutPage() {
           </div>
 
           <div className="pt-4 border-t text-xs text-muted-foreground space-y-1">
-            <p>💡 Padoms: Pēc šī pasūtījuma iesūtīšanas, jūs varat sākt jaunu grozu ar citiem piegādātāju materiāliem.</p>
+            <p>
+              💡 Padoms: Pēc šī pasūtījuma iesūtīšanas, jūs varat sākt jaunu grozu ar citiem
+              piegādātāju materiāliem.
+            </p>
           </div>
         </DialogContent>
       </Dialog>

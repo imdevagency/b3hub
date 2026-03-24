@@ -174,7 +174,7 @@ export default function DisposalWizard() {
       : null,
   );
   const [selectedWastes, setSelectedWastes] = useState<WasteType[]>(
-    state.wasteType ? [state.wasteType] : []
+    state.wasteType ? [state.wasteType] : [],
   );
 
   const toggleWaste = (id: WasteType) => {
@@ -185,7 +185,7 @@ export default function DisposalWizard() {
       } else {
         next = [...prev, id];
       }
-      const resolvedType = next.length > 1 ? 'MIXED' : (next[0] || null);
+      const resolvedType = next.length > 1 ? 'MIXED' : next[0] || null;
       if (resolvedType) setWasteType(resolvedType);
       return next;
     });
@@ -217,8 +217,7 @@ export default function DisposalWizard() {
     if (step === 1) {
       if (router.canGoBack()) router.back();
       else router.replace('/(buyer)/home' as never);
-    }
-    else setStep((s) => (s - 1) as Step);
+    } else setStep((s) => (s - 1) as Step);
   }, [step, router]);
 
   const handleSubmit = useCallback(async () => {
@@ -368,9 +367,13 @@ export default function DisposalWizard() {
                     activeOpacity={0.7}
                   >
                     <View style={{ marginRight: 16 }}>
-                      <WasteIcon size={24} color={isSel ? '#111827' : '#6b7280'} strokeWidth={1.5} />
+                      <WasteIcon
+                        size={24}
+                        color={isSel ? '#111827' : '#6b7280'}
+                        strokeWidth={1.5}
+                      />
                     </View>
-                    
+
                     <View style={s.wasteInfo}>
                       <Text style={[s.wasteLabel, isSel && { color: '#000' }]}>{opt.label}</Text>
                       <Text style={[s.wasteDesc, isSel && { color: '#4b5563' }]}>{opt.desc}</Text>
@@ -387,12 +390,7 @@ export default function DisposalWizard() {
         )}
 
         {/* ── Step 2: Location ── */}
-        {step === 2 && (
-          <InlineAddressStep 
-            picked={picked} 
-            onPick={handlePickConfirm}
-          />
-        )}
+        {step === 2 && <InlineAddressStep picked={picked} onPick={handlePickConfirm} />}
 
         {/* ── Step 3: Volume ── */}
         {step === 3 && (
@@ -420,9 +418,9 @@ export default function DisposalWizard() {
                     activeOpacity={0.7}
                   >
                     <View style={s.volRowIconBadge}>
-                      <Icon size={24} color={isSel ? "#111827" : "#6b7280"} strokeWidth={1.5} />
+                      <Icon size={24} color={isSel ? '#111827' : '#6b7280'} strokeWidth={1.5} />
                     </View>
-                    
+
                     <View style={s.volRowInfo}>
                       <Text style={[s.volRowLabel, isSel && s.volRowLabelSel]}>{p.label}</Text>
                       <Text style={[s.volRowSub, isSel && s.volRowSubSel]}>{p.sublabel}</Text>
@@ -435,9 +433,32 @@ export default function DisposalWizard() {
                 );
               })}
             </View>
-            <Text style={[s.sectionLabel, { textTransform: 'none', color: '#6b7280', fontSize: 13, marginLeft: 4, marginTop: 12 }]}>Papildu informācija (neobligāti)</Text>
+            <Text
+              style={[
+                s.sectionLabel,
+                {
+                  textTransform: 'none',
+                  color: '#6b7280',
+                  fontSize: 13,
+                  marginLeft: 4,
+                  marginTop: 12,
+                },
+              ]}
+            >
+              Papildu informācija (neobligāti)
+            </Text>
             <TextInput
-              style={[s.uberInput, s.uberInputMulti, { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1.5, borderColor: '#f3f4f6', paddingHorizontal: 16 }]}
+              style={[
+                s.uberInput,
+                s.uberInputMulti,
+                {
+                  backgroundColor: '#fff',
+                  borderRadius: 16,
+                  borderWidth: 1.5,
+                  borderColor: '#f3f4f6',
+                  paddingHorizontal: 16,
+                },
+              ]}
               placeholder="piem., Z0 Grunts, asfalta segums..."
               placeholderTextColor="#9ca3af"
               value={desc}
@@ -494,12 +515,16 @@ export default function DisposalWizard() {
               <DetailRow
                 icon={Trash2}
                 label="Atkritumu veids"
-                value={selectedWastes.length ? selectedWastes.map(w => WASTE_LABELS[w]).join(', ') : '—'}
+                value={
+                  selectedWastes.length
+                    ? selectedWastes.map((w) => WASTE_LABELS[w]).join(', ')
+                    : '—'
+                }
               />
-              <DetailRow 
+              <DetailRow
                 icon={Truck}
-                label="Transports" 
-                value={`${preset.truckCount} × ${truck.label}`} 
+                label="Transports"
+                value={`${preset.truckCount} × ${truck.label}`}
               />
               <DetailRow
                 icon={Weight}
@@ -558,7 +583,17 @@ export default function DisposalWizard() {
 }
 
 // ── Summary helper ────────────────────────────────────────────────
-function DetailRow({ label, value, icon: Icon, isLast }: { label: string; value: string; icon?: React.ElementType; isLast?: boolean }) {
+function DetailRow({
+  label,
+  value,
+  icon: Icon,
+  isLast,
+}: {
+  label: string;
+  value: string;
+  icon?: React.ElementType;
+  isLast?: boolean;
+}) {
   return (
     <View style={[s.detailRow, isLast && { borderBottomWidth: 0, paddingBottom: 0 }]}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -659,7 +694,7 @@ const s = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     borderWidth: 2,
-    borderColor: '#f3f4f6', 
+    borderColor: '#f3f4f6',
   },
   volRowSel: {
     borderColor: '#111827',

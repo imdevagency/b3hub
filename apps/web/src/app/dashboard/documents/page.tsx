@@ -137,7 +137,6 @@ const TABS: { id: FilterTab; label: string; icon: React.ElementType }[] = [
   { id: 'CONTRACT', label: 'Līgumi', icon: ScrollText },
 ];
 
-
 // ── Page ─────────────────────────────────────────────────────
 
 export default function DocumentsPage() {
@@ -231,7 +230,7 @@ export default function DocumentsPage() {
     return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
   }).length;
 
-      return (
+  return (
     <div className="w-full h-full pb-20 space-y-10 max-w-6xl mx-auto">
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-4 border-b border-border/40">
@@ -240,13 +239,14 @@ export default function DocumentsPage() {
             Mani Dokumenti
           </h1>
           <p className="text-muted-foreground mt-2 max-w-2xl text-sm sm:text-base">
-            Visi jūsu rēķini, svēršanas lapas, piegādes apstiprinājumi un sertifikāti — bez papīra, vienā vietā.
+            Visi jūsu rēķini, svēršanas lapas, piegādes apstiprinājumi un sertifikāti — bez papīra,
+            vienā vietā.
           </p>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={fetchDocs} 
-          disabled={fetching} 
+        <Button
+          variant="outline"
+          onClick={fetchDocs}
+          disabled={fetching}
           className="rounded-full shadow-none bg-background border-border hover:bg-muted/60 shrink-0"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${fetching ? 'animate-spin' : ''}`} />
@@ -260,10 +260,19 @@ export default function DocumentsPage() {
           { label: 'Kopā dokumenti', value: summary?.total ?? 0, color: 'text-foreground' },
           { label: 'Šajā mēnesī', value: thisMonth, color: 'text-foreground' },
           { label: 'Rēķini', value: summary?.byType?.INVOICE ?? 0, color: 'text-foreground' },
-          { label: 'Svēršanas lapas', value: summary?.byType?.WEIGHING_SLIP ?? 0, color: 'text-foreground' },
+          {
+            label: 'Svēršanas lapas',
+            value: summary?.byType?.WEIGHING_SLIP ?? 0,
+            color: 'text-foreground',
+          },
         ].map((stat) => (
-          <div key={stat.label} className="bg-muted/30 rounded-2xl p-5 flex flex-col justify-center">
-            <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">{stat.label}</p>
+          <div
+            key={stat.label}
+            className="bg-muted/30 rounded-2xl p-5 flex flex-col justify-center"
+          >
+            <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">
+              {stat.label}
+            </p>
             <p className={`text-3xl font-medium tracking-tight ${stat.color}`}>{stat.value}</p>
           </div>
         ))}
@@ -273,7 +282,8 @@ export default function DocumentsPage() {
         <div className="flex items-center gap-3 rounded-2xl bg-amber-500/10 px-5 py-4 text-sm text-amber-700/80">
           <div className="animate-pulse bg-amber-500/20 h-2 w-2 rounded-full shrink-0" />
           <span>
-            <strong>Priekšskatījuma režīms</strong> — šie ir piemēra dokumenti. Jūsu ištie dokumenti tiks ģenerēti šeit.
+            <strong>Priekšskatījuma režīms</strong> — šie ir piemēra dokumenti. Jūsu ištie dokumenti
+            tiks ģenerēti šeit.
           </span>
         </div>
       )}
@@ -283,15 +293,16 @@ export default function DocumentsPage() {
         {/* Tab pills */}
         <div className="flex flex-wrap items-center gap-2">
           {TABS.map((tab) => {
-            const count = tab.id === 'ALL' ? summary?.total : summary?.byType?.[tab.id as DocumentType];
+            const count =
+              tab.id === 'ALL' ? summary?.total : summary?.byType?.[tab.id as DocumentType];
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`relative flex items-center justify-center h-9 px-4 rounded-full text-sm font-medium transition-all duration-200 ${
-                  isActive 
-                    ? 'bg-foreground text-background shadow-md' 
+                  isActive
+                    ? 'bg-foreground text-background shadow-md'
                     : 'bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground'
                 }`}
               >
@@ -354,7 +365,6 @@ export default function DocumentsPage() {
           ))}
         </div>
       )}
-      
 
       {/* ── Inline document viewer ── */}
       <DocumentViewer document={viewerDoc} onClose={() => setViewerDoc(null)} />

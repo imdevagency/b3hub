@@ -201,9 +201,7 @@ export function Step3DateOffers({
       <div
         className={cn(
           'grid gap-6 items-start',
-          compact
-            ? 'grid-cols-1'
-            : 'grid-cols-1 lg:grid-cols-[auto_1fr_260px]'
+          compact ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-[auto_1fr_260px]',
         )}
       >
         {/* ── LEFT: Calendar ─────────────────────────────────────────────── */}

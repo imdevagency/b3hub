@@ -90,9 +90,17 @@ export default function DisposalOrderPage() {
           { elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
           { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f5f5' }] },
           { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-          { featureType: 'road.arterial', elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
+          {
+            featureType: 'road.arterial',
+            elementType: 'labels.text.fill',
+            stylers: [{ color: '#757575' }],
+          },
           { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c9d9e8' }] },
-          { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#9e9e9e' }] },
+          {
+            featureType: 'water',
+            elementType: 'labels.text.fill',
+            stylers: [{ color: '#9e9e9e' }],
+          },
           { featureType: 'poi', stylers: [{ visibility: 'off' }] },
           { featureType: 'transit', stylers: [{ visibility: 'off' }] },
         ],
@@ -123,7 +131,9 @@ export default function DisposalOrderPage() {
               },
             });
           },
-          () => { /* permission denied — stay on Riga */ },
+          () => {
+            /* permission denied — stay on Riga */
+          },
           { timeout: 8000 },
         );
       }
@@ -240,54 +250,56 @@ export default function DisposalOrderPage() {
     <div className="h-[calc(100vh-100px)] w-full bg-background rounded-2xl overflow-hidden shadow-lg border flex flex-col-reverse lg:flex-row">
       <div className="w-full lg:w-105 shrink-0 flex flex-col bg-background z-10 relative border-t lg:border-t-0 lg:border-r">
         <div className="p-5 border-b bg-card space-y-3">
-          <Link href="/dashboard/order" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            href="/dashboard/order"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
             <ArrowLeft className="h-3.5 w-3.5" /> Atpakaļ
           </Link>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Būvgružu Izvešana</h1>
-            <p className="text-sm text-muted-foreground mt-1">Pasūtiet konteineru vai tehniku būvgružu izvešanai</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Pasūtiet konteineru vai tehniku būvgružu izvešanai
+            </p>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto p-5 scrollbar-thin">
           <div className="space-y-6">
-{/* Step indicators */}
-          <div className="flex gap-2 w-full mb-6">
-            {STEPS.map((s, i) => {
-              const n = i + 1;
-              const done = step > n;
-              const active = step === n;
-              return (
-                <div key={n} className="flex-1 flex flex-col gap-2">
-                  <div
-                    className={`h-1.25 w-full rounded-full transition-all ${
-                      done
-                        ? 'bg-green-500'
-                        : active
-                        ? 'bg-primary'
-                        : 'bg-muted'
-                    }`}
-                  />
-                  <div className="flex items-center gap-1.5 opacity-80">
-                    <s.icon className={`h-3.5 w-3.5 ${done ? 'text-green-600' : active ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <span
-                      className={`text-xs font-semibold ${
-                        done
-                          ? 'text-green-700'
-                          : active
-                          ? 'text-foreground'
-                          : 'text-muted-foreground'
+            {/* Step indicators */}
+            <div className="flex gap-2 w-full mb-6">
+              {STEPS.map((s, i) => {
+                const n = i + 1;
+                const done = step > n;
+                const active = step === n;
+                return (
+                  <div key={n} className="flex-1 flex flex-col gap-2">
+                    <div
+                      className={`h-1.25 w-full rounded-full transition-all ${
+                        done ? 'bg-green-500' : active ? 'bg-primary' : 'bg-muted'
                       }`}
-                    >
-                      {s.label}
-                    </span>
+                    />
+                    <div className="flex items-center gap-1.5 opacity-80">
+                      <s.icon
+                        className={`h-3.5 w-3.5 ${done ? 'text-green-600' : active ? 'text-primary' : 'text-muted-foreground'}`}
+                      />
+                      <span
+                        className={`text-xs font-semibold ${
+                          done
+                            ? 'text-green-700'
+                            : active
+                              ? 'text-foreground'
+                              : 'text-muted-foreground'
+                        }`}
+                      >
+                        {s.label}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-                    <div className="p-0">
-
+            <div className="p-0">
               {/* Step 1: Waste type */}
               {step === 1 && (
                 <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
@@ -340,9 +352,7 @@ export default function DisposalOrderPage() {
                       >
                         +
                       </Button>
-                      <span className="text-sm text-muted-foreground">
-                        ≈ {truckCount * 10}t
-                      </span>
+                      <span className="text-sm text-muted-foreground">≈ {truckCount * 10}t</span>
                     </div>
                   </div>
                 </div>
@@ -438,7 +448,9 @@ export default function DisposalOrderPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label className="text-xs font-semibold text-slate-600 mb-1 block">Vārds, uzvārds</Label>
+                        <Label className="text-xs font-semibold text-slate-600 mb-1 block">
+                          Vārds, uzvārds
+                        </Label>
                         <Input
                           type="text"
                           placeholder="Jānis Bērziņš"
@@ -448,7 +460,9 @@ export default function DisposalOrderPage() {
                         />
                       </div>
                       <div>
-                        <Label className="text-xs font-semibold text-slate-600 mb-1 block">Tālrunis</Label>
+                        <Label className="text-xs font-semibold text-slate-600 mb-1 block">
+                          Tālrunis
+                        </Label>
                         <Input
                           type="tel"
                           placeholder="+371 20 000 000"
@@ -495,23 +509,27 @@ export default function DisposalOrderPage() {
                   </Button>
                 )}
               </div>
-              </div>
+            </div>
           </div>
         </div>
       </div>
       <div className="relative w-full h-75 lg:h-auto lg:flex-1 bg-muted/30">
         <div ref={mapDivRef} className="absolute inset-0" />
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-           {address && <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-green-600" />
-            <span className="truncate max-w-50">{address}</span>
-          </div>}
-          {date && <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
-            <CalendarDays className="h-4 w-4 text-blue-600" />
-             {date}
-          </div>}
+          {address && (
+            <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-green-600" />
+              <span className="truncate max-w-50">{address}</span>
+            </div>
+          )}
+          {date && (
+            <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-blue-600" />
+              {date}
+            </div>
+          )}
         </div>
       </div>
-    </div>  );
+    </div>
+  );
 }
-

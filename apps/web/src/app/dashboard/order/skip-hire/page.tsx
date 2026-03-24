@@ -34,7 +34,7 @@ const STEPS = [
 export default function SkipHireOrderPage() {
   const router = useRouter();
   const { token } = useAuth();
-  
+
   const [step, setStep] = useState(1);
   const [confirmedOrder, setConfirmedOrder] = useState<SkipHireOrder | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -81,9 +81,17 @@ export default function SkipHireOrderPage() {
           { elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
           { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f5f5' }] },
           { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-          { featureType: 'road.arterial', elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
+          {
+            featureType: 'road.arterial',
+            elementType: 'labels.text.fill',
+            stylers: [{ color: '#757575' }],
+          },
           { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c9d9e8' }] },
-          { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#9e9e9e' }] },
+          {
+            featureType: 'water',
+            elementType: 'labels.text.fill',
+            stylers: [{ color: '#9e9e9e' }],
+          },
           { featureType: 'poi', stylers: [{ visibility: 'off' }] },
           { featureType: 'transit', stylers: [{ visibility: 'off' }] },
         ],
@@ -114,7 +122,9 @@ export default function SkipHireOrderPage() {
               },
             });
           },
-          () => { /* permission denied — stay on Riga */ },
+          () => {
+            /* permission denied — stay on Riga */
+          },
           { timeout: 8000 },
         );
       }
@@ -228,7 +238,10 @@ export default function SkipHireOrderPage() {
     <div className="h-[calc(100vh-100px)] w-full bg-background rounded-2xl overflow-hidden shadow-lg border flex flex-col-reverse lg:flex-row">
       <div className="w-full lg:w-115 shrink-0 flex flex-col bg-background z-10 relative border-t lg:border-t-0 lg:border-r">
         <div className="p-5 border-b bg-card space-y-3">
-          <Link href="/dashboard/order" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            href="/dashboard/order"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
             <ArrowLeft className="h-3.5 w-3.5" /> Atpakaļ
           </Link>
           <div>
@@ -238,7 +251,7 @@ export default function SkipHireOrderPage() {
             </p>
           </div>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto p-5 scrollbar-thin flex flex-col space-y-6">
           {/* Step indicators */}
           <div className="flex gap-2 w-full shrink-0">
@@ -250,22 +263,20 @@ export default function SkipHireOrderPage() {
                 <div key={n} className="flex-1 flex flex-col gap-2">
                   <div
                     className={`h-1.25 w-full rounded-full transition-all ${
-                      done
-                        ? 'bg-green-500'
-                        : active
-                        ? 'bg-primary'
-                        : 'bg-muted'
+                      done ? 'bg-green-500' : active ? 'bg-primary' : 'bg-muted'
                     }`}
                   />
                   <div className="flex items-center gap-1.5 opacity-80">
-                    <s.icon className={`h-3.5 w-3.5 ${done ? 'text-green-600' : active ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <s.icon
+                      className={`h-3.5 w-3.5 ${done ? 'text-green-600' : active ? 'text-primary' : 'text-muted-foreground'}`}
+                    />
                     <span
                       className={`text-xs font-semibold ${
                         done
                           ? 'text-green-700'
                           : active
-                          ? 'text-foreground'
-                          : 'text-muted-foreground'
+                            ? 'text-foreground'
+                            : 'text-muted-foreground'
                       }`}
                     >
                       <span className="hidden sm:inline">{s.label}</span>

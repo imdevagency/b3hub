@@ -48,7 +48,10 @@ export function ScreenHeader({
       {/* Back button */}
       <TouchableOpacity
         style={styles.backBtn}
-        onPress={onBack ?? (() => router.canGoBack() ? router.back() : router.replace('/(buyer)/home' as any))}
+        onPress={
+          onBack ??
+          (() => (router.canGoBack() ? router.back() : router.replace('/(buyer)/home' as any)))
+        }
         hitSlop={10}
         activeOpacity={0.7}
         accessibilityLabel="Atpakaļ"

@@ -173,7 +173,6 @@ function mapApiJob(j: ApiTransportJob): TransportJob {
 const RADIUS_OPTIONS = [25, 50, 100, 150, 200];
 const LS_KEY = 'b3hub_web_saved_job_searches';
 
-
 export default function JobsPage() {
   const { user, token } = useAuth();
 
@@ -434,12 +433,16 @@ export default function JobsPage() {
                   <div className="relative flex items-center">
                     <select
                       value={draft.fromRadius}
-                      onChange={(e) => setDraft((d) => ({ ...d, fromRadius: Number(e.target.value) }))}
+                      onChange={(e) =>
+                        setDraft((d) => ({ ...d, fromRadius: Number(e.target.value) }))
+                      }
                       className="appearance-none bg-transparent pl-4 pr-8 py-3.5 text-sm font-semibold outline-none cursor-pointer text-foreground"
                     >
                       <option value={0}>+ 0 km</option>
                       {RADIUS_OPTIONS.map((r) => (
-                        <option key={r} value={r}>+ {r} km</option>
+                        <option key={r} value={r}>
+                          + {r} km
+                        </option>
                       ))}
                     </select>
                     <ChevronDown className="h-4 w-4 absolute right-3 pointer-events-none text-muted-foreground" />
@@ -468,12 +471,16 @@ export default function JobsPage() {
                   <div className="relative flex items-center">
                     <select
                       value={draft.toRadius}
-                      onChange={(e) => setDraft((d) => ({ ...d, toRadius: Number(e.target.value) }))}
+                      onChange={(e) =>
+                        setDraft((d) => ({ ...d, toRadius: Number(e.target.value) }))
+                      }
                       className="appearance-none bg-transparent pl-4 pr-8 py-3.5 text-sm font-semibold outline-none cursor-pointer text-foreground"
                     >
                       <option value={0}>+ 0 km</option>
                       {RADIUS_OPTIONS.map((r) => (
-                        <option key={r} value={r}>+ {r} km</option>
+                        <option key={r} value={r}>
+                          + {r} km
+                        </option>
                       ))}
                     </select>
                     <ChevronDown className="h-4 w-4 absolute right-3 pointer-events-none text-muted-foreground" />
@@ -653,11 +660,15 @@ export default function JobsPage() {
                       <div className="flex flex-wrap items-center gap-1.5 mt-1 text-sm text-muted-foreground/80">
                         <span>{job.distanceKm} km</span>
                         <span>•</span>
-                        <span>{job.weightTonnes}t {job.payload}</span>
+                        <span>
+                          {job.weightTonnes}t {job.payload}
+                        </span>
                         {job.pricePerTonne > 0 && (
                           <>
                             <span>•</span>
-                            <span>{job.pricePerTonne.toFixed(2)} {job.currency}/t</span>
+                            <span>
+                              {job.pricePerTonne.toFixed(2)} {job.currency}/t
+                            </span>
                           </>
                         )}
                       </div>
@@ -671,23 +682,27 @@ export default function JobsPage() {
                   <div className="relative mt-2 mb-6 ml-1">
                     {/* The connecting vertical line */}
                     <div className="absolute left-[3.5px] top-4 bottom-4 w-px bg-foreground/20" />
-                    
+
                     {/* Pickup */}
                     <div className="relative flex gap-4 mb-5">
                       <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-foreground z-10" />
                       <div>
-                        <p className="font-medium text-foreground text-[15px] leading-tight">{job.fromCity}</p>
+                        <p className="font-medium text-foreground text-[15px] leading-tight">
+                          {job.fromCity}
+                        </p>
                         <p className="text-sm text-muted-foreground mt-0.5">
                           {job.date} • {job.time}
                         </p>
                       </div>
                     </div>
-                    
+
                     {/* Delivery */}
                     <div className="relative flex gap-4">
                       <div className="mt-1.5 h-2 w-2 shrink-0 bg-foreground z-10" />
                       <div>
-                        <p className="font-medium text-foreground text-[15px] leading-tight">{job.toCity}</p>
+                        <p className="font-medium text-foreground text-[15px] leading-tight">
+                          {job.toCity}
+                        </p>
                         <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1 pr-4">
                           {job.toAddress}
                         </p>
@@ -708,17 +723,20 @@ export default function JobsPage() {
                       >
                         Plānot darbu
                       </Button>
-                    ) : (user?.canTransport && !user?.isCompany) && (
-                      // Independent owner-operator — can self-accept directly from web
-                      <Button
-                        className="w-full rounded-xl h-11.5 mt-4 text-[15px] font-medium bg-foreground text-background hover:bg-foreground/90 transition-all shadow-none"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAccept(job.id);
-                        }}
-                      >
-                        Pieņemt
-                      </Button>
+                    ) : (
+                      user?.canTransport &&
+                      !user?.isCompany && (
+                        // Independent owner-operator — can self-accept directly from web
+                        <Button
+                          className="w-full rounded-xl h-11.5 mt-4 text-[15px] font-medium bg-foreground text-background hover:bg-foreground/90 transition-all shadow-none"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAccept(job.id);
+                          }}
+                        >
+                          Pieņemt
+                        </Button>
+                      )
                     )}
                   </div>
                 </div>
@@ -761,7 +779,9 @@ export default function JobsPage() {
                   <div className="flex items-start gap-3">
                     <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/50 border-2 border-muted mt-1 shrink-0" />
                     <div>
-                      <p className="font-semibold text-sm text-foreground">{dispatchJob.fromCity}</p>
+                      <p className="font-semibold text-sm text-foreground">
+                        {dispatchJob.fromCity}
+                      </p>
                       <p className="text-xs text-muted-foreground">{dispatchJob.fromAddress}</p>
                     </div>
                   </div>
@@ -892,7 +912,10 @@ export default function JobsPage() {
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   Darba veids *
                 </Label>
-                <Select value={createForm.jobType ?? 'MATERIAL_DELIVERY'} onValueChange={(v) => setField('jobType', v)}>
+                <Select
+                  value={createForm.jobType ?? 'MATERIAL_DELIVERY'}
+                  onValueChange={(v) => setField('jobType', v)}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>

@@ -37,7 +37,11 @@ const MAP_STYLES = [
   { elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f5f5' }] },
   { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-  { featureType: 'road.arterial', elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
+  {
+    featureType: 'road.arterial',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#757575' }],
+  },
   { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c9d9e8' }] },
   { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#9e9e9e' }] },
   { featureType: 'poi', stylers: [{ visibility: 'off' }] },
@@ -120,7 +124,9 @@ export default function TransportOrderPage() {
               },
             });
           },
-          () => { /* permission denied — stay on Riga */ },
+          () => {
+            /* permission denied — stay on Riga */
+          },
           { timeout: 8000 },
         );
       }
@@ -132,9 +138,12 @@ export default function TransportOrderPage() {
     const google = (window as any).google;
     if (!google || !mapInstanceRef.current) return;
     if (
-      pickupLat === undefined || pickupLng === undefined ||
-      dropoffLat === undefined || dropoffLng === undefined
-    ) return;
+      pickupLat === undefined ||
+      pickupLng === undefined ||
+      dropoffLat === undefined ||
+      dropoffLng === undefined
+    )
+      return;
 
     const path = [
       { lat: pickupLat, lng: pickupLng },
@@ -295,7 +304,9 @@ export default function TransportOrderPage() {
         <div className="space-y-1">
           <h1 className="text-2xl font-bold">Transporta pieprasījums nosūtīts</h1>
           <p className="text-sm text-muted-foreground">Atsauces numurs: #{createdRef}</p>
-          <p className="text-sm text-muted-foreground">{pickupAddress} → {dropoffAddress}</p>
+          <p className="text-sm text-muted-foreground">
+            {pickupAddress} → {dropoffAddress}
+          </p>
         </div>
         <div className="flex items-center justify-center gap-3">
           <Button onClick={() => router.push('/dashboard/orders')}>Skatīt pasūtījumus</Button>
@@ -311,12 +322,17 @@ export default function TransportOrderPage() {
     <div className="h-[calc(100vh-100px)] w-full bg-background rounded-2xl overflow-hidden shadow-lg border flex flex-col-reverse lg:flex-row">
       <div className="w-full lg:w-105 shrink-0 flex flex-col bg-background z-10 relative border-t lg:border-t-0 lg:border-r">
         <div className="p-5 border-b bg-card space-y-3">
-          <Link href="/dashboard/order" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            href="/dashboard/order"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
             <ArrowLeft className="h-3.5 w-3.5" /> Atpakaļ
           </Link>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Kravu Pārvadājumi</h1>
-            <p className="text-sm text-muted-foreground mt-1">Pasūtiet tehniku materiālu pārvešanai</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Pasūtiet tehniku materiālu pārvešanai
+            </p>
           </div>
         </div>
 
@@ -337,13 +353,21 @@ export default function TransportOrderPage() {
                     }}
                     className="group flex flex-1 flex-col gap-2 relative disabled:opacity-50 text-left outline-none"
                   >
-                    <div className={`h-1.25 w-full rounded-full transition-all duration-300 ${
-                      active ? 'bg-[#D82B24]' : done ? 'bg-[#D82B24]/40' : 'bg-gray-200'
-                    }`} />
-                    <span className={`text-[11px] font-bold tracking-wider uppercase transition-colors pr-1 truncate ${
-                      active ? 'text-[#D82B24]' : done ? 'text-foreground hover:text-[#D82B24]' : 'text-muted-foreground'
-                    }`}>
-                       {s.label}
+                    <div
+                      className={`h-1.25 w-full rounded-full transition-all duration-300 ${
+                        active ? 'bg-[#D82B24]' : done ? 'bg-[#D82B24]/40' : 'bg-gray-200'
+                      }`}
+                    />
+                    <span
+                      className={`text-[11px] font-bold tracking-wider uppercase transition-colors pr-1 truncate ${
+                        active
+                          ? 'text-[#D82B24]'
+                          : done
+                            ? 'text-foreground hover:text-[#D82B24]'
+                            : 'text-muted-foreground'
+                      }`}
+                    >
+                      {s.label}
                     </span>
                   </button>
                 );
@@ -355,7 +379,9 @@ export default function TransportOrderPage() {
                 <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
                   <div>
                     <h2 className="text-xl font-bold">No kurienes vedīsim?</h2>
-                    <p className="text-sm text-muted-foreground mt-1">Ievadiet iekraušanas adresi</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Ievadiet iekraušanas adresi
+                    </p>
                   </div>
                   <div className="relative">
                     <div className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 rounded-full bg-black flex items-center justify-center z-10 pointer-events-none">
@@ -374,7 +400,9 @@ export default function TransportOrderPage() {
                       <MapPin className="h-5 w-5 text-black mt-0.5 shrink-0" />
                       <div>
                         <p className="text-[15px] font-medium text-foreground">{pickupAddress}</p>
-                        {pickupCity && <p className="text-sm text-muted-foreground">{pickupCity}</p>}
+                        {pickupCity && (
+                          <p className="text-sm text-muted-foreground">{pickupCity}</p>
+                        )}
                       </div>
                     </div>
                   )}
@@ -385,7 +413,9 @@ export default function TransportOrderPage() {
                 <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
                   <div>
                     <h2 className="text-xl font-bold">Uz kurieni vedīsim?</h2>
-                    <p className="text-sm text-muted-foreground mt-1">Ievadiet izkraušanas adresi</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Ievadiet izkraušanas adresi
+                    </p>
                   </div>
                   <div className="relative">
                     <div className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 bg-black flex items-center justify-center z-10 pointer-events-none">
@@ -404,7 +434,9 @@ export default function TransportOrderPage() {
                       <MapPin className="h-5 w-5 text-black mt-0.5 shrink-0" />
                       <div>
                         <p className="text-[15px] font-medium text-foreground">{dropoffAddress}</p>
-                        {dropoffCity && <p className="text-sm text-muted-foreground">{dropoffCity}</p>}
+                        {dropoffCity && (
+                          <p className="text-sm text-muted-foreground">{dropoffCity}</p>
+                        )}
                       </div>
                     </div>
                   )}
@@ -420,7 +452,9 @@ export default function TransportOrderPage() {
 
                   <div className="space-y-4">
                     <div>
-                      <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Tehnikas veids</Label>
+                      <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                        Tehnikas veids
+                      </Label>
                       <div className="grid grid-cols-2 gap-3">
                         <Button
                           variant="outline"
@@ -429,8 +463,12 @@ export default function TransportOrderPage() {
                           onClick={() => setVehicleType('TIPPER_SMALL')}
                         >
                           <div className="flex flex-col items-start gap-1">
-                            <Truck className={`h-5 w-5 ${vehicleType === 'TIPPER_SMALL' ? 'text-black' : 'text-muted-foreground'}`} />
-                            <span className={vehicleType === 'TIPPER_SMALL' ? 'font-bold' : ''}>Pašizgāzējs (10 t)</span>
+                            <Truck
+                              className={`h-5 w-5 ${vehicleType === 'TIPPER_SMALL' ? 'text-black' : 'text-muted-foreground'}`}
+                            />
+                            <span className={vehicleType === 'TIPPER_SMALL' ? 'font-bold' : ''}>
+                              Pašizgāzējs (10 t)
+                            </span>
                           </div>
                         </Button>
                         <Button
@@ -440,15 +478,21 @@ export default function TransportOrderPage() {
                           onClick={() => setVehicleType('TIPPER_LARGE')}
                         >
                           <div className="flex flex-col items-start gap-1">
-                            <Truck className={`h-5 w-5 ${vehicleType === 'TIPPER_LARGE' ? 'text-black' : 'text-muted-foreground'}`} />
-                            <span className={vehicleType === 'TIPPER_LARGE' ? 'font-bold' : ''}>Pašizgāzējs (18 t)</span>
+                            <Truck
+                              className={`h-5 w-5 ${vehicleType === 'TIPPER_LARGE' ? 'text-black' : 'text-muted-foreground'}`}
+                            />
+                            <span className={vehicleType === 'TIPPER_LARGE' ? 'font-bold' : ''}>
+                              Pašizgāzējs (18 t)
+                            </span>
                           </div>
                         </Button>
                       </div>
                     </div>
 
                     <div>
-                      <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Kravas svars (tonnās)</Label>
+                      <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                        Kravas svars (tonnās)
+                      </Label>
                       <Input
                         type="number"
                         min={0.1}
@@ -459,7 +503,9 @@ export default function TransportOrderPage() {
                       />
                     </div>
                     <div>
-                      <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Kravas apraksts</Label>
+                      <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                        Kravas apraksts
+                      </Label>
                       <Textarea
                         placeholder="Piem. Ekskavators CAT 320, smilts krava..."
                         className="rounded-xl border-2 resize-none focus-visible:ring-0 focus-visible:border-black text-[15px] p-3 outline-none"
@@ -476,12 +522,16 @@ export default function TransportOrderPage() {
                 <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                   <div>
                     <h2 className="text-xl font-bold">Kad vedīsim?</h2>
-                    <p className="text-sm text-muted-foreground mt-1">Izvēlieties datumu un pievienojiet piezīmes</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Izvēlieties datumu un pievienojiet piezīmes
+                    </p>
                   </div>
 
                   <div className="space-y-5">
                     <div>
-                      <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Vēlamais datums</Label>
+                      <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                        Vēlamais datums
+                      </Label>
                       <Input
                         type="date"
                         className="rounded-xl border-2 py-6 text-[15px] focus-visible:ring-0 focus-visible:border-black outline-none"
@@ -490,7 +540,9 @@ export default function TransportOrderPage() {
                       />
                     </div>
                     <div>
-                      <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Papildus piezīmes</Label>
+                      <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                        Papildus piezīmes
+                      </Label>
                       <Textarea
                         placeholder="Piekļuves nosacījumi, vārtu kodi u.c."
                         className="rounded-xl border-2 resize-none focus-visible:ring-0 focus-visible:border-black text-[15px] p-3 outline-none"
@@ -503,14 +555,18 @@ export default function TransportOrderPage() {
                     {/* Site contact info */}
                     <div className="rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/60 p-4 space-y-3">
                       <div>
-                        <p className="text-sm font-semibold text-slate-700">Objekta kontaktpersona</p>
+                        <p className="text-sm font-semibold text-slate-700">
+                          Objekta kontaktpersona
+                        </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           Šoferis var sazināties ar šo personu piegādes brīdī
                         </p>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <Label className="text-[13px] font-semibold text-slate-600 mb-1 block">Vārds, uzvārds</Label>
+                          <Label className="text-[13px] font-semibold text-slate-600 mb-1 block">
+                            Vārds, uzvārds
+                          </Label>
                           <Input
                             type="text"
                             placeholder="Jānis Bērziņš"
@@ -520,7 +576,9 @@ export default function TransportOrderPage() {
                           />
                         </div>
                         <div>
-                          <Label className="text-[13px] font-semibold text-slate-600 mb-1 block">Tālrunis</Label>
+                          <Label className="text-[13px] font-semibold text-slate-600 mb-1 block">
+                            Tālrunis
+                          </Label>
                           <Input
                             type="tel"
                             placeholder="+371 20 000 000"
@@ -549,24 +607,28 @@ export default function TransportOrderPage() {
             >
               Atpakaļ
             </Button>
-            
+
             {step < 4 ? (
-              <Button 
+              <Button
                 size="lg"
-                onClick={() => setStep(step + 1)} 
-                disabled={!canAdvance()} 
+                onClick={() => setStep(step + 1)}
+                disabled={!canAdvance()}
                 className="flex-1 rounded-xl font-semibold bg-black hover:bg-black/90 text-white shadow-lg gap-2"
               >
                 Tālāk <ChevronRight className="h-4 w-4" />
               </Button>
             ) : (
-              <Button 
+              <Button
                 size="lg"
-                onClick={handleSubmit} 
-                disabled={!canAdvance() || loading} 
+                onClick={handleSubmit}
+                disabled={!canAdvance() || loading}
                 className="flex-2 rounded-xl font-bold bg-black hover:bg-black/90 text-white shadow-lg gap-2"
               >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
+                {loading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-5 w-5" />
+                )}
                 Apstiprināt
               </Button>
             )}
@@ -586,8 +648,12 @@ export default function TransportOrderPage() {
                   <div className="h-2 w-2 rounded-full bg-white" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Iekraušana</p>
-                  <p className="text-[13px] font-semibold truncate text-foreground">{pickupAddress}</p>
+                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                    Iekraušana
+                  </p>
+                  <p className="text-[13px] font-semibold truncate text-foreground">
+                    {pickupAddress}
+                  </p>
                 </div>
               </div>
             )}
@@ -597,8 +663,12 @@ export default function TransportOrderPage() {
                   <div className="h-2 w-2 bg-white" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Izkraušana</p>
-                  <p className="text-[13px] font-semibold truncate text-foreground">{dropoffAddress}</p>
+                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                    Izkraušana
+                  </p>
+                  <p className="text-[13px] font-semibold truncate text-foreground">
+                    {dropoffAddress}
+                  </p>
                 </div>
               </div>
             )}

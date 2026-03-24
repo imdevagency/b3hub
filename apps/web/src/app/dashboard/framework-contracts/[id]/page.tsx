@@ -436,8 +436,8 @@ export default function BuyerProjectDetailPage() {
           <div>
             <p className="text-sm font-semibold text-amber-800">Projekts ir melnrakstā</p>
             <p className="text-xs text-amber-700 mt-0.5">
-              Lai varētu izlaist pasūtījumus pret šī projekta pozīcijām, aktivizējiet to ar pogu augstāk.
-              Jūusu piegādātājs rēķinsūs pec aktivizācijas.
+              Lai varētu izlaist pasūtījumus pret šī projekta pozīcijām, aktivizējiet to ar pogu
+              augstāk. Jūusu piegādātājs rēķinsūs pec aktivizācijas.
             </p>
           </div>
         </div>

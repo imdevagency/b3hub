@@ -16,10 +16,7 @@ import {
   SKIP_SIZE_LABEL,
   StatusBadgeHex,
 } from '@/lib/status-config';
-import {
-  confirmOrder,
-  cancelOrder,
-} from '@/lib/api';
+import { confirmOrder, cancelOrder } from '@/lib/api';
 import { useTransportJobs } from '@/hooks/use-transport-jobs';
 import { useMaterialOrders } from '@/hooks/use-material-orders';
 import { useBuyerOrders } from '@/hooks/use-buyer-orders';
@@ -37,12 +34,14 @@ import {
   X,
 } from 'lucide-react';
 
-
-
 function QuickStat({ value, label, alert }: { value: string; label: string; alert?: boolean }) {
   return (
-    <div className={`p-4 rounded-2xl ${alert ? 'bg-red-50 text-red-900 border border-red-100' : 'bg-muted/30 border border-transparent'} flex flex-col justify-center`}>
-      <span className={`text-xs font-semibold uppercase tracking-wider mb-1 ${alert ? 'text-red-700' : 'text-muted-foreground'}`}>
+    <div
+      className={`p-4 rounded-2xl ${alert ? 'bg-red-50 text-red-900 border border-red-100' : 'bg-muted/30 border border-transparent'} flex flex-col justify-center`}
+    >
+      <span
+        className={`text-xs font-semibold uppercase tracking-wider mb-1 ${alert ? 'text-red-700' : 'text-muted-foreground'}`}
+      >
         {label}
       </span>
       <span className={`text-2xl font-bold tracking-tight ${alert ? '' : 'text-foreground'}`}>

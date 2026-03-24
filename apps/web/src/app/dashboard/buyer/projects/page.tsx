@@ -76,13 +76,18 @@ function ContractCard({ contract }: { contract: ApiFrameworkContract }) {
           <div>
             <div className="flex items-start justify-between gap-3 mb-4">
               <div className="min-w-0">
-                <p className="text-xs text-muted-foreground font-medium mb-1">{contract.contractNumber}</p>
+                <p className="text-xs text-muted-foreground font-medium mb-1">
+                  {contract.contractNumber}
+                </p>
                 <p className="text-base font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                   {contract.title}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <Badge variant={meta.variant} className="text-[10px] h-5 rounded-full px-2.5 font-medium">
+                <Badge
+                  variant={meta.variant}
+                  className="text-[10px] h-5 rounded-full px-2.5 font-medium"
+                >
                   {meta.label}
                 </Badge>
                 <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
@@ -416,7 +421,7 @@ export default function BuyerProjectsPage() {
   const active = contracts.filter((c) => c.status === 'ACTIVE');
   const rest = contracts.filter((c) => c.status !== 'ACTIVE');
 
-    return (
+  return (
     <div className="w-full h-full pb-20 space-y-8">
       {/* header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 mb-2">

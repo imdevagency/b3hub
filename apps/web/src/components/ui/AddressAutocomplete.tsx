@@ -32,9 +32,10 @@ export function loadGoogleMapsScript(apiKey: string, onReady: () => void) {
 
   // Another loader (e.g. @react-google-maps/api) may have already injected the script tag.
   // Avoid duplicate injection — just wait for it to complete.
-  const existing = typeof document !== 'undefined'
-    ? document.querySelector<HTMLScriptElement>('script[src*="maps.googleapis.com/maps/api/js"]')
-    : null;
+  const existing =
+    typeof document !== 'undefined'
+      ? document.querySelector<HTMLScriptElement>('script[src*="maps.googleapis.com/maps/api/js"]')
+      : null;
 
   if (existing) {
     scriptState = 'loading';
@@ -144,29 +145,33 @@ export function AddressAutocomplete({
       setPredictions([]);
       return;
     }
-    
+
     if (!autocompleteService.current) return;
 
     setLoading(true);
     const timeoutId = setTimeout(() => {
-      autocompleteService.current.getPlacePredictions({
-        input: value,
-        componentRestrictions: { country: ['lv'] },
-        types: ['address'],
-        sessionToken: sessionToken.current,
-      }, (results: any, status: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const google = (window as any).google;
-        setLoading(false);
-        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-          setPredictions(results);
-          if (document.activeElement?.id === id || document.activeElement?.closest('#' + id)) {
-            setOpen(true);
+      autocompleteService.current.getPlacePredictions(
+        {
+          input: value,
+          componentRestrictions: { country: ['lv'] },
+          types: ['address'],
+          sessionToken: sessionToken.current,
+        },
+        (results: any, status: any) => {
+          // eslint-disable-line @typescript-eslint/no-explicit-any
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const google = (window as any).google;
+          setLoading(false);
+          if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+            setPredictions(results);
+            if (document.activeElement?.id === id || document.activeElement?.closest('#' + id)) {
+              setOpen(true);
+            }
+          } else {
+            setPredictions([]);
           }
-        } else {
-          setPredictions([]);
-        }
-      });
+        },
+      );
     }, 300);
 
     return () => clearTimeout(timeoutId);
@@ -176,46 +181,50 @@ export function AddressAutocomplete({
   const handleSelect = (prediction: any) => {
     setOpen(false);
     onChange(prediction.description);
-    
+
     if (!placesService.current) return;
 
-    placesService.current.getDetails({
-      placeId: prediction.place_id,
-      fields: ['address_components', 'formatted_address', 'geometry'],
-      sessionToken: sessionToken.current,
-    }, (place: any, status: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const google = (window as any).google;
-      if (status !== google.maps.places.PlacesServiceStatus.OK || !place) return;
+    placesService.current.getDetails(
+      {
+        placeId: prediction.place_id,
+        fields: ['address_components', 'formatted_address', 'geometry'],
+        sessionToken: sessionToken.current,
+      },
+      (place: any, status: any) => {
+        // eslint-disable-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const google = (window as any).google;
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !place) return;
 
-      let route = '';
-      let streetNumber = '';
-      let city = '';
-      let postal = '';
+        let route = '';
+        let streetNumber = '';
+        let city = '';
+        let postal = '';
 
-      const comps = place.address_components || [];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      for (const component of comps as any[]) {
-        const type = component.types[0];
-        if (type === 'route') route = component.long_name;
-        else if (type === 'street_number') streetNumber = component.long_name;
-        else if (type === 'locality') city = component.long_name;
-        else if (type === 'postal_code') postal = component.long_name;
-      }
+        const comps = place.address_components || [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        for (const component of comps as any[]) {
+          const type = component.types[0];
+          if (type === 'route') route = component.long_name;
+          else if (type === 'street_number') streetNumber = component.long_name;
+          else if (type === 'locality') city = component.long_name;
+          else if (type === 'postal_code') postal = component.long_name;
+        }
 
-      const address = route
-        ? `${route}${streetNumber ? ' ' + streetNumber : ''}`
-        : (place.formatted_address ?? '');
+        const address = route
+          ? `${route}${streetNumber ? ' ' + streetNumber : ''}`
+          : (place.formatted_address ?? '');
 
-      const lat = place.geometry?.location?.lat();
-      const lng = place.geometry?.location?.lng();
+        const lat = place.geometry?.location?.lat();
+        const lng = place.geometry?.location?.lng();
 
-      onChange(address);
-      onSelect({ address, city, postal, lat, lng });
+        onChange(address);
+        onSelect({ address, city, postal, lat, lng });
 
-      // Reset session token after a selection
-      sessionToken.current = new google.maps.places.AutocompleteSessionToken();
-    });
+        // Reset session token after a selection
+        sessionToken.current = new google.maps.places.AutocompleteSessionToken();
+      },
+    );
   };
 
   return (

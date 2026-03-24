@@ -7,14 +7,17 @@
 import { useState } from 'react';
 import { Loader2, LocateFixed, MapPin } from 'lucide-react';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
-import {
-  AddressAutocomplete,
-  type PlaceAddress,
-} from '@/components/ui/AddressAutocomplete';
+import { AddressAutocomplete, type PlaceAddress } from '@/components/ui/AddressAutocomplete';
 
 interface Props {
   value: string;
-  onAddressChange: (address: string, lat?: number, lng?: number, city?: string, postal?: string) => void;
+  onAddressChange: (
+    address: string,
+    lat?: number,
+    lng?: number,
+    city?: string,
+    postal?: string,
+  ) => void;
   onNext: () => void;
   onBack: () => void;
   /** Override the step heading (defaults to skip-hire wording) */
@@ -25,7 +28,15 @@ interface Props {
   nextLabel?: string;
 }
 
-export function Step2Address({ value, onAddressChange, onNext, onBack, title, subtitle, nextLabel }: Props) {
+export function Step2Address({
+  value,
+  onAddressChange,
+  onNext,
+  onBack,
+  title,
+  subtitle,
+  nextLabel,
+}: Props) {
   const [input, setInput] = useState(value);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState('');

@@ -182,26 +182,26 @@ Admin panel
 
 ### 🛒 Buyers
 
-| Feature | Web app | Mobile app |
-|---------|:-------:|:----------:|
-| Register / Log in | ✅ | ✅ |
-| Browse material catalog | ✅ | ✅ |
-| Place material delivery order | ✅ | ✅ |
-| Place skip hire / container order | ✅ | ✅ |
-| Place waste disposal booking | ✅ | ✅ |
-| Track active delivery (live map) | read-only | ✅ live |
-| Order history & detail | ✅ | ✅ |
-| Invoices & documents | ✅ | ✅ |
-| Compliance certificates | ✅ | ✅ |
-| Active containers overview | ✅ | ✅ |
-| Projects (grouped orders) | ✅ | ✅ |
-| Framework contracts | ✅ | ✅ |
-| RFQ / Quote requests | ✅ | ✅ |
-| Company & team management | ✅ | ✅ |
-| Submit reviews | ✅ | ✅ |
-| Chat (per job thread) | ✅ | ✅ |
-| Notifications | ✅ | ✅ push |
-| Profile & settings | ✅ | ✅ |
+| Feature                           |  Web app  | Mobile app |
+| --------------------------------- | :-------: | :--------: |
+| Register / Log in                 |    ✅     |     ✅     |
+| Browse material catalog           |    ✅     |     ✅     |
+| Place material delivery order     |    ✅     |     ✅     |
+| Place skip hire / container order |    ✅     |     ✅     |
+| Place waste disposal booking      |    ✅     |     ✅     |
+| Track active delivery (live map)  | read-only |  ✅ live   |
+| Order history & detail            |    ✅     |     ✅     |
+| Invoices & documents              |    ✅     |     ✅     |
+| Compliance certificates           |    ✅     |     ✅     |
+| Active containers overview        |    ✅     |     ✅     |
+| Projects (grouped orders)         |    ✅     |     ✅     |
+| Framework contracts               |    ✅     |     ✅     |
+| RFQ / Quote requests              |    ✅     |     ✅     |
+| Company & team management         |    ✅     |     ✅     |
+| Submit reviews                    |    ✅     |     ✅     |
+| Chat (per job thread)             |    ✅     |     ✅     |
+| Notifications                     |    ✅     |  ✅ push   |
+| Profile & settings                |    ✅     |     ✅     |
 
 **Primary platform:** Both — mobile for on-site ordering and tracking, web for B2B companies managing multiple projects, documents, and teams.
 
@@ -209,18 +209,18 @@ Admin panel
 
 ### 📦 Sellers (`canSell: true`)
 
-| Feature | Web app | Mobile app |
-|---------|:-------:|:----------:|
+| Feature                                  |  Web app   |   Mobile app   |
+| ---------------------------------------- | :--------: | :------------: |
 | Manage product catalog (add/edit/delete) | ✅ primary | ✅ lightweight |
-| View incoming orders | ✅ | ✅ |
-| Confirm / reject incoming orders | ✅ | ✅ |
-| Manage RFQ / quote requests | ✅ | ✅ |
-| Earnings & revenue analytics | ✅ | ✅ |
-| Reviews received | ✅ | ❌ |
-| Documents & delivery notes | ✅ | ❌ |
-| Chat | ✅ | ❌ |
-| Notifications | ✅ | ✅ push |
-| Profile & settings | ✅ | ✅ |
+| View incoming orders                     |     ✅     |       ✅       |
+| Confirm / reject incoming orders         |     ✅     |       ✅       |
+| Manage RFQ / quote requests              |     ✅     |       ✅       |
+| Earnings & revenue analytics             |     ✅     |       ✅       |
+| Reviews received                         |     ✅     |       ❌       |
+| Documents & delivery notes               |     ✅     |       ❌       |
+| Chat                                     |     ✅     |       ❌       |
+| Notifications                            |     ✅     |    ✅ push     |
+| Profile & settings                       |     ✅     |       ✅       |
 
 **Primary platform:** **Web** — catalog management and order intake require a proper desktop surface. Mobile provides quick incoming-order notifications and lightweight confirmations on the go.
 
@@ -230,18 +230,18 @@ Admin panel
 
 Dispatchers manage the fleet from the office.
 
-| Feature | Web app | Mobile app |
-|---------|:-------:|:----------:|
-| Job board — view available jobs | ✅ | ❌ |
-| Dispatch: assign job to driver + vehicle | ✅ | ❌ |
-| Fleet GPS live map (track all active trucks) | ✅ | ❌ |
-| Fleet / garage management (vehicles) | ✅ | ❌ |
-| Driver schedule management | ✅ | ❌ |
-| Carrier settings & preferences | ✅ | ❌ |
-| SLA exception monitoring & resolution | ✅ | ❌ |
-| Transport job history | ✅ | ❌ |
-| Earnings & payout analytics | ✅ | ❌ |
-| Notifications | ✅ | ❌ |
+| Feature                                      | Web app | Mobile app |
+| -------------------------------------------- | :-----: | :--------: |
+| Job board — view available jobs              |   ✅    |     ❌     |
+| Dispatch: assign job to driver + vehicle     |   ✅    |     ❌     |
+| Fleet GPS live map (track all active trucks) |   ✅    |     ❌     |
+| Fleet / garage management (vehicles)         |   ✅    |     ❌     |
+| Driver schedule management                   |   ✅    |     ❌     |
+| Carrier settings & preferences               |   ✅    |     ❌     |
+| SLA exception monitoring & resolution        |   ✅    |     ❌     |
+| Transport job history                        |   ✅    |     ❌     |
+| Earnings & payout analytics                  |   ✅    |     ❌     |
+| Notifications                                |   ✅    |     ❌     |
 
 **Primary platform:** **Web only.** Dispatchers do not use the mobile app for management.
 
@@ -251,21 +251,21 @@ Dispatchers manage the fleet from the office.
 
 Drivers work in the field.
 
-| Feature | Web app | Mobile app |
-|---------|:-------:|:----------:|
-| Job board — self-accept jobs (owner-operators) | ✅ | ✅ primary |
-| Accept active job → navigate to pickup | ❌ | ✅ |
-| Advance job status (step-by-step progression) | ❌ | ✅ |
-| Confirm loading at seller yard | ❌ | ✅ |
-| In-transit navigation | ❌ | ✅ |
-| Confirm delivery (photo + signature) | ❌ | ✅ |
-| Report exceptions / incidents | ❌ | ✅ |
-| Skip hire pickups & drops | ❌ | ✅ |
-| Job history & completed routes | ✅ read-only | ✅ |
-| Earnings | ✅ | ✅ |
-| Vehicle management | ✅ | ✅ |
-| Schedule | ✅ | ✅ |
-| Profile & settings | ✅ | ✅ |
+| Feature                                        |   Web app    | Mobile app |
+| ---------------------------------------------- | :----------: | :--------: |
+| Job board — self-accept jobs (owner-operators) |      ✅      | ✅ primary |
+| Accept active job → navigate to pickup         |      ❌      |     ✅     |
+| Advance job status (step-by-step progression)  |      ❌      |     ✅     |
+| Confirm loading at seller yard                 |      ❌      |     ✅     |
+| In-transit navigation                          |      ❌      |     ✅     |
+| Confirm delivery (photo + signature)           |      ❌      |     ✅     |
+| Report exceptions / incidents                  |      ❌      |     ✅     |
+| Skip hire pickups & drops                      |      ❌      |     ✅     |
+| Job history & completed routes                 | ✅ read-only |     ✅     |
+| Earnings                                       |      ✅      |     ✅     |
+| Vehicle management                             |      ✅      |     ✅     |
+| Schedule                                       |      ✅      |     ✅     |
+| Profile & settings                             |      ✅      |     ✅     |
 
 **Primary platform:** **Mobile** for all active-job work. Web provides read-only history and management for owner-operators and company drivers who also access the dispatcher tools.
 
@@ -275,13 +275,13 @@ Drivers work in the field.
 
 ### 🔧 Admin (`userType: ADMIN`)
 
-| Feature | Web app | Mobile app |
-|---------|:-------:|:----------:|
-| Overview statistics | ✅ | ❌ |
-| Review & approve provider applications | ✅ | ❌ |
-| User management (create, edit, flags) | ✅ | ❌ |
-| All orders & transport jobs | ✅ | ❌ |
-| Platform settings | ✅ | ❌ |
+| Feature                                | Web app | Mobile app |
+| -------------------------------------- | :-----: | :--------: |
+| Overview statistics                    |   ✅    |     ❌     |
+| Review & approve provider applications |   ✅    |     ❌     |
+| User management (create, edit, flags)  |   ✅    |     ❌     |
+| All orders & transport jobs            |   ✅    |     ❌     |
+| Platform settings                      |   ✅    |     ❌     |
 
 **Primary platform:** **Web only.**
 
@@ -529,7 +529,6 @@ All major features are implemented end-to-end. See [STATUS.md](STATUS.md) for th
 
 - Stripe payment integration
 - Mixed-supplier cart splitting (multi-supplier orders in one checkout)
-
 
 ---
 

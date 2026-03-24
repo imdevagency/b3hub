@@ -129,8 +129,7 @@ export default function TransportWizard() {
     if (step === 1) {
       if (router.canGoBack()) router.back();
       else router.replace('/(buyer)/home' as never);
-    }
-    else setStep((s) => (s - 1) as Step);
+    } else setStep((s) => (s - 1) as Step);
   }, [step, router]);
 
   const handleSubmit = useCallback(async () => {
@@ -242,12 +241,7 @@ export default function TransportWizard() {
         ctaLoading={submitting}
       >
         {/* ── Step 1: Pickup ── */}
-        {step === 1 && (
-          <InlineAddressStep 
-            picked={pickupPicked} 
-            onPick={handlePickupConfirm}
-          />
-        )}
+        {step === 1 && <InlineAddressStep picked={pickupPicked} onPick={handlePickupConfirm} />}
 
         {/* ── Step 2: Dropoff ── */}
         {step === 2 && (

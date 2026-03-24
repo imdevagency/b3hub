@@ -68,8 +68,7 @@ export function MatStep4Who({
   error,
 }: Props) {
   const set =
-    (k: keyof ContactValues) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    (k: keyof ContactValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       onChange(k, e.target.value);
 
   const subtotal = items.reduce((s, i) => s + i.material.basePrice * i.qty, 0);

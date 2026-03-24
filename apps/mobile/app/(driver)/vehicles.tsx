@@ -109,7 +109,11 @@ function VehicleCard({
               <Pencil size={16} color="#111827" />
               <Text style={s.editBtnText}>Labot</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={s.deleteBtn} onPress={() => onDelete(vehicle)} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={s.deleteBtn}
+              onPress={() => onDelete(vehicle)}
+              activeOpacity={0.8}
+            >
               <Trash2 size={16} color="#ef4444" />
               <Text style={s.deleteBtnText}>Dzēst</Text>
             </TouchableOpacity>
@@ -372,7 +376,9 @@ export default function VehiclesScreen() {
           >
             <Plus size={18} color="#fff" />
           </TouchableOpacity>
-        ) : <View style={{ width: 36 }} />}
+        ) : (
+          <View style={{ width: 36 }} />
+        )}
       </View>
 
       {loading ? (
@@ -419,10 +425,14 @@ export default function VehiclesScreen() {
                 key={v.id}
                 vehicle={v}
                 isReadOnly={isReadOnly}
-                onEdit={isReadOnly ? () => {} : (veh) => {
-                  setEditing(veh);
-                  setModalVisible(true);
-                }}
+                onEdit={
+                  isReadOnly
+                    ? () => {}
+                    : (veh) => {
+                        setEditing(veh);
+                        setModalVisible(true);
+                      }
+                }
                 onDelete={isReadOnly ? () => {} : handleDelete}
               />
             ))
@@ -539,7 +549,15 @@ const s = StyleSheet.create({
   saveText: { fontSize: 15, fontWeight: '700', color: '#111827' },
   saveTextDisabled: { color: '#9ca3af' },
   formScroll: { padding: 16, gap: 4, paddingBottom: 48 },
-  formLabel: { fontSize: 13, fontWeight: '700', color: '#111827', marginTop: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  formLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#111827',
+    marginTop: 16,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   input: {
     backgroundColor: '#f9fafb',
     borderRadius: 12,

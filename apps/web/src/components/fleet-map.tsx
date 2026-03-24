@@ -115,7 +115,10 @@ export function FleetMap({ jobs }: FleetMapProps) {
   }
 
   return (
-    <div className="relative rounded-2xl overflow-hidden border border-slate-200" style={{ height: 520 }}>
+    <div
+      className="relative rounded-2xl overflow-hidden border border-slate-200"
+      style={{ height: 520 }}
+    >
       <GoogleMap
         mapContainerStyle={{ width: '100%', height: '100%' }}
         center={{ lat: 56.95, lng: 24.1 }}

@@ -56,9 +56,7 @@ export function MatStep3When({ deliveryDate, onDateChange, onNext, onBack }: Pro
     <div className="flex flex-col space-y-5">
       <div>
         <h2 className="text-lg font-bold">Kad piegādāt?</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Izvēlieties vēlamo piegādes datumu
-        </p>
+        <p className="text-sm text-muted-foreground mt-0.5">Izvēlieties vēlamo piegādes datumu</p>
       </div>
 
       {/* Calendar */}
@@ -76,9 +74,7 @@ export function MatStep3When({ deliveryDate, onDateChange, onNext, onBack }: Pro
       {deliveryDate && selected && (
         <div className="flex items-center gap-2.5 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3">
           <CalendarDays className="size-4 text-primary shrink-0" />
-          <span className="text-sm font-semibold text-primary">
-            Piegāde: {fmtFull(selected)}
-          </span>
+          <span className="text-sm font-semibold text-primary">Piegāde: {fmtFull(selected)}</span>
         </div>
       )}
 

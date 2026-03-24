@@ -323,7 +323,7 @@ const ss = StyleSheet.create({
   // Summary card
   summaryCard: {
     backgroundColor: '#f9fafb',
-    borderRadius: 20, 
+    borderRadius: 20,
     padding: 18, // slightly more padding
     borderWidth: 0,
   },
@@ -333,7 +333,7 @@ const ss = StyleSheet.create({
   summaryDivider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 4 }, // light divider
 
   // Section title
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginTop: 8 }, 
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginTop: 8 },
 
   // Empty responses
   emptyResponses: {
@@ -372,7 +372,12 @@ const ss = StyleSheet.create({
   responseTop: { gap: 2 },
   supplierName: { fontSize: 16, fontWeight: '700', color: '#111827' },
   supplierCity: { fontSize: 13, color: '#6b7280' },
-  priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
   priceMain: { fontSize: 24, fontWeight: '800', color: '#111827', letterSpacing: -0.5 },
   priceSub: { fontSize: 13, color: '#6b7280', marginTop: 1 },
   etaChip: {

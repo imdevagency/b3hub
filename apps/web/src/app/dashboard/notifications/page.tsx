@@ -5,15 +5,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import {
-  Bell,
-  CheckCheck,
-  Package,
-  Truck,
-  CreditCard,
-  AlertCircle,
-  RefreshCw,
-} from 'lucide-react';
+import { Bell, CheckCheck, Package, Truck, CreditCard, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -90,7 +82,7 @@ function NotifRow({ n, onMarkRead }: { n: AppNotification; onMarkRead: (id: stri
       >
         <Icon className={`h-5 w-5 ${meta.color}`} />
       </div>
-      
+
       <div className="flex-1 min-w-0 pr-2">
         <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 justify-between">
           <p
@@ -107,10 +99,12 @@ function NotifRow({ n, onMarkRead }: { n: AppNotification; onMarkRead: (id: stri
             {fmtRelative(n.createdAt)}
           </span>
         </div>
-        
-        <p className={`mt-1.5 text-sm leading-relaxed ${
-          n.isRead ? 'text-muted-foreground/70' : 'text-muted-foreground'
-        }`}>
+
+        <p
+          className={`mt-1.5 text-sm leading-relaxed ${
+            n.isRead ? 'text-muted-foreground/70' : 'text-muted-foreground'
+          }`}
+        >
           {n.message}
         </p>
 
@@ -228,7 +222,10 @@ export default function NotificationsPage() {
       {loading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex items-start gap-4 p-4 sm:p-5 rounded-[2rem] bg-muted/10 border border-transparent mb-3 last:mb-0">
+            <div
+              key={i}
+              className="flex items-start gap-4 p-4 sm:p-5 rounded-[2rem] bg-muted/10 border border-transparent mb-3 last:mb-0"
+            >
               <Skeleton className="h-12 w-12 rounded-2xl shrink-0 opacity-40" />
               <div className="flex-1 space-y-3 pt-1">
                 <div className="flex justify-between items-center">

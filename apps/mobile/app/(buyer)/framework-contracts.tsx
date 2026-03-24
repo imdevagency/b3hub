@@ -30,7 +30,6 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { Text } from '@/components/ui/text';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { colors } from '@/lib/theme';
 
 const STATUS: Record<FrameworkContractStatus, { label: string; bg: string; color: string }> = {
@@ -130,24 +129,24 @@ export default function FrameworkContractsScreen() {
   };
 
   return (
-    <ScreenContainer standalone>
-      <ScreenHeader
-        title="Projekti"
-        rightSlot={
-          <TouchableOpacity
-            hitSlop={15}
-            onPress={() => {
-              haptics.light();
-              setCreateVisible(true);
-            }}
-          >
-            <Plus size={24} color="#111827" />
-          </TouchableOpacity>
-        }
-      />
+    <ScreenContainer>
+      {/* Header with Big Title */}
+      <View style={s.header}>
+        <Text style={s.headerTitle}>Projekti</Text>
+        <TouchableOpacity
+          style={s.headerBtn}
+          onPress={() => {
+            haptics.light();
+            setCreateVisible(true);
+          }}
+          activeOpacity={0.8}
+        >
+          <Plus size={24} color="#111827" />
+        </TouchableOpacity>
+      </View>
 
       {loading ? (
-        <ScrollView contentContainerStyle={{ padding: 16 }}>
+        <ScrollView contentContainerStyle={{ padding: 20 }}>
           <SkeletonCard count={4} />
         </ScrollView>
       ) : (
@@ -183,7 +182,7 @@ export default function FrameworkContractsScreen() {
               }
             />
           ) : (
-            <>
+            <View style={s.listGap}>
               {contracts.map((contract) => {
                 const status = STATUS[contract.status] ?? STATUS.ACTIVE;
                 const pct = Math.min(100, contract.totalProgressPct);
@@ -201,14 +200,14 @@ export default function FrameworkContractsScreen() {
                         params: { id: contract.id },
                       } as any);
                     }}
-                    activeOpacity={0.88}
+                    activeOpacity={0.7}
                   >
-                    <View style={s.cardTop}>
-                      <View style={s.cardTopCopy}>
-                        <Text variant="muted" size="sm" style={s.contractNum}>
-                          {contract.contractNumber}
+                    <View style={s.cardHeader}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.contractTitle} numberOfLines={1}>
+                          {contract.title}
                         </Text>
-                        <Text style={s.contractTitle}>{contract.title}</Text>
+                        <Text style={s.contractNum}>{contract.contractNumber}</Text>
                       </View>
                       <StatusPill
                         label={status.label}
@@ -218,57 +217,33 @@ export default function FrameworkContractsScreen() {
                       />
                     </View>
 
-                    <View>
-                      <View style={s.progRow}>
-                        <Text variant="muted" size="sm">
-                          Izpilde
-                        </Text>
-                        <Text size="sm" style={s.progPct}>
-                          {pct.toFixed(0)}%
-                        </Text>
+                    {/* Minimal Progress Bar */}
+                    <View style={s.progWrapper}>
+                      <View style={s.progHeader}>
+                        <Text style={s.progLabel}>Izpilde</Text>
+                        <Text style={s.progValue}>{pct.toFixed(0)}%</Text>
                       </View>
                       <View style={s.progTrack}>
                         <View
-                          style={[
-                            s.progFill,
-                            { width: `${pct}%` as const, backgroundColor: progColor },
-                          ]}
+                          style={[s.progFill, { width: `${pct}%`, backgroundColor: progColor }]}
                         />
                       </View>
-                      <Text variant="muted" size="sm" style={s.progQty}>
-                        {contract.totalConsumedQty.toFixed(1)} /{' '}
-                        {contract.totalAgreedQty.toFixed(1)} vien.
-                      </Text>
                     </View>
 
-                    <View style={s.metaRow}>
-                      <View style={[s.metaChip, isDraft && { backgroundColor: '#fffbeb' }]}>
-                        <Calendar size={12} color={isDraft ? '#b45309' : '#6b7280'} />
-                        <Text
-                          variant="muted"
-                          size="sm"
-                          style={[s.metaText, isDraft && { color: '#b45309' }]}
-                        >
-                          {formatDateShort(contract.startDate)}
-                          {contract.endDate ? ` – ${formatDateShort(contract.endDate)}` : ''}
-                        </Text>
+                    <View style={s.cardFooter}>
+                      <View style={s.metaItem}>
+                        <Calendar size={14} color="#6b7280" />
+                        <Text style={s.metaText}>{formatDateShort(contract.startDate)}</Text>
                       </View>
-                      <View style={[s.metaChip, isDraft && { backgroundColor: '#fffbeb' }]}>
-                        <Package size={12} color={isDraft ? '#b45309' : '#6b7280'} />
-                        <Text
-                          variant="muted"
-                          size="sm"
-                          style={[s.metaText, isDraft && { color: '#b45309' }]}
-                        >
-                          {contract.totalCallOffs} darba uzd.
-                        </Text>
+                      <View style={s.metaItem}>
+                        <Package size={14} color="#6b7280" />
+                        <Text style={s.metaText}>{contract.totalCallOffs} pasūtījumi</Text>
                       </View>
-                      <ChevronRight size={16} color={isDraft ? '#fcd34d' : '#9ca3af'} />
                     </View>
                   </TouchableOpacity>
                 );
               })}
-            </>
+            </View>
           )}
         </ScrollView>
       )}
@@ -285,7 +260,7 @@ export default function FrameworkContractsScreen() {
               Jauns projekts
             </Text>
             <TouchableOpacity onPress={closeCreate} style={s.modalCloseBtn} activeOpacity={0.7}>
-              <X size={20} color={colors.textMuted} />
+              <X size={24} color="#111827" />
             </TouchableOpacity>
           </View>
 
@@ -335,8 +310,8 @@ export default function FrameworkContractsScreen() {
               numberOfLines={3}
             />
 
-            <Button onPress={handleCreate} isLoading={creating} style={s.submitBtnSpacing}>
-              Izveidot projektu
+            <Button onPress={handleCreate} isLoading={creating} style={s.submitActionBtn}>
+              <Text style={s.submitActionBtnText}>Izveidot projektu</Text>
             </Button>
           </ScrollView>
         </ScreenContainer>
@@ -346,45 +321,84 @@ export default function FrameworkContractsScreen() {
 }
 
 const s = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  pageHeader: {
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
   },
-  pageHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  pageTitle: { fontSize: 17, fontWeight: '600', color: '#111827' },
-  addBtnContent: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  addBtnText: { color: '#ffffff', fontSize: 13, fontWeight: '600' },
-  scroll: { padding: 16, paddingBottom: 100, gap: 10 },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#111827',
+    letterSpacing: -0.5,
+  },
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scroll: { paddingHorizontal: 20, paddingBottom: 100 },
   emptyScroll: { flexGrow: 1, paddingBottom: 40 },
+  listGap: { gap: 12 },
   card: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    padding: 14,
-    gap: 8,
+    borderRadius: 16,
+    padding: 16,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.02)', // Subtle border for definition
   },
   cardDraft: {
     backgroundColor: '#fffbeb',
-    borderColor: '#fde68a',
+    borderColor: '#fcd34d',
   },
-  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  cardTopCopy: { flex: 1, gap: 2 },
-  contractNum: { letterSpacing: 0.3 },
-  contractTitle: { fontSize: 15, fontWeight: '700', lineHeight: 20 },
-  progRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  progPct: { fontWeight: '700', color: '#111827' },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  contractTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  contractNum: {
+    fontSize: 13,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  progWrapper: {
+    marginBottom: 16,
+  },
+  progHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  progLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  progValue: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#111827',
+  },
   progTrack: {
     height: 6,
     backgroundColor: '#f3f4f6',
@@ -392,62 +406,91 @@ const s = StyleSheet.create({
     overflow: 'hidden',
   },
   progFill: {
-    height: 6,
-    backgroundColor: '#111827',
+    height: '100%',
     borderRadius: 999,
   },
-  progQty: { marginTop: 3 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  metaChip: {
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f9fafb',
+  },
+  metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    flex: 1,
-    backgroundColor: '#f9fafb',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
   },
-  metaText: { flex: 1 },
+  metaText: {
+    fontSize: 13,
+    color: '#4b5563',
+    fontWeight: '500',
+  },
+
+  // Modal styles (unchanged mostly, just tweaking)
   modalHeader: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 8,
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
+    alignItems: 'center',
   },
-  modalTitle: { fontWeight: '800', color: '#111827' },
+  modalTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#111827',
+    letterSpacing: -0.5,
+  },
   modalCloseBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  modalContent: { paddingHorizontal: 16, paddingBottom: 32 },
+  modalContent: { padding: 24, paddingBottom: 40 },
   fieldLabel: {
     fontSize: 13,
     fontWeight: '600',
     color: '#374151',
-    marginTop: 12,
-    marginBottom: 6,
+    marginTop: 20,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f9fafb',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontSize: 16,
     color: '#111827',
   },
   inputMulti: {
-    height: 90,
+    height: 120,
     textAlignVertical: 'top',
-    paddingTop: 12,
+    paddingTop: 16,
   },
-  submitBtnSpacing: { marginTop: 20 },
+  submitActionBtn: {
+    marginTop: 32,
+    backgroundColor: '#000000',
+    height: 56,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  submitActionBtnText: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
 });
