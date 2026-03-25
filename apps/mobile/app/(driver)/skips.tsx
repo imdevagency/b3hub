@@ -476,7 +476,7 @@ export default function CarrierSkipsScreen() {
   const toCollect = orders.filter((o) => o.status === 'DELIVERED');
 
   return (
-    <ScreenContainer bg="#f2f2f7">
+    <ScreenContainer bg="#f2f2f7" standalone>
       {/* ── Header ── */}
       <View style={s.header}>
         <View>

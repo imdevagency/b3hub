@@ -22,8 +22,21 @@ export default function DriverLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const unreadCount = useUnreadCount();
 
-  // Driver home is a full-screen map with its own FAB header — no layout TopBar or padding
-  const isHome = pathname === '/(driver)/home' || pathname === '/home';
+  // Hide the global TopBar on these screens because they implement their own headers (e.g. back buttons) or are full-screen maps.
+  const HIDE_TOPBAR_ROUTES = [
+    '/home',
+    '/vehicles',
+    '/schedule',
+    '/skips',
+    '/(driver)/home',
+    '/(driver)/vehicles',
+    '/(driver)/schedule',
+    '/(driver)/skips',
+  ];
+  const shouldHideTopBar = HIDE_TOPBAR_ROUTES.some(
+    (route) => pathname.startsWith(route) || pathname === route,
+  );
+
   // eslint-disable-next-line react/display-name
   const renderTabBar = useCallback((props: BottomTabBarProps) => <AnimatedTabBar {...props} />, []);
 
@@ -44,8 +57,10 @@ export default function DriverLayout() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: isHome ? 0 : insets.top }}>
-      {!isHome && (
+    <View
+      style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: shouldHideTopBar ? 0 : insets.top }}
+    >
+      {!shouldHideTopBar && (
         <TopBar
           accentColor={ACCENT}
           onMenuPress={() => setSidebarOpen(true)}

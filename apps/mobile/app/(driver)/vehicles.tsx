@@ -13,10 +13,11 @@ import {
   Platform,
   Alert,
   Switch,
+  FlatList,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Plus, Pencil, Trash2, Truck } from 'lucide-react-native';
+import { ArrowLeft, Plus, Pencil, Trash2, Truck, ChevronRight } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -69,58 +70,41 @@ const BLANK: VehicleForm = {
 
 function VehicleCard({
   vehicle,
-  onEdit,
-  onDelete,
+  onPress,
   isReadOnly = false,
 }: {
   vehicle: ApiVehicle;
-  onEdit: (v: ApiVehicle) => void;
-  onDelete: (v: ApiVehicle) => void;
+  onPress: (v: ApiVehicle) => void;
   isReadOnly?: boolean;
 }) {
   return (
-    <View style={s.card}>
-      <View style={s.cardRow}>
+    <TouchableOpacity
+      style={s.card}
+      onPress={() => onPress(vehicle)}
+      disabled={isReadOnly}
+      activeOpacity={0.7}
+    >
+      <View style={s.cardIconContainer}>
         <Text style={s.cardIcon}>{VEHICLE_ICON[vehicle.vehicleType]}</Text>
-        <View style={{ flex: 1, gap: 2 }}>
+      </View>
+
+      <View style={s.cardContent}>
+        <View style={s.cardHeader}>
           <Text style={s.cardPlate}>{vehicle.licensePlate}</Text>
-          <Text style={s.cardType}>{VEHICLE_LABELS[vehicle.vehicleType]}</Text>
-          {vehicle.make || vehicle.model ? (
-            <Text style={s.cardMeta}>
-              {[vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(' ')}
-            </Text>
-          ) : null}
+          {vehicle.isActive && <View style={s.activeDot} />}
         </View>
-        <View style={[s.statusBadge, !vehicle.isActive && s.statusBadgeInactive]}>
-          <Text style={[s.statusText, !vehicle.isActive && s.statusTextInactive]}>
-            {vehicle.isActive ? 'Aktīvs' : 'Neaktīvs'}
-          </Text>
-        </View>
+        <Text style={s.cardSubtext}>
+          {VEHICLE_LABELS[vehicle.vehicleType]}
+          {vehicle.payloadTonnes ? ` • ${vehicle.payloadTonnes}t` : ''}
+        </Text>
       </View>
 
-      {vehicle.payloadTonnes != null && (
-        <Text style={s.payload}>Krava: {vehicle.payloadTonnes} t</Text>
+      {!isReadOnly && (
+        <View style={s.cardChevron}>
+          <ChevronRight size={20} color="#d1d5db" />
+        </View>
       )}
-
-      <View style={s.cardActions}>
-        {!isReadOnly && (
-          <>
-            <TouchableOpacity style={s.editBtn} onPress={() => onEdit(vehicle)} activeOpacity={0.8}>
-              <Pencil size={16} color="#111827" />
-              <Text style={s.editBtnText}>Labot</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={s.deleteBtn}
-              onPress={() => onDelete(vehicle)}
-              activeOpacity={0.8}
-            >
-              <Trash2 size={16} color="#ef4444" />
-              <Text style={s.deleteBtnText}>Dzēst</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -131,12 +115,14 @@ function VehicleModal({
   initial,
   onClose,
   onSave,
+  onDelete,
   saving,
 }: {
   visible: boolean;
   initial: ApiVehicle | null;
   onClose: () => void;
   onSave: (form: VehicleForm) => void;
+  onDelete?: (id: string) => void;
   saving: boolean;
 }) {
   const [form, setForm] = useState<VehicleForm>(BLANK);
@@ -182,26 +168,28 @@ function VehicleModal({
             <Text style={s.cancelText}>Atcelt</Text>
           </TouchableOpacity>
           <Text style={s.modalTitle}>
-            {initial?.id ? 'Labot transportu' : 'Pievienot transportu'}
+            {initial?.id ? 'Rediģēt transportu' : 'Jauns transports'}
           </Text>
           <TouchableOpacity onPress={() => onSave(form)} disabled={!canSave} hitSlop={10}>
             <Text style={[s.saveText, !canSave && s.saveTextDisabled]}>
-              {saving ? 'Saglabā...' : 'Saglabāt'}
+              {saving ? '...' : 'Saglabāt'}
             </Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView contentContainerStyle={s.formScroll} keyboardShouldPersistTaps="handled">
-          <Text style={s.formLabel}>Reģ. numurs *</Text>
-          <TextInput
-            style={s.input}
-            placeholder="AA-1234"
-            value={form.licensePlate}
-            onChangeText={set('licensePlate')}
-            autoCapitalize="characters"
-          />
+          <View style={s.formSection}>
+            <Text style={s.formLabel}>Reģistrācijas numurs</Text>
+            <TextInput
+              style={s.inputBig}
+              placeholder="AA-1234"
+              value={form.licensePlate}
+              onChangeText={set('licensePlate')}
+              autoCapitalize="characters"
+            />
+          </View>
 
-          <Text style={s.formLabel}>Tips *</Text>
+          <Text style={s.formLabel}>Transporta veids</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipRow}>
             {TYPES.map((t) => (
               <TouchableOpacity
@@ -216,25 +204,30 @@ function VehicleModal({
             ))}
           </ScrollView>
 
-          <Text style={s.formLabel}>Marka</Text>
-          <TextInput
-            style={s.input}
-            placeholder="Scania"
-            value={form.make}
-            onChangeText={set('make')}
-          />
-
-          <Text style={s.formLabel}>Modelis</Text>
-          <TextInput
-            style={s.input}
-            placeholder="R450"
-            value={form.model}
-            onChangeText={set('model')}
-          />
-
-          <View style={{ flexDirection: 'row', gap: 12 }}>
+          <View style={s.row}>
             <View style={{ flex: 1 }}>
-              <Text style={s.formLabel}>Gads</Text>
+              <Text style={s.formLabel}>Marka</Text>
+              <TextInput
+                style={s.input}
+                placeholder="Scania"
+                value={form.make}
+                onChangeText={set('make')}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.formLabel}>Modelis</Text>
+              <TextInput
+                style={s.input}
+                placeholder="R450"
+                value={form.model}
+                onChangeText={set('model')}
+              />
+            </View>
+          </View>
+
+          <View style={s.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.formLabel}>Izlaiduma gads</Text>
               <TextInput
                 style={s.input}
                 placeholder="2020"
@@ -247,7 +240,7 @@ function VehicleModal({
               <Text style={s.formLabel}>Krava (t)</Text>
               <TextInput
                 style={s.input}
-                placeholder="20"
+                placeholder="20.5"
                 value={form.payloadTonnes}
                 onChangeText={set('payloadTonnes')}
                 keyboardType="decimal-pad"
@@ -256,14 +249,25 @@ function VehicleModal({
           </View>
 
           <View style={s.toggleRow}>
-            <Text style={s.toggleLabel}>Aktīvs</Text>
+            <Text style={s.toggleLabel}>Aktīvs statuss</Text>
             <Switch
               value={form.isActive}
               onValueChange={(v) => set('isActive')(v)}
-              trackColor={{ true: '#111827', false: '#d1d5db' }}
+              trackColor={{ true: '#111827', false: '#e5e7eb' }}
               thumbColor="#fff"
             />
           </View>
+
+          {initial && onDelete && (
+            <TouchableOpacity
+              style={s.deleteButton}
+              onPress={() => onDelete(initial.id)}
+              activeOpacity={0.8}
+            >
+              <Trash2 size={18} color="#ef4444" />
+              <Text style={s.deleteButtonText}>Dzēst transportlīdzekli</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
@@ -320,15 +324,15 @@ export default function VehiclesScreen() {
       vehicleType: form.vehicleType,
       make: form.make.trim(),
       model: form.model.trim(),
-      year: form.year ? parseInt(form.year) : undefined,
-      payloadTonnes: form.payloadTonnes ? parseFloat(form.payloadTonnes) : undefined,
+      year: form.year ? Number(form.year) : undefined,
+      payloadTonnes: form.payloadTonnes ? Number(form.payloadTonnes) : undefined,
       isActive: form.isActive,
     };
     try {
       if (editing?.id) {
         await api.vehicles.update(editing.id, payload, token);
       } else {
-        await api.vehicles.create(payload as Parameters<typeof api.vehicles.create>[0], token);
+        await api.vehicles.create(payload as any, token);
       }
       setModalVisible(false);
       load();
@@ -339,8 +343,11 @@ export default function VehiclesScreen() {
     }
   };
 
-  const handleDelete = (v: ApiVehicle) => {
-    Alert.alert('Dzēst transportlīdzekli?', `${v.licensePlate} tiks dzēsts.`, [
+  const handleDelete = (id: string) => {
+    const v = vehicles.find((x) => x.id === id);
+    if (!v) return;
+
+    Alert.alert('Dzēst transportlīdzekli?', `${v.licensePlate} tiks neatgriezeniski dzēsts.`, [
       { text: 'Atcelt', style: 'cancel' },
       {
         text: 'Dzēst',
@@ -348,8 +355,9 @@ export default function VehiclesScreen() {
         onPress: async () => {
           if (!token) return;
           try {
-            await api.vehicles.remove(v.id, token);
-            setVehicles((prev) => prev.filter((x) => x.id !== v.id));
+            await api.vehicles.remove(id, token);
+            setVehicles((prev) => prev.filter((x) => x.id !== id));
+            setModalVisible(false);
           } catch (err: unknown) {
             Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās dzēst');
           }
@@ -358,43 +366,50 @@ export default function VehiclesScreen() {
     ]);
   };
 
+  const openModal = (v?: ApiVehicle) => {
+    setEditing(v || null);
+    setModalVisible(true);
+  };
+
   return (
-    <ScreenContainer bg="#ffffff">
+    <ScreenContainer bg="#ffffff" standalone>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-          <ArrowLeft size={22} color="#111827" />
+          <ArrowLeft size={24} color="#111827" />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Mani transportlīdzekļi</Text>
+
+        <Text style={s.headerTitle} numberOfLines={1}>
+          Mani transporti
+        </Text>
+
         {!isReadOnly ? (
           <TouchableOpacity
             style={s.addBtn}
-            onPress={() => {
-              setEditing(null);
-              setModalVisible(true);
-            }}
+            onPress={() => openModal()}
             activeOpacity={0.8}
+            hitSlop={8}
           >
-            <Plus size={18} color="#fff" />
+            <Plus size={20} color="#fff" />
           </TouchableOpacity>
         ) : (
           <View style={{ width: 36 }} />
         )}
       </View>
 
-      {loading ? (
-        <SkeletonCard count={3} />
-      ) : (
-        <ScrollView
-          contentContainerStyle={s.list}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => load(true)}
-              tintColor="#111827"
-            />
-          }
-        >
-          {vehicles.length === 0 ? (
+      <FlatList
+        data={vehicles}
+        keyExtractor={(item) => item.id}
+        style={{ flex: 1 }}
+        contentContainerStyle={s.list}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => load(true)}
+            tintColor="#111827"
+          />
+        }
+        ListEmptyComponent={
+          !loading ? (
             <EmptyState
               icon={<Truck size={32} color="#9ca3af" />}
               title="Nav transportlīdzekļu"
@@ -407,44 +422,28 @@ export default function VehiclesScreen() {
                 !isReadOnly ? (
                   <TouchableOpacity
                     style={s.emptyAddBtn}
-                    onPress={() => {
-                      setEditing(null);
-                      setModalVisible(true);
-                    }}
+                    onPress={() => openModal()}
                     activeOpacity={0.8}
                   >
-                    <Plus size={16} color="#fff" />
+                    <Plus size={18} color="#fff" />
                     <Text style={s.emptyAddText}>Pievienot</Text>
                   </TouchableOpacity>
                 ) : undefined
               }
             />
-          ) : (
-            vehicles.map((v) => (
-              <VehicleCard
-                key={v.id}
-                vehicle={v}
-                isReadOnly={isReadOnly}
-                onEdit={
-                  isReadOnly
-                    ? () => {}
-                    : (veh) => {
-                        setEditing(veh);
-                        setModalVisible(true);
-                      }
-                }
-                onDelete={isReadOnly ? () => {} : handleDelete}
-              />
-            ))
-          )}
-        </ScrollView>
-      )}
+          ) : null
+        }
+        renderItem={({ item }) => (
+          <VehicleCard vehicle={item} isReadOnly={isReadOnly} onPress={openModal} />
+        )}
+      />
 
       <VehicleModal
         visible={modalVisible}
         initial={editing}
         onClose={() => setModalVisible(false)}
         onSave={handleSave}
+        onDelete={!isReadOnly ? handleDelete : undefined}
         saving={saving}
       />
     </ScreenContainer>
@@ -470,57 +469,39 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  list: { padding: 16, gap: 16, flexGrow: 1, backgroundColor: '#ffffff' },
+  list: { padding: 16, gap: 12, flexGrow: 1, backgroundColor: '#ffffff' },
+
+  // Card
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f9fafb',
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  cardIconContainer: {
+    width: 48,
+    height: 48,
     borderRadius: 24,
-    padding: 20,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
     borderWidth: 1,
     borderColor: '#f3f4f6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
   },
-  cardRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  cardIcon: { fontSize: 32 },
-  cardPlate: { fontSize: 17, fontWeight: '800', color: '#111827', letterSpacing: 1 },
-  cardType: { fontSize: 13, color: '#374151' },
-  cardMeta: { fontSize: 12, color: '#9ca3af' },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    backgroundColor: '#dcfce7',
-  },
-  statusBadgeInactive: { backgroundColor: '#f3f4f6' },
-  statusText: { fontSize: 11, fontWeight: '600', color: '#111827' },
-  statusTextInactive: { color: '#9ca3af' },
-  payload: { fontSize: 12, color: '#6b7280', marginTop: 6 },
-  cardActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  editBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 100,
-    backgroundColor: '#f9fafb',
-  },
-  editBtnText: { fontSize: 13, fontWeight: '600', color: '#111827' },
-  deleteBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 100,
-    backgroundColor: '#fef2f2',
-  },
-  deleteBtnText: { fontSize: 13, fontWeight: '600', color: '#ef4444' },
+  cardIcon: { fontSize: 24 },
+  cardContent: { flex: 1, gap: 2 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  cardPlate: { fontSize: 16, fontWeight: '700', color: '#111827', letterSpacing: 0.5 },
+  activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981' },
+  cardSubtext: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
+  cardChevron: { paddingLeft: 8 },
+
   emptyAddBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -548,12 +529,14 @@ const s = StyleSheet.create({
   cancelText: { fontSize: 15, color: '#6b7280' },
   saveText: { fontSize: 15, fontWeight: '700', color: '#111827' },
   saveTextDisabled: { color: '#9ca3af' },
-  formScroll: { padding: 16, gap: 4, paddingBottom: 48 },
+
+  // Form
+  formScroll: { padding: 20, gap: 16, paddingBottom: 48 },
+  formSection: { marginBottom: 8 },
   formLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#111827',
-    marginTop: 16,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6b7280',
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -566,7 +549,24 @@ const s = StyleSheet.create({
     fontSize: 16,
     color: '#111827',
     fontWeight: '500',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
+  inputBig: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontSize: 24,
+    color: '#111827',
+    fontWeight: '800',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    textAlign: 'center',
+    letterSpacing: 2,
+  },
+  row: { flexDirection: 'row', gap: 12 },
+
   chipRow: { marginBottom: 4 },
   chip: {
     paddingHorizontal: 16,
@@ -574,18 +574,33 @@ const s = StyleSheet.create({
     borderRadius: 100,
     backgroundColor: '#f9fafb',
     marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
   },
-  chipActive: { backgroundColor: '#111827' },
+  chipActive: { backgroundColor: '#111827', borderColor: '#111827' },
   chipText: { fontSize: 14, color: '#6b7280', fontWeight: '600' },
   chipTextActive: { color: '#ffffff', fontWeight: '700' },
+
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-    marginTop: 12,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+    marginTop: 8,
   },
-  toggleLabel: { fontSize: 15, color: '#111827' },
+  toggleLabel: { fontSize: 16, color: '#111827', fontWeight: '600' },
+
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 24,
+    paddingVertical: 16,
+    backgroundColor: '#fef2f2',
+    borderRadius: 16,
+  },
+  deleteButtonText: { color: '#ef4444', fontSize: 15, fontWeight: '600' },
 });
