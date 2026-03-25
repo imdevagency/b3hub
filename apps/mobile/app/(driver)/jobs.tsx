@@ -251,96 +251,129 @@ function JobCard({
       activeOpacity={0.85}
     >
       <CheckCircle2 size={22} color="#fff" />
-      <Text style={mapStyles.swipeAcceptText}>Piemēņem</Text>
+      <Text style={mapStyles.swipeAcceptText}>Pieņemt</Text>
     </TouchableOpacity>
   );
 
   const card = (
     <TouchableOpacity
       style={[styles.card, tourMode && selected && styles.cardSelected]}
-      activeOpacity={tourMode ? 0.7 : 0.97}
+      activeOpacity={tourMode ? 0.8 : 0.96}
       onPress={tourMode ? () => onToggleSelect?.(job.id) : undefined}
     >
       {/* Tour selection indicator */}
       {tourMode && (
         <View style={styles.tourCheckWrap}>
           {selected ? (
-            <CheckCircle2 size={22} color="#111827" />
+            <CheckCircle2 size={24} color="#111827" fill="#fff" />
           ) : (
             <View style={styles.tourCheckEmpty} />
           )}
         </View>
       )}
-      {/* Header row */}
-      <View style={styles.cardHeader}>
-        <View style={styles.cardHeaderLeft}>
-          <Text style={styles.jobNumber}>{job.jobNumber}</Text>
-          <View style={styles.vehicleRow}>
-            <Truck size={16} color="#6b7280" />
-            <Text style={styles.vehicleType}>{job.vehicleType}</Text>
-          </View>
-        </View>
-        <View style={styles.availableBadge}>
-          <Text style={styles.availableBadgeText}>{t.jobs.available}</Text>
-        </View>
-      </View>
 
-      {/* Payload pill */}
-      <View style={styles.payloadRow}>
-        <Text style={styles.payloadWeight}>{job.weightTonnes} t</Text>
-        <View style={styles.payloadDot} />
-        <Text style={styles.payloadMaterial}>{job.payload}</Text>
-      </View>
-
-      {/* Route */}
-      <View style={styles.routeSection}>
-        <View style={styles.routeRow}>
-          <View style={styles.routeDotFrom} />
-          <View>
-            <Text style={styles.routeCity}>{job.fromCity}</Text>
-            <Text style={styles.routeAddress}>{job.fromAddress}</Text>
-          </View>
-        </View>
-        <View style={styles.routeLine} />
-        <View style={styles.routeRow}>
-          <View style={styles.routeDotTo} />
-          <View>
-            <Text style={styles.routeCity}>{job.toCity}</Text>
-            <Text style={styles.routeAddress}>{job.toAddress}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Meta: date, distance, price */}
-      <View style={styles.cardMeta}>
-        <View style={styles.metaItem}>
-          <Calendar size={14} color="#6b7280" />
-          <View>
-            <Text style={styles.metaValue}>{job.date}</Text>
-            <Text style={styles.metaSub}>{job.time}</Text>
-          </View>
-        </View>
-        <View style={styles.metaItem}>
-          <Ruler size={14} color="#6b7280" />
-          <Text style={styles.metaValue}>{job.distanceKm} km</Text>
-        </View>
-        <View style={styles.priceBlock}>
-          <Text style={styles.priceTotal}>
-            {job.priceTotal.toFixed(2)} {job.currency}
+      {/* ── Top Row: Price (Prominent) & JobID ── */}
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: 12,
+        }}
+      >
+        <View>
+          <Text style={{ fontSize: 26, fontWeight: '800', color: '#111827', lineHeight: 30 }}>
+            €{job.priceTotal.toFixed(0)}
           </Text>
-          <Text style={styles.pricePerTonne}>
-            {job.pricePerTonne.toFixed(2)} {job.currency}
-            {t.jobs.perTonne}
+          <Text style={{ fontSize: 13, color: '#6b7280', fontWeight: '500', marginTop: 2 }}>
+            {job.distanceKm} km • {job.pricePerTonne.toFixed(2)}/t
           </Text>
         </View>
+        <View style={{ alignItems: 'flex-end' }}>
+          <View
+            style={{
+              backgroundColor: '#f3f4f6',
+              paddingHorizontal: 6,
+              paddingVertical: 3,
+              borderRadius: 6,
+              marginBottom: 4,
+            }}
+          >
+            <Text style={{ fontSize: 11, fontWeight: '700', color: '#4b5563' }}>
+              #{job.jobNumber}
+            </Text>
+          </View>
+          <Text style={{ fontSize: 12, color: '#9ca3af' }}>{job.time}</Text>
+        </View>
       </View>
 
-      {/* Accept button — hidden in tour-select mode */}
-      {!tourMode && (
-        <TouchableOpacity style={styles.acceptBtn} onPress={() => onAccept(job.id)}>
-          <Text style={styles.acceptBtnText}>{t.jobs.accept}</Text>
-        </TouchableOpacity>
-      )}
+      {/* ── Route Visual ── */}
+      <View style={{ flexDirection: 'row', gap: 14, marginBottom: 16 }}>
+        {/* Visual Line */}
+        <View style={{ alignItems: 'center', paddingTop: 6 }}>
+          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#111827' }} />
+          <View
+            style={{
+              width: 2,
+              flex: 1,
+              backgroundColor: '#e5e7eb',
+              marginVertical: 4,
+              minHeight: 28,
+            }}
+          />
+          <View
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 5,
+              borderWidth: 3,
+              borderColor: '#111827',
+              backgroundColor: '#fff',
+            }}
+          />
+        </View>
+
+        {/* Address Text */}
+        <View style={{ flex: 1, gap: 18 }}>
+          <View>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: '#111827' }}>
+              {job.fromCity}
+            </Text>
+            <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 1 }} numberOfLines={1}>
+              {job.fromAddress}
+            </Text>
+          </View>
+          <View>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: '#111827' }}>{job.toCity}</Text>
+            <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 1 }} numberOfLines={1}>
+              {job.toAddress}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* ── Bottom: Vehicle Info Chip ── */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: '#f9fafb',
+            borderRadius: 8,
+            paddingHorizontal: 10,
+            paddingVertical: 8,
+            alignSelf: 'flex-start',
+            borderWidth: 1,
+            borderColor: '#f3f4f6',
+          }}
+        >
+          <Truck size={14} color="#4b5563" style={{ marginRight: 6 }} />
+          <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151' }}>
+            {job.vehicleType} • {job.weightTonnes}t
+          </Text>
+        </View>
+        <Text style={{ fontSize: 13, color: '#6b7280', fontWeight: '500' }}>{job.payload}</Text>
+      </View>
     </TouchableOpacity>
   );
 
@@ -574,8 +607,8 @@ export default function JobsScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer bg="#f2f2f7">
-        <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 12, gap: 12 }}>
+      <ScreenContainer bg="white">
+        <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 40, gap: 12 }}>
           <SkeletonJobRow count={5} />
         </ScrollView>
       </ScreenContainer>
@@ -583,44 +616,44 @@ export default function JobsScreen() {
   }
 
   return (
-    <ScreenContainer bg="#f3f4f6">
-      {/* ── Minimal floating controls ── */}
-      <View style={styles.controlsRow}>
-        <View style={styles.viewToggle}>
+    <ScreenContainer bg="white" standalone>
+      {/* ── Header ─────────────────────────────────────── */}
+      <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 }}>
+        <Text style={{ fontSize: 32, fontWeight: '800', color: '#111827', letterSpacing: -1 }}>
+          Brīvie darbi
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16, gap: 12 }}>
           <TouchableOpacity
-            style={[styles.viewToggleBtn, viewMode === 'list' && styles.viewToggleBtnActive]}
+            style={[styles.pill, viewMode === 'list' && styles.pillActive]}
             onPress={() => setViewMode('list')}
           >
-            <List size={14} color={viewMode === 'list' ? '#111827' : '#6b7280'} />
-            <Text
-              style={[styles.viewToggleText, viewMode === 'list' && styles.viewToggleTextActive]}
-            >
+            <Text style={[styles.pillText, viewMode === 'list' && styles.pillTextActive]}>
               Saraksts
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.viewToggleBtn, viewMode === 'map' && styles.viewToggleBtnActive]}
+            style={[styles.pill, viewMode === 'map' && styles.pillActive]}
             onPress={() => setViewMode('map')}
           >
-            <Map size={14} color={viewMode === 'map' ? '#111827' : '#6b7280'} />
-            <Text
-              style={[styles.viewToggleText, viewMode === 'map' && styles.viewToggleTextActive]}
-            >
+            <Text style={[styles.pillText, viewMode === 'map' && styles.pillTextActive]}>
               Karte
             </Text>
           </TouchableOpacity>
-        </View>
 
-        {viewMode === 'list' && (
-          <TouchableOpacity
-            style={[styles.filterBtn, panelOpen && styles.filterBtnActive]}
-            onPress={togglePanel}
-          >
-            <Settings2 size={15} color={panelOpen ? '#111827' : '#6b7280'} />
-            {activeFilter && <View style={styles.filterDot} />}
-          </TouchableOpacity>
-        )}
+          <View style={{ flex: 1 }} />
+
+          {viewMode === 'list' && (
+            <TouchableOpacity
+              style={[styles.iconBtn, panelOpen && { backgroundColor: '#f3f4f6' }]}
+              onPress={togglePanel}
+            >
+              <Settings2 size={20} color="#111827" />
+              {activeFilter && <View style={styles.filterDot} />}
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
+
       {/* Map view */}
       {viewMode === 'map' ? (
         <JobMapView
@@ -641,14 +674,6 @@ export default function JobsScreen() {
         >
           {/* Active filter pill */}
           {activeFilter && <ActiveFilterPill filter={activeFilter} onClear={handleReset} />}
-
-          {/* Results header */}
-          <View style={styles.resultsHeader}>
-            <Text style={styles.resultsCount}>{t.jobSearch.results(filteredJobs.length)}</Text>
-            <Text style={styles.sortLabel}>
-              {t.jobSearch.sortNewest} {'↓'}
-            </Text>
-          </View>
 
           {/* Job list */}
           {filteredJobs.length === 0 ? (
@@ -671,7 +696,7 @@ export default function JobsScreen() {
           )}
         </ScrollView>
       )}
-      {/* end map/list conditional */}
+
       {/* Save-search modal */}
       <SaveSearchModal
         visible={saveModalVisible}
@@ -704,19 +729,22 @@ export default function JobsScreen() {
         onConfirm={handleConfirmAccept}
         onClose={() => setAcceptSheetJob(null)}
       />
-      {/* How It Works modal removed — tukšbrauciens lives in active.tsx */}
+
       {/* ── GO ONLINE FAB ── */}
       <View style={styles.onlineFabWrap} pointerEvents="box-none">
         <TouchableOpacity
-          style={[styles.onlineFab, isOnline === true && styles.onlineFabOnline]}
+          style={[styles.goBtn, isOnline && styles.goBtnOnline, togglingOnline && { opacity: 0.8 }]}
           onPress={handleToggleOnline}
           disabled={togglingOnline || isOnline === null}
-          activeOpacity={0.82}
+          activeOpacity={0.8}
         >
-          <View style={[styles.onlineFabDot, isOnline === true && styles.onlineFabDotActive]} />
-          <Text style={[styles.onlineFabLabel, isOnline === true && styles.onlineFabLabelOnline]}>
-            {togglingOnline ? '...' : isOnline === true ? 'Tiešsaistē' : 'IET TIEŠSAISTĒ'}
-          </Text>
+          {togglingOnline ? (
+            <ActivityIndicator color={isOnline ? '#000' : '#fff'} />
+          ) : (
+            <Text style={[styles.goBtnText, isOnline && styles.goBtnTextOnline]}>
+              {isOnline ? 'TIEŠSAISTĒ' : 'GO'}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScreenContainer>
@@ -725,369 +753,289 @@ export default function JobsScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-
-  // ── Controls row (minimal, light) ──────────────────────────────────────────
-  controlsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  pill: {
     paddingHorizontal: 16,
     paddingVertical: 8,
+    borderRadius: 999,
     backgroundColor: '#f3f4f6',
   },
-  filterBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#e5e7eb',
+  pillActive: {
+    backgroundColor: '#111827',
+  },
+  pillText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  pillTextActive: {
+    color: '#ffffff',
+  },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
-  filterBtnActive: { backgroundColor: '#d1d5db' },
   filterDot: {
     position: 'absolute',
-    top: 7,
-    right: 7,
-    width: 7,
-    height: 7,
+    top: 8,
+    right: 8,
+    width: 6,
+    height: 6,
     borderRadius: 4,
     backgroundColor: '#ef4444',
   },
 
-  viewToggle: {
-    flexDirection: 'row',
-    backgroundColor: '#e5e7eb',
-    borderRadius: 20,
-    padding: 3,
-  },
-  viewToggleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 18,
-  },
-  viewToggleBtnActive: {
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
-  },
-  viewToggleText: { fontSize: 12, fontWeight: '600', color: '#6b7280', lineHeight: 18 },
-  viewToggleTextActive: { color: '#111827' },
-
-  // ── GO ONLINE FAB ──────────────────────────────────────────────────────────
+  // GO Button
   onlineFabWrap: {
     position: 'absolute',
-    bottom: 20,
-    left: 24,
-    right: 24,
+    bottom: 30,
+    left: 0,
+    right: 0,
     alignItems: 'center',
   },
-  onlineFab: {
-    flexDirection: 'row',
+  goBtn: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#111827', // Black (or Uber blue #276EF1)
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    backgroundColor: '#111827',
-    paddingVertical: 17,
-    borderRadius: 50,
-    width: '100%',
-    shadowColor: '#000',
-    shadowOpacity: 0.22,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 7,
+    shadowColor: '#111827',
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+    borderWidth: 4,
+    borderColor: '#fff',
   },
-  onlineFabOnline: {
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowOpacity: 0.08,
+  goBtnOnline: {
+    width: 'auto',
+    height: 44,
+    paddingHorizontal: 24,
+    borderRadius: 22,
+    backgroundColor: '#dcfce7', // Green-ish pill
+    borderWidth: 0,
+    shadowOpacity: 0.1,
   },
-  onlineFabDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#6b7280' },
-  onlineFabDotActive: { backgroundColor: '#34d399' },
-  onlineFabLabel: {
-    fontSize: 15,
-    fontWeight: '800',
+  goBtnText: {
+    fontSize: 20,
+    fontWeight: '900',
     color: '#ffffff',
-    letterSpacing: 0.6,
-    lineHeight: 20,
   },
-  onlineFabLabelOnline: {
-    color: '#374151',
-    fontWeight: '600',
+  goBtnTextOnline: {
     fontSize: 14,
-    letterSpacing: 0,
+    fontWeight: '700',
+    color: '#166534',
   },
 
-  scrollContent: { paddingBottom: 104, flexGrow: 1 },
+  scrollContent: { paddingBottom: 120, flexGrow: 1 },
 
   activePill: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f3f4f6',
     marginHorizontal: 16,
-    marginTop: 10,
+    marginTop: 0,
+    marginBottom: 16,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 6,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
   },
   activePillLabel: { fontSize: 11, fontWeight: '700', color: '#6b7280' },
-  activePillText: { flex: 1, fontSize: 12, fontWeight: '600', color: '#78350f' },
+  activePillText: { flex: 1, fontSize: 12, fontWeight: '600', color: '#111827' },
   activePillClear: {
-    backgroundColor: '#9ca3af',
+    backgroundColor: '#d1d5db',
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  activePillClearText: { fontSize: 11, fontWeight: '700', color: '#ffffff' },
+  activePillClearText: { fontSize: 11, fontWeight: '700', color: '#111827' },
 
   resultsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    marginTop: 14,
-    marginBottom: 2,
+    paddingHorizontal: 20,
+    marginBottom: 8,
   },
-  resultsCount: { fontSize: 13, fontWeight: '700', color: '#374151' },
+  resultsCount: { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
   sortLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
 
-  list: { paddingHorizontal: 16 },
+  list: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 100 },
 
   card: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
-    padding: 16,
-    marginTop: 10,
+    padding: 18,
+    marginBottom: 14,
+    marginHorizontal: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-    gap: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
   },
   cardSelected: {
+    backgroundColor: '#f9fafb',
     borderWidth: 2,
     borderColor: '#111827',
-    backgroundColor: '#f0fdf4',
   },
   tourCheckWrap: {
     position: 'absolute',
-    top: 12,
-    right: 12,
+    top: 16,
+    right: 16,
     zIndex: 5,
   },
   tourCheckEmpty: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: '#d1d5db',
     backgroundColor: '#ffffff',
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+  // Sub-styles for card content
+  routeCity: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 2 },
+  routeAddress: { fontSize: 13, color: '#6b7280' },
+  priceTotal: { fontSize: 22, fontWeight: '800', color: '#111827' },
+  pricePerTonne: { fontSize: 12, color: '#9ca3af', fontWeight: '500' },
+  metaValue: { fontSize: 13, fontWeight: '600', color: '#4b5563' },
+  jobNumber: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#9ca3af',
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
-  cardHeaderLeft: { gap: 4 },
-  jobNumber: { fontSize: 12, fontWeight: '600', color: '#6b7280', letterSpacing: 0.5 },
-  vehicleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  vehicleIcon: { fontSize: 18 },
-  vehicleType: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  availableBadge: {
-    backgroundColor: '#dcfce7',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  availableBadgeText: { fontSize: 11, fontWeight: '700', color: '#15803d' },
-
-  payloadRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 8,
-  },
-  payloadWeight: { fontSize: 14, fontWeight: '800', color: '#111827' },
-  payloadDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#9ca3af' },
-  payloadMaterial: { fontSize: 14, fontWeight: '500', color: '#374151' },
-
-  routeSection: { gap: 0, paddingLeft: 2 },
-  routeRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 3 },
-  routeDotFrom: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#111827',
-    borderWidth: 2.5,
-    borderColor: '#e5e7eb',
-  },
-  routeDotTo: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#111827',
-    borderWidth: 2.5,
-    borderColor: '#fca5a5',
-  },
-  routeLine: { width: 2, height: 14, backgroundColor: '#e5e7eb', marginLeft: 5 },
-  routeCity: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  routeAddress: { fontSize: 12, color: '#9ca3af' },
-
-  cardMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-  },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  metaIcon: { fontSize: 14 },
-  metaValue: { fontSize: 12, fontWeight: '600', color: '#374151' },
-  metaSub: { fontSize: 11, color: '#9ca3af' },
-  priceBlock: { alignItems: 'flex-end' },
-  priceTotal: { fontSize: 19, fontWeight: '800', color: '#111827' },
-  pricePerTonne: { fontSize: 11, color: '#9ca3af', marginTop: 1 },
-
-  acceptBtn: {
-    backgroundColor: '#111827',
-    paddingVertical: 13,
-    borderRadius: 999,
-    alignItems: 'center',
-    shadowColor: '#111827',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  acceptBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
 
   emptyResetBtn: {
     marginTop: 8,
     paddingHorizontal: 24,
     paddingVertical: 11,
-    borderRadius: 10,
+    borderRadius: 999,
     backgroundColor: '#111827',
   },
   emptyResetBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   modalInput: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
     color: '#111827',
+    backgroundColor: '#f9fafb',
   },
-  modalActions: { flexDirection: 'row', gap: 10 },
+  modalActions: { flexDirection: 'row', gap: 12 },
   modalCancel: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: 14,
+    borderRadius: 12,
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
   },
-  modalCancelText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
+  modalCancelText: { fontSize: 15, fontWeight: '600', color: '#4b5563' },
   modalSave: {
     flex: 2,
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: 14,
+    borderRadius: 12,
     backgroundColor: '#111827',
     alignItems: 'center',
   },
   modalSaveDisabled: { opacity: 0.5 },
-  modalSaveText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
+  modalSaveText: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
 
   // ── Accept Bottom Sheet ────────────────────────────────────────
   sheetJobCard: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 14,
-    padding: 14,
-    gap: 8,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 2,
   },
   sheetJobHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  sheetJobNum: { fontSize: 13, fontWeight: '700', color: '#6b7280' },
-  sheetJobPrice: { fontSize: 20, fontWeight: '800', color: '#111827' },
+  sheetJobNum: { fontSize: 13, fontWeight: '700', color: '#9ca3af' },
+  sheetJobPrice: { fontSize: 24, fontWeight: '800', color: '#111827' },
   sheetRouteRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     flexWrap: 'nowrap',
   },
-  sheetRouteDot: { width: 10, height: 10, borderRadius: 5, flexShrink: 0 },
-  sheetRouteCity: { fontSize: 14, fontWeight: '700', color: '#111827', flexShrink: 1 },
+  sheetRouteDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
+  sheetRouteCity: { fontSize: 16, fontWeight: '700', color: '#111827', flexShrink: 1 },
   sheetJobMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
   },
-  sheetMetaText: { fontSize: 12, color: '#6b7280' },
+  sheetMetaText: { fontSize: 13, color: '#4b5563', fontWeight: '500' },
   sheetMetaDot: { fontSize: 12, color: '#d1d5db' },
   sheetReturnSection: {
     backgroundColor: '#f0fdf4',
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
-    borderColor: '#d1fae5',
-    gap: 6,
+    borderColor: '#bbf7d0',
+    marginTop: 8,
+    gap: 8,
   },
-  sheetReturnTitle: { fontSize: 13, fontWeight: '700', color: '#065f46' },
+  sheetReturnTitle: { fontSize: 14, fontWeight: '700', color: '#166534' },
   sheetReturnCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 10,
+    borderRadius: 12,
+    padding: 12,
     borderWidth: 1,
-    borderColor: '#d1fae5',
+    borderColor: '#dcfce7',
   },
   sheetReturnLeft: { flex: 1, gap: 4 },
   sheetReturnKmBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#d1fae5',
-    borderRadius: 6,
+    backgroundColor: '#dcfce7',
+    borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  sheetReturnKmText: { fontSize: 10, fontWeight: '700', color: '#059669' },
-  sheetReturnCity: { fontSize: 13, fontWeight: '600', color: '#111827' },
-  sheetReturnPrice: { fontSize: 15, fontWeight: '800', color: '#059669', marginLeft: 8 },
-  sheetReturnNone: { fontSize: 12, color: '#9ca3af', textAlign: 'center', paddingVertical: 8 },
+  sheetReturnKmText: { fontSize: 11, fontWeight: '700', color: '#166534' },
+  sheetReturnCity: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  sheetReturnPrice: { fontSize: 16, fontWeight: '800', color: '#166534', marginLeft: 8 },
+  sheetReturnNone: { fontSize: 13, color: '#9ca3af', textAlign: 'center', paddingVertical: 8 },
   sheetAcceptBtn: {
     backgroundColor: '#111827',
-    borderRadius: 14,
-    paddingVertical: 15,
+    borderRadius: 999,
+    paddingVertical: 18,
     alignItems: 'center',
+    marginTop: 8,
     shadowColor: '#111827',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 6,
   },
-  sheetAcceptBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  sheetAcceptBtnText: { color: '#fff', fontWeight: '800', fontSize: 18 },
 });
 
 // ── Map styles ────────────────────────────────────────────────────────────────
