@@ -27,6 +27,7 @@ import { format } from 'date-fns';
 import { lv } from 'date-fns/locale';
 import { useOrders } from '@/lib/use-orders';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 
 type FilterKey = 'ALL' | 'ACTIVE' | 'DONE' | 'CANCELLED';
 
@@ -124,9 +125,14 @@ export default function OrdersScreen() {
         keyExtractor={(item) => `${item.kind}-${item.data.id}`}
         renderItem={renderItem}
         contentContainerStyle={s.list}
-        refreshControl={<RefreshControl refreshing={refreshing || loading} onRefresh={refresh} />}
+        contentInsetAdjustmentBehavior="never"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
         ListEmptyComponent={
-          !loading ? (
+          loading ? (
+            <View style={{ gap: 16 }}>
+              <SkeletonCard count={3} />
+            </View>
+          ) : (
             <View style={s.emptyState}>
               <View style={s.emptyIcon}>
                 <Package size={32} color="#94a3b8" />
@@ -137,7 +143,7 @@ export default function OrdersScreen() {
                 <Text style={s.emptyButtonText}>Jauns pasūtījums</Text>
               </TouchableOpacity>
             </View>
-          ) : null
+          )
         }
       />
 
