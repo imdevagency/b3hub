@@ -1,0 +1,169 @@
+      {/* ── Static Bottom Card ── */}
+      <View style={[styles.staticBottomCard, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+        <TouchableOpacity style={styles.detailsPull} onPress={() => setDetailsVisible(true)} activeOpacity={0.7}>
+          <View style={styles.detailsPullHandle} />
+        </TouchableOpacity>
+
+        {/* Minimal Uber-like Header */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: phaseColor.text || '#000' }} />
+            <Text style={{ fontSize: 13, fontWeight: '800', color: phaseColor.text || '#000', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              {currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP'
+                ? 'Dodies uz iekraušanu'
+                : currentStatus === 'AT_PICKUP'
+                  ? 'Iekraušana'
+                  : currentStatus === 'LOADED' || currentStatus === 'EN_ROUTE_DELIVERY'
+                    ? 'Dodies uz izkraušanu'
+                    : 'Piegāde'}
+            </Text>
+          </View>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: '#9ca3af' }}>#{job.jobNumber}</Text>
+        </View>
+
+        <Text style={{ fontSize: 26, fontWeight: '800', color: '#111827', marginBottom: 20, letterSpacing: -0.5, lineHeight: 30 }} adjustsFontSizeToFit numberOfLines={2}>
+          {currentStatus === 'ACCEPTED' ||
+          currentStatus === 'EN_ROUTE_PICKUP' ||
+          currentStatus === 'AT_PICKUP'
+            ? `${job.pickupAddress}, ${job.pickupCity}`
+            : `${job.deliveryAddress}, ${job.deliveryCity}`}
+        </Text>
+
+        {/* Primary Action Button */}
+        <View style={styles.actionRow}>
+          {nextStatus ? (
+            <TouchableOpacity style={[styles.primaryButton]} onPress={handleUpdateStatus}>
+              <Text style={styles.primaryButtonText}>
+                {currentStatus === 'AT_DELIVERY'
+                  ? t.deliveryProof.title
+                  : currentStatus === 'AT_PICKUP'
+                    ? 'Apstiprināt kravu'
+                    : t.activeJob.status[nextStatus]}
+              </Text>
+              {currentStatus !== 'AT_DELIVERY' && (
+                <Text style={{ color: '#ffffff80', fontSize: 18 }}>→</Text>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.completedBanner}>
+              <CheckCircle2 size={20} color="#365314" />
+              <Text style={styles.completedText}>Piegādāts!</Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      {/* ── Details Modal ── */}
+      <BottomSheet
+        visible={detailsVisible}
+        onClose={() => setDetailsVisible(false)}
+        title="Kravas detaļas"
+        subtitle={`Krava #${job.jobNumber}`}
+        scrollable
+        maxHeightPct={0.9}
+      >
+        <View style={{ paddingBottom: 40 }}>
+          {/* Main Details */}
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Materiāls</Text>
+            <Text style={styles.detailValue}>{job.cargoType}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Svars</Text>
+            <Text style={styles.detailValue}>{job.cargoWeight ?? '-'} t</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Cena</Text>
+            <Text style={styles.detailValue}>€{job.rate.toFixed(2)}</Text>
+          </View>
+
+          {/* Exceptions Entry Point */}
+          <Text style={[styles.detailLabel, { marginTop: 24, marginBottom: 8 }]}>
+            Izņēmumi / Problēmas
+          </Text>
+          <View style={styles.exceptionCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <AlertTriangle size={18} color="#ef4444" />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: '#7f1d1d' }}>
+                Ziņot par problēmu
+              </Text>
+            </View>
+            <TextInput
+              style={{
+                backgroundColor: '#fff',
+                borderRadius: 8,
+                padding: 8,
+                height: 60,
+                fontSize: 13,
+              }}
+              placeholder="Aprakstiet situāciju..."
+              value={exceptionNotes}
+              onChangeText={setExceptionNotes}
+              multiline
+            />
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#fee2e2',
+                borderRadius: 8,
+                padding: 10,
+                alignItems: 'center',
+              }}
+              onPress={handleReportException}
+            >
+              <Text style={{ color: '#991b1b', fontWeight: '700', fontSize: 13 }}>
+                Ziņot dispečeram
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Return Trips List (if any) */}
+          {returnTrips.length > 0 && (
+            <View style={{ marginTop: 24 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <Route size={16} color="#000" />
+                <Text style={{ fontWeight: '700', fontSize: 14 }}>Atpakaļceļa kravas</Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8 }}
+              >
+                {returnTrips.map((rt) => (
+                  <View
+                    key={rt.id}
+                    style={{
+                      width: 220,
+                      padding: 12,
+                      backgroundColor: '#f3f4f6',
+                      borderRadius: 12,
+                    }}
+                  >
+                    <Text style={{ fontWeight: '700', fontSize: 14 }}>
+                      €{rt.rate.toFixed(0)} · {rt.returnDistanceKm} km
+                    </Text>
+                    <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+                      {rt.pickupCity} → {rt.deliveryCity}
+                    </Text>
+                    <TouchableOpacity
+                      style={{
+                        marginTop: 8,
+                        backgroundColor: '#000',
+                        padding: 8,
+                        borderRadius: 8,
+                        alignItems: 'center',
+                      }}
+                      onPress={() =>
+                        handleAcceptReturnTrip(rt.id, rt.pickupCity, rt.deliveryCity)
+                      }
+                    >
+                      <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                        Pieņemt
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+        </View>
+      </BottomSheet>
