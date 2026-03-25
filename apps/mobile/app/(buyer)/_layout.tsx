@@ -33,7 +33,6 @@ export default function BuyerLayout() {
     pathname.includes('/framework-contract') ||
     pathname.includes('/skip-order') ||
     pathname.includes('/invoices') ||
-    pathname.includes('/containers') ||
     pathname.includes('/certificates') ||
     pathname.includes('/team');
   const hideTopBar = isHome || isDetailScreen;
@@ -97,7 +96,6 @@ export default function BuyerLayout() {
           <Tabs.Screen name="skip-order/[id]" options={{ href: null }} />
           <Tabs.Screen name="rfq/[id]" options={{ href: null }} />
           <Tabs.Screen name="invoices" options={{ href: null }} />
-          <Tabs.Screen name="containers" options={{ href: null }} />
           <Tabs.Screen name="certificates" options={{ href: null }} />
           <Tabs.Screen name="team" options={{ href: null }} />
           <Tabs.Screen name="transport-job/[id]" options={{ href: null }} />

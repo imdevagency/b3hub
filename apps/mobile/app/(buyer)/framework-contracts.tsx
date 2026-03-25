@@ -93,6 +93,8 @@ function getProgressColor(pct: number) {
   return '#10b981';
 }
 
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+
 export default function FrameworkContractsScreen() {
   const { token } = useAuth();
   const router = useRouter();
@@ -272,20 +274,23 @@ export default function FrameworkContractsScreen() {
   return (
     <ScreenContainer bg="white" standalone>
       <Stack.Screen options={{ headerShown: false }} />
-      {/* Minimal Header */}
-      <View style={s.header}>
-        <Text style={s.headerTitle}>Projekti</Text>
-        <TouchableOpacity
-          style={s.headerBtn}
-          onPress={() => {
-            haptics.light();
-            setCreateVisible(true);
-          }}
-          activeOpacity={0.6}
-        >
-          <Plus size={24} color="#000" />
-        </TouchableOpacity>
-      </View>
+      {/* Detail Screen Header */}
+      <ScreenHeader
+        title="Projekti"
+        rightSlot={
+          <TouchableOpacity
+            onPress={() => {
+              haptics.light();
+              setCreateVisible(true);
+            }}
+            hitSlop={10}
+            activeOpacity={0.6}
+          >
+            <Plus size={24} color="#000" />
+          </TouchableOpacity>
+        }
+      />
+      {/**/}
 
       {loading ? (
         <View style={{ padding: 20 }}>

@@ -97,11 +97,6 @@ function buildItems(role: Role, isCompany: boolean): MenuItem[] {
       route: '/(buyer)/invoices',
     });
     items.push({
-      icon: (c) => <Box size={20} color={c} />,
-      label: 'Konteineri',
-      route: '/(buyer)/containers',
-    });
-    items.push({
       icon: (c) => <ShieldCheck size={20} color={c} />,
       label: 'Sertifikāti',
       route: '/(buyer)/certificates',
