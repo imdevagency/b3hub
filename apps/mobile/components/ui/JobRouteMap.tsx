@@ -40,8 +40,8 @@ export interface JobRouteMapProps {
   current?: MapPin | null;
   /** Additional pins (e.g. return-trip pickups, containers) */
   extras?: ExtraPin[];
-  /** Map height in px. Default 220 */
-  height?: number;
+  /** Map height in px or string %. Default 220. Pass null to unconstrain height. */
+  height?: number | string | null;
   /** Border radius. Default 16 */
   borderRadius?: number;
   /** Extra style applied to the outer wrapper */
@@ -77,7 +77,11 @@ export function JobRouteMap({
 }: JobRouteMapProps) {
   const cameraRef = useRef<CameraRefHandle | null>(null);
 
-  // Only use current position if it looks like a real European GPS fix.
+  // If height is explicitly "100%" or null, we shouldn't force a numeric height style if flex is desired.
+  // But for API compat we'll trust the prop.
+  // Note: If explicit height is passed, it overrides other layout styles in the array order if applied via { height }.
+
+  // ...
   // Simulator defaults (Apple HQ / SF) are in California and would push the
   // initial camera centre into the Atlantic Ocean.
   const currentIsValid = current != null && isEuropeanCoord(current.lat, current.lng);
@@ -130,8 +134,22 @@ export function JobRouteMap({
       ])
     : [];
 
+  const containerStyle: any = [styles.container, { borderRadius }];
+  // Only clip with overflow:hidden when there is an actual border radius to clip.
+  // overflow:'hidden' with PROVIDER_GOOGLE on iOS prevents the native GMSMapView from rendering.
+  if (borderRadius > 0) {
+    containerStyle.push({ overflow: 'hidden' });
+  }
+  if (height !== null) {
+    containerStyle.push({ height });
+  } else {
+    // If explicit null is passed, we probably want to fill available space
+    containerStyle.push({ flex: 1, width: '100%' });
+  }
+  containerStyle.push(style);
+
   return (
-    <View style={[styles.container, { height, borderRadius, overflow: 'hidden' }, style]}>
+    <View style={containerStyle}>
       {/* ── Distance + ETA pill ── */}
       {mainRoute && mainRoute.distanceKm > 0 && (
         <View style={styles.infoPill}>
@@ -148,7 +166,7 @@ export function JobRouteMap({
         </View>
       )}
 
-      <BaseMap cameraRef={cameraRef} center={center} zoom={10}>
+      <BaseMap cameraRef={cameraRef} center={center} zoom={10} style={StyleSheet.absoluteFill}>
         {validCurrent && <PinLayer id="current" coordinate={validCurrent} type="current" />}
         <PinLayer id="pickup" coordinate={pickup} type="pickup" label={pickup.label} />
         <PinLayer id="delivery" coordinate={delivery} type="delivery" label={delivery.label} />

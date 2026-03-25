@@ -79,5 +79,7 @@
     <string>Light</string>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
+    <key>googleMapsApiKey</key>
+    <string>AIzaSyBNIZk1VBorD3kU02BNjz_2m4Dlek_gsx8</string>
   </dict>
 </plist>

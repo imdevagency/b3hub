@@ -11,7 +11,6 @@ import {
   Platform,
   TextInput,
   Image,
-  Animated,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -45,6 +44,10 @@ import {
   MessageCircle,
   AlertTriangle,
   Clock,
+  ArrowLeft,
+  HelpCircle,
+  MapPin,
+  User,
 } from 'lucide-react-native';
 
 // ── Status progression ────────────────────────────────────────────────────────
@@ -148,6 +151,8 @@ export default function ActiveJobScreen() {
       setPickupPhotoUri(uri);
     }
   };
+
+  const [detailsExpanded, setDetailsExpanded] = React.useState(false);
 
   // ── Fetch return trips when status enters EN_ROUTE_DELIVERY / AT_DELIVERY ──
   useEffect(() => {
@@ -347,19 +352,6 @@ export default function ActiveJobScreen() {
       locationSub.current?.remove();
       stopLocationTracking().catch(() => {});
     };
-  }, []);
-
-  // ── Active-dot pulse animation ─────────────────────────────────────────────
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.45, duration: 750, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 750, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
   }, []);
 
   if (loading) {
@@ -563,421 +555,349 @@ export default function ActiveJobScreen() {
   };
 
   return (
-    <ScreenContainer bg="#ffffff">
-      <View style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: 140, paddingTop: 0 }]}>
-          {/* ── Interactive map ── */}
-          {job.pickupLat != null &&
-            job.pickupLng != null &&
-            job.deliveryLat != null &&
-            job.deliveryLng != null && (
-              <JobRouteMap
-                pickup={{
-                  lat: job.pickupLat,
-                  lng: job.pickupLng,
-                  label: job.pickupCity,
-                }}
-                delivery={{
-                  lat: job.deliveryLat,
-                  lng: job.deliveryLng,
-                  label: job.deliveryCity,
-                }}
-                current={
-                  currentLat != null && currentLng != null
-                    ? { lat: currentLat, lng: currentLng }
-                    : null
-                }
-                // Show dashed leg only when heading to pickup
-                showToPickupLeg={
-                  currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP'
-                }
-                height={280}
-                borderRadius={0}
-                style={styles.mapCard}
-              />
-            )}
-
-          {/* Floating Job info */}
-          <View style={styles.floatingDetails}>
-            <View
+    <ScreenContainer bg="transparent" topInset={0} style={{ flex: 1 }} noAnimation>
+      {/* ── Absolutely Positioned Map Layer ── */}
+      <View style={StyleSheet.absoluteFill}>
+        {job.pickupLat != null &&
+        job.pickupLng != null &&
+        job.deliveryLat != null &&
+        job.deliveryLng != null ? (
+          <JobRouteMap
+            pickup={{
+              lat: job.pickupLat,
+              lng: job.pickupLng,
+              label: job.pickupCity || '',
+            }}
+            delivery={{
+              lat: job.deliveryLat,
+              lng: job.deliveryLng,
+              label: job.deliveryCity || '',
+            }}
+            current={
+              currentLat != null && currentLng != null ? { lat: currentLat, lng: currentLng } : null
+            }
+            showToPickupLeg={currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP'}
+            height={null}
+            borderRadius={0}
+            style={{ flex: 1 }}
+          />
+        ) : (
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: '#eaedf2',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+            }}
+          >
+            <MapPin size={36} color="#9ca3af" />
+            <Text
               style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
+                fontSize: 14,
+                fontWeight: '600',
+                color: '#9ca3af',
+                textAlign: 'center',
+                paddingHorizontal: 40,
               }}
             >
-              <View>
-                <Text
-                  style={{ fontSize: 24, fontWeight: '700', color: '#000000', letterSpacing: -0.5 }}
-                >
-                  #{job.jobNumber}
-                </Text>
-                <Text style={{ fontSize: 16, color: '#6b7280', marginTop: 4, fontWeight: '500' }}>
-                  {job.cargoType} · {job.cargoWeight ?? 0}t
-                </Text>
-                <View style={{ flexDirection: 'row', marginTop: 6, alignItems: 'center' }}>
-                  <Text style={styles.price}>€{job.rate.toFixed(2)}</Text>
-                </View>
-              </View>
-              <View
-                style={[
-                  styles.statusBadge,
-                  { backgroundColor: phaseColor.bg, borderColor: phaseColor.border },
-                ]}
-              >
-                <Text style={[styles.statusText, { color: phaseColor.text }]}>
-                  {t.activeJob.status[currentStatus] ?? currentStatus}
-                </Text>
-              </View>
-            </View>
-
-            <Text
-              style={[styles.phaseLabel, { color: phaseColor.text, marginTop: 4, marginBottom: 8 }]}
-            >
-              {phaseColor.phase}
+              {currentStatus === 'ACCEPTED' ||
+              currentStatus === 'EN_ROUTE_PICKUP' ||
+              currentStatus === 'AT_PICKUP'
+                ? `${job.pickupAddress ?? ''}, ${job.pickupCity ?? ''}`
+                : `${job.deliveryAddress ?? ''}, ${job.deliveryCity ?? ''}`}
             </Text>
-
-            {/* SLA Alert only if overdue */}
-            {job.sla?.isOverdue && (
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: '#fef2f2',
-                  padding: 12,
-                  borderRadius: 8,
-                  gap: 8,
-                  marginBottom: 16,
-                }}
-              >
-                <AlertTriangle size={16} color="#ef4444" />
-                <Text style={{ color: '#b91c1c', fontWeight: '600', fontSize: 13 }}>
-                  {SLA_STAGE_LABEL[job.sla.stage ?? ''] ?? 'Kavējums'} · {job.sla.overdueMinutes}{' '}
-                  min
-                </Text>
-              </View>
-            )}
-
-            <View style={styles.routeSection}>
-              {/* From */}
-              <View style={styles.routeRow}>
-                <View style={styles.routeDot} />
-                <View style={styles.routeInfo}>
-                  <Text style={styles.routeValue}>
-                    {job.pickupAddress}, {job.pickupCity}
-                  </Text>
-                </View>
-                <TouchableOpacity style={styles.callBtn} onPress={() => handleCall(null)}>
-                  <Phone size={18} color="#374151" />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.routeLine} />
-
-              {/* To */}
-              <View style={styles.routeRow}>
-                <View style={[styles.routeDot, styles.routeDotEnd]} />
-                <View style={styles.routeInfo}>
-                  <Text style={styles.routeValue}>
-                    {job.deliveryAddress}, {job.deliveryCity}
-                  </Text>
-                  {job.order?.siteContactName ? (
-                    <Text style={styles.siteContactName}>{job.order.siteContactName}</Text>
-                  ) : null}
-                </View>
-
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <TouchableOpacity
-                    style={styles.callBtn}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/chat/[jobId]',
-                        params: { jobId: job.id, title: 'Pasūtītājs' },
-                      })
-                    }
-                  >
-                    <MessageCircle size={18} color="#374151" />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.callBtn,
-                      job.order?.siteContactPhone ? styles.callBtnActive : undefined,
-                    ]}
-                    onPress={() =>
-                      handleCall(job.order?.siteContactPhone, job.order?.siteContactName)
-                    }
-                  >
-                    <Phone size={18} color={job.order?.siteContactPhone ? '#ffffff' : '#374151'} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
           </View>
+        )}
+      </View>
 
-          {/* ── Auto Return Trips strip ── */}
-          {!returnDismissed &&
-            RETURN_TRIP_STATUSES.includes(currentStatus) &&
-            (returnTripsLoading || returnTrips.length > 0) && (
-              <View style={styles.returnStrip}>
-                <View style={styles.returnStripHeader}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Route size={16} color="#000000" />
-                    <Text style={styles.returnStripTitle}>{t.avoidEmptyRuns.bannerTitle}</Text>
-                    {returnTrips.length > 0 && (
-                      <View style={styles.returnCountPill}>
-                        <Text style={styles.returnCountPillText}>{returnTrips.length}</Text>
-                      </View>
-                    )}
-                  </View>
-                  <TouchableOpacity onPress={() => setReturnDismissed(true)}>
-                    <Text style={styles.returnStripDismiss}>✕</Text>
-                  </TouchableOpacity>
-                </View>
+      {/* ── Top Bar Overlay ── */}
+      <View style={styles.topOverlay}>
+        <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
+          <ArrowLeft size={24} color="#000" />
+        </TouchableOpacity>
 
-                {returnTripsLoading ? (
-                  <ActivityIndicator size="small" color="#000000" style={{ marginVertical: 8 }} />
-                ) : (
-                  <>
-                    <Text style={styles.returnStripDesc}>
-                      {t.avoidEmptyRuns.bannerDesc(job!.deliveryCity)}
-                    </Text>
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      style={{ marginTop: 10 }}
-                      contentContainerStyle={{ gap: 10, paddingRight: 4 }}
-                    >
-                      {returnTrips.slice(0, 5).map((rt) => (
-                        <View key={rt.id} style={styles.returnMiniCard}>
-                          <View style={styles.returnMiniKmBadge}>
-                            <Route size={10} color="#000000" />
-                            <Text style={styles.returnMiniKmText}>{rt.returnDistanceKm} km</Text>
-                          </View>
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              gap: 4,
-                              marginTop: 6,
-                            }}
-                          >
-                            <Truck size={12} color="#6b7280" />
-                            <Text style={styles.returnMiniRoute}>
-                              {rt.pickupCity} → {rt.deliveryCity}
-                            </Text>
-                          </View>
-                          <Text style={styles.returnMiniWeight}>
-                            {rt.cargoWeight ?? 0} t · {rt.cargoType}
-                          </Text>
-                          <Text style={styles.returnMiniPrice}>€{rt.rate.toFixed(0)}</Text>
-                          <TouchableOpacity
-                            style={[
-                              styles.returnMiniAcceptBtn,
-                              acceptingReturnId === rt.id && { opacity: 0.6 },
-                            ]}
-                            onPress={() =>
-                              handleAcceptReturnTrip(rt.id, rt.pickupCity, rt.deliveryCity)
-                            }
-                            disabled={acceptingReturnId !== null}
-                          >
-                            {acceptingReturnId === rt.id ? (
-                              <ActivityIndicator size="small" color="#fff" />
-                            ) : (
-                              <Text style={styles.returnMiniAcceptText}>Pieņemt →</Text>
-                            )}
-                          </TouchableOpacity>
-                        </View>
-                      ))}
-                    </ScrollView>
-                    <TouchableOpacity
-                      style={styles.returnStripCta}
-                      onPress={() => router.push('/(driver)/jobs')}
-                    >
-                      <Text style={styles.returnStripCtaText}>{t.avoidEmptyRuns.seeAllJobs}</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
-            )}
+        {/* SLA Warning Status */}
+        {job.sla?.isOverdue && (
+          <View
+            style={{
+              backgroundColor: '#fef2f2',
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 20,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              shadowColor: '#000',
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
+          >
+            <Clock size={16} color="#dc2626" />
+            <Text style={{ color: '#dc2626', fontWeight: '700', fontSize: 13 }}>
+              -{job.sla.overdueMinutes} min
+            </Text>
+          </View>
+        )}
+      </View>
 
-          {/* Exceptions widget */}
-          <View style={styles.exceptionCard}>
-            <View style={styles.exceptionHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <AlertTriangle size={17} color="#000000" />
-                <Text style={styles.exceptionTitle}>Izņēmumi</Text>
-              </View>
-              <View style={styles.exceptionCountPill}>
-                <Text style={styles.exceptionCountPillText}>{openExceptions.length} atvērti</Text>
-              </View>
-            </View>
+      {/* ── Bottom Sheet Overlay ── */}
+      <View style={styles.bottomSheet}>
+        <View style={styles.sheetHandle} />
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.exceptionTypeRow}
-            >
-              {EXCEPTION_TYPE_OPTIONS.map((option) => {
-                const selected = option.value === exceptionType;
-                return (
-                  <TouchableOpacity
-                    key={option.value}
-                    style={[styles.exceptionTypeChip, selected && styles.exceptionTypeChipActive]}
-                    onPress={() => setExceptionType(option.value)}
-                  >
-                    <Text
-                      style={[
-                        styles.exceptionTypeChipText,
-                        selected && styles.exceptionTypeChipTextActive,
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            <TextInput
-              style={styles.exceptionInput}
-              multiline
-              value={exceptionNotes}
-              onChangeText={setExceptionNotes}
-              placeholder="Aprakstiet situāciju dispečeram un klientam"
-              placeholderTextColor="#9ca3af"
+        {/* ── Step progress ── */}
+        <View style={{ flexDirection: 'row', gap: 3, marginBottom: 14 }}>
+          {STATUS_STEPS.map((step, i) => (
+            <View
+              key={step}
+              style={{
+                flex: i === currentIndex ? 2 : 1,
+                height: 3,
+                borderRadius: 2,
+                backgroundColor: i <= currentIndex ? '#111827' : '#e5e7eb',
+                opacity: i < currentIndex ? 0.3 : 1,
+              }}
             />
-            <TouchableOpacity
-              style={[styles.exceptionReportBtn, reportingException && { opacity: 0.65 }]}
-              onPress={handleReportException}
-              disabled={reportingException}
-            >
-              {reportingException ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.exceptionReportBtnText}>Ziņot par izņēmumu</Text>
-              )}
-            </TouchableOpacity>
+          ))}
+        </View>
 
-            {exceptionsLoading ? (
-              <ActivityIndicator size="small" color="#6b7280" style={{ marginTop: 8 }} />
-            ) : exceptions.length === 0 ? (
-              <Text style={styles.exceptionEmptyText}>Pašlaik nav reģistrētu izņēmumu.</Text>
-            ) : (
-              <View style={styles.exceptionList}>
-                {exceptions.map((item) => {
-                  const isOpen = item.status === 'OPEN';
-                  return (
-                    <View key={item.id} style={styles.exceptionItem}>
-                      <View style={styles.exceptionItemHead}>
-                        <Text style={styles.exceptionItemType}>{item.type}</Text>
-                        <Text
-                          style={[
-                            styles.exceptionItemStatus,
-                            isOpen ? styles.exceptionOpen : styles.exceptionResolved,
-                          ]}
-                        >
-                          {isOpen ? 'ATVĒRTS' : 'ATRISINĀTS'}
-                        </Text>
-                      </View>
-                      <Text style={styles.exceptionItemNotes}>{item.notes}</Text>
-                      {isOpen && (
-                        <>
-                          <TextInput
-                            style={styles.exceptionResolutionInput}
-                            value={resolutionById[item.id] ?? ''}
-                            onChangeText={(value) =>
-                              setResolutionById((prev) => ({ ...prev, [item.id]: value }))
-                            }
-                            placeholder="Atrisinājuma komentārs"
-                            placeholderTextColor="#9ca3af"
-                          />
-                          <TouchableOpacity
-                            style={[
-                              styles.exceptionResolveBtn,
-                              resolvingExceptionId === item.id && { opacity: 0.65 },
-                            ]}
-                            onPress={() => handleResolveException(item.id)}
-                            disabled={resolvingExceptionId === item.id}
-                          >
-                            {resolvingExceptionId === item.id ? (
-                              <ActivityIndicator size="small" color="#111827" />
-                            ) : (
-                              <Text style={styles.exceptionResolveBtnText}>
-                                Atzīmēt kā atrisinātu
-                              </Text>
-                            )}
-                          </TouchableOpacity>
-                        </>
-                      )}
-                    </View>
-                  );
-                })}
-              </View>
-            )}
+        {/* Minimal Header: Phase */}
+        <View style={styles.statusRow}>
+          <View style={[styles.statusPill, { backgroundColor: phaseColor.bg }]}>
+            <Text style={[styles.statusPillText, { color: phaseColor.text }]}>
+              {currentStatus === 'EN_ROUTE_PICKUP'
+                ? 'CEĻĀ UZ IEKRAUŠANU'
+                : currentStatus === 'EN_ROUTE_DELIVERY'
+                  ? 'CEĻĀ UZ IZKRAUŠANU'
+                  : (t.activeJob.status[currentStatus] ?? currentStatus)}
+            </Text>
           </View>
+          <Text style={styles.jobIdText}>#{job.jobNumber}</Text>
+        </View>
 
-          {/* Actions */}
-          {currentStatus === 'AT_DELIVERY' && deliveryBlockers.length > 0 && (
-            <View style={styles.readinessWarning}>
-              <Text style={styles.readinessWarningTitle}>Trūkst obligāti dokumenti</Text>
-              <Text style={styles.readinessWarningText}>
-                Piegādi nevar pabeigt, kamēr nav iesniegti visi dokumenti.
-              </Text>
-              <Text style={styles.readinessWarningList}>
-                {deliveryBlockers.map(formatDocCode).join(' • ')}
-              </Text>
-            </View>
-          )}
-        </ScrollView>
-        <View
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            paddingHorizontal: 20,
-            paddingTop: 16,
-            paddingBottom: 32,
-            backgroundColor: '#ffffff',
-            borderTopWidth: 1,
-            borderTopColor: '#e5e7eb',
-            ...styles.actionsRow,
-          }}
-        >
-          <TouchableOpacity style={styles.navigateBtn} onPress={handleNavigate}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Navigation2 size={18} color="#000000" />
-              <Text style={styles.navigateBtnText}>{t.activeJob.navigate}</Text>
-            </View>
+        {/* Main Context: Title & Address */}
+        <Text style={styles.sheetTitle} numberOfLines={1} adjustsFontSizeToFit>
+          {currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP'
+            ? 'Dodies uz iekraušanu'
+            : currentStatus === 'AT_PICKUP'
+              ? 'Iekraušana objektā'
+              : currentStatus === 'LOADED' || currentStatus === 'EN_ROUTE_DELIVERY'
+                ? 'Dodies uz izkraušanu'
+                : 'Piegāde objektā'}
+        </Text>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 24 }}>
+          <MapPin size={16} color="#6b7280" />
+          <Text style={styles.sheetAddress} numberOfLines={1}>
+            {currentStatus === 'ACCEPTED' ||
+            currentStatus === 'EN_ROUTE_PICKUP' ||
+            currentStatus === 'AT_PICKUP'
+              ? `${job.pickupAddress}, ${job.pickupCity}`
+              : `${job.deliveryAddress}, ${job.deliveryCity}`}
+          </Text>
+        </View>
+
+        {/* Primary Actions */}
+        <View style={styles.actionRow}>
+          <TouchableOpacity style={styles.navButton} onPress={handleNavigate}>
+            <Navigation2 size={24} color="#000" />
           </TouchableOpacity>
 
-          {nextStatus && (
-            <TouchableOpacity
-              style={[styles.nextBtn, currentStatus === 'AT_DELIVERY' && styles.nextBtnProof]}
-              onPress={handleUpdateStatus}
-            >
-              {currentStatus === 'AT_DELIVERY' ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <CheckCircle2 size={18} color="#fff" />
-                  <Text style={styles.nextBtnText}>{t.deliveryProof.title}</Text>
-                </View>
-              ) : (
-                <Text style={styles.nextBtnText}>{t.activeJob.nextStep} →</Text>
+          {nextStatus ? (
+            <TouchableOpacity style={[styles.primaryButton]} onPress={handleUpdateStatus}>
+              <Text style={styles.primaryButtonText}>
+                {currentStatus === 'AT_DELIVERY'
+                  ? t.deliveryProof.title
+                  : currentStatus === 'AT_PICKUP'
+                    ? 'Apstiprināt kravu'
+                    : t.activeJob.status[nextStatus]}
+              </Text>
+              {currentStatus !== 'AT_DELIVERY' && (
+                <Text style={{ color: '#ffffff80', fontSize: 18 }}>→</Text>
               )}
             </TouchableOpacity>
-          )}
-
-          {!nextStatus && (
+          ) : (
             <View style={styles.completedBanner}>
-              <CheckCircle2 size={20} color="#111827" />
+              <CheckCircle2 size={20} color="#365314" />
               <Text style={styles.completedText}>Piegādāts!</Text>
             </View>
           )}
         </View>
+
+        {/* Expandable Details Trigger */}
+        <TouchableOpacity
+          style={styles.detailsTrigger}
+          onPress={() => setDetailsExpanded(!detailsExpanded)}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={styles.detailsTriggerText}>
+              {detailsExpanded ? 'Slēpt detaļas' : 'Rādīt detaļas & Izņēmumus'}
+            </Text>
+            {!detailsExpanded && openExceptions.length > 0 && (
+              <View
+                style={{
+                  backgroundColor: '#dc2626',
+                  borderRadius: 10,
+                  minWidth: 20,
+                  height: 20,
+                  paddingHorizontal: 4,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>
+                  {openExceptions.length}
+                </Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+
+        {/* Details Content */}
+        {detailsExpanded && (
+          <ScrollView
+            style={styles.expandedContent}
+            contentContainerStyle={{ paddingBottom: 24 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Saziņa Row */}
+            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+              <TouchableOpacity
+                style={[
+                  styles.navButton,
+                  { flex: 1, backgroundColor: '#f0fdf4', height: 48, flexDirection: 'row', gap: 8 },
+                ]}
+                onPress={() => handleCall(job.order?.siteContactPhone, job.order?.siteContactName)}
+              >
+                <Phone size={18} color="#16a34a" />
+                <Text style={{ color: '#16a34a', fontWeight: '600' }}>Zvanīt</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.navButton,
+                  { flex: 1, backgroundColor: '#eff6ff', height: 48, flexDirection: 'row', gap: 8 },
+                ]}
+                onPress={() =>
+                  router.push({
+                    pathname: '/chat/[jobId]',
+                    params: { jobId: job.id, title: 'Pasūtītājs' },
+                  })
+                }
+              >
+                <MessageCircle size={18} color="#2563eb" />
+                <Text style={{ color: '#2563eb', fontWeight: '600' }}>Čats</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Materiāls</Text>
+              <Text style={styles.detailValue}>{job.cargoType}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Svars</Text>
+              <Text style={styles.detailValue}>{job.cargoWeight ?? '-'} t</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Cena</Text>
+              <Text style={styles.detailValue}>€{job.rate.toFixed(2)}</Text>
+            </View>
+
+            {/* Exceptions Entry Point */}
+            <Text style={[styles.detailLabel, { marginTop: 16, marginBottom: 8 }]}>
+              Izņēmumi / Problēmas
+            </Text>
+            <View style={styles.exceptionCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <AlertTriangle size={18} color="#ef4444" />
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#7f1d1d' }}>
+                  Ziņot par problēmu
+                </Text>
+              </View>
+              <TextInput
+                style={{
+                  backgroundColor: '#fff',
+                  borderRadius: 8,
+                  padding: 8,
+                  height: 60,
+                  fontSize: 13,
+                }}
+                placeholder="Aprakstiet situāciju..."
+                value={exceptionNotes}
+                onChangeText={setExceptionNotes}
+                multiline
+              />
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#fee2e2',
+                  borderRadius: 8,
+                  padding: 10,
+                  alignItems: 'center',
+                }}
+                onPress={handleReportException}
+              >
+                <Text style={{ color: '#991b1b', fontWeight: '700', fontSize: 13 }}>
+                  Ziņot dispečeram
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Return Trips List (if any) */}
+            {returnTrips.length > 0 && (
+              <View style={{ marginTop: 16 }}>
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}
+                >
+                  <Route size={16} color="#000" />
+                  <Text style={{ fontWeight: '700', fontSize: 14 }}>Atpakaļceļa kravas</Text>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 8 }}
+                >
+                  {returnTrips.map((rt) => (
+                    <View
+                      key={rt.id}
+                      style={{
+                        width: 220,
+                        padding: 12,
+                        backgroundColor: '#f3f4f6',
+                        borderRadius: 12,
+                      }}
+                    >
+                      <Text style={{ fontWeight: '700', fontSize: 14 }}>
+                        €{rt.rate.toFixed(0)} · {rt.returnDistanceKm} km
+                      </Text>
+                      <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+                        {rt.pickupCity} → {rt.deliveryCity}
+                      </Text>
+                      <TouchableOpacity
+                        style={{
+                          marginTop: 8,
+                          backgroundColor: '#000',
+                          padding: 8,
+                          borderRadius: 8,
+                          alignItems: 'center',
+                        }}
+                        onPress={() =>
+                          handleAcceptReturnTrip(rt.id, rt.pickupCity, rt.deliveryCity)
+                        }
+                      >
+                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                          Pieņemt
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+          </ScrollView>
+        )}
       </View>
 
-      {/* ── Weight Ticket Modal ── */}
+      {/* ── Weight Ticket Modal (Original) ── */}
       <BottomSheet
         visible={weightModalVisible}
         onClose={() => setWeightModalVisible(false)}
@@ -1054,309 +974,260 @@ export default function ActiveJobScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
-  scroll: { padding: 20, gap: 16 },
-  mapCard: {
-    borderBottomWidth: 1,
-    borderColor: '#e5e7eb',
-    marginHorizontal: -20,
-    marginTop: -16,
-    overflow: 'hidden',
-  },
-
-  price: { color: '#000000', fontWeight: '800', fontSize: 28, letterSpacing: -1 },
-
-  floatingDetails: {
-    paddingHorizontal: 0,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  statusBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#000000',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  statusText: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 13,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  phaseLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#000000',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-
-  progressBar: {
+  // New minimal styles
+  container: { flex: 1 },
+  topOverlay: {
+    position: 'absolute',
+    top: 60, // Safe area approx
+    left: 20,
+    right: 20,
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 4,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start', // Align to top
+    zIndex: 10,
+    pointerEvents: 'box-none',
   },
-  progressDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#e5e7eb',
-  },
-  progressDotActive: {
-    backgroundColor: '#000000',
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  progressDotDone: { backgroundColor: '#000000' },
-  progressLine: { flex: 1, height: 2, backgroundColor: '#e5e7eb' },
-  progressLineDone: { backgroundColor: '#000000' },
-
-  routeSection: { gap: 0, marginTop: 16 },
-  routeRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
-  routeDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 2,
-    borderColor: '#9ca3af',
-    backgroundColor: '#ffffff',
-  },
-  routeDotEnd: {
-    width: 10,
-    height: 10,
-    backgroundColor: '#000000',
-    borderRadius: 2,
-  },
-  routeLine: { width: 2, height: 32, backgroundColor: '#e5e7eb', marginLeft: 4 },
-  routeInfo: { flex: 1, paddingLeft: 4 },
-  routeValue: { fontSize: 18, fontWeight: '700', color: '#000000', letterSpacing: -0.3 },
-  siteContactName: { fontSize: 14, color: '#6b7280', marginTop: 4, fontWeight: '500' },
-  callBtn: {
+  iconButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  callBtnActive: { backgroundColor: '#000000' },
-  callBtnText: { fontSize: 18 },
-
-  exceptionCard: {
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 24,
-    paddingVertical: 24,
-    gap: 16,
-    borderTopWidth: 1,
-    borderColor: '#f3f4f6',
-  },
-  exceptionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  exceptionTitle: { fontSize: 15, fontWeight: '700', color: '#000000' },
-  exceptionCountPill: {
-    backgroundColor: '#000000',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  exceptionCountPillText: { fontSize: 11, color: '#ffffff', fontWeight: '700' },
-  exceptionTypeRow: { gap: 8, paddingRight: 4 },
-  exceptionTypeChip: {
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
+  statusChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#f9fafb',
+    borderRadius: 20,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  exceptionTypeChipActive: {
-    backgroundColor: '#000000',
-    borderColor: '#000000',
-  },
-  exceptionTypeChipText: { fontSize: 12, color: '#4b5563', fontWeight: '600' },
-  exceptionTypeChipTextActive: { color: '#ffffff' },
-  exceptionInput: {
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    minHeight: 100,
-    textAlignVertical: 'top',
-    fontSize: 14,
-    color: '#000000',
-    backgroundColor: '#f9fafb',
-  },
-  exceptionReportBtn: {
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#000000',
+  statusDot: { width: 8, height: 8, borderRadius: 4 },
+  statusText: { fontSize: 13, fontWeight: '700', color: '#111827' },
+  roundButton: {
+    // Alias for iconButton
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  exceptionReportBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  exceptionEmptyText: { fontSize: 13, color: '#6b7280' },
-  exceptionList: { gap: 12 },
-  exceptionItem: {
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    padding: 16,
-    gap: 10,
-    backgroundColor: '#f9fafb',
+  bottomSheet: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 12,
+    paddingBottom: 40, // Home indicator space
+    paddingHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 20,
   },
-  exceptionItemHead: {
+  sheetHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 8,
   },
-  exceptionItemType: { fontSize: 14, fontWeight: '700', color: '#000000' },
-  exceptionItemStatus: {
+  statusPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  statusPillText: {
     fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
-  exceptionOpen: { color: '#dc2626' },
-  exceptionResolved: { color: '#16a34a' },
-  exceptionItemNotes: { fontSize: 14, color: '#4b5563' },
-  exceptionResolutionInput: {
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#000000',
-    backgroundColor: '#ffffff',
+  jobIdText: {
+    fontSize: 12,
+    color: '#9ca3af',
   },
-  exceptionResolveBtn: {
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: '#000000',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  exceptionResolveBtnText: { fontSize: 13, color: '#ffffff', fontWeight: '700' },
-
-  readinessWarning: {
-    backgroundColor: '#fffbeb',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
-  },
-  readinessWarningTitle: { fontSize: 15, fontWeight: '700', color: '#b45309' },
-  readinessWarningText: { fontSize: 14, color: '#92400e' },
-  readinessWarningList: { fontSize: 14, color: '#b45309', fontWeight: '700' },
-
-  actionsRow: { gap: 12 },
-  navigateBtn: {
-    backgroundColor: '#e5e7eb',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  navigateBtnText: { color: '#000000', fontWeight: '700', fontSize: 16 },
-  nextBtn: {
-    backgroundColor: '#000000',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  nextBtnProof: {
-    backgroundColor: '#000000',
-  },
-  nextBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
-  completedBanner: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#000000',
-  },
-  completedText: { color: '#000000', fontWeight: '700', fontSize: 16 },
-
-  returnStrip: {
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 24,
-    paddingVertical: 24,
-    borderTopWidth: 1,
-    borderColor: '#f3f4f6',
-    gap: 8,
-  },
-  returnStripHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  returnStripTitle: { fontSize: 15, fontWeight: '700', color: '#000000' },
-  returnCountPill: {
-    backgroundColor: '#000000',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginLeft: 6,
-  },
-  returnCountPillText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  returnStripDismiss: { fontSize: 16, color: '#9ca3af', paddingLeft: 8 },
-  returnStripDesc: { fontSize: 13, color: '#6b7280', marginTop: 4 },
-  returnMiniCard: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 16,
-    padding: 16,
-    width: 220,
-    marginRight: 6,
-  },
-  returnMiniKmBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    alignSelf: 'flex-start',
-  },
-  returnMiniKmText: { fontSize: 12, fontWeight: '700', color: '#000000' },
-  returnMiniRoute: { fontSize: 14, fontWeight: '700', color: '#000000', marginTop: 8 },
-  returnMiniWeight: { fontSize: 13, color: '#6b7280', marginTop: 4 },
-  returnMiniPrice: { fontSize: 16, fontWeight: '800', color: '#000000', marginTop: 8 },
-  returnMiniAcceptBtn: {
-    marginTop: 12,
-    backgroundColor: '#000000',
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  returnMiniAcceptText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  returnStripCta: { marginTop: 12 },
-  returnStripCtaText: {
-    fontSize: 14,
-    color: '#000000',
+  sheetTitle: {
+    fontSize: 24,
     fontWeight: '700',
-    textDecorationLine: 'underline',
+    color: '#111827',
+    marginBottom: 4,
+    letterSpacing: -0.5,
   },
-
-  goBtn: {
-    marginTop: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
+  sheetAddress: {
+    fontSize: 16,
+    color: '#6b7280',
+    marginBottom: 24,
+  },
+  mainInfo: { marginBottom: 20 },
+  addressRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  actionGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  actionRow: {
+    // Keep for back-compat if needed
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  actionButtonSecondary: {
+    width: 80,
+    height: 60,
+    borderRadius: 16,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionLabel: { fontSize: 12, fontWeight: '600', color: '#1f2937', marginTop: 2 },
+  actionButtonPrimary: {
+    flex: 1,
+    height: 60,
+    borderRadius: 16,
+    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  navButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 16,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryButton: {
+    flex: 1,
+    height: 60,
+    borderRadius: 16,
+    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  completedBanner: {
+    flex: 1,
+    height: 60,
+    borderRadius: 16,
+    backgroundColor: '#ecfccb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#84cc16',
+  },
+  completedText: {
+    color: '#365314',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  detailsTrigger: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+    marginTop: 8,
+  },
+  detailsTriggerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  expandedContent: {
+    marginTop: 0,
+    paddingTop: 8,
+    maxHeight: 320,
+  },
+  contactRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
+  contactButton: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
+    height: 48,
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 12,
-    backgroundColor: '#000000',
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
   },
-  goBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  contactText: { fontWeight: '600', color: '#1f2937' },
 
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f9fafb',
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  exceptionCard: {
+    marginTop: 8,
+    backgroundColor: '#fef2f2',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    gap: 12,
+  },
+  exceptionTitle: { fontSize: 14, fontWeight: '700', color: '#991b1b' },
+  // Weight Modal
   weightInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
@@ -1367,7 +1238,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 32,
     fontWeight: '700',
-    color: '#000000',
+    color: '#000',
     paddingVertical: 12,
   },
   weightUnit: { fontSize: 18, fontWeight: '700', color: '#9ca3af' },
@@ -1380,16 +1251,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#e5e7eb',
     alignItems: 'center',
   },
-  weightCancelText: { fontSize: 15, fontWeight: '700', color: '#000000' },
+  weightCancelText: { fontSize: 15, fontWeight: '700', color: '#000' },
   weightConfirm: {
     flex: 2,
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: '#000000',
+    backgroundColor: '#000',
     alignItems: 'center',
   },
-  weightConfirmText: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
-
+  weightConfirmText: { fontSize: 15, fontWeight: '700', color: '#fff' },
   photoCapture: {
     borderWidth: 1,
     borderColor: '#e5e7eb',
@@ -1398,25 +1268,31 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
     marginBottom: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fff',
   },
-  photoCaptured: {
-    borderColor: '#000000',
-    borderStyle: 'solid',
-  },
+  photoCaptured: { borderStyle: 'solid', borderColor: '#000' },
   photoPicker: { alignItems: 'center', gap: 8 },
-  photoPickerText: { fontSize: 15, fontWeight: '700', color: '#000000' },
+  photoPickerText: { fontSize: 15, fontWeight: '700', color: '#000' },
   photoPickerHint: { fontSize: 13, color: '#6b7280' },
   photoPreview: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   photoThumb: { width: 80, height: 80, borderRadius: 8 },
   photoCheck: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  photoCheckText: { fontSize: 14, fontWeight: '700', color: '#000000' },
-  chatHeaderBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
+  photoCheckText: { fontSize: 14, fontWeight: '700', color: '#000' },
+  goBtn: {
+    marginTop: 24,
+    backgroundColor: '#000',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
-    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  goBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
   },
 });
