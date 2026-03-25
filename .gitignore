@@ -61,3 +61,15 @@ apps/web/.next/
 # Mobile local node_modules (workspace packages)
 apps/mobile/node_modules/
 apps/web/node_modules/
+
+# Local scripts
+*.py
+*.pyc
+__pycache__/
+fix_*.js
+tmp_*.js
+test_*.js
+run_update.js
+update_*.js
+do_fix_*.js
+*.txt
