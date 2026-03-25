@@ -3,6 +3,7 @@
  * Sets up the Navigation stack, AuthProvider, and global font loading.
  * Entry point for all mobile screens.
  */
+import '../global.css';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '@/lib/auth-context';

@@ -3,29 +3,21 @@
  * Shows online/offline status toggle + weekly availability schedule.
  */
 import React, { useCallback, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Switch,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, Switch, ActivityIndicator } from 'react-native';
 import { useToast } from '@/components/ui/Toast';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { SkeletonCard } from '@/components/ui/Skeleton';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { Button } from '@/components/ui/button';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { Divider } from '@/components/ui/Divider';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api, type DriverAvailability, type DriverWeeklySlot } from '@/lib/api';
-import { colors, spacing, radius, shadows } from '@/lib/theme';
-import { CalendarDays, Clock, Wifi, WifiOff, Info, XCircle } from 'lucide-react-native';
+import { colors } from '@/lib/theme';
+import { CalendarDays, Wifi, WifiOff } from 'lucide-react-native';
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
-
-const DAY_LABELS = ['Sv', 'Pr', 'Ot', 'Tr', 'Ce', 'Pk', 'Se'];
 const DAY_FULL = [
   'Svētdiena',
   'Pirmdiena',
@@ -37,7 +29,7 @@ const DAY_FULL = [
 ];
 
 function fmtTime(t: string): string {
-  return t.substring(0, 5); // 'HH:MM:SS' → 'HH:MM'
+  return t.substring(0, 5);
 }
 
 function fmtBlockDate(iso: string): string {
@@ -47,21 +39,6 @@ function fmtBlockDate(iso: string): string {
     month: 'long',
   });
 }
-
-// ─── Status badge ──────────────────────────────────────────────────────────
-
-function StatusBadge({ online }: { online: boolean }) {
-  return (
-    <View style={[s.badge, online ? s.badgeOnline : s.badgeOffline]}>
-      {online ? <Wifi size={13} color="#065F46" /> : <WifiOff size={13} color="#92400E" />}
-      <Text style={[s.badgeText, online ? s.badgeTextOnline : s.badgeTextOffline]}>
-        {online ? 'Tiešsaistē' : 'Bezsaistē'}
-      </Text>
-    </View>
-  );
-}
-
-// ─── Weekly day row ────────────────────────────────────────────────────────
 
 function DayRow({
   slot,
@@ -73,49 +50,30 @@ function DayRow({
   disabled?: boolean;
 }) {
   return (
-    <TouchableOpacity
-      style={[s.dayRow, !slot.isActive && s.dayRowInactive, disabled && s.dayRowUpdating]}
-      activeOpacity={0.7}
-      onPress={onToggle}
-      disabled={disabled}
+    <View
+      className={`flex-row items-center justify-between p-4 bg-white ${disabled ? 'opacity-50' : ''}`}
     >
-      <View style={s.dayRowLeft}>
-        <View style={[s.dayDot, slot.isActive ? s.dayDotActive : s.dayDotInactive]} />
-        <Text style={[s.dayLabel, !slot.isActive && s.dayLabelInactive]}>
+      <View className="gap-1">
+        <Text
+          className={`text-base font-semibold ${slot.isActive ? 'text-text-primary' : 'text-text-muted'}`}
+        >
           {DAY_FULL[slot.dayOfWeek]}
         </Text>
+        <Text className="text-sm text-text-muted">
+          {slot.isActive ? `${fmtTime(slot.startTime)} – ${fmtTime(slot.endTime)}` : 'Brīvdiena'}
+        </Text>
       </View>
-      {slot.isActive ? (
-        <View style={s.timeRow} pointerEvents="none">
-          <Clock size={13} color={colors.textMuted} />
-          <Text style={s.timeText}>
-            {fmtTime(slot.startTime)} – {fmtTime(slot.endTime)}
-          </Text>
-          <Switch
-            value={slot.isActive}
-            trackColor={{ false: '#D1D5DB', true: colors.success }}
-            thumbColor="#FFFFFF"
-            ios_backgroundColor="#D1D5DB"
-            style={{ transform: [{ scale: 0.8 }], marginLeft: 4 }}
-          />
-        </View>
-      ) : (
-        <View style={s.timeRow} pointerEvents="none">
-          <Text style={s.inactiveLabel}>Brīvdiena</Text>
-          <Switch
-            value={slot.isActive}
-            trackColor={{ false: '#D1D5DB', true: colors.success }}
-            thumbColor="#FFFFFF"
-            ios_backgroundColor="#D1D5DB"
-            style={{ transform: [{ scale: 0.8 }], marginLeft: 4 }}
-          />
-        </View>
-      )}
-    </TouchableOpacity>
+      <Switch
+        value={slot.isActive}
+        onValueChange={onToggle}
+        disabled={disabled}
+        trackColor={{ false: '#E5E7EB', true: colors.primary }}
+        thumbColor="#FFFFFF"
+        ios_backgroundColor="#E5E7EB"
+      />
+    </View>
   );
 }
-
-// ─── Screen ───────────────────────────────────────────────────────────────
 
 export default function ScheduleScreen() {
   const { token } = useAuth();
@@ -147,7 +105,6 @@ export default function ScheduleScreen() {
   const handleToggleOnline = async (value: boolean) => {
     if (!token || toggling) return;
     setToggling(true);
-    // Optimistic update — update both isOnline and effectiveOnline so the badge reflects immediately
     setProfile((prev) => (prev ? { ...prev, isOnline: value, effectiveOnline: value } : prev));
     try {
       const res = await api.driverSchedule.toggleOnline(value, token);
@@ -155,7 +112,6 @@ export default function ScheduleScreen() {
         prev ? { ...prev, isOnline: res.isOnline, effectiveOnline: res.isOnline } : prev,
       );
     } catch {
-      // Revert on error
       setProfile((prev) => (prev ? { ...prev, isOnline: !value, effectiveOnline: !value } : prev));
       toast.error('Neizdevās mainīt statusu.');
     } finally {
@@ -163,13 +119,11 @@ export default function ScheduleScreen() {
     }
   };
 
-  // Build a sorted 7-day grid (Mon–Sun order: 1-6 then 0)
   const sortedSlots = (profile?.weeklySchedule ?? []).slice().sort((a, b) => {
     const ord = (d: number) => (d === 0 ? 7 : d);
     return ord(a.dayOfWeek) - ord(b.dayOfWeek);
   });
 
-  // Fill in missing days
   const slotMap = new Map(sortedSlots.map((s) => [s.dayOfWeek, s]));
   const allDays = [1, 2, 3, 4, 5, 6, 0];
   const gridSlots: DriverWeeklySlot[] = allDays.map(
@@ -189,11 +143,10 @@ export default function ScheduleScreen() {
     if (!currentSlot) return;
 
     const newActiveState = !currentSlot.isActive;
-
-    // Optimistic update
     const newWeeklySchedule = gridSlots.map((s) =>
       s.dayOfWeek === dayOfWeek ? { ...s, isActive: newActiveState } : s,
     );
+
     setProfile({ ...profile, weeklySchedule: newWeeklySchedule });
     setUpdatingDays((prev) => new Set(prev).add(dayOfWeek));
 
@@ -209,12 +162,11 @@ export default function ScheduleScreen() {
         maxJobsPerDay: profile.maxJobsPerDay,
       };
 
-      const res = await api.driverSchedule.updateSchedule(payload, token);
-      setProfile(res);
+      await api.driverSchedule.updateSchedule(payload, token);
       toast.success('Grafiks atjaunināts!');
     } catch {
       toast.error('Neizdevās atjaunināt grafiku.');
-      load(); // Revert on error
+      load();
     } finally {
       setUpdatingDays((prev) => {
         const next = new Set(prev);
@@ -229,18 +181,18 @@ export default function ScheduleScreen() {
   );
 
   return (
-    <ScreenContainer standalone bg="#f9fafb">
-      <ScreenHeader title="Grafiks" />
+    <ScreenContainer standalone bg="#F4F5F7">
+      <ScreenHeader title="Darba grafiks" />
 
       <ScrollView
-        style={s.scroll}
-        contentContainerStyle={s.content}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
         {loading ? (
-          <View style={{ gap: spacing.base }}>
-            <SkeletonCard />
-            <SkeletonCard />
+          <View className="p-4 gap-4">
+            <Skeleton height={200} radius={24} />
+            <Skeleton height={400} radius={12} />
           </View>
         ) : !profile ? (
           <EmptyState
@@ -250,198 +202,77 @@ export default function ScheduleScreen() {
           />
         ) : (
           <>
-            {/* ── Online / offline card ──────────────────────────────── */}
-            <View style={s.card}>
-              <View style={s.cardRow}>
-                <View style={s.cardLeft}>
-                  <Text style={s.cardTitle}>Statusas</Text>
-                  <StatusBadge online={profile.effectiveOnline} />
-                </View>
-                <View style={s.switchWrap}>
-                  {toggling && (
-                    <ActivityIndicator
-                      size="small"
-                      color={colors.success}
-                      style={s.spinnerInline}
+            {/* Status Hero */}
+            <View className="bg-white items-center py-8 rounded-b-3xl shadow-sm mb-6">
+              <View
+                className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${profile.isOnline ? 'bg-green-100' : 'bg-gray-100'}`}
+              >
+                {profile.isOnline ? (
+                  <Wifi size={32} color="#059669" />
+                ) : (
+                  <WifiOff size={32} color="#9CA3AF" />
+                )}
+              </View>
+              <Text className="text-xl font-bold text-text-primary mb-1">
+                {profile.isOnline ? 'Jūs esat tiešsaistē' : 'Jūs esat bezsaistē'}
+              </Text>
+              <Text className="text-text-muted text-center px-8 mb-6">
+                {profile.isOnline
+                  ? 'Jūs saņemsiet jaunus darba piedāvājumus.'
+                  : 'Jūs nesaņemat darba piedāvājumus.'}
+              </Text>
+
+              <Button
+                variant={profile.isOnline ? 'destructive' : 'default'}
+                className="w-64 rounded-full"
+                onPress={() => handleToggleOnline(!profile.isOnline)}
+                isLoading={toggling}
+              >
+                {profile.isOnline ? 'Beigt darbu' : 'Sākt darbu'}
+              </Button>
+            </View>
+
+            {/* Schedule */}
+            <View className="px-4">
+              <SectionLabel label="NEDĒĻAS PLĀNS" />
+              <View className="bg-white rounded-xl overflow-hidden shadow-sm">
+                {gridSlots.map((slot, i) => (
+                  <React.Fragment key={slot.dayOfWeek}>
+                    <DayRow
+                      slot={slot}
+                      onToggle={() => handleToggleDay(slot.dayOfWeek)}
+                      disabled={updatingDays.has(slot.dayOfWeek)}
                     />
-                  )}
-                  <Switch
-                    value={profile.isOnline}
-                    onValueChange={handleToggleOnline}
-                    trackColor={{ false: '#D1D5DB', true: colors.success }}
-                    thumbColor="#FFFFFF"
-                    ios_backgroundColor="#D1D5DB"
-                  />
-                </View>
-              </View>
-
-              {profile.autoSchedule && (
-                <View style={s.infoRow}>
-                  <Info size={13} color={colors.textMuted} />
-                  <Text style={s.infoText}>
-                    Automātiskais grafiks aktīvs — statuss mainās pēc nedēļas grafika
-                  </Text>
-                </View>
-              )}
-              {profile.maxJobsPerDay != null && (
-                <View style={s.infoRow}>
-                  <Clock size={13} color={colors.textMuted} />
-                  <Text style={s.infoText}>Maks. darbi dienā: {profile.maxJobsPerDay}</Text>
-                </View>
-              )}
-            </View>
-
-            {/* ── Weekly schedule ────────────────────────────────────── */}
-            <View style={s.sectionHeader}>
-              <CalendarDays size={16} color={colors.textSecondary} />
-              <Text style={s.sectionTitle}>Nedēļas grafiks</Text>
-            </View>
-
-            <View style={s.card}>
-              {gridSlots.map((slot, i) => (
-                <React.Fragment key={slot.dayOfWeek}>
-                  <DayRow
-                    slot={slot}
-                    onToggle={() => handleToggleDay(slot.dayOfWeek)}
-                    disabled={updatingDays.has(slot.dayOfWeek)}
-                  />
-                  {i < gridSlots.length - 1 && <View style={s.divider} />}
-                </React.Fragment>
-              ))}
-            </View>
-
-            {/* ── Blocked dates ──────────────────────────────────────── */}
-            <View style={s.sectionHeader}>
-              <XCircle size={16} color={colors.textSecondary} />
-              <Text style={s.sectionTitle}>Bloķētie datumi</Text>
-            </View>
-
-            {futureBlocks.length === 0 ? (
-              <View style={s.emptyBlocks}>
-                <Text style={s.emptyBlocksText}>Nav bloķētu datumu</Text>
-              </View>
-            ) : (
-              <View style={s.card}>
-                {futureBlocks.map((block, i) => (
-                  <React.Fragment key={block.id}>
-                    <View style={s.blockRow}>
-                      <Text style={s.blockDate}>{fmtBlockDate(block.blockedDate)}</Text>
-                      {block.reason ? <Text style={s.blockReason}>{block.reason}</Text> : null}
-                    </View>
-                    {i < futureBlocks.length - 1 && <View style={s.divider} />}
+                    {i < gridSlots.length - 1 && <Divider />}
                   </React.Fragment>
                 ))}
               </View>
-            )}
+            </View>
 
-            <View style={{ height: 32 }} />
+            {/* Blocked Dates */}
+            {futureBlocks.length > 0 && (
+              <View className="px-4 mt-6">
+                <SectionLabel label="BRĪVDIENAS" />
+                <View className="bg-white rounded-xl overflow-hidden shadow-sm">
+                  {futureBlocks.map((block, i) => (
+                    <React.Fragment key={block.id}>
+                      <View className="p-4 bg-white">
+                        <Text className="font-medium text-text-primary">
+                          {fmtBlockDate(block.blockedDate)}
+                        </Text>
+                        {block.reason ? (
+                          <Text className="text-sm text-text-muted mt-0.5">{block.reason}</Text>
+                        ) : null}
+                      </View>
+                      {i < futureBlocks.length - 1 && <Divider />}
+                    </React.Fragment>
+                  ))}
+                </View>
+              </View>
+            )}
           </>
         )}
       </ScrollView>
     </ScreenContainer>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────
-
-const s = StyleSheet.create({
-  scroll: { flex: 1 },
-  content: { padding: spacing.base, gap: spacing.sm },
-
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: radius.lg,
-    ...shadows.card,
-    overflow: 'hidden',
-  },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.base,
-  },
-  cardLeft: { gap: spacing.xs },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  switchWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  spinnerInline: { marginRight: 4 },
-
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 99,
-    alignSelf: 'flex-start',
-  },
-  badgeOnline: { backgroundColor: '#D1FAE5' },
-  badgeOffline: { backgroundColor: '#FEF3C7' },
-  badgeText: { fontSize: 12, fontWeight: '600' },
-  badgeTextOnline: { color: '#065F46' },
-  badgeTextOffline: { color: '#92400E' },
-
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: spacing.base,
-    paddingBottom: spacing.sm,
-  },
-  infoText: { fontSize: 12, color: colors.textMuted, flex: 1 },
-
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    marginTop: spacing.sm,
-    marginBottom: 4,
-    paddingHorizontal: 2,
-  },
-  sectionTitle: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
-
-  dayRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.base,
-    paddingVertical: 12,
-  },
-  dayRowInactive: { opacity: 0.55 },
-  dayRowUpdating: { opacity: 0.7 },
-  dayRowLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  dayDot: { width: 8, height: 8, borderRadius: 4 },
-  dayDotActive: { backgroundColor: colors.primary },
-  dayDotInactive: { backgroundColor: '#E5E7EB' },
-  dayLabel: { fontSize: 14, fontWeight: '500', color: colors.textPrimary },
-  dayLabelInactive: { color: colors.textDisabled },
-
-  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  timeText: { fontSize: 13, color: colors.textSecondary, fontWeight: '500' },
-  inactiveLabel: { fontSize: 13, color: colors.textDisabled },
-
-  divider: { height: 1, backgroundColor: '#F3F4F6', marginHorizontal: spacing.base },
-
-  emptyBlocks: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: radius.md,
-    padding: spacing.base,
-    alignItems: 'center',
-  },
-  emptyBlocksText: { fontSize: 13, color: colors.textMuted },
-
-  blockRow: {
-    paddingHorizontal: spacing.base,
-    paddingVertical: 12,
-    gap: 3,
-  },
-  blockDate: { fontSize: 14, fontWeight: '500', color: colors.textPrimary },
-  blockReason: { fontSize: 12, color: colors.textMuted },
-});
