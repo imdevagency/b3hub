@@ -1,4 +1,6 @@
-import React, { useCallback, useState } from 'react';
+import sys
+
+content = """import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +11,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiOrder } from '@/lib/api';
@@ -98,7 +101,7 @@ function computeStats(orders: ApiOrder[]): {
     pendingPayout = 0;
 
   const history: HistoryEntry[] = [];
-
+  
   const confirmedOrders = orders.filter((o) => REVENUE_STATUSES.includes(o.status));
   const avgOrderValue =
     confirmedOrders.length > 0
@@ -136,19 +139,12 @@ function computeStats(orders: ApiOrder[]): {
       });
     }
   }
-
+  
   // Sort history by date descending
   history.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
 
   return {
-    stats: {
-      todayEarnings,
-      weekEarnings,
-      monthEarnings,
-      completedJobs,
-      pendingPayout,
-      avgOrderValue,
-    },
+    stats: { todayEarnings, weekEarnings, monthEarnings, completedJobs, pendingPayout, avgOrderValue },
     history,
     dailyChart: buildDailyChart(orders),
   };
@@ -223,25 +219,22 @@ export default function SellerEarningsScreen() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [dailyChart, setDailyChart] = useState<DayBar[]>([]);
 
-  const fetchEarnings = useCallback(
-    async (silent = false) => {
-      if (!token) return;
-      if (!silent) setLoading(true);
-      try {
-        const orders = await api.orders.myOrders(token);
-        const { stats: s, history: h, dailyChart: dc } = computeStats(orders);
-        setStats(s);
-        setHistory(h);
-        setDailyChart(dc);
-      } catch (e) {
-        // silent fail
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [token],
-  );
+  const fetchEarnings = useCallback(async (silent = false) => {
+    if (!token) return;
+    if (!silent) setLoading(true);
+    try {
+      const orders = await api.orders.myOrders(token);
+      const { stats: s, history: h, dailyChart: dc } = computeStats(orders);
+      setStats(s);
+      setHistory(h);
+      setDailyChart(dc);
+    } catch (e) {
+      // silent fail
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [token]);
 
   useFocusEffect(
     useCallback(() => {
@@ -284,7 +277,8 @@ export default function SellerEarningsScreen() {
 
   if (loading && !refreshing) {
     return (
-      <ScreenContainer bg="white">
+      <ScreenContainer standalone bg="white">
+        <ScreenHeader title="Ieņēmumi" />
         <View style={{ padding: 24, gap: 20 }}>
           <Skeleton style={{ height: 48, width: 128, alignSelf: 'center', borderRadius: 8 }} />
           <Skeleton style={{ height: 160, width: '100%', borderRadius: 16 }} />
@@ -295,7 +289,9 @@ export default function SellerEarningsScreen() {
   }
 
   return (
-    <ScreenContainer bg="white">
+    <ScreenContainer standalone bg="white">
+      <ScreenHeader title="Ieņēmumi" />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
@@ -306,8 +302,7 @@ export default function SellerEarningsScreen() {
         {/* ── Hero Section ──────────────────────────────── */}
         <View style={s.heroContainer}>
           <Text style={s.heroLabel}>
-            {period === 'today' ? 'Šodienas' : period === 'week' ? 'Šīs nedēļas' : 'Mēneša'}{' '}
-            ieņēmumi
+            {period === 'today' ? 'Šodienas' : period === 'week' ? 'Šīs nedēļas' : 'Mēneša'} ieņēmumi
           </Text>
           <Text style={s.heroAmount}>€{heroAmount.toFixed(2)}</Text>
 
@@ -524,3 +519,9 @@ const s = StyleSheet.create({
     color: '#111827',
   },
 });
+"""
+
+import os
+with open("apps/mobile/app/(seller)/earnings.tsx", "w") as f:
+    f.write(content)
+print("Updated successfully")

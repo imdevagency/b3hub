@@ -32,6 +32,7 @@ import { JobRouteMap } from '@/components/ui/JobRouteMap';
 import { haptics } from '@/lib/haptics';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import GorhomBottomSheet from '@gorhom/bottom-sheet';
 
 import { EmptyState } from '@/components/ui/EmptyState';
 import {

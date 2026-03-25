@@ -1,5 +1,19 @@
-/**
+
+import os
+import sys
+
+# Target the correct file
+file_path = os.path.abspath("apps/mobile/app/(buyer)/team.tsx")
+print(f"Targeting file: {file_path}")
+
+try:
+    if not os.path.exists(file_path):
+        print(f"Error: File does not exist at {file_path}")
+        sys.exit(1)
+
+    new_content = r'''/**
  * team.tsx — Buyer: Company team members & permissions
+ * Redesigned: Minimal / Uber-like
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -17,7 +31,13 @@ import {
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { BottomSheet } from '@/components/ui/BottomSheet';
-import { Users, UserPlus, Trash2, ChevronRight, Building2 } from 'lucide-react-native';
+import {
+  Users,
+  UserPlus,
+  Trash2,
+  ChevronRight,
+  Building2,
+} from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import {
   api,
@@ -50,62 +70,68 @@ const PERM_META: Array<{ key: keyof MemberPermissions; label: string; sub: strin
 
 const s = {
   // Structure
-  headerRow: 'flex-row items-center justify-between px-6 pt-2 pb-4',
-  heroTitle: 'text-3xl font-extrabold text-[#111827]',
-  headerBtn: 'w-10 h-10 rounded-full bg-[#f3f4f6] items-center justify-center',
-
+  headerRow: "flex-row items-center justify-between px-6 pt-2 pb-4",
+  heroTitle: "text-3xl font-extrabold text-[#111827]",
+  headerBtn: "w-10 h-10 rounded-full bg-[#f3f4f6] items-center justify-center",
+  
   // List
-  row: 'flex-row items-center py-4 px-6 border-b border-[#f3f4f6] bg-white active:bg-[#f9fafb]',
-
+  row: "flex-row items-center py-4 px-6 border-b border-[#f3f4f6] bg-white active:bg-[#f9fafb]",
+  
   // Avatar
-  avatar: 'w-12 h-12 rounded-full bg-[#f3f4f6] items-center justify-center mr-4',
-  avatarText: 'text-base font-bold text-[#374151]',
-
+  avatar: "w-12 h-12 rounded-full bg-[#f3f4f6] items-center justify-center mr-4",
+  avatarText: "text-base font-bold text-[#374151]",
+  
   // Text
-  name: 'text-[17px] font-semibold text-[#111827]',
-  role: 'text-[14px] text-[#6b7280] mt-0.5',
-
+  name: "text-[17px] font-semibold text-[#111827]",
+  role: "text-[14px] text-[#6b7280] mt-0.5",
+  
   // Badges
-  badge: 'px-2.5 py-1 rounded-full bg-[#f3f4f6] self-start ml-2',
-  badgeText: 'text-[11px] font-bold text-[#374151] uppercase tracking-wide',
-
+  badge: "px-2.5 py-1 rounded-full bg-[#f3f4f6] self-start ml-2",
+  badgeText: "text-[11px] font-bold text-[#374151] uppercase tracking-wide",
+  
   // Sheet
-  sheetSection: 'px-6 pt-2 pb-12',
-  label: 'text-[13px] font-bold text-[#374151] uppercase tracking-wide mb-2 ml-1',
-  input: 'bg-[#f9fafb] rounded-xl px-4 py-3.5 text-[16px] text-[#111827] font-medium mb-4',
-
+  sheetSection: "px-6 pt-2 pb-12",
+  label: "text-[13px] font-bold text-[#374151] uppercase tracking-wide mb-2 ml-1",
+  input: "bg-[#f9fafb] rounded-xl px-4 py-3.5 text-[16px] text-[#111827] font-medium mb-4",
+  
   // Toggles
-  switchRow: 'flex-row items-center justify-between py-4 border-b border-[#f3f4f6]',
-  switchLabel: 'text-[16px] font-medium text-[#111827]',
-  switchSub: 'text-[13px] text-[#6b7280] mt-0.5',
-
+  switchRow: "flex-row items-center justify-between py-4 border-b border-[#f3f4f6]",
+  switchLabel: "text-[16px] font-medium text-[#111827]",
+  switchSub: "text-[13px] text-[#6b7280] mt-0.5",
+  
   // Actions
-  primaryBtn: 'bg-[#111827] rounded-xl py-4 items-center mt-6 shadow-sm active:opacity-90',
-  primaryBtnText: 'text-white font-bold text-[16px]',
-  deleteBtn:
-    'flex-row items-center justify-center gap-2 mt-6 py-4 bg-[#fee2e2] rounded-xl active:opacity-90 border border-red-100',
-  deleteBtnText: 'text-[#dc2626] font-bold text-[15px]',
+  primaryBtn: "bg-[#111827] rounded-xl py-4 items-center mt-6 shadow-sm active:opacity-90",
+  primaryBtnText: "text-white font-bold text-[16px]",
+  deleteBtn: "flex-row items-center justify-center gap-2 mt-6 py-4 bg-[#fee2e2] rounded-xl active:opacity-90 border border-red-100",
+  deleteBtnText: "text-[#dc2626] font-bold text-[15px]",
 };
 
 // ── Components ─────────────────────────────────────────────────
 
-function MemberRow({ member, onPress }: { member: ApiCompanyMember; onPress: () => void }) {
+function MemberRow({ 
+  member, 
+  onPress 
+}: { 
+  member: ApiCompanyMember; 
+  onPress: () => void; 
+}) {
   const isOwner = member.companyRole === 'OWNER';
-
+  
   return (
-    <TouchableOpacity className={s.row} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity 
+      className={s.row}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
       <View className={s.avatar}>
         <Text className={s.avatarText}>
-          {member.firstName.charAt(0)}
-          {member.lastName.charAt(0)}
+          {member.firstName.charAt(0)}{member.lastName.charAt(0)}
         </Text>
       </View>
-
+      
       <View style={{ flex: 1, justifyContent: 'center' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text className={s.name}>
-            {member.firstName} {member.lastName}
-          </Text>
+          <Text className={s.name}>{member.firstName} {member.lastName}</Text>
           {isOwner && (
             <View className={s.badge}>
               <Text className={s.badgeText}>Owner</Text>
@@ -116,7 +142,7 @@ function MemberRow({ member, onPress }: { member: ApiCompanyMember; onPress: () 
           {member.email} • {ROLE_LABEL[member.companyRole ?? 'MEMBER'] ?? member.companyRole}
         </Text>
       </View>
-
+      
       <ChevronRight size={20} color="#d1d5db" />
     </TouchableOpacity>
   );
@@ -130,7 +156,7 @@ function MemberDetailsSheet({
   onClose,
   onUpdate,
   onRemove,
-  currentUserRole,
+  currentUserRole
 }: {
   member: ApiCompanyMember | null;
   visible: boolean;
@@ -141,7 +167,7 @@ function MemberDetailsSheet({
 }) {
   const [perms, setPerms] = useState<MemberPermissions>({} as any);
   const [loading, setLoading] = useState(false);
-
+  
   useEffect(() => {
     if (member) {
       setPerms({
@@ -169,9 +195,9 @@ function MemberDetailsSheet({
   }
 
   return (
-    <BottomSheet
-      visible={visible}
-      onClose={onClose}
+    <BottomSheet 
+      visible={visible} 
+      onClose={onClose} 
       title={`${member.firstName} ${member.lastName}`}
       subtitle={member.email || undefined}
       scrollable
@@ -179,23 +205,17 @@ function MemberDetailsSheet({
       <View className={s.sheetSection}>
         <View className="mb-6 flex-row gap-4">
           <View className="flex-1 bg-[#f9fafb] p-3 rounded-xl border border-gray-100">
-            <Text className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">
-              TELEFONS
-            </Text>
+            <Text className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">TELEFONS</Text>
             <Text className="text-sm font-semibold text-gray-900">{member.phone || '—'}</Text>
           </View>
           <View className="flex-1 bg-[#f9fafb] p-3 rounded-xl border border-gray-100">
-            <Text className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">
-              LOMA
-            </Text>
-            <Text className="text-sm font-semibold text-gray-900">
-              {ROLE_LABEL[member.companyRole ?? ''] ?? member.companyRole}
-            </Text>
+            <Text className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">LOMA</Text>
+            <Text className="text-sm font-semibold text-gray-900">{ROLE_LABEL[member.companyRole ?? ''] ?? member.companyRole}</Text>
           </View>
         </View>
 
         <Text className={s.label}>Tiesību Pārvaldība</Text>
-
+        
         {PERM_META.map(({ key, label, sub }) => (
           <View key={key} className={s.switchRow}>
             <View style={{ flex: 1, paddingRight: 16 }}>
@@ -204,7 +224,7 @@ function MemberDetailsSheet({
             </View>
             <Switch
               value={perms[key]}
-              onValueChange={(v) => canEdit && setPerms((prev) => ({ ...prev, [key]: v }))}
+              onValueChange={(v) => canEdit && setPerms(prev => ({ ...prev, [key]: v }))}
               trackColor={{ false: '#e5e7eb', true: '#111827' }}
               thumbColor="#fff"
               disabled={!canEdit}
@@ -214,21 +234,25 @@ function MemberDetailsSheet({
 
         {canEdit && (
           <>
-            <TouchableOpacity className={s.primaryBtn} onPress={handleSave} disabled={loading}>
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text className={s.primaryBtnText}>Saglabāt izmaiņas</Text>
-              )}
+            <TouchableOpacity 
+              className={s.primaryBtn} 
+              onPress={handleSave}
+              disabled={loading}
+            >
+              {loading ? <ActivityIndicator color="#fff" /> : <Text className={s.primaryBtnText}>Saglabāt izmaiņas</Text>}
             </TouchableOpacity>
 
-            <TouchableOpacity
+            <TouchableOpacity 
               className={s.deleteBtn}
               onPress={() => {
-                Alert.alert('Noņemt dalībnieku?', 'Šī darbība ir neatgriezeniska.', [
-                  { text: 'Atcelt', style: 'cancel' },
-                  { text: 'Noņemt', style: 'destructive', onPress: () => onRemove(member.id) },
-                ]);
+                Alert.alert(
+                  'Noņemt dalībnieku?',
+                  'Šī darbība ir neatgriezeniska.',
+                  [
+                    { text: 'Atcelt', style: 'cancel' },
+                    { text: 'Noņemt', style: 'destructive', onPress: () => onRemove(member.id) }
+                  ]
+                );
               }}
             >
               <Trash2 size={18} color="#dc2626" />
@@ -244,22 +268,15 @@ function MemberDetailsSheet({
 function InviteSheet({
   visible,
   onClose,
-  onInvite,
+  onInvite
 }: {
   visible: boolean;
   onClose: () => void;
   onInvite: (data: InviteMemberInput) => Promise<void>;
 }) {
   const [form, setForm] = useState<InviteMemberInput>({
-    email: '',
-    firstName: '',
-    lastName: '',
-    phone: '',
-    permCreateContracts: false,
-    permReleaseCallOffs: false,
-    permManageOrders: false,
-    permViewFinancials: false,
-    permManageTeam: false,
+    email: '', firstName: '', lastName: '', phone: '',
+    permCreateContracts: false, permReleaseCallOffs: false, permManageOrders: false, permViewFinancials: false, permManageTeam: false
   });
   const [loading, setLoading] = useState(false);
 
@@ -267,17 +284,7 @@ function InviteSheet({
     setLoading(true);
     await onInvite(form);
     setLoading(false);
-    setForm({
-      email: '',
-      firstName: '',
-      lastName: '',
-      phone: '',
-      permCreateContracts: false,
-      permReleaseCallOffs: false,
-      permManageOrders: false,
-      permViewFinancials: false,
-      permManageTeam: false,
-    });
+    setForm({ email: '', firstName: '', lastName: '', phone: '', permCreateContracts: false, permReleaseCallOffs: false, permManageOrders: false, permViewFinancials: false, permManageTeam: false });
     onClose();
   }
 
@@ -285,37 +292,37 @@ function InviteSheet({
     <BottomSheet visible={visible} onClose={onClose} title="Jauns dalībnieks" scrollable>
       <View className={s.sheetSection}>
         <Text className={s.label}>Pamatinformācija</Text>
-
-        <TextInput
-          className={s.input}
-          placeholder="Vārds"
+        
+        <TextInput 
+          className={s.input} 
+          placeholder="Vārds" 
           placeholderTextColor="#9ca3af"
           value={form.firstName}
-          onChangeText={(t) => setForm((p) => ({ ...p, firstName: t }))}
+          onChangeText={t => setForm(p => ({...p, firstName: t}))}
         />
-        <TextInput
-          className={s.input}
-          placeholder="Uzvārds"
+        <TextInput 
+          className={s.input} 
+          placeholder="Uzvārds" 
           placeholderTextColor="#9ca3af"
           value={form.lastName}
-          onChangeText={(t) => setForm((p) => ({ ...p, lastName: t }))}
+          onChangeText={t => setForm(p => ({...p, lastName: t}))}
         />
-        <TextInput
-          className={s.input}
-          placeholder="E-pasts (ielūgumam)"
+        <TextInput 
+          className={s.input} 
+          placeholder="E-pasts (ielūgumam)" 
           placeholderTextColor="#9ca3af"
           autoCapitalize="none"
           keyboardType="email-address"
           value={form.email}
-          onChangeText={(t) => setForm((p) => ({ ...p, email: t }))}
+          onChangeText={t => setForm(p => ({...p, email: t}))}
         />
-        <TextInput
-          className={s.input}
-          placeholder="Telefons"
+        <TextInput 
+          className={s.input} 
+          placeholder="Telefons" 
           placeholderTextColor="#9ca3af"
           keyboardType="phone-pad"
           value={form.phone || ''}
-          onChangeText={(t) => setForm((p) => ({ ...p, phone: t }))}
+          onChangeText={t => setForm(p => ({...p, phone: t}))}
         />
 
         <Text className={`${s.label} mt-4`}>Tiesības</Text>
@@ -324,19 +331,19 @@ function InviteSheet({
             <Text className={s.switchLabel}>{label}</Text>
             <Switch
               value={form[key] as boolean}
-              onValueChange={(v) => setForm((p) => ({ ...p, [key]: v }))}
+              onValueChange={(v) => setForm(p => ({ ...p, [key]: v }))}
               trackColor={{ false: '#e5e7eb', true: '#111827' }}
               thumbColor="#fff"
             />
           </View>
         ))}
 
-        <TouchableOpacity className={s.primaryBtn} onPress={handleSend} disabled={loading}>
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text className={s.primaryBtnText}>Nosūtīt ielūgumu</Text>
-          )}
+        <TouchableOpacity 
+          className={s.primaryBtn} 
+          onPress={handleSend}
+          disabled={loading}
+        >
+          {loading ? <ActivityIndicator color="#fff" /> : <Text className={s.primaryBtnText}>Nosūtīt ielūgumu</Text>}
         </TouchableOpacity>
       </View>
     </BottomSheet>
@@ -354,32 +361,28 @@ export default function TeamScreen() {
   const [members, setMembers] = useState<ApiCompanyMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
+  
   // Sheet State
   const [selectedMember, setSelectedMember] = useState<ApiCompanyMember | null>(null);
   const [isInviteOpen, setInviteOpen] = useState(false);
 
   // Computed
-  const canManage =
-    !user?.companyRole || user?.companyRole === 'OWNER' || user?.permManageTeam === true;
+  const canManage = !user?.companyRole || user?.companyRole === 'OWNER' || user?.permManageTeam === true;
 
-  const load = useCallback(
-    async (quiet = false) => {
-      if (!token) return;
-      if (!quiet) setLoading(true);
-      try {
-        const data = await api.companyMembers.list(token);
-        setMembers(data);
-      } catch (e: unknown) {
-        console.error(e);
-        showToast('Kļūda ielādējot datus', 'error');
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [token],
-  );
+  const load = useCallback(async (quiet = false) => {
+    if (!token) return;
+    if (!quiet) setLoading(true);
+    try {
+      const data = await api.companyMembers.list(token);
+      setMembers(data);
+    } catch (e: unknown) {
+      console.error(e);
+      showToast('Kļūda ielādējot datus', 'error');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [token]);
 
   useEffect(() => {
     if (user?.isCompany) {
@@ -392,7 +395,7 @@ export default function TeamScreen() {
     if (!token) return;
     try {
       const updated = await api.companyMembers.updatePermissions(id, perms, token);
-      setMembers((prev) => prev.map((m) => (m.id === id ? updated : m)));
+      setMembers(prev => prev.map(m => m.id === id ? updated : m));
       showToast('Tiesības atjaunotas', 'success');
     } catch (e: any) {
       showToast(e.message, 'error');
@@ -403,7 +406,7 @@ export default function TeamScreen() {
     if (!token) return;
     try {
       await api.companyMembers.remove(id, token);
-      setMembers((prev) => prev.filter((m) => m.id !== id));
+      setMembers(prev => prev.filter(m => m.id !== id));
       setSelectedMember(null);
       showToast('Dalībnieks noņemts', 'success');
     } catch (e: any) {
@@ -419,7 +422,7 @@ export default function TeamScreen() {
     }
     try {
       const res = await api.companyMembers.invite(data, token);
-      setMembers((prev) => [...prev, res.member]);
+      setMembers(prev => [...prev, res.member]);
       showToast('Ielūgums nosūtīts', 'success');
       setInviteOpen(false);
     } catch (e: any) {
@@ -430,7 +433,7 @@ export default function TeamScreen() {
   // Guard: Not a company
   if (!user?.isCompany) {
     return (
-      <ScreenContainer standalone bg="white">
+      <ScreenContainer standalone>
         <View className={s.headerRow}>
           <Text className={s.heroTitle}>Komanda</Text>
         </View>
@@ -444,12 +447,12 @@ export default function TeamScreen() {
   }
 
   return (
-    <ScreenContainer standalone bg="white">
+    <ScreenContainer standalone>
       {/* Header */}
       <View className={s.headerRow}>
         <Text className={s.heroTitle}>Komanda</Text>
         {canManage && (
-          <TouchableOpacity
+          <TouchableOpacity 
             className={s.headerBtn}
             onPress={() => {
               haptics.light();
@@ -469,20 +472,12 @@ export default function TeamScreen() {
       ) : (
         <FlatList
           data={members}
-          keyExtractor={(m) => m.id}
+          keyExtractor={m => m.id}
           contentContainerStyle={{ paddingBottom: 100 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => {
-                setRefreshing(true);
-                load(true);
-              }}
-            />
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} />}
           renderItem={({ item }) => (
-            <MemberRow
-              member={item}
+            <MemberRow 
+              member={item} 
               onPress={() => {
                 haptics.light();
                 setSelectedMember(item);
@@ -496,8 +491,8 @@ export default function TeamScreen() {
               subtitle="Pievienojiet kolēģus, lai kopīgi pārvaldītu pasūtījumus un objektus."
               action={
                 canManage ? (
-                  <TouchableOpacity
-                    className={s.primaryBtn}
+                  <TouchableOpacity 
+                    className={s.primaryBtn} 
                     style={{ marginTop: 20, width: 220 }}
                     onPress={() => setInviteOpen(true)}
                   >
@@ -528,3 +523,13 @@ export default function TeamScreen() {
     </ScreenContainer>
   );
 }
+'''
+    
+    with open(file_path, 'w') as f:
+        f.write(new_content)
+    
+    print(f"Recursively rewrote {file_path}")
+
+except Exception as e:
+    print(f"Error: {e}")
+    sys.exit(1)

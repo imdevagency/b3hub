@@ -1,4 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import os
+
+content = """import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -23,7 +25,14 @@ import { haptics } from '@/lib/haptics';
 import { SELLER_ORDER_STATUS } from '@/lib/materials';
 import { useToast } from '@/components/ui/Toast';
 import { api, type ApiOrder } from '@/lib/api';
-import { X, Square, CheckSquare2, MapPin, Inbox, AlertCircle } from 'lucide-react-native';
+import {
+  X,
+  Square,
+  CheckSquare2,
+  MapPin,
+  Inbox,
+  AlertCircle
+} from 'lucide-react-native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type OrderStatus = 'PENDING' | 'CONFIRMED' | 'LOADING' | 'DISPATCHED';
@@ -81,16 +90,11 @@ function mapApiOrder(o: ApiOrder): IncomingOrder {
 // ── Status Helper ──────────────────────────────────────────────────────────────
 function getMinimalStatus(status: OrderStatus) {
   switch (status) {
-    case 'PENDING':
-      return { text: 'Jauns', color: '#d97706' };
-    case 'CONFIRMED':
-      return { text: 'Apstiprināts', color: '#2563eb' };
-    case 'LOADING':
-      return { text: 'Iekraušana', color: '#16a34a' };
-    case 'DISPATCHED':
-      return { text: 'Piegādē', color: '#4b5563' };
-    default:
-      return { text: status, color: '#6b7280' };
+    case 'PENDING': return { text: 'Jauns', color: '#d97706' };
+    case 'CONFIRMED': return { text: 'Apstiprināts', color: '#2563eb' };
+    case 'LOADING': return { text: 'Iekraušana', color: '#16a34a' };
+    case 'DISPATCHED': return { text: 'Piegādē', color: '#4b5563' };
+    default: return { text: status, color: '#6b7280' };
   }
 }
 
@@ -134,10 +138,7 @@ function LoadingModal({
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <SafeAreaView style={modalStyles.container} edges={['top', 'bottom']}>
         <View style={modalStyles.header}>
-          <TouchableOpacity
-            onPress={onClose}
-            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-          >
+          <TouchableOpacity onPress={onClose} hitSlop={{top:20,bottom:20,left:20,right:20}}>
             <X size={24} color="#111827" />
           </TouchableOpacity>
           <Text style={modalStyles.title}>Iekraušanas apstiprinājums</Text>
@@ -151,9 +152,7 @@ function LoadingModal({
           <ScrollView contentContainerStyle={modalStyles.body}>
             <View style={modalStyles.heroCard}>
               <Text style={modalStyles.heroMaterial}>{order.material}</Text>
-              <Text style={modalStyles.heroSub}>
-                {order.buyerName} • #{order.orderNumber}
-              </Text>
+              <Text style={modalStyles.heroSub}>{order.buyerName} • #{order.orderNumber}</Text>
             </View>
 
             <View style={modalStyles.inputWrapper}>
@@ -181,9 +180,7 @@ function LoadingModal({
                   ) : (
                     <Square size={24} color="#d1d5db" />
                   )}
-                  <Text
-                    style={[modalStyles.checkText, checkedItems[i] && modalStyles.checkTextActive]}
-                  >
+                  <Text style={[modalStyles.checkText, checkedItems[i] && modalStyles.checkTextActive]}>
                     {item}
                   </Text>
                 </TouchableOpacity>
@@ -194,10 +191,7 @@ function LoadingModal({
 
         <View style={modalStyles.footer}>
           <TouchableOpacity
-            style={[
-              modalStyles.confirmBtn,
-              (!allChecked || confirming) && modalStyles.confirmBtnDisabled,
-            ]}
+            style={[modalStyles.confirmBtn, (!allChecked || confirming) && modalStyles.confirmBtnDisabled]}
             onPress={() => {
               haptics.success();
               const parsed = parseFloat(weight.replace(',', '.'));
@@ -238,12 +232,8 @@ function OrderCard({
     <View style={styles.card}>
       <View style={styles.cardTop}>
         <View style={styles.cardTopLeft}>
-          <Text style={styles.materialText}>
-            {order.material} • {order.weightTonnes}t
-          </Text>
-          <Text style={styles.buyerText}>
-            {order.buyerName} ({order.requestedDate})
-          </Text>
+          <Text style={styles.materialText}>{order.material} • {order.weightTonnes}t</Text>
+          <Text style={styles.buyerText}>{order.buyerName} ({order.requestedDate})</Text>
         </View>
         <View style={styles.cardTopRight}>
           <Text style={styles.priceText}>€{order.price.toFixed(0)}</Text>
@@ -256,9 +246,7 @@ function OrderCard({
 
       <View style={styles.addressRow}>
         <MapPin size={14} color="#9ca3af" />
-        <Text style={styles.addressText} numberOfLines={1}>
-          {order.deliveryAddress}
-        </Text>
+        <Text style={styles.addressText} numberOfLines={1}>{order.deliveryAddress}</Text>
       </View>
 
       {/* Actions */}
@@ -270,11 +258,7 @@ function OrderCard({
             onPress={() => onReject(order.id)}
             activeOpacity={0.7}
           >
-            {isBusy ? (
-              <ActivityIndicator size="small" color="#111827" />
-            ) : (
-              <Text style={styles.btnOutlineText}>Noraidīt</Text>
-            )}
+            {isBusy ? <ActivityIndicator size="small" color="#111827" /> : <Text style={styles.btnOutlineText}>Noraidīt</Text>}
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.btnSolid, isBusy && styles.btnDisabled]}
@@ -282,11 +266,7 @@ function OrderCard({
             onPress={() => onConfirm(order.id)}
             activeOpacity={0.7}
           >
-            {isBusy ? (
-              <ActivityIndicator size="small" color="#ffffff" />
-            ) : (
-              <Text style={styles.btnSolidText}>Apstiprināt</Text>
-            )}
+            {isBusy ? <ActivityIndicator size="small" color="#ffffff" /> : <Text style={styles.btnSolidText}>Apstiprināt</Text>}
           </TouchableOpacity>
         </View>
       )}
@@ -299,11 +279,7 @@ function OrderCard({
             onPress={() => onStartLoading(order.id)}
             activeOpacity={0.7}
           >
-            {isBusy ? (
-              <ActivityIndicator size="small" color="#ffffff" />
-            ) : (
-              <Text style={styles.btnSolidText}>Sākt iekraušanu</Text>
-            )}
+            {isBusy ? <ActivityIndicator size="small" color="#ffffff" /> : <Text style={styles.btnSolidText}>Sākt iekraušanu</Text>}
           </TouchableOpacity>
         </View>
       )}
@@ -439,51 +415,36 @@ export default function IncomingScreen() {
       </View>
 
       {/* Filter Tabs */}
-      {orders.length > 0 && (
-        <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8 }}
-          >
-            {STATUS_FILTERS.map((f) => {
-              const count =
-                f.key === 'ALL' ? orders.length : orders.filter((o) => o.status === f.key).length;
-              const active = filterStatus === f.key;
-              return (
-                <TouchableOpacity
-                  key={f.key}
-                  style={[styles.filterPill, active && styles.filterPillActive]}
-                  onPress={() => {
-                    haptics.light();
-                    setFilterStatus(f.key);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.filterPillText, active && styles.filterPillTextActive]}>
-                    {f.label}
-                  </Text>
-                  {count > 0 && (
-                    <View style={[styles.filterBadge, active && styles.filterBadgeActive]}>
-                      <Text
-                        style={[styles.filterBadgeText, active && styles.filterBadgeTextActive]}
-                      >
-                        {count}
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-      )}
+      <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+          {STATUS_FILTERS.map((f) => {
+            const count =
+              f.key === 'ALL' ? orders.length : orders.filter((o) => o.status === f.key).length;
+            const active = filterStatus === f.key;
+            return (
+              <TouchableOpacity
+                key={f.key}
+                style={[styles.filterPill, active && styles.filterPillActive]}
+                onPress={() => {
+                  haptics.light();
+                  setFilterStatus(f.key);
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.filterPillText, active && styles.filterPillTextActive]}>{f.label}</Text>
+                {count > 0 && (
+                  <View style={[styles.filterBadge, active && styles.filterBadgeActive]}>
+                    <Text style={[styles.filterBadgeText, active && styles.filterBadgeTextActive]}>{count}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       <ScrollView
-        contentContainerStyle={[
-          styles.list,
-          visibleOrders.length === 0 && { flexGrow: 1, justifyContent: 'center' },
-        ]}
+        contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -497,17 +458,9 @@ export default function IncomingScreen() {
       >
         {visibleOrders.length === 0 ? (
           <View style={styles.emptyWrap}>
-            <View style={styles.emptyIconWrap}>
-              <Inbox size={32} color="#111827" />
-            </View>
-            <Text style={styles.emptyTitle}>
-              {orders.length === 0 ? 'Nav pasūtījumu' : 'Nav atrasts'}
-            </Text>
-            <Text style={styles.emptyDesc}>
-              {orders.length === 0
-                ? 'Šobrīd nav neviena aktīva pasūtījuma.'
-                : 'Šajā kategorijā pašlaik nav neviena pasūtījuma.'}
-            </Text>
+            <Inbox size={48} color="#e5e7eb" style={{ marginBottom: 16 }} />
+            <Text style={styles.emptyTitle}>Nav pasūtījumu</Text>
+            <Text style={styles.emptyDesc}>Šajā kategorijā pašlaik nav neviena pasūtījuma.</Text>
           </View>
         ) : (
           visibleOrders.map((order) => (
@@ -587,7 +540,7 @@ const styles = StyleSheet.create({
   cardTopLeft: { gap: 4, flex: 1, paddingRight: 10 },
   materialText: { fontSize: 18, fontWeight: '700', color: '#111827' },
   buyerText: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
-
+  
   cardTopRight: { alignItems: 'flex-end', gap: 4 },
   priceText: { fontSize: 18, fontWeight: '800', color: '#111827' },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
@@ -629,26 +582,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 80,
-    paddingHorizontal: 32,
-    flex: 1, // Let it expand inside the flexGrow:1 ScrollView container
+    paddingHorizontal: 20,
   },
-  emptyIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptyDesc: { fontSize: 16, color: '#6b7280', textAlign: 'center', lineHeight: 24 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 8 },
+  emptyDesc: { fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 20 },
 });
 
 const modalStyles = StyleSheet.create({
@@ -704,3 +641,8 @@ const modalStyles = StyleSheet.create({
   confirmBtnDisabled: { opacity: 0.5 },
   confirmBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
 });
+"""
+
+with open("apps/mobile/app/(seller)/incoming.tsx", "w") as f:
+    f.write(content)
+print("Updated incoming.tsx")

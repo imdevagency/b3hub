@@ -1,4 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import re
+import os
+
+file_path = 'apps/mobile/app/(seller)/catalog.tsx'
+
+new_content = r"""import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -724,3 +729,9 @@ const s = StyleSheet.create({
   sheetRowText: { fontSize: 16, color: '#111827' },
   miniIcon: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
 });
+"""
+
+with open(file_path, 'w') as f:
+    f.write(new_content)
+
+print("catalog.tsx updated")

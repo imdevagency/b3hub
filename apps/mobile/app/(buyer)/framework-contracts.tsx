@@ -6,7 +6,7 @@
  * unit prices that the buyer releases as individual call-off transport jobs.
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import {
   View,
   ScrollView,
@@ -18,18 +18,65 @@ import {
   TextInput,
   Modal,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiFrameworkContract, type FrameworkContractStatus } from '@/lib/api';
 import { formatDateShort } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
-import { Package, Plus, X } from 'lucide-react-native';
+import { Package, Plus, X, Calendar as CalendarIcon, FileText } from 'lucide-react-native';
 import { Button } from '@/components/ui/button';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/text';
-import { colors } from '@/lib/theme';
+import { Calendar, LocaleConfig, DateData } from 'react-native-calendars';
+
+// Setup Latvian Locale
+LocaleConfig.locales['lv'] = {
+  monthNames: [
+    'Janvāris',
+    'Februāris',
+    'Marts',
+    'Aprīlis',
+    'Maijs',
+    'Jūnijs',
+    'Jūlijs',
+    'Augusts',
+    'Septembris',
+    'Oktobris',
+    'Novembris',
+    'Decembris',
+  ],
+  monthNamesShort: [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mai',
+    'Jūn',
+    'Jūl',
+    'Aug',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Dec',
+  ],
+  dayNames: [
+    'Svētdiena',
+    'Pirmdiena',
+    'Otrdiena',
+    'Trešdiena',
+    'Ceturtdiena',
+    'Piektdiena',
+    'Sestdiena',
+  ],
+  dayNamesShort: ['Sv', 'Pr', 'Ot', 'Tr', 'Ce', 'Pk', 'Se'],
+  today: 'Šodien',
+};
+LocaleConfig.defaultLocale = 'lv';
 
 const STATUS: Record<FrameworkContractStatus, { label: string; bg: string; color: string }> = {
   // ... existing status map code ...
@@ -60,6 +107,56 @@ export default function FrameworkContractsScreen() {
   const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState('');
   const [notes, setNotes] = useState('');
+
+  // Calendar logic
+  const handleDayPress = (day: DateData) => {
+    haptics.light();
+
+    // Case 1: Start new selection if both set, or if clicking before start
+    if ((startDate && endDate) || (startDate && day.dateString < startDate)) {
+      setStartDate(day.dateString);
+      setEndDate('');
+      return;
+    }
+
+    // Case 2: Set start if nothing set
+    if (!startDate) {
+      setStartDate(day.dateString);
+      return;
+    }
+
+    // Case 3: Set end if start is set and clicking after
+    if (startDate && !endDate && day.dateString > startDate) {
+      setEndDate(day.dateString);
+    }
+  };
+
+  const markedDates = useMemo(() => {
+    const marks: any = {};
+
+    if (startDate) {
+      marks[startDate] = { startingDay: true, color: 'black', textColor: 'white' };
+    }
+
+    if (endDate) {
+      marks[endDate] = { endingDay: true, color: 'black', textColor: 'white' };
+
+      // Fill in between
+      let curr = new Date(startDate);
+      const end = new Date(endDate);
+      curr.setDate(curr.getDate() + 1);
+
+      while (curr < end) {
+        const dateStr = curr.toISOString().split('T')[0];
+        marks[dateStr] = { color: '#f3f4f6', textColor: 'black' };
+        curr.setDate(curr.getDate() + 1);
+      }
+    } else if (startDate) {
+      marks[startDate] = { selected: true, color: 'black', textColor: 'white' };
+    }
+
+    return marks;
+  }, [startDate, endDate]);
 
   const load = useCallback(
     async (skeleton = true) => {
@@ -173,7 +270,7 @@ export default function FrameworkContractsScreen() {
   };
 
   return (
-    <ScreenContainer bg="#F9FAFB" standalone>
+    <ScreenContainer bg="white" standalone>
       <Stack.Screen options={{ headerShown: false }} />
       {/* Minimal Header */}
       <View style={s.header}>
@@ -212,20 +309,34 @@ export default function FrameworkContractsScreen() {
             />
           }
           ListEmptyComponent={
-            <View style={s.emptyContainer}>
-              <Text style={s.emptyTitle}>Nav aktīvu projektu</Text>
-              <Text style={s.emptySubtitle}>Sāciet jaunu projektu, lai veiktu pasūtījumus.</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  haptics.light();
-                  setCreateVisible(true);
-                }}
-                activeOpacity={0.7}
-                style={s.emptyAction}
-              >
-                <Text style={s.emptyActionText}>Izveidot projektu</Text>
-              </TouchableOpacity>
-            </View>
+            <EmptyState
+              icon={<Package size={42} color="#9ca3af" />}
+              title="Nav aktīvu projektu"
+              subtitle="Sāciet jaunu projektu, lai veiktu pasūtījumus."
+              action={
+                <TouchableOpacity
+                  onPress={() => {
+                    haptics.light();
+                    setCreateVisible(true);
+                  }}
+                  activeOpacity={0.8}
+                  style={{
+                    marginTop: 20,
+                    backgroundColor: '#111827',
+                    paddingHorizontal: 24,
+                    paddingVertical: 14,
+                    borderRadius: 12,
+                    shadowColor: '#000',
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                  }}
+                >
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>
+                    Izveidot projektu
+                  </Text>
+                </TouchableOpacity>
+              }
+            />
           }
         />
       )}
@@ -237,69 +348,105 @@ export default function FrameworkContractsScreen() {
         presentationStyle="pageSheet"
         onRequestClose={closeCreate}
       >
-        <ScreenContainer standalone bg="#fff">
-          <View style={s.modalHeader}>
-            <Text size="xl" style={s.modalTitle}>
-              Jauns projekts
-            </Text>
-            <TouchableOpacity onPress={closeCreate} style={s.modalCloseBtn}>
-              <X size={24} color="#000" />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView contentContainerStyle={s.modalContent} keyboardShouldPersistTaps="handled">
-            <View style={s.formGroup}>
-              <Text style={s.label}>Nosaukums</Text>
-              <TextInput
-                style={s.modernInput}
-                value={title}
-                onChangeText={setTitle}
-                placeholder="Piem. Grantsšķembas Ceļš A2"
-                placeholderTextColor="#9ca3af"
-                autoFocus
-              />
+        <ScreenContainer bg="#fff">
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+          >
+            <View style={s.modalHeader}>
+              <TouchableOpacity onPress={closeCreate} style={s.modalCloseBtn}>
+                <X size={24} color="#000" />
+              </TouchableOpacity>
+              <Text style={s.modalStepText}>Jauns līgums</Text>
+              <View style={{ width: 36 }} />
             </View>
 
-            <View style={s.row}>
-              <View style={[s.formGroup, { flex: 1 }]}>
-                <Text style={s.label}>Sākums</Text>
+            <ScrollView contentContainerStyle={s.modalContent} keyboardShouldPersistTaps="handled">
+              {/* 1. Title Section */}
+              <View style={s.section}>
                 <TextInput
-                  style={s.modernInput}
-                  value={startDate}
-                  onChangeText={setStartDate}
-                  placeholder="GGGG-MM-DD"
-                  keyboardType="numbers-and-punctuation"
+                  style={s.heroInput}
+                  value={title}
+                  onChangeText={setTitle}
+                  placeholder="Projekta nosaukums"
+                  placeholderTextColor="#9ca3af"
+                  autoFocus={false}
+                  multiline
                 />
               </View>
-              <View style={{ width: 12 }} />
-              <View style={[s.formGroup, { flex: 1 }]}>
-                <Text style={s.label}>Beigas (izvēles)</Text>
-                <TextInput
-                  style={s.modernInput}
-                  value={endDate}
-                  onChangeText={setEndDate}
-                  placeholder="GGGG-MM-DD"
-                  keyboardType="numbers-and-punctuation"
-                />
+
+              {/* 2. Date Section */}
+              <View style={s.section}>
+                <View style={s.dateRow}>
+                  <View style={s.dateBlock}>
+                    <Text style={s.dateLabel}>SĀKUMS</Text>
+                    <Text style={[s.dateValue, !startDate && s.datePlaceholder]}>
+                      {startDate || 'Izvēlies'}
+                    </Text>
+                  </View>
+                  <View style={s.dateDivider} />
+                  <View style={s.dateBlock}>
+                    <Text style={s.dateLabel}>BEIGAS</Text>
+                    <Text style={[s.dateValue, !endDate && s.datePlaceholder]}>
+                      {endDate || 'Neierobežots'}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={s.calendarWrapper}>
+                  <Calendar
+                    current={startDate}
+                    onDayPress={handleDayPress}
+                    markingType={'period'}
+                    markedDates={markedDates}
+                    theme={{
+                      backgroundColor: '#ffffff',
+                      calendarBackground: '#ffffff',
+                      textSectionTitleColor: '#b6c1cd',
+                      selectedDayBackgroundColor: '#000000',
+                      selectedDayTextColor: '#ffffff',
+                      todayTextColor: '#000000',
+                      dayTextColor: '#2d4150',
+                      textDisabledColor: '#d9e1e8',
+                      dotColor: '#00adf5',
+                      selectedDotColor: '#ffffff',
+                      arrowColor: '#000000',
+                      monthTextColor: '#000000',
+                      textDayFontWeight: '600',
+                      textMonthFontWeight: 'bold',
+                      textDayHeaderFontWeight: '600',
+                      textDayFontSize: 14,
+                      textMonthFontSize: 16,
+                      textDayHeaderFontSize: 13,
+                    }}
+                  />
+                </View>
               </View>
-            </View>
 
-            <View style={s.formGroup}>
-              <Text style={s.label}>Piezīmes</Text>
-              <TextInput
-                style={[s.modernInput, s.textArea]}
-                value={notes}
-                onChangeText={setNotes}
-                placeholder="Papildinformācija..."
-                multiline
-                numberOfLines={3}
-              />
-            </View>
+              {/* 3. Notes Section */}
+              <View style={s.section}>
+                <View style={s.inputRow}>
+                  <FileText size={18} color="#9ca3af" style={{ marginRight: 10, marginTop: 12 }} />
+                  <TextInput
+                    style={[s.modernInput, s.textArea]}
+                    value={notes}
+                    onChangeText={setNotes}
+                    placeholder="Piezīmes (izvēles)..."
+                    placeholderTextColor="#9ca3af"
+                    multiline
+                  />
+                </View>
+              </View>
 
-            <Button onPress={handleCreate} isLoading={creating} style={s.fabButton}>
-              <Text style={s.fabText}>Izveidot</Text>
-            </Button>
-          </ScrollView>
+              <View style={{ height: 100 }} />
+            </ScrollView>
+
+            <View style={s.footer}>
+              <Button onPress={handleCreate} isLoading={creating} style={s.fabButton}>
+                <Text style={s.fabText}>Izveidot projektu</Text>
+              </Button>
+            </View>
+          </KeyboardAvoidingView>
         </ScreenContainer>
       </Modal>
     </ScreenContainer>
@@ -307,6 +454,7 @@ export default function FrameworkContractsScreen() {
 }
 
 const s = StyleSheet.create({
+  // ... existing styles ...
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -328,7 +476,6 @@ const s = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    // Minimal shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -366,7 +513,6 @@ const s = StyleSheet.create({
   emptyAction: {
     paddingVertical: 12,
     paddingHorizontal: 24,
-    // No background, just text link style or minimal outline
   },
   emptyActionText: {
     fontSize: 16,
@@ -374,56 +520,31 @@ const s = StyleSheet.create({
     color: '#000',
     textDecorationLine: 'underline',
   },
-
-  // Item Styles - Uber-like Minimal
   itemContainer: {
     backgroundColor: '#fff',
     borderRadius: 16,
     marginBottom: 12,
     padding: 20,
-    // Very subtle elevation
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.03,
     shadowRadius: 12,
     elevation: 2,
   },
-  itemContent: {
-    gap: 8,
-  },
-  itemTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+  itemContent: { gap: 8 },
+  itemTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   itemTitle: {
-    fontSize: 18, // Bigger
+    fontSize: 18,
     fontWeight: '700',
     color: '#111827',
     flex: 1,
     marginRight: 12,
     letterSpacing: -0.3,
   },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  itemMetaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  itemSubtitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6b7280',
-  },
-  itemProgress: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#374151',
-  },
+  statusDot: { width: 8, height: 8, borderRadius: 4 },
+  itemMetaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  itemSubtitle: { fontSize: 14, fontWeight: '500', color: '#6b7280' },
+  itemProgress: { fontSize: 13, fontWeight: '600', color: '#374151' },
   miniProgressTrack: {
     height: 3,
     backgroundColor: '#f3f4f6',
@@ -432,24 +553,16 @@ const s = StyleSheet.create({
     width: '100%',
     overflow: 'hidden',
   },
-  miniProgressFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
+  miniProgressFill: { height: '100%', borderRadius: 2 },
 
-  // Modal / Form Styles
+  // New Modal Styles
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#000',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
   },
   modalCloseBtn: {
     width: 36,
@@ -459,41 +572,98 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  modalContent: {
-    padding: 24,
-  },
-  formGroup: {
-    marginBottom: 20,
-  },
-  row: {
-    flexDirection: 'row',
-  },
-  label: {
-    fontSize: 13,
+  modalStepText: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-    marginLeft: 4,
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  modalContent: {
+    paddingHorizontal: 24,
+    paddingTop: 10,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  heroInput: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111827',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'transparent',
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderRadius: 16,
+    padding: 4,
+    marginBottom: 16,
+  },
+  dateBlock: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  dateLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#9ca3af',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  dateValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  datePlaceholder: {
+    color: '#9ca3af',
+  },
+  dateDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#e5e7eb',
+  },
+  calendarWrapper: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+    overflow: 'hidden',
+    padding: 4,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#f9fafb',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
   },
   modernInput: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    flex: 1,
     fontSize: 16,
     fontWeight: '500',
     color: '#111827',
+    paddingVertical: 14,
   },
   textArea: {
-    height: 100,
+    minHeight: 80,
     textAlignVertical: 'top',
-    paddingTop: 12,
+  },
+  footer: {
+    padding: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+    backgroundColor: '#fff',
   },
   fabButton: {
     backgroundColor: '#000',
     borderRadius: 16,
     height: 56,
-    marginTop: 24,
+    width: '100%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,

@@ -1,10 +1,12 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import { SectionLabel } from '@/components/ui/SectionLabel';
+import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import {
   Inbox,
   LayoutGrid,
@@ -12,45 +14,26 @@ import {
   Wallet,
   Bell,
   ChevronRight,
-  ArrowRight,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
-import { ScreenContainer } from '@/components/ui/ScreenContainer';
-
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'Labrīt';
-  if (h < 17) return 'Labdien';
-  return 'Labvakar';
-}
 
 const QUICK_ACTIONS = [
-  {
-    id: 'incoming',
-    icon: Inbox,
-    label: 'Ienākošie',
-    sub: 'Jauni pasūtījumi',
-    route: '/(seller)/incoming',
-  },
   {
     id: 'catalog',
     icon: LayoutGrid,
     label: 'Katalogs',
-    sub: 'Pārvaldīt materiālus',
     route: '/(seller)/catalog',
   },
   {
     id: 'quotes',
     icon: FileText,
     label: 'Pieprasījumi',
-    sub: 'Cenu pieprasījumi',
     route: '/(seller)/quotes',
   },
   {
     id: 'earnings',
     icon: Wallet,
     label: 'Ienākumi',
-    sub: 'Pārdošanas statistika',
     route: '/(seller)/earnings',
   },
 ];
@@ -80,97 +63,107 @@ export default function SellerHomeScreen() {
 
   return (
     <ScreenContainer topInset={0} bg="#ffffff">
-      {/* ── Top bar ── */}
-      <View style={[s.topBar, { paddingTop: insets.top + 12 }]}>
-        <View style={s.avatar}>
-          <Text style={s.avatarText}>{user?.firstName?.[0]?.toUpperCase() ?? '?'}</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={s.greetingLabel}>{greeting()},</Text>
-          <Text style={s.greetingName} numberOfLines={1}>
-            {user?.firstName ?? 'Pārdevējs'}
+      {/* MINIMAL TOP BAR */}
+      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
+            {user?.firstName?.[0]?.toUpperCase() ?? 'S'}
           </Text>
         </View>
         <TouchableOpacity
-          style={s.bellBtn}
           onPress={() => {
             haptics.light();
             router.push('/notifications' as any);
           }}
-          activeOpacity={0.75}
+          style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}
         >
-          <Bell size={22} color="#111827" />
+          <Bell size={20} color="#111827" />
         </TouchableOpacity>
       </View>
 
-      {/* ── Scrollable content ── */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={[s.scroll, { paddingBottom: TAB_H + insets.bottom + 32 }]}
+        contentContainerStyle={{ paddingBottom: TAB_H + insets.bottom + 32, paddingHorizontal: 20, paddingTop: 32 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Pending orders alert */}
-        {pendingCount != null && pendingCount > 0 && (
-          <TouchableOpacity
-            style={s.alertCard}
-            onPress={() => {
-              haptics.light();
-              router.push('/(seller)/incoming' as any);
-            }}
-            activeOpacity={0.85}
-          >
-            <View style={s.alertBadge}>
-              <Text style={s.alertBadgeNum}>{pendingCount}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.alertTitle}>Jauni pasūtījumi gaida</Text>
-              <Text style={s.alertSub}>Apstipriniet vai noraidiet</Text>
-            </View>
-            <ChevronRight size={18} color="#92400e" />
-          </TouchableOpacity>
-        )}
-
-        {/* Primary CTA */}
-        <TouchableOpacity
-          style={s.primaryBtn}
-          onPress={() => {
-            haptics.medium();
-            router.push('/(seller)/incoming' as any);
-          }}
-          activeOpacity={0.85}
-        >
-          <Text style={s.primaryBtnText}>Ienākošie pasūtījumi →</Text>
-        </TouchableOpacity>
-
-        {/* Section label */}
-        <SectionLabel label="Ātrās darbības" />
-
-        {/* 2×2 quick action grid */}
-        <View style={s.grid}>
-          {QUICK_ACTIONS.map((a) => {
-            const Icon = a.icon;
-            return (
-              <View key={a.id} style={{ width: '48%' }}>
-                <TouchableOpacity
-                  style={s.gridTile}
+        {/* HERO SECTION / PRIMARY ACTION */}
+        <View style={{ alignItems: 'center', marginBottom: 48, minHeight: 200, justifyContent: 'center' }}>
+          {pendingCount !== null ? (
+            pendingCount > 0 ? (
+              <TouchableOpacity
+                onPress={() => {
+                  haptics.medium();
+                  router.push('/(seller)/incoming' as any);
+                }}
+                activeOpacity={0.8}
+                style={{ alignItems: 'center', width: '100%' }}
+              >
+                <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: '#111827', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                  <Text style={{ color: '#ffffff', fontSize: 36, fontWeight: '800' }}>{pendingCount}</Text>
+                </View>
+                <Text style={{ fontSize: 24, fontWeight: '700', color: '#111827', textAlign: 'center', marginBottom: 8 }}>
+                  Jauni pasūtījumi
+                </Text>
+                <Text style={{ fontSize: 16, color: '#6b7280', textAlign: 'center', marginBottom: 24 }}>
+                  Pārskatiet gaidošos pasūtījumus
+                </Text>
+                <Button 
                   onPress={() => {
-                    haptics.light();
-                    router.push(a.route as any);
+                    haptics.medium();
+                    router.push('/(seller)/incoming' as any);
                   }}
-                  activeOpacity={0.75}
+                  className="rounded-3xl w-full"
                 >
-                  <View style={s.gridIcon}>
-                    <Icon size={24} color="#111827" />
-                  </View>
-                  <Text style={s.gridLabel}>{a.label}</Text>
-                  <Text style={s.gridSub} numberOfLines={1}>
-                    {a.sub}
-                  </Text>
-                  <View style={{ marginTop: 8 }}>
-                    <ArrowRight size={14} color="#9ca3af" />
-                  </View>
-                </TouchableOpacity>
+                  Skatīt sarakstu
+                </Button>
+              </TouchableOpacity>
+            ) : (
+              <View style={{ alignItems: 'center' }}>
+                <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                  <Inbox size={40} color="#9ca3af" />
+                </View>
+                <Text style={{ fontSize: 24, fontWeight: '700', color: '#111827', textAlign: 'center', marginBottom: 8 }}>
+                  Gatavs darbam
+                </Text>
+                <Text style={{ fontSize: 16, color: '#6b7280', textAlign: 'center' }}>
+                  Pagaidām jaunu pasūtījumu nav
+                </Text>
               </View>
+            )
+          ) : (
+             <View style={{ alignItems: 'center' }}>
+               <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: '#f9fafb', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }} />
+             </View>
+          )}
+        </View>
+
+        {/* LIST / MENU */}
+        <View style={{ gap: 8 }}>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 8 }}>Ātrās darbības</Text>
+
+          {[
+            { id: 'incoming', icon: Inbox, label: 'Visi ienākošie', route: '/(seller)/incoming' },
+            ...QUICK_ACTIONS
+          ].map((action) => {
+            const Icon = action.icon;
+            return (
+              <TouchableOpacity
+                key={action.id}
+                onPress={() => {
+                  haptics.light();
+                  router.push(action.route as any);
+                }}
+                activeOpacity={0.7}
+                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f9fafb' }}
+              >
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                  <Icon size={20} color="#111827" />
+                </View>
+                <Text style={{ flex: 1, fontSize: 16, fontWeight: '600', color: '#111827' }}>
+                  {action.label}
+                </Text>
+                <ChevronRight size={20} color="#d1d5db" />
+              </TouchableOpacity>
             );
           })}
         </View>
@@ -178,141 +171,3 @@ export default function SellerHomeScreen() {
     </ScreenContainer>
   );
 }
-
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f2f7' },
-
-  // Top bar
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    backgroundColor: '#f2f2f7',
-    gap: 12,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#059669',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: 'Inter_700Bold' },
-  greetingLabel: {
-    fontSize: 13,
-    color: '#9ca3af',
-    fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
-    lineHeight: 18,
-  },
-  greetingName: {
-    fontSize: 18,
-    fontWeight: '800',
-    fontFamily: 'Inter_700Bold',
-    color: '#111827',
-    lineHeight: 24,
-  },
-  bellBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-
-  scroll: { paddingHorizontal: 16, gap: 12 },
-
-  // Alert card
-  alertCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#fefce8',
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1.5,
-    borderColor: '#fde68a',
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-  },
-  alertBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f59e0b',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  alertBadgeNum: { color: '#fff', fontWeight: '800', fontSize: 16, lineHeight: 20 },
-  alertTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
-    color: '#92400e',
-    lineHeight: 20,
-  },
-  alertSub: { fontSize: 12, color: '#a16207', marginTop: 2, lineHeight: 17 },
-
-  // Primary CTA button
-  primaryBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 18,
-    paddingVertical: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  primaryBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
-    letterSpacing: 0.2,
-  },
-
-  // 2×2 grid
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  gridTile: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 18,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-  },
-  gridIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 15,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  gridLabel: {
-    fontSize: 15,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
-    color: '#111827',
-    lineHeight: 20,
-  },
-  gridSub: { fontSize: 12, color: '#9ca3af', lineHeight: 17, marginTop: 2 },
-});
