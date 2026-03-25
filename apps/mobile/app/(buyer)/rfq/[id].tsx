@@ -150,7 +150,7 @@ export default function RfqDetailScreen() {
     <ScreenContainer standalone bg="#ffffff">
       <ScreenHeader
         title={`Pieprasījums #${rfq.requestNumber}`}
-        rightSlot={
+        rightAction={
           <StatusPill
             label={RFQ_STATUS_HEADER_LABEL[rfq.status] ?? st.label}
             bg={st.bg}

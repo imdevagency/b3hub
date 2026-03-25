@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import {
   Plus,
   Package,
@@ -71,12 +72,25 @@ export default function OrdersScreen() {
   return (
     <ScreenContainer>
       {/* ── Header ───────────────────────────────────────────── */}
-      <View style={s.header}>
-        <Text style={s.headerTitle}>Pasūtījumi</Text>
-        <TouchableOpacity style={s.headerButton} onPress={handleNewOrder} activeOpacity={0.8}>
-          <Plus size={24} color="#111827" />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="Pasūtījumi"
+        rightAction={
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleNewOrder}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: '#f3f4f6',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Plus size={24} color="#111827" />
+          </TouchableOpacity>
+        }
+      />
 
       {/* ── Filters ──────────────────────────────────────────── */}
       <View style={s.filterContainer}>
@@ -476,31 +490,8 @@ function formatStatus(status: string) {
 // ── Styles ────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#111827',
-    letterSpacing: -0.5,
-  },
-  headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
   filterContainer: {
+    paddingTop: 12,
     backgroundColor: '#fff',
     paddingBottom: 12,
   },

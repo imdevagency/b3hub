@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import {
   Layers,
   Leaf,
@@ -86,9 +87,7 @@ export default function CatalogScreen() {
   return (
     <ScreenContainer>
       {/* Header */}
-      <View style={s.header}>
-        <Text style={s.headerTitle}>Materiāli</Text>
-      </View>
+      <ScreenHeader title="Materiāli" />
 
       {/* Category grid */}
       <ScrollView contentContainerStyle={s.grid} showsVerticalScrollIndicator={false}>
@@ -103,18 +102,6 @@ export default function CatalogScreen() {
 // ── Styles ─────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#111827',
-    letterSpacing: -0.5,
-  },
-
   grid: {
     paddingHorizontal: 20,
     paddingBottom: 40,

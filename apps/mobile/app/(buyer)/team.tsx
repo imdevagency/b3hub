@@ -17,7 +17,21 @@ import {
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { BottomSheet } from '@/components/ui/BottomSheet';
-import { Users, UserPlus, Trash2, ChevronRight, Building2 } from 'lucide-react-native';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import {
+  Users,
+  UserPlus,
+  Trash2,
+  Building2,
+  Phone,
+  Shield,
+  FileText,
+  Truck,
+  ClipboardList,
+  Banknote,
+  Plus,
+  ChevronRight,
+} from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import {
   api,
@@ -27,7 +41,7 @@ import {
 } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 
 // ── Types & data ───────────────────────────────────────────────
 
@@ -49,13 +63,9 @@ const PERM_META: Array<{ key: keyof MemberPermissions; label: string; sub: strin
 // ── Styles (Utility Classes) ───────────────────────────────────
 
 const s = {
-  // Structure
-  headerRow: 'flex-row items-center justify-between px-6 pt-2 pb-4',
-  heroTitle: 'text-3xl font-extrabold text-[#111827]',
-  headerBtn: 'w-10 h-10 rounded-full bg-[#f3f4f6] items-center justify-center',
-
   // List
   row: 'flex-row items-center py-4 px-6 border-b border-[#f3f4f6] bg-white active:bg-[#f9fafb]',
+  headerBtn: 'w-10 h-10 items-center justify-center rounded-full active:bg-gray-100',
 
   // Avatar
   avatar: 'w-12 h-12 rounded-full bg-[#f3f4f6] items-center justify-center mr-4',
@@ -177,40 +187,70 @@ function MemberDetailsSheet({
       scrollable
     >
       <View className={s.sheetSection}>
-        <View className="mb-6 flex-row gap-4">
-          <View className="flex-1 bg-[#f9fafb] p-3 rounded-xl border border-gray-100">
-            <Text className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">
-              TELEFONS
-            </Text>
-            <Text className="text-sm font-semibold text-gray-900">{member.phone || '—'}</Text>
+        <View className="mb-8 px-1">
+          {/* Phone Row */}
+          <View className="flex-row items-center py-4 border-b border-gray-100">
+            <View className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center mr-4">
+              <Phone size={18} color="#6b7280" />
+            </View>
+            <View>
+              <Text className="text-[12px] font-medium text-gray-500 uppercase tracking-wide">
+                Telefons
+              </Text>
+              <Text className="text-[16px] font-semibold text-gray-900 mt-0.5">
+                {member.phone || '—'}
+              </Text>
+            </View>
           </View>
-          <View className="flex-1 bg-[#f9fafb] p-3 rounded-xl border border-gray-100">
-            <Text className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">
-              LOMA
-            </Text>
-            <Text className="text-sm font-semibold text-gray-900">
-              {ROLE_LABEL[member.companyRole ?? ''] ?? member.companyRole}
-            </Text>
+
+          {/* Role Row */}
+          <View className="flex-row items-center py-4 border-b border-gray-100">
+            <View className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center mr-4">
+              <Shield size={18} color="#6b7280" />
+            </View>
+            <View>
+              <Text className="text-[12px] font-medium text-gray-500 uppercase tracking-wide">
+                Loma
+              </Text>
+              <Text className="text-[16px] font-semibold text-gray-900 mt-0.5">
+                {ROLE_LABEL[member.companyRole ?? ''] ?? member.companyRole}
+              </Text>
+            </View>
           </View>
         </View>
 
-        <Text className={s.label}>Tiesību Pārvaldība</Text>
+        <View className="mb-4">
+          <Text className={s.label}>Tiesību Pārvaldība</Text>
+        </View>
 
-        {PERM_META.map(({ key, label, sub }) => (
-          <View key={key} className={s.switchRow}>
-            <View style={{ flex: 1, paddingRight: 16 }}>
-              <Text className={s.switchLabel}>{label}</Text>
-              <Text className={s.switchSub}>{sub}</Text>
+        {PERM_META.map(({ key, label, sub }) => {
+          // Icon mapping for permissions to match Uber-style minimalism
+          let IconComp = FileText;
+          if (key === 'permCreateContracts') IconComp = FileText;
+          if (key === 'permReleaseCallOffs') IconComp = Truck;
+          if (key === 'permManageOrders') IconComp = ClipboardList;
+          if (key === 'permViewFinancials') IconComp = Banknote;
+          if (key === 'permManageTeam') IconComp = Users;
+
+          return (
+            <View key={key} className="flex-row items-center py-4 border-b border-gray-100">
+              <View className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center mr-4">
+                <IconComp size={18} color="#6b7280" />
+              </View>
+              <View style={{ flex: 1, paddingRight: 16 }}>
+                <Text className="text-[16px] font-medium text-[#111827]">{label}</Text>
+                <Text className="text-[13px] text-[#6b7280] mt-0.5">{sub}</Text>
+              </View>
+              <Switch
+                value={perms[key]}
+                onValueChange={(v) => canEdit && setPerms((prev) => ({ ...prev, [key]: v }))}
+                trackColor={{ false: '#e5e7eb', true: '#111827' }}
+                thumbColor="#fff"
+                disabled={!canEdit}
+              />
             </View>
-            <Switch
-              value={perms[key]}
-              onValueChange={(v) => canEdit && setPerms((prev) => ({ ...prev, [key]: v }))}
-              trackColor={{ false: '#e5e7eb', true: '#111827' }}
-              thumbColor="#fff"
-              disabled={!canEdit}
-            />
-          </View>
-        ))}
+          );
+        })}
 
         {canEdit && (
           <>
@@ -319,17 +359,32 @@ function InviteSheet({
         />
 
         <Text className={`${s.label} mt-4`}>Tiesības</Text>
-        {PERM_META.map(({ key, label }) => (
-          <View key={key} className={s.switchRow}>
-            <Text className={s.switchLabel}>{label}</Text>
-            <Switch
-              value={form[key] as boolean}
-              onValueChange={(v) => setForm((p) => ({ ...p, [key]: v }))}
-              trackColor={{ false: '#e5e7eb', true: '#111827' }}
-              thumbColor="#fff"
-            />
-          </View>
-        ))}
+        {PERM_META.map(({ key, label, sub }) => {
+          let IconComp = FileText;
+          if (key === 'permCreateContracts') IconComp = FileText;
+          if (key === 'permReleaseCallOffs') IconComp = Truck;
+          if (key === 'permManageOrders') IconComp = ClipboardList;
+          if (key === 'permViewFinancials') IconComp = Banknote;
+          if (key === 'permManageTeam') IconComp = Users;
+
+          return (
+            <View key={key} className="flex-row items-center py-3 border-b border-gray-100">
+              <View className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center mr-4">
+                <IconComp size={18} color="#6b7280" />
+              </View>
+              <View style={{ flex: 1, paddingRight: 16 }}>
+                <Text className="text-[16px] font-medium text-[#111827]">{label}</Text>
+                <Text className="text-[12px] text-[#6b7280]">{sub}</Text>
+              </View>
+              <Switch
+                value={form[key] as boolean}
+                onValueChange={(v) => setForm((p) => ({ ...p, [key]: v }))}
+                trackColor={{ false: '#e5e7eb', true: '#111827' }}
+                thumbColor="#fff"
+              />
+            </View>
+          );
+        })}
 
         <TouchableOpacity className={s.primaryBtn} onPress={handleSend} disabled={loading}>
           {loading ? (
@@ -349,6 +404,7 @@ export default function TeamScreen() {
   const { token, user } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
+  const navigation = useNavigation();
 
   // State
   const [members, setMembers] = useState<ApiCompanyMember[]>([]);
@@ -431,9 +487,7 @@ export default function TeamScreen() {
   if (!user?.isCompany) {
     return (
       <ScreenContainer standalone bg="white">
-        <View className={s.headerRow}>
-          <Text className={s.heroTitle}>Komanda</Text>
-        </View>
+        <ScreenHeader title="Komanda" />
         <EmptyState
           icon={<Building2 size={42} color="#9ca3af" />}
           title="Tikai uzņēmumiem"
@@ -446,20 +500,22 @@ export default function TeamScreen() {
   return (
     <ScreenContainer standalone bg="white">
       {/* Header */}
-      <View className={s.headerRow}>
-        <Text className={s.heroTitle}>Komanda</Text>
-        {canManage && (
-          <TouchableOpacity
-            className={s.headerBtn}
-            onPress={() => {
-              haptics.light();
-              setInviteOpen(true);
-            }}
-          >
-            <UserPlus size={20} color="#111827" strokeWidth={2.5} />
-          </TouchableOpacity>
-        )}
-      </View>
+      <ScreenHeader
+        title="Komanda"
+        rightAction={
+          canManage && (
+            <TouchableOpacity
+              className={s.headerBtn}
+              onPress={() => {
+                haptics.light();
+                setInviteOpen(true);
+              }}
+            >
+              <Plus size={24} color="#111827" strokeWidth={2.5} />
+            </TouchableOpacity>
+          )
+        }
+      />
 
       {/* List */}
       {loading ? (

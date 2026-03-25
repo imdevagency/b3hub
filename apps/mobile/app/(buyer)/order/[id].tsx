@@ -11,9 +11,9 @@ import {
   Image,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
-  ArrowLeft,
   MapPin,
   CalendarDays,
   Phone,
@@ -93,13 +93,7 @@ export default function OrderDetailScreen() {
   if (loading) {
     return (
       <ScreenContainer bg="#f9fafb">
-        <View style={s.header}>
-          <TouchableOpacity style={s.backBtn} onPress={() => router.back()} hitSlop={8}>
-            <ArrowLeft size={18} color="#111827" />
-          </TouchableOpacity>
-          <Text style={s.headerTitle}>Pasūtījums</Text>
-          <View style={{ width: 36 }} />
-        </View>
+        <ScreenHeader title="Pasūtījums" />
         <SkeletonDetail />
       </ScreenContainer>
     );
@@ -108,13 +102,7 @@ export default function OrderDetailScreen() {
   if (!order) {
     return (
       <ScreenContainer bg="#f9fafb">
-        <View style={s.header}>
-          <TouchableOpacity style={s.backBtn} onPress={() => router.back()} hitSlop={8}>
-            <ArrowLeft size={18} color="#111827" />
-          </TouchableOpacity>
-          <Text style={s.headerTitle}>Pasūtījums</Text>
-          <View style={{ width: 36 }} />
-        </View>
+        <ScreenHeader title="Pasūtījums" />
         <EmptyState icon={<Package size={32} color="#9ca3af" />} title="Pasūtījums nav atrasts" />
       </ScreenContainer>
     );
@@ -136,15 +124,10 @@ export default function OrderDetailScreen() {
   return (
     <ScreenContainer bg="#f9fafb">
       {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={() => router.back()} hitSlop={8}>
-          <ArrowLeft size={18} color="#111827" />
-        </TouchableOpacity>
-        <Text style={s.headerTitle} numberOfLines={1}>
-          {order.orderNumber}
-        </Text>
-        <StatusPill label={st.label} bg={st.bg} color={st.color} />
-      </View>
+      <ScreenHeader
+        title={order.orderNumber}
+        rightAction={<StatusPill label={st.label} bg={st.bg} color={st.color} />}
+      />
 
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         {/* Live driver tracking map — shows planned route even before GPS fix */}

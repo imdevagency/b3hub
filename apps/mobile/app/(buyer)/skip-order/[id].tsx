@@ -10,10 +10,10 @@ import {
   Linking,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SIZE_LABEL } from '@/lib/materials';
 import {
-  ArrowLeft,
   MapPin,
   CalendarDays,
   Trash2,
@@ -151,11 +151,7 @@ export default function SkipOrderDetailScreen() {
   if (loading) {
     return (
       <ScreenContainer bg="#f9fafb">
-        <View style={s.header}>
-          <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-            <ArrowLeft size={20} color="#111827" />
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader title="" />
         <SkeletonDetail />
       </ScreenContainer>
     );
@@ -198,18 +194,10 @@ export default function SkipOrderDetailScreen() {
   return (
     <ScreenContainer bg="#f9fafb">
       {/* ── Header ── */}
-      <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-          <ArrowLeft size={20} color="#111827" />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={s.headerTitle} numberOfLines={1}>
-            #{order.orderNumber}
-          </Text>
-          <Text style={s.headerSub}>Konteinera pasūtījums</Text>
-        </View>
-        <StatusPill label={status.label} bg={status.bg} color={status.color} />
-      </View>
+      <ScreenHeader
+        title={`#${order.orderNumber}`}
+        rightAction={<StatusPill label={status.label} bg={status.bg} color={status.color} />}
+      />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
         {/* ── Status timeline ── */}

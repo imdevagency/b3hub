@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useToast } from '@/components/ui/Toast';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter } from 'expo-router';
 import {
   Pencil,
@@ -239,6 +240,7 @@ export default function ProfileScreen() {
 
   return (
     <ScreenContainer bg="white">
+      <ScreenHeader title="Profils" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}

@@ -277,7 +277,7 @@ export default function FrameworkContractsScreen() {
       {/* Detail Screen Header */}
       <ScreenHeader
         title="Projekti"
-        rightSlot={
+        rightAction={
           <TouchableOpacity
             onPress={() => {
               haptics.light();
@@ -285,8 +285,16 @@ export default function FrameworkContractsScreen() {
             }}
             hitSlop={10}
             activeOpacity={0.6}
+            style={{
+              width: 40,
+              height: 40,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 20,
+              backgroundColor: '#f3f4f6',
+            }}
           >
-            <Plus size={24} color="#000" />
+            <Plus size={24} color="#111827" />
           </TouchableOpacity>
         }
       />

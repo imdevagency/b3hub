@@ -11,96 +11,64 @@
  */
 
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
-import { useRouter } from 'expo-router';
-import { ArrowLeft } from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '@/lib/theme';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { useRouter, useNavigation } from 'expo-router';
+import { ChevronLeft } from 'lucide-react-native';
 
 interface ScreenHeaderProps {
   title: string;
-  /** Override the default router.back() behaviour */
-  onBack?: () => void;
-  /** Element rendered on the right side (e.g. mark-all button, edit icon) */
-  rightSlot?: React.ReactNode;
-  /** Extra style applied to the outer container */
-  style?: ViewStyle;
   /**
-   * When true the component adds the safe-area top inset as padding.
-   * Use this when the parent ScreenContainer was given standalone=true
-   * and does NOT add its own top inset (e.g. bg-white auth-adjacent screens).
+   * Element rendered on the right side.
+   * Can be an Icon button or a Text button.
    */
-  withTopInset?: boolean;
+  rightAction?: React.ReactNode;
+  /**
+   * Override the default router.back() behaviour.
+   * Pass explicit `null` to disable back button entirely.
+   */
+  onBack?: (() => void) | null;
+  /**
+   * Force showing the back button.
+   * By default, it auto-shows if navigation.canGoBack() is true.
+   */
+  showBack?: boolean;
 }
 
-export function ScreenHeader({
-  title,
-  onBack,
-  rightSlot,
-  style,
-  withTopInset = false,
-}: ScreenHeaderProps) {
+export function ScreenHeader({ title, rightAction, onBack, showBack }: ScreenHeaderProps) {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+
+  // If onBack is explicitly null, hide back button.
+  // Otherwise, use canGoBack() or force showBack.
+  const shouldShowBack = onBack !== null && (showBack || navigation.canGoBack());
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else if (router.canGoBack()) {
+      router.back();
+    }
+  };
 
   return (
-    <View style={[styles.container, withTopInset && { paddingTop: insets.top }, style]}>
-      {/* Back button */}
-      <TouchableOpacity
-        style={styles.backBtn}
-        onPress={
-          onBack ??
-          (() => (router.canGoBack() ? router.back() : router.replace('/(buyer)/home' as any)))
-        }
-        hitSlop={10}
-        activeOpacity={0.7}
-        accessibilityLabel="Atpakaļ"
-        accessibilityRole="button"
-      >
-        <ArrowLeft size={20} color={colors.textSecondary} />
-      </TouchableOpacity>
+    <View className="flex-row items-center justify-between px-5 pt-3 pb-3 bg-white border-b border-gray-100 min-h-[56px]">
+      <View className="flex-row items-center flex-1 gap-1">
+        {shouldShowBack && (
+          <TouchableOpacity
+            onPress={handleBack}
+            className="w-10 h-10 -ml-2 items-center justify-center rounded-full active:bg-gray-100"
+            hitSlop={8}
+            activeOpacity={0.6}
+          >
+            <ChevronLeft size={24} color="#111827" />
+          </TouchableOpacity>
+        )}
+        <Text className="text-[20px] font-bold text-[#111827] flex-1" numberOfLines={1}>
+          {title}
+        </Text>
+      </View>
 
-      {/* Title */}
-      <Text style={styles.title} numberOfLines={1}>
-        {title}
-      </Text>
-
-      {/* Right slot — same width as back button to keep title centred */}
-      <View style={styles.rightWrap}>{rightSlot ?? null}</View>
+      {rightAction && <View className="flex-row items-center pl-4">{rightAction}</View>}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    height: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    backgroundColor: colors.bgCard,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    gap: 8,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.bgMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    flex: 1,
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    textAlign: 'left',
-  },
-  rightWrap: {
-    minWidth: 36,
-    flexShrink: 0,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-  },
-});

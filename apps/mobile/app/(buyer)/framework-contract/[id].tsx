@@ -319,7 +319,7 @@ export default function FrameworkContractDetailScreen() {
     <ScreenContainer standalone bg="#ffffff">
       <ScreenHeader
         title={contract.title}
-        rightSlot={
+        rightAction={
           <StatusPill label={status.label} bg={status.bg} color={status.color} size="sm" />
         }
       />
