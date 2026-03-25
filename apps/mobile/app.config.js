@@ -26,7 +26,7 @@ module.exports = () => {
         ...(base.android?.config || {}),
         googleMaps: {
           ...(base.android?.config?.googleMaps || {}),
-          apiKey: googleMapsKey,
+          apiKey: googleMapsKey || 'AIzaSyBNIZk1VBorD3kU02BNjz_2m4Dlek_gsx8',
         },
       },
     },

@@ -1,4 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import os
+
+file_path = "apps/mobile/app/(driver)/home.tsx"
+
+new_content = """import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -309,4 +313,7 @@ const s = StyleSheet.create({
   quickItem: { alignItems: 'center', gap: 8 },
   quickIcon: {}, 
   quickLabel: { fontSize: 12, color: '#4b5563', fontWeight: '500' }
-});
+});"""
+
+with open(file_path, "w") as f:
+    f.write(new_content)
