@@ -32,6 +32,8 @@ export default function DriverLayout() {
     '/(driver)/vehicles',
     '/(driver)/schedule',
     '/(driver)/skips',
+    '/earnings',
+    '/(driver)/earnings',
   ];
   const shouldHideTopBar = HIDE_TOPBAR_ROUTES.some(
     (route) => pathname.startsWith(route) || pathname === route,

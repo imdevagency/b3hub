@@ -1,4 +1,8 @@
-import React, { useCallback, useState } from 'react';
+import os
+
+file_path = "apps/mobile/app/(driver)/earnings.tsx"
+
+new_content = """import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -155,19 +159,12 @@ function MinimalBarChart({ bars }: { bars: DayBar[] }) {
   const barW = (CHART_W - 6 * 8) / 7; // 7 bars, 6 gaps of 8px
 
   return (
-    <View
-      style={{
-        height: CHART_H + 30,
-        flexDirection: 'row',
-        alignItems: 'flex-end',
-        justifyContent: 'space-between',
-      }}
-    >
+    <View style={{ height: CHART_H + 30, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
       {bars.map((bar, i) => {
         const fillH = (bar.amount / maxAmt) * CHART_H;
         // Ensure at least a tiny bit visible if amounts are 0 but max > 0, or just show 0 height
         const h = bar.amount > 0 ? Math.max(fillH, 4) : 4;
-
+        
         return (
           <View key={i} style={{ alignItems: 'center', width: barW, gap: 8 }}>
             <View style={{ height: CHART_H, justifyContent: 'flex-end', width: '100%' }}>
@@ -266,11 +263,11 @@ export default function EarningsScreen() {
   if (loading) {
     return (
       <ScreenContainer standalone>
-        <ScreenHeader title="Izpeļņa" />
-        <View style={{ padding: 24, gap: 20 }}>
-          <Skeleton style={{ height: 48, width: 128, alignSelf: 'center', borderRadius: 8 }} />
-          <Skeleton style={{ height: 160, width: '100%', borderRadius: 16 }} />
-          <Skeleton style={{ height: 32, width: '100%', borderRadius: 8 }} />
+        <ScreenHeader title="Ienākumi" onBack={() => router.back()} />
+        <View style={{ padding: 24, paddingTop: 40, gap: 20 }}>
+             <Skeleton style={{ height: 48, width: 128, alignSelf: 'center', borderRadius: 8 }} />
+             <Skeleton style={{ height: 160, width: '100%', borderRadius: 16 }} />
+             <Skeleton style={{ height: 32, width: '100%', borderRadius: 8 }} />
         </View>
       </ScreenContainer>
     );
@@ -278,19 +275,17 @@ export default function EarningsScreen() {
 
   return (
     <ScreenContainer standalone bg="white">
-      <ScreenHeader title="Izpeļņa" />
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
-      >
+      <ScreenHeader title="Ienākumi" onBack={() => router.back()} style={{ borderBottomWidth: 0 }} />
+      
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+        
         {/* ── Hero Section ──────────────────────────────── */}
         <View style={s.heroContainer}>
           <Text style={s.heroLabel}>
             {period === 'today' ? 'Šodienas' : period === 'week' ? 'Šīs nedēļas' : 'Mēneša'} izpeļņa
           </Text>
           <Text style={s.heroAmount}>€{heroAmount.toFixed(2)}</Text>
-
+          
           {/* Segmented Control */}
           <View style={s.segmentedControl}>
             {PERIODS.map((p) => {
@@ -305,7 +300,9 @@ export default function EarningsScreen() {
                   }}
                   activeOpacity={0.8}
                 >
-                  <Text style={[s.segmentText, isActive && s.segmentTextActive]}>{p.label}</Text>
+                  <Text style={[s.segmentText, isActive && s.segmentTextActive]}>
+                    {p.label}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
@@ -314,58 +311,60 @@ export default function EarningsScreen() {
 
         {/* ── Chart ─────────────────────────────────────── */}
         <View style={s.chartSection}>
-          <MinimalBarChart bars={dailyChart} />
+           <MinimalBarChart bars={dailyChart} />
         </View>
 
         {/* ── Key Metrics ───────────────────────────────── */}
         <View style={s.metricsRow}>
-          <View style={s.metricItem}>
-            <Text style={s.metricValue}>{stats.completedJobs}</Text>
-            <Text style={s.metricLabel}>Braucieni</Text>
-          </View>
-          <View style={s.metricDivider} />
-          <View style={s.metricItem}>
-            <Text style={s.metricValue}>€{stats.pendingPayout.toFixed(0)}</Text>
-            <Text style={s.metricLabel}>Gaida izmaksu</Text>
-          </View>
-          <View style={s.metricDivider} />
-          <View style={s.metricItem}>
-            <Text style={s.metricValue}>--:--</Text>
-            <Text style={s.metricLabel}>Tiešsaistē</Text>
-          </View>
+           <View style={s.metricItem}>
+              <Text style={s.metricValue}>{stats.completedJobs}</Text>
+              <Text style={s.metricLabel}>Braucieni</Text>
+           </View>
+           <View style={s.metricDivider} />
+           <View style={s.metricItem}>
+              <Text style={s.metricValue}>€{stats.pendingPayout.toFixed(0)}</Text>
+              <Text style={s.metricLabel}>Gaida izmaksu</Text>
+           </View>
+           <View style={s.metricDivider} />
+           <View style={s.metricItem}>
+              <Text style={s.metricValue}>--:--</Text> 
+              <Text style={s.metricLabel}>Tiešsaistē</Text>
+           </View>
         </View>
 
         {/* ── Recent Activity List ──────────────────────── */}
         <View style={s.listSection}>
           <Text style={s.sectionTitle}>Nesenā aktivitāte</Text>
-
+          
           {filteredHistory.length === 0 ? (
-            <EmptyState title="Nav aktivitātes" subtitle="Šajā periodā nav reģistrētu braucienu" />
+            <EmptyState 
+               title="Nav aktivitātes" 
+               subtitle="Šajā periodā nav reģistrētu braucienu" 
+            />
           ) : (
-            <View>
-              {filteredHistory.map((item, i) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={[s.listItem, i < filteredHistory.length - 1 && s.listBorder]}
-                  activeOpacity={0.7}
-                >
-                  <View style={s.listLeft}>
-                    {/* Time or Date only if not strictly visible in header context, but here we show date */}
-                    <Text style={s.listTime}>{item.date}</Text>
-                    <Text style={s.listRoute} numberOfLines={1}>
-                      {item.route}
-                    </Text>
-                  </View>
-                  <View style={s.listRight}>
-                    <Text style={s.listAmount}>
-                      {item.amount > 0 ? `€${item.amount.toFixed(2)}` : '€0.00'}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
+             <View>
+                {filteredHistory.map((item, i) => (
+                  <TouchableOpacity 
+                    key={item.id} 
+                    style={[s.listItem, i < filteredHistory.length - 1 && s.listBorder]}
+                    activeOpacity={0.7}
+                  >
+                    <View style={s.listLeft}>
+                        {/* Time or Date only if not strictly visible in header context, but here we show date */}
+                        <Text style={s.listTime}>{item.date}</Text>
+                        <Text style={s.listRoute} numberOfLines={1}>{item.route}</Text>
+                    </View>
+                    <View style={s.listRight}>
+                        <Text style={s.listAmount}>
+                           {item.amount > 0 ? `€${item.amount.toFixed(2)}` : '€0.00'}
+                        </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+             </View>
           )}
         </View>
+
       </ScrollView>
     </ScreenContainer>
   );
@@ -389,7 +388,7 @@ const s = StyleSheet.create({
     color: '#111827',
     letterSpacing: -1.5,
   },
-
+  
   // Segmented Control
   segmentedControl: {
     flexDirection: 'row',
@@ -491,12 +490,12 @@ const s = StyleSheet.create({
   listRoute: {
     fontSize: 14,
     color: '#374151',
-    fontWeight: '500',
+    fontWeight: '500', 
   },
   listRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+     flexDirection: 'row',
+     alignItems: 'center',
+     gap: 6,
   },
   listAmount: {
     fontSize: 16,
@@ -504,3 +503,7 @@ const s = StyleSheet.create({
     color: '#111827',
   },
 });
+"""
+
+with open(file_path, "w") as f:
+    f.write(new_content)
