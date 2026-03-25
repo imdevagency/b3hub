@@ -15,8 +15,8 @@ datasource db {
 // ================================
 
 enum UserType {
-  BUYER   // Demand side — anyone who orders materials or waste collection
-  ADMIN   // Platform administrators
+  BUYER // Demand side — anyone who orders materials or waste collection
+  ADMIN // Platform administrators
 }
 
 enum ApplicationStatus {
@@ -34,17 +34,17 @@ enum UserStatus {
 
 enum CompanyType {
   CONSTRUCTION // Construction company
-  SUPPLIER     // Material supplier
-  RECYCLER     // Waste management
-  CARRIER      // Transport company
-  HYBRID       // Multiple services
+  SUPPLIER // Material supplier
+  RECYCLER // Waste management
+  CARRIER // Transport company
+  HYBRID // Multiple services
 }
 
 enum CompanyRole {
-  OWNER    // Company admin — manages team, settings, billing
-  MANAGER  // Can manage jobs, orders, and assign drivers
-  DRIVER   // Can only see and execute transport jobs
-  MEMBER   // Default — read-only access
+  OWNER // Company admin — manages team, settings, billing
+  MANAGER // Can manage jobs, orders, and assign drivers
+  DRIVER // Can only see and execute transport jobs
+  MEMBER // Default — read-only access
 }
 
 enum MaterialCategory {
@@ -68,10 +68,10 @@ enum MaterialUnit {
 }
 
 enum ContainerType {
-  SKIP      // Open top container
-  ROLL_OFF  // Roll-off dumpster
+  SKIP // Open top container
+  ROLL_OFF // Roll-off dumpster
   COMPACTOR // Compactor container
-  ENCLOSED  // Enclosed container
+  ENCLOSED // Enclosed container
 }
 
 enum ContainerSize {
@@ -92,11 +92,11 @@ enum ContainerStatus {
 }
 
 enum OrderType {
-  MATERIAL  // Material purchase
+  MATERIAL // Material purchase
   CONTAINER // Container rental
-  DISPOSAL  // Waste disposal
+  DISPOSAL // Waste disposal
   TRANSPORT // Transport only
-  COMBINED  // Multiple services
+  COMBINED // Multiple services
 }
 
 enum OrderStatus {
@@ -111,7 +111,10 @@ enum OrderStatus {
 
 enum PaymentStatus {
   PENDING
-  PAID
+  AUTHORIZED // Funds held
+  CAPTURED // Funds taken (on job start)
+  RELEASED // Funds transferred to seller (on completion)
+  PAID // Legacy/Direct
   PARTIALLY_PAID
   REFUNDED
   FAILED
@@ -150,10 +153,10 @@ enum SkipWasteCategory {
 }
 
 enum SkipSize {
-  MINI      // 2 m³
-  MIDI      // 4 m³
-  BUILDERS  // 6 m³
-  LARGE     // 8 m³
+  MINI // 2 m³
+  MIDI // 4 m³
+  BUILDERS // 6 m³
+  LARGE // 8 m³
 }
 
 enum SkipHireStatus {
@@ -180,20 +183,20 @@ enum TransportJobType {
   CONTAINER_PICKUP
   WASTE_COLLECTION
   EQUIPMENT_TRANSPORT
-  TRANSPORT          // General point-to-point freight transport
+  TRANSPORT // General point-to-point freight transport
 }
 
 enum TransportJobStatus {
-  AVAILABLE        // Available for assignment
-  ASSIGNED         // Assigned to carrier
-  ACCEPTED         // Accepted by driver
-  EN_ROUTE_PICKUP  // On the way to pickup
-  AT_PICKUP        // At pickup location
-  LOADED           // Cargo loaded
+  AVAILABLE // Available for assignment
+  ASSIGNED // Assigned to carrier
+  ACCEPTED // Accepted by driver
+  EN_ROUTE_PICKUP // On the way to pickup
+  AT_PICKUP // At pickup location
+  LOADED // Cargo loaded
   EN_ROUTE_DELIVERY // On the way to delivery
-  AT_DELIVERY      // At delivery location
-  DELIVERED        // Completed
-  CANCELLED        // Cancelled
+  AT_DELIVERY // At delivery location
+  DELIVERED // Completed
+  CANCELLED // Cancelled
 }
 
 enum TransportExceptionType {
@@ -273,37 +276,59 @@ enum QuoteResponseStatus {
 }
 
 // ================================
-// MODELS
+// PAYMENTS
 // ================================
 
+model Payment {
+  id      String @id @default(uuid())
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  stripePaymentId String? // pi_...
+  stripeChargeId  String? // ch_...
+  transferGroup   String? // Stripe transfer group ID
+
+  amount   Float // Total amount
+  currency String @default("EUR")
+
+  status PaymentStatus @default(PENDING)
+
+  platformFee  Float? // Commission kept
+  sellerPayout Float? // Net to seller
+  driverPayout Float? // Net to driver
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model User {
-  id            String     @id @default(cuid())
-  email         String?    @unique  // optional: phone-only registration
-  phone         String?    @unique  // optional: email-only registration
-  password      String     // Hashed
-  firstName     String
-  lastName      String
-  avatar        String?
-  userType      UserType   @default(BUYER)
-  isCompany     Boolean    @default(false) // true = company account (VAT invoices etc.)
-  canSell       Boolean    @default(false) // approved to list & sell materials
-  canTransport  Boolean      @default(false) // approved to offer transport services
-  canSkipHire   Boolean      @default(false) // approved to manage skip hire fleet
-  companyRole   CompanyRole? // role within their company; null for solo accounts
-  status        UserStatus   @default(ACTIVE) // buyers are auto-activated
-  emailVerified Boolean      @default(false)
-  phoneVerified Boolean      @default(false)
-  pushToken     String?      // Expo push token for native notifications
-  resetToken        String?   // password-reset token (hashed)
-  resetTokenExpiry  DateTime? // token expiry (1h window)
-  refreshToken      String?   // hashed refresh token (30-day sliding window)
+  id                 String       @id @default(cuid())
+  email              String?      @unique // optional: phone-only registration
+  phone              String?      @unique // optional: email-only registration
+  password           String // Hashed
+  firstName          String
+  lastName           String
+  avatar             String?
+  userType           UserType     @default(BUYER)
+  isCompany          Boolean      @default(false) // true = company account (VAT invoices etc.)
+  canSell            Boolean      @default(false) // approved to list & sell materials
+  canTransport       Boolean      @default(false) // approved to offer transport services
+  canSkipHire        Boolean      @default(false) // approved to manage skip hire fleet
+  companyRole        CompanyRole? // role within their company; null for solo accounts
+  status             UserStatus   @default(ACTIVE) // buyers are auto-activated
+  emailVerified      Boolean      @default(false)
+  phoneVerified      Boolean      @default(false)
+  pushToken          String? // Expo push token for native notifications
+  resetToken         String? // password-reset token (hashed)
+  resetTokenExpiry   DateTime? // token expiry (1h window)
+  refreshToken       String? // hashed refresh token (30-day sliding window)
   refreshTokenExpiry DateTime? // refresh token expiry
 
   // Notification preferences
-  notifPush         Boolean  @default(true)
-  notifOrderUpdates Boolean  @default(true)
-  notifJobAlerts    Boolean  @default(true)
-  notifMarketing    Boolean  @default(false)
+  notifPush         Boolean @default(true)
+  notifOrderUpdates Boolean @default(true)
+  notifJobAlerts    Boolean @default(true)
+  notifMarketing    Boolean @default(false)
 
   // Company sub-user permissions (ignored for OWNER — they always have full access)
   permCreateContracts Boolean @default(false) // create & manage framework contracts
@@ -321,15 +346,15 @@ model User {
   buyerProfile  BuyerProfile?
 
   // Activity
-  ordersCreated            Order[]
-  driverJobs               TransportJob[] @relation("DriverJobs")
-  requestedTransportJobs   TransportJob[] @relation("RequestedJobs")
-  notifications            Notification[]
-  vehicles       Vehicle[]
-  quoteRequests  QuoteRequest[]
-  reviews        Review[]
-  sentMessages   ChatMessage[]
-  frameworkContracts       FrameworkContract[]
+  ordersCreated               Order[]
+  driverJobs                  TransportJob[]          @relation("DriverJobs")
+  requestedTransportJobs      TransportJob[]          @relation("RequestedJobs")
+  notifications               Notification[]
+  vehicles                    Vehicle[]
+  quoteRequests               QuoteRequest[]
+  reviews                     Review[]
+  sentMessages                ChatMessage[]
+  frameworkContracts          FrameworkContract[]
   reportedTransportExceptions TransportJobException[] @relation("ExceptionReporter")
   resolvedTransportExceptions TransportJobException[] @relation("ExceptionResolver")
 
@@ -365,6 +390,11 @@ model Company {
   verified    Boolean @default(false)
   rating      Float?
 
+  // Stripe & Commission
+  stripeConnectId String? // Stripe Connect Express account ID
+  commissionRate  Float   @default(10.0) // Platform fee percentage
+  payoutEnabled   Boolean @default(false)
+
   // Relations
   users            User[]
   materials        Material[]
@@ -376,13 +406,13 @@ model Company {
   quoteResponses   QuoteResponse[]
 
   // Carrier comparison engine
-  carrierPricing     CarrierPricing[]     @relation("CarrierPricing")
-  serviceZones       CarrierServiceZone[] @relation("CarrierServiceZones")
-  availabilityBlocks CarrierAvailability[] @relation("CarrierAvailability")
-  assignedSkipOrders SkipHireOrder[]      @relation("AssignedSkipCarrier")
-  reviews            Review[]
-  frameworkContracts         FrameworkContract[] @relation("BuyerFrameworkContracts")
-  supplierFrameworkContracts  FrameworkContract[] @relation("SupplierFrameworkContracts")
+  carrierPricing             CarrierPricing[]      @relation("CarrierPricing")
+  serviceZones               CarrierServiceZone[]  @relation("CarrierServiceZones")
+  availabilityBlocks         CarrierAvailability[] @relation("CarrierAvailability")
+  assignedSkipOrders         SkipHireOrder[]       @relation("AssignedSkipCarrier")
+  reviews                    Review[]
+  frameworkContracts         FrameworkContract[]   @relation("BuyerFrameworkContracts")
+  supplierFrameworkContracts FrameworkContract[]   @relation("SupplierFrameworkContracts")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -430,7 +460,7 @@ model Material {
 }
 
 model Container {
-  id            String          @id @default(cuid())
+  id            String        @id @default(cuid())
   containerType ContainerType
   size          ContainerSize
   volume        Float // in m3
@@ -458,8 +488,8 @@ model Container {
 }
 
 model Order {
-  id          String      @id @default(cuid())
-  orderNumber String      @unique
+  id          String    @id @default(cuid())
+  orderNumber String    @unique
   orderType   OrderType
 
   // Customer info
@@ -500,6 +530,7 @@ model Order {
   containerOrders ContainerOrder[]
   transportJobs   TransportJob[]
   invoices        Invoice[]
+  payment         Payment?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -510,7 +541,7 @@ model Order {
 model OrderItem {
   id String @id @default(cuid())
 
-  order      Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderId    String
   material   Material @relation(fields: [materialId], references: [id])
   materialId String
@@ -570,8 +601,8 @@ model ContainerOrder {
 }
 
 model TransportJob {
-  id        String            @id @default(cuid())
-  jobNumber String            @unique
+  id        String           @id @default(cuid())
+  jobNumber String           @unique
   jobType   TransportJobType
 
   // Job details
@@ -596,14 +627,14 @@ model TransportJob {
 
   // Cargo
   cargoType           String
-  cargoWeight         Float?   // estimated weight in tonnes
+  cargoWeight         Float? // estimated weight in tonnes
   cargoVolume         Float?
-  actualWeightKg      Float?   // actual weigh-bridge reading at pickup
-  pickupPhotoUrl      String?  // weighing slip photo taken by driver at pickup
+  actualWeightKg      Float? // actual weigh-bridge reading at pickup
+  pickupPhotoUrl      String? // weighing slip photo taken by driver at pickup
   specialRequirements String?
 
   // Required vehicle
-  requiredVehicleType String?   // human-readable e.g. "Sattelkipper"
+  requiredVehicleType String? // human-readable e.g. "Sattelkipper"
   requiredVehicleEnum VehicleType?
 
   // Geo coords for radius filtering
@@ -627,13 +658,13 @@ model TransportJob {
   vehicleId String?
 
   // Framework contract call-off
-  frameworkContract    FrameworkContract?  @relation(fields: [frameworkContractId], references: [id])
-  frameworkContractId  String?
-  frameworkPosition    FrameworkPosition?  @relation("PositionCallOffs", fields: [frameworkPositionId], references: [id])
-  frameworkPositionId  String?
+  frameworkContract   FrameworkContract? @relation(fields: [frameworkContractId], references: [id])
+  frameworkContractId String?
+  frameworkPosition   FrameworkPosition? @relation("PositionCallOffs", fields: [frameworkPositionId], references: [id])
+  frameworkPositionId String?
 
   // The buyer/user who originally requested this disposal or freight job
-  requester   User?   @relation("RequestedJobs", fields: [requestedById], references: [id])
+  requester     User?   @relation("RequestedJobs", fields: [requestedById], references: [id])
   requestedById String? @map("requested_by_id")
 
   // Status
@@ -653,8 +684,8 @@ model TransportJob {
   deliveryProof DeliveryProof?
 
   // Relations
-  containerDeliveries ContainerOrder[] @relation("ContainerDelivery")
-  containerPickups    ContainerOrder[] @relation("ContainerPickup")
+  containerDeliveries ContainerOrder[]        @relation("ContainerDelivery")
+  containerPickups    ContainerOrder[]        @relation("ContainerPickup")
   chatMessages        ChatMessage[]
   exceptions          TransportJobException[]
 
@@ -682,7 +713,7 @@ model TransportJobException {
   resolvedById String?
   resolution   String?
 
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
   resolvedAt DateTime?
 
   @@index([transportJobId, status])
@@ -690,7 +721,7 @@ model TransportJobException {
 }
 
 model DeliveryProof {
-  id             String @id @default(cuid())
+  id             String       @id @default(cuid())
   transportJob   TransportJob @relation(fields: [transportJobId], references: [id])
   transportJobId String       @unique
 
@@ -714,23 +745,23 @@ model DeliveryProof {
 }
 
 model Vehicle {
-  id           String @id @default(cuid())
+  id           String  @id @default(cuid())
   make         String
   model        String
   year         Int
-  licensePlate String @unique
+  licensePlate String  @unique
   vin          String?
   imageUrl     String?
 
   // Type & Capacity
   vehicleType    VehicleType
-  capacity       Float           // load weight in tonnes
-  maxGrossWeight Float?          // total permitted weight in tonnes
-  volumeCapacity Float?          // in m3
-  driveType      String?         // '4WD', 'AWD', '2WD', etc.
+  capacity       Float // load weight in tonnes
+  maxGrossWeight Float? // total permitted weight in tonnes
+  volumeCapacity Float? // in m3
+  driveType      String? // '4WD', 'AWD', '2WD', etc.
 
   // Individual owner (solo CARRIER without a company)
-  owner   User?    @relation(fields: [ownerId], references: [id])
+  owner   User?   @relation(fields: [ownerId], references: [id])
   ownerId String?
 
   // Company owner
@@ -841,15 +872,15 @@ model DriverProfile {
   completedJobs Int    @default(0)
 
   // Status
-  available        Boolean @default(true)   // legacy; now derived from isOnline + schedule
-  isOnline         Boolean @default(false)  // driver tapped "Go Online"
-  autoSchedule     Boolean @default(false)  // auto toggle based on weeklySchedule
-  maxJobsPerDay    Int?                     // cap on daily job accepts; null = unlimited
-  currentLocation  Json?
+  available       Boolean @default(true) // legacy; now derived from isOnline + schedule
+  isOnline        Boolean @default(false) // driver tapped "Go Online"
+  autoSchedule    Boolean @default(false) // auto toggle based on weeklySchedule
+  maxJobsPerDay   Int? // cap on daily job accepts; null = unlimited
+  currentLocation Json?
 
   // Schedule relations
-  weeklySchedule  DriverSchedule[]
-  dateBlocks      DriverDateBlock[]
+  weeklySchedule DriverSchedule[]
+  dateBlocks     DriverDateBlock[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -869,7 +900,7 @@ model BuyerProfile {
 
   // Credit
   creditLimit  Float?
-  creditUsed   Float  @default(0)
+  creditUsed   Float   @default(0)
   paymentTerms String? // e.g., "NET30"
 
   createdAt DateTime @default(now())
@@ -927,12 +958,12 @@ model Invoice {
 // ── Digital Documents ─────────────────────────────────────────
 
 enum DocumentType {
-  INVOICE          // Invoice / bill
-  WEIGHING_SLIP    // Weight certificate when materials are loaded / delivered
-  DELIVERY_PROOF   // Signed proof of delivery with photos
+  INVOICE // Invoice / bill
+  WEIGHING_SLIP // Weight certificate when materials are loaded / delivered
+  DELIVERY_PROOF // Signed proof of delivery with photos
   WASTE_CERTIFICATE // Recycling / waste processing certificate
-  DELIVERY_NOTE    // Transport CMR / delivery note
-  CONTRACT         // Agreement / contract between parties
+  DELIVERY_NOTE // Transport CMR / delivery note
+  CONTRACT // Agreement / contract between parties
   OTHER
 }
 
@@ -962,15 +993,15 @@ enum DocumentLinkRole {
 }
 
 model Document {
-  id    String       @id @default(cuid())
-  title String
-  type  DocumentType
+  id     String         @id @default(cuid())
+  title  String
+  type   DocumentType
   status DocumentStatus @default(ISSUED)
 
   // Storage
-  fileUrl  String?  // Supabase / S3 signed URL
-  mimeType String?  // application/pdf, image/jpeg, …
-  fileSize Int?     // bytes
+  fileUrl  String? // Supabase / S3 signed URL
+  mimeType String? // application/pdf, image/jpeg, …
+  fileSize Int? // bytes
 
   // Linked entities (all optional – attach to whatever is relevant)
   orderId        String?
@@ -980,11 +1011,11 @@ model Document {
   skipHireId     String?
 
   // Ownership
-  ownerId   String  // User who can see this document
-  issuedBy  String? // Company / system that issued it
+  ownerId  String // User who can see this document
+  issuedBy String? // Company / system that issued it
 
   // Metadata
-  isGenerated Boolean  @default(false) // true = auto-generated by backend
+  isGenerated Boolean   @default(false) // true = auto-generated by backend
   notes       String?
   expiresAt   DateTime?
 
@@ -1005,7 +1036,7 @@ model DocumentLink {
 
   entityType DocumentEntityType
   entityId   String
-  role       DocumentLinkRole @default(RELATED)
+  role       DocumentLinkRole   @default(RELATED)
 
   createdAt DateTime @default(now())
 
@@ -1073,9 +1104,9 @@ model CarrierPricing {
   carrier   Company @relation("CarrierPricing", fields: [carrierId], references: [id], onDelete: Cascade)
   carrierId String
 
-  skipSize  SkipSize
-  price     Float
-  currency  String   @default("EUR")
+  skipSize SkipSize
+  price    Float
+  currency String   @default("EUR")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1089,9 +1120,9 @@ model CarrierServiceZone {
   carrier   Company @relation("CarrierServiceZones", fields: [carrierId], references: [id], onDelete: Cascade)
   carrierId String
 
-  city      String   // e.g. "Rīga", "Jūrmala"
-  postcode  String?  // optional tighter targeting
-  surcharge Float    @default(0)
+  city      String // e.g. "Rīga", "Jūrmala"
+  postcode  String? // optional tighter targeting
+  surcharge Float   @default(0)
 
   createdAt DateTime @default(now())
 
@@ -1099,9 +1130,9 @@ model CarrierServiceZone {
 }
 
 model CarrierAvailability {
-  id          String   @id @default(cuid())
-  carrier     Company  @relation("CarrierAvailability", fields: [carrierId], references: [id], onDelete: Cascade)
-  carrierId   String
+  id        String  @id @default(cuid())
+  carrier   Company @relation("CarrierAvailability", fields: [carrierId], references: [id], onDelete: Cascade)
+  carrierId String
 
   blockedDate DateTime @db.Date
   reason      String?
@@ -1114,13 +1145,13 @@ model CarrierAvailability {
 
 // ── Provider Applications (supply/transport onboarding) ─────────────────────
 model ProviderApplication {
-  id          String @id @default(cuid())
+  id String @id @default(cuid())
 
   // Applicant identity
-  email       String
-  firstName   String
-  lastName    String
-  phone       String
+  email     String
+  firstName String
+  lastName  String
+  phone     String
 
   // Company details
   companyName String
@@ -1140,8 +1171,8 @@ model ProviderApplication {
 
   // Review
   status     ApplicationStatus @default(PENDING)
-  reviewedBy String?           // Admin userId who reviewed
-  reviewNote String?           // Admin note
+  reviewedBy String? // Admin userId who reviewed
+  reviewNote String? // Admin note
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1158,10 +1189,10 @@ model DriverSchedule {
   driverProfile   DriverProfile @relation(fields: [driverProfileId], references: [id], onDelete: Cascade)
   driverProfileId String
 
-  dayOfWeek Int     // 0 = Sunday … 6 = Saturday
+  dayOfWeek Int // 0 = Sunday … 6 = Saturday
   enabled   Boolean @default(true)
-  startTime String  // "07:00" (local time, HH:mm)
-  endTime   String  // "18:00"
+  startTime String // "07:00" (local time, HH:mm)
+  endTime   String // "18:00"
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1190,8 +1221,8 @@ model DriverDateBlock {
 
 // A buyer's open request for pricing when no instant offer is available
 model QuoteRequest {
-  id            String             @id @default(cuid())
-  requestNumber String             @unique
+  id            String @id @default(cuid())
+  requestNumber String @unique
 
   buyer   User   @relation(fields: [buyerId], references: [id])
   buyerId String
@@ -1249,8 +1280,8 @@ model QuoteResponse {
 
 // A buyer review submitted after a completed order
 model Review {
-  id      String @id @default(cuid())
-  rating  Int    // 1–5 stars
+  id      String  @id @default(cuid())
+  rating  Int // 1–5 stars
   comment String?
 
   reviewer   User   @relation(fields: [reviewerId], references: [id])
@@ -1271,16 +1302,16 @@ model Review {
 // ── Per-job Chat ──────────────────────────────────────────────────────────────
 
 model ChatMessage {
-  id             String       @id @default(cuid())
+  id String @id @default(cuid())
 
   transportJob   TransportJob @relation(fields: [transportJobId], references: [id], onDelete: Cascade)
   transportJobId String
 
-  sender         User         @relation(fields: [senderId], references: [id])
-  senderId       String
+  sender   User   @relation(fields: [senderId], references: [id])
+  senderId String
 
-  senderName     String   // denormalized for quick display
-  body           String
+  senderName String // denormalized for quick display
+  body       String
 
   createdAt DateTime @default(now())
 
@@ -1291,25 +1322,25 @@ model ChatMessage {
 // ── Framework Contracts (blanket agreements / call-off orders) ────────────────
 
 model FrameworkContract {
-  id             String                  @id @default(cuid())
-  contractNumber String                  @unique
+  id             String @id @default(cuid())
+  contractNumber String @unique
   title          String
 
-  buyer          Company                 @relation("BuyerFrameworkContracts", fields: [buyerId], references: [id])
-  buyerId        String
-  createdBy      User                    @relation(fields: [createdById], references: [id])
-  createdById    String
+  buyer       Company @relation("BuyerFrameworkContracts", fields: [buyerId], references: [id])
+  buyerId     String
+  createdBy   User    @relation(fields: [createdById], references: [id])
+  createdById String
 
-  supplier       Company?                @relation("SupplierFrameworkContracts", fields: [supplierId], references: [id])
-  supplierId     String?
+  supplier   Company? @relation("SupplierFrameworkContracts", fields: [supplierId], references: [id])
+  supplierId String?
 
-  status         FrameworkContractStatus @default(DRAFT)
-  startDate      DateTime
-  endDate        DateTime?
-  notes          String?
+  status    FrameworkContractStatus @default(DRAFT)
+  startDate DateTime
+  endDate   DateTime?
+  notes     String?
 
-  positions      FrameworkPosition[]
-  callOffJobs    TransportJob[]
+  positions   FrameworkPosition[]
+  callOffJobs TransportJob[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1318,14 +1349,14 @@ model FrameworkContract {
 }
 
 model FrameworkPosition {
-  id           String                @id @default(cuid())
+  id String @id @default(cuid())
 
-  contract     FrameworkContract     @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  contractId   String
+  contract   FrameworkContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  contractId String
 
   positionType FrameworkPositionType
   description  String
-  agreedQty    Float                 // total agreed quantity
+  agreedQty    Float // total agreed quantity
   unit         String                @default("t") // t, m3, loads
   unitPrice    Float?
 
@@ -1334,7 +1365,7 @@ model FrameworkPosition {
   deliveryAddress String?
   deliveryCity    String?
 
-  callOffs     TransportJob[]        @relation("PositionCallOffs")
+  callOffs TransportJob[] @relation("PositionCallOffs")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

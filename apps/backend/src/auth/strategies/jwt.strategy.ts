@@ -24,6 +24,7 @@ interface JwtPayload {
   permManageOrders?: boolean;
   permViewFinancials?: boolean;
   permManageTeam?: boolean;
+  payoutEnabled?: boolean;
 }
 
 @Injectable()
@@ -53,6 +54,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       permManageOrders: payload.permManageOrders ?? false,
       permViewFinancials: payload.permViewFinancials ?? false,
       permManageTeam: payload.permManageTeam ?? false,
+      payoutEnabled: payload.payoutEnabled ?? false,
     };
   }
 }

@@ -6,8 +6,8 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { getMyOrders, type ApiOrder } from '@/lib/api';
-import { Card, CardContent, CardHeader, CardDescription } from '@/components/ui/card';
+import { getMyOrders, type ApiOrder, setupPayouts } from '@/lib/api';
+import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Banknote,
@@ -213,11 +213,25 @@ function StatCard({
 // ── page ─────────────────────────────────────────────────────────────────────
 
 export default function SupplierEarningsPage() {
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<Period>('week');
+  const [setupLoading, setSetupLoading] = useState(false);
+
+  const handleSetupPayouts = async () => {
+    try {
+      setSetupLoading(true);
+      if (!token) return;
+      const { url } = await setupPayouts(token);
+      window.location.href = url;
+    } catch (err) {
+      console.error('Failed to setup payouts', err);
+    } finally {
+      setSetupLoading(false);
+    }
+  };
 
   const load = async (showRefresh = false) => {
     if (!token) return;
@@ -260,6 +274,27 @@ export default function SupplierEarningsPage() {
           </Button>
         }
       />
+
+      {user?.isCompany && user.payoutEnabled === false && (
+        <Card className="mb-6 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+          <CardHeader>
+            <CardTitle className="text-amber-700 dark:text-amber-400">Enable Payouts</CardTitle>
+            <CardDescription className="text-amber-600/90 dark:text-amber-400/90">
+              You must set up a payout method to receive funds from your sales directly to your bank
+              account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={handleSetupPayouts}
+              disabled={setupLoading}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {setupLoading ? 'Redirecting...' : 'Setup Payouts with Stripe'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* period tabs */}
       <div className="flex gap-1 bg-muted rounded-lg p-1 w-fit">

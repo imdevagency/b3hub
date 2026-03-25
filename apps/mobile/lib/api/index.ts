@@ -18,6 +18,8 @@ export * from './notifications';
 export * from './documents';
 export * from './chat';
 export * from './containers';
+export * from './payments';
+
 export * from './company';
 // Re-export the helper for consumers that need it directly
 export { apiFetch } from './common';
@@ -35,6 +37,7 @@ import { documentsApi } from './documents';
 import { chatApi } from './chat';
 import { containersApi } from './containers';
 import { companyApi } from './company';
+import { paymentsApi } from './payments';
 
 // ─── Assembled api object ─────────────────────────────────────────────────
 /**
@@ -44,6 +47,7 @@ import { companyApi } from './company';
 export const api = {
   // ── Auth (flat methods) ────────────────────────────────────────────────
   ...authApi,
+  ...paymentsApi,
 
   // ── Orders ────────────────────────────────────────────────────────────
   ...ordersApi,

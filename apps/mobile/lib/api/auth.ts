@@ -14,6 +14,8 @@ export interface User {
   isCompany: boolean;
   canSell: boolean;
   canTransport: boolean;
+  canSkipHire?: boolean;
+  payoutEnabled?: boolean;
   status: string;
   phone?: string;
   avatar?: string;

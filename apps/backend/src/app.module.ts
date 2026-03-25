@@ -35,6 +35,7 @@ import { EmailModule } from './email/email.module';
 import { FrameworkContractsModule } from './framework-contracts/framework-contracts.module';
 import { CompanyMembersModule } from './company-members/company-members.module';
 import { MapsModule } from './maps/maps.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { MapsModule } from './maps/maps.module';
     FrameworkContractsModule,
     CompanyMembersModule,
     MapsModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [

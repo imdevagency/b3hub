@@ -7,6 +7,8 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Dimensions,
+  Linking,
+  Alert,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -199,10 +201,11 @@ function MinimalBarChart({ bars }: { bars: DayBar[] }) {
 type Period = 'today' | 'week' | 'month';
 
 export default function EarningsScreen() {
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>('week');
+  const [setupLoading, setSetupLoading] = useState(false);
   const [stats, setStats] = useState<EarningsStats>({
     todayEarnings: 0,
     weekEarnings: 0,
@@ -212,6 +215,24 @@ export default function EarningsScreen() {
   });
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [dailyChart, setDailyChart] = useState<DayBar[]>([]);
+
+  const handleSetupPayouts = async () => {
+    if (!token) return;
+    try {
+      setSetupLoading(true);
+      const { url } = await api.setupPayouts(token);
+      if (url) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Kļūda', 'Neizdevās iegūt saiti.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      Alert.alert('Kļūda', err.message || 'Neizdevās savienoties ar Stripe.');
+    } finally {
+      setSetupLoading(false);
+    }
+  };
 
   const fetchEarnings = useCallback(async () => {
     if (!token) return;
@@ -284,6 +305,26 @@ export default function EarningsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
+        {user?.isCompany && user.payoutEnabled === false && (
+          <View className="mb-4 mx-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <Text className="text-orange-900 font-bold mb-1">Enable Payouts</Text>
+            <Text className="text-orange-800 text-sm mb-3">
+              Setup your bank account to receive earnings.
+            </Text>
+            <TouchableOpacity
+              onPress={handleSetupPayouts}
+              disabled={setupLoading}
+              className="bg-orange-600 py-2 px-4 rounded-md items-center"
+            >
+              {setupLoading ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <Text className="text-white font-medium">Setup with Stripe</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* ── Hero Section ──────────────────────────────── */}
         <View style={s.heroContainer}>
           <Text style={s.heroLabel}>

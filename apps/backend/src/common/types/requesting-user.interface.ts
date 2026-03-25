@@ -17,4 +17,5 @@ export interface RequestingUser {
   permManageOrders: boolean;
   permViewFinancials: boolean;
   permManageTeam: boolean;
+  payoutEnabled?: boolean;
 }

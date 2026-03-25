@@ -7,11 +7,14 @@ import {
   TouchableOpacity,
   Dimensions,
   RefreshControl,
+  Alert,
+  Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
-import { api, type ApiOrder } from '@/lib/api';
+import { api, type ApiOrder, paymentsApi } from '@/lib/api';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { haptics } from '@/lib/haptics';
@@ -207,10 +210,11 @@ function MinimalBarChart({ bars }: { bars: DayBar[] }) {
 type Period = 'today' | 'week' | 'month';
 
 export default function SellerEarningsScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [setupLoading, setSetupLoading] = useState(false);
   const [period, setPeriod] = useState<Period>('week');
   const [stats, setStats] = useState<EarningsStats>({
     todayEarnings: 0,
@@ -220,6 +224,25 @@ export default function SellerEarningsScreen() {
     pendingPayout: 0,
     avgOrderValue: 0,
   });
+
+  const handleSetupPayouts = async () => {
+    if (!token) return;
+    setSetupLoading(true);
+    try {
+      const { url } = await paymentsApi.setupPayouts(token);
+      if (url) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Kļūda', 'Neizdevās iegūt saiti.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      Alert.alert('Kļūda', err.message || 'Neizdevās savienoties ar Stripe.');
+    } finally {
+      setSetupLoading(false);
+    }
+  };
+
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [dailyChart, setDailyChart] = useState<DayBar[]>([]);
 
@@ -303,6 +326,26 @@ export default function SellerEarningsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
         }
       >
+        {user?.isCompany && user.payoutEnabled === false && (
+          <View className="mb-4 mx-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <Text className="text-orange-900 font-bold mb-1">Enable Payouts</Text>
+            <Text className="text-orange-800 text-sm mb-3">
+              Setup your bank account to receive earnings.
+            </Text>
+            <TouchableOpacity
+              onPress={handleSetupPayouts}
+              disabled={setupLoading}
+              className="bg-orange-600 py-2 px-4 rounded-md items-center"
+            >
+              {setupLoading ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <Text className="text-white font-medium">Setup with Stripe</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* ── Hero Section ──────────────────────────────── */}
         <View style={s.heroContainer}>
           <Text style={s.heroLabel}>

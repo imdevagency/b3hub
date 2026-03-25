@@ -187,6 +187,7 @@ export class AuthService {
         permViewFinancials: user.permViewFinancials ?? false,
         permManageTeam: user.permManageTeam ?? false,
       },
+      user.company?.payoutEnabled ?? false,
     );
 
     // Remove password from response
@@ -464,14 +465,17 @@ export class AuthService {
         permViewFinancials: boolean;
         permManageTeam: boolean;
         refreshTokenExpiry: Date | null;
+        payoutEnabled: boolean | null;
       }[]
     >`
-      SELECT id, email, "userType", "isCompany", "canSell", "canTransport", "canSkipHire",
-             "companyId", "companyRole",
-             "permCreateContracts", "permReleaseCallOffs", "permManageOrders",
-             "permViewFinancials", "permManageTeam", "refreshTokenExpiry"
-      FROM users
-      WHERE "refreshToken" = ${hashed}
+      SELECT u.id, u.email, u."userType", u."isCompany", u."canSell", u."canTransport", u."canSkipHire",
+             u."companyId", u."companyRole",
+             u."permCreateContracts", u."permReleaseCallOffs", u."permManageOrders",
+             u."permViewFinancials", u."permManageTeam", u."refreshTokenExpiry",
+             c."payoutEnabled"
+      FROM users u
+      LEFT JOIN companies c ON u."companyId" = c.id
+      WHERE u."refreshToken" = ${hashed}
       LIMIT 1
     `;
 
@@ -501,6 +505,7 @@ export class AuthService {
         permViewFinancials: user.permViewFinancials,
         permManageTeam: user.permManageTeam,
       },
+      user.payoutEnabled ?? false,
     );
 
     return { token, refreshToken: newRefreshToken };
@@ -531,6 +536,7 @@ export class AuthService {
       permViewFinancials: boolean;
       permManageTeam: boolean;
     },
+    payoutEnabled?: boolean,
   ): string {
     const payload = {
       sub: userId,
@@ -547,6 +553,7 @@ export class AuthService {
       permManageOrders: permissions?.permManageOrders ?? false,
       permViewFinancials: permissions?.permViewFinancials ?? false,
       permManageTeam: permissions?.permManageTeam ?? false,
+      payoutEnabled: payoutEnabled ?? false,
     };
     return this.jwtService.sign(payload);
   }

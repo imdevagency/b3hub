@@ -6,8 +6,9 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { getMyTransportJobs, type ApiTransportJob } from '@/lib/api';
+import { getMyTransportJobs, type ApiTransportJob, setupPayouts } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Banknote,
   TrendingUp,
@@ -191,11 +192,25 @@ const PERIOD_LABELS: Record<Period2, string> = {
 // ── page ─────────────────────────────────────────────────────────────────────
 
 export default function TransporterEarningsPage() {
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const [jobs, setJobs] = useState<ApiTransportJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<Period>('week');
+  const [setupLoading, setSetupLoading] = useState(false);
+
+  const handleSetupPayouts = async () => {
+    try {
+      setSetupLoading(true);
+      if (!token) return;
+      const { url } = await setupPayouts(token);
+      window.location.href = url;
+    } catch (err) {
+      console.error('Failed to setup payouts', err);
+    } finally {
+      setSetupLoading(false);
+    }
+  };
 
   const load = async (showRefresh = false) => {
     if (!token) return;
@@ -244,6 +259,26 @@ export default function TransporterEarningsPage() {
           </Button>
         }
       />
+
+      {user?.isCompany && user.payoutEnabled === false && (
+        <Card className="mb-6 border-blue-500 bg-blue-50 dark:bg-blue-950/20">
+          <CardHeader>
+            <CardTitle className="text-blue-700 dark:text-blue-400">Enable Payouts</CardTitle>
+            <CardDescription className="text-blue-600/90 dark:text-blue-400/90">
+              You must set up a payout method to receive funds from completed transport jobs.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={handleSetupPayouts}
+              disabled={setupLoading}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {setupLoading ? 'Redirecting...' : 'Setup Payouts with Stripe'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* period tabs */}
       <div className="flex gap-1 bg-muted/50 rounded-xl p-1 w-fit">
