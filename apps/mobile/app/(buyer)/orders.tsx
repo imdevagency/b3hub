@@ -70,7 +70,7 @@ export default function OrdersScreen() {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenContainer standalone bg="#ffffff">
       {/* ── Header ───────────────────────────────────────────── */}
       <ScreenHeader
         title="Pasūtījumi"
@@ -119,6 +119,7 @@ export default function OrdersScreen() {
 
       {/* ── List ─────────────────────────────────────────────── */}
       <FlatList
+        style={{ flex: 1 }}
         data={filtered}
         keyExtractor={(item) => `${item.kind}-${item.data.id}`}
         renderItem={renderItem}

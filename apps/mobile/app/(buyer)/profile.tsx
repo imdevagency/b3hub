@@ -239,7 +239,7 @@ export default function ProfileScreen() {
   const set = (key: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [key]: v }));
 
   return (
-    <ScreenContainer bg="white">
+    <ScreenContainer bg="white" standalone>
       <ScreenHeader title="Profils" />
       <ScrollView
         showsVerticalScrollIndicator={false}

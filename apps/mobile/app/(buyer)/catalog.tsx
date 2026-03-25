@@ -85,7 +85,7 @@ export default function CatalogScreen() {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenContainer standalone>
       {/* Header */}
       <ScreenHeader title="Materiāli" />
 
