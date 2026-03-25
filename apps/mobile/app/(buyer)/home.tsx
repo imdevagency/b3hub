@@ -305,11 +305,11 @@ export default function HomeScreen() {
         {/* Services Row */}
         <Text style={s.sectionTitle}>Pakalpojumi</Text>
         <View style={s.servicesRow}>
-          {SERVICES.map((svc) => {
+          {SERVICES.map((svc, i) => {
             const Icon = svc.icon;
             return (
               <TouchableOpacity
-                key={svc.id}
+                key={`${svc.id}-${i}`}
                 style={s.serviceItem}
                 onPress={() => {
                   haptics.light();

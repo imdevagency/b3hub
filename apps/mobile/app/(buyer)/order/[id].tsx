@@ -250,7 +250,7 @@ export default function OrderDetailScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={s.itemName}>{item.material.name}</Text>
                 <Text style={s.itemMeta}>
-                  {item.quantity} {UNIT_SHORT[item.unit] ?? item.unit} × €
+                  {item.quantity} {UNIT_SHORT[item.unit as keyof typeof UNIT_SHORT] ?? item.unit} × €
                   {item.unitPrice.toFixed(2)}
                 </Text>
               </View>

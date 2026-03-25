@@ -5,7 +5,7 @@
  * `cameraRef` API (setCamera / fitBounds) so all callers work unchanged.
  */
 import React, { useRef, useEffect, useCallback } from 'react';
-import { StyleSheet, ViewStyle } from 'react-native';
+import { StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import MapView, { PROVIDER_GOOGLE, MapPressEvent, EdgePadding } from 'react-native-maps';
 
 /** Rīga city centre — [longitude, latitude] (Mapbox convention kept for compat). */
@@ -37,7 +37,7 @@ export interface BaseMapProps {
   center?: [number, number];
   zoom?: number;
   onPress?: (feature: MapPressFeature) => void;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   children?: React.ReactNode;
   rotateEnabled?: boolean;
   pitchEnabled?: boolean;

@@ -141,7 +141,8 @@ export default function RfqDetailScreen() {
   }
 
   const st = RFQ_STATUS[rfq.status] ?? RFQ_STATUS.PENDING;
-  const categoryLabel = CATEGORY_LABELS[rfq.materialCategory] ?? rfq.materialCategory;
+  const categoryLabel =
+    CATEGORY_LABELS[rfq.materialCategory as keyof typeof CATEGORY_LABELS] ?? rfq.materialCategory;
   // Sort cheapest-first so the "Best" badge always lands on the lowest-price offer
   const sortedResponses = [...rfq.responses].sort((a, b) => a.totalPrice - b.totalPrice);
 

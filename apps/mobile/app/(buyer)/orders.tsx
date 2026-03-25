@@ -127,7 +127,7 @@ export default function OrdersScreen() {
       />
 
       {/* ── New Order Sheet ──────────────────────────────────── */}
-      <BottomSheet isVisible={showTypePicker} onClose={() => setShowTypePicker(false)}>
+      <BottomSheet visible={showTypePicker} onClose={() => setShowTypePicker(false)}>
         <View style={s.sheetContent}>
           <Text style={s.sheetTitle}>Jauns pasūtījums</Text>
 
