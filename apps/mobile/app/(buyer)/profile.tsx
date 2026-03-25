@@ -33,6 +33,7 @@ import {
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
+import { ModeSwitcher } from '@/components/ui/ModeSwitcher';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 import { ACCOUNT_STATUS } from '@/lib/materials';
@@ -161,7 +162,7 @@ const s = StyleSheet.create({
 
 export default function ProfileScreen() {
   const { user, token, updateUser, logout } = useAuth();
-  const { mode } = useMode();
+  const { mode, isMultiRole } = useMode();
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -260,6 +261,9 @@ export default function ProfileScreen() {
             <Text style={s.headerEditBtnText}>Rediģēt profilu</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Role Switcher */}
+        {isMultiRole && <ModeSwitcher />}
 
         {/* Missing Phone Nudge */}
         {!user?.phone && (
