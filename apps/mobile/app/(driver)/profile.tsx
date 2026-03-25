@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useToast } from '@/components/ui/Toast';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import {
@@ -19,13 +20,17 @@ import {
   X,
   Check,
   LogOut,
-  Bell,
-  Truck,
   ChevronRight,
-  Power,
-  Settings,
-  MessageCircle,
+  Phone,
+  AlertCircle,
   HelpCircle,
+  MessageCircle,
+  Bell,
+  Settings,
+  Shield,
+  Activity,
+  Truck,
+  Power,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -33,6 +38,147 @@ import { useMode } from '@/lib/mode-context';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 import { ACCOUNT_STATUS } from '@/lib/materials';
+
+const s = StyleSheet.create({
+  header: { alignItems: 'center', paddingVertical: 32 },
+  avatar: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  initials: { fontSize: 30, fontWeight: '700', color: '#111827' },
+  name: { fontSize: 24, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  headerEmail: { color: '#6b7280', marginTop: 4, marginBottom: 16, fontSize: 14 },
+  headerEditBtn: {
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 9999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerEditBtnText: { fontWeight: '600', color: '#374151', fontSize: 14 },
+
+  // Status Card
+  statusCard: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+    padding: 16,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+  },
+  statusOnline: { backgroundColor: '#f0fdf4', borderColor: '#dcfce7' },
+  statusOffline: { backgroundColor: '#f9fafb', borderColor: '#e5e7eb' },
+  statusIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusTextContainer: { flex: 1, marginLeft: 16, marginRight: 8 },
+  statusTitle: { fontWeight: '700', fontSize: 16, color: '#111827' },
+  statusSubtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+  statusToggle: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 9999,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  statusToggleActive: {
+    backgroundColor: '#111827',
+    borderColor: '#111827',
+  },
+  statusToggleText: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  statusToggleTextActive: { color: '#ffffff' },
+
+  menuConfig: { paddingHorizontal: 20 },
+  sectionHeader: {
+    color: '#9ca3af',
+    fontWeight: '700',
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.1,
+    marginBottom: 12,
+    marginLeft: 4,
+  },
+  menuFooter: { marginTop: 32, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
+
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    marginHorizontal: -8,
+    borderRadius: 12,
+  },
+  menuItemContent: { flexDirection: 'row', alignItems: 'center', gap: 16, flex: 1 },
+  menuIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconNormal: { backgroundColor: '#f3f4f6' },
+  iconDestructive: { backgroundColor: '#fef2f2' },
+  menuLabel: { fontWeight: '600', fontSize: 16, color: '#111827' },
+  menuValue: { color: '#6b7280', fontSize: 14, marginTop: 2 },
+
+  // Modal styles
+  modalHandle: { alignItems: 'center', paddingTop: 10, paddingBottom: 4 },
+  handleBar: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#d1d5db' },
+  modalToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  modalTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  fieldGroup: { gap: 6 },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  fieldInput: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#111827',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+  },
+  saveBtn: {
+    backgroundColor: '#111827',
+    borderRadius: 100,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+});
 
 export default function ProfileScreen() {
   const { user, token, updateUser, logout } = useAuth();
@@ -47,9 +193,16 @@ export default function ProfileScreen() {
     lastName: user?.lastName ?? '',
     phone: user?.phone ?? '',
   });
+  const toast = useToast();
 
-  const roleLabel = t.mode[mode];
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`;
+
+  const ROLE_THEME: Record<string, { avatarBg: string; badgeBg: string; badgeText: string }> = {
+    buyer: { avatarBg: '#fee2e2', badgeBg: '#fef2f2', badgeText: '#b91c1c' },
+    seller: { avatarBg: '#d1fae5', badgeBg: '#f0fdf4', badgeText: '#15803d' },
+    driver: { avatarBg: '#dbeafe', badgeBg: '#eff6ff', badgeText: '#1d4ed8' },
+  };
+  const roleTheme = ROLE_THEME[mode] ?? ROLE_THEME.driver;
 
   const accountTypeLabel =
     user?.userType === 'ADMIN'
@@ -59,6 +212,7 @@ export default function ProfileScreen() {
           ...(user?.canSell ? ['Piegādātājs'] : []),
           ...(user?.canTransport ? ['Pārvadātājs'] : []),
         ].join(' + ');
+
   const handleLogout = () => {
     Alert.alert('Iziet', 'Vai tiešām vēlaties izrakstīties?', [
       { text: 'Atcelt', style: 'cancel' },
@@ -97,23 +251,20 @@ export default function ProfileScreen() {
       await updateUser(updated);
       haptics.success();
       setEditOpen(false);
+      if (toast?.success) {
+        toast.success('Profils atjaunināts');
+      }
     } catch {
       haptics.error();
-      Alert.alert('Kļūda', 'Neizdevās saglabāt izmaiņas. Lūdzu, mēģiniet vēlreiz.');
+      if (toast?.error) {
+        toast.error('Neizdevās saglabāt izmaiņas');
+      } else {
+        Alert.alert('Kļūda', 'Neizdevās saglabāt izmaiņas');
+      }
     } finally {
       setSaving(false);
     }
   };
-
-  const INFO_ROWS = [
-    { label: t.profile.email, value: user?.email },
-    { label: t.profile.phone, value: user?.phone || '—' },
-    {
-      label: t.profile.accountType,
-      value: accountTypeLabel,
-    },
-    { label: t.profile.status, value: ACCOUNT_STATUS[user?.status ?? ''] ?? user?.status },
-  ];
 
   const set = (key: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [key]: v }));
 
@@ -134,138 +285,126 @@ export default function ProfileScreen() {
       haptics.success();
     } catch {
       haptics.error();
+      if (toast?.error) {
+        toast.error('Neizdevās mainīt statusu');
+      }
     } finally {
       setTogglingOnline(false);
     }
   };
 
   return (
-    <ScreenContainer bg="#f9fafb">
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* ── Online status hero card ── */}
-        <View style={s.onlineCard}>
-          <View style={s.onlineCardLeft}>
-            <View style={[s.onlineDot, isOnline === true && s.onlineDotActive]} />
-            <View>
-              <Text style={s.onlineCardTitle}>
-                {isOnline === null ? 'Ielādē...' : isOnline ? 'Tiešsaistē' : 'Bezsaistē'}
-              </Text>
-              <Text style={s.onlineCardSub}>
-                {isOnline ? 'Pieejams jauniem darbiem' : 'Darbi nav redzami'}
-              </Text>
-            </View>
+    <ScreenContainer bg="white">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        {/* Minimal Avatar Header */}
+        <View style={s.header}>
+          <View style={[s.avatar, { backgroundColor: roleTheme.avatarBg }]}>
+            <Text style={s.initials}>{initials}</Text>
+          </View>
+          <Text style={s.name}>
+            {user?.firstName} {user?.lastName}
+          </Text>
+          <Text style={s.headerEmail}>{user?.email}</Text>
+
+          <TouchableOpacity onPress={openEdit} style={s.headerEditBtn} activeOpacity={0.8}>
+            <Pencil size={14} color="#374151" />
+            <Text style={s.headerEditBtnText}>Rediģēt profilu</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Online Status Card */}
+        <View style={[s.statusCard, isOnline ? s.statusOnline : s.statusOffline]}>
+          <View
+            style={[
+              s.statusIcon,
+              { backgroundColor: isOnline ? '#dcfce7' : '#f3f4f6' },
+            ]}
+          >
+            <Power size={20} color={isOnline ? '#16a34a' : '#9ca3af'} />
+          </View>
+          <View style={s.statusTextContainer}>
+            <Text style={s.statusTitle}>
+              {isOnline === null ? 'Ielādē...' : isOnline ? 'Tiešsaistē' : 'Bezsaistē'}
+            </Text>
+            <Text style={s.statusSubtitle}>
+              {isOnline ? 'Pieejams jauniem darbiem' : 'Darbi nav redzami'}
+            </Text>
           </View>
           <TouchableOpacity
-            style={[s.onlineToggleBtn, isOnline === true && s.onlineToggleBtnActive]}
+            style={[s.statusToggle, isOnline && s.statusToggleActive]}
             onPress={handleToggleOnline}
             disabled={togglingOnline || isOnline === null}
-            activeOpacity={0.8}
+            activeOpacity={0.9}
           >
             {togglingOnline ? (
               <ActivityIndicator size="small" color={isOnline ? '#fff' : '#6b7280'} />
             ) : (
-              <Power size={16} color={isOnline ? '#ffffff' : '#6b7280'} />
-            )}
-            <Text style={[s.onlineToggleBtnText, isOnline === true && s.onlineToggleBtnTextActive]}>
-              {isOnline ? 'Beigties' : 'Iet tiešsaistē'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        {/* Avatar header */}
-        <View style={s.avatarSection}>
-          <View style={s.avatarCircle}>
-            <Text style={s.avatarText}>{initials}</Text>
-          </View>
-          <Text style={s.fullName}>
-            {user?.firstName} {user?.lastName}
-          </Text>
-          <Text style={s.email}>{user?.email}</Text>
-          <View style={s.roleBadge}>
-            <Text style={s.roleBadgeText}>{roleLabel}</Text>
-          </View>
-          <TouchableOpacity style={s.editBtn} onPress={openEdit} activeOpacity={0.8}>
-            <Pencil size={13} color="#111827" />
-            <Text style={s.editBtnText}>Rediģēt profilu</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={s.body}>
-          {/* Info card */}
-          <View style={s.card}>
-            <Text style={s.cardTitle}>{t.profile.account}</Text>
-            {INFO_ROWS.map((item, idx) => (
-              <View
-                key={item.label}
-                style={[s.row, idx < INFO_ROWS.length - 1 ? s.rowBorder : null]}
+              <Text
+                style={[
+                  s.statusToggleText,
+                  isOnline && s.statusToggleTextActive,
+                ]}
               >
-                <Text style={s.rowLabel}>{item.label}</Text>
-                <Text style={s.rowValue}>{item.value}</Text>
-              </View>
-            ))}
-          </View>
+                {isOnline ? 'Beigties' : 'Iet tiešsaistē'}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
 
-          {/* Quick links */}
-          <TouchableOpacity
-            style={s.linkRow}
+        {/* Menu Items */}
+        <View style={s.menuConfig}>
+          <Text style={s.sectionHeader}>Darba instrumenti</Text>
+
+          <MenuItem
+            icon={Truck}
+            label="Mani transportlīdzekļi"
             onPress={() => router.push('/(driver)/vehicles')}
-            activeOpacity={0.8}
-          >
-            <View style={s.linkLeft}>
-              <Truck size={16} color="#374151" />
-              <Text style={s.linkText}>Mani transportlīdzekļi</Text>
-            </View>
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={s.linkRow}
+          />
+          <MenuItem
+            icon={Bell}
+            label="Paziņojumi"
             onPress={() => router.push('/notifications' as any)}
-            activeOpacity={0.8}
-          >
-            <View style={s.linkLeft}>
-              <Bell size={16} color="#374151" />
-              <Text style={s.linkText}>Paziņojumi</Text>
-            </View>
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={s.linkRow}
-            onPress={() => router.push('/messages' as any)}
-            activeOpacity={0.8}
-          >
-            <View style={s.linkLeft}>
-              <MessageCircle size={16} color="#374151" />
-              <Text style={s.linkText}>Ziņojumi</Text>
-            </View>
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={s.linkRow}
-            onPress={() => router.push('/settings' as any)}
-            activeOpacity={0.8}
-          >
-            <View style={s.linkLeft}>
-              <Settings size={16} color="#374151" />
-              <Text style={s.linkText}>Iestatījumi</Text>
-            </View>
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={s.linkRow}
-            onPress={() => router.push('/help' as any)}
-            activeOpacity={0.8}
-          >
-            <View style={s.linkLeft}>
-              <HelpCircle size={16} color="#374151" />
-              <Text style={s.linkText}>Palīdzība / BUJ</Text>
-            </View>
-            <ChevronRight size={16} color="#9ca3af" />
-          </TouchableOpacity>
+          />
 
-          {/* Sign out */}
-          <TouchableOpacity style={s.signOutBtn} onPress={handleLogout} activeOpacity={0.8}>
-            <LogOut size={16} color="#111827" />
-            <Text style={s.signOutText}>{t.profile.signOut}</Text>
-          </TouchableOpacity>
+          <Text style={[s.sectionHeader, { marginTop: 32 }]}>Konta informācija</Text>
+
+          <MenuItem
+            icon={Phone}
+            label="Tālrunis"
+            value={user?.phone || 'Nav norādīts'}
+            onPress={openEdit}
+          />
+          <MenuItem icon={Shield} label="Konta veids" value={accountTypeLabel} />
+          <MenuItem
+            icon={Activity}
+            label="Statuss"
+            value={ACCOUNT_STATUS[user?.status ?? ''] ?? user?.status}
+          />
+
+          <Text style={[s.sectionHeader, { marginTop: 32 }]}>Atbalsts</Text>
+
+          <MenuItem
+            icon={MessageCircle}
+            label="Ziņojumi"
+            onPress={() => router.push('/messages' as any)}
+          />
+          <MenuItem
+            icon={Settings}
+            label="Iestatījumi"
+            onPress={() => router.push('/settings' as any)}
+          />
+          <MenuItem
+            icon={HelpCircle}
+            label="Palīdzība / BUJ"
+            onPress={() => router.push('/help' as any)}
+          />
+
+          <View style={s.menuFooter}>
+            <MenuItem icon={LogOut} label="Iziet" onPress={handleLogout} isDestructive />
+          </View>
         </View>
       </ScrollView>
 
@@ -277,7 +416,7 @@ export default function ProfileScreen() {
         onRequestClose={() => setEditOpen(false)}
       >
         <KeyboardAvoidingView
-          style={{ flex: 1, backgroundColor: '#f2f2f7' }}
+          style={{ flex: 1, backgroundColor: '#f9fafb' }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <View style={s.modalHandle}>
@@ -348,183 +487,28 @@ export default function ProfileScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f9fafb' },
-
-  // ── Online status card ────────────────────────────────────────
-  onlineCard: {
-    margin: 16,
-    marginBottom: 0,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  onlineCardLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  onlineDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#d1d5db' },
-  onlineDotActive: { backgroundColor: '#34d399' },
-  onlineCardTitle: { fontSize: 15, fontWeight: '700', color: '#111827', lineHeight: 20 },
-  onlineCardSub: { fontSize: 12, color: '#6b7280', lineHeight: 16 },
-  onlineToggleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  onlineToggleBtnActive: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
-  },
-  onlineToggleBtnText: { fontSize: 13, fontWeight: '600', color: '#6b7280', lineHeight: 18 },
-  onlineToggleBtnTextActive: { color: '#ffffff' },
-  avatarSection: {
-    backgroundColor: '#fff',
-    paddingVertical: 32,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  avatarCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#fee2e2',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  avatarText: { color: '#111827', fontSize: 26, fontWeight: '700' },
-  fullName: { fontSize: 18, fontWeight: '700', color: '#111827' },
-  email: { fontSize: 14, color: '#6b7280', marginTop: 2 },
-  roleBadge: {
-    marginTop: 8,
-    backgroundColor: '#fef2f2',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  roleBadgeText: { color: '#b91c1c', fontSize: 12, fontWeight: '500' },
-  editBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    backgroundColor: '#fef2f2',
-  },
-  editBtnText: { color: '#111827', fontSize: 13, fontWeight: '600' },
-  body: { padding: 20 },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-  },
-  cardTitle: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#9ca3af',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 12,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-  },
-  rowBorder: { borderBottomWidth: 1, borderBottomColor: '#f9fafb' },
-  rowLabel: { fontSize: 14, color: '#6b7280' },
-  rowValue: { fontSize: 14, fontWeight: '500', color: '#111827' },
-  linkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-  },
-  linkLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  linkText: { fontSize: 15, color: '#111827', fontWeight: '500' },
-  signOutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#fef2f2',
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    borderRadius: 16,
-    paddingVertical: 16,
-  },
-  signOutText: { color: '#111827', fontWeight: '600', fontSize: 15 },
-  // Modal
-  modalHandle: { alignItems: 'center', paddingTop: 10, paddingBottom: 4 },
-  handleBar: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#d1d5db' },
-  modalToolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  modalTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  fieldGroup: { gap: 6 },
-  fieldLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  fieldInput: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#111827',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  saveBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-});
+const MenuItem = ({
+  icon: Icon,
+  label,
+  value,
+  onPress,
+  isDestructive,
+  rightIcon: RightIcon = ChevronRight,
+}: any) => (
+  <TouchableOpacity style={s.menuItem} onPress={onPress} disabled={!onPress} activeOpacity={0.7}>
+    <View style={s.menuItemContent}>
+      <View style={[s.menuIcon, isDestructive ? s.iconDestructive : s.iconNormal]}>
+        <Icon size={20} color={isDestructive ? '#ef4444' : '#4b5563'} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[s.menuLabel, isDestructive && { color: '#ef4444' }]}>{label}</Text>
+        {!!value && (
+          <Text style={s.menuValue} numberOfLines={1}>
+            {value}
+          </Text>
+        )}
+      </View>
+    </View>
+    {onPress && !isDestructive && <RightIcon size={18} color="#e5e7eb" />}
+  </TouchableOpacity>
+);
