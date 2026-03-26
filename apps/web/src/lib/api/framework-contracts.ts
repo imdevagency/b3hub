@@ -14,12 +14,14 @@ export type FrameworkPositionType =
 
 export interface ApiFrameworkCallOff {
   id: string;
-  callOffNumber: string;
-  requestedQty: number;
-  scheduledDate: string | null;
+  jobNumber: string;
+  cargoWeight: number | null;
   status: string;
+  pickupDate: string | null;
+  deliveryDate?: string | null;
+  pickupCity?: string | null;
+  deliveryCity?: string | null;
   notes?: string | null;
-  createdAt: string;
 }
 
 export interface ApiFrameworkPosition {
@@ -73,8 +75,11 @@ export interface CreateFrameworkContractInput {
 }
 
 export interface CreateCallOffInput {
-  requestedQty: number;
-  scheduledDate?: string;
+  quantity: number;
+  pickupDate?: string;
+  deliveryDate?: string;
+  pickupCity?: string;
+  deliveryCity?: string;
   notes?: string;
 }
 
@@ -166,16 +171,18 @@ export async function createFrameworkCallOff(
   data: CreateCallOffInput,
   token: string,
 ): Promise<{ id: string; jobNumber: string }> {
-  const date = data.scheduledDate ?? new Date().toISOString();
+  const date = data.pickupDate ?? new Date().toISOString().split('T')[0];
   return apiFetch<{ id: string; jobNumber: string }>(
     `/framework-contracts/${contractId}/positions/${positionId}/call-off`,
     {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        quantity: data.requestedQty,
+        quantity: data.quantity,
         pickupDate: date,
-        deliveryDate: date,
+        deliveryDate: data.deliveryDate ?? date,
+        pickupCity: data.pickupCity,
+        deliveryCity: data.deliveryCity,
         notes: data.notes,
       }),
     },

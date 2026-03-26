@@ -222,5 +222,11 @@ export const companyApi = {
           body: JSON.stringify(data),
         },
       ),
+
+    activate: (id: string, token: string) =>
+      apiFetch<ApiFrameworkContract>(`/framework-contracts/${id}/activate`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
   },
 };

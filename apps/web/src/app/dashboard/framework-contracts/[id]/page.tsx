@@ -99,13 +99,13 @@ function CallOffRow({ item }: { item: ApiFrameworkCallOff }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">#{item.callOffNumber}</span>
+          <span className="text-sm font-medium">#{item.jobNumber}</span>
           <Badge variant="outline" className="text-[10px] h-4 px-1.5">
             {cfg.label}
           </Badge>
         </div>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {item.requestedQty} vienības · {fmtDate(item.scheduledDate)}
+          {item.cargoWeight != null ? `${item.cargoWeight} t` : '—'} · {fmtDate(item.pickupDate)}
           {item.notes ? ` · ${item.notes}` : ''}
         </p>
       </div>
@@ -349,8 +349,9 @@ export default function BuyerProjectDetailPage() {
       contract.id,
       releasePos.id,
       {
-        requestedQty: qty,
-        scheduledDate: date || undefined,
+        quantity: qty,
+        pickupDate: date || new Date().toISOString().split('T')[0],
+        deliveryDate: date || undefined,
         notes: notes || undefined,
       },
       token,

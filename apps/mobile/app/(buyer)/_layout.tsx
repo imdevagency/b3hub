@@ -28,7 +28,6 @@ export default function BuyerLayout() {
   const isHome = pathname === '/(buyer)/home' || pathname === '/home';
   const isDetailScreen =
     pathname.includes('/rfq') ||
-    pathname.includes('/project') ||
     pathname.includes('/transport-job') ||
     pathname.includes('/framework-contract') ||
     pathname.includes('/skip-order') ||
@@ -104,6 +103,8 @@ export default function BuyerLayout() {
           <Tabs.Screen name="transport-job/[id]" options={{ href: null }} />
           <Tabs.Screen name="framework-contracts" options={{ href: null }} />
           <Tabs.Screen name="framework-contract/[id]" options={{ href: null }} />
+          <Tabs.Screen name="projects" options={{ href: null }} />
+          <Tabs.Screen name="project/[id]" options={{ href: null }} />
         </Tabs>
       </View>
       <Sidebar

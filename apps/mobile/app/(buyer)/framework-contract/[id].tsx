@@ -194,6 +194,7 @@ export default function FrameworkContractDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [activating, setActivating] = useState(false);
   const [callOffPosition, setCallOffPosition] = useState<ApiFrameworkPosition | null>(null);
   const [qty, setQty] = useState('');
   const [pickupDate, setPickupDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -227,6 +228,20 @@ export default function FrameworkContractDetailScreen() {
       load();
     }, [load]),
   );
+
+  const handleActivate = async () => {
+    if (!token || !contract || activating) return;
+    setActivating(true);
+    try {
+      const updated = await api.frameworkContracts.activate(contract.id, token);
+      setContract(updated);
+      haptics.success();
+    } catch (e) {
+      Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās aktivizēt līgumu');
+    } finally {
+      setActivating(false);
+    }
+  };
 
   const openCallOff = (position: ApiFrameworkPosition) => {
     haptics.light();
@@ -323,6 +338,20 @@ export default function FrameworkContractDetailScreen() {
           <StatusPill label={status.label} bg={status.bg} color={status.color} size="sm" />
         }
       />
+
+      {contract.status === 'DRAFT' && (
+        <View style={s.draftBanner}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.draftBannerTitle}>Melnraksts</Text>
+            <Text variant="muted" size="sm">
+              Aktivizējiet, lai varētu izlaist darba uzdevumus.
+            </Text>
+          </View>
+          <Button size="sm" onPress={handleActivate} isLoading={activating} style={s.activateBtn}>
+            Aktivizēt
+          </Button>
+        </View>
+      )}
 
       <ScrollView
         contentContainerStyle={s.scroll}
@@ -574,4 +603,20 @@ const s = StyleSheet.create({
     paddingTop: 12,
   },
   submitBtnSpacing: { marginTop: 20 },
+  draftBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    backgroundColor: '#fef9c3',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  draftBannerTitle: { fontSize: 13, fontWeight: '700', color: '#92400e', marginBottom: 2 },
+  activateBtn: { minWidth: 90 },
 });
