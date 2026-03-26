@@ -434,6 +434,7 @@ model Material {
 
   // Stock & Availability
   inStock          Boolean @default(true)
+  stockQty         Float?  // actual quantity in stock (null = unlimited / not tracked)
   minOrder         Float?
   maxOrder         Float?
   deliveryRadiusKm Int?    @default(100) // km radius the supplier delivers

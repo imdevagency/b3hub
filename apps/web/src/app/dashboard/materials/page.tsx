@@ -18,7 +18,17 @@ import {
   type CreateMaterialInput,
   type UpdateMaterialInput,
 } from '@/lib/api';
-import { Check, Loader2, Package, Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react';
+import {
+  Check,
+  Loader2,
+  Package,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Trash2,
+  X,
+  AlertTriangle,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { PageHeader } from '@/components/ui/page-header';
@@ -86,6 +96,7 @@ interface MaterialFormValues {
   unit: MaterialUnit;
   minOrder: string;
   maxOrder: string;
+  stockQty: string;
   inStock: boolean;
   isRecycled: boolean;
   quality: string;
@@ -100,6 +111,7 @@ const EMPTY_FORM: MaterialFormValues = {
   unit: 'TONNE',
   minOrder: '',
   maxOrder: '',
+  stockQty: '',
   inStock: true,
   isRecycled: false,
   quality: '',
@@ -115,6 +127,7 @@ function materialToForm(m: ApiMaterial): MaterialFormValues {
     unit: m.unit,
     minOrder: m.minOrder ? String(m.minOrder) : '',
     maxOrder: m.maxOrder ? String(m.maxOrder) : '',
+    stockQty: m.stockQty != null ? String(m.stockQty) : '',
     inStock: m.inStock,
     isRecycled: m.isRecycled,
     quality: m.quality ?? '',
@@ -185,6 +198,7 @@ function MaterialFormModal({
           unit: form.unit,
           minOrder: form.minOrder ? parseFloat(form.minOrder) : undefined,
           maxOrder: form.maxOrder ? parseFloat(form.maxOrder) : undefined,
+          stockQty: form.stockQty !== '' ? parseFloat(form.stockQty) : null,
           inStock: form.inStock,
           isRecycled: form.isRecycled,
           quality: form.quality.trim() || undefined,
@@ -204,6 +218,7 @@ function MaterialFormModal({
           isRecycled: form.isRecycled,
           quality: form.quality.trim() || undefined,
           supplierId,
+          ...(form.stockQty !== '' && { stockQty: parseFloat(form.stockQty) }),
         };
         result = await createMaterial(input, token);
       }
@@ -317,8 +332,8 @@ function MaterialFormModal({
               </div>
             </div>
 
-            {/* Min / Max order */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Min / Max order + Stock Qty */}
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label className="text-sm font-medium ml-1">
                   Min. pasūtījums ({UNIT_SHORT[form.unit]})
@@ -344,6 +359,20 @@ function MaterialFormModal({
                   placeholder="—"
                   value={form.maxOrder}
                   onChange={set('maxOrder')}
+                  className={inputClasses}
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium ml-1">
+                  Krājums ({UNIT_SHORT[form.unit]})
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  placeholder="Nav izsekots"
+                  value={form.stockQty}
+                  onChange={set('stockQty')}
                   className={inputClasses}
                 />
               </div>
@@ -646,6 +675,12 @@ export default function MyMaterialsPage() {
                         {CATEGORIES.find((c) => c.value === m.category)?.label}
                         {m.subCategory ? ` · ${m.subCategory}` : ''}
                       </p>
+                      {m.stockQty != null && m.stockQty < 10 && (
+                        <span className="inline-flex items-center gap-1 mt-1 text-[11px] font-semibold text-amber-700 bg-amber-50 rounded-full px-2 py-0.5">
+                          <AlertTriangle className="size-3" />
+                          Maz krājumu ({m.stockQty} {UNIT_SHORT[m.unit]})
+                        </span>
+                      )}
                     </div>
                   </div>
 

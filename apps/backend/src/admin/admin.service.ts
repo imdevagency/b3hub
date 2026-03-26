@@ -29,6 +29,7 @@ export class AdminService {
     emailVerified: true,
     createdAt: true,
     company: { select: { id: true, name: true } },
+    buyerProfile: { select: { creditLimit: true, creditUsed: true, paymentTerms: true } },
   } as const;
 
   async getUsers() {
@@ -43,7 +44,10 @@ export class AdminService {
     if (!user) throw new NotFoundException('User not found');
 
     this.logger.log(`Admin updated user ${id}`);
-    return this.prisma.user.update({
+    const hasCreditUpdate =
+      data.creditLimit !== undefined || data.paymentTerms !== undefined;
+
+    const updatedUser = await this.prisma.user.update({
       where: { id },
       data: {
         ...(data.canSell !== undefined && { canSell: data.canSell }),
@@ -60,6 +64,28 @@ export class AdminService {
       },
       select: this.userSelect,
     });
+
+    if (hasCreditUpdate) {
+      await this.prisma.buyerProfile.upsert({
+        where: { userId: id },
+        create: {
+          userId: id,
+          creditLimit: data.creditLimit ?? null,
+          paymentTerms: data.paymentTerms ?? null,
+        },
+        update: {
+          ...(data.creditLimit !== undefined && { creditLimit: data.creditLimit }),
+          ...(data.paymentTerms !== undefined && { paymentTerms: data.paymentTerms }),
+        },
+      });
+      // Re-fetch with updated buyerProfile
+      return this.prisma.user.findUnique({
+        where: { id },
+        select: this.userSelect,
+      });
+    }
+
+    return updatedUser;
   }
 
   async getStats() {

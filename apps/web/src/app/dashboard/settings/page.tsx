@@ -22,6 +22,7 @@ import {
   Eye,
   EyeOff,
   BadgeCheck,
+  DollarSign,
 } from 'lucide-react';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -42,6 +43,12 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   PENDING: { label: 'Gaida apstiprinājumu', color: '#b45309' },
   SUSPENDED: { label: 'Apturēts', color: '#b91c1c' },
   REJECTED: { label: 'Noraidīts', color: '#b91c1c' },
+};
+
+const PAYMENT_TERMS_LABEL: Record<string, string> = {
+  NET30: 'NET 30',
+  NET60: 'NET 60',
+  COD: 'COD',
 };
 
 function StatusFeedback({
@@ -384,6 +391,66 @@ export default function SettingsPage() {
           ))}
         </CardContent>
       </Card>
+
+      {/* ── Credit limit card (buyers only) ──────────────────── */}
+      {user?.userType !== 'ADMIN' && user?.buyerProfile && (
+        <Card className="shadow-none">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-base">Kredītlimits</CardTitle>
+            </div>
+            <CardDescription>Piemērotu kredītlimitu iestata administrātors.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {user.buyerProfile.creditLimit != null ? (
+              <>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Izlietots</span>
+                  <span className="font-semibold">
+                    €
+                    {user.buyerProfile.creditUsed.toLocaleString('lv-LV', {
+                      minimumFractionDigits: 2,
+                    })}
+                    {' / '}€
+                    {user.buyerProfile.creditLimit.toLocaleString('lv-LV', {
+                      minimumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
+                <div className="h-2.5 w-full rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      user.buyerProfile.creditUsed / user.buyerProfile.creditLimit >= 0.9
+                        ? 'bg-red-500'
+                        : user.buyerProfile.creditUsed / user.buyerProfile.creditLimit >= 0.7
+                          ? 'bg-amber-500'
+                          : 'bg-green-500'
+                    }`}
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        (user.buyerProfile.creditUsed / user.buyerProfile.creditLimit) * 100,
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">Nav noteikts kredītlimits.</p>
+            )}
+            {user.buyerProfile.paymentTerms && (
+              <div className="flex items-center justify-between py-2 border-t">
+                <span className="text-sm text-muted-foreground">Maksājumu termiņš</span>
+                <span className="inline-flex items-center text-xs font-semibold rounded-full px-2.5 py-1 bg-blue-50 text-blue-700">
+                  {PAYMENT_TERMS_LABEL[user.buyerProfile.paymentTerms] ??
+                    user.buyerProfile.paymentTerms}
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

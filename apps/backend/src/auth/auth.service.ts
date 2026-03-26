@@ -251,6 +251,13 @@ export class AuthService {
             companyType: true,
           },
         },
+        buyerProfile: {
+          select: {
+            creditLimit: true,
+            creditUsed: true,
+            paymentTerms: true,
+          },
+        },
       },
     });
 

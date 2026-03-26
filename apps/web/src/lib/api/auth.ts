@@ -44,6 +44,11 @@ export interface User {
     companyType: string;
     logo?: string;
   };
+  buyerProfile?: {
+    creditLimit: number | null;
+    creditUsed: number;
+    paymentTerms: string | null;
+  } | null;
 }
 
 export interface AuthResponse {

@@ -59,6 +59,11 @@ export interface AdminUser {
   emailVerified: boolean;
   company?: { id: string; name: string } | null;
   createdAt: string;
+  buyerProfile?: {
+    creditLimit: number | null;
+    creditUsed: number;
+    paymentTerms: string | null;
+  } | null;
 }
 
 // ─── Functions ─────────────────────────────────────────────────────────────
@@ -120,6 +125,8 @@ export async function adminUpdateUser(
     canSkipHire: boolean;
     status: string;
     userType: string;
+    creditLimit: number | null;
+    paymentTerms: string | null;
   }>,
   token: string,
 ): Promise<AdminUser> {

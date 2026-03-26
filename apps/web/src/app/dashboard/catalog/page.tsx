@@ -64,6 +64,7 @@ import {
   Map,
   Layers,
   Zap,
+  AlertTriangle,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -859,6 +860,11 @@ function OfferCard({
               {isCheapest && (
                 <span className="shrink-0 flex items-center gap-0.5 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green-800">
                   <Star className="size-3" /> Labākais
+                </span>
+              )}
+              {offer.stockQty != null && offer.stockQty < 10 && (
+                <span className="shrink-0 flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
+                  <AlertTriangle className="size-3" /> Maz krājumu
                 </span>
               )}
             </div>

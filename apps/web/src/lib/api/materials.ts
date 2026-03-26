@@ -30,6 +30,7 @@ export interface ApiMaterial {
   unit: MaterialUnit;
   currency: string;
   inStock: boolean;
+  stockQty?: number | null;
   minOrder?: number;
   maxOrder?: number;
   isRecycled: boolean;
@@ -54,6 +55,7 @@ export interface CreateMaterialInput {
   basePrice: number;
   unit: MaterialUnit;
   inStock?: boolean;
+  stockQty?: number;
   minOrder?: number;
   maxOrder?: number;
   isRecycled?: boolean;
@@ -69,6 +71,7 @@ export interface UpdateMaterialInput {
   basePrice?: number;
   unit?: MaterialUnit;
   inStock?: boolean;
+  stockQty?: number | null;
   minOrder?: number;
   maxOrder?: number;
   isRecycled?: boolean;
@@ -162,6 +165,7 @@ export interface SupplierOffer {
   distanceKm: number | null;
   etaDays: number;
   isInstant: boolean;
+  stockQty?: number | null;
   deliveryRadiusKm: number | null;
   supplier: {
     id: string;

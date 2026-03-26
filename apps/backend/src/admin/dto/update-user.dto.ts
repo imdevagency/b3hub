@@ -1,4 +1,4 @@
-import { IsBoolean, IsEnum, IsOptional } from 'class-validator';
+import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { UserStatus, UserType } from '@prisma/client';
 
 export class UpdateUserDto {
@@ -21,4 +21,14 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEnum(UserType)
   userType?: UserType;
+
+  // BuyerProfile fields
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  creditLimit?: number | null;
+
+  @IsOptional()
+  @IsString()
+  paymentTerms?: string | null;
 }

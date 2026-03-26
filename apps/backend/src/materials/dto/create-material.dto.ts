@@ -41,6 +41,11 @@ export class CreateMaterialDto {
 
   @IsOptional()
   @IsNumber()
+  @Min(0)
+  stockQty?: number;
+
+  @IsOptional()
+  @IsNumber()
   minOrder?: number;
 
   @IsOptional()
