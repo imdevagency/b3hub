@@ -29,11 +29,12 @@ import {
   Mail,
   Shield,
   Activity,
+  ArrowUpDown,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
-import { ModeSwitcher } from '@/components/ui/ModeSwitcher';
+import { RoleSheet } from '@/components/ui/TopBar';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 import { ACCOUNT_STATUS } from '@/lib/materials';
@@ -96,6 +97,19 @@ const s = StyleSheet.create({
     marginLeft: 4,
   },
   menuFooter: { marginTop: 32, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
+  roleSwitchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    backgroundColor: '#f9fafb',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+  },
 
   menuItem: {
     flexDirection: 'row',
@@ -165,6 +179,7 @@ export default function ProfileScreen() {
   const { mode, isMultiRole } = useMode();
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
+  const [roleSheetOpen, setRoleSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     firstName: user?.firstName ?? '',
@@ -263,7 +278,25 @@ export default function ProfileScreen() {
         </View>
 
         {/* Role Switcher */}
-        {isMultiRole && <ModeSwitcher />}
+        {isMultiRole && (
+          <TouchableOpacity
+            style={s.roleSwitchRow}
+            onPress={() => {
+              haptics.light();
+              setRoleSheetOpen(true);
+            }}
+            activeOpacity={0.75}
+          >
+            <View style={[s.menuIcon, s.iconNormal]}>
+              <ArrowUpDown size={18} color="#374151" strokeWidth={2} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.menuLabel}>Mainīt lomu</Text>
+              <Text style={s.menuValue}>{t.mode[mode]}</Text>
+            </View>
+            <ChevronRight size={16} color="#9ca3af" />
+          </TouchableOpacity>
+        )}
 
         {/* Missing Phone Nudge */}
         {!user?.phone && (
@@ -390,6 +423,7 @@ export default function ProfileScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
+      {isMultiRole && <RoleSheet visible={roleSheetOpen} onClose={() => setRoleSheetOpen(false)} />}
     </ScreenContainer>
   );
 }

@@ -68,7 +68,7 @@ const ROLE_CFG: Record<AppMode, { Icon: React.ElementType; label: string; desc: 
 
 // ── Role picker bottom-sheet ──────────────────────────────────────────────────
 
-function RoleSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export function RoleSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { mode, setMode, availableModes } = useMode();
   const router = useRouter();
 
