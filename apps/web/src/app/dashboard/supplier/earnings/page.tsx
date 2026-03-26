@@ -262,7 +262,7 @@ export default function SupplierEarningsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-12 max-w-4xl pb-10">
       {/* header */}
       <PageHeader
         title="Ieņēmumi"
@@ -276,179 +276,165 @@ export default function SupplierEarningsPage() {
       />
 
       {user?.isCompany && user.payoutEnabled === false && (
-        <Card className="mb-6 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
-          <CardHeader>
-            <CardTitle className="text-amber-700 dark:text-amber-400">Enable Payouts</CardTitle>
-            <CardDescription className="text-amber-600/90 dark:text-amber-400/90">
-              You must set up a payout method to receive funds from your sales directly to your bank
-              account.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        <div className="flex items-start gap-3 p-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/50">
+          <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <h3 className="text-sm font-medium text-amber-800 dark:text-amber-400">
+              Pievienojiet izmaksu kontu
+            </h3>
+            <p className="text-sm text-amber-700/80 dark:text-amber-500/80 mt-1 mb-3">
+              Pievienojiet savu bankas kontu (caur Stripe), lai varētu saņemt maksājumus par
+              pasūtījumiem.
+            </p>
             <Button
               onClick={handleSetupPayouts}
               disabled={setupLoading}
-              className="bg-amber-600 hover:bg-amber-700 text-white"
+              className="bg-amber-600 hover:bg-amber-700 text-white h-9 px-4 text-xs"
             >
-              {setupLoading ? 'Redirecting...' : 'Setup Payouts with Stripe'}
+              {setupLoading ? 'Notiek apstrāde...' : 'Pievienot bankas kontu'}
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
-      {/* period tabs */}
-      <div className="flex gap-1 bg-muted rounded-lg p-1 w-fit">
-        {(['today', 'week', 'month'] as Period[]).map((p) => (
-          <button
-            key={p}
-            onClick={() => setPeriod(p)}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              period === p
-                ? 'bg-background shadow-sm text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {PERIOD_LABELS[p]}
-          </button>
-        ))}
-      </div>
+      {/* Minimal Hero Period & Balance */}
+      <div className="flex flex-col items-start gap-5">
+        {/* period tabs */}
+        <div className="flex gap-6 border-b border-border/60 w-full pb-2">
+          {(['today', 'week', 'month'] as Period[]).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={`pb-2 text-sm font-medium transition-all relative -mb-[9px] ${
+                period === p
+                  ? 'text-foreground border-b-2 border-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {PERIOD_LABELS[p]}
+            </button>
+          ))}
+        </div>
 
-      {/* main revenue highlight */}
-      <div className="rounded-2xl bg-linear-to-br from-emerald-600 to-emerald-500 p-6 text-white">
-        <p className="text-sm font-medium opacity-80">{PERIOD_LABELS[period]} ieņēmumi</p>
-        <p className="text-4xl font-extrabold mt-1 tabular-nums">{euro(periodRevenue)}</p>
-        <div className="flex gap-6 mt-4 text-sm opacity-90">
-          <span>
-            <span className="font-semibold">{stats.totalOrders}</span> pasūtījumi
-          </span>
-          <span>
-            Vid. <span className="font-semibold">{euro(stats.avgOrderValue)}</span>
-          </span>
-          <span className="text-yellow-200">{euro(stats.pendingRevenue)} gaida</span>
+        <div className="pt-2 w-full">
+          <p className="text-sm font-medium text-muted-foreground mb-2">
+            {PERIOD_LABELS[period]} ieņēmumi
+          </p>
+          <h1 className="text-6xl md:text-7xl font-semibold tracking-tight text-foreground tabular-nums">
+            {euro(periodRevenue)}
+          </h1>
+
+          {/* Minimal Key Stats Row */}
+          <div className="flex items-center gap-8 mt-10 pt-6 border-t border-border/40">
+            <div className="flex flex-col gap-1">
+              <span className="text-2xl font-medium text-foreground tabular-nums">
+                {stats.totalOrders}
+              </span>
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+                Pasūtījumi
+              </span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-2xl font-medium text-foreground tabular-nums">
+                {euro(stats.avgOrderValue)}
+              </span>
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+                Vid. Pasūtījums
+              </span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-2xl font-medium text-foreground tabular-nums">
+                {euro(stats.pendingRevenue)}
+              </span>
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+                Gaida apmaksu
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <StatCard
-          label="Šodien"
-          value={euro(stats.todayRevenue)}
-          icon={Banknote}
-          color="bg-emerald-100 text-emerald-700"
-        />
-        <StatCard
-          label="Šonedēļ"
-          value={euro(stats.weekRevenue)}
-          icon={TrendingUp}
-          color="bg-blue-100 text-blue-700"
-        />
-        <StatCard
-          label="Šomēnes"
-          value={euro(stats.monthRevenue)}
-          icon={BarChart3}
-          color="bg-violet-100 text-violet-700"
-        />
-        <StatCard
-          label="Pasūtījumi"
-          value={String(stats.totalOrders)}
-          icon={Package}
-          color="bg-gray-100 text-gray-700"
-        />
-        <StatCard
-          label="Gaida apmaksu"
-          value={euro(stats.pendingRevenue)}
-          icon={Clock}
-          color="bg-yellow-100 text-yellow-700"
-        />
-        <StatCard
-          label="Vid. pasūtījums"
-          value={euro(stats.avgOrderValue)}
-          icon={CheckCircle}
-          color="bg-pink-100 text-pink-700"
-        />
+      {/* 7-day bar chart (Uber style) */}
+      <div className="space-y-4 pt-4 border-t border-border/40">
+        <h2 className="text-sm font-medium text-muted-foreground">Pēdējās 7 dienas</h2>
+        {loading ? (
+          <div className="h-32 w-full bg-muted/30 animate-pulse rounded-lg" />
+        ) : (
+          <div className="flex items-end gap-2 h-32 w-full">
+            {chart.map((bar) => {
+              const heightPct = maxChart > 0 ? (bar.amount / maxChart) * 100 : 0;
+              return (
+                <div key={bar.label} className="flex-1 flex flex-col items-center gap-2 group">
+                  <div className="w-full flex items-end justify-center" style={{ height: 100 }}>
+                    <div
+                      className={`w-full max-w-[40px] rounded-[3px] transition-all duration-300 ${bar.isToday ? 'bg-foreground' : 'bg-muted group-hover:bg-muted-foreground/30'}`}
+                      style={{ height: `${Math.max(heightPct, bar.amount > 0 ? 4 : 1)}%` }}
+                      title={euro(bar.amount)}
+                    />
+                  </div>
+                  <span
+                    className={`text-[10px] sm:text-xs font-medium ${bar.isToday ? 'text-foreground' : 'text-muted-foreground'}`}
+                  >
+                    {bar.shortLabel}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* 7-day bar chart */}
-      <Card className="shadow-none border-border/50">
-        <CardHeader className="px-5 pt-5 pb-3">
-          <h2 className="text-sm font-semibold">Pēdējās 7 dienas</h2>
-        </CardHeader>
-        <CardContent className="px-5 pb-5">
+      {/* Flat order history */}
+      <div className="space-y-2 pt-4 border-t border-border/40">
+        <div className="flex flex-row items-center justify-between pb-4">
+          <h2 className="text-sm font-medium text-muted-foreground">Pasūtījumu vēsture</h2>
+          <span className="text-xs text-muted-foreground font-medium bg-muted/50 px-2 py-1 rounded-md">
+            {entries.length} ieraksti
+          </span>
+        </div>
+        <div className="flex flex-col">
           {loading ? (
-            <div className="h-28 bg-muted animate-pulse rounded-lg" />
-          ) : (
-            <div className="flex items-end gap-2 h-28">
-              {chart.map((bar) => {
-                const heightPct = maxChart > 0 ? (bar.amount / maxChart) * 100 : 0;
-                return (
-                  <div key={bar.label} className="flex-1 flex flex-col items-center gap-1">
-                    <div className="w-full flex items-end justify-center" style={{ height: 88 }}>
-                      <div
-                        className={`w-full rounded-t-md transition-all ${bar.isToday ? 'bg-emerald-500' : 'bg-emerald-200'}`}
-                        style={{ height: `${Math.max(heightPct, bar.amount > 0 ? 4 : 2)}%` }}
-                        title={euro(bar.amount)}
-                      />
-                    </div>
-                    <span
-                      className={`text-[10px] font-medium ${bar.isToday ? 'text-emerald-700' : 'text-muted-foreground'}`}
-                    >
-                      {bar.shortLabel}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* order history */}
-      <Card className="shadow-none border-border/50">
-        <CardHeader className="px-5 pt-5 pb-3 flex flex-row items-center justify-between">
-          <h2 className="text-sm font-semibold">Pasūtījumu vēsture</h2>
-          <span className="text-xs text-muted-foreground">{entries.length} ieraksti</span>
-        </CardHeader>
-        <CardContent className="px-0 pb-2">
-          {loading ? (
-            <div className="space-y-3 px-5">
+            <div className="space-y-4 py-2">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-12 bg-muted animate-pulse rounded-lg" />
+                <div key={i} className="h-16 bg-muted/30 animate-pulse rounded-md" />
               ))}
             </div>
           ) : entries.length === 0 ? (
-            <p className="text-sm text-muted-foreground px-5 py-4">Nav pasūtījumu</p>
+            <p className="text-sm text-muted-foreground py-8 text-center border border-dashed border-border/50 rounded-xl">
+              Nav pasūtījumu
+            </p>
           ) : (
-            <div className="divide-y divide-border">
-              {entries.map((entry) => {
-                const cfg = STATUS_CONFIG[entry.status];
-                return (
-                  <div
-                    key={entry.id}
-                    className="flex items-center gap-3 px-5 py-3 hover:bg-muted/40 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-foreground">
-                          #{entry.orderNumber}
-                        </span>
-                        <Badge variant={cfg.variant} className="text-[10px] h-4 px-1.5">
-                          {cfg.label}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                        {entry.buyerName} · {entry.date}
-                      </p>
+            entries.map((entry) => {
+              const cfg = STATUS_CONFIG[entry.status];
+              return (
+                <div
+                  key={entry.id}
+                  className="flex items-center gap-4 py-4 border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors px-3 -mx-3 rounded-xl"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-1.5">
+                      <span className="text-base font-medium text-foreground tracking-tight">
+                        #{entry.orderNumber}
+                      </span>
+                      <span
+                        className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-sm border ${cfg.className}`}
+                      >
+                        {cfg.label}
+                      </span>
                     </div>
-                    <span className="text-sm font-semibold tabular-nums text-emerald-700 shrink-0">
-                      {euro(entry.amount)}
-                    </span>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {entry.buyerName} · {entry.date}
+                    </p>
                   </div>
-                );
-              })}
-            </div>
+                  <span className="text-lg font-medium tabular-nums text-foreground shrink-0">
+                    {euro(entry.amount)}
+                  </span>
+                </div>
+              );
+            })
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
