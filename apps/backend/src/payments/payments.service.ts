@@ -163,10 +163,16 @@ export class PaymentsService {
            const paymentIntent = await this.stripe.paymentIntents.capture(payment.stripePaymentId);
            
            if (paymentIntent.status === 'succeeded') {
-                await this.prisma.payment.update({
-                    where: { orderId },
-                    data: { status: 'CAPTURED' },
-                });
+                await this.prisma.$transaction([
+                  this.prisma.payment.update({
+                      where: { orderId },
+                      data: { status: 'CAPTURED' },
+                  }),
+                  this.prisma.order.update({
+                      where: { id: orderId },
+                      data: { paymentStatus: 'CAPTURED' },
+                  }),
+                ]);
            }
        } catch (error) {
            this.logger.error(`Failed to capture payment for order ${orderId}: ${(error as Error).message}`);
@@ -356,6 +362,27 @@ export class PaymentsService {
     }
 
     switch (event.type) {
+      // Buyer authorized the payment (card held, not yet captured)
+      case 'payment_intent.amount_capturable_updated': {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        const orderId = pi.metadata?.orderId;
+        if (orderId) {
+          await this.prisma.payment
+            .update({
+              where: { orderId },
+              data: { status: 'AUTHORIZED' },
+            })
+            .catch(() => null);
+          await this.prisma.order
+            .update({
+              where: { id: orderId },
+              data: { paymentStatus: 'AUTHORIZED' },
+            })
+            .catch(() => null);
+        }
+        break;
+      }
+
       case 'payment_intent.succeeded': {
         const pi = event.data.object as Stripe.PaymentIntent;
         const orderId = pi.metadata?.orderId;

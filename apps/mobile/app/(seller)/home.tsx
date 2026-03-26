@@ -8,7 +8,6 @@ import { Text } from '@/components/ui/text';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Inbox, LayoutGrid, FileText, Wallet, Bell, ArrowRight } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
-import { FadeInView } from '@/components/ui/FadeInView';
 
 const QUICK_ACTIONS = [
   {
@@ -61,20 +60,11 @@ export default function SellerHomeScreen() {
   );
 
   return (
-    <ScreenContainer standalone noAnimation bg="#ffffff">
+    <ScreenContainer standalone noAnimation bg="#F3F4F6">
       {/* MINIMAL TOP BAR */}
-      <View
-        style={{
-          paddingTop: 16,
-          paddingBottom: 16,
-          paddingHorizontal: 24,
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
+      <View className="pt-4 pb-4 px-6 flex-row justify-between items-center">
         <View>
-          <Text style={{ fontSize: 28, fontWeight: '800', color: '#111827', letterSpacing: -0.5 }}>
+          <Text className="text-[28px] font-extrabold text-gray-900 tracking-tight">
             Sveiki, {user?.firstName || 'Pārdevēj'}!
           </Text>
         </View>
@@ -83,217 +73,139 @@ export default function SellerHomeScreen() {
             haptics.light();
             router.push('/notifications' as any);
           }}
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 22,
-            backgroundColor: '#f3f4f6',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+          className="w-11 h-11 rounded-full bg-white items-center justify-center shadow-sm"
         >
           <Bell size={22} color="#111827" />
         </TouchableOpacity>
       </View>
 
       <ScrollView
-        style={{ flex: 1 }}
+        className="flex-1"
         contentContainerStyle={{
           paddingBottom: TAB_H + insets.bottom + 32,
           paddingHorizontal: 24,
-          paddingTop: 32,
+          paddingTop: 16,
         }}
         showsVerticalScrollIndicator={false}
       >
         {/* STATUS CARD (UBER STYLE) */}
-        <FadeInView variant="fadeSlideUp" index={0}>
+        <View className="mb-6">
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => {
               haptics.medium();
               router.push('/(seller)/incoming' as any);
             }}
-            style={{
-              backgroundColor: pendingCount && pendingCount > 0 ? '#111827' : '#f3f4f6',
-              borderRadius: 24,
-              padding: 24,
-              marginBottom: 32,
-              minHeight: 140,
-              justifyContent: 'space-between',
-            }}
+            className={`rounded-3xl p-6 min-h-[160px] justify-between ${
+              pendingCount !== null && pendingCount > 0
+                ? 'bg-black'
+                : 'bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
+            }`}
           >
             {pendingCount !== null ? (
               pendingCount > 0 ? (
                 <>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                    }}
-                  >
+                  <View className="flex-row justify-between items-start">
                     <View>
-                      <Text
-                        style={{
-                          color: '#9ca3af',
-                          fontSize: 16,
-                          fontWeight: '600',
-                          marginBottom: 4,
-                        }}
-                      >
-                        Jauni pasūtījumi
-                      </Text>
-                      <Text
-                        style={{
-                          color: '#ffffff',
-                          fontSize: 40,
-                          fontWeight: '800',
-                          letterSpacing: -1,
-                        }}
-                      >
+                      <View className="flex-row items-center mb-1">
+                        <View className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                        <Text className="text-gray-300 text-[15px] font-medium tracking-tight">
+                          Jauni pasūtījumi
+                        </Text>
+                      </View>
+                      <Text className="text-white text-[64px] font-bold tracking-tighter leading-none mt-2">
                         {pendingCount}
                       </Text>
                     </View>
-                    <View
-                      style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 24,
-                        backgroundColor: 'rgba(255,255,255,0.1)',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <ArrowRight size={24} color="#ffffff" />
+                    <View className="w-12 h-12 rounded-full bg-white/10 items-center justify-center">
+                      <ArrowRight size={24} color="#ffffff" strokeWidth={2.5} />
                     </View>
                   </View>
-                  <Text
-                    style={{ color: '#ffffff', fontSize: 16, fontWeight: '500', marginTop: 16 }}
-                  >
+                  <Text className="text-white text-[15px] font-medium mt-4 opacity-80">
                     Pieskaries, lai skatītu
                   </Text>
                 </>
               ) : (
                 <>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                    }}
-                  >
+                  <View className="flex-row justify-between items-start">
                     <View>
-                      <Text
-                        style={{
-                          color: '#6b7280',
-                          fontSize: 16,
-                          fontWeight: '600',
-                          marginBottom: 4,
-                        }}
-                      >
-                        Statuss
-                      </Text>
-                      <Text
-                        style={{
-                          color: '#111827',
-                          fontSize: 24,
-                          fontWeight: '800',
-                          letterSpacing: -0.5,
-                        }}
-                      >
+                      <View className="flex-row items-center mb-1">
+                        <View className="w-2 h-2 rounded-full bg-gray-300 mr-2" />
+                        <Text className="text-gray-500 text-[15px] font-medium tracking-tight">
+                          Statuss
+                        </Text>
+                      </View>
+                      <Text className="text-black text-[28px] font-bold tracking-tight mt-2">
                         Gatavs darbam
                       </Text>
                     </View>
-                    <View
-                      style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 24,
-                        backgroundColor: '#ffffff',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Inbox size={24} color="#111827" />
+                    <View className="w-12 h-12 rounded-full bg-gray-100 items-center justify-center">
+                      <Inbox size={24} color="#000000" strokeWidth={2} />
                     </View>
                   </View>
-                  <Text
-                    style={{ color: '#6b7280', fontSize: 16, fontWeight: '500', marginTop: 16 }}
-                  >
-                    Jaunu pasūtījumu pagaidām nav
+                  <Text className="text-gray-500 text-[15px] font-medium mt-6">
+                    Pagaidām nav jaunu pieprasījumu
                   </Text>
                 </>
               )
             ) : (
-              <View style={{ flex: 1, backgroundColor: 'transparent' }} />
+              <View className="flex-1" />
             )}
           </TouchableOpacity>
-        </FadeInView>
+        </View>
 
         {/* QUICK ACTIONS GRID */}
-        <FadeInView variant="fadeSlideUp" index={1}>
-          <View style={{ gap: 12 }}>
-            {/* Row 1 */}
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              {QUICK_ACTIONS.slice(0, 2).map((action) => {
-                const Icon = action.icon;
-                return (
-                  <TouchableOpacity
-                    key={action.id}
-                    onPress={() => {
-                      haptics.light();
-                      router.push(action.route as any);
-                    }}
-                    activeOpacity={0.7}
-                    style={{
-                      flex: 1,
-                      backgroundColor: '#f3f4f6', // Uber style flat gray
-                      borderRadius: 16,
-                      padding: 16,
-                      height: 100, // Squator rectangles instead of huge squares
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    <Icon size={24} color="#111827" />
-                    <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
-                      {action.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* Row 2 */}
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              {QUICK_ACTIONS.slice(2, 4).map((action) => {
-                const Icon = action.icon;
-                return (
-                  <TouchableOpacity
-                    key={action.id}
-                    onPress={() => {
-                      haptics.light();
-                      router.push(action.route as any);
-                    }}
-                    activeOpacity={0.7}
-                    style={{
-                      flex: 1,
-                      backgroundColor: '#f3f4f6', // Uber style flat gray
-                      borderRadius: 16,
-                      padding: 16,
-                      height: 100, // Squator rectangles instead of huge squares
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    <Icon size={24} color="#111827" />
-                    <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
-                      {action.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+        <View className="gap-3">
+          {/* Row 1 */}
+          <View className="flex-row gap-3">
+            {QUICK_ACTIONS.slice(0, 2).map((action) => {
+              const Icon = action.icon;
+              return (
+                <TouchableOpacity
+                  key={action.id}
+                  onPress={() => {
+                    haptics.light();
+                    router.push(action.route as any);
+                  }}
+                  activeOpacity={0.7}
+                  className="flex-1 bg-white rounded-3xl p-4 h-[116px] justify-between shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+                >
+                  <View className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center">
+                    <Icon size={20} color="#000000" strokeWidth={2} />
+                  </View>
+                  <Text className="text-[16px] font-semibold text-black ml-1 tracking-tight">
+                    {action.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
-        </FadeInView>
+
+          {/* Row 2 */}
+          <View className="flex-row gap-3">
+            {QUICK_ACTIONS.slice(2, 4).map((action) => {
+              const Icon = action.icon;
+              return (
+                <TouchableOpacity
+                  key={action.id}
+                  onPress={() => {
+                    haptics.light();
+                    router.push(action.route as any);
+                  }}
+                  activeOpacity={0.7}
+                  className="flex-1 bg-white rounded-3xl p-4 h-[116px] justify-between shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+                >
+                  <View className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center">
+                    <Icon size={20} color="#000000" strokeWidth={2} />
+                  </View>
+                  <Text className="text-[16px] font-semibold text-black ml-1 tracking-tight">
+                    {action.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
       </ScrollView>
     </ScreenContainer>
   );
