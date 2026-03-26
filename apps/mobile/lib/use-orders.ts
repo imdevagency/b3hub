@@ -132,7 +132,7 @@ export function useOrders() {
       list.push({
         kind: 'transport',
         data: o,
-        sortDate: new Date(o.pickupDate).getTime(),
+        sortDate: o.pickupDate ? new Date(o.pickupDate).getTime() : Date.now(),
         isActive: reqBucket(o.status) === 'ACTIVE',
       });
     });

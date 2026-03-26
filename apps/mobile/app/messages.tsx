@@ -3,18 +3,17 @@
  * Conversation list view for the in-app chat on mobile.
  */
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiChatRoom } from '@/lib/api';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SkeletonJobRow } from '@/components/ui/Skeleton';
 import { t } from '@/lib/translations';
 import { colors, spacing, radius, shadows } from '@/lib/theme';
 import {
-  ArrowLeft,
   MessageCircle,
   Truck,
   Trash2,
@@ -128,7 +127,6 @@ function RoomCard({ item, onPress }: { item: ApiChatRoom; onPress: () => void })
 export default function MessagesScreen() {
   const { token } = useAuth();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const handleBack = () =>
     router.canGoBack() ? router.back() : router.replace('/(buyer)/home' as any);
   const [rooms, setRooms] = useState<ApiChatRoom[]>([]);
@@ -168,24 +166,8 @@ export default function MessagesScreen() {
   );
 
   return (
-    <ScreenContainer standalone topInset={0} bg={colors.bgCard}>
-      {/* Custom Uber-style header — centered title, prominent back button */}
-      <View style={[s.header, { paddingTop: insets.top }]}>
-        <TouchableOpacity
-          style={s.backBtn}
-          onPress={handleBack}
-          activeOpacity={0.72}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel="Atpakaļ"
-        >
-          <ArrowLeft size={20} color={colors.textPrimary} strokeWidth={2.2} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle} numberOfLines={1}>
-          {t.nav.messages}
-        </Text>
-        <View style={{ width: 38 }} />
-      </View>
+    <ScreenContainer standalone bg={colors.bgCard}>
+      <ScreenHeader title={t.nav.messages} onBack={handleBack} />
 
       {loading ? (
         <View style={s.skeletonWrap}>
@@ -263,32 +245,6 @@ export default function MessagesScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  // Custom Uber-style header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-    backgroundColor: colors.bgCard,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.bgMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-
   skeletonWrap: {
     paddingHorizontal: spacing.base,
     paddingTop: spacing.sm,

@@ -25,11 +25,9 @@ import {
 } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { lv } from 'date-fns/locale';
-import { useOrders } from '@/lib/use-orders';
+import { useOrders, type FilterKey } from '@/lib/use-orders';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonCard } from '@/components/ui/Skeleton';
-
-type FilterKey = 'ALL' | 'ACTIVE' | 'DONE' | 'CANCELLED';
 
 export default function OrdersScreen() {
   const router = useRouter();
@@ -44,11 +42,7 @@ export default function OrdersScreen() {
 
   const [showTypePicker, setShowTypePicker] = useState(false);
 
-  // Helper to change filter
-  const handleFilterChange = (key: string) => {
-    // Cast to expected type - the hook expects 'ALL' | 'ACTIVE' | 'DONE' | 'CANCELLED'
-    setFilter(key as any);
-  };
+  const handleFilterChange = (key: FilterKey) => setFilter(key);
 
   const handleNewOrder = () => {
     setShowTypePicker(true);
@@ -114,6 +108,11 @@ export default function OrdersScreen() {
             label="Pabeigtie"
             active={filter === 'DONE'}
             onPress={() => handleFilterChange('DONE')}
+          />
+          <FilterChip
+            label="Atceltie"
+            active={filter === 'CANCELLED'}
+            onPress={() => handleFilterChange('CANCELLED')}
           />
         </ScrollView>
       </View>
@@ -292,7 +291,7 @@ function MaterialOrderCard({ order }: { order: any }) {
       </View>
 
       <View style={s.cardFooter}>
-        <Text style={s.price}>€{order.totalAmount}</Text>
+        <Text style={s.price}>{order.totalAmount != null ? `€${order.totalAmount}` : '—'}</Text>
         <View style={s.chevronBox}>
           <ChevronRight size={18} color="#94a3b8" />
         </View>
@@ -324,7 +323,8 @@ function TransportRequestCard({ req }: { req: any }) {
       </View>
 
       <Text style={s.cardTitle} numberOfLines={2}>
-        {req.pickupAddress.split(',')[0]} → {req.deliveryAddress.split(',')[0]}
+        {(req.pickupAddress ?? '').split(',')[0] || 'Iekraušana'} →{' '}
+        {(req.deliveryAddress ?? '').split(',')[0] || 'Piegāde'}
       </Text>
 
       <View style={s.cardMeta}>
@@ -445,7 +445,7 @@ function SkipOrderCard({ order }: { order: any }) {
       </View>
 
       <View style={s.cardFooter}>
-        <Text style={s.price}>€{order.totalAmount}</Text>
+        <Text style={s.price}>{order.totalAmount != null ? `€${order.totalAmount}` : '—'}</Text>
         <View style={s.chevronBox}>
           <ChevronRight size={18} color="#94a3b8" />
         </View>

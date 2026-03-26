@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
@@ -12,11 +11,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useToast } from '@/components/ui/Toast';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { t } from '@/lib/translations';
 import {
-  ArrowLeft,
-  BellOff,
-  CheckCheck,
   Package,
   CheckCircle2,
   Truck,
@@ -30,10 +25,9 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
 import type { ApiNotification } from '@/lib/api';
 
-type LucideIcon = React.ComponentType<{ size?: number; color?: string }>;
+type LucideIcon = React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
 interface TypeInfo {
   Icon: LucideIcon;
   bg: string;
@@ -121,26 +115,32 @@ function NotifCard({
   };
 
   return (
-    <View>
+    <View className="border-b border-gray-100">
       <TouchableOpacity
-        style={[s.card, !notif.isRead && s.cardUnread]}
+        className={`flex-row items-start gap-4 p-5 bg-white ${
+          !notif.isRead ? 'bg-blue-50/50' : ''
+        }`}
         onPress={handlePress}
-        activeOpacity={0.8}
+        activeOpacity={0.7}
       >
-        <View style={s.iconWrap}>
-          <View style={[s.iconCircle, { backgroundColor: bg }]}>
-            <Icon size={20} color={iconColor} />
+        <View className="relative">
+          <View className="w-12 h-12 rounded-full bg-gray-100 items-center justify-center">
+            <Icon size={22} color="#000000" strokeWidth={2} />
           </View>
-          {!notif.isRead && <View style={s.unreadDot} />}
+          {!notif.isRead && (
+            <View className="absolute top-0 right-0 w-3 h-3 rounded-full bg-blue-600 border-2 border-white" />
+          )}
         </View>
-        <View style={{ flex: 1, gap: 2 }}>
-          <Text style={s.cardTitle} numberOfLines={1}>
+        <View className="flex-1 pt-1 space-y-1">
+          <Text className="text-[16px] font-semibold text-black tracking-tight" numberOfLines={1}>
             {notif.title}
           </Text>
-          <Text style={s.cardMsg} numberOfLines={2}>
+          <Text className="text-[15px] text-gray-500 leading-[22px]" numberOfLines={2}>
             {notif.message}
           </Text>
-          <Text style={s.cardTime}>{timeAgo(notif.createdAt)}</Text>
+          <Text className="text-[13px] text-gray-400 mt-1 font-medium">
+            {timeAgo(notif.createdAt)}
+          </Text>
         </View>
       </TouchableOpacity>
     </View>
@@ -205,16 +205,20 @@ export default function NotificationsScreen() {
   const unreadCount = notifs.filter((n) => !n.isRead).length;
 
   return (
-    <ScreenContainer standalone>
+    <ScreenContainer standalone noAnimation bg="#ffffff">
       <ScreenHeader
-        title={unreadCount > 0 ? `${t.nav.notifications} (${unreadCount})` : t.nav.notifications}
-        rightSlot={
+        title={unreadCount > 0 ? `Paziņojumi (${unreadCount})` : 'Paziņojumi'}
+        rightAction={
           unreadCount > 0 ? (
-            <TouchableOpacity onPress={markAllRead} disabled={markingAll} hitSlop={12}>
+            <TouchableOpacity
+              onPress={markAllRead}
+              disabled={markingAll}
+              className="h-10 px-4 rounded-full bg-gray-100 items-center justify-center"
+            >
               {markingAll ? (
-                <ActivityIndicator size="small" color="#111827" />
+                <ActivityIndicator size="small" color="#000000" />
               ) : (
-                <CheckCheck size={20} color="#111827" />
+                <Text className="text-[14px] font-semibold text-black">Atzīmēt</Text>
               )}
             </TouchableOpacity>
           ) : undefined
@@ -222,92 +226,39 @@ export default function NotificationsScreen() {
       />
 
       {loading ? (
-        <SkeletonCard count={5} />
+        <View className="p-4 gap-2">
+          <SkeletonCard count={5} />
+        </View>
       ) : (
         <ScrollView
-          contentContainerStyle={s.list}
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => load(true)}
-              tintColor="#111827"
+              tintColor="#000000"
             />
           }
         >
           {notifs.length === 0 ? (
-            <EmptyState
-              icon={<BellOff size={32} color="#9ca3af" />}
-              title="Nav paziņojumu"
-              subtitle="Šeit parādīsies jūsu paziņojumi"
-            />
+            <View className="flex-1 min-h-[400px] items-center justify-center">
+              <View className="w-16 h-16 rounded-full bg-gray-100 items-center justify-center mb-4">
+                <Bell size={28} color="#9ca3af" strokeWidth={2} />
+              </View>
+              <Text className="text-[20px] font-bold text-black mb-2">Nav paziņojumu</Text>
+              <Text className="text-[16px] text-gray-500">Šeit parādīsies jūsu paziņojumi</Text>
+            </View>
           ) : (
-            notifs.map((n) => <NotifCard key={n.id} notif={n} onMarkRead={markRead} />)
+            <View className="bg-white">
+              {notifs.map((n) => (
+                <NotifCard key={n.id} notif={n} onMarkRead={markRead} />
+              ))}
+            </View>
           )}
         </ScrollView>
       )}
     </ScreenContainer>
   );
 }
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f7' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e5e7eb',
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: { fontSize: 17, fontWeight: '700', fontFamily: 'Inter_700Bold', color: '#111827' },
-  list: { padding: 16, gap: 10, flexGrow: 1 },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardUnread: {
-    borderLeftWidth: 3,
-    borderLeftColor: '#111827',
-  },
-  iconWrap: { position: 'relative' },
-  iconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  unreadDot: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#111827',
-    borderWidth: 1.5,
-    borderColor: '#fff',
-  },
-  cardTitle: { fontSize: 14, fontWeight: '700', fontFamily: 'Inter_700Bold', color: '#111827' },
-  cardMsg: { fontSize: 13, color: '#374151', lineHeight: 18 },
-  cardTime: { fontSize: 11, color: '#9ca3af', marginTop: 2 },
-});

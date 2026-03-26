@@ -11,8 +11,8 @@ import {
   UIManager,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, ChevronDown, MessageCircle, Mail } from 'lucide-react-native';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { ChevronDown, MessageCircle, Mail } from 'lucide-react-native';
 import { Linking } from 'react-native';
 
 if (Platform.OS === 'android') {
@@ -130,19 +130,9 @@ function FaqItem({ q, a, isLast }: { q: string; a: string; isLast: boolean }) {
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function HelpScreen() {
-  const router = useRouter();
-
   return (
     <ScreenContainer standalone bg="#f2f2f7">
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-          <ArrowLeft size={20} color="#111827" />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={s.headerTitle}>Biežāk uzdotie jautājumi</Text>
-        </View>
-      </View>
+      <ScreenHeader title="Biežāk uzdotie jautājumi" />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
         <Text style={s.intro}>
@@ -199,27 +189,6 @@ export default function HelpScreen() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-    backgroundColor: '#f9fafb',
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#111827' },
-
   scroll: { padding: 20 },
   intro: { fontSize: 14, color: '#6b7280', lineHeight: 21, marginBottom: 24 },
 
