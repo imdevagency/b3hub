@@ -1,15 +1,43 @@
-import { Controller, Post, Body, Param, UseGuards, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Get,
+  Headers,
+  Req,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import type { RawBodyRequest } from '@nestjs/common';
+import type { Request } from 'express';
 import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { RequestingUser } from '../common/types/requesting-user.interface';
+import type { RequestingUser } from '../common/types/requesting-user.interface';
 
 @Controller('payments')
-@UseGuards(JwtAuthGuard)
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
+  /**
+   * POST /payments/webhook
+   * Stripe sends events here (no JWT — verified by Stripe-Signature header).
+   * NestJS must be configured to expose rawBody for this route.
+   */
+  @Post('webhook')
+  @HttpCode(HttpStatus.OK)
+  async handleWebhook(
+    @Req() req: RawBodyRequest<Request>,
+    @Headers('stripe-signature') signature: string,
+  ) {
+    await this.paymentsService.handleWebhookEvent(req.rawBody!, signature);
+    return { received: true };
+  }
+
   @Post('create-intent/:orderId')
+  @UseGuards(JwtAuthGuard)
   createIntent(
     @Param('orderId') orderId: string,
     @CurrentUser() user: RequestingUser,
@@ -18,6 +46,7 @@ export class PaymentsController {
   }
 
   @Post('onboard')
+  @UseGuards(JwtAuthGuard)
   createConnectLink(@CurrentUser() user: RequestingUser) {
     return this.paymentsService.createConnectAccountLink(user);
   }

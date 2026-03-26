@@ -11,6 +11,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -21,6 +22,7 @@ import {
   AlertCircle,
   CreditCard,
   ChevronRight,
+  Download,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiInvoice, type InvoiceStatus } from '@/lib/api';
@@ -29,6 +31,19 @@ import { haptics } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { API_URL } from '@/lib/api/common';
+
+// Guard: expo-file-system / expo-sharing — available in dev builds and Expo Go
+let FileSystem: typeof import('expo-file-system') | null = null;
+let Sharing: typeof import('expo-sharing') | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  FileSystem = require('expo-file-system');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  Sharing = require('expo-sharing');
+} catch {
+  /* fallback — download unavailable */
+}
 
 // ── Helpers ────────────────────────────────────────────────────
 
@@ -90,12 +105,16 @@ function InvoiceModal({
   onClose,
   onPay,
   paying,
+  onDownload,
+  downloading,
 }: {
   invoice: ApiInvoice | null;
   visible: boolean;
   onClose: () => void;
   onPay: () => void;
   paying: boolean;
+  onDownload: () => void;
+  downloading: boolean;
 }) {
   const lastRef = useRef<ApiInvoice | null>(invoice);
   if (invoice) lastRef.current = invoice;
@@ -193,6 +212,23 @@ function InvoiceModal({
             )}
           </TouchableOpacity>
         )}
+
+        {/* Download PDF CTA */}
+        <TouchableOpacity
+          style={m.downloadBtn}
+          onPress={onDownload}
+          disabled={downloading}
+          activeOpacity={0.85}
+        >
+          {downloading ? (
+            <ActivityIndicator color="#111827" />
+          ) : (
+            <>
+              <Download size={18} color="#111827" />
+              <Text style={m.downloadBtnText}>Lejupielādēt PDF</Text>
+            </>
+          )}
+        </TouchableOpacity>
       </View>
     </BottomSheet>
   );
@@ -215,6 +251,7 @@ export default function InvoicesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selected, setSelected] = useState<ApiInvoice | null>(null);
   const [paying, setPaying] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [filter, setFilter] = useState<InvoiceStatus | 'ALL'>('ALL');
 
   const load = useCallback(
@@ -257,6 +294,44 @@ export default function InvoicesScreen() {
       toast.error(err instanceof Error ? err.message : 'Neizdevās apstrādāt apmaksu.');
     } finally {
       setPaying(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!selected || !token || !FileSystem || !Sharing) {
+      toast.error('Lejupielāde nav pieejama šajā ierīcē.');
+      return;
+    }
+    setDownloading(true);
+    haptics.light();
+    try {
+      const url = `${API_URL}/invoices/${selected.id}/pdf`;
+      const fileUri = `${FileSystem.documentDirectory}invoice-${selected.invoiceNumber}.pdf`;
+
+      const downloadRes = await FileSystem.downloadAsync(url, fileUri, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (downloadRes.status !== 200) {
+        throw new Error('Neizdevās lejupielādēt PDF');
+      }
+
+      if (Platform.OS === 'ios') {
+        await Sharing.shareAsync(downloadRes.uri, {
+          UTI: 'com.adobe.pdf',
+          mimeType: 'application/pdf',
+        });
+      } else {
+        await Sharing.shareAsync(downloadRes.uri);
+      }
+      haptics.success();
+    } catch (err) {
+      haptics.error();
+      toast.error(err instanceof Error ? err.message : 'Neizdevās piekļūt rēķinam.');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -364,6 +439,8 @@ export default function InvoicesScreen() {
         onClose={() => setSelected(null)}
         onPay={handlePay}
         paying={paying}
+        onDownload={handleDownload}
+        downloading={downloading}
       />
     </ScreenContainer>
   );
@@ -525,4 +602,15 @@ const m = StyleSheet.create({
   },
   payBtnOverdue: { backgroundColor: '#dc2626' },
   payBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  downloadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 14,
+    backgroundColor: '#f3f4f6',
+    marginTop: 12,
+    gap: 8,
+  },
+  downloadBtnText: { color: '#111827', fontWeight: '600', fontSize: 15 },
 });

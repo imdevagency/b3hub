@@ -28,6 +28,7 @@ import { RequestingUser } from '../common/types/requesting-user.interface';
 import { EmailService } from '../email/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
+import { PaymentsService } from '../payments/payments.service';
 
 @Injectable()
 export class OrdersService {
@@ -55,6 +56,7 @@ export class OrdersService {
     private prisma: PrismaService,
     private email: EmailService,
     private notifications: NotificationsService,
+    private payments: PaymentsService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, currentUser: RequestingUser) {
@@ -82,12 +84,14 @@ export class OrdersService {
       );
     }
 
-    // Generate order number
-    const orderNumber = await this.generateOrderNumber();
+    // ── Enrich items and group by supplier ────────────────────────────────────
+    type EnrichedItem = (typeof items)[0] & {
+      resolvedUnitPrice: number;
+      supplierId: string;
+    };
+    const itemsBySupplier = new Map<string, EnrichedItem[]>();
+    let grandSubtotal = 0;
 
-    // Calculate totals
-    let subtotal = 0;
-    const supplierIds = new Set<string>();
     for (const item of items) {
       const material = await this.prisma.material.findUnique({
         where: { id: item.materialId },
@@ -96,35 +100,95 @@ export class OrdersService {
       if (!material) {
         throw new NotFoundException(`Material ${item.materialId} not found`);
       }
-      subtotal += material.basePrice * item.quantity;
-      supplierIds.add(material.supplierId);
+      const enriched: EnrichedItem = {
+        ...item,
+        resolvedUnitPrice: material.basePrice,
+        supplierId: material.supplierId,
+      };
+      grandSubtotal += material.basePrice * item.quantity;
+      if (!itemsBySupplier.has(material.supplierId)) {
+        itemsBySupplier.set(material.supplierId, []);
+      }
+      itemsBySupplier.get(material.supplierId)!.push(enriched);
     }
 
-    if (supplierIds.size > 1) {
-      throw new BadRequestException(
-        'Mixed-supplier carts are not supported yet. Please place one order per supplier.',
-      );
-    }
+    const grandTax = grandSubtotal * 0.21; // 21% VAT (Latvia)
+    const grandTotal = grandSubtotal + grandTax + (orderData.deliveryFee || 0);
 
-    const tax = subtotal * 0.19; // 19% VAT
-    const total = subtotal + tax + (orderData.deliveryFee || 0);
-
-    // ── Credit limit check ────────────────────────────────────────────────────
-    // If the buyer has a credit limit configured, verify this order would not exceed it.
+    // ── Credit limit check (whole cart) ──────────────────────────────────────
     const buyerProfile = await this.prisma.buyerProfile.findUnique({
       where: { userId },
       select: { creditLimit: true, creditUsed: true },
     });
     if (buyerProfile?.creditLimit != null) {
-      const remaining = buyerProfile.creditLimit - (buyerProfile.creditUsed ?? 0);
-      if (total > remaining) {
+      const remaining =
+        buyerProfile.creditLimit - (buyerProfile.creditUsed ?? 0);
+      if (grandTotal > remaining) {
         throw new BadRequestException(
-          `Order total €${total.toFixed(2)} exceeds your remaining credit limit of €${remaining.toFixed(2)}`,
+          `Order total €${grandTotal.toFixed(2)} exceeds your remaining credit limit of €${remaining.toFixed(2)}`,
         );
       }
     }
 
-    // Create order with items
+    // Increment credit once for the whole cart (non-blocking, best-effort)
+    if (buyerProfile?.creditLimit != null) {
+      this.prisma.buyerProfile
+        .update({
+          where: { userId },
+          data: { creditUsed: { increment: grandTotal } },
+        })
+        .catch(() => null);
+    }
+
+    // ── Create one order per supplier ─────────────────────────────────────────
+    const createdOrders: Array<
+      Awaited<ReturnType<OrdersService['createSupplierOrder']>>
+    > = [];
+
+    for (const [, supplierItems] of itemsBySupplier) {
+      const order = await this.createSupplierOrder(
+        supplierItems,
+        orderData,
+        buyerCompanyId,
+        userId,
+      );
+      createdOrders.push(order);
+    }
+
+    // Single supplier: return the plain order for backward compatibility.
+    // Multiple suppliers: return { orders: [...] } so clients can handle the split.
+    if (createdOrders.length === 1) {
+      return createdOrders[0];
+    }
+    return { orders: createdOrders };
+  }
+
+  /**
+   * Creates one order for a single supplier's item group and fires all side-effects
+   * (email, transport job, seller notifications). Extracted so `create()` can call
+   * it once per supplier when the cart contains items from multiple suppliers.
+   */
+  private async createSupplierOrder(
+    items: Array<{
+      materialId: string;
+      quantity: number;
+      unit: any;
+      unitPrice: number;
+      resolvedUnitPrice: number;
+      supplierId: string;
+    }>,
+    orderData: Omit<CreateOrderDto, 'items'>,
+    buyerCompanyId: string,
+    userId: string,
+  ) {
+    const orderNumber = await this.generateOrderNumber();
+    const subtotal = items.reduce(
+      (sum, i) => sum + i.resolvedUnitPrice * i.quantity,
+      0,
+    );
+    const tax = subtotal * 0.21; // 21% VAT (Latvia)
+    const total = subtotal + tax + (orderData.deliveryFee || 0);
+
     const order = await this.prisma.order.create({
       data: {
         orderNumber,
@@ -154,8 +218,8 @@ export class OrdersService {
             materialId: item.materialId,
             quantity: item.quantity,
             unit: item.unit,
-            unitPrice: item.unitPrice,
-            total: item.unitPrice * item.quantity,
+            unitPrice: item.resolvedUnitPrice,
+            total: item.resolvedUnitPrice * item.quantity,
           })),
         },
       },
@@ -181,7 +245,7 @@ export class OrdersService {
       },
     });
 
-    // Send order confirmation email to buyer (non-blocking)
+    // Email (fire-and-forget)
     if (order.buyer?.email) {
       this.email
         .sendOrderConfirmation(order.buyer.email, order.buyer.name ?? '', {
@@ -199,30 +263,17 @@ export class OrdersService {
         .catch(() => null);
     }
 
-    // Update creditUsed on the buyer profile (non-blocking, best-effort)
-    if (buyerProfile?.creditLimit != null) {
-      this.prisma.buyerProfile
-        .update({
-          where: { userId },
-          data: { creditUsed: { increment: total } },
-        })
-        .catch(() => null);
-    }
-
-    // Auto-create a transport job for material orders so drivers see it on the job board immediately.
+    // Auto-create transport job (fire-and-forget, non-fatal)
     if (orderData.orderType === OrderType.MATERIAL && items.length > 0) {
-      try {
-        await this.spawnTransportJob(order.id, items, orderData, total);
-      } catch (err) {
-        // Non-fatal — log but don't roll back the order
+      this.spawnTransportJob(order.id, items, orderData, total).catch((err) => {
         this.logger.error(
           `Failed to auto-create transport job for order ${order.id}:`,
           err,
         );
-      }
+      });
     }
 
-    // Notify seller(s) of new order (fire-and-forget)
+    // Notify sellers (fire-and-forget)
     this.notifyOrderSellers(order.id, order.orderNumber).catch(() => null);
 
     return order;
@@ -543,14 +594,68 @@ export class OrdersService {
       }
     }
 
-    // Release credit when an order is cancelled
-    if (status === OrderStatus.CANCELLED && order.total) {
-      this.prisma.buyerProfile
-        .update({
-          where: { userId: order.createdById },
-          data: { creditUsed: { decrement: Number(order.total) } },
-        })
-        .catch(() => null);
+    // Capture payment when seller confirms the order (fire-and-forget, non-fatal)
+    if (status === OrderStatus.CONFIRMED) {
+      this.payments.capturePayment(id).catch((err) =>
+        this.logger.error(`capturePayment failed for order ${id}: ${err.message}`),
+      );
+    }
+
+    // Release funds to seller/driver when order is completed (fire-and-forget, non-fatal)
+    if (status === OrderStatus.COMPLETED) {
+      this.payments.releaseFunds(id).catch((err) =>
+        this.logger.error(`releaseFunds failed for order ${id}: ${err.message}`),
+      );
+    }
+
+    // Release credit and cascade-cancel transport jobs when order is cancelled
+    if (status === OrderStatus.CANCELLED) {
+      if (order.total) {
+        this.prisma.buyerProfile
+          .update({
+            where: { userId: order.createdById },
+            data: { creditUsed: { decrement: Number(order.total) } },
+          })
+          .catch(() => null);
+      }
+
+      // Cancel all transport jobs for this order that are still in a pre-delivery state
+      const cancelableStatuses: TransportJobStatus[] = [
+        TransportJobStatus.AVAILABLE,
+        TransportJobStatus.ASSIGNED,
+        TransportJobStatus.ACCEPTED,
+        TransportJobStatus.EN_ROUTE_PICKUP,
+        TransportJobStatus.AT_PICKUP,
+        TransportJobStatus.LOADED,
+        TransportJobStatus.EN_ROUTE_DELIVERY,
+        TransportJobStatus.AT_DELIVERY,
+      ];
+
+      const jobsToCancel = await this.prisma.transportJob.findMany({
+        where: { orderId: id, status: { in: cancelableStatuses } },
+        select: { id: true, driverId: true },
+      });
+
+      if (jobsToCancel.length > 0) {
+        await this.prisma.transportJob.updateMany({
+          where: { orderId: id, status: { in: cancelableStatuses } },
+          data: { status: TransportJobStatus.CANCELLED },
+        });
+
+        for (const job of jobsToCancel) {
+          if (job.driverId) {
+            this.notifications
+              .create({
+                userId: job.driverId,
+                type: NotificationType.ORDER_CANCELLED,
+                title: 'Darbs atcelts',
+                message: `Pasūtījums #${order.orderNumber} ir atcelts. Jūsu transporta darbs tika atcelts.`,
+                data: { orderId: id, jobId: job.id },
+              })
+              .catch(() => null);
+          }
+        }
+      }
     }
 
     // Notify buyer of status change (fire-and-forget)
@@ -649,6 +754,45 @@ export class OrdersService {
       where: { id },
       data: { status: OrderStatus.CANCELLED },
     });
+
+    // Cascade-cancel any transport jobs that are still in progress
+    const cancelableStatuses: TransportJobStatus[] = [
+      TransportJobStatus.AVAILABLE,
+      TransportJobStatus.ASSIGNED,
+      TransportJobStatus.ACCEPTED,
+      TransportJobStatus.EN_ROUTE_PICKUP,
+      TransportJobStatus.AT_PICKUP,
+      TransportJobStatus.LOADED,
+      TransportJobStatus.EN_ROUTE_DELIVERY,
+      TransportJobStatus.AT_DELIVERY,
+    ];
+
+    const jobsToCancel = (order.transportJobs ?? []).filter((j) =>
+      cancelableStatuses.includes(j.status as TransportJobStatus),
+    );
+
+    if (jobsToCancel.length > 0) {
+      await this.prisma.transportJob.updateMany({
+        where: { orderId: id, status: { in: cancelableStatuses } },
+        data: { status: TransportJobStatus.CANCELLED },
+      });
+
+      // Notify each assigned driver
+      for (const job of jobsToCancel) {
+        const driverId = job.driverId ?? job.driver?.id;
+        if (driverId) {
+          this.notifications
+            .create({
+              userId: driverId,
+              type: NotificationType.ORDER_CANCELLED,
+              title: 'Darbs atcelts',
+              message: `Pasūtījums #${order.orderNumber} ir atcelts. Jūsu transporta darbs tika atcelts.`,
+              data: { orderId: id, jobId: job.id },
+            })
+            .catch(() => null);
+        }
+      }
+    }
 
     // Release credit on cancellation
     if (order.total) {

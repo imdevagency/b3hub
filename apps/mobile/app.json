@@ -58,6 +58,13 @@
     "plugins": [
       "expo-router",
       [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.b3hub",
+          "enableGooglePay": false
+        }
+      ],
+      [
         "expo-notifications",
         {
           "color": "#dc2626",

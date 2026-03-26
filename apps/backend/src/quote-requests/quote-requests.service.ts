@@ -21,6 +21,8 @@ import {
   PaymentStatus,
   QuoteRequestStatus,
   QuoteResponseStatus,
+  TransportJobStatus,
+  TransportJobType,
 } from '@prisma/client';
 
 const INCLUDE_REQUEST = {
@@ -164,11 +166,17 @@ export class QuoteRequestsService {
         select: { companyId: true },
       });
 
+      if (!buyer?.companyId) {
+        throw new BadRequestException(
+          'Your account is not linked to a company. Please complete your company profile before placing orders.',
+        );
+      }
+
       const newOrder = await tx.order.create({
         data: {
           orderNumber,
           orderType: OrderType.MATERIAL,
-          buyerId: buyer?.companyId ?? response.supplierId, // fallback
+          buyerId: buyer.companyId,
           createdById: userId,
           deliveryAddress: req.deliveryAddress,
           deliveryCity: req.deliveryCity,
@@ -223,6 +231,66 @@ export class QuoteRequestsService {
           data: { requestId, orderId: order.id },
         })
         .catch(() => null);
+    }
+
+    // Notify buyer that the order was created
+    this.notifications
+      .create({
+        userId,
+        type: NotificationType.ORDER_CONFIRMED,
+        title: 'Pasūtījums izveidots',
+        message: `Jūsu piedāvājuma pieprasījums #${req.requestNumber} ir pieņemts. Pasūtījums izveidots.`,
+        data: { orderId: order.id },
+      })
+      .catch(() => null);
+
+    // Spawn a transport job so drivers see this order on the job board
+    try {
+      const supplier = await this.prisma.company.findUnique({
+        where: { id: response.supplierId },
+        select: { street: true, city: true, state: true, postalCode: true },
+      });
+
+      if (supplier) {
+        const jobCount = await this.prisma.transportJob.count();
+        const d = new Date();
+        const jobNumber = `TRJ${d.getFullYear().toString().slice(-2)}${(d.getMonth() + 1).toString().padStart(2, '0')}${(jobCount + 1).toString().padStart(5, '0')}`;
+        const pickupDate = new Date();
+        pickupDate.setDate(pickupDate.getDate() + (response.etaDays ?? 1));
+
+        await this.prisma.transportJob.create({
+          data: {
+            jobNumber,
+            jobType: TransportJobType.MATERIAL_DELIVERY,
+            orderId: order.id,
+            pickupAddress: supplier.street ?? '',
+            pickupCity: supplier.city ?? '',
+            pickupState: supplier.state ?? '',
+            pickupPostal: supplier.postalCode ?? '',
+            pickupDate,
+            deliveryAddress: req.deliveryAddress,
+            deliveryCity: req.deliveryCity,
+            deliveryState: '',
+            deliveryPostal: '',
+            deliveryDate: pickupDate,
+            cargoType: req.materialName,
+            cargoWeight: req.quantity,
+            rate: order.total,
+            currency: 'EUR',
+            status: TransportJobStatus.AVAILABLE,
+          },
+        });
+
+        this.logger.log(
+          `Transport job ${jobNumber} created for RFQ order ${order.id} (${supplier.city} → ${req.deliveryCity})`,
+        );
+      }
+    } catch (err) {
+      // Non-fatal — log but don't undo the order
+      this.logger.error(
+        `Failed to spawn transport job for RFQ order ${order.id}:`,
+        err,
+      );
     }
 
     return order;

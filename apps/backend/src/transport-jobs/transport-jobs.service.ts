@@ -319,6 +319,89 @@ export class TransportJobsService {
     return `TRJ${year}${month}${number}`;
   }
 
+  /**
+   * When the driver submits an actual weight at LOADED, compare it against the
+   * ordered quantity. If there is a material difference (>1%), update the linked
+   * invoice and order totals to reflect the actual delivered weight and notify
+   * the buyer of the adjustment.
+   *
+   * @param orderId  The order linked to this transport job
+   * @param actualWeightKg  Weigh-bridge reading in kg
+   */
+  private async reconcileInvoiceWeight(
+    orderId: string,
+    actualWeightKg: number,
+  ): Promise<void> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: { select: { quantity: true, unit: true, unitPrice: true } },
+        invoices: { select: { id: true, paymentStatus: true } },
+      },
+    });
+
+    if (!order || order.items.length === 0) return;
+
+    // Only reconcile PENDING invoices — do not touch paid invoices
+    const invoice = order.invoices.find(
+      (inv) => inv.paymentStatus === 'PENDING',
+    );
+    if (!invoice) return;
+
+    // Convert actual weight to tonnes (same unit as order quantity)
+    const actualTonnes = actualWeightKg / 1000;
+    const orderedTonnes = Number(order.items[0].quantity);
+
+    // Skip if within 1% tolerance
+    const diff = Math.abs(actualTonnes - orderedTonnes);
+    if (orderedTonnes === 0 || diff / orderedTonnes < 0.01) return;
+
+    // Recalculate totals based on actual weight
+    const unitPrice = Number(order.items[0].unitPrice);
+    const actualSubtotal = Math.round(actualTonnes * unitPrice * 100) / 100;
+    const actualTax = Math.round(actualSubtotal * 0.21 * 100) / 100;
+    const actualTotal = actualSubtotal + actualTax;
+    const deliveryFee = Number(order.deliveryFee ?? 0);
+
+    await this.prisma.$transaction([
+      // Update invoice
+      this.prisma.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          subtotal: actualSubtotal,
+          tax: actualTax,
+          total: actualTotal + deliveryFee,
+        },
+      }),
+      // Update order totals
+      this.prisma.order.update({
+        where: { id: orderId },
+        data: {
+          subtotal: actualSubtotal,
+          tax: actualTax,
+          total: actualTotal + deliveryFee,
+        },
+      }),
+    ]);
+
+    // Notify buyer of the adjustment
+    const direction = actualTonnes > orderedTonnes ? 'palielināts' : 'samazināts';
+    const delta = Math.abs(actualTonnes - orderedTonnes).toFixed(2);
+    this.notifications
+      .create({
+        userId: order.createdById,
+        type: NotificationType.SYSTEM_ALERT,
+        title: 'Rēķins precizēts',
+        message: `Pasūtījums #${order.orderNumber}: faktiskais svars ${actualTonnes.toFixed(2)} t (pasūtīts ${orderedTonnes.toFixed(2)} t, starpība ${delta} t). Rēķins ${direction}. Jauna summa: €${(actualTotal + deliveryFee).toFixed(2)}.`,
+        data: { orderId, invoiceId: invoice.id },
+      })
+      .catch(() => null);
+
+    this.logger.log(
+      `Invoice ${invoice.id} reconciled for order ${orderId}: ${orderedTonnes}t ordered → ${actualTonnes.toFixed(3)}t actual (€${order.total} → €${(actualTotal + deliveryFee).toFixed(2)})`,
+    );
+  }
+
   // ── All jobs (dispatcher fleet view) ─────────────────────────
   async findAllAsUser(user: RequestingUser) {
     if (!this.isDispatcher(user)) {
@@ -903,6 +986,11 @@ export class TransportJobsService {
         this.documents
           .generateWeighingSlip(orderId, order.createdById, weight ?? 0, 't')
           .catch(() => {});
+      }
+
+      // Reconcile invoice if actual weight differs from the ordered quantity
+      if (dto.weightKg) {
+        this.reconcileInvoiceWeight(orderId, dto.weightKg).catch(() => null);
       }
     }
 

@@ -82,6 +82,7 @@ export interface ApiOrder {
   id: string;
   orderNumber: string;
   status: string;
+  paymentStatus?: string;
   items: {
     material: { name: string; category: string };
     quantity: number;

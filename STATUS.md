@@ -59,7 +59,7 @@ Each row is a product feature domain.
 | **Admin — Users**                | ✅ `admin/`                       | ✅ `/dashboard/admin/users`                                                                        | 📵                                                                             |                                                                                                                                                                       |
 | **Admin — Applications**         | ✅ `provider-applications/`       | ✅ `/dashboard/admin/applications`                                                                 | 📵                                                                             |                                                                                                                                                                       |
 | **Email Notifications**          | ✅ `email/` (Resend)              | 📵                                                                                                 | 📵                                                                             | Welcome, order confirmation, quotes. Falls back to `console.log` in dev when `RESEND_API_KEY` absent                                                                  |
-| **Payment / Stripe**             | ❌ Not built                      | ❌                                                                                                 | ❌                                                                             | Planned future feature                                                                                                                                                |
+| **Payment / Stripe**             | ✅ `payments/`                    | ✅ `/dashboard/orders/[id]` pay flow                                                               | ✅ `(buyer)/order/[id]` pay flow                                               | PaymentIntent + Stripe Connect + webhook; capture on CONFIRMED, release on COMPLETED; web/mobile checkout UI wired.                                                   |
 | **Settings**                     | (user profile)                    | ✅ `/dashboard/settings`                                                                           | ✅ `settings`                                                                  |                                                                                                                                                                       |
 
 ---
@@ -85,10 +85,11 @@ Each row is a product feature domain.
 
 ### Outstanding Gaps
 
-| Gap                                                                                  | Impact            | Area          |
-| ------------------------------------------------------------------------------------ | ----------------- | ------------- |
-| Stripe payment integration missing                                                   | No payment flow   | Backend + all |
-| Mixed-supplier material carts are blocked until order-group splitting is implemented | Marketplace scale | Orders        |
+| Gap                                                                                      | Impact                | Area              |
+| ---------------------------------------------------------------------------------------- | --------------------- | ----------------- |
+| ~~Stripe payment integration missing~~                                                   | ~~No payment flow~~   | ~~Backend + all~~ |
+| Verify Stripe publishable keys + native dev build for mobile payment sheet               | Runtime readiness     | Web + mobile      |
+| ~~Mixed-supplier material carts are blocked until order-group splitting is implemented~~ | ~~Marketplace scale~~ | ~~Orders~~        |
 
 ---
 

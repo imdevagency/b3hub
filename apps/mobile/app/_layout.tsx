@@ -56,6 +56,20 @@ try {
   /* ignore */
 }
 
+// Guard: Stripe React Native — requires native build (not available in Expo Go)
+let StripeProvider: React.ComponentType<{
+  publishableKey: string;
+  children?: React.ReactNode;
+}> | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  StripeProvider = require('@stripe/stripe-react-native').StripeProvider;
+} catch {
+  /* Expo Go fallback — Stripe unavailable */
+}
+
+const STRIPE_PK = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '';
+
 export default function RootLayout() {
   const notifListener = useRef<{ remove(): void } | null>(null);
 
@@ -100,20 +114,39 @@ export default function RootLayout() {
           <AuthProvider>
             <ModeProvider>
               <ToastProvider>
-                <Stack
-                  screenOptions={{
-                    headerShown: false,
-                    ...SCREEN.push,
-                  }}
-                >
-                  {/* Booking wizard flows enter from the bottom — Uber-style */}
-                  <Stack.Screen name="order-request-new" options={SCREEN.modal} />
-                  <Stack.Screen name="order" options={SCREEN.modal} />
-                  <Stack.Screen name="disposal" options={SCREEN.modal} />
-                  <Stack.Screen name="transport" options={SCREEN.modal} />
-                  {/* Auth redirect — instant, no animation */}
-                  <Stack.Screen name="(auth)" options={SCREEN.fade} />
-                </Stack>
+                {StripeProvider && STRIPE_PK ? (
+                  <StripeProvider publishableKey={STRIPE_PK}>
+                    <Stack
+                      screenOptions={{
+                        headerShown: false,
+                        ...SCREEN.push,
+                      }}
+                    >
+                      {/* Booking wizard flows enter from the bottom — Uber-style */}
+                      <Stack.Screen name="order-request-new" options={SCREEN.modal} />
+                      <Stack.Screen name="order" options={SCREEN.modal} />
+                      <Stack.Screen name="disposal" options={SCREEN.modal} />
+                      <Stack.Screen name="transport" options={SCREEN.modal} />
+                      {/* Auth redirect — instant, no animation */}
+                      <Stack.Screen name="(auth)" options={SCREEN.fade} />
+                    </Stack>
+                  </StripeProvider>
+                ) : (
+                  <Stack
+                    screenOptions={{
+                      headerShown: false,
+                      ...SCREEN.push,
+                    }}
+                  >
+                    {/* Booking wizard flows enter from the bottom — Uber-style */}
+                    <Stack.Screen name="order-request-new" options={SCREEN.modal} />
+                    <Stack.Screen name="order" options={SCREEN.modal} />
+                    <Stack.Screen name="disposal" options={SCREEN.modal} />
+                    <Stack.Screen name="transport" options={SCREEN.modal} />
+                    {/* Auth redirect — instant, no animation */}
+                    <Stack.Screen name="(auth)" options={SCREEN.fade} />
+                  </Stack>
+                )}
               </ToastProvider>
             </ModeProvider>
           </AuthProvider>

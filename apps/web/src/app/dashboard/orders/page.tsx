@@ -251,14 +251,18 @@ function CarrierView({ token }: { token: string }) {
 function SupplierView({ token }: { token: string }) {
   const { orders, setOrders, loading, reload } = useMaterialOrders(token);
   const [actioning, setActioning] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const handleConfirm = async (id: string) => {
     setActioning(id);
+    setActionError(null);
     try {
       const updated = await confirmOrder(id, token);
       setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: updated.status } : o)));
-    } catch {
-      /**/
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : 'Neizdevās apstiprināt pasūtījumu. Mēģiniet vēlreiz.',
+      );
     } finally {
       setActioning(null);
     }
@@ -267,11 +271,14 @@ function SupplierView({ token }: { token: string }) {
   const handleCancel = async (id: string) => {
     if (!confirm('Vai atcelt šo pasūtījumu?')) return;
     setActioning(id);
+    setActionError(null);
     try {
       await cancelOrder(id, token);
       setOrders((prev) => prev.filter((o) => o.id !== id));
-    } catch {
-      /**/
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : 'Neizdevās atcelt pasūtījumu. Mēģiniet vēlreiz.',
+      );
     } finally {
       setActioning(null);
     }
@@ -290,6 +297,18 @@ function SupplierView({ token }: { token: string }) {
         <QuickStat value={String(pending)} label="Gaida apstiprinājumu" alert={pending > 0} />
         <QuickStat value={fmtMoney(revenue)} label="Kopā ieņēmumi" />
       </div>
+
+      {actionError && (
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          <span>{actionError}</span>
+          <button
+            onClick={() => setActionError(null)}
+            className="shrink-0 text-red-400 hover:text-red-600 font-medium"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <div className="flex justify-end mb-4">
         <button

@@ -149,6 +149,7 @@ export class AuthService {
             id: true,
             name: true,
             companyType: true,
+            payoutEnabled: true,
           },
         },
       },

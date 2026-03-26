@@ -6,7 +6,7 @@ import { RequestingUser } from '../common/types/requesting-user.interface';
 
 @Injectable()
 export class PaymentsService {
-  private stripe: Stripe;
+  private stripe!: Stripe;
   private readonly logger = new Logger(PaymentsService.name);
 
   constructor(
@@ -16,7 +16,7 @@ export class PaymentsService {
     const stripeKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (stripeKey) {
       this.stripe = new Stripe(stripeKey, {
-        apiVersion: '2025-02-24.acacia', // Use latest or compatible version
+        apiVersion: '2026-02-25.clover',
       });
     } else {
       this.logger.warn('STRIPE_SECRET_KEY not found in env');
@@ -169,24 +169,261 @@ export class PaymentsService {
                 });
            }
        } catch (error) {
-           this.logger.error(`Failed to capture payment for order ${orderId}: ${error.message}`);
+           this.logger.error(`Failed to capture payment for order ${orderId}: ${(error as Error).message}`);
            throw error;
        }
   }
 
     /**
-   * Release funds (Transfer) to seller and driver.
+   * Release funds (Transfer) to seller and driver via Stripe Connect.
    * Called when order is COMPLETED.
+   * Platform keeps a 5% fee; remainder split 80% seller / 20% driver (if job exists).
    */
   async releaseFunds(orderId: string) {
-      if (!this.stripe) return;
-      
-      const order = await this.prisma.order.findUnique({
-          where: { id: orderId },
-          include: { items: { include: { material: true } } },
-      });
-      // Retrieve Supplier Company
-      // Calculate split
-      // Transfer to Connect ID
+    if (!this.stripe) return;
+
+    const payment = await this.prisma.payment.findUnique({
+      where: { orderId },
+    });
+
+    if (!payment || !payment.stripePaymentId) {
+      this.logger.warn(`releaseFunds: no payment record for order ${orderId}`);
+      return;
+    }
+
+    if (payment.status === 'RELEASED') {
+      return; // Already released
+    }
+
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: {
+          include: {
+            material: {
+              include: {
+                supplier: { select: { id: true, stripeConnectId: true } },
+              },
+            },
+          },
+        },
+        transportJobs: {
+          where: { status: 'DELIVERED' },
+          include: {
+            driver: {
+              select: {
+                id: true,
+                companyId: true,
+                company: { select: { stripeConnectId: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!order) throw new BadRequestException('Order not found');
+
+    const totalCents = Math.round(Number(order.total) * 100);
+    const PLATFORM_FEE_PERCENT = 0.05;
+    const platformFeeCents = Math.round(totalCents * PLATFORM_FEE_PERCENT);
+    const payoutCents = totalCents - platformFeeCents;
+
+    // Determine if a driver is involved
+    const deliveredJob = order.transportJobs?.[0];
+    const driverConnectId =
+      deliveredJob?.driver?.company?.stripeConnectId ?? null;
+
+    const DRIVER_SHARE_PERCENT = driverConnectId ? 0.2 : 0;
+    const driverCents = Math.round(payoutCents * DRIVER_SHARE_PERCENT);
+    const sellerCents = payoutCents - driverCents;
+
+    // Stripe requires a transfer group to link transfers to a PaymentIntent
+    const transferGroup = `order_${orderId}`;
+
+    // Retrieve the charge ID from the PaymentIntent
+    let chargeId = payment.stripeChargeId;
+    if (!chargeId) {
+      const pi = await this.stripe.paymentIntents.retrieve(
+        payment.stripePaymentId,
+      );
+      chargeId =
+        typeof pi.latest_charge === 'string'
+          ? pi.latest_charge
+          : (pi.latest_charge?.id ?? null);
+      if (chargeId) {
+        await this.prisma.payment.update({
+          where: { orderId },
+          data: { stripeChargeId: chargeId },
+        });
+      }
+    }
+
+    const supplierIds = [
+      ...new Set(order.items.map((i) => i.material.supplier.id)),
+    ];
+    // For simplicity split seller payout equally among suppliers when multiple (rare after cart-split)
+    const perSupplierCents = Math.round(sellerCents / supplierIds.length);
+
+    for (const item of order.items) {
+      const supplierConnectId = item.material.supplier.stripeConnectId;
+      if (!supplierConnectId) {
+        this.logger.warn(
+          `Supplier ${item.material.supplier.id} has no Stripe Connect account — skipping transfer`,
+        );
+        continue;
+      }
+
+      try {
+        await this.stripe.transfers.create({
+          amount: perSupplierCents,
+          currency: order.currency.toLowerCase(),
+          destination: supplierConnectId,
+          transfer_group: transferGroup,
+          ...(chargeId ? { source_transaction: chargeId } : {}),
+          metadata: { orderId, supplierId: item.material.supplier.id },
+        });
+      } catch (err) {
+        this.logger.error(
+          `Supplier transfer failed for order ${orderId}: ${(err as Error).message}`,
+        );
+        throw err;
+      }
+      break; // one transfer per supplier (items may repeat the same supplier)
+    }
+
+    // Driver transfer
+    if (driverConnectId && driverCents > 0) {
+      try {
+        await this.stripe.transfers.create({
+          amount: driverCents,
+          currency: order.currency.toLowerCase(),
+          destination: driverConnectId,
+          transfer_group: transferGroup,
+          ...(chargeId ? { source_transaction: chargeId } : {}),
+          metadata: { orderId, driverId: deliveredJob?.driverId ?? '' },
+        });
+      } catch (err) {
+        this.logger.error(
+          `Driver transfer failed for order ${orderId}: ${(err as Error).message}`,
+        );
+        // Non-fatal — seller already paid; log and continue
+      }
+    }
+
+    // Mark payment as released and record the split
+    await this.prisma.payment.update({
+      where: { orderId },
+      data: {
+        status: 'RELEASED',
+        transferGroup,
+        platformFee: platformFeeCents / 100,
+        sellerPayout: sellerCents / 100,
+        driverPayout: driverCents / 100,
+      },
+    });
+
+    // Update the order's paymentStatus
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: { paymentStatus: 'RELEASED' },
+    });
+  }
+
+  /**
+   * Handle Stripe webhook events.
+   * Verifies signature and processes relevant event types.
+   */
+  async handleWebhookEvent(rawBody: Buffer, signature: string) {
+    const webhookSecret = this.configService.get<string>(
+      'STRIPE_WEBHOOK_SECRET',
+    );
+    if (!webhookSecret || !this.stripe) {
+      this.logger.warn('Stripe webhook secret not configured — skipping');
+      return;
+    }
+
+    let event: Stripe.Event;
+    try {
+      event = this.stripe.webhooks.constructEvent(
+        rawBody,
+        signature,
+        webhookSecret,
+      );
+    } catch (err) {
+      throw new BadRequestException(`Stripe webhook signature invalid: ${(err as Error).message}`);
+
+    }
+
+    switch (event.type) {
+      case 'payment_intent.succeeded': {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        const orderId = pi.metadata?.orderId;
+        if (orderId) {
+          await this.prisma.payment
+            .update({
+              where: { orderId },
+              data: { status: 'CAPTURED' },
+            })
+            .catch(() => null);
+          await this.prisma.order
+            .update({
+              where: { id: orderId },
+              data: { paymentStatus: 'CAPTURED' },
+            })
+            .catch(() => null);
+        }
+        break;
+      }
+
+      case 'payment_intent.payment_failed': {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        const orderId = pi.metadata?.orderId;
+        if (orderId) {
+          await this.prisma.payment
+            .update({
+              where: { orderId },
+              data: { status: 'FAILED' },
+            })
+            .catch(() => null);
+          await this.prisma.order
+            .update({
+              where: { id: orderId },
+              data: { paymentStatus: 'FAILED' },
+            })
+            .catch(() => null);
+        }
+        break;
+      }
+
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge;
+        const pi = charge.payment_intent as string | null;
+        if (pi) {
+          const payment = await this.prisma.payment.findFirst({
+            where: { stripePaymentId: pi },
+          });
+          if (payment) {
+            await this.prisma.payment
+              .update({
+                where: { id: payment.id },
+                data: { status: 'REFUNDED' },
+              })
+              .catch(() => null);
+            await this.prisma.order
+              .update({
+                where: { id: payment.orderId },
+                data: { paymentStatus: 'REFUNDED' },
+              })
+              .catch(() => null);
+          }
+        }
+        break;
+      }
+
+      default:
+        // Ignore unhandled event types
+        break;
+    }
   }
 }

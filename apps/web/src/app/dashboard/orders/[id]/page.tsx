@@ -8,6 +8,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 
 const TrackingMap = dynamic(() => import('@/components/tracking/TrackingMap'), {
   ssr: false,
@@ -16,12 +18,22 @@ const TrackingMap = dynamic(() => import('@/components/tracking/TrackingMap'), {
 import {
   getTransportJob,
   getTransportJobLocation,
+  createPaymentIntent,
   type ApiTransportJob,
   type TransportJobLocation,
   type TransportJobStatus,
 } from '@/lib/api';
 import { fmtDate } from '@/lib/format';
-import { ArrowLeft, CheckCircle2, Circle, Clock, Phone, Truck, User } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Circle,
+  Clock,
+  CreditCard,
+  Phone,
+  Truck,
+  User,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageSpinner } from '@/components/ui/page-spinner';
 
@@ -104,6 +116,10 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastPoll, setLastPoll] = useState<Date | null>(null);
+  const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
+  const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
+  const [paymentInitLoading, setPaymentInitLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -164,6 +180,21 @@ export default function OrderDetailPage() {
   const currentIdx = statusIndex(job.status);
 
   const isLive = job.status === 'EN_ROUTE_PICKUP' || job.status === 'EN_ROUTE_DELIVERY';
+
+  const handleStartPayment = async () => {
+    if (!token || !job.order?.id) return;
+    setPaymentInitLoading(true);
+    setPaymentError(null);
+    try {
+      const payment = await createPaymentIntent(job.order.id, token);
+      setStripePromise(loadStripe(payment.publishableKey));
+      setPaymentClientSecret(payment.clientSecret);
+    } catch (err: unknown) {
+      setPaymentError(err instanceof Error ? err.message : 'Neizdevās uzsākt maksājumu');
+    } finally {
+      setPaymentInitLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
@@ -415,6 +446,80 @@ export default function OrderDetailPage() {
           )}
         </div>
       </div>
+
+      {/* ── Payment ── */}
+      {job.order?.id && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+          <h2 className="text-sm font-semibold text-slate-700">Maksājums</h2>
+          {!paymentClientSecret || !stripePromise ? (
+            <Button onClick={handleStartPayment} disabled={paymentInitLoading} className="w-full">
+              <CreditCard className="h-4 w-4 mr-2" />
+              {paymentInitLoading ? 'Sagatavo maksājumu...' : 'Apmaksāt pasūtījumu'}
+            </Button>
+          ) : (
+            <Elements stripe={stripePromise} options={{ clientSecret: paymentClientSecret }}>
+              <InlinePaymentForm
+                onError={setPaymentError}
+                onSuccess={async () => {
+                  setPaymentError(null);
+                  await loadJob();
+                }}
+              />
+            </Elements>
+          )}
+          {paymentError && <p className="text-sm text-red-600">{paymentError}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InlinePaymentForm({
+  onError,
+  onSuccess,
+}: {
+  onError: (message: string | null) => void;
+  onSuccess: () => Promise<void>;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleConfirm = async () => {
+    if (!stripe || !elements) return;
+    setSubmitting(true);
+    onError(null);
+    const result = await stripe.confirmPayment({
+      elements,
+      redirect: 'if_required',
+    });
+    if (result.error) {
+      onError(result.error.message ?? 'Maksājums neizdevās');
+      setSubmitting(false);
+      return;
+    }
+
+    const status = result.paymentIntent?.status;
+    if (status === 'succeeded' || status === 'processing' || status === 'requires_capture') {
+      await onSuccess();
+      setSubmitting(false);
+      return;
+    }
+
+    onError('Maksājuma statuss nav apstiprināts. Lūdzu mēģiniet vēlreiz.');
+    setSubmitting(false);
+  };
+
+  return (
+    <div className="space-y-3">
+      <PaymentElement />
+      <Button
+        onClick={handleConfirm}
+        disabled={!stripe || !elements || submitting}
+        className="w-full"
+      >
+        {submitting ? 'Apstrādā...' : 'Apstiprināt maksājumu'}
+      </Button>
     </div>
   );
 }

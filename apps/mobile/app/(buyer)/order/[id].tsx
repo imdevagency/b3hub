@@ -27,6 +27,7 @@ import {
   MessageCircle,
   User,
   Camera,
+  CreditCard,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -41,6 +42,15 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { DetailRow } from '@/components/ui/DetailRow';
 import { UNIT_SHORT, MAT_STATUS } from '@/lib/materials';
 import { formatDate } from '@/lib/format';
+
+// Guard: Stripe React Native — requires native build (not available in Expo Go)
+let useStripe: (() => { initPaymentSheet: Function; presentPaymentSheet: Function }) | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  useStripe = require('@stripe/stripe-react-native').useStripe;
+} catch {
+  /* Expo Go fallback */
+}
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -64,6 +74,44 @@ export default function OrderDetailScreen() {
   // Local flag so the UI updates immediately after rating without a reload
   const [ratedLocally, setRatedLocally] = useState(false);
   const hasRated = alreadyRated || ratedLocally;
+
+  // Stripe payment sheet — guarded for Expo Go
+  const stripe = useStripe ? useStripe() : null;
+  const [payLoading, setPayLoading] = useState(false);
+
+  const handlePay = async () => {
+    if (!token || !order || !stripe) return;
+    setPayLoading(true);
+    haptics.light();
+    try {
+      const { clientSecret } = await api.createIntent(order.id, token);
+      const { error: initError } = await stripe.initPaymentSheet({
+        paymentIntentClientSecret: clientSecret,
+        merchantDisplayName: 'B3Hub',
+        defaultBillingDetails: {},
+      });
+      if (initError) {
+        Alert.alert('Kļūda', initError.message);
+        return;
+      }
+      const { error: presentError } = await stripe.presentPaymentSheet();
+      if (presentError) {
+        if (presentError.code !== 'Canceled') {
+          haptics.error();
+          Alert.alert('Maksājums neizdevās', presentError.message);
+        }
+        return;
+      }
+      haptics.success();
+      Alert.alert('Maksājums veiksmīgs', 'Jūsu pasūtījums tiek apstrādāts.');
+      load();
+    } catch (err: unknown) {
+      haptics.error();
+      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās apstrādāt maksājumu');
+    } finally {
+      setPayLoading(false);
+    }
+  };
 
   const handleCancel = () => {
     haptics.heavy();
@@ -120,6 +168,10 @@ export default function OrderDetailScreen() {
   );
   const driver = activeJob?.driver;
   const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status);
+  const canPay =
+    order.status === 'PENDING' &&
+    (!order.paymentStatus || order.paymentStatus === 'PENDING') &&
+    !!stripe;
 
   return (
     <ScreenContainer bg="#f9fafb">
@@ -365,6 +417,24 @@ export default function OrderDetailScreen() {
 
         {/* Actions */}
         <View style={s.actions}>
+          {/* Pay Now — shown when order is PENDING and payment not yet authorised */}
+          {canPay && (
+            <TouchableOpacity
+              style={[s.payNowBtn, payLoading && { opacity: 0.6 }]}
+              onPress={handlePay}
+              disabled={payLoading}
+              activeOpacity={0.85}
+            >
+              {payLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <CreditCard size={16} color="#fff" />
+                  <Text style={s.payNowBtnText}>Maksāt €{order.total.toFixed(2)}</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
           {/* Chat with driver — shown whenever there's an active transport job */}
           {activeJob && (
             <TouchableOpacity
@@ -610,6 +680,16 @@ const s = StyleSheet.create({
     borderColor: '#111827',
   },
   cancelOrderBtnText: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  payNowBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#111827',
+    borderRadius: 14,
+    padding: 16,
+  },
+  payNowBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
   rateBtn: {
     flexDirection: 'row',
     alignItems: 'center',
