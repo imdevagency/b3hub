@@ -326,6 +326,20 @@ export default function FrameworkContractDetailScreen() {
   const status = CONTRACT_STATUS[contract.status] ?? CONTRACT_STATUS.ACTIVE;
   const overallPct = Math.min(100, contract.totalProgressPct);
   const canRelease = contract.status === 'ACTIVE';
+
+  // Job costing
+  const positionsWithPrice = contract.positions.filter((p) => p.unitPrice != null);
+  const totalBudget = positionsWithPrice.reduce(
+    (sum, p) => sum + p.agreedQty * (p.unitPrice ?? 0),
+    0,
+  );
+  const totalActual = positionsWithPrice.reduce(
+    (sum, p) => sum + p.consumedQty * (p.unitPrice ?? 0),
+    0,
+  );
+  const totalRemaining = totalBudget - totalActual;
+  const costPct = totalBudget > 0 ? Math.min(100, (totalActual / totalBudget) * 100) : 0;
+
   const period = `${formatDate(contract.startDate)}${
     contract.endDate ? ` – ${formatDate(contract.endDate)}` : ''
   }`;
@@ -397,6 +411,98 @@ export default function FrameworkContractDetailScreen() {
             <DetailRow label="Darba uzdevumi" value={String(contract.totalCallOffs)} />
             <DetailRow label="Piezīmes" value={contract.notes ?? null} last />
           </View>
+        </InfoSection>
+
+        {/* ── Job Costing ── */}
+        <SectionLabel label="Izmaksu analīze" />
+        <InfoSection icon={<TrendingUp size={14} color="#6b7280" />} title="Budžeta pārskats">
+          {totalBudget > 0 ? (
+            <View style={s.sectionBody}>
+              {/* 3 KPI tiles */}
+              <View style={s.costKpiRow}>
+                <View style={s.costKpi}>
+                  <Text variant="muted" size="sm">
+                    Plānotāis
+                  </Text>
+                  <Text style={s.costKpiValue}>
+                    €
+                    {totalBudget.toLocaleString('lv-LV', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </Text>
+                </View>
+                <View style={[s.costKpi, s.costKpiMid]}>
+                  <Text variant="muted" size="sm">
+                    Patērētais
+                  </Text>
+                  <Text style={[s.costKpiValue, s.costKpiActual]}>
+                    €
+                    {totalActual.toLocaleString('lv-LV', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </Text>
+                </View>
+                <View style={[s.costKpi, s.costKpiLast]}>
+                  <Text variant="muted" size="sm">
+                    Atlikums
+                  </Text>
+                  <Text style={[s.costKpiValue, totalRemaining < 0 && s.costKpiOver]}>
+                    {totalRemaining < 0 ? '-' : ''}€
+                    {Math.abs(totalRemaining).toLocaleString('lv-LV', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Overall cost progress */}
+              <View style={s.progressBlock}>
+                <View style={s.progRow}>
+                  <Text variant="muted" size="sm">
+                    Izmantotais budžets
+                  </Text>
+                  <Text size="sm" style={s.progressValue}>
+                    {costPct.toFixed(0)}%
+                  </Text>
+                </View>
+                <ProgressBar pct={costPct} complete={costPct >= 100} />
+              </View>
+
+              {/* Per-position cost rows */}
+              {positionsWithPrice.map((pos) => {
+                const posBudget = pos.agreedQty * (pos.unitPrice ?? 0);
+                const posActual = pos.consumedQty * (pos.unitPrice ?? 0);
+                const posRemaining = posBudget - posActual;
+                const posCostPct = posBudget > 0 ? Math.min(100, (posActual / posBudget) * 100) : 0;
+                return (
+                  <View key={pos.id} style={s.costPosRow}>
+                    <View style={s.costPosHeader}>
+                      <Text style={s.costPosDesc} numberOfLines={1}>
+                        {pos.description}
+                      </Text>
+                      <Text size="sm" style={s.costPosAmt}>
+                        €{posActual.toFixed(0)} / €{posBudget.toFixed(0)}
+                      </Text>
+                    </View>
+                    <ProgressBar pct={posCostPct} complete={posCostPct >= 100} />
+                    <Text variant="muted" size="sm">
+                      Atlikums: €{posRemaining.toFixed(2)} · €{pos.unitPrice?.toFixed(2)}/{pos.unit}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={s.costNoPriceBanner}>
+              <TrendingUp size={16} color="#9ca3af" />
+              <Text variant="muted" size="sm" style={{ flex: 1 }}>
+                Pievienojiet vienību cenas pozīcijās, lai rēķētu izmaksu analīzi.
+              </Text>
+            </View>
+          )}
         </InfoSection>
 
         <SectionLabel label={`Pozīcijas (${contract.positions.length})`} />
@@ -619,4 +725,50 @@ const s = StyleSheet.create({
   },
   draftBannerTitle: { fontSize: 13, fontWeight: '700', color: '#92400e', marginBottom: 2 },
   activateBtn: { minWidth: 90 },
+  // Job costing
+  costKpiRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  costKpi: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
+    borderRadius: 10,
+    padding: 10,
+    gap: 3,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  costKpiMid: {},
+  costKpiLast: {},
+  costKpiValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  costKpiActual: { color: '#059669' },
+  costKpiOver: { color: '#dc2626' },
+  costPosRow: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 10,
+    padding: 10,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  costPosHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  costPosDesc: { flex: 1, fontSize: 13, fontWeight: '600', color: '#374151' },
+  costPosAmt: { fontWeight: '700', color: '#111827' },
+  costNoPriceBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
 });
