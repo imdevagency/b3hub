@@ -11,6 +11,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   Award,
   Banknote,
+  BarChart3,
   Bell,
   Box,
   Briefcase,
@@ -100,6 +101,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       icon: FolderOpen,
       items: [
         { label: 'Rēķini', href: '/dashboard/invoices', icon: Receipt },
+        { label: 'Analītika', href: '/dashboard/analytics', icon: BarChart3 },
         { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
         { label: 'Sertifikāti', href: '/dashboard/certificates', icon: Award },
         { label: 'Ziņojumi', href: '/dashboard/chat', icon: MessageSquare },
@@ -132,6 +134,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       icon: Banknote,
       items: [
         { label: 'Ieņēmumi', href: '/dashboard/supplier/earnings', icon: Banknote },
+        { label: 'Analītika', href: '/dashboard/analytics', icon: BarChart3 },
         { label: 'Atsauksmes', href: '/dashboard/reviews', icon: Star },
         { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
         { label: 'Ziņojumi', href: '/dashboard/chat', icon: MessageSquare },
@@ -163,6 +166,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       icon: Banknote,
       items: [
         { label: 'Ienākumi', href: '/dashboard/transporter/earnings', icon: Banknote },
+        { label: 'Analītika', href: '/dashboard/analytics', icon: BarChart3 },
         { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
         { label: 'Ziņojumi', href: '/dashboard/chat', icon: MessageSquare },
       ],

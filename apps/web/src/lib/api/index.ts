@@ -13,6 +13,7 @@ export * from './transport';
 export * from './materials';
 export * from './orders';
 export * from './invoices';
+export * from './analytics';
 export * from './driver-schedule';
 export * from './admin';
 export * from './notifications';

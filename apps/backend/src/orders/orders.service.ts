@@ -109,6 +109,21 @@ export class OrdersService {
     const tax = subtotal * 0.19; // 19% VAT
     const total = subtotal + tax + (orderData.deliveryFee || 0);
 
+    // ── Credit limit check ────────────────────────────────────────────────────
+    // If the buyer has a credit limit configured, verify this order would not exceed it.
+    const buyerProfile = await this.prisma.buyerProfile.findUnique({
+      where: { userId },
+      select: { creditLimit: true, creditUsed: true },
+    });
+    if (buyerProfile?.creditLimit != null) {
+      const remaining = buyerProfile.creditLimit - (buyerProfile.creditUsed ?? 0);
+      if (total > remaining) {
+        throw new BadRequestException(
+          `Order total €${total.toFixed(2)} exceeds your remaining credit limit of €${remaining.toFixed(2)}`,
+        );
+      }
+    }
+
     // Create order with items
     const order = await this.prisma.order.create({
       data: {
@@ -180,6 +195,16 @@ export class OrdersService {
             unit: i.unit,
             material: { name: i.material.name },
           })),
+        })
+        .catch(() => null);
+    }
+
+    // Update creditUsed on the buyer profile (non-blocking, best-effort)
+    if (buyerProfile?.creditLimit != null) {
+      this.prisma.buyerProfile
+        .update({
+          where: { userId },
+          data: { creditUsed: { increment: total } },
         })
         .catch(() => null);
     }
@@ -518,6 +543,16 @@ export class OrdersService {
       }
     }
 
+    // Release credit when an order is cancelled
+    if (status === OrderStatus.CANCELLED && order.total) {
+      this.prisma.buyerProfile
+        .update({
+          where: { userId: order.createdById },
+          data: { creditUsed: { decrement: Number(order.total) } },
+        })
+        .catch(() => null);
+    }
+
     // Notify buyer of status change (fire-and-forget)
     const notifMap: Partial<
       Record<
@@ -614,6 +649,16 @@ export class OrdersService {
       where: { id },
       data: { status: OrderStatus.CANCELLED },
     });
+
+    // Release credit on cancellation
+    if (order.total) {
+      this.prisma.buyerProfile
+        .update({
+          where: { userId: order.createdById },
+          data: { creditUsed: { decrement: Number(order.total) } },
+        })
+        .catch(() => null);
+    }
 
     // Notify buyer (if someone else cancelled on their behalf)
     this.notifications
@@ -754,6 +799,18 @@ export class OrdersService {
     return { buyer, seller, transport };
   }
 
+  private parseDueDateFromTerms(paymentTerms?: string | null): Date {
+    const now = new Date();
+    if (!paymentTerms || paymentTerms === 'COD') return now;
+    const match = paymentTerms.match(/NET(\d+)/i);
+    if (match) {
+      const days = parseInt(match[1], 10);
+      return new Date(now.getTime() + days * 86_400_000);
+    }
+    // Default: Net-30
+    return new Date(now.getTime() + 30 * 86_400_000);
+  }
+
   private async spawnInvoice(order: {
     id: string;
     subtotal: number;
@@ -763,8 +820,12 @@ export class OrdersService {
     createdById: string;
   }): Promise<void> {
     const invoiceNumber = await this.generateInvoiceNumber();
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 30); // Net-30 payment terms
+
+    const buyerProfile = await this.prisma.buyerProfile.findUnique({
+      where: { userId: order.createdById },
+      select: { paymentTerms: true },
+    });
+    const dueDate = this.parseDueDateFromTerms(buyerProfile?.paymentTerms);
 
     await this.prisma.invoice.create({
       data: {

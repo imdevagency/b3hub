@@ -8,6 +8,7 @@ import { Text } from '@/components/ui/text';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Inbox, LayoutGrid, FileText, Wallet, Bell, ArrowRight } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { FadeInView } from '@/components/ui/FadeInView';
 
 const QUICK_ACTIONS = [
   {
@@ -60,7 +61,7 @@ export default function SellerHomeScreen() {
   );
 
   return (
-    <ScreenContainer standalone bg="#ffffff">
+    <ScreenContainer standalone noAnimation bg="#ffffff">
       {/* MINIMAL TOP BAR */}
       <View
         style={{
@@ -105,176 +106,194 @@ export default function SellerHomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* STATUS CARD (UBER STYLE) */}
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={() => {
-            haptics.medium();
-            router.push('/(seller)/incoming' as any);
-          }}
-          style={{
-            backgroundColor: pendingCount && pendingCount > 0 ? '#111827' : '#f3f4f6',
-            borderRadius: 24,
-            padding: 24,
-            marginBottom: 32,
-            minHeight: 140,
-            justifyContent: 'space-between',
-          }}
-        >
-          {pendingCount !== null ? (
-            pendingCount > 0 ? (
-              <>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                  }}
-                >
-                  <View>
-                    <Text
-                      style={{ color: '#9ca3af', fontSize: 16, fontWeight: '600', marginBottom: 4 }}
-                    >
-                      Jauni pasūtījumi
-                    </Text>
-                    <Text
-                      style={{
-                        color: '#ffffff',
-                        fontSize: 40,
-                        fontWeight: '800',
-                        letterSpacing: -1,
-                      }}
-                    >
-                      {pendingCount}
-                    </Text>
-                  </View>
+        <FadeInView variant="fadeSlideUp" index={0}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => {
+              haptics.medium();
+              router.push('/(seller)/incoming' as any);
+            }}
+            style={{
+              backgroundColor: pendingCount && pendingCount > 0 ? '#111827' : '#f3f4f6',
+              borderRadius: 24,
+              padding: 24,
+              marginBottom: 32,
+              minHeight: 140,
+              justifyContent: 'space-between',
+            }}
+          >
+            {pendingCount !== null ? (
+              pendingCount > 0 ? (
+                <>
                   <View
                     style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 24,
-                      backgroundColor: 'rgba(255,255,255,0.1)',
-                      justifyContent: 'center',
-                      alignItems: 'center',
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
                     }}
                   >
-                    <ArrowRight size={24} color="#ffffff" />
+                    <View>
+                      <Text
+                        style={{
+                          color: '#9ca3af',
+                          fontSize: 16,
+                          fontWeight: '600',
+                          marginBottom: 4,
+                        }}
+                      >
+                        Jauni pasūtījumi
+                      </Text>
+                      <Text
+                        style={{
+                          color: '#ffffff',
+                          fontSize: 40,
+                          fontWeight: '800',
+                          letterSpacing: -1,
+                        }}
+                      >
+                        {pendingCount}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 24,
+                        backgroundColor: 'rgba(255,255,255,0.1)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <ArrowRight size={24} color="#ffffff" />
+                    </View>
                   </View>
-                </View>
-                <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '500', marginTop: 16 }}>
-                  Pieskaries, lai skatītu
-                </Text>
-              </>
+                  <Text
+                    style={{ color: '#ffffff', fontSize: 16, fontWeight: '500', marginTop: 16 }}
+                  >
+                    Pieskaries, lai skatītu
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                    }}
+                  >
+                    <View>
+                      <Text
+                        style={{
+                          color: '#6b7280',
+                          fontSize: 16,
+                          fontWeight: '600',
+                          marginBottom: 4,
+                        }}
+                      >
+                        Statuss
+                      </Text>
+                      <Text
+                        style={{
+                          color: '#111827',
+                          fontSize: 24,
+                          fontWeight: '800',
+                          letterSpacing: -0.5,
+                        }}
+                      >
+                        Gatavs darbam
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 24,
+                        backgroundColor: '#ffffff',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Inbox size={24} color="#111827" />
+                    </View>
+                  </View>
+                  <Text
+                    style={{ color: '#6b7280', fontSize: 16, fontWeight: '500', marginTop: 16 }}
+                  >
+                    Jaunu pasūtījumu pagaidām nav
+                  </Text>
+                </>
+              )
             ) : (
-              <>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                  }}
-                >
-                  <View>
-                    <Text
-                      style={{ color: '#6b7280', fontSize: 16, fontWeight: '600', marginBottom: 4 }}
-                    >
-                      Statuss
-                    </Text>
-                    <Text
-                      style={{
-                        color: '#111827',
-                        fontSize: 24,
-                        fontWeight: '800',
-                        letterSpacing: -0.5,
-                      }}
-                    >
-                      Gatavs darbam
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 24,
-                      backgroundColor: '#ffffff',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Inbox size={24} color="#111827" />
-                  </View>
-                </View>
-                <Text style={{ color: '#6b7280', fontSize: 16, fontWeight: '500', marginTop: 16 }}>
-                  Jaunu pasūtījumu pagaidām nav
-                </Text>
-              </>
-            )
-          ) : (
-            <View style={{ flex: 1, backgroundColor: 'transparent' }} />
-          )}
-        </TouchableOpacity>
+              <View style={{ flex: 1, backgroundColor: 'transparent' }} />
+            )}
+          </TouchableOpacity>
+        </FadeInView>
 
         {/* QUICK ACTIONS GRID */}
-        <View style={{ gap: 12 }}>
-          {/* Row 1 */}
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            {QUICK_ACTIONS.slice(0, 2).map((action) => {
-              const Icon = action.icon;
-              return (
-                <TouchableOpacity
-                  key={action.id}
-                  onPress={() => {
-                    haptics.light();
-                    router.push(action.route as any);
-                  }}
-                  activeOpacity={0.7}
-                  style={{
-                    flex: 1,
-                    backgroundColor: '#f3f4f6', // Uber style flat gray
-                    borderRadius: 16,
-                    padding: 16,
-                    height: 100, // Squator rectangles instead of huge squares
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <Icon size={24} color="#111827" />
-                  <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
-                    {action.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+        <FadeInView variant="fadeSlideUp" index={1}>
+          <View style={{ gap: 12 }}>
+            {/* Row 1 */}
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              {QUICK_ACTIONS.slice(0, 2).map((action) => {
+                const Icon = action.icon;
+                return (
+                  <TouchableOpacity
+                    key={action.id}
+                    onPress={() => {
+                      haptics.light();
+                      router.push(action.route as any);
+                    }}
+                    activeOpacity={0.7}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#f3f4f6', // Uber style flat gray
+                      borderRadius: 16,
+                      padding: 16,
+                      height: 100, // Squator rectangles instead of huge squares
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <Icon size={24} color="#111827" />
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
+                      {action.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
-          {/* Row 2 */}
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            {QUICK_ACTIONS.slice(2, 4).map((action) => {
-              const Icon = action.icon;
-              return (
-                <TouchableOpacity
-                  key={action.id}
-                  onPress={() => {
-                    haptics.light();
-                    router.push(action.route as any);
-                  }}
-                  activeOpacity={0.7}
-                  style={{
-                    flex: 1,
-                    backgroundColor: '#f3f4f6', // Uber style flat gray
-                    borderRadius: 16,
-                    padding: 16,
-                    height: 100, // Squator rectangles instead of huge squares
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <Icon size={24} color="#111827" />
-                  <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
-                    {action.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+            {/* Row 2 */}
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              {QUICK_ACTIONS.slice(2, 4).map((action) => {
+                const Icon = action.icon;
+                return (
+                  <TouchableOpacity
+                    key={action.id}
+                    onPress={() => {
+                      haptics.light();
+                      router.push(action.route as any);
+                    }}
+                    activeOpacity={0.7}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#f3f4f6', // Uber style flat gray
+                      borderRadius: 16,
+                      padding: 16,
+                      height: 100, // Squator rectangles instead of huge squares
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <Icon size={24} color="#111827" />
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
+                      {action.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
-        </View>
+        </FadeInView>
       </ScrollView>
     </ScreenContainer>
   );

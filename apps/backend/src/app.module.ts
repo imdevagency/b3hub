@@ -36,6 +36,7 @@ import { FrameworkContractsModule } from './framework-contracts/framework-contra
 import { CompanyMembersModule } from './company-members/company-members.module';
 import { MapsModule } from './maps/maps.module';
 import { PaymentsModule } from './payments/payments.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { PaymentsModule } from './payments/payments.module';
     CompanyMembersModule,
     MapsModule,
     PaymentsModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [
