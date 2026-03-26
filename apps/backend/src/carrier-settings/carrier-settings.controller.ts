@@ -22,6 +22,7 @@ import { CarrierSettingsService } from './carrier-settings.service';
 import { BlockDateDto } from './dto/block-date.dto';
 import { CreateZoneDto } from './dto/create-zone.dto';
 import { SetPriceDto } from './dto/set-price.dto';
+import { SetRadiusDto } from './dto/set-radius.dto';
 
 @Controller('carrier-settings')
 @UseGuards(JwtAuthGuard)
@@ -110,5 +111,22 @@ export class CarrierSettingsController {
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
     return this.service.unblockDate(req.user.userId, id);
+  }
+
+  // ── Radius ───────────────────────────────────────────────────────────────
+
+  /** GET /api/v1/carrier-settings/radius — get my service radius */
+  @Get('radius')
+  getRadius(@Request() req: Express.Request & { user: RequestingUser }) {
+    return this.service.getRadius(req.user.userId);
+  }
+
+  /** PUT /api/v1/carrier-settings/radius — update my service radius */
+  @Put('radius')
+  setRadius(
+    @Body() dto: SetRadiusDto,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
+    return this.service.setRadius(req.user.userId, dto.radiusKm);
   }
 }

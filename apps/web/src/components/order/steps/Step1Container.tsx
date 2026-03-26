@@ -5,7 +5,8 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getSkipHireMarketPrices, type SkipMarketPrices } from '@/lib/api';
 
 // ── Container sizes ────────────────────────────────────────────────────────────
 
@@ -71,11 +72,31 @@ interface Props {
   onSizeChange: (v: string) => void;
   onWasteChange: (v: string) => void;
   onNext: () => void;
+  /** Optional pre-fetched market prices. If omitted, fetched internally. */
+  minPrices?: SkipMarketPrices;
 }
 
-export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, onNext }: Props) {
+export function Step1Container({
+  size,
+  wasteType,
+  onSizeChange,
+  onWasteChange,
+  onNext,
+  minPrices: minPricesProp,
+}: Props) {
   const [showWaste, setShowWaste] = useState(!!wasteType);
   const canProceed = !!size && !!wasteType;
+  const [marketPrices, setMarketPrices] = useState<SkipMarketPrices | null>(minPricesProp ?? null);
+
+  useEffect(() => {
+    if (minPricesProp) {
+      setMarketPrices(minPricesProp);
+      return;
+    }
+    getSkipHireMarketPrices()
+      .then(setMarketPrices)
+      .catch(() => null); // silent — falls back to hardcoded defaults below
+  }, [minPricesProp]);
 
   return (
     <div className="flex flex-col space-y-6">
@@ -139,7 +160,7 @@ export function Step1Container({ size, wasteType, onSizeChange, onWasteChange, o
               <div className="text-right shrink-0">
                 <p className="text-[10px] text-muted-foreground leading-none">No</p>
                 <p className={cn('text-sm font-bold', selected ? 'text-primary' : 'text-gray-900')}>
-                  €{s.priceFrom}
+                  €{marketPrices?.[s.id.toUpperCase() as keyof SkipMarketPrices] ?? s.priceFrom}
                 </p>
               </div>
             </button>

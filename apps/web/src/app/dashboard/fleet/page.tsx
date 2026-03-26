@@ -248,7 +248,7 @@ export default function FleetPage() {
       description="Pārskata visi transporta darbi · reāllaikā"
       action={
         <div className="flex items-center gap-2">
-          <div className="flex rounded-[1.25rem] bg-muted/50 p-1">
+          <div className="flex rounded-4xl bg-muted/50 p-1">
             <button
               onClick={() => setViewMode('list')}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-2xl transition-all duration-200 ${viewMode === 'list' ? 'bg-white dark:bg-zinc-900 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}

@@ -9,10 +9,12 @@ import { useRouter } from 'next/navigation';
 import {
   getMySkipHireOrders,
   createSkipHireOrder,
+  getSkipHireMarketPrices,
   type SkipHireOrder,
   type SkipSize,
   type SkipWasteCategory,
   type CreateSkipHireInput,
+  type SkipMarketPrices,
 } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
@@ -40,35 +42,30 @@ const SKIP_SIZES: {
   value: SkipSize;
   label: string;
   volume: string;
-  price: string;
   desc: string;
 }[] = [
   {
     value: 'MINI',
     label: 'Mini',
     volume: '2 m³',
-    price: 'no €89',
     desc: 'Mājas remontam, mazdārzam',
   },
   {
     value: 'MIDI',
     label: 'Midi',
     volume: '4 m³',
-    price: 'no €129',
     desc: 'Virtuves/vannas istabas renovācijai',
   },
   {
     value: 'BUILDERS',
     label: 'Celtniecības',
     volume: '6 m³',
-    price: 'no €169',
     desc: 'Lielākiem celtniecības projektiem',
   },
   {
     value: 'LARGE',
     label: 'Liels',
     volume: '8 m³',
-    price: 'no €199',
     desc: 'Komerciālai lietošanai, lieliem projektiem',
   },
 ];
@@ -126,6 +123,7 @@ export default function SkipHirePage() {
   const [tab, setTab] = useState<'orders' | 'new'>('orders');
   const [orders, setOrders] = useState<SkipHireOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [marketPrices, setMarketPrices] = useState<SkipMarketPrices | null>(null);
 
   const [step, setStep] = useState<BookStep>(1);
   const [form, setForm] = useState<BookingForm>(INITIAL_FORM);
@@ -136,6 +134,12 @@ export default function SkipHirePage() {
   useEffect(() => {
     if (!isLoading && !token) router.push('/login');
   }, [token, isLoading, router]);
+
+  useEffect(() => {
+    getSkipHireMarketPrices()
+      .then(setMarketPrices)
+      .catch(() => null); // silent — UI falls back to hardcoded defaults
+  }, []);
 
   const loadOrders = useCallback(async () => {
     if (!token) return;
@@ -446,7 +450,15 @@ export default function SkipHirePage() {
                           <span
                             className={`text-sm font-bold ${form.skipSize === sz.value ? 'text-primary' : 'text-gray-500'}`}
                           >
-                            {sz.price}
+                            {marketPrices
+                              ? `no €${marketPrices[sz.value]}`
+                              : sz.value === 'MINI'
+                                ? 'no €89'
+                                : sz.value === 'MIDI'
+                                  ? 'no €129'
+                                  : sz.value === 'BUILDERS'
+                                    ? 'no €169'
+                                    : 'no €199'}
                           </span>
                         </div>
                         <p className="font-semibold text-sm text-gray-900">
@@ -575,7 +587,17 @@ export default function SkipHirePage() {
                     <div className="border-t pt-2 flex justify-between font-bold">
                       <span>Orientējošā cena</span>
                       <span className="text-primary">
-                        {SKIP_SIZES.find((s) => s.value === form.skipSize)?.price}
+                        {form.skipSize && marketPrices
+                          ? `no €${marketPrices[form.skipSize]}`
+                          : form.skipSize === 'MINI'
+                            ? 'no €89'
+                            : form.skipSize === 'MIDI'
+                              ? 'no €129'
+                              : form.skipSize === 'BUILDERS'
+                                ? 'no €169'
+                                : form.skipSize === 'LARGE'
+                                  ? 'no €199'
+                                  : '—'}
                       </span>
                     </div>
                   </div>

@@ -493,7 +493,7 @@ _No props interface — check source file._
 | `delivery` | `MapPin` | **required** |
 | `current` | `MapPin | null` | optional |
 | `extras` | `ExtraPin[]` | optional |
-| `height` | `number` | optional |
+| `height` | `number | string | null` | optional |
 | `borderRadius` | `number` | optional |
 | `style` | `ViewStyle` | optional |
 | `showToPickupLeg` | `boolean` | optional |
@@ -536,10 +536,9 @@ _No props interface — check source file._
 | Prop | Type | |
 |------|------|---|
 | `title` | `string` | **required** |
-| `onBack` | `() => void` | optional |
-| `rightSlot` | `React.ReactNode` | optional |
-| `style` | `ViewStyle` | optional |
-| `withTopInset` | `boolean` | optional |
+| `rightAction` | `React.ReactNode` | optional |
+| `onBack` | `(() => void) | null` | optional |
+| `showBack` | `boolean` | optional |
 
 **Exports:** `ScreenHeader`
 
@@ -624,7 +623,7 @@ _No props interface — check source file._
 | `onMenuPress` | `() => void` | **required** |
 | `unreadCount` | `number` | optional |
 
-**Exports:** `TopBar`
+**Exports:** `RoleSheet`, `TopBar`
 
 ---
 

@@ -116,7 +116,7 @@ export default function SupplierDashboardPage() {
       label: 'Pievienot Materiālu',
       description: 'Publicēt jaunu produktu vai pakalpojumu',
       icon: Plus,
-      href: '/dashboard/materials/new',
+      href: '/dashboard/materials?new=true',
       primary: true,
     },
     {
@@ -129,7 +129,7 @@ export default function SupplierDashboardPage() {
       label: 'Analītika',
       description: 'Pārdošanas statistika un produktu veiktspējas rādītāji',
       icon: BarChart3,
-      href: '/dashboard/orders',
+      href: '/dashboard/analytics',
     },
     {
       label: 'Mani Dokumenti',

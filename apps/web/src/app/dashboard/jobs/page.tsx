@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   ChevronDown,
   ChevronUp,
@@ -43,6 +43,7 @@ import {
   type CreateTransportJobInput,
 } from '@/lib/api';
 import { useAvailableJobs } from '@/hooks/use-available-jobs';
+import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { CalendarDays, Users, CircleCheck } from 'lucide-react';
 
@@ -84,6 +85,10 @@ interface SavedSearch extends SearchFilter {
 
 // ── Haversine ──────────────────────────────────────────────────────────────────
 
+/**
+ * Fallback lookup for common Latvian cities.
+ * Used when the Google Maps Geocoding API is unavailable or the city is already known.
+ */
 const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   riga: { lat: 56.9496, lng: 24.1052 },
   jurmala: { lat: 56.9677, lng: 23.7718 },
@@ -94,20 +99,30 @@ const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   liepaja: { lat: 56.5114, lng: 21.0107 },
   daugavpils: { lat: 55.8749, lng: 26.5363 },
   valmiera: { lat: 57.5405, lng: 25.4229 },
+  rezekne: { lat: 56.509, lng: 27.3326 },
+  jekabpils: { lat: 56.4985, lng: 25.8706 },
+  jelsava: { lat: 56.649, lng: 23.7124 },
+  tukums: { lat: 56.9671, lng: 23.156 },
+  cesis: { lat: 57.3124, lng: 25.2773 },
+  dobele: { lat: 56.6236, lng: 23.2781 },
+  kuldiga: { lat: 56.969, lng: 21.9612 },
+  bauska: { lat: 56.4086, lng: 24.1957 },
+  limbazi: { lat: 57.511, lng: 24.7195 },
+  salaspils: { lat: 56.8619, lng: 24.3498 },
+  olaine: { lat: 56.7887, lng: 23.9404 },
+  marupe: { lat: 56.8955, lng: 23.98 },
+  adazi: { lat: 57.0745, lng: 24.3219 },
+  saulkrasti: { lat: 57.2572, lng: 24.4134 },
+  smiltene: { lat: 57.4228, lng: 25.896 },
+  gulbene: { lat: 57.1756, lng: 26.7439 },
+  madona: { lat: 56.857, lng: 26.2213 },
+  preili: { lat: 56.2904, lng: 26.7225 },
+  ludza: { lat: 56.548, lng: 27.7194 },
+  balvi: { lat: 57.1305, lng: 27.2649 },
 };
 
-function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function cityCoords(input: string): { lat: number; lng: number } | null {
-  const key = input
+function normalizeCity(input: string): string {
+  return input
     .toLowerCase()
     .trim()
     .replace(/ā/g, 'a')
@@ -120,23 +135,66 @@ function cityCoords(input: string): { lat: number; lng: number } | null {
     .replace(/ņ/g, 'n')
     .replace(/š/g, 's')
     .replace(/ž/g, 'z');
-  return (
-    CITY_COORDS[key] ??
-    Object.entries(CITY_COORDS).find(([k]) => k.includes(key) || key.includes(k))?.[1] ??
-    null
-  );
 }
 
-function filterJobs(jobs: TransportJob[], filter: SearchFilter | null): TransportJob[] {
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function resolveCityCoords(
+  input: string,
+  geocodeCache: Record<string, { lat: number; lng: number }>,
+): { lat: number; lng: number } | null {
+  const key = normalizeCity(input);
+  if (geocodeCache[key]) return geocodeCache[key];
+  if (CITY_COORDS[key]) return CITY_COORDS[key];
+  // Partial match in CITY_COORDS
+  return Object.entries(CITY_COORDS).find(([k]) => k.includes(key) || key.includes(k))?.[1] ?? null;
+}
+
+async function geocodeCity(
+  city: string,
+  apiKey: string,
+): Promise<{ lat: number; lng: number } | null> {
+  if (!apiKey || !city.trim()) return null;
+  try {
+    const encoded = encodeURIComponent(`${city}, Latvia`);
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encoded}&key=${apiKey}`,
+    );
+    const data = (await res.json()) as {
+      status: string;
+      results: Array<{ geometry: { location: { lat: number; lng: number } } }>;
+    };
+    if (data.status === 'OK' && data.results[0]) {
+      return data.results[0].geometry.location;
+    }
+  } catch {
+    // silent
+  }
+  return null;
+}
+
+function filterJobs(
+  jobs: TransportJob[],
+  filter: SearchFilter | null,
+  geocodeCache: Record<string, { lat: number; lng: number }>,
+): TransportJob[] {
   if (!filter) return jobs;
   const { fromLocation, fromRadius, toLocation, toRadius } = filter;
   return jobs.filter((job) => {
     if (fromLocation.trim() && fromRadius > 0) {
-      const c = cityCoords(fromLocation);
+      const c = resolveCityCoords(fromLocation, geocodeCache);
       if (c && haversineKm(c.lat, c.lng, job.fromLat, job.fromLng) > fromRadius) return false;
     }
     if (toLocation.trim() && toRadius > 0) {
-      const c = cityCoords(toLocation);
+      const c = resolveCityCoords(toLocation, geocodeCache);
       if (c && haversineKm(c.lat, c.lng, job.toLat, job.toLng) > toRadius) return false;
     }
     return true;
@@ -199,6 +257,8 @@ export default function JobsPage() {
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  /** Cache of geocoded city names → lat/lng; populated on demand via Google Maps Geocoding API */
+  const geocodeCacheRef = useRef<Record<string, { lat: number; lng: number }>>({});
 
   // Dispatch panel
   const [dispatchJob, setDispatchJob] = useState<TransportJob | null>(null);
@@ -238,10 +298,26 @@ export default function JobsPage() {
     }
   }, [savedSearches]);
 
-  const filteredJobs = filterJobs(allJobs, activeFilter);
+  const filteredJobs = filterJobs(allJobs, activeFilter, geocodeCacheRef.current);
 
-  const handleApply = () => {
-    setActiveFilter({ ...draft });
+  const handleApply = async () => {
+    const newFilter = { ...draft };
+    const apiKey = getGoogleMapsPublicKey();
+    // Geocode any city names not found in the static lookup
+    const toResolve = [newFilter.fromLocation, newFilter.toLocation].filter((loc) => {
+      if (!loc.trim()) return false;
+      const key = normalizeCity(loc);
+      return !geocodeCacheRef.current[key] && !resolveCityCoords(loc, {});
+    });
+    if (toResolve.length > 0 && apiKey) {
+      const results = await Promise.all(toResolve.map((c) => geocodeCity(c, apiKey)));
+      toResolve.forEach((city, i) => {
+        if (results[i]) {
+          geocodeCacheRef.current[normalizeCity(city)] = results[i]!;
+        }
+      });
+    }
+    setActiveFilter(newFilter);
     setPanelOpen(false);
   };
 
@@ -262,13 +338,25 @@ export default function JobsPage() {
     setTimeout(() => setSaveSuccess(false), 2500);
   };
 
-  const handleApplySaved = (s: SavedSearch) => {
+  const handleApplySaved = async (s: SavedSearch) => {
     const f: SearchFilter = {
       fromLocation: s.fromLocation,
       fromRadius: s.fromRadius,
       toLocation: s.toLocation,
       toRadius: s.toRadius,
     };
+    const apiKey = getGoogleMapsPublicKey();
+    const toResolve = [f.fromLocation, f.toLocation].filter((loc) => {
+      if (!loc.trim()) return false;
+      const key = normalizeCity(loc);
+      return !geocodeCacheRef.current[key] && !resolveCityCoords(loc, {});
+    });
+    if (toResolve.length > 0 && apiKey) {
+      const results = await Promise.all(toResolve.map((c) => geocodeCity(c, apiKey)));
+      toResolve.forEach((city, i) => {
+        if (results[i]) geocodeCacheRef.current[normalizeCity(city)] = results[i]!;
+      });
+    }
     setDraft(f);
     setActiveFilter(f);
     setPanelOpen(false);

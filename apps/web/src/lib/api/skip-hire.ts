@@ -143,3 +143,10 @@ export async function getSkipCarrierMap(token: string): Promise<SkipMapOrder[]> 
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+export type SkipMarketPrices = Record<SkipSize, number>;
+
+/** Public — minimum price per skip size across verified carriers. */
+export async function getSkipHireMarketPrices(): Promise<SkipMarketPrices> {
+  return apiFetch<SkipMarketPrices>('/skip-hire/market-prices');
+}

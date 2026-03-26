@@ -5,7 +5,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import {
   getMyMaterials,
@@ -517,10 +517,11 @@ function DeleteConfirm({
 export default function MyMaterialsPage() {
   const { user, token, isLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [materials, setMaterials] = useState<ApiMaterial[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(() => searchParams.get('new') === 'true');
   const [editing, setEditing] = useState<ApiMaterial | null>(null);
   const [deleting, setDeleting] = useState<ApiMaterial | null>(null);
   const [error, setError] = useState('');

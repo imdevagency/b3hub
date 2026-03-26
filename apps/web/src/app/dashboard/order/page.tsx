@@ -70,7 +70,7 @@ export default function OrderHubPage() {
                   </p>
                 </div>
                 <div
-                  className={`flex h-16 w-16 md:h-20 md:w-20 shrink-0 items-center justify-center rounded-2xl md:rounded-[1.25rem] ${svc.bgColor} group-hover:scale-105 transition-transform duration-300`}
+                  className={`flex h-16 w-16 md:h-20 md:w-20 shrink-0 items-center justify-center rounded-2xl md:rounded-4xl ${svc.bgColor} group-hover:scale-105 transition-transform duration-300`}
                 >
                   <Icon className={`h-8 w-8 md:h-10 md:w-10 ${svc.color}`} strokeWidth={1.5} />
                 </div>

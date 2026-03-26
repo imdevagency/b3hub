@@ -53,7 +53,7 @@ Each row is a product feature domain.
 | **Notifications**                | ✅ `notifications/`               | ✅ `/dashboard/notifications`                                                                      | ✅ `notifications`                                                             | Push via Expo; web page added this session                                                                                                                            |
 | **Reviews**                      | ✅ `reviews/`                     | ✅ `/dashboard/reviews`                                                                            | ✅ `review/[orderId]`, orders.tsx chip                                         | Standalone review screen + rate button on completed orders added this session                                                                                         |
 | **Recycling Centers / Disposal** | ✅ `recycling-centers/`           | ✅ `/dashboard/recycling-centers`                                                                  | ✅ `disposal/index`                                                            | Waste disposal booking; mobile confirmation now uses context (job data preserved)                                                                                     |
-| **Projects**                     | (via orders)                      | ✅ `/dashboard/buyer/projects`, `/[id]`                                                            | ✅ `(buyer)/projects`, `project/[id]`                                          | Client-side grouping of orders                                                                                                                                        |
+| **Projects**                     | (via orders)                      | 🚧 `/dashboard/buyer/projects` + `/[id]` redirect → framework-contracts                           | 🚧 `(buyer)/projects` + `project/[id]` redirect → framework-contracts                             | "Projekti" UI label routes to Framework Contracts — these redirect stubs exist for backward compat only                                                              |
 | **Certificates**                 | (via documents)                   | ✅ `/dashboard/certificates`                                                                       | ✅ `(buyer)/certificates`                                                      | Web page added this session                                                                                                                                           |
 | **Admin — Dashboard**            | ✅ `admin/`                       | ✅ `/dashboard/admin`                                                                              | 📵                                                                             | Web-only                                                                                                                                                              |
 | **Admin — Users**                | ✅ `admin/`                       | ✅ `/dashboard/admin/users`                                                                        | 📵                                                                             |                                                                                                                                                                       |
@@ -78,6 +78,10 @@ Each row is a product feature domain.
 | Web sidebar dynamic signal badges        | ✅     | UX/Navigation  |
 | Web single role switcher (topbar only)   | ✅     | UX/Navigation  |
 | Order flow hardening                     | ✅     | Security/Ops   |
+| Web buyer sidebar: Konteineri → skip-hire, admin redirect, CTA fixed | ✅ | UX/Navigation |
+| Mobile seller + driver profiles: role-switch row added               | ✅ | UX/Navigation |
+| Mobile seller `_layout.tsx`: stale `title` on hidden quotes tab removed | ✅ | Code quality |
+| Stale `containers` route removed from copilot-instructions.md        | ✅ | Docs accuracy  |
 
 ### Outstanding Gaps
 
@@ -105,8 +109,8 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Backend Modules
 
 <!-- GEN:status-backend-modules -->
-
 - admin
+- analytics
 - auth
 - carrier-settings
 - chat
@@ -122,6 +126,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - materials
 - notifications
 - orders
+- payments
 - provider-applications
 - quote-requests
 - recycling-centers
@@ -134,7 +139,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Web Pages
 
 <!-- GEN:status-web-pages -->
-
 - (auth)/login
 - (auth)/register
 - (root)
@@ -144,6 +148,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/admin
 - dashboard/admin/applications
 - dashboard/admin/users
+- dashboard/analytics
 - dashboard/buyer
 - dashboard/buyer/projects
 - dashboard/buyer/projects/[id]
@@ -154,6 +159,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/company
 - dashboard/company/team
 - dashboard/containers
+- dashboard/containers/fleet
 - dashboard/documents
 - dashboard/fleet
 - dashboard/framework-contracts
@@ -165,6 +171,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/notifications
 - dashboard/order
 - dashboard/order/disposal
+- dashboard/order/materials
 - dashboard/order/skip-hire
 - dashboard/order/transport
 - dashboard/orders
@@ -180,6 +187,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/supplier/earnings
 - dashboard/transporter
 - dashboard/transporter/earnings
+- dashboard/transporter/settings
 - forgot-password
 - order
 - reset-password
@@ -188,7 +196,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Mobile Screens
 
 <!-- GEN:status-mobile-screens -->
-
 - (auth)/apply-role
 - (auth)/forgot-password
 - (auth)/login
@@ -196,7 +203,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (auth)/welcome
 - (buyer)/catalog
 - (buyer)/certificates
-- (buyer)/containers
 - (buyer)/framework-contract/[id]
 - (buyer)/framework-contracts
 - (buyer)/home
@@ -233,7 +239,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - index
 - messages
 - notifications
-- order-request
 - order-request-new
 - order/confirmation
 - order/index

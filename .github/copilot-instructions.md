@@ -90,6 +90,7 @@ export interface RequestingUser {
   permManageOrders: boolean;
   permViewFinancials: boolean;
   permManageTeam: boolean;
+  payoutEnabled?: boolean;
 }
 ```
 <!-- END GEN -->
@@ -151,9 +152,9 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 
 <!-- GEN:mobile-routes -->
 - `(auth)` — apply-role, forgot-password, login, register, welcome
-- `(buyer)` — catalog, certificates, containers, framework-contract/, framework-contracts, home, invoices, order/, orders, profile, project/, projects, rfq/, skip-order/, team, transport-job/
+- `(buyer)` — catalog, catalog.tsx.bak, certificates, framework-contract/, framework-contracts, home, invoices, order/, orders, orders.tsx.bak, profile, project/, projects, projects.tsx.bak, rfq/, skip-order/, team, transport-job/
 - `(driver)` — active, earnings, home, jobs, profile, schedule, skips, vehicles
-- `(seller)` — catalog, earnings, home, incoming, profile, quotes
+- `(seller)` — catalog, catalog.tsx.bak, earnings, home, incoming, profile, quotes
 <!-- END GEN -->
 
 ### Styling

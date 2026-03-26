@@ -16,6 +16,7 @@ import {
   type CarrierPricing,
   type CarrierServiceZone,
   type CarrierBlockedDate,
+  type CarrierRadiusSettings,
   getCarrierPricing,
   setCarrierPrice,
   deleteCarrierPrice,
@@ -25,6 +26,8 @@ import {
   getCarrierBlockedDates,
   blockCarrierDate,
   unblockCarrierDate,
+  getCarrierRadius,
+  setCarrierRadius,
 } from '@/lib/api/carrier-settings';
 import { Trash2, Plus, RefreshCw, Check, X } from 'lucide-react';
 
@@ -37,7 +40,7 @@ const SKIP_SIZES: { value: SkipSize; label: string; volume: string }[] = [
   { value: 'LARGE', label: 'Liels', volume: '8 m³' },
 ];
 
-type Tab = 'pricing' | 'zones' | 'availability';
+type Tab = 'pricing' | 'zones' | 'availability' | 'radius';
 
 // ─── Pricing tab ───────────────────────────────────────────────────────────
 
@@ -128,7 +131,7 @@ function PricingTab({ token }: { token: string }) {
                   <td className="px-5 py-3.5 text-muted-foreground">{volume}</td>
                   <td className="px-5 py-3.5">
                     {isEditing ? (
-                      <div className="flex items-center gap-2 max-w-[140px]">
+                      <div className="flex items-center gap-2 max-w-35">
                         <span className="text-muted-foreground">€</span>
                         <Input
                           type="number"
@@ -543,12 +546,122 @@ function AvailabilityTab({ token }: { token: string }) {
   );
 }
 
-// ─── Page ──────────────────────────────────────────────────────────────────
+// ─── Radius tab ───────────────────────────────────────────────────────────────────
+
+function RadiusTab({ token }: { token: string }) {
+  const [data, setData] = useState<CarrierRadiusSettings | null>(null);
+  const [inputVal, setInputVal] = useState<string>('');
+  const [noLimit, setNoLimit] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    getCarrierRadius(token).then((d) => {
+      setData(d);
+      if (d.serviceRadiusKm === null) {
+        setNoLimit(true);
+        setInputVal('');
+      } else {
+        setNoLimit(false);
+        setInputVal(String(d.serviceRadiusKm));
+      }
+      setLoading(false);
+    });
+  }, [token]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    try {
+      const radiusKm = noLimit ? null : parseInt(inputVal, 10);
+      const updated = await setCarrierRadius(token, radiusKm);
+      setData(updated);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-lg space-y-6">
+      <div className="rounded-lg border bg-card p-6 space-y-4">
+        <div>
+          <h3 className="font-semibold text-base">Darbības rādiuss</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Maksimālais attālums (km) no Jūsu bāzes pilsētas, kurā veicam konteineru piegādes.
+            Pasūtījumi ārpus šī rādiusa netiks rādīti Jūsu katalogā.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <input
+            id="no-limit"
+            type="checkbox"
+            checked={noLimit}
+            onChange={(e) => {
+              setNoLimit(e.target.checked);
+              if (e.target.checked) setInputVal('');
+            }}
+            className="h-4 w-4 rounded border-border"
+          />
+          <Label htmlFor="no-limit" className="cursor-pointer">
+            Nav ierobežojuma (apkalpo visu valsti)
+          </Label>
+        </div>
+
+        {!noLimit && (
+          <div className="space-y-1.5">
+            <Label htmlFor="radius-km">Rādiuss (km)</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="radius-km"
+                type="number"
+                min={1}
+                max={500}
+                value={inputVal}
+                onChange={(e) => setInputVal(e.target.value)}
+                placeholder="p.ē. 50"
+                className="w-32"
+              />
+              <span className="text-sm text-muted-foreground">km</span>
+            </div>
+          </div>
+        )}
+
+        <Button
+          onClick={handleSave}
+          disabled={saving || (!noLimit && (!inputVal || isNaN(parseInt(inputVal, 10))))}
+          className="gap-2"
+        >
+          {saving ? (
+            <RefreshCw className="h-4 w-4 animate-spin" />
+          ) : saved ? (
+            <Check className="h-4 w-4" />
+          ) : null}
+          {saved ? 'Saglabāts' : 'Saglabāt'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ───────────────────────────────────────────────────────────────────────
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'pricing', label: 'Cenas' },
   { key: 'zones', label: 'Servisa zonas' },
   { key: 'availability', label: 'Pieejamība' },
+  { key: 'radius', label: 'Darbības rādiuss' },
 ];
 
 export default function CarrierSettingsPage() {
@@ -558,6 +671,7 @@ export default function CarrierSettingsPage() {
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
+    if (!isLoading && user && !user.canSkipHire) router.push('/dashboard/transporter');
   }, [user, isLoading, router]);
 
   if (isLoading || !token) {
@@ -597,6 +711,7 @@ export default function CarrierSettingsPage() {
         {tab === 'pricing' && <PricingTab token={token} />}
         {tab === 'zones' && <ZonesTab token={token} />}
         {tab === 'availability' && <AvailabilityTab token={token} />}
+        {tab === 'radius' && <RadiusTab token={token} />}
       </div>
     </div>
   );

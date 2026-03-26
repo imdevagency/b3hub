@@ -395,6 +395,9 @@ model Company {
   commissionRate  Float   @default(10.0) // Platform fee percentage
   payoutEnabled   Boolean @default(false)
 
+  // Carrier operational area
+  serviceRadiusKm Int? // Max km radius from base city for skip-hire jobs (null = no restriction)
+
   // Relations
   users            User[]
   materials        Material[]

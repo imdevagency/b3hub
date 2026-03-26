@@ -31,6 +31,16 @@ export class SkipHireController {
   constructor(private readonly skipHireService: SkipHireService) {}
 
   /**
+   * GET /api/v1/skip-hire/market-prices
+   * Public — returns the minimum price per skip size across verified carriers.
+   * Used by the frontend to display indicative "from €X" prices in step 1.
+   */
+  @Get('market-prices')
+  getMarketPrices() {
+    return this.skipHireService.getMarketPrices();
+  }
+
+  /**
    * GET /api/v1/skip-hire/quotes
    * Public — returns carrier offers for the given size, location, date.
    */

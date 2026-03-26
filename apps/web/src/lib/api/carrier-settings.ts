@@ -117,3 +117,28 @@ export async function unblockCarrierDate(token: string, id: string): Promise<voi
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ─── Radius ────────────────────────────────────────────────────────────────
+
+export interface CarrierRadiusSettings {
+  serviceRadiusKm: number | null;
+}
+
+/** Get the carrier's configured service radius (null = no restriction). */
+export async function getCarrierRadius(token: string): Promise<CarrierRadiusSettings> {
+  return apiFetch<CarrierRadiusSettings>('/carrier-settings/radius', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+/** Update the carrier's service radius (null = no restriction). */
+export async function setCarrierRadius(
+  token: string,
+  radiusKm: number | null,
+): Promise<CarrierRadiusSettings> {
+  return apiFetch<CarrierRadiusSettings>('/carrier-settings/radius', {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ radiusKm }),
+  });
+}

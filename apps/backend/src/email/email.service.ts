@@ -203,6 +203,83 @@ export class EmailService {
     });
   }
 
+  /** Invoice issued — send to buyer with PDF attachment */
+  async sendInvoice(
+    to: string,
+    buyerName: string,
+    invoice: {
+      invoiceNumber: string;
+      total: number;
+      currency: string;
+      dueDate: Date;
+      orderNumber: string;
+    },
+    pdfBuffer: Buffer,
+  ) {
+    const dueDateStr = invoice.dueDate.toLocaleDateString('lv-LV');
+    const html = this.base({
+      title: `Rēķins #${invoice.invoiceNumber}`,
+      body: `
+        <p>Labdien, ${buyerName}!</p>
+        <p>Pielikumā atradīsiet rēķinu par pasūtījumu <strong>#${invoice.orderNumber}</strong>.</p>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px">
+          <tr>
+            <td style="padding:8px 0;color:#6b7280">Rēķina numurs</td>
+            <td style="padding:8px 0;font-weight:600">#${invoice.invoiceNumber}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7280">Apmaksas termiņš</td>
+            <td style="padding:8px 0;font-weight:600">${dueDateStr}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7280">Kopā apmaksai</td>
+            <td style="padding:8px 0;font-size:18px;font-weight:700;color:#111827">${invoice.currency} ${invoice.total.toFixed(2)}</td>
+          </tr>
+        </table>
+        <p style="font-size:13px;color:#6b7280">Lūdzu apmaksājiet rēķinu līdz ${dueDateStr}. Jautājumu gadījumā rakstiet uz <a href="mailto:support@b3hub.lv">support@b3hub.lv</a>.</p>
+      `,
+      cta: {
+        label: 'Skatīt rēķinus',
+        url: `${this.webUrl}/dashboard/invoices`,
+      },
+    });
+
+    if (!this.enabled || !this.resend) {
+      this.logger.debug(
+        `[DEV EMAIL] Invoice #${invoice.invoiceNumber} to: ${to} (PDF ${pdfBuffer.length} bytes)`,
+      );
+      return;
+    }
+
+    try {
+      const { error } = await this.resend.emails.send({
+        from: this.from,
+        to: [to],
+        subject: `Rēķins #${invoice.invoiceNumber} — B3Hub`,
+        html,
+        attachments: [
+          {
+            filename: `invoice-${invoice.invoiceNumber}.pdf`,
+            content: pdfBuffer.toString('base64'),
+          },
+        ],
+      });
+      if (error) {
+        this.logger.error(
+          `Failed to send invoice email to ${to}: ${error.message}`,
+        );
+      } else {
+        this.logger.log(
+          `Invoice #${invoice.invoiceNumber} emailed to ${to}`,
+        );
+      }
+    } catch (err) {
+      this.logger.error(
+        `Invoice email send exception: ${(err as Error).message}`,
+      );
+    }
+  }
+
   // ── Private helpers ────────────────────────────────────────────────────────
 
   private async send(opts: { to: string; subject: string; html: string }) {

@@ -736,7 +736,7 @@ function WizardInline({
               </p>
               <div className="w-full space-y-3 pt-2">
                 <Button
-                  onClick={() => (window.location.href = '/dashboard/quotes')}
+                  onClick={() => (window.location.href = '/dashboard/quote-requests')}
                   className="w-full rounded-2xl h-12 font-bold"
                 >
                   <ReceiptText className="size-4 mr-1.5" /> Skatīt pieprasījumus

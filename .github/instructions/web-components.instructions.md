@@ -427,6 +427,18 @@ Wrap page sections that may throw.
 
 ---
 
+#### `page-container` — `@/components/ui/page-container`
+
+| Prop | Type | |
+|------|------|---|
+| `children` | `React.ReactNode` | **required** |
+| `containerClassName` | `string` | optional |
+| `childrenClassName` | `string` | optional |
+
+**Exports:** `PageContainer`
+
+---
+
 #### `page-header` — `@/components/ui/page-header`
 
 | Prop | Type | |

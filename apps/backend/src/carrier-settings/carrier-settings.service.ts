@@ -132,4 +132,20 @@ export class CarrierSettingsService {
     }
     await this.prisma.carrierAvailability.delete({ where: { id: blockId } });
   }
+
+  // ── Radius ───────────────────────────────────────────────────────────────
+
+  async getRadius(userId: string) {
+    const company = await this.requireCarrierCompany(userId);
+    return { serviceRadiusKm: company.serviceRadiusKm };
+  }
+
+  async setRadius(userId: string, radiusKm: number | null | undefined) {
+    const company = await this.requireCarrierCompany(userId);
+    return this.prisma.company.update({
+      where: { id: company.id },
+      data: { serviceRadiusKm: radiusKm ?? null },
+      select: { serviceRadiusKm: true },
+    });
+  }
 }

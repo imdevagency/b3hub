@@ -121,6 +121,37 @@ export class SkipHireService {
     return order;
   }
 
+  // ── Market prices (public) ───────────────────────────────────────────
+  /**
+   * Returns the minimum price per skip size across all verified carriers.
+   * Falls back to the platform default prices when no carrier pricing exists.
+   */
+  async getMarketPrices(): Promise<Record<SkipSize, number>> {
+    const pricings = await this.prisma.carrierPricing.findMany({
+      where: {
+        carrier: {
+          verified: true,
+          companyType: { in: CARRIER_TYPES },
+        },
+      },
+      select: { skipSize: true, price: true },
+    });
+
+    const mins: Partial<Record<SkipSize, number>> = {};
+    for (const p of pricings) {
+      if (mins[p.skipSize] === undefined || p.price < mins[p.skipSize]!) {
+        mins[p.skipSize] = p.price;
+      }
+    }
+
+    return {
+      MINI: mins.MINI ?? SKIP_PRICES.MINI,
+      MIDI: mins.MIDI ?? SKIP_PRICES.MIDI,
+      BUILDERS: mins.BUILDERS ?? SKIP_PRICES.BUILDERS,
+      LARGE: mins.LARGE ?? SKIP_PRICES.LARGE,
+    };
+  }
+
   // ── Get quotes (public) ──────────────────────────────────────────────
   async getQuotes(
     size: SkipSize,
