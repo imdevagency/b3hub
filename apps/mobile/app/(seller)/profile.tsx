@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { RoleSheet } from '@/components/ui/TopBar';
 import {
   View,
   Text,
@@ -23,6 +24,7 @@ import {
   ChevronRight,
   Phone,
   AlertCircle,
+  ArrowUpDown,
   HelpCircle,
   MessageCircle,
   Bell,
@@ -96,6 +98,19 @@ const s = StyleSheet.create({
     marginLeft: 4,
   },
   menuFooter: { marginTop: 32, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
+  roleSwitchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    backgroundColor: '#f9fafb',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+  },
 
   menuItem: {
     flexDirection: 'row',
@@ -162,9 +177,10 @@ const s = StyleSheet.create({
 
 export default function ProfileScreen() {
   const { user, token, updateUser, logout } = useAuth();
-  const { mode } = useMode();
+  const { mode, isMultiRole } = useMode();
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
+  const [roleSheetOpen, setRoleSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     firstName: user?.firstName ?? '',
@@ -258,6 +274,27 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Role Switcher */}
+        {isMultiRole && (
+          <TouchableOpacity
+            style={s.roleSwitchRow}
+            onPress={() => {
+              haptics.light();
+              setRoleSheetOpen(true);
+            }}
+            activeOpacity={0.75}
+          >
+            <View style={[s.menuIcon, s.iconNormal]}>
+              <ArrowUpDown size={18} color="#374151" strokeWidth={2} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.menuLabel}>Mainīt lomu</Text>
+              <Text style={s.menuValue}>{t.mode[mode]}</Text>
+            </View>
+            <ChevronRight size={16} color="#9ca3af" />
+          </TouchableOpacity>
+        )}
+
         {/* Missing Phone Nudge */}
         {!user?.phone && (
           <TouchableOpacity style={s.nudge} onPress={openEdit} activeOpacity={0.8}>
@@ -273,6 +310,9 @@ export default function ProfileScreen() {
         )}
 
         {/* Menu Items */}
+        {isMultiRole && (
+          <RoleSheet visible={roleSheetOpen} onClose={() => setRoleSheetOpen(false)} />
+        )}
         <View style={s.menuConfig}>
           <Text style={s.sectionHeader}>Konta informācija</Text>
 

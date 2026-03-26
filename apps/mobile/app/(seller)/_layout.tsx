@@ -82,13 +82,7 @@ export default function SellerLayout() {
               tabBarIcon: ({ color }) => <Wallet size={22} color={color} />,
             }}
           />
-          <Tabs.Screen
-            name="quotes"
-            options={{
-              title: t.tabs.quotes,
-              href: null,
-            }}
-          />
+          <Tabs.Screen name="quotes" options={{ href: null }} />
           <Tabs.Screen
             name="profile"
             options={{

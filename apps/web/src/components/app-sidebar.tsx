@@ -26,6 +26,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   LogOut,
+  MapPin,
   MessageSquare,
   Recycle,
   Package,
@@ -92,7 +93,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
         { label: 'Mani Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
         { label: 'Projekti', href: '/dashboard/framework-contracts', icon: FolderKanban },
         { label: 'Cenu Pieprasījumi', href: '/dashboard/quote-requests', icon: FileQuestion },
-        { label: 'Konteineri', href: '/dashboard/containers', icon: Box },
+        { label: 'Konteineri', href: '/dashboard/skip-hire', icon: Box },
       ],
     },
     {
@@ -158,7 +159,11 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       id: 'carrier-fleet',
       label: 'Flote',
       icon: Car,
-      items: [{ label: 'Mans Autoparks', href: '/dashboard/garage', icon: Car }],
+      items: [
+        { label: 'Mans Autoparks', href: '/dashboard/garage', icon: Car },
+        { label: 'Konteineru Flote', href: '/dashboard/containers/fleet', icon: Package },
+        { label: 'Nesēja Iestatījumi', href: '/dashboard/transporter/settings', icon: Settings },
+      ],
     },
     {
       id: 'carrier-business',
@@ -250,6 +255,39 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             return {
               ...section,
               items: section.items.filter((item) => item.href !== '/dashboard/transporter'),
+            };
+          }
+          return section;
+        });
+      }
+
+      if (!isDispatcher) {
+        // Non-dispatcher drivers get a quick link to their active job GPS view
+        sections = sections.map((section) => {
+          if (section.id !== 'carrier-jobs') return section;
+          const dashboardItem = section.items[0];
+          return {
+            ...section,
+            items: [
+              dashboardItem,
+              { label: 'Aktīvais Darbs', href: '/dashboard/active', icon: MapPin },
+              ...section.items.slice(1),
+            ],
+          };
+        });
+      }
+
+      // Skip-hire items are only relevant for carriers with canSkipHire capability
+      if (!user?.canSkipHire) {
+        sections = sections.map((section) => {
+          if (section.id === 'carrier-fleet') {
+            return {
+              ...section,
+              items: section.items.filter(
+                (item) =>
+                  item.href !== '/dashboard/containers/fleet' &&
+                  item.href !== '/dashboard/transporter/settings',
+              ),
             };
           }
           return section;

@@ -28,13 +28,13 @@ export const notificationsApi = {
 
     markAllRead: (token: string) =>
       apiFetch<void>('/notifications/read-all', {
-        method: 'POST',
+        method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       }),
 
     markRead: (id: string, token: string) =>
       apiFetch<void>(`/notifications/${id}/read`, {
-        method: 'POST',
+        method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       }),
   },

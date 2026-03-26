@@ -107,7 +107,7 @@ export default function BuyerDashboardPage() {
       label: 'Pasūtīt Konteineru',
       description: 'Rezervēt atkritumu konteineru savai darba vai mājas vietai',
       icon: Trash2,
-      href: '/dashboard/order',
+      href: '/dashboard/skip-hire',
       primary: true,
     },
     {

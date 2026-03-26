@@ -23,6 +23,7 @@ import {
   ChevronRight,
   Phone,
   AlertCircle,
+  ArrowUpDown,
   HelpCircle,
   MessageCircle,
   Bell,
@@ -35,6 +36,7 @@ import {
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
+import { RoleSheet } from '@/components/ui/TopBar';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 import { ACCOUNT_STATUS } from '@/lib/materials';
@@ -117,6 +119,19 @@ const s = StyleSheet.create({
     marginLeft: 4,
   },
   menuFooter: { marginTop: 32, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
+  roleSwitchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    backgroundColor: '#f9fafb',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+  },
 
   menuItem: {
     flexDirection: 'row',
@@ -183,9 +198,10 @@ const s = StyleSheet.create({
 
 export default function ProfileScreen() {
   const { user, token, updateUser, logout } = useAuth();
-  const { mode } = useMode();
+  const { mode, isMultiRole } = useMode();
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
+  const [roleSheetOpen, setRoleSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isOnline, setIsOnline] = useState<boolean | null>(null);
   const [togglingOnline, setTogglingOnline] = useState(false);
@@ -309,6 +325,27 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Role Switcher */}
+        {isMultiRole && (
+          <TouchableOpacity
+            style={s.roleSwitchRow}
+            onPress={() => {
+              haptics.light();
+              setRoleSheetOpen(true);
+            }}
+            activeOpacity={0.75}
+          >
+            <View style={[s.menuIcon, s.iconNormal]}>
+              <ArrowUpDown size={18} color="#374151" strokeWidth={2} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.menuLabel}>Mainīt lomu</Text>
+              <Text style={s.menuValue}>{t.mode[mode]}</Text>
+            </View>
+            <ChevronRight size={16} color="#9ca3af" />
+          </TouchableOpacity>
+        )}
+
         {/* Online Status Card */}
         <View style={[s.statusCard, isOnline ? s.statusOnline : s.statusOffline]}>
           <View style={[s.statusIcon, { backgroundColor: isOnline ? '#dcfce7' : '#f3f4f6' }]}>
@@ -338,6 +375,9 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        {isMultiRole && (
+          <RoleSheet visible={roleSheetOpen} onClose={() => setRoleSheetOpen(false)} />
+        )}
         {/* Menu Items */}
         <View style={s.menuConfig}>
           <Text style={s.sectionHeader}>Darba instrumenti</Text>

@@ -8,26 +8,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { getAdminStats, type AdminStats } from '@/lib/api/admin';
 import { Users, ClipboardList, Truck, BarChart3, RefreshCw, ArrowRight } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
-
-// ── Admin stats ───────────────────────────────────────────────────────────────
-
-interface AdminStats {
-  totalUsers: number;
-  totalOrders: number;
-  pendingApplications: number;
-  activeJobs: number;
-}
-
-async function getAdminStats(token: string): Promise<AdminStats> {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1'}/admin/stats`,
-    { headers: { Authorization: `Bearer ${token}` } },
-  );
-  if (!res.ok) throw new Error('Failed to fetch stats');
-  return res.json();
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 

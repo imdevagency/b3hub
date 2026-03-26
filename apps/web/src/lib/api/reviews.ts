@@ -18,8 +18,8 @@ export interface Review {
 
 // ─── Functions ─────────────────────────────────────────────────────────────
 
-export async function getMyReviews(token: string): Promise<Review[]> {
-  return apiFetch<Review[]>('/reviews/mine', {
+export async function getMyReviews(companyId: string, token: string): Promise<Review[]> {
+  return apiFetch<Review[]>(`/reviews/company/${companyId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 }

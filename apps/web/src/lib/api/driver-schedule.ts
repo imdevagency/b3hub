@@ -62,7 +62,7 @@ export async function updateDriverSchedule(
   token: string,
 ): Promise<DriverAvailability> {
   return apiFetch<DriverAvailability>('/driver-schedule', {
-    method: 'POST',
+    method: 'PUT',
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(data),
   });

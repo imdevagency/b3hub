@@ -100,3 +100,70 @@ export async function getMyWasteRecords(token: string): Promise<ApiWasteRecord[]
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ─── Carrier fleet management ──────────────────────────────────────────────
+
+export interface CreateContainerInput {
+  containerType: ContainerType;
+  size: ContainerSize;
+  volume: number;
+  maxWeight: number;
+  rentalPrice: number;
+  deliveryFee: number;
+  pickupFee: number;
+  location?: string;
+  currency?: string;
+}
+
+/** Carrier: add a new container to their fleet. */
+export async function createContainer(
+  token: string,
+  data: CreateContainerInput,
+): Promise<ApiContainer> {
+  return apiFetch<ApiContainer>('/containers', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+/** Carrier: list all containers in their fleet. */
+export async function getMyFleetContainers(token: string): Promise<ApiContainer[]> {
+  return apiFetch<ApiContainer[]>('/containers/mine', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+/** Carrier: update a container (pricing, status, details). */
+export async function updateContainer(
+  token: string,
+  id: string,
+  data: Partial<CreateContainerInput> & { status?: ContainerStatus },
+): Promise<ApiContainer> {
+  return apiFetch<ApiContainer>(`/containers/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+/** Carrier: remove a container from their fleet. */
+export async function deleteContainer(token: string, id: string): Promise<void> {
+  return apiFetch<void>(`/containers/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+/** Carrier: update the status of an incoming rental order. */
+export async function updateContainerOrderStatus(
+  token: string,
+  orderId: string,
+  status: ContainerOrderStatus,
+): Promise<ApiContainerOrder> {
+  return apiFetch<ApiContainerOrder>(`/containers/orders/${orderId}/status`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ status }),
+  });
+}

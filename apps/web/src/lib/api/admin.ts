@@ -136,3 +136,16 @@ export async function adminUpdateUser(
     body: JSON.stringify(data),
   });
 }
+
+export interface AdminStats {
+  totalUsers: number;
+  totalOrders: number;
+  pendingApplications: number;
+  activeJobs: number;
+}
+
+export async function getAdminStats(token: string): Promise<AdminStats> {
+  return apiFetch<AdminStats>('/admin/stats', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

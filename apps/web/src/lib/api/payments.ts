@@ -1,5 +1,5 @@
 // apps/web/src/lib/api/payments.ts
-import { API_BASE } from './common';
+import { API_URL as API_BASE } from './common';
 
 export interface PaymentOnboardResponse {
   url: string;

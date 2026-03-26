@@ -23,9 +23,9 @@ const ROLE_HOME: Record<Mode, string> = {
 };
 
 const MODE_LABEL: Record<Mode, string> = {
-  BUYER: 'Pasutitajs',
-  SUPPLIER: 'Piegadatajs',
-  CARRIER: 'Parvadatajs',
+  BUYER: 'Pasūtītājs',
+  SUPPLIER: 'Piegādātājs',
+  CARRIER: 'Pārvadātājs',
 };
 
 export function RoleModeSwitcher() {

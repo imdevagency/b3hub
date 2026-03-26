@@ -27,6 +27,10 @@ export default function DashboardRedirectPage() {
       router.replace('/login');
       return;
     }
+    if (user.userType === 'ADMIN') {
+      router.replace('/dashboard/admin');
+      return;
+    }
     router.replace(ROLE_HOME[activeMode]);
   }, [user, isLoading, activeMode, router]);
 
