@@ -26,6 +26,7 @@ import {
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { haptics } from '@/lib/haptics';
+import { getRoleName } from '@/lib/utils';
 
 const SIDEBAR_WIDTH = 300;
 
@@ -209,7 +210,7 @@ export function Sidebar({ visible, onClose, role, accentColor }: SidebarProps) {
           </View>
           <View style={styles.bannerText}>
             <Text style={styles.bannerName}>{fullName || 'Lietotājs'}</Text>
-            <Text style={styles.bannerRole}>{ROLE_LABEL[role]}</Text>
+            <Text style={styles.bannerRole}>{getRoleName(user)}</Text>
           </View>
         </View>
 

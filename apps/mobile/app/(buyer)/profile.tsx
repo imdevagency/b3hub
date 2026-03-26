@@ -38,6 +38,7 @@ import { RoleSheet } from '@/components/ui/TopBar';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 import { ACCOUNT_STATUS } from '@/lib/materials';
+import { getRoleName } from '@/lib/utils';
 
 const s = StyleSheet.create({
   header: { alignItems: 'center', paddingVertical: 32 },
@@ -198,14 +199,7 @@ export default function ProfileScreen() {
   };
   const roleTheme = ROLE_THEME[mode] ?? ROLE_THEME.buyer;
 
-  const accountTypeLabel =
-    user?.userType === 'ADMIN'
-      ? 'Administrators'
-      : [
-          'Pircējs',
-          ...(user?.canSell ? ['Piegādātājs'] : []),
-          ...(user?.canTransport ? ['Pārvadātājs'] : []),
-        ].join(' + ');
+  const accountTypeLabel = user?.userType === 'ADMIN' ? 'Administrators' : getRoleName(user);
   const handleLogout = () => {
     Alert.alert('Iziet', 'Vai tiešām vēlaties izrakstīties?', [
       { text: 'Atcelt', style: 'cancel' },

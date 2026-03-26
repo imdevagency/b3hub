@@ -38,6 +38,7 @@ import { useMode } from '@/lib/mode-context';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 import { ACCOUNT_STATUS } from '@/lib/materials';
+import { getRoleName } from '@/lib/utils';
 
 const s = StyleSheet.create({
   header: { alignItems: 'center', paddingVertical: 32 },
@@ -204,14 +205,7 @@ export default function ProfileScreen() {
   };
   const roleTheme = ROLE_THEME[mode] ?? ROLE_THEME.driver;
 
-  const accountTypeLabel =
-    user?.userType === 'ADMIN'
-      ? 'Administrators'
-      : [
-          'Pircējs',
-          ...(user?.canSell ? ['Piegādātājs'] : []),
-          ...(user?.canTransport ? ['Pārvadātājs'] : []),
-        ].join(' + ');
+  const accountTypeLabel = user?.userType === 'ADMIN' ? 'Administrators' : getRoleName(user);
 
   const handleLogout = () => {
     Alert.alert('Iziet', 'Vai tiešām vēlaties izrakstīties?', [
@@ -317,12 +311,7 @@ export default function ProfileScreen() {
 
         {/* Online Status Card */}
         <View style={[s.statusCard, isOnline ? s.statusOnline : s.statusOffline]}>
-          <View
-            style={[
-              s.statusIcon,
-              { backgroundColor: isOnline ? '#dcfce7' : '#f3f4f6' },
-            ]}
-          >
+          <View style={[s.statusIcon, { backgroundColor: isOnline ? '#dcfce7' : '#f3f4f6' }]}>
             <Power size={20} color={isOnline ? '#16a34a' : '#9ca3af'} />
           </View>
           <View style={s.statusTextContainer}>
@@ -342,12 +331,7 @@ export default function ProfileScreen() {
             {togglingOnline ? (
               <ActivityIndicator size="small" color={isOnline ? '#fff' : '#6b7280'} />
             ) : (
-              <Text
-                style={[
-                  s.statusToggleText,
-                  isOnline && s.statusToggleTextActive,
-                ]}
-              >
+              <Text style={[s.statusToggleText, isOnline && s.statusToggleTextActive]}>
                 {isOnline ? 'Beigties' : 'Iet tiešsaistē'}
               </Text>
             )}

@@ -243,7 +243,9 @@ function MemberDetailsSheet({
               </View>
               <Switch
                 value={perms[key]}
-                onValueChange={(v) => canEdit && setPerms((prev) => ({ ...prev, [key]: v }))}
+                onValueChange={(v) => {
+                  if (canEdit) setPerms((prev) => ({ ...prev, [key]: v }));
+                }}
                 trackColor={{ false: '#e5e7eb', true: '#111827' }}
                 thumbColor="#fff"
                 disabled={!canEdit}
@@ -573,7 +575,7 @@ export default function TeamScreen() {
         onClose={() => setSelectedMember(null)}
         onUpdate={handleUpdatePerms}
         onRemove={handleRemove}
-        currentUserRole={user?.companyRole}
+        currentUserRole={user?.companyRole ?? undefined}
       />
 
       <InviteSheet
