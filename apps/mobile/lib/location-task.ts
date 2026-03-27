@@ -59,7 +59,7 @@ if (TaskManager && Location) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ latitude, longitude }),
+        body: JSON.stringify({ lat: latitude, lng: longitude }),
       });
     } catch {
       // Silent — never crash the background task

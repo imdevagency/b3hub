@@ -32,7 +32,6 @@ import { JobRouteMap } from '@/components/ui/JobRouteMap';
 import { haptics } from '@/lib/haptics';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { BottomSheet } from '@/components/ui/BottomSheet';
-import GorhomBottomSheet from '@gorhom/bottom-sheet';
 
 import { EmptyState } from '@/components/ui/EmptyState';
 import {
@@ -80,7 +79,6 @@ const NEXT_STATUS: Record<JobStatus, JobStatus | null> = {
 const RETURN_TRIP_STATUSES: JobStatus[] = ['EN_ROUTE_DELIVERY', 'AT_DELIVERY'];
 
 const EXCEPTION_TYPE_OPTIONS: Array<{ value: TransportExceptionType; label: string }> = [
-  { value: 'DRIVER_NO_SHOW', label: 'Šoferis neieradās' },
   { value: 'SUPPLIER_NOT_READY', label: 'Piegādātājs nav gatavs' },
   { value: 'WRONG_MATERIAL', label: 'Nepareizs materiāls' },
   { value: 'PARTIAL_DELIVERY', label: 'Daļēja piegāde' },
@@ -115,13 +113,11 @@ export default function ActiveJobScreen() {
   const [currentLat, setCurrentLat] = React.useState<number | null>(null);
   const [currentLng, setCurrentLng] = React.useState<number | null>(null);
   const locationSub = useRef<Location.LocationSubscription | null>(null);
-  const bottomSheetRef = useRef<GorhomBottomSheet>(null);
   // Keep a stable ref to the current job so the GPS callback can access its id
   const jobRef = useRef<ApiTransportJob | null>(null);
   // Return trips — fetched automatically when nearing delivery
   const [returnTrips, setReturnTrips] = React.useState<ApiReturnTripJob[]>([]);
   const [returnTripsLoading, setReturnTripsLoading] = React.useState(false);
-  const [returnDismissed, setReturnDismissed] = React.useState(false);
   const [acceptingReturnId, setAcceptingReturnId] = React.useState<string | null>(null);
   const [deliveryBlockers, setDeliveryBlockers] = React.useState<string[]>([]);
   const [readinessLoading, setReadinessLoading] = React.useState(false);
@@ -149,12 +145,9 @@ export default function ActiveJobScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.7,
       allowsEditing: false,
-      base64: true,
     });
     if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      const uri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
-      setPickupPhotoUri(uri);
+      setPickupPhotoUri(result.assets[0].uri);
     }
   };
 
@@ -251,6 +244,7 @@ export default function ActiveJobScreen() {
       );
       setExceptions((prev) => [created, ...prev]);
       setExceptionNotes('');
+      setExceptionType('OTHER');
       haptics.success();
     } catch (err: unknown) {
       haptics.error();
@@ -293,8 +287,10 @@ export default function ActiveJobScreen() {
           try {
             await api.transportJobs.accept(tripId, token);
             setReturnTrips((prev) => prev.filter((t) => t.id !== tripId));
+            haptics.success();
             Alert.alert('✓ Darbs pieņemts', 'Atpakaļceļa darbs pievienots jūsu darbu sarakstam.');
           } catch (err: unknown) {
+            haptics.error();
             Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās pieņemt darbu');
           } finally {
             setAcceptingReturnId(null);
@@ -323,7 +319,7 @@ export default function ActiveJobScreen() {
     }, [fetchActiveJob]),
   );
 
-  // ── Background + foreground GPS tracking ──────────────────────
+  // ── Foreground GPS watcher — live map dot only ────────────────
   useEffect(() => {
     let active = true;
 
@@ -331,12 +327,6 @@ export default function ActiveJobScreen() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted' || !active) return;
 
-      // Start background task (handles backend updates in both foreground + background)
-      if (jobRef.current?.id) {
-        startLocationTracking(jobRef.current.id).catch(() => {});
-      }
-
-      // Also watch position for live map dot updates in the UI only
       locationSub.current = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.Balanced,
@@ -354,9 +344,17 @@ export default function ActiveJobScreen() {
     return () => {
       active = false;
       locationSub.current?.remove();
-      stopLocationTracking().catch(() => {});
     };
   }, []);
+
+  // ── Background tracking — starts once job id is known ─────────
+  useEffect(() => {
+    if (!job?.id) return;
+    startLocationTracking(job.id).catch(() => {});
+    return () => {
+      stopLocationTracking().catch(() => {});
+    };
+  }, [job?.id]);
 
   if (loading) {
     return (
@@ -388,25 +386,11 @@ export default function ActiveJobScreen() {
   const nextStatus = NEXT_STATUS[currentStatus];
   const openExceptions = exceptions.filter((ex) => ex.status === 'OPEN');
 
-  const slaTone = job.sla?.isOverdue
-    ? {
-        bg: '#fef2f2',
-        border: '#fecaca',
-        title: '#991b1b',
-        body: '#7f1d1d',
-      }
-    : {
-        bg: '#eff6ff',
-        border: '#bfdbfe',
-        title: '#1d4ed8',
-        body: '#1e40af',
-      };
-
   const phaseColor =
     currentStatus === 'DELIVERED'
       ? { bg: '#dcfce7', border: '#86efac', text: '#15803d', phase: 'Piegādāts ✓' }
-      : currentIndex >= 4
-        ? { bg: '#d1fae5', border: '#6ee7b7', text: '#000000', phase: 'Piegādes fāze' }
+      : currentIndex >= 3
+        ? { bg: '#d1fae5', border: '#6ee7b7', text: '#059669', phase: 'Piegādes fāze' }
         : { bg: '#fef3c7', border: '#fde68a', text: '#d97706', phase: 'Iekraušanas fāze' };
 
   // ── Navigate — Schüttflix-style app picker ────────────────────────────────
@@ -763,7 +747,7 @@ export default function ActiveJobScreen() {
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Cena</Text>
-            <Text style={styles.detailValue}>€{job.rate.toFixed(2)}</Text>
+            <Text style={styles.detailValue}>€{job.rate?.toFixed(2) ?? '-'}</Text>
           </View>
 
           {/* Exceptions Entry Point */}
@@ -777,6 +761,37 @@ export default function ActiveJobScreen() {
                 Ziņot par problēmu
               </Text>
             </View>
+            {/* Exception type picker */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 6 }}
+            >
+              {EXCEPTION_TYPE_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt.value}
+                  onPress={() => setExceptionType(opt.value)}
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 20,
+                    backgroundColor: exceptionType === opt.value ? '#991b1b' : '#fff',
+                    borderWidth: 1,
+                    borderColor: exceptionType === opt.value ? '#991b1b' : '#fecaca',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '600',
+                      color: exceptionType === opt.value ? '#fff' : '#7f1d1d',
+                    }}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
             <TextInput
               style={{
                 backgroundColor: '#fff',
@@ -792,15 +807,16 @@ export default function ActiveJobScreen() {
             />
             <TouchableOpacity
               style={{
-                backgroundColor: '#fee2e2',
+                backgroundColor: reportingException ? '#e5e7eb' : '#fee2e2',
                 borderRadius: 8,
                 padding: 10,
                 alignItems: 'center',
               }}
               onPress={handleReportException}
+              disabled={reportingException}
             >
               <Text style={{ color: '#991b1b', fontWeight: '700', fontSize: 13 }}>
-                Ziņot dispečeram
+                {reportingException ? 'Sūta...' : 'Ziņot dispečeram'}
               </Text>
             </TouchableOpacity>
           </View>
