@@ -1,10 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { View, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import { Text } from '@/components/ui/text';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Inbox, LayoutGrid, FileText, Wallet, Bell, ArrowRight } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
@@ -73,7 +72,15 @@ export default function SellerHomeScreen() {
         }}
       >
         <View>
-          <Text className="text-[28px] font-extrabold text-gray-900 tracking-tight">
+          <Text
+            style={{
+              fontSize: 28,
+              fontFamily: 'Inter_800ExtraBold',
+              fontWeight: '800',
+              color: '#111827',
+              letterSpacing: -0.7,
+            }}
+          >
             Sveiki, {user?.firstName || 'Pārdevēj'}!
           </Text>
         </View>
@@ -101,7 +108,7 @@ export default function SellerHomeScreen() {
       </View>
 
       <ScrollView
-        className="flex-1"
+        style={{ flex: 1 }}
         contentContainerStyle={{
           paddingBottom: TAB_H + insets.bottom + 32,
           paddingHorizontal: 24,
@@ -157,13 +164,28 @@ export default function SellerHomeScreen() {
                             marginRight: 8,
                           }}
                         />
-                        <Text className="text-gray-300 text-[15px] font-medium tracking-tight">
+                        <Text
+                          style={{
+                            fontSize: 15,
+                            fontFamily: 'Inter_500Medium',
+                            fontWeight: '500',
+                            color: '#d1d5db',
+                            letterSpacing: -0.3,
+                          }}
+                        >
                           Jauni pasūtījumi
                         </Text>
                       </View>
                       <Text
-                        className="text-white text-[64px] font-bold tracking-tighter leading-none"
-                        style={{ marginTop: 8 }}
+                        style={{
+                          fontSize: 64,
+                          fontFamily: 'Inter_700Bold',
+                          fontWeight: '700',
+                          color: '#ffffff',
+                          lineHeight: 64,
+                          letterSpacing: -3.2,
+                          marginTop: 8,
+                        }}
                       >
                         {pendingCount}
                       </Text>
@@ -182,8 +204,14 @@ export default function SellerHomeScreen() {
                     </View>
                   </View>
                   <Text
-                    className="text-white text-[15px] font-medium"
-                    style={{ marginTop: 16, opacity: 0.8 }}
+                    style={{
+                      fontSize: 15,
+                      fontFamily: 'Inter_500Medium',
+                      fontWeight: '500',
+                      color: '#ffffff',
+                      marginTop: 16,
+                      opacity: 0.8,
+                    }}
                   >
                     Pieskaries, lai skatītu
                   </Text>
@@ -208,13 +236,27 @@ export default function SellerHomeScreen() {
                             marginRight: 8,
                           }}
                         />
-                        <Text className="text-gray-500 text-[15px] font-medium tracking-tight">
+                        <Text
+                          style={{
+                            fontSize: 15,
+                            fontFamily: 'Inter_500Medium',
+                            fontWeight: '500',
+                            color: '#6b7280',
+                            letterSpacing: -0.3,
+                          }}
+                        >
                           Statuss
                         </Text>
                       </View>
                       <Text
-                        className="text-black text-[28px] font-bold tracking-tight"
-                        style={{ marginTop: 8 }}
+                        style={{
+                          fontSize: 28,
+                          fontFamily: 'Inter_700Bold',
+                          fontWeight: '700',
+                          color: '#000000',
+                          letterSpacing: -0.7,
+                          marginTop: 8,
+                        }}
                       >
                         Gatavs darbam
                       </Text>
@@ -232,13 +274,21 @@ export default function SellerHomeScreen() {
                       <Inbox size={24} color="#000000" strokeWidth={2} />
                     </View>
                   </View>
-                  <Text className="text-gray-500 text-[15px] font-medium" style={{ marginTop: 24 }}>
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontFamily: 'Inter_500Medium',
+                      fontWeight: '500',
+                      color: '#6b7280',
+                      marginTop: 24,
+                    }}
+                  >
                     Pagaidām nav jaunu pieprasījumu
                   </Text>
                 </>
               )
             ) : (
-              <View className="flex-1" />
+              <View style={{ flex: 1 }} />
             )}
           </TouchableOpacity>
         </View>
@@ -283,7 +333,16 @@ export default function SellerHomeScreen() {
                   >
                     <Icon size={20} color="#000000" strokeWidth={2} />
                   </View>
-                  <Text className="text-[16px] font-semibold text-black ml-1 tracking-tight">
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontFamily: 'Inter_600SemiBold',
+                      fontWeight: '600',
+                      color: '#000000',
+                      marginLeft: 4,
+                      letterSpacing: -0.4,
+                    }}
+                  >
                     {action.label}
                   </Text>
                 </TouchableOpacity>
@@ -329,7 +388,16 @@ export default function SellerHomeScreen() {
                   >
                     <Icon size={20} color="#000000" strokeWidth={2} />
                   </View>
-                  <Text className="text-[16px] font-semibold text-black ml-1 tracking-tight">
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontFamily: 'Inter_600SemiBold',
+                      fontWeight: '600',
+                      color: '#000000',
+                      marginLeft: 4,
+                      letterSpacing: -0.4,
+                    }}
+                  >
                     {action.label}
                   </Text>
                 </TouchableOpacity>

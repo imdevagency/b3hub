@@ -52,6 +52,8 @@ All tokens are defined in `apps/mobile/lib/tokens.js` (CommonJS, required by Tai
 
 ### When to use StyleSheet instead of className
 
+> **See also: `.github/instructions/mobile-styling.instructions.md`** — complete rules for what must go in `style` vs `className` (arbitrary values, font weights, shadows, dynamic values).
+
 Only use `StyleSheet.create` + `@/lib/theme` imports for values that are **not expressible as Tailwind classes**: exact pixel offsets in transforms, shadow objects, dynamic computed values. Import like:
 
 ```tsx
@@ -370,18 +372,19 @@ Multi-step form wizard primitives used by order creation and skip-hire flows.
 - Translations: use `t.xxx` from `@/lib/translations` for all user-visible strings.
 
 <!-- GEN:component-api -->
+
 #### `AddressPicker` — `@/components/ui/AddressPicker`
 
-| Prop | Type | |
-|------|------|---|
-| `visible` | `boolean` | **required** |
-| `title` | `string` | optional |
-| `initialAddress` | `string` | optional |
-| `initialLat` | `number` | optional |
-| `initialLng` | `number` | optional |
-| `onConfirm` | `(loc: PickedLocation) => void` | **required** |
-| `onClose` | `() => void` | **required** |
-| `pinColor` | `string` | optional |
+| Prop             | Type                            |              |
+| ---------------- | ------------------------------- | ------------ |
+| `visible`        | `boolean`                       | **required** |
+| `title`          | `string`                        | optional     |
+| `initialAddress` | `string`                        | optional     |
+| `initialLat`     | `number`                        | optional     |
+| `initialLng`     | `number`                        | optional     |
+| `onConfirm`      | `(loc: PickedLocation) => void` | **required** |
+| `onClose`        | `() => void`                    | **required** |
+| `pinColor`       | `string`                        | optional     |
 
 **Exports:** `AddressPicker`
 
@@ -389,9 +392,9 @@ Multi-step form wizard primitives used by order creation and skip-hire flows.
 
 #### `AnimatedTabBar` — `@/components/ui/AnimatedTabBar`
 
-| Prop | Type | |
-|------|------|---|
-| `activeTint` | `string` | optional |
+| Prop           | Type     |          |
+| -------------- | -------- | -------- |
+| `activeTint`   | `string` | optional |
 | `inactiveTint` | `string` | optional |
 
 **Exports:** `AnimatedTabBar`
@@ -400,16 +403,16 @@ Multi-step form wizard primitives used by order creation and skip-hire flows.
 
 #### `BottomSheet` — `@/components/ui/BottomSheet`
 
-| Prop | Type | |
-|------|------|---|
-| `visible` | `boolean` | **required** |
-| `onClose` | `() => void` | **required** |
-| `title` | `string` | optional |
-| `subtitle` | `string` | optional |
-| `hideHandle` | `boolean` | optional |
-| `scrollable` | `boolean` | optional |
-| `maxHeightPct` | `number` | optional |
-| `children` | `React.ReactNode` | **required** |
+| Prop           | Type              |              |
+| -------------- | ----------------- | ------------ |
+| `visible`      | `boolean`         | **required** |
+| `onClose`      | `() => void`      | **required** |
+| `title`        | `string`          | optional     |
+| `subtitle`     | `string`          | optional     |
+| `hideHandle`   | `boolean`         | optional     |
+| `scrollable`   | `boolean`         | optional     |
+| `maxHeightPct` | `number`          | optional     |
+| `children`     | `React.ReactNode` | **required** |
 
 **Exports:** `BottomSheet`
 
@@ -417,11 +420,11 @@ Multi-step form wizard primitives used by order creation and skip-hire flows.
 
 #### `DetailRow` — `@/components/ui/DetailRow`
 
-| Prop | Type | |
-|------|------|---|
-| `label` | `string` | **required** |
-| `value` | `string | null` | optional |
-| `last` | `boolean` | optional |
+| Prop    | Type      |              |
+| ------- | --------- | ------------ | -------- |
+| `label` | `string`  | **required** |
+| `value` | `string   | null`        | optional |
+| `last`  | `boolean` | optional     |
 
 **Exports:** `DetailRow`
 
@@ -429,9 +432,9 @@ Multi-step form wizard primitives used by order creation and skip-hire flows.
 
 #### `Divider` — `@/components/ui/Divider`
 
-| Prop | Type | |
-|------|------|---|
-| `color` | `string` | optional |
+| Prop      | Type     |          |
+| --------- | -------- | -------- |
+| `color`   | `string` | optional |
 | `marginV` | `number` | optional |
 
 **Exports:** `Divider`
@@ -440,18 +443,19 @@ Multi-step form wizard primitives used by order creation and skip-hire flows.
 
 #### `EmptyState` — `@/components/ui/EmptyState`
 
-| Prop | Type | |
-|------|------|---|
-| `icon` | `React.ReactNode` | optional |
-| `title` | `string` | **required** |
-| `subtitle` | `string` | optional |
-| `action` | `React.ReactNode` | optional |
+| Prop       | Type              |              |
+| ---------- | ----------------- | ------------ |
+| `icon`     | `React.ReactNode` | optional     |
+| `title`    | `string`          | **required** |
+| `subtitle` | `string`          | optional     |
+| `action`   | `React.ReactNode` | optional     |
 
 **Exports:** `EmptyState`
 
 ---
 
 #### `ErrorBoundary` — `@/components/ui/ErrorBoundary`
+
 _No props interface — check source file._
 
 **Exports:** `ErrorBoundary`
@@ -460,13 +464,13 @@ _No props interface — check source file._
 
 #### `FadeInView` — `@/components/ui/FadeInView`
 
-| Prop | Type | |
-|------|------|---|
-| `children` | `React.ReactNode` | **required** |
-| `variant` | `FadeInVariant` | optional |
-| `index` | `number` | optional |
-| `delay` | `number` | optional |
-| `style` | `StyleProp<ViewStyle>` | optional |
+| Prop       | Type                   |              |
+| ---------- | ---------------------- | ------------ |
+| `children` | `React.ReactNode`      | **required** |
+| `variant`  | `FadeInVariant`        | optional     |
+| `index`    | `number`               | optional     |
+| `delay`    | `number`               | optional     |
+| `style`    | `StyleProp<ViewStyle>` | optional     |
 
 **Exports:** `FadeInView`
 
@@ -474,12 +478,12 @@ _No props interface — check source file._
 
 #### `InfoSection` — `@/components/ui/InfoSection`
 
-| Prop | Type | |
-|------|------|---|
-| `icon` | `React.ReactNode` | optional |
-| `title` | `string` | **required** |
-| `right` | `React.ReactNode` | optional |
-| `children` | `React.ReactNode` | optional |
+| Prop       | Type              |              |
+| ---------- | ----------------- | ------------ |
+| `icon`     | `React.ReactNode` | optional     |
+| `title`    | `string`          | **required** |
+| `right`    | `React.ReactNode` | optional     |
+| `children` | `React.ReactNode` | optional     |
 
 **Exports:** `InfoSection`
 
@@ -487,22 +491,23 @@ _No props interface — check source file._
 
 #### `JobRouteMap` — `@/components/ui/JobRouteMap`
 
-| Prop | Type | |
-|------|------|---|
-| `pickup` | `MapPin` | **required** |
-| `delivery` | `MapPin` | **required** |
-| `current` | `MapPin | null` | optional |
-| `extras` | `ExtraPin[]` | optional |
-| `height` | `number | string | null` | optional |
-| `borderRadius` | `number` | optional |
-| `style` | `ViewStyle` | optional |
-| `showToPickupLeg` | `boolean` | optional |
+| Prop              | Type         |              |
+| ----------------- | ------------ | ------------ | -------- | -------- |
+| `pickup`          | `MapPin`     | **required** |
+| `delivery`        | `MapPin`     | **required** |
+| `current`         | `MapPin      | null`        | optional |
+| `extras`          | `ExtraPin[]` | optional     |
+| `height`          | `number      | string       | null`    | optional |
+| `borderRadius`    | `number`     | optional     |
+| `style`           | `ViewStyle`  | optional     |
+| `showToPickupLeg` | `boolean`    | optional     |
 
 **Exports:** `JobRouteMap`
 
 ---
 
 #### `ModeSwitcher` — `@/components/ui/ModeSwitcher`
+
 _No props interface — check source file._
 
 **Exports:** `ModeSwitcher`
@@ -510,6 +515,7 @@ _No props interface — check source file._
 ---
 
 #### `RatingModal` — `@/components/ui/RatingModal`
+
 _No props interface — check source file._
 
 **Exports:** `RatingModal`
@@ -518,14 +524,14 @@ _No props interface — check source file._
 
 #### `ScreenContainer` — `@/components/ui/ScreenContainer`
 
-| Prop | Type | |
-|------|------|---|
-| `children` | `React.ReactNode` | **required** |
-| `bg` | `string` | optional |
-| `standalone` | `boolean` | optional |
-| `topInset` | `number` | optional |
-| `style` | `ViewStyle` | optional |
-| `noAnimation` | `boolean` | optional |
+| Prop          | Type              |              |
+| ------------- | ----------------- | ------------ |
+| `children`    | `React.ReactNode` | **required** |
+| `bg`          | `string`          | optional     |
+| `standalone`  | `boolean`         | optional     |
+| `topInset`    | `number`          | optional     |
+| `style`       | `ViewStyle`       | optional     |
+| `noAnimation` | `boolean`         | optional     |
 
 **Exports:** `ScreenContainer`
 
@@ -533,18 +539,19 @@ _No props interface — check source file._
 
 #### `ScreenHeader` — `@/components/ui/ScreenHeader`
 
-| Prop | Type | |
-|------|------|---|
-| `title` | `string` | **required** |
-| `rightAction` | `React.ReactNode` | optional |
-| `onBack` | `(() => void) | null` | optional |
-| `showBack` | `boolean` | optional |
+| Prop          | Type              |              |
+| ------------- | ----------------- | ------------ | -------- |
+| `title`       | `string`          | **required** |
+| `rightAction` | `React.ReactNode` | optional     |
+| `onBack`      | `(() => void)     | null`        | optional |
+| `showBack`    | `boolean`         | optional     |
 
 **Exports:** `ScreenHeader`
 
 ---
 
 #### `SectionLabel` — `@/components/ui/SectionLabel`
+
 _No props interface — check source file._
 
 **Exports:** `SectionLabel`
@@ -553,12 +560,12 @@ _No props interface — check source file._
 
 #### `Sidebar` — `@/components/ui/Sidebar`
 
-| Prop | Type | |
-|------|------|---|
-| `visible` | `boolean` | **required** |
-| `onClose` | `() => void` | **required** |
-| `role` | `Role` | **required** |
-| `accentColor` | `string` | **required** |
+| Prop          | Type         |              |
+| ------------- | ------------ | ------------ |
+| `visible`     | `boolean`    | **required** |
+| `onClose`     | `() => void` | **required** |
+| `role`        | `Role`       | **required** |
+| `accentColor` | `string`     | **required** |
 
 **Exports:** `Sidebar`
 
@@ -566,12 +573,12 @@ _No props interface — check source file._
 
 #### `Skeleton` — `@/components/ui/Skeleton`
 
-| Prop | Type | |
-|------|------|---|
-| `width` | `number | `${number}%`` | optional |
-| `height` | `number` | optional |
-| `radius` | `number` | optional |
-| `style` | `ViewStyle` | optional |
+| Prop     | Type        |               |
+| -------- | ----------- | ------------- | -------- |
+| `width`  | `number     | `${number}%`` | optional |
+| `height` | `number`    | optional      |
+| `radius` | `number`    | optional      |
+| `style`  | `ViewStyle` | optional      |
 
 **Exports:** `Skeleton`, `SkeletonCard`, `SkeletonHome`, `SkeletonDetail`, `SkeletonJobRow`
 
@@ -579,12 +586,12 @@ _No props interface — check source file._
 
 #### `StatusPill` — `@/components/ui/StatusPill`
 
-| Prop | Type | |
-|------|------|---|
+| Prop    | Type     |              |
+| ------- | -------- | ------------ | -------- |
 | `label` | `string` | **required** |
-| `bg` | `string` | **required** |
+| `bg`    | `string` | **required** |
 | `color` | `string` | **required** |
-| `size` | `'sm' | 'md'` | optional |
+| `size`  | `'sm'    | 'md'`        | optional |
 
 **Exports:** `StatusPill`
 
@@ -592,22 +599,23 @@ _No props interface — check source file._
 
 #### `TextInputField` — `@/components/ui/TextInputField`
 
-| Prop | Type | |
-|------|------|---|
-| `label` | `string` | optional |
-| `error` | `string` | optional |
-| `hint` | `string` | optional |
-| `containerStyle` | `ViewStyle` | optional |
-| `inputStyle` | `TextStyle` | optional |
-| `required` | `boolean` | optional |
-| `accessibilityLabel` | `string` | optional |
-| `fullWidth` | `boolean` | optional |
+| Prop                 | Type        |          |
+| -------------------- | ----------- | -------- |
+| `label`              | `string`    | optional |
+| `error`              | `string`    | optional |
+| `hint`               | `string`    | optional |
+| `containerStyle`     | `ViewStyle` | optional |
+| `inputStyle`         | `TextStyle` | optional |
+| `required`           | `boolean`   | optional |
+| `accessibilityLabel` | `string`    | optional |
+| `fullWidth`          | `boolean`   | optional |
 
 **Exports:** `TextInputField`
 
 ---
 
 #### `Toast` — `@/components/ui/Toast`
+
 _No props interface — check source file._
 
 **Exports:** `useToast`, `ToastProvider`
@@ -616,12 +624,12 @@ _No props interface — check source file._
 
 #### `TopBar` — `@/components/ui/TopBar`
 
-| Prop | Type | |
-|------|------|---|
-| `title` | `string` | optional |
-| `accentColor` | `string` | **required** |
+| Prop          | Type         |              |
+| ------------- | ------------ | ------------ |
+| `title`       | `string`     | optional     |
+| `accentColor` | `string`     | **required** |
 | `onMenuPress` | `() => void` | **required** |
-| `unreadCount` | `number` | optional |
+| `unreadCount` | `number`     | optional     |
 
 **Exports:** `RoleSheet`, `TopBar`
 
@@ -629,17 +637,18 @@ _No props interface — check source file._
 
 #### `button` — `@/components/ui/button`
 
-| Prop | Type | |
-|------|------|---|
-| `className` | `string` | optional |
+| Prop        | Type      |          |
+| ----------- | --------- | -------- |
+| `className` | `string`  | optional |
 | `isLoading` | `boolean` | optional |
-| `textColor` | `string` | optional |
+| `textColor` | `string`  | optional |
 
 ---
 
 #### `text` — `@/components/ui/text`
 
-| Prop | Type | |
-|------|------|---|
+| Prop        | Type     |          |
+| ----------- | -------- | -------- |
 | `className` | `string` | optional |
+
 <!-- END GEN -->

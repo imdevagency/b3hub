@@ -43,7 +43,9 @@ npm run dev:mobile        # Expo dev server
 ### API prefix
 
 <!-- GEN:api-prefix -->
+
 All routes prefixed with `/api/v1` (e.g. `POST /api/v1/orders`).
+
 <!-- END GEN -->
 
 ### Module anatomy
@@ -71,6 +73,7 @@ src/<feature>/
 ### RequestingUser shape (JWT payload)
 
 <!-- GEN:requesting-user -->
+
 ```ts
 export interface RequestingUser {
   /** Primary ID (alias: same as userId) */
@@ -93,6 +96,7 @@ export interface RequestingUser {
   payoutEnabled?: boolean;
 }
 ```
+
 <!-- END GEN -->
 
 ### User roles
@@ -151,6 +155,7 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 ### Route groups (Expo Router file-based routing)
 
 <!-- GEN:mobile-routes -->
+
 - `(auth)` — apply-role, forgot-password, login, register, welcome
 - `(buyer)` — catalog, catalog.tsx.bak, certificates, framework-contract/, framework-contracts, home, invoices, order/, orders, orders.tsx.bak, profile, project/, projects, projects.tsx.bak, rfq/, skip-order/, team, transport-job/
 - `(driver)` — active, earnings, home, jobs, profile, schedule, skips, vehicles
@@ -211,12 +216,14 @@ Detailed references are in scoped instruction files:
 - **Backend** (`apps/backend/**`) → `.github/instructions/backend-schema.instructions.md`
 - **Web** (`apps/web/**`) → `.github/instructions/web-components.instructions.md`
 - **Mobile** (`apps/mobile/**`) → `.github/instructions/mobile-components.instructions.md`
+- **Mobile styling** (`apps/mobile/**`) → `.github/instructions/mobile-styling.instructions.md`
 
 Key rules:
 
 - **Backend**: always use the schema reference before writing Prisma queries or migrations. Follow the migration checklist when adding new fields or models.
 - **Web**: use shadcn/ui primitives from `@/components/ui/`. Never write raw `<button>` or custom modal markup.
 - **Mobile**: every screen must start with `<ScreenContainer>`. Detail screens must use `<ScreenHeader>`. Named sections must use `<InfoSection>` + `<DetailRow>`. Status must use `<StatusPill>`. Empty lists must use `<EmptyState>`.
+- **Mobile styling**: always check the NativeWind safe-usage rules before writing any `className` or `style` in mobile. Never use arbitrary values (`text-[16px]`) in `className`. Never mix the custom `Text` component with font-weight overrides.
 
 ---
 
@@ -237,6 +244,7 @@ Key rules:
 | `.github/instructions/backend-schema.instructions.md`        | All 30 DB models, enums, Prisma workflow, migration checklist                           |
 | `.github/instructions/web-components.instructions.md`        | Web UI component catalog + usage                                                        |
 | `.github/instructions/mobile-components.instructions.md`     | Mobile UI component catalog + usage                                                     |
+| `.github/instructions/mobile-styling.instructions.md`        | NativeWind safe-usage rules — what goes in className vs style, font rules               |
 | `scripts/generate-instructions.mjs`                          | Regenerates all instruction files from source — runs automatically on `prisma:generate` |
 
 ```
