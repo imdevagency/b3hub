@@ -36,13 +36,21 @@ export default function DriverLayout() {
     '/(driver)/earnings',
     '/jobs',
     '/(driver)/jobs',
+    '/active',
+    '/(driver)/active',
   ];
   const shouldHideTopBar = HIDE_TOPBAR_ROUTES.some(
     (route) => pathname.startsWith(route) || pathname === route,
   );
 
   // eslint-disable-next-line react/display-name
-  const renderTabBar = useCallback((props: BottomTabBarProps) => <AnimatedTabBar {...props} />, []);
+  const renderTabBar = useCallback(
+    (props: BottomTabBarProps) => {
+      if (pathname === '/active' || pathname === '/(driver)/active') return null;
+      return <AnimatedTabBar {...props} />;
+    },
+    [pathname],
+  );
 
   useEffect(() => {
     if (!isLoading && !user) {
