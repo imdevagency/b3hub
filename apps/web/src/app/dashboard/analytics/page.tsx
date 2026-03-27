@@ -32,7 +32,7 @@ import {
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function euro(v: number) {
-  return `€${v.toLocaleString('lv-LV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `€${(v ?? 0).toLocaleString('lv-LV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function pct(v: number) {
