@@ -82,10 +82,12 @@ export default function RootLayout() {
     Inter_800ExtraBold,
   });
 
-  // Apply Inter globally as soon as fonts are ready
+  // Apply Inter globally as soon as fonts are ready.
+  // NativeWind's font-bold etc. now also set fontFamily via tailwind.config.js,
+  // but raw RN <Text> elements (not using our custom Text component) still need
+  // defaultProps to get Inter_400Regular as the base face.
   useEffect(() => {
     if (!fontsLoaded) return;
-    // Set default fontFamily on all Text / TextInput elements
     (Text as any).defaultProps = (Text as any).defaultProps ?? {};
     (Text as any).defaultProps.style = { fontFamily: 'Inter_400Regular' };
     (TextInput as any).defaultProps = (TextInput as any).defaultProps ?? {};

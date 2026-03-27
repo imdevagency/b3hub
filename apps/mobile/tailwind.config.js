@@ -26,6 +26,19 @@ module.exports = {
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
+      // ── Fonts ────────────────────────────────────────────────────────────────
+      // Map each weight class to the matching Expo-loaded Inter font face name.
+      // On iOS, fontFamily must be the exact loaded face — fontWeight alone
+      // cannot synthesize bold from a custom font. This makes font-bold etc.
+      // set { fontFamily: 'Inter_700Bold' } in addition to fontWeight, so
+      // both iOS (fontFamily) and Android (fontWeight) work correctly.
+      fontFamily: {
+        // Only font-sans is safe here — all other weight keys (bold, semibold
+        // etc.) conflict with Tailwind's built-in fontWeight plugin and get
+        // overridden. Weight → fontFamily mapping is done in the plugin below.
+        sans: ['Inter_400Regular'],
+      },
+
       colors: {
         // ── Brand ────────────────────────────────────────────────────────────
         primary:        colors.primary,       // bg-primary / text-primary
@@ -90,5 +103,22 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Override Tailwind's built-in font-weight utilities to ALSO set the
+    // correct Expo-loaded Inter font-family face. On iOS, React Native cannot
+    // synthesise bold/semibold weights from a custom font-family name — you
+    // must reference the exact loaded face (e.g. Inter_700Bold).
+    // User plugins run after all built-in plugins, so these definitions win.
+    function ({ addUtilities }) {
+      addUtilities({
+        '.font-light':     { 'font-family': 'Inter_300Light',     'font-weight': '300' },
+        '.font-normal':    { 'font-family': 'Inter_400Regular',   'font-weight': '400' },
+        '.font-medium':    { 'font-family': 'Inter_500Medium',    'font-weight': '500' },
+        '.font-semibold':  { 'font-family': 'Inter_600SemiBold',  'font-weight': '600' },
+        '.font-bold':      { 'font-family': 'Inter_700Bold',      'font-weight': '700' },
+        '.font-extrabold': { 'font-family': 'Inter_800ExtraBold', 'font-weight': '800' },
+        '.font-black':     { 'font-family': 'Inter_800ExtraBold', 'font-weight': '900' },
+      });
+    },
+  ],
 };

@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, useNavigation } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 
@@ -51,24 +51,64 @@ export function ScreenHeader({ title, rightAction, onBack, showBack }: ScreenHea
   };
 
   return (
-    <View className="flex-row items-center justify-between px-5 pt-3 pb-3 bg-white border-b border-gray-100 min-h-[56px]">
-      <View className="flex-row items-center flex-1 gap-1">
+    <View style={styles.header}>
+      <View style={styles.left}>
         {shouldShowBack && (
           <TouchableOpacity
             onPress={handleBack}
-            className="w-10 h-10 -ml-2 items-center justify-center rounded-full active:bg-gray-100"
+            style={styles.backButton}
             hitSlop={8}
             activeOpacity={0.6}
           >
             <ChevronLeft size={24} color="#111827" />
           </TouchableOpacity>
         )}
-        <Text className="text-[20px] font-bold text-[#111827] flex-1" numberOfLines={1}>
+        <Text style={styles.title} numberOfLines={1}>
           {title}
         </Text>
       </View>
 
-      {rightAction && <View className="flex-row items-center pl-4">{rightAction}</View>}
+      {rightAction && <View style={styles.right}>{rightAction}</View>}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+    minHeight: 56,
+  },
+  left: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 4,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    marginLeft: -8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    color: '#111827',
+    flex: 1,
+  },
+  right: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 16,
+  },
+});

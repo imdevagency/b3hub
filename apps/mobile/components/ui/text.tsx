@@ -3,7 +3,7 @@ import { Text as RNText } from 'react-native';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
-const textVariants = cva('text-base', {
+const textVariants = cva('font-sans text-base', {
   variants: {
     variant: {
       default: 'text-gray-900',

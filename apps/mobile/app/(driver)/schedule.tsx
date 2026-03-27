@@ -51,11 +51,13 @@ function DayRow({
 }) {
   return (
     <View
-      className={`flex-row items-center justify-between p-4 bg-white ${disabled ? 'opacity-50' : ''}`}
+      className="flex-row items-center justify-between p-4 bg-white"
+      style={disabled ? { opacity: 0.5 } : undefined}
     >
       <View className="gap-1">
         <Text
-          className={`text-base font-semibold ${slot.isActive ? 'text-text-primary' : 'text-text-muted'}`}
+          className="text-base font-semibold"
+          style={{ color: slot.isActive ? colors.textPrimary : colors.textMuted }}
         >
           {DAY_FULL[slot.dayOfWeek]}
         </Text>
@@ -205,7 +207,8 @@ export default function ScheduleScreen() {
             {/* Status Hero */}
             <View className="bg-white items-center py-8 rounded-b-3xl shadow-sm mb-6">
               <View
-                className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${profile.isOnline ? 'bg-green-100' : 'bg-gray-100'}`}
+                className="w-16 h-16 rounded-full items-center justify-center mb-4"
+                style={{ backgroundColor: profile.isOnline ? '#dcfce7' : '#f3f4f6' }}
               >
                 {profile.isOnline ? (
                   <Wifi size={32} color="#059669" />

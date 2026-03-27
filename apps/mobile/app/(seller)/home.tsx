@@ -62,7 +62,16 @@ export default function SellerHomeScreen() {
   return (
     <ScreenContainer standalone noAnimation bg="#F3F4F6">
       {/* MINIMAL TOP BAR */}
-      <View className="pt-4 pb-4 px-6 flex-row justify-between items-center">
+      <View
+        style={{
+          paddingTop: 16,
+          paddingBottom: 16,
+          paddingHorizontal: 24,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <View>
           <Text className="text-[28px] font-extrabold text-gray-900 tracking-tight">
             Sveiki, {user?.firstName || 'Pārdevēj'}!
@@ -73,7 +82,19 @@ export default function SellerHomeScreen() {
             haptics.light();
             router.push('/notifications' as any);
           }}
-          className="w-11 h-11 rounded-full bg-white items-center justify-center shadow-sm"
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: '#ffffff',
+            alignItems: 'center',
+            justifyContent: 'center',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.06,
+            shadowRadius: 4,
+            elevation: 2,
+          }}
         >
           <Bell size={22} color="#111827" />
         </TouchableOpacity>
@@ -89,61 +110,129 @@ export default function SellerHomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* STATUS CARD (UBER STYLE) */}
-        <View className="mb-6">
+        <View style={{ marginBottom: 24 }}>
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => {
               haptics.medium();
               router.push('/(seller)/incoming' as any);
             }}
-            className={`rounded-3xl p-6 min-h-[160px] justify-between ${
+            style={[
+              {
+                borderRadius: 24,
+                padding: 24,
+                minHeight: 160,
+                justifyContent: 'space-between',
+              },
               pendingCount !== null && pendingCount > 0
-                ? 'bg-black'
-                : 'bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
-            }`}
+                ? { backgroundColor: '#000000' }
+                : {
+                    backgroundColor: '#ffffff',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.04,
+                    shadowRadius: 8,
+                    elevation: 2,
+                  },
+            ]}
           >
             {pendingCount !== null ? (
               pendingCount > 0 ? (
                 <>
-                  <View className="flex-row justify-between items-start">
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                    }}
+                  >
                     <View>
-                      <View className="flex-row items-center mb-1">
-                        <View className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                        <View
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: 4,
+                            backgroundColor: '#22c55e',
+                            marginRight: 8,
+                          }}
+                        />
                         <Text className="text-gray-300 text-[15px] font-medium tracking-tight">
                           Jauni pasūtījumi
                         </Text>
                       </View>
-                      <Text className="text-white text-[64px] font-bold tracking-tighter leading-none mt-2">
+                      <Text
+                        className="text-white text-[64px] font-bold tracking-tighter leading-none"
+                        style={{ marginTop: 8 }}
+                      >
                         {pendingCount}
                       </Text>
                     </View>
-                    <View className="w-12 h-12 rounded-full bg-white/10 items-center justify-center">
+                    <View
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 24,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'rgba(255,255,255,0.1)',
+                      }}
+                    >
                       <ArrowRight size={24} color="#ffffff" strokeWidth={2.5} />
                     </View>
                   </View>
-                  <Text className="text-white text-[15px] font-medium mt-4 opacity-80">
+                  <Text
+                    className="text-white text-[15px] font-medium"
+                    style={{ marginTop: 16, opacity: 0.8 }}
+                  >
                     Pieskaries, lai skatītu
                   </Text>
                 </>
               ) : (
                 <>
-                  <View className="flex-row justify-between items-start">
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                    }}
+                  >
                     <View>
-                      <View className="flex-row items-center mb-1">
-                        <View className="w-2 h-2 rounded-full bg-gray-300 mr-2" />
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                        <View
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: 4,
+                            backgroundColor: '#d1d5db',
+                            marginRight: 8,
+                          }}
+                        />
                         <Text className="text-gray-500 text-[15px] font-medium tracking-tight">
                           Statuss
                         </Text>
                       </View>
-                      <Text className="text-black text-[28px] font-bold tracking-tight mt-2">
+                      <Text
+                        className="text-black text-[28px] font-bold tracking-tight"
+                        style={{ marginTop: 8 }}
+                      >
                         Gatavs darbam
                       </Text>
                     </View>
-                    <View className="w-12 h-12 rounded-full bg-gray-100 items-center justify-center">
+                    <View
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 24,
+                        backgroundColor: '#f3f4f6',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
                       <Inbox size={24} color="#000000" strokeWidth={2} />
                     </View>
                   </View>
-                  <Text className="text-gray-500 text-[15px] font-medium mt-6">
+                  <Text className="text-gray-500 text-[15px] font-medium" style={{ marginTop: 24 }}>
                     Pagaidām nav jaunu pieprasījumu
                   </Text>
                 </>
@@ -155,9 +244,9 @@ export default function SellerHomeScreen() {
         </View>
 
         {/* QUICK ACTIONS GRID */}
-        <View className="gap-3">
+        <View style={{ gap: 12 }}>
           {/* Row 1 */}
-          <View className="flex-row gap-3">
+          <View style={{ flexDirection: 'row', gap: 12 }}>
             {QUICK_ACTIONS.slice(0, 2).map((action) => {
               const Icon = action.icon;
               return (
@@ -168,9 +257,30 @@ export default function SellerHomeScreen() {
                     router.push(action.route as any);
                   }}
                   activeOpacity={0.7}
-                  className="flex-1 bg-white rounded-3xl p-4 h-[116px] justify-between shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#ffffff',
+                    borderRadius: 24,
+                    padding: 16,
+                    height: 116,
+                    justifyContent: 'space-between',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.04,
+                    shadowRadius: 8,
+                    elevation: 2,
+                  }}
                 >
-                  <View className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center">
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: '#f3f4f6',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
                     <Icon size={20} color="#000000" strokeWidth={2} />
                   </View>
                   <Text className="text-[16px] font-semibold text-black ml-1 tracking-tight">
@@ -182,7 +292,7 @@ export default function SellerHomeScreen() {
           </View>
 
           {/* Row 2 */}
-          <View className="flex-row gap-3">
+          <View style={{ flexDirection: 'row', gap: 12 }}>
             {QUICK_ACTIONS.slice(2, 4).map((action) => {
               const Icon = action.icon;
               return (
@@ -193,9 +303,30 @@ export default function SellerHomeScreen() {
                     router.push(action.route as any);
                   }}
                   activeOpacity={0.7}
-                  className="flex-1 bg-white rounded-3xl p-4 h-[116px] justify-between shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#ffffff',
+                    borderRadius: 24,
+                    padding: 16,
+                    height: 116,
+                    justifyContent: 'space-between',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.04,
+                    shadowRadius: 8,
+                    elevation: 2,
+                  }}
                 >
-                  <View className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center">
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: '#f3f4f6',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
                     <Icon size={20} color="#000000" strokeWidth={2} />
                   </View>
                   <Text className="text-[16px] font-semibold text-black ml-1 tracking-tight">

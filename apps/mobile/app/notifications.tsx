@@ -117,21 +117,23 @@ function NotifCard({
   return (
     <View className="border-b border-gray-100">
       <TouchableOpacity
-        className={`flex-row items-start gap-4 p-5 bg-white ${
-          !notif.isRead ? 'bg-blue-50/50' : ''
-        }`}
+        className="flex-row items-start gap-4 p-5 bg-white"
+        style={!notif.isRead ? { backgroundColor: 'rgba(239,246,255,0.5)' } : undefined}
         onPress={handlePress}
         activeOpacity={0.7}
       >
         <View className="relative">
-          <View className="w-12 h-12 rounded-full bg-gray-100 items-center justify-center">
-            <Icon size={22} color="#000000" strokeWidth={2} />
+          <View
+            className="w-12 h-12 rounded-full items-center justify-center"
+            style={{ backgroundColor: bg }}
+          >
+            <Icon size={22} color={iconColor} strokeWidth={2} />
           </View>
           {!notif.isRead && (
             <View className="absolute top-0 right-0 w-3 h-3 rounded-full bg-blue-600 border-2 border-white" />
           )}
         </View>
-        <View className="flex-1 pt-1 space-y-1">
+        <View className="flex-1 pt-1 gap-1">
           <Text className="text-[16px] font-semibold text-black tracking-tight" numberOfLines={1}>
             {notif.title}
           </Text>
@@ -243,7 +245,7 @@ export default function NotificationsScreen() {
           }
         >
           {notifs.length === 0 ? (
-            <View className="flex-1 min-h-[400px] items-center justify-center">
+            <View className="flex-1 items-center justify-center" style={{ minHeight: 400 }}>
               <View className="w-16 h-16 rounded-full bg-gray-100 items-center justify-center mb-4">
                 <Bell size={28} color="#9ca3af" strokeWidth={2} />
               </View>
