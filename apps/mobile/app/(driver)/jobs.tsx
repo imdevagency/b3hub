@@ -16,7 +16,6 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Location from 'expo-location';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -25,7 +24,6 @@ import { SkeletonJobRow } from '@/components/ui/Skeleton';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { FilterSheet } from '@/components/driver/FilterSheet';
-import { JobMapView } from '@/components/driver/JobMapView';
 import {
   type TransportJob,
   type SearchFilter,
@@ -36,16 +34,13 @@ import {
   nearbyJobs,
 } from '@/components/driver/job-types';
 import {
-  Calendar,
-  Ruler,
   Settings2,
   Search,
   Truck,
-  Route,
   CheckCircle2,
   ChevronRight,
-  Map,
-  List,
+  Ruler,
+  Route,
 } from 'lucide-react-native';
 // Lazy-load: react-native-gesture-handler native module not available in Expo Go
 type SwipeableProps = {
@@ -274,107 +269,88 @@ function JobCard({
         </View>
       )}
 
-      {/* ── Top Row: Price (Prominent) & JobID ── */}
+      {/* ── Top Row: Price & Essential Meta ── */}
       <View
         style={{
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-          marginBottom: 12,
+          marginBottom: 20,
         }}
       >
-        <View>
-          <Text style={{ fontSize: 26, fontWeight: '800', color: '#111827', lineHeight: 30 }}>
-            €{job.priceTotal.toFixed(0)}
-          </Text>
-          <Text style={{ fontSize: 13, color: '#6b7280', fontWeight: '500', marginTop: 2 }}>
-            {job.distanceKm} km • {job.pricePerTonne.toFixed(2)}/t
-          </Text>
-        </View>
+        <Text
+          style={{
+            fontSize: 32,
+            fontWeight: '800',
+            color: '#111827',
+            lineHeight: 36,
+            letterSpacing: -0.5,
+          }}
+        >
+          €{job.priceTotal.toFixed(0)}
+        </Text>
         <View style={{ alignItems: 'flex-end' }}>
           <View
             style={{
               backgroundColor: '#f3f4f6',
-              paddingHorizontal: 6,
-              paddingVertical: 3,
-              borderRadius: 6,
-              marginBottom: 4,
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              borderRadius: 8,
             }}
           >
-            <Text style={{ fontSize: 11, fontWeight: '700', color: '#4b5563' }}>
-              #{job.jobNumber}
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#111827' }}>
+              {job.distanceKm} km
             </Text>
           </View>
-          <Text style={{ fontSize: 12, color: '#9ca3af' }}>{job.time}</Text>
+          <Text style={{ fontSize: 13, color: '#9ca3af', marginTop: 4, fontWeight: '600' }}>
+            {job.time}
+          </Text>
         </View>
       </View>
 
       {/* ── Route Visual ── */}
-      <View style={{ flexDirection: 'row', gap: 14, marginBottom: 16 }}>
-        {/* Visual Line */}
-        <View style={{ alignItems: 'center', paddingTop: 6 }}>
-          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#111827' }} />
+      <View style={{ flexDirection: 'row', gap: 16, marginBottom: 24 }}>
+        <View style={{ alignItems: 'center', paddingTop: 6, width: 12 }}>
+          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#000' }} />
           <View
-            style={{
-              width: 2,
-              flex: 1,
-              backgroundColor: '#e5e7eb',
-              marginVertical: 4,
-              minHeight: 28,
-            }}
+            style={{ width: 2, flex: 1, backgroundColor: '#000', marginVertical: 4, minHeight: 40 }}
           />
-          <View
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: 5,
-              borderWidth: 3,
-              borderColor: '#111827',
-              backgroundColor: '#fff',
-            }}
-          />
+          <View style={{ width: 10, height: 10, backgroundColor: '#000' }} />
         </View>
 
-        {/* Address Text */}
         <View style={{ flex: 1, gap: 18 }}>
           <View>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: '#111827' }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 2 }}>
               {job.fromCity}
             </Text>
-            <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 1 }} numberOfLines={1}>
+            <Text style={{ fontSize: 14, color: '#6b7280' }} numberOfLines={1}>
               {job.fromAddress}
             </Text>
           </View>
           <View>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: '#111827' }}>{job.toCity}</Text>
-            <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 1 }} numberOfLines={1}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 2 }}>
+              {job.toCity}
+            </Text>
+            <Text style={{ fontSize: 14, color: '#6b7280' }} numberOfLines={1}>
               {job.toAddress}
             </Text>
           </View>
         </View>
       </View>
 
-      {/* ── Bottom: Vehicle Info Chip ── */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: '#f9fafb',
-            borderRadius: 8,
-            paddingHorizontal: 10,
-            paddingVertical: 8,
-            alignSelf: 'flex-start',
-            borderWidth: 1,
-            borderColor: '#f3f4f6',
-          }}
-        >
-          <Truck size={14} color="#4b5563" style={{ marginRight: 6 }} />
-          <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151' }}>
-            {job.vehicleType} • {job.weightTonnes}t
-          </Text>
-        </View>
-        <Text style={{ fontSize: 13, color: '#6b7280', fontWeight: '500' }}>{job.payload}</Text>
+      {/* ── Bottom: Details Line ── */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          borderTopWidth: 1,
+          borderTopColor: '#f3f4f6',
+          paddingTop: 16,
+        }}
+      >
+        <Text style={{ fontSize: 13, color: '#4b5563', fontWeight: '600' }} numberOfLines={1}>
+          {job.vehicleType} · {job.weightTonnes}t · {job.payload}
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -400,18 +376,6 @@ function JobCard({
 export default function JobsScreen() {
   const { token } = useAuth();
   const router = useRouter();
-
-  // ── Online / Offline toggle ───────────────────────────────────
-  const [isOnline, setIsOnline] = useState<boolean | null>(null);
-  const [togglingOnline, setTogglingOnline] = useState(false);
-
-  // ── View mode ─────────────────────────────────────────────────
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
-
-  // ── Driver location (for map) ──────────────────────────────────
-  const [driverLat, setDriverLat] = useState<number | null>(null);
-  const [driverLng, setDriverLng] = useState<number | null>(null);
-  const [mapRadius, setMapRadius] = useState<number>(100);
 
   const [allJobs, setAllJobs] = useState<TransportJob[]>([]);
   const [loading, setLoading] = useState(true);
@@ -445,28 +409,6 @@ export default function JobsScreen() {
       setRefreshing(false);
     }
   }, [token]);
-
-  // Load online status on mount
-  useEffect(() => {
-    if (!token) return;
-    api.driverSchedule
-      .getStatus(token)
-      .then((s) => setIsOnline(s.isOnline))
-      .catch(() => setIsOnline(false));
-  }, [token]);
-
-  const handleToggleOnline = async () => {
-    if (!token || togglingOnline || isOnline === null) return;
-    setTogglingOnline(true);
-    try {
-      const res = await api.driverSchedule.toggleOnline(!isOnline, token);
-      setIsOnline(res.isOnline);
-    } catch (e) {
-      Alert.alert('Kļūda', 'Neizdevās mainīt statusu');
-    } finally {
-      setTogglingOnline(false);
-    }
-  };
 
   // Refresh jobs whenever the tab is focused
   useFocusEffect(
@@ -509,26 +451,6 @@ export default function JobsScreen() {
   useEffect(() => {
     AsyncStorage.setItem(ASYNC_KEY, JSON.stringify(savedSearches));
   }, [savedSearches]);
-
-  // Driver GPS for map view
-  useEffect(() => {
-    if (viewMode !== 'map') return;
-    let sub: Location.LocationSubscription | null = null;
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
-      sub = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.Balanced, distanceInterval: 50 },
-        (loc) => {
-          setDriverLat(loc.coords.latitude);
-          setDriverLng(loc.coords.longitude);
-        },
-      );
-    })();
-    return () => {
-      sub?.remove();
-    };
-  }, [viewMode]);
 
   const filteredJobs = filterJobs(allJobs, activeFilter);
 
@@ -589,13 +511,6 @@ export default function JobsScreen() {
 
   const handleConfirmAccept = async () => {
     if (!acceptSheetJob || !token) return;
-    if (isOnline === false) {
-      Alert.alert('Bezsaistē', 'Lai pieņemtu darbu, jums jābūt tiešsaistē.', [
-        { text: 'Atcelt', style: 'cancel' },
-        { text: 'Iet tiešsaistē', onPress: handleToggleOnline },
-      ]);
-      return;
-    }
     const jobId = acceptSheetJob.id;
     setAcceptSheetJob(null);
     try {
@@ -611,7 +526,7 @@ export default function JobsScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer bg="white">
+      <ScreenContainer bg="#f2f2f7">
         <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 40, gap: 12 }}>
           <SkeletonJobRow count={5} />
         </ScrollView>
@@ -648,41 +563,29 @@ export default function JobsScreen() {
       {/* ── Active filter pill ────────────────────────────── */}
       {activeFilter && <ActiveFilterPill filter={activeFilter} onClear={handleReset} />}
 
-      {/* ── Map or List ───────────────────────────────────── */}
-      {viewMode === 'map' ? (
-        <JobMapView
-          jobs={filteredJobs}
-          driverLat={driverLat}
-          driverLng={driverLng}
-          mapRadius={mapRadius}
-          onRadiusChange={setMapRadius}
-          onJobSelect={setAcceptSheetJob}
-        />
-      ) : (
-        <FlatList
-          style={{ flex: 1 }}
-          data={filteredJobs}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <JobCard job={item} onAccept={handleAcceptPressed} />}
-          contentContainerStyle={styles.list}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
-          }
-          keyboardShouldPersistTaps="handled"
-          ListEmptyComponent={
-            <EmptyState
-              icon={<Search size={32} color="#9ca3af" />}
-              title={t.jobs.empty}
-              subtitle={t.jobs.emptyDesc}
-              action={
-                <TouchableOpacity style={styles.emptyResetBtn} onPress={handleReset}>
-                  <Text style={styles.emptyResetBtnText}>{t.jobSearch.resetFilter}</Text>
-                </TouchableOpacity>
-              }
-            />
-          }
-        />
-      )}
+      <FlatList
+        style={{ flex: 1 }}
+        data={filteredJobs}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => <JobCard job={item} onAccept={handleAcceptPressed} />}
+        contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
+        }
+        keyboardShouldPersistTaps="handled"
+        ListEmptyComponent={
+          <EmptyState
+            icon={<Search size={32} color="#9ca3af" />}
+            title={t.jobs.empty}
+            subtitle={t.jobs.emptyDesc}
+            action={
+              <TouchableOpacity style={styles.emptyResetBtn} onPress={handleReset}>
+                <Text style={styles.emptyResetBtnText}>{t.jobSearch.resetFilter}</Text>
+              </TouchableOpacity>
+            }
+          />
+        }
+      />
 
       {/* Save-search modal */}
       <SaveSearchModal
@@ -716,49 +619,6 @@ export default function JobsScreen() {
         onConfirm={handleConfirmAccept}
         onClose={() => setAcceptSheetJob(null)}
       />
-
-      {/* ── Toggle Map/List (Bottom Right) ── */}
-      <View style={styles.mapToggleWrap} pointerEvents="box-none">
-        <TouchableOpacity
-          style={styles.floatingModeToggle}
-          onPress={() => setViewMode((v) => (v === 'list' ? 'map' : 'list'))}
-          activeOpacity={0.8}
-        >
-          {viewMode === 'list' ? (
-            <>
-              <Map size={20} color="#111827" />
-              <Text style={styles.floatingModeToggleText}>Karte</Text>
-            </>
-          ) : (
-            <>
-              <List size={20} color="#111827" />
-              <Text style={styles.floatingModeToggleText}>Saraksts</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* ── GO Button ── */}
-      <View style={styles.goButtonWrap} pointerEvents="box-none">
-        <TouchableOpacity
-          style={[
-            styles.goButton,
-            isOnline && styles.goButtonOnline,
-            togglingOnline && { opacity: 0.8 },
-          ]}
-          onPress={handleToggleOnline}
-          disabled={togglingOnline || isOnline === null}
-          activeOpacity={0.8}
-        >
-          {togglingOnline ? (
-            <ActivityIndicator color={isOnline ? '#111827' : '#ffffff'} />
-          ) : (
-            <Text style={[styles.goButtonText, isOnline && styles.goButtonTextOnline]}>
-              {isOnline ? 'TIEŠSAISTĒ' : 'GO'}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
     </ScreenContainer>
   );
 }
@@ -810,88 +670,6 @@ const styles = StyleSheet.create({
     color: '#64748b',
   },
 
-  // Floating Overlays at bottom
-  mapToggleWrap: {
-    position: 'absolute',
-    bottom: 12,
-    right: 16,
-    zIndex: 10,
-    pointerEvents: 'box-none',
-  },
-  floatingModeToggle: {
-    height: 48,
-    paddingHorizontal: 20,
-    borderRadius: 24,
-    backgroundColor: '#ffffff',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
-  },
-  floatingModeToggleText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#111827',
-  },
-
-  // GO Button (Center)
-  goButtonWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 12,
-    alignItems: 'center',
-    pointerEvents: 'box-none',
-  },
-  goButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#000000',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 10,
-    borderWidth: 4,
-    borderColor: '#ffffff',
-  },
-  goButtonOnline: {
-    width: 'auto',
-    height: 52,
-    paddingHorizontal: 28,
-    borderRadius: 26,
-    backgroundColor: '#ef4444', // Red background when online
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#ef4444',
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
-    borderWidth: 2,
-    borderColor: '#ffffff',
-  },
-  goButtonText: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#ffffff',
-    letterSpacing: -0.5,
-  },
-  goButtonTextOnline: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#ffffff',
-    letterSpacing: 0,
-  },
-
   scrollContent: { paddingBottom: 120, paddingHorizontal: 20, paddingTop: 8, gap: 16 },
 
   activePill: {
@@ -926,23 +704,23 @@ const styles = StyleSheet.create({
   resultsCount: { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
   sortLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
 
-  list: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 120, gap: 16 },
+  list: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32, gap: 12 },
 
   cardWrap: {
-    borderRadius: 16,
+    borderRadius: 20,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
+    borderColor: '#f3f4f6',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 20,
+    padding: 24,
     overflow: 'hidden',
   },
   cardSelected: {

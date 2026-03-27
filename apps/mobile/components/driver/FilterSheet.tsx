@@ -79,19 +79,21 @@ export function FilterSheet({
           showsVerticalScrollIndicator={false}
         >
           {/* From section */}
-          <View style={fs.sectionCard}>
-            <View style={fs.sectionHeader}>
-              <MapPin size={14} color="#6b7280" />
-              <Text style={fs.sectionLabel}>{t.jobSearch.fromLocation}</Text>
+          <View style={fs.sectionBlock}>
+            <Text style={fs.sectionLabel}>{t.jobSearch.fromLocation}</Text>
+            <View style={fs.inputWrap}>
+              <View style={fs.inputIcon}>
+                <MapPin size={18} color="#000" />
+              </View>
+              <TextInput
+                style={fs.input}
+                value={draft.fromLocation}
+                onChangeText={(v) => onChange({ ...draft, fromLocation: v })}
+                placeholder={t.jobSearch.fromPlaceholder}
+                placeholderTextColor="#9ca3af"
+                returnKeyType="done"
+              />
             </View>
-            <TextInput
-              style={fs.input}
-              value={draft.fromLocation}
-              onChangeText={(v) => onChange({ ...draft, fromLocation: v })}
-              placeholder={t.jobSearch.fromPlaceholder}
-              placeholderTextColor="#9ca3af"
-              returnKeyType="done"
-            />
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={fs.radiusRow}>
                 {[0, ...RADIUS_OPTIONS].map((r) => (
@@ -109,20 +111,25 @@ export function FilterSheet({
             </ScrollView>
           </View>
 
+          {/* Divider */}
+          <View style={fs.divider} />
+
           {/* To section */}
-          <View style={fs.sectionCard}>
-            <View style={fs.sectionHeader}>
-              <Navigation2 size={14} color="#6b7280" />
-              <Text style={fs.sectionLabel}>{t.jobSearch.toLocation}</Text>
+          <View style={fs.sectionBlock}>
+            <Text style={fs.sectionLabel}>{t.jobSearch.toLocation}</Text>
+            <View style={fs.inputWrap}>
+              <View style={fs.inputIcon}>
+                <Navigation2 size={18} color="#000" />
+              </View>
+              <TextInput
+                style={fs.input}
+                value={draft.toLocation}
+                onChangeText={(v) => onChange({ ...draft, toLocation: v })}
+                placeholder={t.jobSearch.toPlaceholder}
+                placeholderTextColor="#9ca3af"
+                returnKeyType="done"
+              />
             </View>
-            <TextInput
-              style={fs.input}
-              value={draft.toLocation}
-              onChangeText={(v) => onChange({ ...draft, toLocation: v })}
-              placeholder={t.jobSearch.toPlaceholder}
-              placeholderTextColor="#9ca3af"
-              returnKeyType="done"
-            />
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={fs.radiusRow}>
                 {[0, ...RADIUS_OPTIONS].map((r) => (
@@ -142,28 +149,31 @@ export function FilterSheet({
 
           {/* Saved searches */}
           {savedSearches.length > 0 && (
-            <View style={fs.savedSection}>
-              <Text style={fs.savedTitle}>{t.jobSearch.savedSearches}</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={fs.savedChips}>
-                  {savedSearches.map((s) => (
-                    <View key={s.id} style={fs.savedChip}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          onApplySaved(s);
-                          onClose();
-                        }}
-                      >
-                        <Text style={fs.savedChipText}>{s.name}</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => onDeleteSaved(s.id)} style={fs.savedChipX}>
-                        <X size={11} color="#9ca3af" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
+            <>
+              <View style={fs.divider} />
+              <View style={fs.sectionBlock}>
+                <Text style={fs.savedTitle}>{t.jobSearch.savedSearches}</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={fs.savedChips}>
+                    {savedSearches.map((s) => (
+                      <View key={s.id} style={fs.savedChip}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            onApplySaved(s);
+                            onClose();
+                          }}
+                        >
+                          <Text style={fs.savedChipText}>{s.name}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => onDeleteSaved(s.id)} style={fs.savedChipX}>
+                          <X size={11} color="#9ca3af" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+            </>
           )}
 
           {/* Save search link */}
@@ -188,125 +198,116 @@ export function FilterSheet({
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const fs = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f2f7' },
+  root: { flex: 1, backgroundColor: '#ffffff' },
   handleWrap: { alignItems: 'center', paddingTop: 10, paddingBottom: 2 },
-  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#d1d5db' },
+  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#e5e7eb' },
   toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: '#f2f2f7',
-  },
-  toolbarCancel: { fontSize: 16, color: '#6b7280', fontWeight: '400', lineHeight: 22 },
-  toolbarTitle: { fontSize: 16, fontWeight: '700', color: '#111827', lineHeight: 22 },
-  toolbarReset: { fontSize: 16, color: '#ef4444', fontWeight: '600', lineHeight: 22 },
-  scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16, paddingBottom: 24, gap: 12 },
-  sectionCard: {
+    paddingVertical: 18,
     backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
+  toolbarCancel: { fontSize: 16, color: '#111827', fontWeight: '500', lineHeight: 22 },
+  toolbarTitle: { fontSize: 18, fontWeight: '800', color: '#111827', lineHeight: 22 },
+  toolbarReset: { fontSize: 16, color: '#111827', fontWeight: '500', lineHeight: 22 },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 0, paddingBottom: 40, gap: 0 },
+  sectionBlock: {
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    backgroundColor: '#ffffff',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#f3f4f6',
+    marginHorizontal: 20,
   },
   sectionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6b7280',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 16,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    lineHeight: 18,
+  },
+  inputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 12,
+    marginBottom: 20,
+    paddingHorizontal: 16,
+  },
+  inputIcon: {
+    marginRight: 10,
   },
   input: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    fontSize: 15,
+    flex: 1,
+    paddingVertical: 16,
+    fontSize: 16,
+    fontWeight: '500',
     color: '#111827',
-    marginBottom: 12,
   },
-  radiusRow: { flexDirection: 'row', gap: 8, paddingRight: 4 },
+  radiusRow: { flexDirection: 'row', gap: 10, paddingRight: 20 },
   radChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
     backgroundColor: '#f3f4f6',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
   },
-  radChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  radChipText: { fontSize: 13, fontWeight: '600', color: '#374151', lineHeight: 18 },
+  radChipActive: { backgroundColor: '#111827' },
+  radChipText: { fontSize: 15, fontWeight: '600', color: '#111827' },
   radChipTextActive: { color: '#ffffff' },
-  savedSection: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-  },
+
   savedTitle: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#9ca3af',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 16,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 10,
-    lineHeight: 16,
   },
-  savedChips: { flexDirection: 'row', gap: 8 },
+  savedChips: { flexDirection: 'row', gap: 10, paddingRight: 20 },
   savedChip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f3f4f6',
-    borderRadius: 20,
-    paddingLeft: 12,
-    paddingRight: 6,
-    paddingVertical: 7,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderRadius: 999,
+    paddingLeft: 16,
+    paddingRight: 8,
+    paddingVertical: 10,
+    gap: 8,
   },
-  savedChipText: { fontSize: 13, fontWeight: '600', color: '#111827', lineHeight: 18 },
+  savedChipText: { fontSize: 14, fontWeight: '600', color: '#111827' },
   savedChipX: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: '#e5e7eb',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveLink: { alignItems: 'center', paddingVertical: 4 },
-  saveLinkText: { fontSize: 14, color: '#6b7280', fontWeight: '500', lineHeight: 20 },
+  saveLink: { alignItems: 'center', paddingVertical: 24, marginTop: 10 },
+  saveLinkText: { fontSize: 16, color: '#111827', fontWeight: '700' },
   footer: {
-    paddingHorizontal: 16,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
-    paddingTop: 12,
-    backgroundColor: '#f2f2f7',
+    paddingHorizontal: 20,
+    paddingBottom: 34,
+    paddingTop: 16,
+    backgroundColor: '#ffffff',
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: '#f3f4f6',
   },
   applyBtn: {
     backgroundColor: '#111827',
-    borderRadius: 14,
-    paddingVertical: 16,
+    paddingVertical: 18,
+    borderRadius: 16,
     alignItems: 'center',
   },
-  applyBtnText: { fontSize: 16, fontWeight: '700', color: '#ffffff', lineHeight: 22 },
+  applyBtnText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
 });
