@@ -33,6 +33,7 @@ import {
   mapJob,
   nearbyJobs,
 } from '@/components/driver/job-types';
+import { geocodeLocation } from '@/lib/maps';
 import {
   Settings2,
   Search,
@@ -390,6 +391,7 @@ export default function JobsScreen() {
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
   const [saveModalVisible, setSaveModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
   const [todayStats, setTodayStats] = useState<{ earnings: number; completed: number } | null>(
     null,
   );
@@ -459,9 +461,24 @@ export default function JobsScreen() {
     fetchJobs();
   }, [fetchJobs]);
 
-  const handleApply = () => {
-    setActiveFilter({ ...draft });
-    setPanelOpen(false);
+  const handleApply = async () => {
+    setGeocoding(true);
+    try {
+      const [resolvedFrom, resolvedTo] = await Promise.all([
+        draft.fromLocation.trim() ? geocodeLocation(draft.fromLocation) : Promise.resolve(null),
+        draft.toLocation.trim() ? geocodeLocation(draft.toLocation) : Promise.resolve(null),
+      ]);
+      setActiveFilter({
+        ...draft,
+        fromLat: resolvedFrom?.lat,
+        fromLng: resolvedFrom?.lng,
+        toLat: resolvedTo?.lat,
+        toLng: resolvedTo?.lng,
+      });
+    } finally {
+      setGeocoding(false);
+      setPanelOpen(false);
+    }
   };
 
   const handleReset = () => {
@@ -601,6 +618,7 @@ export default function JobsScreen() {
         onChange={setDraft}
         savedSearches={savedSearches}
         onApply={handleApply}
+        applyLoading={geocoding}
         onReset={handleReset}
         onSaveSearch={handleSaveSearch}
         onApplySaved={handleApplySaved}

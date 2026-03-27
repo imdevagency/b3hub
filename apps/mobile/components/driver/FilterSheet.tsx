@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { MapPin, Navigation2, X } from 'lucide-react-native';
 import { t } from '@/lib/translations';
@@ -23,6 +24,8 @@ interface FilterSheetProps {
   onChange: (f: SearchFilter) => void;
   savedSearches: SavedSearch[];
   onApply: () => void;
+  /** While true the Apply button shows a spinner */
+  applyLoading?: boolean;
   onReset: () => void;
   onSaveSearch: () => void;
   onApplySaved: (s: SavedSearch) => void;
@@ -38,6 +41,7 @@ export function FilterSheet({
   onChange,
   savedSearches,
   onApply,
+  applyLoading = false,
   onReset,
   onSaveSearch,
   onApplySaved,
@@ -179,15 +183,24 @@ export function FilterSheet({
           {/* Save search link */}
           <TouchableOpacity style={fs.saveLink} onPress={onSaveSearch} disabled={!hasContent}>
             <Text style={[fs.saveLinkText, !hasContent && { opacity: 0.35 }]}>
-              ♡ {t.jobSearch.saveSearch}
+              {t.jobSearch.saveSearch}
             </Text>
           </TouchableOpacity>
         </ScrollView>
 
         {/* Apply CTA */}
         <View style={fs.footer}>
-          <TouchableOpacity style={fs.applyBtn} onPress={onApply} activeOpacity={0.88}>
-            <Text style={fs.applyBtnText}>{t.jobSearch.applyFilter}</Text>
+          <TouchableOpacity
+            style={[fs.applyBtn, applyLoading && { opacity: 0.7 }]}
+            onPress={onApply}
+            activeOpacity={0.88}
+            disabled={applyLoading}
+          >
+            {applyLoading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={fs.applyBtnText}>{t.jobSearch.applyFilter}</Text>
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

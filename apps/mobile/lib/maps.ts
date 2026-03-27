@@ -13,6 +13,7 @@ import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 
 const GOOGLE_KEY = getGoogleMapsPublicKey();
 const DIRECTIONS_BASE = 'https://maps.googleapis.com/maps/api/directions/json';
+const GEOCODING_BASE = 'https://maps.googleapis.com/maps/api/geocode/json';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -218,5 +219,35 @@ export async function optimizeRoute(stops: Stop[]): Promise<OptimizedRoute> {
     return { orderedStops, visitOrder, totalDistanceKm };
   } catch {
     return fallback;
+  }
+}
+
+// ── Geocoding API ─────────────────────────────────────────────────────────────
+
+/**
+ * Convert a free-text address / city / postal code to lat/lng.
+ * Region-biased to Latvia (region=lv) for better results.
+ * Returns null on any error or if no results were found.
+ */
+export async function geocodeLocation(
+  text: string,
+): Promise<{ lat: number; lng: number } | null> {
+  if (!text.trim()) return null;
+  try {
+    const url =
+      `${GEOCODING_BASE}?address=${encodeURIComponent(text.trim())}` +
+      `&region=lv&key=${GOOGLE_KEY}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      status?: string;
+      results?: Array<{ geometry?: { location?: { lat?: number; lng?: number } } }>;
+    };
+    if (data.status !== 'OK' || !data.results?.[0]?.geometry?.location) return null;
+    const loc = data.results[0].geometry.location;
+    if (typeof loc.lat !== 'number' || typeof loc.lng !== 'number') return null;
+    return { lat: loc.lat, lng: loc.lng };
+  } catch {
+    return null;
   }
 }
