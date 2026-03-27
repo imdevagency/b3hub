@@ -4,6 +4,7 @@ import {
   View,
   Text,
   ScrollView,
+  FlatList,
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
@@ -12,6 +13,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
@@ -380,15 +382,17 @@ function JobCard({
   if (tourMode) return card;
 
   return (
-    <Swipeable
-      ref={swipeRef}
-      renderRightActions={renderRightActions}
-      friction={2.5}
-      rightThreshold={60}
-      overshootRight={false}
-    >
-      {card}
-    </Swipeable>
+    <View style={styles.cardWrap}>
+      <Swipeable
+        ref={swipeRef}
+        renderRightActions={renderRightActions}
+        friction={2.5}
+        rightThreshold={60}
+        overshootRight={false}
+      >
+        {card}
+      </Swipeable>
+    </View>
   );
 }
 
@@ -616,45 +620,35 @@ export default function JobsScreen() {
   }
 
   return (
-    <ScreenContainer bg="white" standalone>
-      {/* ── Header ─────────────────────────────────────── */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 }}>
-        <Text style={{ fontSize: 32, fontWeight: '800', color: '#111827', letterSpacing: -1 }}>
-          Brīvie darbi
-        </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16, gap: 12 }}>
-          <TouchableOpacity
-            style={[styles.pill, viewMode === 'list' && styles.pillActive]}
-            onPress={() => setViewMode('list')}
-          >
-            <Text style={[styles.pillText, viewMode === 'list' && styles.pillTextActive]}>
-              Saraksts
-            </Text>
+    <ScreenContainer bg="#f2f2f7" standalone>
+      {/* ── Header ────────────────────────────────────────── */}
+      <ScreenHeader
+        title="Darbi"
+        onBack={null}
+        rightAction={
+          <TouchableOpacity onPress={togglePanel} style={styles.filterBtn} activeOpacity={0.7}>
+            <Settings2 size={22} color="#111827" />
+            {activeFilter && <View style={styles.filterDot} />}
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.pill, viewMode === 'map' && styles.pillActive]}
-            onPress={() => setViewMode('map')}
-          >
-            <Text style={[styles.pillText, viewMode === 'map' && styles.pillTextActive]}>
-              Karte
-            </Text>
-          </TouchableOpacity>
+        }
+      />
 
-          <View style={{ flex: 1 }} />
-
-          {viewMode === 'list' && (
-            <TouchableOpacity
-              style={[styles.iconBtn, panelOpen && { backgroundColor: '#f3f4f6' }]}
-              onPress={togglePanel}
-            >
-              <Settings2 size={20} color="#111827" />
-              {activeFilter && <View style={styles.filterDot} />}
-            </TouchableOpacity>
-          )}
-        </View>
+      {/* ── Earnings strip ────────────────────────────────── */}
+      <View style={styles.earningsStrip}>
+        {todayStats !== null ? (
+          <View style={styles.earningsStripInner}>
+            <Text style={styles.earningsStripAmount}>€{todayStats.earnings.toFixed(0)}</Text>
+            <Text style={styles.earningsStripLabel}>šodien · {todayStats.completed} paveikti</Text>
+          </View>
+        ) : (
+          <ActivityIndicator size="small" color="#111827" />
+        )}
       </View>
 
-      {/* Map view */}
+      {/* ── Active filter pill ────────────────────────────── */}
+      {activeFilter && <ActiveFilterPill filter={activeFilter} onClear={handleReset} />}
+
+      {/* ── Map or List ───────────────────────────────────── */}
       {viewMode === 'map' ? (
         <JobMapView
           jobs={filteredJobs}
@@ -665,18 +659,17 @@ export default function JobsScreen() {
           onJobSelect={setAcceptSheetJob}
         />
       ) : (
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
+        <FlatList
+          style={{ flex: 1 }}
+          data={filteredJobs}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <JobCard job={item} onAccept={handleAcceptPressed} />}
+          contentContainerStyle={styles.list}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
           }
           keyboardShouldPersistTaps="handled"
-        >
-          {/* Active filter pill */}
-          {activeFilter && <ActiveFilterPill filter={activeFilter} onClear={handleReset} />}
-
-          {/* Job list */}
-          {filteredJobs.length === 0 ? (
+          ListEmptyComponent={
             <EmptyState
               icon={<Search size={32} color="#9ca3af" />}
               title={t.jobs.empty}
@@ -687,14 +680,8 @@ export default function JobsScreen() {
                 </TouchableOpacity>
               }
             />
-          ) : (
-            <View style={styles.list}>
-              {filteredJobs.map((job) => (
-                <JobCard key={job.id} job={job} onAccept={handleAcceptPressed} />
-              ))}
-            </View>
-          )}
-        </ScrollView>
+          }
+        />
       )}
 
       {/* Save-search modal */}
@@ -730,18 +717,43 @@ export default function JobsScreen() {
         onClose={() => setAcceptSheetJob(null)}
       />
 
-      {/* ── GO ONLINE FAB ── */}
-      <View style={styles.onlineFabWrap} pointerEvents="box-none">
+      {/* ── Toggle Map/List (Bottom Right) ── */}
+      <View style={styles.mapToggleWrap} pointerEvents="box-none">
         <TouchableOpacity
-          style={[styles.goBtn, isOnline && styles.goBtnOnline, togglingOnline && { opacity: 0.8 }]}
+          style={styles.floatingModeToggle}
+          onPress={() => setViewMode((v) => (v === 'list' ? 'map' : 'list'))}
+          activeOpacity={0.8}
+        >
+          {viewMode === 'list' ? (
+            <>
+              <Map size={20} color="#111827" />
+              <Text style={styles.floatingModeToggleText}>Karte</Text>
+            </>
+          ) : (
+            <>
+              <List size={20} color="#111827" />
+              <Text style={styles.floatingModeToggleText}>Saraksts</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* ── GO Button ── */}
+      <View style={styles.goButtonWrap} pointerEvents="box-none">
+        <TouchableOpacity
+          style={[
+            styles.goButton,
+            isOnline && styles.goButtonOnline,
+            togglingOnline && { opacity: 0.8 },
+          ]}
           onPress={handleToggleOnline}
           disabled={togglingOnline || isOnline === null}
           activeOpacity={0.8}
         >
           {togglingOnline ? (
-            <ActivityIndicator color={isOnline ? '#000' : '#fff'} />
+            <ActivityIndicator color={isOnline ? '#111827' : '#ffffff'} />
           ) : (
-            <Text style={[styles.goBtnText, isOnline && styles.goBtnTextOnline]}>
+            <Text style={[styles.goButtonText, isOnline && styles.goButtonTextOnline]}>
               {isOnline ? 'TIEŠSAISTĒ' : 'GO'}
             </Text>
           )}
@@ -753,86 +765,134 @@ export default function JobsScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  pill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: '#f3f4f6',
-  },
-  pillActive: {
-    backgroundColor: '#111827',
-  },
-  pillText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
-  pillTextActive: {
-    color: '#ffffff',
-  },
-  iconBtn: {
+  // Header filter button (rightAction)
+  filterBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
   },
   filterDot: {
     position: 'absolute',
     top: 8,
     right: 8,
-    width: 6,
-    height: 6,
+    width: 8,
+    height: 8,
     borderRadius: 4,
     backgroundColor: '#ef4444',
+    borderWidth: 2,
+    borderColor: '#ffffff',
   },
 
-  // GO Button
-  onlineFabWrap: {
-    position: 'absolute',
-    bottom: 30,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
+  // Earnings strip (below ScreenHeader)
+  earningsStrip: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+    backgroundColor: '#ffffff',
   },
-  goBtn: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#111827', // Black (or Uber blue #276EF1)
+  earningsStripInner: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+  },
+  earningsStripAmount: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  earningsStripLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#64748b',
+  },
+
+  // Floating Overlays at bottom
+  mapToggleWrap: {
+    position: 'absolute',
+    bottom: 12,
+    right: 16,
+    zIndex: 10,
+    pointerEvents: 'box-none',
+  },
+  floatingModeToggle: {
+    height: 48,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#111827',
-    shadowOpacity: 0.3,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 8,
-    borderWidth: 4,
-    borderColor: '#fff',
   },
-  goBtnOnline: {
-    width: 'auto',
-    height: 44,
-    paddingHorizontal: 24,
-    borderRadius: 22,
-    backgroundColor: '#dcfce7', // Green-ish pill
-    borderWidth: 0,
-    shadowOpacity: 0.1,
-  },
-  goBtnText: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#ffffff',
-  },
-  goBtnTextOnline: {
-    fontSize: 14,
+  floatingModeToggleText: {
+    fontSize: 15,
     fontWeight: '700',
-    color: '#166534',
+    color: '#111827',
   },
 
-  scrollContent: { paddingBottom: 120, flexGrow: 1 },
+  // GO Button (Center)
+  goButtonWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 12,
+    alignItems: 'center',
+    pointerEvents: 'box-none',
+  },
+  goButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#000000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
+    borderWidth: 4,
+    borderColor: '#ffffff',
+  },
+  goButtonOnline: {
+    width: 'auto',
+    height: 52,
+    paddingHorizontal: 28,
+    borderRadius: 26,
+    backgroundColor: '#ef4444', // Red background when online
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#ef4444',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  goButtonText: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#ffffff',
+    letterSpacing: -0.5,
+  },
+  goButtonTextOnline: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: 0,
+  },
+
+  scrollContent: { paddingBottom: 120, paddingHorizontal: 20, paddingTop: 8, gap: 16 },
 
   activePill: {
     flexDirection: 'row',
@@ -866,21 +926,24 @@ const styles = StyleSheet.create({
   resultsCount: { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
   sortLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
 
-  list: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 100 },
+  list: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 120, gap: 16 },
 
-  card: {
-    backgroundColor: '#ffffff',
+  cardWrap: {
     borderRadius: 16,
-    padding: 18,
-    marginBottom: 14,
-    marginHorizontal: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#f3f4f6',
+    borderColor: 'rgba(0,0,0,0.06)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    overflow: 'hidden',
   },
   cardSelected: {
     backgroundColor: '#f9fafb',
