@@ -262,7 +262,7 @@ export default function SupplierEarningsPage() {
   };
 
   return (
-    <div className="space-y-12 max-w-4xl pb-10">
+    <div className="space-y-12 pb-10">
       {/* header */}
       <PageHeader
         title="Ieņēmumi"
