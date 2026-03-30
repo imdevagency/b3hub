@@ -1,27 +1,14 @@
 /**
- * Public landing page (/).
- * Renders the marketing landing sections: Hero, Features, HowItWorks, Stats, CTA, Footer.
+ * apps/web root page.
+ *
+ * This is the authenticated portal (app.b3hub.lv / localhost:3001).
+ * Marketing lives at apps/landing (b3hub.lv / localhost:3002) — a separate app.
+ *
+ * Unauthenticated users who land here get sent to /login.
+ * After login the auth flow redirects to /dashboard.
  */
-import { Navbar } from '@/components/layout/Navbar';
-import { Hero } from '@/components/landing/Hero';
-import { HowItWorks } from '@/components/landing/HowItWorks';
-import { Features } from '@/components/landing/Features';
-import { Stats } from '@/components/landing/Stats';
-import { CTA } from '@/components/landing/CTA';
-import { Footer } from '@/components/landing/Footer';
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return (
-    <>
-      <Navbar />
-      <main className="min-h-screen">
-        <Hero />
-        <HowItWorks />
-        <Features />
-        <Stats />
-        <CTA />
-        <Footer />
-      </main>
-    </>
-  );
+  redirect('/login');
 }
