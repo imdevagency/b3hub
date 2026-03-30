@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { Container } from '@/components/layout/Container';
 import {
   ArrowRight,
   FileCheck,
@@ -86,7 +87,7 @@ export default function KarjeriemPage() {
       <Navbar />
       <main className="bg-background w-full overflow-hidden">
         {/* ── HERO ── */}
-        <section className="w-full pt-40 pb-32 px-6 lg:px-12 max-w-7xl mx-auto">
+        <Container as="section" className="pt-40 pb-32">
           <div className="flex flex-col gap-8 max-w-4xl">
             <span className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
               Karjeriem & Piegādātājiem
@@ -117,11 +118,11 @@ export default function KarjeriemPage() {
               </Link>
             </div>
           </div>
-        </section>
+        </Container>
 
         {/* ── PROBLEM ── */}
         <section className="w-full py-24 border-t border-border bg-muted/30">
-          <div className="px-6 lg:px-12 max-w-7xl mx-auto flex flex-col md:flex-row gap-16 items-start">
+          <Container className="flex flex-col md:flex-row gap-16 items-start">
             <div className="md:w-1/2">
               <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-8">
                 Problēma
@@ -148,11 +149,11 @@ export default function KarjeriemPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Container>
         </section>
 
         {/* ── HOW IT WORKS ── */}
-        <section className="w-full py-32 border-t border-border px-6 lg:px-12 max-w-7xl mx-auto">
+        <Container as="section" className="py-32 border-t border-border">
           <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-16">
             Kā tas strādā
           </p>
@@ -165,10 +166,10 @@ export default function KarjeriemPage() {
               </div>
             ))}
           </div>
-        </section>
+        </Container>
 
         {/* ── FEATURES ── */}
-        <section className="w-full py-32 border-t border-border px-6 lg:px-12 max-w-7xl mx-auto">
+        <Container as="section" className="py-32 border-t border-border">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20">
             <div>
               <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-4">
@@ -188,10 +189,10 @@ export default function KarjeriemPage() {
               </div>
             ))}
           </div>
-        </section>
+        </Container>
 
         {/* ── MATERIALS ── */}
-        <section className="w-full py-32 border-t border-border px-6 lg:px-12 max-w-7xl mx-auto">
+        <Container as="section" className="py-32 border-t border-border">
           <div className="flex flex-col md:flex-row gap-16 items-start">
             <div className="md:w-1/3 flex flex-col gap-6 md:sticky md:top-32">
               <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
@@ -220,10 +221,10 @@ export default function KarjeriemPage() {
               ))}
             </div>
           </div>
-        </section>
+        </Container>
 
         {/* ── STATS ── */}
-        <section className="w-full py-24 border-t border-border px-6 lg:px-12 max-w-7xl mx-auto">
+        <Container as="section" className="py-24 border-t border-border">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:divide-x divide-border">
             {[
               { value: '240+', label: 'Aktīvie pārvadātāji platformā' },
@@ -240,11 +241,11 @@ export default function KarjeriemPage() {
               </div>
             ))}
           </div>
-        </section>
+        </Container>
 
         {/* ── CTA ── */}
         <section className="w-full py-32 bg-foreground">
-          <div className="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-12">
+          <Container className="flex flex-col md:flex-row items-center justify-between gap-12">
             <h2 className="text-5xl md:text-7xl font-medium tracking-tighter text-background leading-[0.95]">
               Pievienojies
               <br />
@@ -264,7 +265,7 @@ export default function KarjeriemPage() {
                 Vai sazinieties ar mums →
               </Link>
             </div>
-          </div>
+          </Container>
         </section>
       </main>
       <Footer />

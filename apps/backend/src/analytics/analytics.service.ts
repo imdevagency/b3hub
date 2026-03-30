@@ -66,7 +66,9 @@ export class AnalyticsService {
 
     const invoices = await this.prisma.invoice.findMany({
       where: {
-        paymentStatus: { in: [PaymentStatus.PENDING, PaymentStatus.PARTIALLY_PAID] },
+        paymentStatus: {
+          in: [PaymentStatus.PENDING, PaymentStatus.PARTIALLY_PAID],
+        },
         order: buyerWhere,
       },
       select: { id: true, total: true, dueDate: true, paymentStatus: true },
@@ -84,11 +86,15 @@ export class AnalyticsService {
     for (const inv of invoices) {
       const daysPast = Math.floor((now - inv.dueDate.getTime()) / 86_400_000);
       const key =
-        daysPast <= 0 ? 'current'
-        : daysPast <= 30 ? 'days30'
-        : daysPast <= 60 ? 'days60'
-        : daysPast <= 90 ? 'days90'
-        : 'over90';
+        daysPast <= 0
+          ? 'current'
+          : daysPast <= 30
+            ? 'days30'
+            : daysPast <= 60
+              ? 'days60'
+              : daysPast <= 90
+                ? 'days90'
+                : 'over90';
       buckets[key].count++;
       buckets[key].total += inv.total;
     }
@@ -154,7 +160,11 @@ export class AnalyticsService {
       select: { total: true, order: { select: { createdAt: true } } },
     });
 
-    return this.aggregateByMonth(items, (i) => i.total, (i) => i.order.createdAt);
+    return this.aggregateByMonth(
+      items,
+      (i) => i.total,
+      (i) => i.order.createdAt,
+    );
   }
 
   private async getPerformanceStats(companyId: string) {
@@ -192,7 +202,9 @@ export class AnalyticsService {
       by: ['materialId'],
       where: {
         material: { supplierId: companyId },
-        order: { status: { in: [OrderStatus.COMPLETED, OrderStatus.DELIVERED] } },
+        order: {
+          status: { in: [OrderStatus.COMPLETED, OrderStatus.DELIVERED] },
+        },
       },
       _sum: { total: true, quantity: true },
       _count: { id: true },
@@ -223,16 +235,18 @@ export class AnalyticsService {
     yearAgo.setDate(1);
     yearAgo.setHours(0, 0, 0, 0);
 
-    const [monthlyEarnings, jobBreakdown, fleetUtilization] = await Promise.all([
-      this.getMonthlyCarrierEarnings(companyId, yearAgo),
-      this.prisma.transportJob.groupBy({
-        by: ['status'],
-        where: { carrierId: companyId },
-        _count: { id: true },
-        _sum: { rate: true },
-      }),
-      this.getFleetUtilization(companyId),
-    ]);
+    const [monthlyEarnings, jobBreakdown, fleetUtilization] = await Promise.all(
+      [
+        this.getMonthlyCarrierEarnings(companyId, yearAgo),
+        this.prisma.transportJob.groupBy({
+          by: ['status'],
+          where: { carrierId: companyId },
+          _count: { id: true },
+          _sum: { rate: true },
+        }),
+        this.getFleetUtilization(companyId),
+      ],
+    );
 
     return { monthlyEarnings, jobBreakdown, fleetUtilization };
   }
@@ -247,7 +261,11 @@ export class AnalyticsService {
       select: { rate: true, updatedAt: true },
     });
 
-    return this.aggregateByMonth(jobs, (j) => j.rate, (j) => j.updatedAt);
+    return this.aggregateByMonth(
+      jobs,
+      (j) => j.rate,
+      (j) => j.updatedAt,
+    );
   }
 
   private async getFleetUtilization(companyId: string) {
@@ -275,7 +293,7 @@ export class AnalyticsService {
     const map: Record<string, number> = {};
 
     for (const r of records) {
-      const date = getDate ? getDate(r) : (r as any).createdAt as Date;
+      const date = getDate ? getDate(r) : ((r as any).createdAt as Date);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       map[key] = (map[key] ?? 0) + getValue(r);
     }

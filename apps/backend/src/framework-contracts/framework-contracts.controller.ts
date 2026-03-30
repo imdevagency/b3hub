@@ -76,10 +76,7 @@ export class FrameworkContractsController {
 
   /** PATCH /framework-contracts/:id/activate — activate (DRAFT → ACTIVE, buyer owner only) */
   @Patch(':id/activate')
-  activate(
-    @Param('id') id: string,
-    @CurrentUser() user: RequestingUser,
-  ) {
+  activate(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     if (!isOwnerOrSolo(user) && !user.permCreateContracts) {
       throw new ForbiddenException(
         'You do not have permission to activate framework contracts',

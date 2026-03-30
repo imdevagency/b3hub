@@ -71,6 +71,11 @@ export class PaymentsController {
     @Body() dto: ReportDisputeDto,
     @CurrentUser() user: RequestingUser,
   ) {
-    return this.paymentsService.reportDispute(orderId, dto.reason, dto.details, user);
+    return this.paymentsService.reportDispute(
+      orderId,
+      dto.reason,
+      dto.details,
+      user,
+    );
   }
 }

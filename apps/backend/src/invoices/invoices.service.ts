@@ -44,9 +44,13 @@ function mapInvoice(inv: InvoiceWithRelations) {
   const status = mapPaymentStatus(inv.paymentStatus);
   // Normalize to the frontend PaymentStatus union: PENDING | PAID | OVERDUE | CANCELLED
   const paymentStatus =
-    status === 'PAID' ? 'PAID' :
-    status === 'OVERDUE' ? 'OVERDUE' :
-    status === 'CANCELLED' ? 'CANCELLED' : 'PENDING'; // ISSUED → PENDING
+    status === 'PAID'
+      ? 'PAID'
+      : status === 'OVERDUE'
+        ? 'OVERDUE'
+        : status === 'CANCELLED'
+          ? 'CANCELLED'
+          : 'PENDING'; // ISSUED → PENDING
   return {
     ...inv,
     paymentStatus, // override raw DB enum with normalised frontend value
@@ -209,7 +213,13 @@ export class InvoicesService {
   private buildPdf(
     inv: Prisma.InvoiceGetPayload<{
       include: {
-        order: { select: { orderNumber: true; deliveryAddress: true; deliveryCity: true } };
+        order: {
+          select: {
+            orderNumber: true;
+            deliveryAddress: true;
+            deliveryCity: true;
+          };
+        };
       };
     }>,
   ): Promise<Buffer> {
@@ -221,7 +231,8 @@ export class InvoicesService {
       doc.on('error', reject);
 
       const currency = inv.currency ?? 'EUR';
-      const invoiceNumber = inv.invoiceNumber ?? inv.id.slice(0, 8).toUpperCase();
+      const invoiceNumber =
+        inv.invoiceNumber ?? inv.id.slice(0, 8).toUpperCase();
       const issuedAt = inv.createdAt.toLocaleDateString('lv-LV');
       const dueDate = inv.dueDate
         ? inv.dueDate.toLocaleDateString('lv-LV')
@@ -262,17 +273,25 @@ export class InvoicesService {
       doc.fillColor('#111827').fontSize(10).font('Helvetica');
       const metaY = 125;
       doc.text('Izrakstīts:', 50, metaY).text(issuedAt, 180, metaY);
-      doc.text('Apmaksas termiņš:', 50, metaY + 18).text(dueDate, 180, metaY + 18);
+      doc
+        .text('Apmaksas termiņš:', 50, metaY + 18)
+        .text(dueDate, 180, metaY + 18);
       doc
         .text('Pasūtījums:', 50, metaY + 36)
         .text(`#${inv.order?.orderNumber ?? '—'}`, 180, metaY + 36);
       if (address) {
-        doc.text('Piegādes adrese:', 50, metaY + 54).text(address, 180, metaY + 54);
+        doc
+          .text('Piegādes adrese:', 50, metaY + 54)
+          .text(address, 180, metaY + 54);
       }
 
       // ── Totals table ──────────────────────────────────────────────────────
       const tableY = address ? 220 : 200;
-      doc.moveTo(50, tableY).lineTo(545, tableY).strokeColor('#e5e7eb').stroke();
+      doc
+        .moveTo(50, tableY)
+        .lineTo(545, tableY)
+        .strokeColor('#e5e7eb')
+        .stroke();
 
       doc
         .font('Helvetica-Bold')
@@ -281,25 +300,40 @@ export class InvoicesService {
         .text('Apraksts', 50, tableY + 10)
         .text('Summa', 0, tableY + 10, { align: 'right' });
 
-      doc.moveTo(50, tableY + 28).lineTo(545, tableY + 28).strokeColor('#e5e7eb').stroke();
+      doc
+        .moveTo(50, tableY + 28)
+        .lineTo(545, tableY + 28)
+        .strokeColor('#e5e7eb')
+        .stroke();
 
       doc
         .font('Helvetica')
         .fillColor('#111827')
         .text('Pakalpojumi', 50, tableY + 38)
-        .text(`${currency} ${subtotal.toFixed(2)}`, 0, tableY + 38, { align: 'right' });
+        .text(`${currency} ${subtotal.toFixed(2)}`, 0, tableY + 38, {
+          align: 'right',
+        });
 
       doc
         .text('PVN (21%)', 50, tableY + 58)
-        .text(`${currency} ${tax.toFixed(2)}`, 0, tableY + 58, { align: 'right' });
+        .text(`${currency} ${tax.toFixed(2)}`, 0, tableY + 58, {
+          align: 'right',
+        });
 
-      doc.moveTo(50, tableY + 80).lineTo(545, tableY + 80).strokeColor('#111827').lineWidth(1).stroke();
+      doc
+        .moveTo(50, tableY + 80)
+        .lineTo(545, tableY + 80)
+        .strokeColor('#111827')
+        .lineWidth(1)
+        .stroke();
 
       doc
         .font('Helvetica-Bold')
         .fontSize(13)
         .text('KOPĀ', 50, tableY + 92)
-        .text(`${currency} ${total.toFixed(2)}`, 0, tableY + 92, { align: 'right' });
+        .text(`${currency} ${total.toFixed(2)}`, 0, tableY + 92, {
+          align: 'right',
+        });
 
       // ── Footer ────────────────────────────────────────────────────────────
       doc

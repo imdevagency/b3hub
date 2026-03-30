@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { Container } from '@/components/layout/Container';
 import {
   ArrowRight,
   Truck,
@@ -76,7 +77,10 @@ export default function HomePage() {
       <Navbar />
       <main className="bg-background w-full overflow-hidden">
         {/* ── HERO ── */}
-        <section className="relative w-full pt-32 pb-24 md:pt-48 md:pb-32 px-6 lg:px-12 max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-12">
+        <Container
+          as="section"
+          className="relative pt-32 pb-24 md:pt-48 md:pb-32 flex flex-col md:flex-row items-center justify-between gap-12"
+        >
           <div className="z-10 w-full md:w-1/2 flex flex-col gap-8">
             <span className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
               Celtniecības loģistika · Latvija & Baltija
@@ -111,10 +115,10 @@ export default function HomePage() {
             <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1541888086925-920a0b4111eb?q=80&w=2670&auto=format&fit=crop')] bg-cover bg-center" />
             <div className="absolute inset-0 bg-black/20" />
           </div>
-        </section>
+        </Container>
 
         {/* ── HOW IT WORKS ── */}
-        <section className="w-full py-32 border-t border-border px-6 lg:px-12 max-w-7xl mx-auto">
+        <Container as="section" className="py-32 border-t border-border">
           <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-16">
             Kā tas strādā
           </p>
@@ -146,10 +150,10 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-        </section>
+        </Container>
 
         {/* ── AUDIENCE BENTO ── */}
-        <section className="w-full py-24 px-6 lg:px-12 max-w-7xl mx-auto">
+        <Container as="section" className="py-24">
           <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-16">
             Kas izmanto B3Hub
           </p>
@@ -203,10 +207,10 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-        </section>
+        </Container>
 
         {/* ── PLATFORM FEATURES ── */}
-        <section className="w-full py-32 border-t border-border px-6 lg:px-12 max-w-7xl mx-auto">
+        <Container as="section" className="py-32 border-t border-border">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20">
             <div>
               <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-4">
@@ -232,10 +236,10 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-        </section>
+        </Container>
 
         {/* ── MATERIALS CATALOG ── */}
-        <section className="w-full py-32 border-t border-border px-6 lg:px-12 max-w-7xl mx-auto">
+        <Container as="section" className="py-32 border-t border-border">
           <div className="flex flex-col md:flex-row gap-16 items-start">
             <div className="md:w-1/3 flex flex-col gap-6 md:sticky md:top-32">
               <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
@@ -270,11 +274,11 @@ export default function HomePage() {
               ))}
             </div>
           </div>
-        </section>
+        </Container>
 
         {/* ── B3 FIELDS ── */}
         <section className="w-full py-32 bg-foreground">
-          <div className="px-6 lg:px-12 max-w-7xl mx-auto">
+          <Container>
             <div className="flex flex-col md:flex-row gap-16 items-start">
               <div className="md:w-1/2 flex flex-col gap-8">
                 <p className="text-sm font-bold tracking-widest uppercase text-background/40">
@@ -314,11 +318,11 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
-          </div>
+          </Container>
         </section>
 
         {/* ── STATS ── */}
-        <section className="w-full py-24 px-6 lg:px-12 max-w-7xl mx-auto border-t border-border">
+        <Container as="section" className="py-24 border-t border-border">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-0 md:divide-x divide-border">
             {[
               { value: '1.5M+', label: 'Pārvietotās tonnas' },
@@ -335,11 +339,11 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-        </section>
+        </Container>
 
         {/* ── FINAL CTA ── */}
         <section className="w-full py-32 bg-foreground">
-          <div className="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-12">
+          <Container className="flex flex-col md:flex-row items-center justify-between gap-12">
             <h2 className="text-5xl md:text-7xl font-medium tracking-tighter text-background leading-[0.95]">
               Gatavs sākt
               <br />
@@ -354,7 +358,7 @@ export default function HomePage() {
               </Link>
               <p className="text-center text-background/40 text-sm">Nav nepieciešama kredītkarte</p>
             </div>
-          </div>
+          </Container>
         </section>
       </main>
       <Footer />

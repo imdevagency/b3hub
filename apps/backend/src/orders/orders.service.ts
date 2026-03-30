@@ -33,7 +33,10 @@ import { PaymentsService } from '../payments/payments.service';
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
-  private readonly allowedStatusTransitions: Record<OrderStatus, OrderStatus[]> = {
+  private readonly allowedStatusTransitions: Record<
+    OrderStatus,
+    OrderStatus[]
+  > = {
     [OrderStatus.DRAFT]: [OrderStatus.PENDING, OrderStatus.CANCELLED],
     [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
     [OrderStatus.CONFIRMED]: [
@@ -596,16 +599,24 @@ export class OrdersService {
 
     // Capture payment when seller confirms the order (fire-and-forget, non-fatal)
     if (status === OrderStatus.CONFIRMED) {
-      this.payments.capturePayment(id).catch((err) =>
-        this.logger.error(`capturePayment failed for order ${id}: ${err.message}`),
-      );
+      this.payments
+        .capturePayment(id)
+        .catch((err) =>
+          this.logger.error(
+            `capturePayment failed for order ${id}: ${err.message}`,
+          ),
+        );
     }
 
     // Release funds to seller/driver when order is completed (fire-and-forget, non-fatal)
     if (status === OrderStatus.COMPLETED) {
-      this.payments.releaseFunds(id).catch((err) =>
-        this.logger.error(`releaseFunds failed for order ${id}: ${err.message}`),
-      );
+      this.payments
+        .releaseFunds(id)
+        .catch((err) =>
+          this.logger.error(
+            `releaseFunds failed for order ${id}: ${err.message}`,
+          ),
+        );
     }
 
     // Release credit and cascade-cancel transport jobs when order is cancelled
@@ -704,7 +715,10 @@ export class OrdersService {
     await this.findOne(id, currentUser);
 
     // Confirm/start-loading are seller-side operational actions.
-    if (status === OrderStatus.CONFIRMED || status === OrderStatus.IN_PROGRESS) {
+    if (
+      status === OrderStatus.CONFIRMED ||
+      status === OrderStatus.IN_PROGRESS
+    ) {
       const canManageSupplierOrders = this.canManageSupplierOrder(currentUser);
 
       if (!canManageSupplierOrders) {
@@ -721,7 +735,9 @@ export class OrdersService {
       });
 
       if (supplierMatchCount === 0) {
-        throw new ForbiddenException('This order does not belong to your supplier company');
+        throw new ForbiddenException(
+          'This order does not belong to your supplier company',
+        );
       }
     }
 
@@ -768,7 +784,7 @@ export class OrdersService {
     ];
 
     const jobsToCancel = (order.transportJobs ?? []).filter((j) =>
-      cancelableStatuses.includes(j.status as TransportJobStatus),
+      cancelableStatuses.includes(j.status),
     );
 
     if (jobsToCancel.length > 0) {

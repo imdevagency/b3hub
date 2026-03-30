@@ -29,7 +29,9 @@ export class AdminService {
     emailVerified: true,
     createdAt: true,
     company: { select: { id: true, name: true } },
-    buyerProfile: { select: { creditLimit: true, creditUsed: true, paymentTerms: true } },
+    buyerProfile: {
+      select: { creditLimit: true, creditUsed: true, paymentTerms: true },
+    },
   } as const;
 
   async getUsers() {
@@ -74,8 +76,12 @@ export class AdminService {
           paymentTerms: data.paymentTerms ?? null,
         },
         update: {
-          ...(data.creditLimit !== undefined && { creditLimit: data.creditLimit }),
-          ...(data.paymentTerms !== undefined && { paymentTerms: data.paymentTerms }),
+          ...(data.creditLimit !== undefined && {
+            creditLimit: data.creditLimit,
+          }),
+          ...(data.paymentTerms !== undefined && {
+            paymentTerms: data.paymentTerms,
+          }),
         },
       });
       // Re-fetch with updated buyerProfile

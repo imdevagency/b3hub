@@ -131,11 +131,7 @@ export class InvoicesController {
     if (!user.email) {
       throw new ForbiddenException('No email address on account');
     }
-    await this.invoicesService.emailInvoice(
-      id,
-      user.email,
-      user.userId,
-    );
+    await this.invoicesService.emailInvoice(id, user.email, user.userId);
     return { message: 'Invoice emailed successfully' };
   }
 }

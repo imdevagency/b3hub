@@ -100,8 +100,10 @@ export class QuoteRequestsController {
   ) {
     this.assertCanRespondAsSupplier(user);
     if (!user.companyId) {
-      throw new ForbiddenException('Supplier company is required to submit a response');
+      throw new ForbiddenException(
+        'Supplier company is required to submit a response',
+      );
     }
-    return this.service.addResponse(id, dto, user.companyId!);
+    return this.service.addResponse(id, dto, user.companyId);
   }
 }

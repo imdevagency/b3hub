@@ -1,4 +1,10 @@
-import { Injectable, Logger, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
@@ -45,8 +51,8 @@ export class PaymentsService {
     }
 
     if (order.createdById !== user.userId && user.userType !== 'ADMIN') {
-        // Basic check, might need more robust permission logic
-        throw new BadRequestException('Not authorized to pay for this order');
+      // Basic check, might need more robust permission logic
+      throw new BadRequestException('Not authorized to pay for this order');
     }
 
     // Amount in cents
@@ -96,17 +102,19 @@ export class PaymentsService {
    */
   async createConnectAccountLink(user: RequestingUser) {
     if (!this.stripe) {
-        throw new BadRequestException('Stripe is not configured');
+      throw new BadRequestException('Stripe is not configured');
     }
-    
+
     // Ensure user has a company
     const companyId = user.companyId;
     if (!companyId) {
-        throw new BadRequestException('User must belong to a company to receive payouts');
+      throw new BadRequestException(
+        'User must belong to a company to receive payouts',
+      );
     }
 
     const company = await this.prisma.company.findUnique({
-        where: { id: companyId },
+      where: { id: companyId },
     });
 
     if (!company) throw new BadRequestException('Company not found');
@@ -114,31 +122,31 @@ export class PaymentsService {
     let accountId = company.stripeConnectId;
 
     if (!accountId) {
-        // Create a new Express account
-        const account = await this.stripe.accounts.create({
-            type: 'express',
-            country: company.country || 'LV', // Default to Latvia or use company country
-            email: company.email,
-            business_type: 'company',
-            capabilities: {
-                transfers: { requested: true },
-            },
-        });
-        accountId = account.id;
+      // Create a new Express account
+      const account = await this.stripe.accounts.create({
+        type: 'express',
+        country: company.country || 'LV', // Default to Latvia or use company country
+        email: company.email,
+        business_type: 'company',
+        capabilities: {
+          transfers: { requested: true },
+        },
+      });
+      accountId = account.id;
 
-        // Save to DB
-        await this.prisma.company.update({
-            where: { id: companyId },
-            data: { stripeConnectId: accountId },
-        });
+      // Save to DB
+      await this.prisma.company.update({
+        where: { id: companyId },
+        data: { stripeConnectId: accountId },
+      });
     }
 
     // Create an account link for onboarding
     const accountLink = await this.stripe.accountLinks.create({
-        account: accountId,
-        refresh_url: `${this.configService.get('WEB_BASE_URL')}/dashboard/supplier/earnings?refresh=true`,
-        return_url: `${this.configService.get('WEB_BASE_URL')}/dashboard/supplier/earnings?success=true`,
-        type: 'account_onboarding',
+      account: accountId,
+      refresh_url: `${this.configService.get('WEB_BASE_URL')}/dashboard/supplier/earnings?refresh=true`,
+      return_url: `${this.configService.get('WEB_BASE_URL')}/dashboard/supplier/earnings?success=true`,
+      type: 'account_onboarding',
     });
 
     return { url: accountLink.url };
@@ -148,53 +156,65 @@ export class PaymentsService {
    * Capture funds when order is confirmed/in-progress.
    */
   async capturePayment(orderId: string) {
-       if (!this.stripe) {
-         this.logger.error(`capturePayment called for order ${orderId} but Stripe is not configured`);
-         throw new BadRequestException('Stripe is not configured — set STRIPE_SECRET_KEY');
-       }
+    if (!this.stripe) {
+      this.logger.error(
+        `capturePayment called for order ${orderId} but Stripe is not configured`,
+      );
+      throw new BadRequestException(
+        'Stripe is not configured — set STRIPE_SECRET_KEY',
+      );
+    }
 
-       const payment = await this.prisma.payment.findUnique({
-           where: { orderId },
-       });
+    const payment = await this.prisma.payment.findUnique({
+      where: { orderId },
+    });
 
-       if (!payment || !payment.stripePaymentId) {
-           throw new BadRequestException('No payment found for this order');
-       }
+    if (!payment || !payment.stripePaymentId) {
+      throw new BadRequestException('No payment found for this order');
+    }
 
-       if (payment.status === 'CAPTURED' || payment.status === 'RELEASED') {
-           return; // Already captured
-       }
+    if (payment.status === 'CAPTURED' || payment.status === 'RELEASED') {
+      return; // Already captured
+    }
 
-       try {
-           const paymentIntent = await this.stripe.paymentIntents.capture(payment.stripePaymentId);
-           
-           if (paymentIntent.status === 'succeeded') {
-                await this.prisma.$transaction([
-                  this.prisma.payment.update({
-                      where: { orderId },
-                      data: { status: 'CAPTURED' },
-                  }),
-                  this.prisma.order.update({
-                      where: { id: orderId },
-                      data: { paymentStatus: 'CAPTURED' },
-                  }),
-                ]);
-           }
-       } catch (error) {
-           this.logger.error(`Failed to capture payment for order ${orderId}: ${(error as Error).message}`);
-           throw error;
-       }
+    try {
+      const paymentIntent = await this.stripe.paymentIntents.capture(
+        payment.stripePaymentId,
+      );
+
+      if (paymentIntent.status === 'succeeded') {
+        await this.prisma.$transaction([
+          this.prisma.payment.update({
+            where: { orderId },
+            data: { status: 'CAPTURED' },
+          }),
+          this.prisma.order.update({
+            where: { id: orderId },
+            data: { paymentStatus: 'CAPTURED' },
+          }),
+        ]);
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to capture payment for order ${orderId}: ${(error as Error).message}`,
+      );
+      throw error;
+    }
   }
 
-    /**
+  /**
    * Release funds (Transfer) to seller and driver via Stripe Connect.
    * Called when order is COMPLETED.
    * Platform keeps a 5% fee; remainder split 80% seller / 20% driver (if job exists).
    */
   async releaseFunds(orderId: string) {
     if (!this.stripe) {
-      this.logger.error(`releaseFunds called for order ${orderId} but Stripe is not configured`);
-      throw new BadRequestException('Stripe is not configured — set STRIPE_SECRET_KEY');
+      this.logger.error(
+        `releaseFunds called for order ${orderId} but Stripe is not configured`,
+      );
+      throw new BadRequestException(
+        'Stripe is not configured — set STRIPE_SECRET_KEY',
+      );
     }
 
     const payment = await this.prisma.payment.findUnique({
@@ -366,14 +386,15 @@ export class PaymentsService {
         webhookSecret,
       );
     } catch (err) {
-      throw new BadRequestException(`Stripe webhook signature invalid: ${(err as Error).message}`);
-
+      throw new BadRequestException(
+        `Stripe webhook signature invalid: ${(err as Error).message}`,
+      );
     }
 
     switch (event.type) {
       // Buyer authorized the payment (card held, not yet captured)
       case 'payment_intent.amount_capturable_updated': {
-        const pi = event.data.object as Stripe.PaymentIntent;
+        const pi = event.data.object;
         const orderId = pi.metadata?.orderId;
         if (orderId) {
           await this.prisma.payment
@@ -393,7 +414,7 @@ export class PaymentsService {
       }
 
       case 'payment_intent.succeeded': {
-        const pi = event.data.object as Stripe.PaymentIntent;
+        const pi = event.data.object;
         const orderId = pi.metadata?.orderId;
         if (orderId) {
           await this.prisma.payment
@@ -413,7 +434,7 @@ export class PaymentsService {
       }
 
       case 'payment_intent.payment_failed': {
-        const pi = event.data.object as Stripe.PaymentIntent;
+        const pi = event.data.object;
         const orderId = pi.metadata?.orderId;
         if (orderId) {
           await this.prisma.payment
@@ -433,7 +454,7 @@ export class PaymentsService {
       }
 
       case 'charge.refunded': {
-        const charge = event.data.object as Stripe.Charge;
+        const charge = event.data.object;
         const pi = charge.payment_intent as string | null;
         if (pi) {
           const payment = await this.prisma.payment.findFirst({
@@ -476,7 +497,14 @@ export class PaymentsService {
   ) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
-      select: { id: true, orderNumber: true, buyerId: true, createdById: true, status: true, internalNotes: true },
+      select: {
+        id: true,
+        orderNumber: true,
+        buyerId: true,
+        createdById: true,
+        status: true,
+        internalNotes: true,
+      },
     });
 
     if (!order) throw new NotFoundException('Order not found');
@@ -519,8 +547,14 @@ export class PaymentsService {
       },
     );
 
-    this.logger.log(`Dispute filed for order ${order.orderNumber} by user ${user.userId}`);
+    this.logger.log(
+      `Dispute filed for order ${order.orderNumber} by user ${user.userId}`,
+    );
 
-    return { ok: true, message: 'Sūdzība saņemta. Mēs sazināsimies ar jums 1-2 darba dienu laikā.' };
+    return {
+      ok: true,
+      message:
+        'Sūdzība saņemta. Mēs sazināsimies ar jums 1-2 darba dienu laikā.',
+    };
   }
 }

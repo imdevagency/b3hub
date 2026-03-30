@@ -269,9 +269,7 @@ export class EmailService {
           `Failed to send invoice email to ${to}: ${error.message}`,
         );
       } else {
-        this.logger.log(
-          `Invoice #${invoice.invoiceNumber} emailed to ${to}`,
-        );
+        this.logger.log(`Invoice #${invoice.invoiceNumber} emailed to ${to}`);
       }
     } catch (err) {
       this.logger.error(

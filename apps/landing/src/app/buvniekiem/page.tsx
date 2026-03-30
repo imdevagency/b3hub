@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { Container } from '@/components/layout/Container';
 import {
   ArrowRight,
   FileCheck,
@@ -15,73 +16,47 @@ import Link from 'next/link';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001';
 
-const painPoints = [
-  'Zvanāt karjeriem, lai noskaidrotu cenu un pieejamību',
-  'Sekot līdzi piegādēm ar WhatsApp ziņām',
-  'Manuāli aizpildīt CMR un svara zīmes',
-  'Zaudēt papīra dokumentus pirms rēķina apmaksas',
-  'Nezināt, kurā brīdī šoferis ieradīsies',
-  'Katru mēnesi samierināties ar pārsteiguma rēķiniem',
+const problems = [
+  { old: 'Zvani karjeriem un šoferiem', new: 'Cenas un pieejamība uzreiz' },
+  { old: 'Piegādes sekosana WhatsApp', new: 'Reāllaika GPS izsekošana' },
+  { old: 'Papīra svara zīmes un CMR', new: 'Visi dokumenti ģenerēti automātiski' },
+  { old: 'Rēķini no 10 dažādiem piegādātājiem', new: 'Viss pārskatāms vienā projektā' },
 ];
 
 const features = [
   {
-    icon: MapPin,
-    title: 'GPS izsekošana reāllaikā',
-    body: 'Redziet kravas auto atrašanās vietu no iekraušanas brīža. Precīzs ierašanās laiks — bez zvaniem dispečeram.',
+    title: 'Izsekošana un precizitāte',
+    body: 'Sekojiet līdzi kravas auto reāllaikā no iekraušanas līdz jūsu būvlaukumam. Precīzs ierašanās laiks un paziņojumi telefonā.',
   },
   {
-    icon: FileCheck,
     title: 'Automātiski dokumenti',
-    body: 'Pēc katras piegādes platforma uzreiz ģenerē svara zīmi, CMR un rēķinu. Viss arhīvā mākonī — 5 gadus.',
+    body: 'Pēc katras piegādes saņemiet digitāli parakstītu svara zīmi un CMR. Visi dokumenti glabājas mākoņa arhīvā 5 gadus.',
   },
   {
-    icon: ClipboardList,
-    title: 'Projektu pārsekošana',
-    body: 'Katrs pasūtījums tiek piesaistīts projektam. Reāllaika budžeta pārskats: plānots vs. faktiski iztērēts.',
-  },
-  {
-    icon: BarChart3,
-    title: 'Ietvarlīgumi',
-    body: 'Noslēdziet ietvarlīgumu ar fiksētām cenām. Katrs atslēgdarbs (call-off) ar vienu klikšķi — transports ieplānots automātiski.',
-  },
-  {
-    icon: Users,
-    title: 'Uzņēmuma konts',
-    body: 'Darbinieki ar dažādām lomām — menedžeris, grāmatvedis, būvlaukuma vadītājs. Katram savs piekļuves līmenis.',
-  },
-  {
-    icon: Package,
-    title: 'Skip hire & konteineri',
-    body: 'Pasūtiet atkritumu konteineru uz būvlaukumu. Platforma automātiski ieplāno atvešanu, aizvešanu un ģenerē aktu.',
-  },
-  {
-    icon: Recycle,
     title: 'Atkritumu izvešana',
-    body: 'Juridiski derīgi atkritumu pārvietošanas sertifikāti pēc katras izvešanas. Atbilstība ES direktīvai bez papildu darba.',
+    body: 'Pasūtiet būvgružu izvešanu un uzreiz saņemiet atkritumu pārvietošanas sertifikātu, nodrošinot pilnu atbilstību ES prasībām.',
+  },
+  {
+    title: 'Projektu budžetēšana',
+    body: 'Katrs pasūtījums automātiski piesaistās konkrētam projektam, sniedzot caurspīdīgu pārskatu par izmaksām un budžeta izpildi.',
   },
 ];
 
 const steps = [
   {
     step: '01',
-    title: 'Reģistrējies bez maksas',
-    body: 'Izveidojiet uzņēmuma kontu un pievienojiet komandas locekļus. Nav nepieciešama kredītkarte — sākt var 5 minūtēs.',
+    title: 'Izvēlies',
+    body: 'Atrodi materiālu vai pakalpojumu katalogā. Cena ir zināma pirms pasūtījuma.',
   },
   {
     step: '02',
-    title: 'Izvēlies materiālu un vietu',
-    body: 'Atveriet katalogu, izvēlieties materiālu, norādiet piegādes adresi un daudzumu. Cena redzama uzreiz.',
+    title: 'Izseko',
+    body: 'Redzi kravas auto tuvojoties. Saņem paziņojumu, kad piegāde ir klāt.',
   },
   {
     step: '03',
-    title: 'Sekojiet piegādei telefonā',
-    body: 'GPS izsekošana no iekraušanas brīža. Saņemiet paziņojumu, kad šoferis ir klāt.',
-  },
-  {
-    step: '04',
-    title: 'Dokumenti gatavi uzreiz',
-    body: 'Svara zīme, CMR un rēķins ir arhīvā mākonī uzreiz pēc piegādes. Lejupielādēt vai nosūtīt grāmatvedim — vienā klikšķī.',
+    title: 'Saņem',
+    body: 'Visi nepieciešamie dokumenti ir sagatavoti automātiski un pieejami platformā.',
   },
 ];
 
@@ -91,173 +66,140 @@ export default function BuvnieckiemPage() {
       <Navbar />
       <main className="bg-background w-full overflow-hidden">
         {/* ── HERO ── */}
-        <section className="w-full pt-40 pb-32 px-6 lg:px-12 max-w-7xl mx-auto">
-          <div className="flex flex-col gap-8 max-w-4xl">
-            <span className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
-              Būvniekiem & Pasūtītājiem
-            </span>
-            <h1 className="text-6xl md:text-8xl font-medium tracking-tighter text-foreground leading-[0.9]">
-              Pasūti materiālus.
+        <Container
+          as="section"
+          className="pt-48 pb-32 flex flex-col md:flex-row items-center justify-between gap-16"
+        >
+          <div className="flex flex-col gap-10 w-full md:w-3/5">
+            <h1 className="text-6xl md:text-8xl font-medium tracking-tighter text-foreground leading-[0.85]">
+              Pasūti.
               <br />
-              Bez zvaniem.
+              Seko.
               <br />
-              Bez papīriem.
+              Strādā.
             </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground font-light max-w-xl tracking-tight">
-              B3Hub automātiski savieno jūs ar tuvāko pieejamo krājumu un kravas auto — no
-              pasūtījuma līdz parakstītam dokumentam vienā platformā.
+            <p className="text-xl md:text-2xl text-muted-foreground font-light max-w-lg tracking-tight">
+              Aizmirsti par zvanīšanu karjeriem un pazudušām svara zīmēm. Uzreiz zināmas cenas,
+              reāllaika piegāde un automātiski dokumenti.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 mt-4">
+            <div className="flex flex-col sm:flex-row gap-6 mt-4">
               <Link
                 href={`${APP_URL}/register`}
-                className="bg-foreground text-background px-10 py-5 rounded-xl text-lg font-medium hover:scale-105 transition-transform text-center"
+                className="bg-foreground text-background px-10 py-5 text-xl font-medium hover:scale-[1.02] transition-transform text-center"
               >
                 Sākt bez maksas
               </Link>
-              <Link
-                href="/pricing"
-                className="border border-border px-10 py-5 rounded-xl text-lg font-medium hover:border-foreground transition-colors text-center"
-              >
-                Skatīt cenas
-              </Link>
             </div>
           </div>
-        </section>
-
-        {/* ── PAIN POINTS ── */}
-        <section className="w-full py-24 border-t border-border bg-muted/30">
-          <div className="px-6 lg:px-12 max-w-7xl mx-auto">
-            <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-12">
-              Vai tas jums ir pazīstami?
+          <div className="w-full md:w-2/5 aspect-square bg-[#0a0a0a] flex items-center justify-center p-12">
+            <p className="text-background/50 font-light text-2xl tracking-tighter">
+              B3Hub / Būvniekiem
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border">
-              {painPoints.map((point) => (
-                <div key={point} className="bg-background p-8 flex items-start gap-4">
-                  <span className="text-2xl mt-0.5 select-none">😤</span>
-                  <p className="text-base font-light text-muted-foreground leading-relaxed">
-                    {point}
+          </div>
+        </Container>
+
+        {/* ── PROBLEM (BEFORE VS AFTER) ── */}
+        <Container as="section" className="py-32 border-t border-border">
+          <div className="flex flex-col md:flex-row gap-16 items-start">
+            <div className="md:w-1/2">
+              <h2 className="text-3xl md:text-4xl font-medium tracking-tighter leading-tight mb-6">
+                Zvani, WhatsApp un Excel ir pagātne.
+              </h2>
+            </div>
+            <div className="md:w-1/2 flex flex-col divide-y divide-border border-t border-b border-border w-full">
+              {problems.map(({ old, new: after }) => (
+                <div key={old} className="py-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <p className="text-muted-foreground font-light line-through decoration-1 text-lg">
+                    {old}
+                  </p>
+                  <p className="text-foreground font-medium text-lg flex items-center gap-2">
+                    <ArrowRight className="w-4 h-4 text-muted-foreground" /> {after}
                   </p>
                 </div>
               ))}
             </div>
-            <p className="text-2xl md:text-3xl font-medium tracking-tight mt-12 max-w-2xl">
-              B3Hub atrisina visu to vienā platformā — nekādu zvanu, nekādu papīru.
-            </p>
           </div>
-        </section>
+        </Container>
 
         {/* ── HOW IT WORKS ── */}
-        <section className="w-full py-32 border-t border-border px-6 lg:px-12 max-w-7xl mx-auto">
-          <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-16">
-            Kā tas strādā
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-px bg-border">
-            {steps.map(({ step, title, body }) => (
-              <div key={step} className="bg-background p-8 flex flex-col gap-5">
-                <span className="text-4xl font-medium tracking-tighter text-border">{step}</span>
-                <h3 className="text-xl font-medium tracking-tight">{title}</h3>
-                <p className="text-muted-foreground font-light leading-relaxed text-sm">{body}</p>
-              </div>
-            ))}
-          </div>
+        <section className="w-full py-32 bg-[#0a0a0a] text-background">
+          <Container>
+            <p className="text-sm font-bold tracking-widest uppercase text-background/40 mb-24">
+              Kā tas strādā
+            </p>
+            <div className="flex flex-col divide-y divide-background/20 border-t border-b border-background/20">
+              {steps.map(({ step, title, body }) => (
+                <div
+                  key={step}
+                  className="flex flex-col md:flex-row md:items-center gap-6 md:gap-16 py-12"
+                >
+                  <span className="text-6xl md:text-8xl font-medium tracking-tighter text-background/20 md:w-32">
+                    {step}
+                  </span>
+                  <div className="flex-1 md:flex md:items-center md:gap-12 md:justify-between">
+                    <h3 className="text-3xl md:text-5xl font-medium tracking-tighter mb-4 md:mb-0 w-full md:w-1/3">
+                      {title}
+                    </h3>
+                    <p className="text-background/60 font-light text-xl leading-relaxed max-w-lg w-full md:w-2/3">
+                      {body}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Container>
         </section>
 
         {/* ── FEATURES ── */}
-        <section className="w-full py-32 border-t border-border px-6 lg:px-12 max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20">
-            <div>
-              <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-4">
-                Funkcijas
-              </p>
-              <h2 className="text-5xl md:text-6xl font-medium tracking-tighter">
-                Viss, kas vajadzīgs.
-              </h2>
-            </div>
-            <p className="text-lg text-muted-foreground font-light max-w-sm md:text-right">
-              No vienkāršiem pasūtījumiem līdz sarežģītiem ietvarlīgumiem ar daudziem piegādātājiem.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-border">
-            {features.map(({ icon: Icon, title, body }) => (
-              <div key={title} className="bg-background p-8 flex flex-col gap-5">
-                <Icon className="w-8 h-8 text-foreground" strokeWidth={1.5} />
-                <div>
-                  <h3 className="text-lg font-medium tracking-tight mb-2">{title}</h3>
-                  <p className="text-muted-foreground text-sm font-light leading-relaxed">{body}</p>
-                </div>
+        <Container as="section" className="py-32">
+          <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-16">
+            Funkcijas
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-y-24">
+            {features.map(({ title, body }) => (
+              <div key={title} className="flex flex-col gap-4 border-t border-border pt-6">
+                <h3 className="text-3xl font-medium tracking-tight">{title}</h3>
+                <p className="text-muted-foreground text-xl font-light leading-relaxed max-w-md">
+                  {body}
+                </p>
               </div>
             ))}
           </div>
-        </section>
+        </Container>
 
-        {/* ── TRUST ── */}
-        <section className="w-full py-24 border-t border-border px-6 lg:px-12 max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:divide-x divide-border">
+        {/* ── STATS ── */}
+        <Container as="section" className="py-24 border-t border-border">
+          <div className="flex flex-col md:flex-row justify-between md:items-center gap-16">
             {[
-              { value: '1.5M+', label: 'Pārvietotās tonnas' },
-              { value: '98%', label: 'Pasūtījumu izpildes rādītājs' },
-              { value: '4.8★', label: 'Vidējais pasūtītāju vērtējums' },
+              { value: '1.5M+', label: 'Tonnas pārvietotas' },
+              { value: '98%', label: 'Piegādes laikā' },
+              { value: '0', label: 'Zaudēti dokumenti' },
             ].map(({ value, label }) => (
-              <div key={label} className="md:px-16 first:pl-0 last:pr-0 py-8 md:py-0">
-                <p className="text-7xl md:text-8xl font-medium tracking-tighter leading-none">
-                  {value}
-                </p>
+              <div key={label}>
+                <p className="text-8xl font-medium tracking-tighter leading-none">{value}</p>
                 <p className="text-xl text-muted-foreground mt-4 font-light tracking-tight">
                   {label}
                 </p>
               </div>
             ))}
           </div>
-        </section>
-
-        {/* ── INCLUDED ── */}
-        <section className="w-full py-24 border-t border-border bg-muted/20">
-          <div className="px-6 lg:px-12 max-w-7xl mx-auto">
-            <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-12">
-              Iekļauts katrā pasūtījumā
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
-              {[
-                'Reāllaika GPS izsekošana',
-                'Automātiska svara zīme',
-                'CMR pārvadājuma dokuments',
-                'Elektroniski rēķins',
-                'Piegādes paziņojumi',
-                'Dokumentu arhīvs 5 gadus',
-                'Projektu budžeta pārskats',
-                'Prioritāra klientu atbalsts',
-              ].map((item) => (
-                <div key={item} className="flex items-center gap-3">
-                  <CheckCircle
-                    className="w-5 h-5 text-foreground flex-shrink-0"
-                    strokeWidth={1.5}
-                  />
-                  <span className="text-base font-light">{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        </Container>
 
         {/* ── CTA ── */}
-        <section className="w-full py-32 bg-foreground">
-          <div className="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-12">
-            <h2 className="text-5xl md:text-7xl font-medium tracking-tighter text-background leading-[0.95]">
-              Gatavs pasūtīt
-              <br />
-              pirmo kravas?
-            </h2>
-            <div className="flex flex-col gap-4 min-w-fit">
-              <Link
-                href={`${APP_URL}/register`}
-                className="bg-background text-foreground px-10 py-5 rounded-xl text-xl font-medium hover:scale-105 transition-transform text-center"
-              >
-                Reģistrēties bez maksas
-              </Link>
-              <p className="text-center text-background/40 text-sm">Nav nepieciešama kredītkarte</p>
-            </div>
-          </div>
-        </section>
+        <Container
+          as="section"
+          className="py-32 border-t border-border flex flex-col items-center justify-center text-center gap-12"
+        >
+          <h2 className="text-6xl md:text-8xl font-medium tracking-tighter leading-[0.9]">
+            Aizmirsti par papīriem.
+          </h2>
+          <Link
+            href={`${APP_URL}/register`}
+            className="bg-foreground text-background px-12 py-6 text-xl font-medium hover:scale-[1.02] transition-transform flex items-center gap-4"
+          >
+            Izveidot kontu <ArrowRight className="w-6 h-6" />
+          </Link>
+        </Container>
       </main>
       <Footer />
     </>

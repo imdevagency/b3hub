@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Container } from './Container';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001';
 
@@ -20,7 +21,7 @@ export function Navbar() {
 
   return (
     <header className="fixed top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/50">
-      <div className="mx-auto max-w-7xl px-6 lg:px-12">
+      <Container>
         <div className="flex h-20 items-center justify-between">
           <div className="flex items-center gap-12">
             {/* Logo */}
@@ -69,7 +70,7 @@ export function Navbar() {
             {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
-      </div>
+      </Container>
 
       {/* Mobile menu */}
       <div

@@ -54,7 +54,10 @@ export class TransportJobsController {
    * Dispatcher / admin creates a new transport job and posts it to the board.
    */
   @Post()
-  create(@Body() dto: CreateTransportJobDto, @CurrentUser() user: RequestingUser) {
+  create(
+    @Body() dto: CreateTransportJobDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
     if (!canDispatch(user)) {
       throw new ForbiddenException(
         'You do not have permission to create transport jobs',
@@ -156,7 +159,9 @@ export class TransportJobsController {
   @Get('drivers')
   findDrivers(@CurrentUser() user: RequestingUser) {
     if (!canDispatch(user)) {
-      throw new ForbiddenException('You do not have permission to view drivers');
+      throw new ForbiddenException(
+        'You do not have permission to view drivers',
+      );
     }
     return this.service.findDriversAsUser(user);
   }

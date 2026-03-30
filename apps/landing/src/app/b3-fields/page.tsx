@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { Container } from '@/components/layout/Container';
 import { ArrowRight, MapPin, Package, Recycle, Truck, FileCheck, Clock } from 'lucide-react';
 import Link from 'next/link';
 
@@ -57,7 +58,7 @@ export default function B3FieldsPage() {
       <Navbar />
       <main className="bg-background w-full overflow-hidden">
         {/* ── HERO ── */}
-        <section className="w-full pt-40 pb-32 px-6 lg:px-12 max-w-7xl mx-auto">
+        <Container as="section" className="pt-40 pb-32">
           <div className="flex flex-col gap-8 max-w-4xl">
             <span className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
               B3 Fields — fiziskais tīkls
@@ -88,11 +89,11 @@ export default function B3FieldsPage() {
               </Link>
             </div>
           </div>
-        </section>
+        </Container>
 
         {/* ── WHAT IS B3 FIELD ── */}
         <section className="w-full py-24 border-t border-border bg-foreground">
-          <div className="px-6 lg:px-12 max-w-7xl mx-auto">
+          <Container>
             <p className="text-sm font-bold tracking-widest uppercase text-background/40 mb-12">
               Kas ir B3 Field?
             </p>
@@ -112,11 +113,11 @@ export default function B3FieldsPage() {
                 </p>
               </div>
             </div>
-          </div>
+          </Container>
         </section>
 
         {/* ── SERVICES ── */}
-        <section className="w-full py-32 border-t border-border px-6 lg:px-12 max-w-7xl mx-auto">
+        <Container as="section" className="py-32 border-t border-border">
           <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-16">
             Pakalpojumi
           </p>
@@ -136,10 +137,10 @@ export default function B3FieldsPage() {
               </div>
             ))}
           </div>
-        </section>
+        </Container>
 
         {/* ── HOW TO USE ── */}
-        <section className="w-full py-32 border-t border-border px-6 lg:px-12 max-w-7xl mx-auto">
+        <Container as="section" className="py-32 border-t border-border">
           <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-16">
             Kā izmantot B3 Field
           </p>
@@ -171,13 +172,10 @@ export default function B3FieldsPage() {
               </div>
             ))}
           </div>
-        </section>
+        </Container>
 
         {/* ── LOCATIONS ── */}
-        <section
-          id="locations"
-          className="w-full py-32 border-t border-border px-6 lg:px-12 max-w-7xl mx-auto"
-        >
+        <Container as="section" id="locations" className="py-32 border-t border-border">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
             <div>
               <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-4">
@@ -220,11 +218,11 @@ export default function B3FieldsPage() {
               </div>
             ))}
           </div>
-        </section>
+        </Container>
 
         {/* ── OPENING HOURS ── */}
         <section className="w-full py-24 border-t border-border bg-muted/20">
-          <div className="px-6 lg:px-12 max-w-7xl mx-auto flex flex-col md:flex-row gap-16 items-start">
+          <Container className="flex flex-col md:flex-row gap-16 items-start">
             <div className="md:w-1/3">
               <Clock className="w-8 h-8 text-foreground mb-6" strokeWidth={1.5} />
               <h2 className="text-3xl font-medium tracking-tight mb-4">Darba laiks</h2>
@@ -245,12 +243,12 @@ export default function B3FieldsPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Container>
         </section>
 
         {/* ── CTA ── */}
         <section className="w-full py-32 bg-foreground">
-          <div className="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-12">
+          <Container className="flex flex-col md:flex-row items-center justify-between gap-12">
             <h2 className="text-5xl md:text-7xl font-medium tracking-tighter text-background leading-[0.95]">
               Atrodi tuvāko
               <br />
@@ -270,7 +268,7 @@ export default function B3FieldsPage() {
                 Vai sazinieties ar mums →
               </Link>
             </div>
-          </div>
+          </Container>
         </section>
       </main>
       <Footer />

@@ -59,12 +59,11 @@ export class ProjectsController {
 
   /** POST /projects — create project (OWNER / MANAGER / permManageOrders) */
   @Post()
-  create(
-    @Body() dto: CreateProjectDto,
-    @CurrentUser() user: RequestingUser,
-  ) {
+  create(@Body() dto: CreateProjectDto, @CurrentUser() user: RequestingUser) {
     if (!isOwnerOrManager(user)) {
-      throw new ForbiddenException('You do not have permission to create projects');
+      throw new ForbiddenException(
+        'You do not have permission to create projects',
+      );
     }
     return this.service.create(dto, user.userId, user.companyId);
   }
@@ -77,7 +76,9 @@ export class ProjectsController {
     @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrManager(user)) {
-      throw new ForbiddenException('You do not have permission to update projects');
+      throw new ForbiddenException(
+        'You do not have permission to update projects',
+      );
     }
     return this.service.update(id, dto, user.companyId);
   }
@@ -90,7 +91,9 @@ export class ProjectsController {
     @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrManager(user)) {
-      throw new ForbiddenException('You do not have permission to manage project orders');
+      throw new ForbiddenException(
+        'You do not have permission to manage project orders',
+      );
     }
     return this.service.assignOrders(id, dto, user.companyId);
   }
@@ -103,7 +106,9 @@ export class ProjectsController {
     @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrManager(user)) {
-      throw new ForbiddenException('You do not have permission to manage project orders');
+      throw new ForbiddenException(
+        'You do not have permission to manage project orders',
+      );
     }
     return this.service.unassignOrder(id, orderId, user.companyId);
   }

@@ -123,11 +123,7 @@ export class ProjectsService {
     return project;
   }
 
-  async update(
-    id: string,
-    dto: UpdateProjectDto,
-    companyId?: string,
-  ) {
+  async update(id: string, dto: UpdateProjectDto, companyId?: string) {
     await this.assertMember(id, companyId);
 
     return this.prisma.project.update({
@@ -140,7 +136,9 @@ export class ProjectsService {
         ...(dto.contractValue !== undefined && {
           contractValue: dto.contractValue,
         }),
-        ...(dto.budgetAmount !== undefined && { budgetAmount: dto.budgetAmount }),
+        ...(dto.budgetAmount !== undefined && {
+          budgetAmount: dto.budgetAmount,
+        }),
         ...(dto.status !== undefined && { status: dto.status }),
         ...(dto.startDate !== undefined && {
           startDate: new Date(dto.startDate),
@@ -180,11 +178,7 @@ export class ProjectsService {
     return { assigned: orders.length };
   }
 
-  async unassignOrder(
-    id: string,
-    orderId: string,
-    companyId?: string,
-  ) {
+  async unassignOrder(id: string, orderId: string, companyId?: string) {
     await this.assertMember(id, companyId);
 
     const order = await this.prisma.order.findUnique({
@@ -193,7 +187,8 @@ export class ProjectsService {
     });
 
     if (!order) throw new NotFoundException('Order not found');
-    if (order.buyerId !== companyId) throw new ForbiddenException('Access denied');
+    if (order.buyerId !== companyId)
+      throw new ForbiddenException('Access denied');
     if (order.projectId !== id) {
       throw new BadRequestException('Order is not assigned to this project');
     }
@@ -224,7 +219,11 @@ export class ProjectsService {
 
     if (!project) throw new NotFoundException('Project not found');
 
-    return this.computeFinancials(project.contractValue, project.budgetAmount, project.orders);
+    return this.computeFinancials(
+      project.contractValue,
+      project.budgetAmount,
+      project.orders,
+    );
   }
 
   // ── Internal formatters ──────────────────────────────────────────────────
@@ -243,7 +242,8 @@ export class ProjectsService {
       .reduce((sum, o) => sum + o.total, 0);
 
     const grossMargin = contractValue - materialCosts;
-    const marginPct = contractValue > 0 ? (grossMargin / contractValue) * 100 : 0;
+    const marginPct =
+      contractValue > 0 ? (grossMargin / contractValue) * 100 : 0;
     const budgetUsedPct =
       budgetAmount && budgetAmount > 0
         ? (materialCosts / budgetAmount) * 100
@@ -256,30 +256,29 @@ export class ProjectsService {
       pendingCosts,
       grossMargin,
       marginPct: Math.round(marginPct * 10) / 10,
-      budgetUsedPct: budgetUsedPct !== null ? Math.round(budgetUsedPct * 10) / 10 : null,
+      budgetUsedPct:
+        budgetUsedPct !== null ? Math.round(budgetUsedPct * 10) / 10 : null,
     };
   }
 
-  private formatProject(
-    p: {
-      id: string;
-      name: string;
-      description: string | null;
-      clientName: string | null;
-      siteAddress: string | null;
-      contractValue: number;
-      budgetAmount: number | null;
-      status: string;
-      startDate: Date | null;
-      endDate: Date | null;
-      companyId: string;
-      createdById: string;
-      createdAt: Date;
-      updatedAt: Date;
-      _count: { orders: number };
-      orders: { total: number; status: string }[];
-    },
-  ) {
+  private formatProject(p: {
+    id: string;
+    name: string;
+    description: string | null;
+    clientName: string | null;
+    siteAddress: string | null;
+    contractValue: number;
+    budgetAmount: number | null;
+    status: string;
+    startDate: Date | null;
+    endDate: Date | null;
+    companyId: string;
+    createdById: string;
+    createdAt: Date;
+    updatedAt: Date;
+    _count: { orders: number };
+    orders: { total: number; status: string }[];
+  }) {
     const financials = this.computeFinancials(
       p.contractValue,
       p.budgetAmount,
@@ -316,7 +315,12 @@ export class ProjectsService {
     createdById: string;
     createdAt: Date;
     updatedAt: Date;
-    createdBy: { id: string; firstName: string; lastName: string; email: string | null };
+    createdBy: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string | null;
+    };
     orders: {
       id: string;
       orderNumber: string;

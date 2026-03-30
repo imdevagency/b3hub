@@ -236,8 +236,16 @@ describe('OrdersService — Error Handling', () => {
   describe('create — supplier isolation', () => {
     it('blocks mixed-supplier carts', async () => {
       (prisma.material.findUnique as jest.Mock)
-        .mockResolvedValueOnce({ id: 'm1', basePrice: 10, supplierId: 'supplier-a' })
-        .mockResolvedValueOnce({ id: 'm2', basePrice: 20, supplierId: 'supplier-b' });
+        .mockResolvedValueOnce({
+          id: 'm1',
+          basePrice: 10,
+          supplierId: 'supplier-a',
+        })
+        .mockResolvedValueOnce({
+          id: 'm2',
+          basePrice: 20,
+          supplierId: 'supplier-b',
+        });
 
       const user = {
         id: 'u1',
@@ -291,11 +299,7 @@ describe('OrdersService — Error Handling', () => {
       } as Partial<RequestingUser> as RequestingUser;
 
       await expect(
-        service.update(
-          'order1',
-          { deliveryAddress: 'Changed 123' },
-          supplier,
-        ),
+        service.update('order1', { deliveryAddress: 'Changed 123' }, supplier),
       ).rejects.toThrow(ForbiddenException);
     });
   });

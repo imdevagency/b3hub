@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { Container } from '@/components/layout/Container';
 import { getAllPosts } from '@/lib/blog';
 
 export const metadata: Metadata = {
@@ -18,7 +19,7 @@ export default function BlogPage() {
     <>
       <Navbar />
       <main className="bg-background w-full min-h-screen">
-        <section className="pt-32 pb-24 md:pt-48 md:pb-32 px-6 lg:px-12 max-w-7xl mx-auto">
+        <Container as="section" className="pt-32 pb-24 md:pt-48 md:pb-32">
           <div className="max-w-3xl mb-24">
             <h1 className="text-6xl md:text-8xl font-medium tracking-tighter text-foreground mb-6 leading-[0.9]">
               Vēstis & <br /> Ieskati.
@@ -70,7 +71,7 @@ export default function BlogPage() {
               </article>
             ))}
           </div>
-        </section>
+        </Container>
       </main>
       <Footer />
     </>

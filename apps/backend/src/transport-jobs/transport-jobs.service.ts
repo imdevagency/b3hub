@@ -385,7 +385,8 @@ export class TransportJobsService {
     ]);
 
     // Notify buyer of the adjustment
-    const direction = actualTonnes > orderedTonnes ? 'palielināts' : 'samazināts';
+    const direction =
+      actualTonnes > orderedTonnes ? 'palielināts' : 'samazināts';
     const delta = Math.abs(actualTonnes - orderedTonnes).toFixed(2);
     this.notifications
       .create({
@@ -405,7 +406,9 @@ export class TransportJobsService {
   // ── All jobs (dispatcher fleet view) ─────────────────────────
   async findAllAsUser(user: RequestingUser) {
     if (!this.isDispatcher(user)) {
-      throw new ForbiddenException('You do not have permission to view fleet jobs');
+      throw new ForbiddenException(
+        'You do not have permission to view fleet jobs',
+      );
     }
     return this.findAll();
   }
@@ -779,7 +782,9 @@ export class TransportJobsService {
   // ── List drivers (canTransport users) ──────────────────────────
   async findDriversAsUser(user: RequestingUser) {
     if (!this.isDispatcher(user)) {
-      throw new ForbiddenException('You do not have permission to view drivers');
+      throw new ForbiddenException(
+        'You do not have permission to view drivers',
+      );
     }
     return this.findDrivers();
   }
@@ -1254,7 +1259,9 @@ export class TransportJobsService {
     });
     if (!job) throw new NotFoundException('Transport job not found');
     if (!job.orderId) {
-      throw new ForbiddenException('Loading dock is only available for order-linked jobs');
+      throw new ForbiddenException(
+        'Loading dock is only available for order-linked jobs',
+      );
     }
 
     const supplierMatchCount = await this.prisma.orderItem.count({
@@ -1264,7 +1271,9 @@ export class TransportJobsService {
       },
     });
     if (supplierMatchCount === 0) {
-      throw new ForbiddenException('This transport job is not linked to your supplier company');
+      throw new ForbiddenException(
+        'This transport job is not linked to your supplier company',
+      );
     }
 
     return this.loadingDock(id, weightKg);

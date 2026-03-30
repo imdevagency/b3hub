@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Container } from './Container';
 
 const navigation = {
   platform: [
@@ -25,7 +26,7 @@ export function Footer() {
       <h2 id="footer-heading" className="sr-only">
         Footer
       </h2>
-      <div className="mx-auto max-w-7xl px-6 pb-8 pt-24 lg:px-12 lg:pt-32">
+      <Container className="pb-8 pt-24 lg:pt-32">
         <div className="xl:grid xl:grid-cols-2 xl:gap-8">
           {/* Brand & Mission - left side */}
           <div className="space-y-6 xl:col-span-1">
@@ -94,7 +95,7 @@ export function Footer() {
             </Link>
           </div>
         </div>
-      </div>
+      </Container>
     </footer>
   );
 }

@@ -130,11 +130,7 @@ export class FrameworkContractsService {
     );
   }
 
-  async activate(
-    contractId: string,
-    userId: string,
-    companyId?: string,
-  ) {
+  async activate(contractId: string, userId: string, companyId?: string) {
     const contract = await this.assertOwner(contractId, userId, companyId);
     // Only the buyer side can activate; supplier can view but not activate
     if (contract.buyerId !== companyId && contract.createdById !== userId) {
