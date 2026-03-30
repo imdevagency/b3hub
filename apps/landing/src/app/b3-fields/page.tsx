@@ -58,56 +58,49 @@ export default function B3FieldsPage() {
       <Navbar />
       <main className="bg-background w-full overflow-hidden">
         {/* ── HERO ── */}
-        <Container as="section" className="pt-40 pb-32">
-          <div className="flex flex-col gap-8 max-w-4xl">
-            <span className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
-              B3 Fields — fiziskais tīkls
-            </span>
-            <h1 className="text-6xl md:text-8xl font-medium tracking-tighter text-foreground leading-[0.9]">
+        <Container as="section" className="pt-48 pb-32 md:pt-56 md:pb-40">
+          <div className="flex flex-col gap-10 max-w-5xl">
+            <h1 className="text-7xl md:text-[8rem] font-bold tracking-tighter text-foreground leading-[0.85]">
               Fiziski punkti.
               <br />
-              Digitāli
-              <br />
-              darījumi.
+              Digitāli darījumi.
             </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground font-light max-w-xl tracking-tight">
-              B3 Fields ir loģistikas mezgli visā Latvijā — materiālu paņemšana, atkritumu nodošana
-              ar sertifikātu un piekabju noma. Viss caur platformu. Viss ar dokumentiem.
+            <p className="text-2xl text-muted-foreground font-light max-w-2xl tracking-tight">
+              Aizmirsti par birokrātiju. Paņem materiālus, nodod atkritumus un īrē piekabes ar pāris
+              klikšķiem savā telefonā.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 mt-4">
-              <Link
-                href="#locations"
-                className="bg-foreground text-background px-10 py-5 rounded-xl text-lg font-medium hover:scale-105 transition-transform text-center"
-              >
-                Skatīt vietas
-              </Link>
+            <div className="flex flex-col sm:flex-row gap-4 mt-8">
               <Link
                 href={`${APP_URL}/register`}
-                className="border border-border px-10 py-5 rounded-xl text-lg font-medium hover:border-foreground transition-colors text-center"
+                className="bg-foreground text-background px-10 py-5 text-lg font-medium hover:bg-foreground/90 transition-colors text-center flex items-center justify-center gap-2"
               >
-                Reģistrēties
+                Sākt lietot <ArrowRight className="w-5 h-5" />
+              </Link>
+              <Link
+                href="#locations"
+                className="bg-muted text-foreground px-10 py-5 text-lg font-medium hover:bg-muted/80 transition-colors text-center"
+              >
+                Skatīt vietas
               </Link>
             </div>
           </div>
         </Container>
 
         {/* ── WHAT IS B3 FIELD ── */}
-        <section className="w-full py-24 border-t border-border bg-foreground">
+        <section className="w-full py-40 bg-foreground text-background">
           <Container>
-            <p className="text-sm font-bold tracking-widest uppercase text-background/40 mb-12">
-              Kas ir B3 Field?
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-start">
-              <h2 className="text-4xl md:text-5xl font-medium tracking-tighter text-background leading-tight">
-                Ne katram pasūtijumam vajadzīga pilna piegāde. B3 Fields atrisina to.
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-20 items-start">
+              <h2 className="text-5xl md:text-6xl font-medium tracking-tighter leading-tight">
+                Gudra loģistika,
+                <br /> bez liekas gaidīšanas.
               </h2>
-              <div className="flex flex-col gap-6">
-                <p className="text-lg text-background/60 font-light leading-relaxed">
+              <div className="flex flex-col gap-8">
+                <p className="text-xl text-background/70 font-light leading-relaxed">
                   Mazi pasūtijumi — vairākas tonnas smilts vai grants mājas projektam — bieži vien
                   piegādes izmaksas pārsniedz paša materiāla cenu. B3 Field ļauj jums paņemt
                   materiālu pašam, kad tas ir izdevīgāk.
                 </p>
-                <p className="text-lg text-background/60 font-light leading-relaxed">
+                <p className="text-xl text-background/70 font-light leading-relaxed">
                   Celtniecības atkritumu izvešana juridiskajā sistēmā prasa dokumentus. B3 Field
                   ģenerē tos automātiski uz vietas — bez birokrātijas, bez gaidīšanas.
                 </p>
@@ -117,22 +110,22 @@ export default function B3FieldsPage() {
         </section>
 
         {/* ── SERVICES ── */}
-        <Container as="section" className="py-32 border-t border-border">
-          <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-16">
-            Pakalpojumi
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border">
+        <Container as="section" className="py-40">
+          <h2 className="text-4xl font-medium tracking-tighter mb-20">Pakalpojumi.</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {services.map(({ icon: Icon, title, body, tag }) => (
-              <div key={title} className="bg-background p-10 flex flex-col gap-6">
-                <div className="flex items-start justify-between">
+              <div key={title} className="flex flex-col gap-6">
+                <div className="bg-muted w-16 h-16 flex items-center justify-center rounded-none mb-4">
                   <Icon className="w-8 h-8 text-foreground" strokeWidth={1.5} />
-                  <span className="text-xs font-bold tracking-widest uppercase text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
-                    {tag}
-                  </span>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-medium tracking-tight mb-3">{title}</h3>
-                  <p className="text-muted-foreground font-light leading-relaxed">{body}</p>
+                  <h3 className="text-3xl font-medium tracking-tight mb-4">{title}</h3>
+                  <p className="text-muted-foreground text-lg font-light leading-relaxed mb-6">
+                    {body}
+                  </p>
+                  <span className="text-sm font-medium tracking-wide text-foreground border border-border px-4 py-2 rounded-none">
+                    {tag}
+                  </span>
                 </div>
               </div>
             ))}
@@ -140,76 +133,62 @@ export default function B3FieldsPage() {
         </Container>
 
         {/* ── HOW TO USE ── */}
-        <Container as="section" className="py-32 border-t border-border">
-          <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-16">
-            Kā izmantot B3 Field
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:divide-x divide-border">
-            {[
-              {
-                step: '01',
-                title: 'Atver platformu',
-                body: 'Reģistrējies vai ienāc B3Hub platformā. Izvēlies "B3 Field paņemšana" vai "Atkritumu nodošana".',
-              },
-              {
-                step: '02',
-                title: 'Izvēlies vietu & laiku',
-                body: 'Atver karti ar visām B3 Field vietām. Izvēlies tuvāko un rezervē laiku —  atbraukšanas slots apstiprinās uzreiz.',
-              },
-              {
-                step: '03',
-                title: 'Iebrauc un saņem dokumentu',
-                body: 'Uz vietas skenē QR kodu pie ieejas. Darījums tiek apstrādāts automātiski — saņem dokumentu telefonā.',
-              },
-            ].map(({ step, title, body }) => (
-              <div
-                key={step}
-                className="md:px-12 first:pl-0 last:pr-0 py-8 md:py-0 flex flex-col gap-6"
-              >
-                <span className="text-5xl font-medium tracking-tighter text-border">{step}</span>
-                <h3 className="text-2xl font-medium tracking-tight">{title}</h3>
-                <p className="text-muted-foreground font-light leading-relaxed">{body}</p>
-              </div>
-            ))}
-          </div>
-        </Container>
+        <section className="w-full py-40 bg-muted/30">
+          <Container>
+            <h2 className="text-4xl font-medium tracking-tighter mb-20">Kā tas strādā.</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-24">
+              {[
+                {
+                  step: '01',
+                  title: 'Atver platformu',
+                  body: 'Reģistrējies vai ienāc platformā. Izvēlies pakalpojumu.',
+                },
+                {
+                  step: '02',
+                  title: 'Izvēlies vietu',
+                  body: 'Atrodi tuvāko punktu un rezervē ierašanās laiku bez rindas.',
+                },
+                {
+                  step: '03',
+                  title: 'Skenē un brauc',
+                  body: 'Uz vietas skenē QR kodu. Darījums un dokumenti apstrādājas automātiski.',
+                },
+              ].map(({ step, title, body }) => (
+                <div key={step} className="flex flex-col gap-6 border-t-2 border-foreground pt-8">
+                  <span className="text-2xl font-bold tracking-tighter text-foreground">
+                    {step}
+                  </span>
+                  <h3 className="text-3xl font-medium tracking-tight">{title}</h3>
+                  <p className="text-muted-foreground text-lg font-light leading-relaxed">{body}</p>
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
 
         {/* ── LOCATIONS ── */}
-        <Container as="section" id="locations" className="py-32 border-t border-border">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
-            <div>
-              <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-4">
-                Vietas
-              </p>
-              <h2 className="text-5xl md:text-6xl font-medium tracking-tighter">
-                6 punkti Latvijā.
-              </h2>
-            </div>
-            <p className="text-lg text-muted-foreground font-light max-w-sm md:text-right">
-              Tīkls aug — jaunas vietas 2026. gadā Igaunijā un Lietuvā.
+        <Container as="section" id="locations" className="py-40">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20">
+            <h2 className="text-6xl md:text-8xl font-medium tracking-tighter">B3 Tīkls.</h2>
+            <p className="text-xl text-muted-foreground font-light max-w-sm md:text-right">
+              Mēs nepārtraukti augam. Jaunas vietas gaidāmas 2026. gadā.
             </p>
           </div>
-          <div className="flex flex-col divide-y divide-border border-t border-b border-border">
+          <div className="flex flex-col">
             {locations.map(({ city, address, services: svc }) => (
               <div
                 key={city}
-                className="flex flex-col md:flex-row md:items-center justify-between py-7 gap-4 group hover:bg-muted/20 -mx-4 px-4 transition-colors"
+                className="flex flex-col md:flex-row md:items-center justify-between py-10 gap-4 border-b border-border group hover:pl-4 transition-all"
               >
-                <div className="flex items-center gap-6">
-                  <MapPin
-                    className="w-5 h-5 text-muted-foreground flex-shrink-0"
-                    strokeWidth={1.5}
-                  />
-                  <div>
-                    <p className="text-xl font-medium tracking-tight">{city}</p>
-                    <p className="text-muted-foreground font-light text-sm mt-0.5">{address}</p>
-                  </div>
+                <div className="flex items-center gap-8">
+                  <h3 className="text-4xl font-medium tracking-tight w-48">{city}</h3>
+                  <p className="text-muted-foreground text-xl font-light">{address}</p>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap md:justify-end">
+                <div className="flex items-center gap-3 flex-wrap md:justify-end">
                   {svc.map((s) => (
                     <span
                       key={s}
-                      className="text-xs font-bold tracking-widest uppercase bg-muted text-muted-foreground px-3 py-1.5 rounded-full"
+                      className="text-sm font-medium tracking-wide bg-muted text-foreground px-4 py-2"
                     >
                       {s}
                     </span>
@@ -220,52 +199,18 @@ export default function B3FieldsPage() {
           </div>
         </Container>
 
-        {/* ── OPENING HOURS ── */}
-        <section className="w-full py-24 border-t border-border bg-muted/20">
-          <Container className="flex flex-col md:flex-row gap-16 items-start">
-            <div className="md:w-1/3">
-              <Clock className="w-8 h-8 text-foreground mb-6" strokeWidth={1.5} />
-              <h2 className="text-3xl font-medium tracking-tight mb-4">Darba laiks</h2>
-              <p className="text-muted-foreground font-light">
-                Dalibas apmeklēšana notiek pēc rezervācijas.
-              </p>
-            </div>
-            <div className="md:w-2/3 flex flex-col divide-y divide-border border-t border-b border-border w-full">
-              {[
-                { day: 'Pirmdiena – Piektdiena', time: '07:00 – 19:00' },
-                { day: 'Sestdiena', time: '08:00 – 16:00' },
-                { day: 'Svētdiena', time: 'Slēgts' },
-                { day: 'Svētku dienas', time: 'Skatīt platformā' },
-              ].map(({ day, time }) => (
-                <div key={day} className="flex items-center justify-between py-5">
-                  <p className="text-base font-light">{day}</p>
-                  <p className="text-base font-medium">{time}</p>
-                </div>
-              ))}
-            </div>
-          </Container>
-        </section>
-
         {/* ── CTA ── */}
-        <section className="w-full py-32 bg-foreground">
-          <Container className="flex flex-col md:flex-row items-center justify-between gap-12">
-            <h2 className="text-5xl md:text-7xl font-medium tracking-tighter text-background leading-[0.95]">
-              Atrodi tuvāko
-              <br />
-              B3 Field.
+        <section className="w-full py-40 bg-foreground">
+          <Container className="flex flex-col items-center justify-center text-center gap-12">
+            <h2 className="text-5xl md:text-[6rem] font-bold tracking-tighter text-background leading-[0.9]">
+              Sāc jau šodien.
             </h2>
-            <div className="flex flex-col gap-4 min-w-fit">
+            <div className="flex flex-col gap-6 mt-8">
               <Link
                 href={`${APP_URL}/register`}
-                className="bg-background text-foreground px-10 py-5 rounded-xl text-xl font-medium hover:scale-105 transition-transform text-center"
+                className="bg-background text-foreground px-12 py-6 text-xl font-medium hover:bg-background/90 transition-colors"
               >
-                Reģistrēties bez maksas
-              </Link>
-              <Link
-                href="/contact"
-                className="text-center text-background/40 text-sm hover:text-background/70 transition-colors"
-              >
-                Vai sazinieties ar mums →
+                Izveidot bezmaksas kontu
               </Link>
             </div>
           </Container>
