@@ -31,6 +31,7 @@ import {
   Settings,
   Shield,
   Activity,
+  TrendingUp,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -316,6 +317,11 @@ export default function ProfileScreen() {
         <View style={s.menuConfig}>
           <Text style={s.sectionHeader}>Konta informācija</Text>
 
+          <MenuItem
+            icon={TrendingUp}
+            label="Ienākumi"
+            onPress={() => router.push('/(seller)/earnings' as any)}
+          />
           <MenuItem
             icon={Phone}
             label="Tālrunis"

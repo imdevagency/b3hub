@@ -32,6 +32,7 @@ import {
   Activity,
   Truck,
   Power,
+  TrendingUp,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -382,6 +383,11 @@ export default function ProfileScreen() {
         <View style={s.menuConfig}>
           <Text style={s.sectionHeader}>Darba instrumenti</Text>
 
+          <MenuItem
+            icon={TrendingUp}
+            label="Ienākumi un izmaksas"
+            onPress={() => router.push('/(driver)/earnings')}
+          />
           <MenuItem
             icon={Truck}
             label="Mani transportlīdzekļi"

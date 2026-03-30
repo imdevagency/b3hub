@@ -144,9 +144,12 @@ export default function ActiveJobScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.7,
       allowsEditing: false,
+      base64: true,
     });
     if (!result.canceled && result.assets[0]) {
-      setPickupPhotoUri(result.assets[0].uri);
+      const asset = result.assets[0];
+      const uri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+      setPickupPhotoUri(uri);
     }
   };
 

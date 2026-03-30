@@ -30,6 +30,7 @@ import {
   Camera,
   CreditCard,
   AlertTriangle,
+  Navigation2,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -257,6 +258,29 @@ export default function OrderDetailScreen() {
             </View>
             <Text style={s.stepHint}>{ORDER_STEPS[stepperIdx]?.hint ?? ''}</Text>
           </View>
+        )}
+
+        {/* Live tracking card — shown whenever a transport job is active */}
+        {activeJob && (
+          <TouchableOpacity
+            style={s.liveTrackCard}
+            activeOpacity={0.82}
+            onPress={() => {
+              haptics.light();
+              router.push(`/(buyer)/transport-job/${activeJob.id}` as any);
+            }}
+          >
+            <View style={s.liveTrackLeft}>
+              <View style={s.liveIndicator}>
+                <View style={s.liveDot} />
+              </View>
+              <View>
+                <Text style={s.liveTrackTitle}>Šoferis ir ceļā</Text>
+                <Text style={s.liveTrackSub}>Izseko piegādi kartē</Text>
+              </View>
+            </View>
+            <Navigation2 size={20} color="#3b82f6" />
+          </TouchableOpacity>
         )}
 
         {/* Driver card — if order is in transit */}
@@ -776,6 +800,48 @@ const s = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
   },
 
+  liveTrackCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#eff6ff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    marginBottom: 2,
+  },
+  liveTrackLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  liveIndicator: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#dbeafe',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  liveDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#3b82f6',
+  },
+  liveTrackTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1d4ed8',
+    fontFamily: 'Inter_700Bold',
+  },
+  liveTrackSub: {
+    fontSize: 12,
+    color: '#3b82f6',
+    marginTop: 1,
+    fontFamily: 'Inter_400Regular',
+  },
   driverCard: {
     backgroundColor: '#f9fafb',
     borderRadius: 14,

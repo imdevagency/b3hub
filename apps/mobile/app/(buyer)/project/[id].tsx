@@ -18,7 +18,7 @@ import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiProjectDetail, type ProjectStatus, type ApiProjectOrder } from '@/lib/api';
 import { formatDate, formatDateShort } from '@/lib/format';
-import { Building2, MapPin, User, Calendar, ChevronRight } from 'lucide-react-native';
+import { Building2, MapPin, User, Calendar, ChevronRight, Plus } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -159,7 +159,18 @@ export default function ProjectDetailScreen() {
 
   return (
     <ScreenContainer standalone bg="#f4f5f7">
-      <ScreenHeader title="Projekts" />
+      <ScreenHeader
+        title="Projekts"
+        rightAction={
+          <TouchableOpacity
+            onPress={() => router.push('/(buyer)/catalog' as any)}
+            style={{ padding: 4 }}
+            activeOpacity={0.7}
+          >
+            <Plus size={22} color="#111827" />
+          </TouchableOpacity>
+        }
+      />
       <ScrollView
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         contentContainerStyle={styles.scroll}

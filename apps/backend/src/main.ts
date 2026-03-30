@@ -5,6 +5,7 @@
  */
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { json } from 'express';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
@@ -13,6 +14,9 @@ async function bootstrap() {
     // rawBody is required for Stripe webhook signature verification
     rawBody: true,
   });
+
+  // Increase JSON body limit to support base64-encoded photo uploads
+  app.use(json({ limit: '10mb' }));
 
   // CORS — tight in production, open in development
   const allowedOrigin =

@@ -80,7 +80,12 @@ const STEP_TITLES: Record<Step, string> = {
 export default function OrderRequestWizard() {
   const router = useRouter();
   const { user, token } = useAuth();
-  const params = useLocalSearchParams<{ initialCategory?: string }>();
+  const params = useLocalSearchParams<{
+    initialCategory?: string;
+    prefillMaterial?: string;
+    prefillAddress?: string;
+    prefillCity?: string;
+  }>();
 
   const category = (params.initialCategory ?? '') as MaterialCategory;
 
@@ -90,7 +95,7 @@ export default function OrderRequestWizard() {
 
   // ── Specs step ──
   const [materialName, setMaterialName] = useState(
-    () => DEFAULT_MATERIAL_NAMES[category as MaterialCategory] ?? '',
+    () => params.prefillMaterial || DEFAULT_MATERIAL_NAMES[category as MaterialCategory] || '',
   );
   const [unit, setUnit] = useState<MaterialUnit>(CATEGORY_DEFAULT_UNIT[category] ?? 'TONNE');
   const [quantity, setQuantity] = useState(5);
@@ -111,6 +116,7 @@ export default function OrderRequestWizard() {
   const [submitted, setSubmitted] = useState<SubmitResult | null>(null);
   const [orderNumber, setOrderNumber] = useState('');
   const [rfqNumber, setRfqNumber] = useState('');
+  const [rfqId, setRfqId] = useState('');
 
   // ── Contact — pre-filled from user profile ──
   const [contactName] = useState(() => `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim());
@@ -214,6 +220,7 @@ export default function OrderRequestWizard() {
         token,
       );
       setRfqNumber(result.requestNumber);
+      setRfqId(result.id);
       setSubmitted('rfq');
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Kaut kas nogāja greizi.');
@@ -233,13 +240,17 @@ export default function OrderRequestWizard() {
           : !offersLoading && !submitting && !submitted;
 
   const ctaLabel = submitted
-    ? 'Skatīt pasūtījumus'
+    ? submitted === 'rfq'
+      ? 'Skatīt pieprasījumu'
+      : 'Skatīt pasūtījumus'
     : step === 'offers'
       ? 'Nosūtīt pieprasījumu'
       : 'Turpināt';
 
   const handleCTA = submitted
-    ? () => router.replace('/(buyer)/orders' as never)
+    ? submitted === 'rfq'
+      ? () => router.replace(`/(buyer)/rfq/${rfqId}` as never)
+      : () => router.replace('/(buyer)/orders' as never)
     : step === 'offers'
       ? handleSendRFQ
       : goNext;
@@ -347,7 +358,11 @@ export default function OrderRequestWizard() {
   );
 
   const renderAddress = () => (
-    <InlineAddressStep picked={pickedAddress} onPick={setPickedAddress} />
+    <InlineAddressStep
+      picked={pickedAddress}
+      onPick={setPickedAddress}
+      initialText={params.prefillAddress}
+    />
   );
 
   const renderWhen = () => {

@@ -127,7 +127,7 @@ export default function OrdersScreen() {
         contentInsetAdjustmentBehavior="never"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
         ListEmptyComponent={
-          loading && !refreshing && filter === 'ALL' ? (
+          loading && !refreshing ? (
             <View style={{ gap: 16 }}>
               <SkeletonCard count={3} />
             </View>
@@ -246,12 +246,22 @@ function FilterChip({
   );
 }
 
+const DRIVER_TRANSIT_STATUSES = new Set([
+  'ACCEPTED',
+  'EN_ROUTE_PICKUP',
+  'AT_PICKUP',
+  'LOADED',
+  'EN_ROUTE_DELIVERY',
+  'AT_DELIVERY',
+]);
+
 function MaterialOrderCard({ order }: { order: any }) {
   const router = useRouter();
   const statusColors = getStatusColors(order.status);
   const itemsCount = order.items?.length || 0;
   const firstItemName = order.items?.[0]?.product?.name || 'Materiālu pasūtījums';
   const displayTitle = itemsCount > 1 ? `${firstItemName} +${itemsCount - 1}` : firstItemName;
+  const activeJob = order.transportJobs?.find((j: any) => DRIVER_TRANSIT_STATUSES.has(j.status));
 
   return (
     <TouchableOpacity
@@ -292,6 +302,19 @@ function MaterialOrderCard({ order }: { order: any }) {
 
       <View style={s.cardFooter}>
         <Text style={s.price}>{order.totalAmount != null ? `€${order.totalAmount}` : '—'}</Text>
+        {activeJob && (
+          <TouchableOpacity
+            style={s.liveChip}
+            onPress={(e) => {
+              e.stopPropagation();
+              router.push(`/(buyer)/transport-job/${activeJob.id}` as any);
+            }}
+            activeOpacity={0.8}
+          >
+            <View style={s.liveChipDot} />
+            <Text style={s.liveChipText}>Live</Text>
+          </TouchableOpacity>
+        )}
         <View style={s.chevronBox}>
           <ChevronRight size={18} color="#94a3b8" />
         </View>
@@ -610,6 +633,28 @@ const s = StyleSheet.create({
     backgroundColor: '#f8fafc',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  liveChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  liveChipDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#3b82f6',
+  },
+  liveChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#3b82f6',
   },
 
   // Empty State

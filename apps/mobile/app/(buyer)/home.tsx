@@ -18,6 +18,7 @@ import { HardHat, Trash2, Truck, Package, ChevronRight, Bell, Menu } from 'lucid
 import { haptics } from '@/lib/haptics';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { useToast } from '@/components/ui/Toast';
 import { BaseMap } from '@/components/map/BaseMap';
 
 // ── Status maps ───────────────────────────────────────────────────────────
@@ -117,6 +118,7 @@ export default function HomeScreen() {
   const [transportOrders, setTransportOrders] = useState<ApiTransportJob[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const toast = useToast();
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -140,7 +142,10 @@ export default function HomeScreen() {
     useCallback(() => {
       if (!token) return;
       Promise.all([
-        api.orders.myOrders(token).catch(() => [] as ApiOrder[]),
+        api.orders.myOrders(token).catch(() => {
+          toast.error('Neizdevās ielādēt pasūtījumus');
+          return [] as ApiOrder[];
+        }),
         api.skipHire.myOrders(token).catch(() => [] as SkipHireOrder[]),
         api.transportJobs.myRequests(token).catch(() => [] as ApiTransportJob[]),
       ]).then(([mats, skips, reqs]) => {
@@ -168,15 +173,17 @@ export default function HomeScreen() {
 
   const activeItem: ActiveItem | null = (() => {
     const mat = orders.find((o) => ACTIVE_STATUSES.has(o.status));
-    if (mat)
+    if (mat) {
+      const trackingJob = mat.transportJobs?.find((j: any) => TJ_ACTIVE_STATUSES.has(j.status));
       return {
-        id: mat.id,
+        id: trackingJob ? trackingJob.id : mat.id,
         num: `#${mat.orderNumber}`,
         sub: mat.deliveryCity ?? '—',
         status: STATUS_LABEL[mat.status] ?? mat.status,
         dotColor: STATUS_DOT[mat.status] ?? '#22c55e',
-        kind: 'mat',
+        kind: trackingJob ? ('transport' as const) : ('mat' as const),
       };
+    }
     const skip = skipOrders.find((o) => SKIP_ACTIVE_STATUSES.has(o.status));
     if (skip)
       return {

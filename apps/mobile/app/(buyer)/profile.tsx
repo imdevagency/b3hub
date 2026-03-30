@@ -28,6 +28,8 @@ import {
   MessageCircle,
   Mail,
   Shield,
+  Settings,
+  Bell,
   Activity,
   ArrowUpDown,
 } from 'lucide-react-native';
@@ -326,9 +328,19 @@ export default function ProfileScreen() {
           <Text style={[s.sectionHeader, { marginTop: 32 }]}>Atbalsts</Text>
 
           <MenuItem
+            icon={Bell}
+            label="Paziņojumi"
+            onPress={() => router.push('/notifications' as any)}
+          />
+          <MenuItem
             icon={MessageCircle}
             label="Ziņojumi"
             onPress={() => router.push('/messages' as any)}
+          />
+          <MenuItem
+            icon={Settings}
+            label="Iestatījumi"
+            onPress={() => router.push('/settings' as any)}
           />
           <MenuItem
             icon={HelpCircle}

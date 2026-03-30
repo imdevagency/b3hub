@@ -70,7 +70,7 @@ function deepLinkPath(notif: ApiNotification): string | null {
     case 'ORDER_PLACED':
     case 'ORDER_SHIPPED':
     case 'ORDER_CANCELLED':
-      return '/(buyer)/orders';
+      return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/orders';
     // ── Driver ────────────────────────────────────────────────
     case 'JOB_AVAILABLE':
       return '/(driver)/jobs';
@@ -84,7 +84,7 @@ function deepLinkPath(notif: ApiNotification): string | null {
     case 'PAYMENT_RECEIVED':
       return '/(driver)/earnings';
     case 'INVOICE_ISSUED':
-      return '/(seller)/orders';
+      return '/(seller)/incoming';
     default:
       return null;
   }

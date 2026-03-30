@@ -1,11 +1,12 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
 import { Inbox, LayoutGrid, FileText, Wallet, Bell, ArrowRight } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 
@@ -44,10 +45,13 @@ export default function SellerHomeScreen() {
   const insets = useSafeAreaInsets();
   const [pendingCount, setPendingCount] = useState<number | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const toast = useToast();
 
-  useFocusEffect(
-    useCallback(() => {
+  const loadData = useCallback(
+    (isRefresh = false) => {
       if (!token) return;
+      if (isRefresh) setRefreshing(true);
       api.orders
         .myOrders(token)
         .then((orders) => {
@@ -56,12 +60,23 @@ export default function SellerHomeScreen() {
           ).length;
           setPendingCount(pending);
         })
-        .catch(() => {});
+        .catch(() => {
+          toast.error('Neizdevās ielādēt pasūtījumus');
+          setPendingCount(0);
+        })
+        .finally(() => setRefreshing(false));
       api.notifications
         .unreadCount(token)
         .then((res) => setUnreadCount(res.count))
         .catch(() => {});
-    }, [token]),
+    },
+    [token, toast],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData(false);
+    }, [loadData]),
   );
 
   return (
@@ -136,6 +151,13 @@ export default function SellerHomeScreen() {
           paddingTop: 16,
         }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadData(true)}
+            tintColor="#111827"
+          />
+        }
       >
         {/* STATUS CARD (UBER STYLE) */}
         <View style={{ marginBottom: 24 }}>

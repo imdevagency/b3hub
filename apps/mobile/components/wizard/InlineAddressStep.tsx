@@ -45,6 +45,8 @@ type Props = {
   picked: PickedAddress | null;
   /** Called whenever the user confirms a new address. */
   onPick: (p: PickedAddress) => void;
+  /** Pre-seed the search input text without marking an address as confirmed (e.g. reorder prefill). */
+  initialText?: string;
   /** Optional compact banner shown above the map (e.g. pickup reference in transport step 2). */
   banner?: React.ReactNode;
   /** Optional label describing what address we're selecting (e.g. "Piegādes vieta"). */
@@ -69,6 +71,7 @@ const RIGA_REGION = {
 export function InlineAddressStep({
   picked,
   onPick,
+  initialText,
   banner,
   contextLabel,
   contextIcon,
@@ -83,7 +86,7 @@ export function InlineAddressStep({
   const [pin, setPin] = useState<{ latitude: number; longitude: number } | null>(
     picked ? { latitude: picked.lat, longitude: picked.lng } : null,
   );
-  const [query, setQuery] = useState(picked?.address ?? '');
+  const [query, setQuery] = useState(initialText ?? picked?.address ?? '');
   const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
   const [showSugs, setShowSugs] = useState(false);
   const [searching, setSearching] = useState(false);

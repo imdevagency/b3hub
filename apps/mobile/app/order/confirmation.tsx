@@ -125,7 +125,17 @@ export default function OrderConfirmation() {
           {/* Status badge */}
           <View style={s.statusBadge}>
             <View style={s.statusDot} />
-            <Text style={s.statusText}>{order.status}</Text>
+            <Text style={s.statusText}>
+              {(
+                {
+                  PENDING: 'Gaida apstiprinājumu',
+                  CONFIRMED: 'Apstiprināts',
+                  IN_PROGRESS: 'Izpildē',
+                  COMPLETED: 'Pabeigts',
+                  CANCELLED: 'Atcelts',
+                } as Record<string, string>
+              )[order.status] ?? order.status}
+            </Text>
           </View>
         </Animated.View>
 

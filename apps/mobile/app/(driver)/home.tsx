@@ -42,6 +42,7 @@ export default function DriverHomeScreen() {
   const [hasActiveJob, setHasActiveJob] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [todayEarnings, setTodayEarnings] = useState<number | null>(null);
+  const [loadingJobs, setLoadingJobs] = useState(true);
 
   // Fly camera to driver's current location once on mount
   useEffect(() => {
@@ -72,8 +73,13 @@ export default function DriverHomeScreen() {
         .catch(() => {});
       api.transportJobs
         .available(token)
-        .then((jobs: ApiTransportJob[]) => setAvailableJobs(Array.isArray(jobs) ? jobs : []))
-        .catch(() => {});
+        .then((jobs: ApiTransportJob[]) => {
+          setAvailableJobs(Array.isArray(jobs) ? jobs : []);
+          setLoadingJobs(false);
+        })
+        .catch(() => {
+          setLoadingJobs(false);
+        });
       api.notifications
         .unreadCount(token)
         .then((res: { count: number }) => setUnreadCount(res.count))
@@ -183,7 +189,7 @@ export default function DriverHomeScreen() {
         {/* Detailed Stats Row */}
         <View style={s.statsContainer}>
           <View style={s.statBox}>
-            <Text style={s.statValue}>{availableCount}</Text>
+            <Text style={s.statValue}>{loadingJobs ? '--' : availableCount}</Text>
             <Text style={s.statLabel}>Pieejami darbi</Text>
           </View>
           <View style={s.verticalLine} />
@@ -211,6 +217,11 @@ export default function DriverHomeScreen() {
           <Text style={s.primaryActionText}>{hasActiveJob ? 'ATVĒRT DARBU' : 'MEKLĒT DARBUS'}</Text>
           {!hasActiveJob && <ChevronRight size={24} color="#fff" style={{ marginLeft: 4 }} />}
         </TouchableOpacity>
+
+        {/* Empty hint — only when not loading and no jobs nearby */}
+        {!hasActiveJob && !loadingJobs && availableCount === 0 && (
+          <Text style={s.noJobsHint}>Nav pieejamo darbu jūsu reģionā</Text>
+        )}
 
         {/* Secondary Quick Actions — Clean icons */}
         <View style={s.quickGrid}>
@@ -366,6 +377,7 @@ const s = StyleSheet.create({
   },
   primaryActionActive: { backgroundColor: '#059669' },
   primaryActionText: { color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: 0.5 },
+  noJobsHint: { fontSize: 13, color: '#9ca3af', textAlign: 'center', marginTop: 10 },
 
   // Quick Actions
   quickGrid: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 12 },

@@ -148,7 +148,10 @@ export class PaymentsService {
    * Capture funds when order is confirmed/in-progress.
    */
   async capturePayment(orderId: string) {
-       if (!this.stripe) return;
+       if (!this.stripe) {
+         this.logger.error(`capturePayment called for order ${orderId} but Stripe is not configured`);
+         throw new BadRequestException('Stripe is not configured — set STRIPE_SECRET_KEY');
+       }
 
        const payment = await this.prisma.payment.findUnique({
            where: { orderId },
@@ -189,7 +192,10 @@ export class PaymentsService {
    * Platform keeps a 5% fee; remainder split 80% seller / 20% driver (if job exists).
    */
   async releaseFunds(orderId: string) {
-    if (!this.stripe) return;
+    if (!this.stripe) {
+      this.logger.error(`releaseFunds called for order ${orderId} but Stripe is not configured`);
+      throw new BadRequestException('Stripe is not configured — set STRIPE_SECRET_KEY');
+    }
 
     const payment = await this.prisma.payment.findUnique({
       where: { orderId },

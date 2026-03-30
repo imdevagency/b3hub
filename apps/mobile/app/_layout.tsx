@@ -86,13 +86,14 @@ export default function RootLayout() {
   // NativeWind's font-bold etc. now also set fontFamily via tailwind.config.js,
   // but raw RN <Text> elements (not using our custom Text component) still need
   // defaultProps to get Inter_400Regular as the base face.
-  useEffect(() => {
-    if (!fontsLoaded) return;
+  // NOTE: Must be set synchronously here — NOT in a useEffect.
+  // useEffect fires after render, causing one frame of system-font flash.
+  if (fontsLoaded) {
     (Text as any).defaultProps = (Text as any).defaultProps ?? {};
     (Text as any).defaultProps.style = { fontFamily: 'Inter_400Regular' };
     (TextInput as any).defaultProps = (TextInput as any).defaultProps ?? {};
     (TextInput as any).defaultProps.style = { fontFamily: 'Inter_400Regular' };
-  }, [fontsLoaded]);
+  }
 
   useEffect(() => {
     // Foreground notification received listener
