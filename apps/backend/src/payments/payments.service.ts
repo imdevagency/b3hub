@@ -1,8 +1,10 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { RequestingUser } from '../common/types/requesting-user.interface';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/dto/create-notification.dto';
 
 @Injectable()
 export class PaymentsService {
@@ -12,6 +14,7 @@ export class PaymentsService {
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
+    private notifications: NotificationsService,
   ) {
     const stripeKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (stripeKey) {
@@ -452,5 +455,66 @@ export class PaymentsService {
         // Ignore unhandled event types
         break;
     }
+  }
+
+  /**
+   * POST /payments/dispute/:orderId
+   * Buyer reports an issue with a DELIVERED order (wrong quantity, damage, etc.).
+   * Flags the order for admin review and alerts all admins via in-app notification.
+   */
+  async reportDispute(
+    orderId: string,
+    reason: string,
+    details: string | undefined,
+    user: RequestingUser,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, orderNumber: true, buyerId: true, createdById: true, status: true, internalNotes: true },
+    });
+
+    if (!order) throw new NotFoundException('Order not found');
+
+    // Only the buyer who created the order (or any member of their company) may dispute
+    if (order.buyerId !== user.companyId && order.createdById !== user.userId) {
+      throw new ForbiddenException('Not authorized to dispute this order');
+    }
+
+    if (order.status !== 'DELIVERED') {
+      throw new BadRequestException('Only delivered orders can be disputed');
+    }
+
+    const disputeEntry =
+      `[DISPUTE ${new Date().toISOString()}] Reason: ${reason}` +
+      (details ? `\nDetails: ${details}` : '');
+
+    const updatedNotes = order.internalNotes
+      ? `${order.internalNotes}\n\n${disputeEntry}`
+      : disputeEntry;
+
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: { internalNotes: updatedNotes },
+    });
+
+    // Notify all admin users
+    const admins = await this.prisma.user.findMany({
+      where: { userType: 'ADMIN' },
+      select: { id: true },
+    });
+
+    await this.notifications.createForMany(
+      admins.map((a) => a.id),
+      {
+        type: NotificationType.SYSTEM_ALERT,
+        title: `Strīds: pasūtījums ${order.orderNumber}`,
+        message: `${reason}${details ? ` — ${details.slice(0, 80)}` : ''}`,
+        data: { orderId, orderNumber: order.orderNumber, reason },
+      },
+    );
+
+    this.logger.log(`Dispute filed for order ${order.orderNumber} by user ${user.userId}`);
+
+    return { ok: true, message: 'Sūdzība saņemta. Mēs sazināsimies ar jums 1-2 darba dienu laikā.' };
   }
 }

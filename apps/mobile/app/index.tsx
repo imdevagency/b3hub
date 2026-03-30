@@ -6,8 +6,10 @@
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/lib/auth-context';
 import { useMode, MODE_HOME } from '@/lib/mode-context';
+import { ONBOARDING_KEY } from './(auth)/onboarding';
 
 export default function Index() {
   const { user, isLoading } = useAuth();
@@ -17,10 +19,13 @@ export default function Index() {
   useEffect(() => {
     if (isLoading) return;
     if (user) {
-      // Small timeout so any pending mode state update from ModeSwitcher
-      // has committed before we read it here.
-      const t = setTimeout(() => {
-        router.replace(MODE_HOME[mode] as any);
+      const t = setTimeout(async () => {
+        const seen = await AsyncStorage.getItem(ONBOARDING_KEY);
+        if (!seen) {
+          router.replace('/(auth)/onboarding');
+        } else {
+          router.replace(MODE_HOME[mode] as any);
+        }
       }, 50);
       return () => clearTimeout(t);
     } else {

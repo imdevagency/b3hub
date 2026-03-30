@@ -16,6 +16,19 @@ import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
+import { IsString, IsOptional, MinLength, MaxLength } from 'class-validator';
+
+class ReportDisputeDto {
+  @IsString()
+  @MinLength(3)
+  @MaxLength(200)
+  reason!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  details?: string;
+}
 
 @Controller('payments')
 export class PaymentsController {
@@ -49,5 +62,15 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   createConnectLink(@CurrentUser() user: RequestingUser) {
     return this.paymentsService.createConnectAccountLink(user);
+  }
+
+  @Post('dispute/:orderId')
+  @UseGuards(JwtAuthGuard)
+  reportDispute(
+    @Param('orderId') orderId: string,
+    @Body() dto: ReportDisputeDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.paymentsService.reportDispute(orderId, dto.reason, dto.details, user);
   }
 }

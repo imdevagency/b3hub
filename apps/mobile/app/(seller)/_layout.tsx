@@ -24,6 +24,7 @@ export default function SellerLayout() {
 
   // Seller home renders its own greeting header — no layout TopBar or padding on that screen
   const isHome = pathname === '/(seller)/home' || pathname === '/home';
+  const isQuotes = pathname.includes('/quotes');
   // eslint-disable-next-line react/display-name
   const renderTabBar = useCallback((props: BottomTabBarProps) => <AnimatedTabBar {...props} />, []);
 
@@ -44,8 +45,14 @@ export default function SellerLayout() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: isHome ? 0 : insets.top }}>
-      {!isHome && (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: '#ffffff',
+        paddingTop: isHome || isQuotes ? 0 : insets.top,
+      }}
+    >
+      {!isHome && !isQuotes && (
         <TopBar
           accentColor={ACCENT}
           onMenuPress={() => setSidebarOpen(true)}

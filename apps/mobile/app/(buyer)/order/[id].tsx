@@ -9,6 +9,7 @@ import {
   Alert,
   Linking,
   Image,
+  TextInput,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -28,6 +29,7 @@ import {
   User,
   Camera,
   CreditCard,
+  AlertTriangle,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -40,6 +42,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { InfoSection } from '@/components/ui/InfoSection';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { DetailRow } from '@/components/ui/DetailRow';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import { UNIT_SHORT, MAT_STATUS } from '@/lib/materials';
 import { formatDate } from '@/lib/format';
 
@@ -55,11 +58,11 @@ try {
 // ── Constants ──────────────────────────────────────────────────
 
 const ORDER_STEPS = [
-  { key: 'PENDING', label: 'Pasūtīts', hint: 'Gaida apstiprināšanu' },
-  { key: 'CONFIRMED', label: 'Apstiprināts', hint: 'Pasūtījums apstiprināts' },
-  { key: 'PROCESSING', label: 'Sagatavo', hint: 'Kravu sagatavo' },
-  { key: 'SHIPPED', label: 'Ceļā', hint: 'Šoferis dodas uz jums' },
-  { key: 'DELIVERED', label: 'Piegādāts', hint: 'Piegāde pabeigta' },
+  { key: 'PENDING', label: 'Pasūtīts', short: 'Gaida', hint: 'Gaida apstiprināšanu' },
+  { key: 'CONFIRMED', label: 'Apstiprināts', short: 'Apstip.', hint: 'Pasūtījums apstiprināts' },
+  { key: 'PROCESSING', label: 'Sagatavo', short: 'Sagat.', hint: 'Kravu sagatavo' },
+  { key: 'SHIPPED', label: 'Ceļā', short: 'Ceļā', hint: 'Šoferis dodas uz jums' },
+  { key: 'DELIVERED', label: 'Piegādāts', short: 'Piegāde', hint: 'Piegāde pabeigta' },
 ];
 
 // ── Main Screen ────────────────────────────────────────────────
@@ -71,6 +74,11 @@ export default function OrderDetailScreen() {
   const { order, setOrder, loading, alreadyRated, documents, reload: load } = useOrderDetail(id);
   const [actionLoading, setActionLoading] = useState(false);
   const [showRating, setShowRating] = useState(false);
+  const [showDispute, setShowDispute] = useState(false);
+  const [disputeReason, setDisputeReason] = useState('');
+  const [disputeDetails, setDisputeDetails] = useState('');
+  const [disputeLoading, setDisputeLoading] = useState(false);
+  const [disputeFiled, setDisputeFiled] = useState(false);
   // Local flag so the UI updates immediately after rating without a reload
   const [ratedLocally, setRatedLocally] = useState(false);
   const hasRated = alreadyRated || ratedLocally;
@@ -113,6 +121,40 @@ export default function OrderDetailScreen() {
     }
   };
 
+  const DISPUTE_REASONS = [
+    'Krašana nepareiza / trūkst daudzums',
+    'Sagadītā prece neatbilst pasūtītājai',
+    'Prece bojāta piegādes laikā',
+    'Nav saņemta piegāde',
+    'Cits jautājums',
+  ];
+
+  const handleDisputeSubmit = async () => {
+    if (!disputeReason) {
+      haptics.warning();
+      Alert.alert('Izvēlieties iemeslu', 'Lūdzu izvēlieties problēmas iemeslu.');
+      return;
+    }
+    if (!token || !order) return;
+    setDisputeLoading(true);
+    haptics.light();
+    try {
+      await api.reportDispute(order.id, disputeReason, disputeDetails || undefined, token);
+      haptics.success();
+      setDisputeFiled(true);
+      setShowDispute(false);
+      Alert.alert(
+        'Sūdzība saņemta',
+        'Mēs izskatīsim jūsu paziņojumu un sazināsimies 1–2 darba dienu laikā.',
+      );
+    } catch (err: unknown) {
+      haptics.error();
+      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās nosūtīt sūdzību');
+    } finally {
+      setDisputeLoading(false);
+    }
+  };
+
   const handleCancel = () => {
     haptics.heavy();
     Alert.alert('Atcelt pasūtījumu?', 'Šo darbību nevar atsaukt.', [
@@ -140,7 +182,7 @@ export default function OrderDetailScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer bg="#f9fafb">
+      <ScreenContainer standalone bg="#f4f5f7">
         <ScreenHeader title="Pasūtījums" />
         <SkeletonDetail />
       </ScreenContainer>
@@ -149,7 +191,7 @@ export default function OrderDetailScreen() {
 
   if (!order) {
     return (
-      <ScreenContainer bg="#f9fafb">
+      <ScreenContainer standalone bg="#f4f5f7">
         <ScreenHeader title="Pasūtījums" />
         <EmptyState icon={<Package size={32} color="#9ca3af" />} title="Pasūtījums nav atrasts" />
       </ScreenContainer>
@@ -172,9 +214,10 @@ export default function OrderDetailScreen() {
     order.status === 'PENDING' &&
     (!order.paymentStatus || order.paymentStatus === 'PENDING') &&
     !!stripe;
+  const stepperIdx = ORDER_STEPS.findIndex((x) => x.key === order.status);
 
   return (
-    <ScreenContainer bg="#f9fafb">
+    <ScreenContainer standalone bg="#f4f5f7">
       {/* Header */}
       <ScreenHeader
         title={order.orderNumber}
@@ -182,7 +225,40 @@ export default function OrderDetailScreen() {
       />
 
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        {/* Live driver tracking map — shows planned route even before GPS fix */}
+        {/* ── Horizontal status stepper ─────────────────────────── */}
+        {order.status !== 'CANCELLED' && (
+          <View style={s.stepperCard}>
+            <View style={s.stepperWrap}>
+              {/* Grey background track */}
+              <View style={s.stepperTrack} />
+              {/* Green filled progress */}
+              {stepperIdx > 0 && <View style={[s.stepperFill, { width: `${stepperIdx * 20}%` }]} />}
+              {/* Step columns */}
+              <View style={s.stepperDotsRow}>
+                {ORDER_STEPS.map((step, i) => {
+                  const done = i < stepperIdx;
+                  const active = i === stepperIdx;
+                  return (
+                    <View key={step.key} style={s.stepCol}>
+                      <View style={[s.stepDot, done && s.stepDotDone, active && s.stepDotActive]}>
+                        {done && <CheckCircle size={9} color="#fff" />}
+                        {active && <View style={s.stepDotPulse} />}
+                      </View>
+                      <Text
+                        style={[s.stepLabel, done && s.stepLabelDone, active && s.stepLabelActive]}
+                        numberOfLines={1}
+                      >
+                        {step.short}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+            <Text style={s.stepHint}>{ORDER_STEPS[stepperIdx]?.hint ?? ''}</Text>
+          </View>
+        )}
+
         {/* Driver card — if order is in transit */}
         {driver && (
           <View style={s.driverCard}>
@@ -222,35 +298,6 @@ export default function OrderDetailScreen() {
               ) : null}
             </View>
           </View>
-        )}
-
-        {/* Order status timeline */}
-        {order.status !== 'CANCELLED' && (
-          <InfoSection icon={<CheckCircle size={14} color="#6b7280" />} title="Izpildes progress">
-            {ORDER_STEPS.map((step, i) => {
-              const currentIdx = ORDER_STEPS.findIndex((s) => s.key === order.status);
-              const isDone = i < currentIdx;
-              const isActive = i === currentIdx;
-              const isLast = i === ORDER_STEPS.length - 1;
-              return (
-                <View key={step.key} style={s.tlRow}>
-                  <View style={s.tlLeft}>
-                    <View style={[s.tlDot, isDone && s.tlDotDone, isActive && s.tlDotActive]}>
-                      {isDone && <CheckCircle size={10} color="#fff" />}
-                      {isActive && <View style={s.tlDotInner} />}
-                    </View>
-                    {!isLast && <View style={[s.tlLine, isDone && s.tlLineDone]} />}
-                  </View>
-                  <View style={s.tlContent}>
-                    <Text style={[s.tlLabel, isDone && s.tlLabelDone, isActive && s.tlLabelActive]}>
-                      {step.label}
-                    </Text>
-                    {isActive && <Text style={s.tlHint}>{step.hint}</Text>}
-                  </View>
-                </View>
-              );
-            })}
-          </InfoSection>
         )}
 
         {/* Weighing slip photo — shown as soon as driver marks job LOADED */}
@@ -505,10 +552,28 @@ export default function OrderDetailScreen() {
             </View>
           )}
           {order.status === 'CANCELLED' && (
-            <View style={s.cancelledNote}>
-              <XCircle size={14} color="#b91c1c" />
-              <Text style={s.cancelledText}>Pasūtījums atcelts</Text>
-            </View>
+            <>
+              <View style={s.cancelledNote}>
+                <XCircle size={14} color="#b91c1c" />
+                <Text style={s.cancelledText}>Pasūtījums atcelts</Text>
+              </View>
+              <TouchableOpacity
+                style={s.reorderBtn}
+                onPress={() =>
+                  router.push({
+                    pathname: '/order-request-new',
+                    params: {
+                      prefillMaterial: order.items[0]?.material?.name ?? '',
+                      prefillAddress: order.deliveryAddress ?? '',
+                      prefillCity: order.deliveryCity ?? '',
+                    },
+                  })
+                }
+                activeOpacity={0.85}
+              >
+                <Text style={s.reorderBtnText}>🔁 Pasūtīt no jauna</Text>
+              </TouchableOpacity>
+            </>
           )}
           {canCancel && (
             <TouchableOpacity
@@ -523,6 +588,27 @@ export default function OrderDetailScreen() {
                 <Text style={s.cancelOrderBtnText}>Atcelt pasūtījumu</Text>
               )}
             </TouchableOpacity>
+          )}
+
+          {/* Report issue — shown on delivered orders that haven't been disputed yet */}
+          {order.status === 'DELIVERED' && !disputeFiled && (
+            <TouchableOpacity
+              style={s.reportIssueBtn}
+              onPress={() => {
+                haptics.light();
+                setShowDispute(true);
+              }}
+              activeOpacity={0.8}
+            >
+              <AlertTriangle size={14} color="#6b7280" />
+              <Text style={s.reportIssueBtnText}>Ziņot par problēmu</Text>
+            </TouchableOpacity>
+          )}
+          {disputeFiled && (
+            <View style={s.disputeFiledNote}>
+              <AlertTriangle size={13} color="#d97706" />
+              <Text style={s.disputeFiledText}>Sūdzība iesniegta — mēs sazināsimies ar jums</Text>
+            </View>
           )}
         </View>
       </ScrollView>
@@ -540,6 +626,59 @@ export default function OrderDetailScreen() {
           orderId={id}
         />
       )}
+
+      {/* Dispute / report issue bottom sheet */}
+      <BottomSheet
+        visible={showDispute}
+        onClose={() => setShowDispute(false)}
+        title="Ziņot par problēmu"
+        subtitle="Aprakstiet problēmu ar pasūtījumu"
+        scrollable
+      >
+        <View style={{ gap: 12, paddingBottom: 8 }}>
+          {DISPUTE_REASONS.map((r) => (
+            <TouchableOpacity
+              key={r}
+              style={[s.disputeReasonRow, disputeReason === r && s.disputeReasonRowActive]}
+              onPress={() => {
+                haptics.light();
+                setDisputeReason(r);
+              }}
+              activeOpacity={0.8}
+            >
+              <View style={[s.disputeRadio, disputeReason === r && s.disputeRadioActive]}>
+                {disputeReason === r && <View style={s.disputeRadioDot} />}
+              </View>
+              <Text style={[s.disputeReasonText, disputeReason === r && s.disputeReasonTextActive]}>
+                {r}
+              </Text>
+            </TouchableOpacity>
+          ))}
+
+          <TextInput
+            style={s.disputeDetailsInput}
+            placeholder="Papildu informācija (neobligāts)..."
+            placeholderTextColor="#9ca3af"
+            multiline
+            numberOfLines={3}
+            value={disputeDetails}
+            onChangeText={setDisputeDetails}
+          />
+
+          <TouchableOpacity
+            style={[s.disputeSubmitBtn, (!disputeReason || disputeLoading) && { opacity: 0.5 }]}
+            onPress={handleDisputeSubmit}
+            disabled={!disputeReason || disputeLoading}
+            activeOpacity={0.85}
+          >
+            {disputeLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={s.disputeSubmitBtnText}>Nosūtīt sūdzību</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
     </ScreenContainer>
   );
 }
@@ -566,6 +705,77 @@ const s = StyleSheet.create({
   },
   headerTitle: { fontSize: 17, fontWeight: '700', color: '#111827', flex: 1, marginHorizontal: 10 },
   content: { padding: 16, gap: 12, paddingBottom: 48 },
+
+  // ── Horizontal status stepper ──────────────────────────────────
+  stepperCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  stepperWrap: { position: 'relative', paddingBottom: 4 },
+  stepperTrack: {
+    position: 'absolute',
+    top: 11,
+    left: '10%',
+    right: '10%',
+    height: 2,
+    backgroundColor: '#e5e7eb',
+  },
+  stepperFill: {
+    position: 'absolute',
+    top: 11,
+    left: '10%',
+    height: 2,
+    backgroundColor: '#00A878',
+  },
+  stepperDotsRow: { flexDirection: 'row' },
+  stepCol: { flex: 1, alignItems: 'center', gap: 6 },
+  stepDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepDotDone: { backgroundColor: '#00A878' },
+  stepDotActive: {
+    backgroundColor: '#00A878',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    shadowColor: '#00A878',
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  stepDotPulse: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#fff' },
+  stepLabel: {
+    fontSize: 10,
+    color: '#d1d5db',
+    textAlign: 'center',
+    fontFamily: 'Inter_400Regular',
+  },
+  stepLabelDone: { color: '#9ca3af' },
+  stepLabelActive: {
+    color: '#00A878',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+  },
+  stepHint: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginTop: 12,
+    fontFamily: 'Inter_400Regular',
+  },
+
   driverCard: {
     backgroundColor: '#f9fafb',
     borderRadius: 14,
@@ -873,5 +1083,107 @@ const s = StyleSheet.create({
     fontWeight: '700',
     color: '#374151',
     marginLeft: 'auto',
+  },
+
+  // Report issue button
+  reportIssueBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    marginTop: 4,
+  },
+  reportIssueBtnText: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+
+  // Dispute filed confirmation
+  disputeFiledNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    justifyContent: 'center',
+    paddingVertical: 12,
+    backgroundColor: '#fffbeb',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    marginTop: 4,
+  },
+  disputeFiledText: {
+    fontSize: 13,
+    color: '#92400e',
+    fontWeight: '500',
+  },
+
+  // Dispute bottom sheet
+  disputeReasonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#fff',
+  },
+  disputeReasonRowActive: {
+    borderColor: '#111827',
+    backgroundColor: '#f9fafb',
+  },
+  disputeRadio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  disputeRadioActive: {
+    borderColor: '#111827',
+  },
+  disputeRadioDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#111827',
+  },
+  disputeReasonText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#374151',
+  },
+  disputeReasonTextActive: {
+    color: '#111827',
+    fontWeight: '600',
+  },
+  disputeDetailsInput: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#111827',
+    backgroundColor: '#fff',
+    height: 80,
+    textAlignVertical: 'top',
+  },
+  disputeSubmitBtn: {
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  disputeSubmitBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
   },
 });

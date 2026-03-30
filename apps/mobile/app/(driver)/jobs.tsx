@@ -69,12 +69,14 @@ function AcceptBottomSheet({
   job,
   nearby,
   onConfirm,
+  loading = false,
   onClose,
 }: {
   visible: boolean;
   job: TransportJob | null;
   nearby: { job: TransportJob; gapKm: number }[];
   onConfirm: () => void;
+  loading?: boolean;
   onClose: () => void;
 }) {
   // Preserve last job so exit animation shows content
@@ -140,8 +142,16 @@ function AcceptBottomSheet({
         )}
 
         {/* CTA */}
-        <TouchableOpacity style={styles.sheetAcceptBtn} onPress={onConfirm}>
-          <Text style={styles.sheetAcceptBtnText}>{t.jobs.acceptAndGo}</Text>
+        <TouchableOpacity
+          style={[styles.sheetAcceptBtn, loading && { opacity: 0.6 }]}
+          onPress={onConfirm}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.sheetAcceptBtnText}>{t.jobs.acceptAndGo}</Text>
+          )}
         </TouchableOpacity>
       </View>
     </BottomSheet>
@@ -398,6 +408,7 @@ export default function JobsScreen() {
 
   // ── Accept sheet ──────────────────────────────────────────────
   const [acceptSheetJob, setAcceptSheetJob] = useState<TransportJob | null>(null);
+  const [accepting, setAccepting] = useState(false);
 
   const fetchJobs = useCallback(async () => {
     if (!token) return;
@@ -527,23 +538,26 @@ export default function JobsScreen() {
   };
 
   const handleConfirmAccept = async () => {
-    if (!acceptSheetJob || !token) return;
+    if (!acceptSheetJob || !token || accepting) return;
     const jobId = acceptSheetJob.id;
-    setAcceptSheetJob(null);
+    setAccepting(true);
     try {
       await api.transportJobs.accept(jobId, token);
       setAllJobs((prev) => prev.filter((j) => j.id !== jobId));
       haptics.success();
+      setAcceptSheetJob(null);
       router.replace('/(driver)/active');
     } catch (err: unknown) {
       haptics.error();
       Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās pieņemt darbu');
+    } finally {
+      setAccepting(false);
     }
   };
 
   if (loading) {
     return (
-      <ScreenContainer bg="#f2f2f7">
+      <ScreenContainer standalone bg="#f2f2f7">
         <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 40, gap: 12 }}>
           <SkeletonJobRow count={5} />
         </ScrollView>
@@ -552,7 +566,7 @@ export default function JobsScreen() {
   }
 
   return (
-    <ScreenContainer bg="#f2f2f7" standalone>
+    <ScreenContainer standalone bg="#f2f2f7">
       {/* ── Header ────────────────────────────────────────── */}
       <ScreenHeader
         title="Darbi"
@@ -635,7 +649,10 @@ export default function JobsScreen() {
             : []
         }
         onConfirm={handleConfirmAccept}
-        onClose={() => setAcceptSheetJob(null)}
+        loading={accepting}
+        onClose={() => {
+          if (!accepting) setAcceptSheetJob(null);
+        }}
       />
     </ScreenContainer>
   );

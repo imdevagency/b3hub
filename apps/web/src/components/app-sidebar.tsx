@@ -91,7 +91,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       icon: ClipboardList,
       items: [
         { label: 'Mani Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
-        { label: 'Projekti', href: '/dashboard/framework-contracts', icon: FolderKanban },
+        { label: 'Ietvarlīgumi', href: '/dashboard/framework-contracts', icon: FolderKanban },
         { label: 'Cenu Pieprasījumi', href: '/dashboard/quote-requests', icon: FileQuestion },
         { label: 'Konteineri', href: '/dashboard/skip-hire', icon: Box },
       ],
@@ -225,6 +225,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       ...section,
       items: [...section.items],
     }));
+
+    if (activeMode === 'BUYER' && user?.isCompany) {
+      // Company buyers (CONSTRUCTION / HYBRID) get the construction project tracker
+      sections = sections.map((section) => {
+        if (section.id !== 'buyer-orders') return section;
+        return {
+          ...section,
+          items: [
+            ...section.items,
+            { label: 'Projekti', href: '/dashboard/projects', icon: FolderKanban },
+          ],
+        };
+      });
+    }
 
     if (activeMode === 'CARRIER') {
       const isDispatcher =

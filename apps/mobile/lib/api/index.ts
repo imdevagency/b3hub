@@ -21,6 +21,7 @@ export * from './containers';
 export * from './payments';
 
 export * from './company';
+export * from './projects';
 // Re-export the helper for consumers that need it directly
 export { apiFetch } from './common';
 
@@ -38,6 +39,7 @@ import { chatApi } from './chat';
 import { containersApi } from './containers';
 import { companyApi } from './company';
 import { paymentsApi } from './payments';
+import { projectsApi } from './projects';
 
 // ─── Assembled api object ─────────────────────────────────────────────────
 /**
@@ -79,4 +81,7 @@ export const api = {
 
   // ── Company members & framework contracts ─────────────────────────────
   ...companyApi,
+
+  // ── Projects ─────────────────────────────────────────────────────────
+  ...projectsApi,
 };

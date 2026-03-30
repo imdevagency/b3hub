@@ -25,6 +25,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import {
   Trash2,
   MapPin,
@@ -476,38 +477,36 @@ export default function CarrierSkipsScreen() {
   const toCollect = orders.filter((o) => o.status === 'DELIVERED');
 
   return (
-    <ScreenContainer bg="#f2f2f7" standalone>
-      {/* ── Header ── */}
-      <View style={s.header}>
-        <View>
-          <Text style={s.headerTitle}>{cs.title}</Text>
-          <Text style={s.headerSubtitle}>{cs.subtitle}</Text>
-        </View>
-        <View style={s.headerRight}>
-          <View style={s.toggle}>
+    <ScreenContainer standalone bg="#f2f2f7">
+      <ScreenHeader
+        title={cs.title}
+        rightAction={
+          <View style={s.headerRight}>
+            <View style={s.toggle}>
+              <TouchableOpacity
+                style={[s.toggleBtn, viewMode === 'list' && s.toggleActive]}
+                onPress={() => setViewMode('list')}
+              >
+                <List size={16} color={viewMode === 'list' ? '#fff' : '#6b7280'} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.toggleBtn, viewMode === 'map' && s.toggleActive]}
+                onPress={() => setViewMode('map')}
+              >
+                <Map size={16} color={viewMode === 'map' ? '#fff' : '#6b7280'} />
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity
-              style={[s.toggleBtn, viewMode === 'list' && s.toggleActive]}
-              onPress={() => setViewMode('list')}
+              onPress={() => load()}
+              style={s.refreshBtn}
+              hitSlop={8}
+              disabled={loading}
             >
-              <List size={16} color={viewMode === 'list' ? '#fff' : '#6b7280'} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.toggleBtn, viewMode === 'map' && s.toggleActive]}
-              onPress={() => setViewMode('map')}
-            >
-              <Map size={16} color={viewMode === 'map' ? '#fff' : '#6b7280'} />
+              <RefreshCw size={20} color={loading ? '#d1d5db' : ACCENT} />
             </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            onPress={() => load()}
-            style={s.refreshBtn}
-            hitSlop={8}
-            disabled={loading}
-          >
-            <RefreshCw size={20} color={loading ? '#d1d5db' : ACCENT} />
-          </TouchableOpacity>
-        </View>
-      </View>
+        }
+      />
 
       {/* ── Summary chips ── */}
       {!loading && orders.length > 0 && (

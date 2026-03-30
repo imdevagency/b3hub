@@ -344,7 +344,7 @@ export default function InvoicesScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer bg="#fff" standalone>
+      <ScreenContainer standalone bg="#fff">
         <ScreenHeader title="Rēķini" />
         <View style={{ padding: 20 }}>
           <SkeletonCard count={4} />
@@ -354,7 +354,7 @@ export default function InvoicesScreen() {
   }
 
   return (
-    <ScreenContainer bg="#fff" standalone>
+    <ScreenContainer standalone bg="#fff">
       <ScreenHeader title="Rēķini" />
       {/* ── Summary ── */}
       <View style={s.summary}>

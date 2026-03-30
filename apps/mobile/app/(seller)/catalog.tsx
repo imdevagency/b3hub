@@ -16,7 +16,16 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useFocusEffect } from 'expo-router';
-import { Plus, Pencil, Trash2, Leaf, PackageSearch, ChevronDown, Check, X } from 'lucide-react-native';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Leaf,
+  PackageSearch,
+  ChevronDown,
+  Check,
+  X,
+} from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { CATEGORY_LABELS, DEFAULT_MATERIAL_NAMES, UNIT_SHORT } from '@/lib/materials';
 import { api } from '@/lib/api';
@@ -82,18 +91,16 @@ function ListingCard({
   const catTheme = CATEGORY_COLOR[material.category] ?? { bg: '#f3f4f6', color: '#6b7280' };
 
   return (
-    <TouchableOpacity 
-      style={s.card} 
-      onPress={() => onEdit(material)}
-      activeOpacity={0.7}
-    >
+    <TouchableOpacity style={s.card} onPress={() => onEdit(material)} activeOpacity={0.7}>
       <View style={[s.iconBox, { backgroundColor: catTheme.bg }]}>
         <PackageSearch size={22} color={catTheme.color} />
       </View>
 
       <View style={s.cardBody}>
         <View style={s.cardRowTop}>
-          <Text style={s.cardName} numberOfLines={1}>{material.name}</Text>
+          <Text style={s.cardName} numberOfLines={1}>
+            {material.name}
+          </Text>
           <Text style={s.cardPrice}>
             €{material.basePrice.toFixed(2)} / {UNIT_SHORT[material.unit]}
           </Text>
@@ -101,12 +108,12 @@ function ListingCard({
 
         <View style={s.cardRowBottom}>
           <Text style={s.cardCategory}>{CATEGORY_LABELS[material.category]}</Text>
-          
+
           <View style={s.metaRight}>
             {material.isRecycled && (
               <View style={s.tagRecycled}>
-                 <Leaf size={10} color="#059669" />
-                 <Text style={s.tagRecycledText}>Rec.</Text>
+                <Leaf size={10} color="#059669" />
+                <Text style={s.tagRecycledText}>Rec.</Text>
               </View>
             )}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -179,16 +186,13 @@ function ListingModal({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={s.modalHeader}>
-          <Text style={s.modalTitle}>
-            {isEditMode ? 'Labot sludinājumu' : 'Jauns sludinājums'}
-          </Text>
+          <Text style={s.modalTitle}>{isEditMode ? 'Labot sludinājumu' : 'Jauns sludinājums'}</Text>
           <TouchableOpacity onPress={onClose} hitSlop={10} style={s.closeBtn}>
             <X size={24} color="#111827" />
           </TouchableOpacity>
         </View>
 
         <ScrollView contentContainerStyle={s.formScroll} keyboardShouldPersistTaps="handled">
-          
           {/* Main Info */}
           <View style={s.formGroup}>
             <Text style={s.label}>Nosaukums</Text>
@@ -202,34 +206,40 @@ function ListingModal({
           </View>
 
           <View style={s.row2}>
-             <View style={{ flex: 1.2 }}>
-               <Text style={s.label}>Kategorija</Text>
-               <TouchableOpacity
-                 style={s.pickerBtn}
-                 onPress={() => setCatSheetOpen(true)}
-                 activeOpacity={0.7}
-               >
-                 <Text style={s.pickerValue} numberOfLines={1}>{CATEGORY_LABELS[form.category]}</Text>
-                 <ChevronDown size={16} color="#6b7280" />
-               </TouchableOpacity>
-             </View>
-             
-             <View style={{ flex: 0.8 }}>
-               <Text style={s.label}>Cena (€)</Text>
-               <TextInput
-                 style={s.input}
-                 placeholder="0.00"
-                 placeholderTextColor="#9ca3af"
-                 value={form.basePrice}
-                 onChangeText={set('basePrice')}
-                 keyboardType="decimal-pad"
-               />
-             </View>
+            <View style={{ flex: 1.2 }}>
+              <Text style={s.label}>Kategorija</Text>
+              <TouchableOpacity
+                style={s.pickerBtn}
+                onPress={() => setCatSheetOpen(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={s.pickerValue} numberOfLines={1}>
+                  {CATEGORY_LABELS[form.category]}
+                </Text>
+                <ChevronDown size={16} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flex: 0.8 }}>
+              <Text style={s.label}>Cena (€)</Text>
+              <TextInput
+                style={s.input}
+                placeholder="0.00"
+                placeholderTextColor="#9ca3af"
+                value={form.basePrice}
+                onChangeText={set('basePrice')}
+                keyboardType="decimal-pad"
+              />
+            </View>
           </View>
 
           <View style={s.formGroup}>
             <Text style={s.label}>Mērvienība</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsScroll}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={s.chipsScroll}
+            >
               {UNITS.map((unit) => (
                 <TouchableOpacity
                   key={unit}
@@ -245,15 +255,15 @@ function ListingModal({
           </View>
 
           <View style={s.formGroup}>
-             <Text style={s.label}>Min. pasūtījums</Text>
-             <TextInput
-               style={s.input}
-               placeholder="—"
-               placeholderTextColor="#9ca3af"
-               value={form.minOrder}
-               onChangeText={set('minOrder')}
-               keyboardType="decimal-pad"
-             />
+            <Text style={s.label}>Min. pasūtījums</Text>
+            <TextInput
+              style={s.input}
+              placeholder="—"
+              placeholderTextColor="#9ca3af"
+              value={form.minOrder}
+              onChangeText={set('minOrder')}
+              keyboardType="decimal-pad"
+            />
           </View>
 
           <View style={s.formGroup}>
@@ -280,7 +290,7 @@ function ListingModal({
               />
             </View>
           </View>
-          
+
           <View style={s.formGroup}>
             <Text style={s.label}>Apraksts</Text>
             <TextInput
@@ -296,21 +306,23 @@ function ListingModal({
 
           {/* Actions */}
           <View style={{ gap: 12, marginTop: 24 }}>
-            <TouchableOpacity 
-              style={[s.saveBtn, !canSave && { opacity: 0.5 }]} 
-              onPress={() => onSave(form)} 
+            <TouchableOpacity
+              style={[s.saveBtn, !canSave && { opacity: 0.5 }]}
+              onPress={() => onSave(form)}
               disabled={!canSave}
               activeOpacity={0.8}
             >
               {saving ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={s.saveBtnText}>{isEditMode ? 'Saglabāt izmaiņas' : 'Izveidot sludinājumu'}</Text>
+                <Text style={s.saveBtnText}>
+                  {isEditMode ? 'Saglabāt izmaiņas' : 'Izveidot sludinājumu'}
+                </Text>
               )}
             </TouchableOpacity>
-            
+
             {isEditMode && initial?.id && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={s.deleteBtn}
                 onPress={() => onDelete(initial.id!)}
                 activeOpacity={0.8}
@@ -319,48 +331,58 @@ function ListingModal({
               </TouchableOpacity>
             )}
           </View>
-
         </ScrollView>
 
         {/* Category picker overlay */}
         {catSheetOpen && (
           <View style={s.overlay}>
-             <TouchableOpacity style={s.overlayBg} activeOpacity={1} onPress={() => setCatSheetOpen(false)} />
-             <View style={s.sheet}>
-               <View style={s.sheetHandle} />
-               <Text style={s.sheetTitle}>Izvēlieties kategoriju</Text>
-               <ScrollView bounces={false} style={{ maxHeight: 400 }}>
-                 {CATEGORIES.map((cat) => (
-                   <TouchableOpacity
-                     key={cat}
-                     style={s.sheetRow}
-                     onPress={() => {
-                       setForm((f) => {
-                         const prevDefault = DEFAULT_MATERIAL_NAMES[f.category] ?? '';
-                         const shouldFill = f.name === '' || f.name === prevDefault;
-                         return {
-                           ...f,
-                           category: cat,
-                           name: shouldFill ? (DEFAULT_MATERIAL_NAMES[cat] ?? f.name) : f.name,
-                         };
-                       });
-                       setCatSheetOpen(false);
-                     }}
-                     activeOpacity={0.7}
-                   >
-                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                        <View style={[s.miniIcon, { backgroundColor: CATEGORY_COLOR[cat]?.bg ?? '#f3f4f6' }]}>
-                           <PackageSearch size={16} color={CATEGORY_COLOR[cat]?.color ?? '#6b7280'} />
-                        </View>
-                        <Text style={[s.sheetRowText, form.category === cat && { fontWeight: '700' }]}>
-                          {CATEGORY_LABELS[cat]}
-                        </Text>
-                     </View>
-                     {form.category === cat && <Check size={18} color="#111827" />}
-                   </TouchableOpacity>
-                 ))}
-               </ScrollView>
-             </View>
+            <TouchableOpacity
+              style={s.overlayBg}
+              activeOpacity={1}
+              onPress={() => setCatSheetOpen(false)}
+            />
+            <View style={s.sheet}>
+              <View style={s.sheetHandle} />
+              <Text style={s.sheetTitle}>Izvēlieties kategoriju</Text>
+              <ScrollView bounces={false} style={{ maxHeight: 400 }}>
+                {CATEGORIES.map((cat) => (
+                  <TouchableOpacity
+                    key={cat}
+                    style={s.sheetRow}
+                    onPress={() => {
+                      setForm((f) => {
+                        const prevDefault = DEFAULT_MATERIAL_NAMES[f.category] ?? '';
+                        const shouldFill = f.name === '' || f.name === prevDefault;
+                        return {
+                          ...f,
+                          category: cat,
+                          name: shouldFill ? (DEFAULT_MATERIAL_NAMES[cat] ?? f.name) : f.name,
+                        };
+                      });
+                      setCatSheetOpen(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <View
+                        style={[
+                          s.miniIcon,
+                          { backgroundColor: CATEGORY_COLOR[cat]?.bg ?? '#f3f4f6' },
+                        ]}
+                      >
+                        <PackageSearch size={16} color={CATEGORY_COLOR[cat]?.color ?? '#6b7280'} />
+                      </View>
+                      <Text
+                        style={[s.sheetRowText, form.category === cat && { fontWeight: '700' }]}
+                      >
+                        {CATEGORY_LABELS[cat]}
+                      </Text>
+                    </View>
+                    {form.category === cat && <Check size={18} color="#111827" />}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
           </View>
         )}
       </KeyboardAvoidingView>
@@ -461,9 +483,8 @@ export default function SellerCatalog() {
 
   return (
     <ScreenContainer bg="white">
-      {/* Header */}
-      <View style={s.header}>
-        <Text style={s.heroTitle}>Mani sludinājumi</Text>
+      {/* Add button */}
+      <View style={{ paddingHorizontal: 16, paddingVertical: 10, alignItems: 'flex-end' }}>
         <TouchableOpacity style={s.addBtn} onPress={openNew} activeOpacity={0.8}>
           <Plus size={20} color="#fff" />
           <Text style={s.addBtnText}>Pievienot</Text>
@@ -472,9 +493,9 @@ export default function SellerCatalog() {
 
       {!loading && materials.length > 0 && (
         <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
-           <View style={s.countChip}>
-              <Text style={s.countChipText}>{materials.length} materiāli</Text>
-           </View>
+          <View style={s.countChip}>
+            <Text style={s.countChipText}>{materials.length} materiāli</Text>
+          </View>
         </View>
       )}
 
@@ -484,7 +505,10 @@ export default function SellerCatalog() {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={[s.list, materials.length === 0 && { flexGrow: 1, justifyContent: 'center' }]}
+          contentContainerStyle={[
+            s.list,
+            materials.length === 0 && { flexGrow: 1, justifyContent: 'center' },
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -494,20 +518,20 @@ export default function SellerCatalog() {
           }
         >
           {materials.length === 0 ? (
-             <View style={s.emptyWrap}>
-               <View style={s.emptyIconWrap}>
-                 <PackageSearch size={32} color="#111827" />
-               </View>
-               <Text style={s.emptyTitle}>Nav sludinājumu</Text>
-               <Text style={s.emptyDesc}>Pievienojiet savu pirmo materiālu, lai saņemtu pirkumus.</Text>
-               <TouchableOpacity style={s.emptyBtn} onPress={openNew} activeOpacity={0.8}>
-                 <Text style={s.emptyBtnText}>Pievienot materiālu</Text>
-               </TouchableOpacity>
+            <View style={s.emptyWrap}>
+              <View style={s.emptyIconWrap}>
+                <PackageSearch size={32} color="#111827" />
+              </View>
+              <Text style={s.emptyTitle}>Nav sludinājumu</Text>
+              <Text style={s.emptyDesc}>
+                Pievienojiet savu pirmo materiālu, lai saņemtu pirkumus.
+              </Text>
+              <TouchableOpacity style={s.emptyBtn} onPress={openNew} activeOpacity={0.8}>
+                <Text style={s.emptyBtnText}>Pievienot materiālu</Text>
+              </TouchableOpacity>
             </View>
           ) : (
-            materials.map((m) => (
-              <ListingCard key={m.id} material={m} onEdit={openEdit} />
-            ))
+            materials.map((m) => <ListingCard key={m.id} material={m} onEdit={openEdit} />)
           )}
         </ScrollView>
       )}
@@ -553,7 +577,7 @@ const s = StyleSheet.create({
     borderRadius: 30,
   },
   addBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 14 },
-  
+
   countChip: {
     backgroundColor: '#f3f4f6',
     borderRadius: 20,
@@ -564,7 +588,7 @@ const s = StyleSheet.create({
   countChipText: { fontSize: 13, fontWeight: '700', color: '#6b7280' },
 
   list: { paddingBottom: 60 },
-  
+
   // Card
   card: {
     flexDirection: 'row',
@@ -577,7 +601,7 @@ const s = StyleSheet.create({
     gap: 16,
   },
   iconBox: {
-    width: 48, 
+    width: 48,
     height: 48,
     borderRadius: 24,
     alignItems: 'center',
@@ -587,10 +611,10 @@ const s = StyleSheet.create({
   cardRowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardName: { fontSize: 16, fontWeight: '700', color: '#111827', flex: 1, paddingRight: 8 },
   cardPrice: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  
+
   cardRowBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardCategory: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
-  
+
   metaRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   tagRecycled: {
     flexDirection: 'row',
@@ -602,7 +626,12 @@ const s = StyleSheet.create({
     borderRadius: 6,
     marginRight: 4,
   },
-  tagRecycledText: { fontSize: 10, fontWeight: '700', color: '#059669', textTransform: 'uppercase' },
+  tagRecycledText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#059669',
+    textTransform: 'uppercase',
+  },
   statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981' },
   statusText: { fontSize: 13, fontWeight: '600', color: '#10b981' },
 
@@ -623,7 +652,13 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 24,
   },
-  emptyTitle: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 8, textAlign: 'center' },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
   emptyDesc: { fontSize: 16, color: '#6b7280', textAlign: 'center', lineHeight: 24 },
   emptyBtn: {
     marginTop: 24,
@@ -651,7 +686,14 @@ const s = StyleSheet.create({
   formScroll: { padding: 20, paddingBottom: 60 },
   formGroup: { marginBottom: 20 },
   row2: { flexDirection: 'row', gap: 16, marginBottom: 20 },
-  label: { fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  label: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#374151',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   input: {
     backgroundColor: '#f9fafb',
     borderRadius: 12,
@@ -672,7 +714,7 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
   },
   pickerValue: { fontSize: 16, color: '#111827', fontWeight: '500', flex: 1 },
-  
+
   chipsScroll: { gap: 8 },
   chip: {
     paddingHorizontal: 16,
@@ -684,7 +726,7 @@ const s = StyleSheet.create({
   chipActive: { backgroundColor: '#111827' },
   chipText: { fontSize: 14, fontWeight: '600', color: '#374151' },
   chipTextActive: { color: '#ffffff' },
-  
+
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -703,7 +745,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   saveBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
-  
+
   deleteBtn: {
     marginTop: 12,
     backgroundColor: '#fef2f2',
@@ -715,12 +757,60 @@ const s = StyleSheet.create({
   deleteBtnText: { color: '#ef4444', fontWeight: '700', fontSize: 16 },
 
   // Picker Sheet
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, justifyContent: 'flex-end' },
-  overlayBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' },
-  sheet: { backgroundColor: '#ffffff', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 40, maxHeight: '80%' },
-  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#e5e7eb', alignSelf: 'center', marginTop: 12 },
-  sheetTitle: { fontSize: 18, fontWeight: '800', color: '#111827', padding: 20, textAlign: 'center' },
-  sheetRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, paddingHorizontal: 24, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 100,
+    justifyContent: 'flex-end',
+  },
+  overlayBg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  sheet: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 40,
+    maxHeight: '80%',
+  },
+  sheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#e5e7eb',
+    alignSelf: 'center',
+    marginTop: 12,
+  },
+  sheetTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#111827',
+    padding: 20,
+    textAlign: 'center',
+  },
+  sheetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
   sheetRowText: { fontSize: 16, color: '#111827' },
-  miniIcon: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  miniIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

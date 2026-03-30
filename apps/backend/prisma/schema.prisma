@@ -262,6 +262,13 @@ enum FrameworkContractStatus {
   CANCELLED
 }
 
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  COMPLETED
+  ON_HOLD
+}
+
 enum FrameworkPositionType {
   MATERIAL_DELIVERY
   WASTE_DISPOSAL
@@ -355,6 +362,7 @@ model User {
   reviews                     Review[]
   sentMessages                ChatMessage[]
   frameworkContracts          FrameworkContract[]
+  projects                    Project[]
   reportedTransportExceptions TransportJobException[] @relation("ExceptionReporter")
   resolvedTransportExceptions TransportJobException[] @relation("ExceptionResolver")
 
@@ -416,6 +424,7 @@ model Company {
   reviews                    Review[]
   frameworkContracts         FrameworkContract[]   @relation("BuyerFrameworkContracts")
   supplierFrameworkContracts FrameworkContract[]   @relation("SupplierFrameworkContracts")
+  projects                   Project[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -529,6 +538,10 @@ model Order {
   notes         String?
   internalNotes String?
 
+  // Project association (optional — retrospective tagging)
+  project   Project? @relation(fields: [projectId], references: [id])
+  projectId String?
+
   // Relations
   items           OrderItem[]
   containerOrders ContainerOrder[]
@@ -539,6 +552,7 @@ model Order {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([projectId])
   @@map("orders")
 }
 
@@ -1375,4 +1389,37 @@ model FrameworkPosition {
   updatedAt DateTime @updatedAt
 
   @@map("framework_positions")
+}
+
+// ── Construction Project Management ──────────────────────────────────────────
+
+model Project {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  clientName  String?       // End client this project is for
+  siteAddress String?       // Construction site address
+
+  // Financials
+  contractValue Float        // Revenue: what their client pays them
+  budgetAmount  Float?       // Optional: material spend cap
+
+  status    ProjectStatus @default(PLANNING)
+  startDate DateTime?
+  endDate   DateTime?
+
+  // Ownership
+  company     Company @relation(fields: [companyId], references: [id])
+  companyId   String
+  createdBy   User    @relation(fields: [createdById], references: [id])
+  createdById String
+
+  // Tagged orders (costs)
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@map("projects")
 }

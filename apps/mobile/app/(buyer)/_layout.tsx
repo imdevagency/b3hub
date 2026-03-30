@@ -35,8 +35,11 @@ export default function BuyerLayout() {
     pathname.includes('/certificates') ||
     pathname.includes('/team') ||
     pathname.includes('/orders') ||
+    pathname.includes('/order') ||
     pathname.includes('/profile') ||
-    pathname.includes('/catalog');
+    pathname.includes('/catalog') ||
+    pathname.includes('/projects') ||
+    pathname.includes('/project');
   const hideTopBar = isHome || isDetailScreen;
 
   useEffect(() => {

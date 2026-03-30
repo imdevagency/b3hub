@@ -16,10 +16,10 @@ import {
   Platform,
   StyleSheet,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, Link } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { StatusBar } from 'expo-status-bar';
-import { ChevronLeft, CheckCircle } from 'lucide-react-native';
+import { ChevronLeft, CheckCircle, Info } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
@@ -46,11 +46,13 @@ export default function ApplyRoleScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const validate = (): boolean => {
     const e: Record<string, string> = {};
     if (companyName.trim().length < 2) e.companyName = 'Ievadiet uzņēmuma nosaukumu';
     if (phone.trim().length < 6) e.phone = 'Ievadiet tālruņa numuru';
+    if (roleType === 'carrier' && !termsAccepted) e.terms = 'Jums jāpiekrīt nosacījumiem';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -207,6 +209,48 @@ export default function ApplyRoleScreen() {
             />
           </View>
 
+          {/* Carrier terms — shown only for carrier applications */}
+          {roleType === 'carrier' && (
+            <View style={s.termsBox}>
+              <View style={s.termsHeader}>
+                <Info size={15} color="#1d4ed8" />
+                <Text style={s.termsTitle}>Nosacījumi pārvadātājiem</Text>
+              </View>
+              <View style={s.termsList}>
+                <Text style={s.termsItem}>
+                  • B3Hub darībojas kā logistics starpnieks — jūsu līgums ir ar platformu, ne
+                  pasūtītāju.
+                </Text>
+                <Text style={s.termsItem}>
+                  • Izmaksa notiek pēc piegādes apstiprināšanas un dokumentu iesniegšanas.
+                </Text>
+                <Text style={s.termsItem}>
+                  • Darba samaksa redzama pirms jebkura darba piemēšanas — nav slēpto atskaiījumu.
+                </Text>
+                <Text style={s.termsItem}>
+                  • Platforma patur logīstikas maržu; jūsu sam. likme tiek nodrošināta līgumiskā
+                  pakalpojuma ietvarošana.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={s.termsCheckRow}
+                onPress={() => {
+                  haptics.light();
+                  setTermsAccepted((v) => !v);
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={[s.checkbox, termsAccepted && s.checkboxActive]}>
+                  {termsAccepted && <CheckCircle size={14} color="#fff" />}
+                </View>
+                <Text style={s.termsCheckLabel}>
+                  Es esmu izlasījis un piekrītu B3Hub pārvadātāja noteikumiem
+                </Text>
+              </TouchableOpacity>
+              {errors.terms && <Text style={s.err}>{errors.terms}</Text>}
+            </View>
+          )}
+
           {errors.submit && (
             <View style={s.apiErrBox}>
               <Text style={s.apiErrText}>{errors.submit}</Text>
@@ -296,6 +340,63 @@ const s = StyleSheet.create({
     borderTopColor: '#f3f4f6',
     backgroundColor: '#fff',
   },
+  // Carrier terms box
+  termsBox: {
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
+  },
+  termsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginBottom: 10,
+  },
+  termsTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1d4ed8',
+  },
+  termsList: {
+    gap: 6,
+    marginBottom: 14,
+  },
+  termsItem: {
+    fontSize: 13,
+    color: '#1e40af',
+    lineHeight: 19,
+  },
+  termsCheckRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#93c5fd',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    marginTop: 1,
+  },
+  checkboxActive: {
+    backgroundColor: '#1d4ed8',
+    borderColor: '#1d4ed8',
+  },
+  termsCheckLabel: {
+    flex: 1,
+    fontSize: 13,
+    color: '#1e40af',
+    lineHeight: 19,
+    fontWeight: '500',
+  },
+
   submitBtn: {
     borderRadius: 999,
     paddingVertical: 17,

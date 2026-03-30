@@ -349,11 +349,11 @@ export default function FrameworkContractsScreen() {
   };
 
   return (
-    <ScreenContainer bg="white" standalone>
+    <ScreenContainer standalone bg="white">
       <Stack.Screen options={{ headerShown: false }} />
       {/* Detail Screen Header */}
       <ScreenHeader
-        title="Projekti"
+        title="Rāmjlīgumi"
         rightAction={
           <TouchableOpacity
             onPress={() => {

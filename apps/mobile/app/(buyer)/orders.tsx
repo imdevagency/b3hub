@@ -127,7 +127,7 @@ export default function OrdersScreen() {
         contentInsetAdjustmentBehavior="never"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
         ListEmptyComponent={
-          loading ? (
+          loading && !refreshing && filter === 'ALL' ? (
             <View style={{ gap: 16 }}>
               <SkeletonCard count={3} />
             </View>

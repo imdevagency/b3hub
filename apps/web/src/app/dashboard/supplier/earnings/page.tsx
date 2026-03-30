@@ -10,6 +10,7 @@ import { getMyOrders, type ApiOrder, setupPayouts } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
+  AlertCircle,
   Banknote,
   TrendingUp,
   Clock,
@@ -172,11 +173,26 @@ const PERIOD_REVENUE: Record<Period, keyof RevenueStats> = {
 
 const STATUS_CONFIG: Record<
   string,
-  { label: string; variant: 'default' | 'secondary' | 'outline' }
+  { label: string; variant: 'default' | 'secondary' | 'outline'; className: string }
 > = {
-  delivered: { label: 'Piegādāts', variant: 'default' },
-  confirmed: { label: 'Apstiprināts', variant: 'secondary' },
-  pending: { label: 'Gaida', variant: 'outline' },
+  delivered: {
+    label: 'Piegādāts',
+    variant: 'default',
+    className:
+      'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-900/50',
+  },
+  confirmed: {
+    label: 'Apstiprināts',
+    variant: 'secondary',
+    className:
+      'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/50',
+  },
+  pending: {
+    label: 'Gaida',
+    variant: 'outline',
+    className:
+      'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50',
+  },
 };
 
 // ── sub-components ────────────────────────────────────────────────────────────
@@ -305,7 +321,7 @@ export default function SupplierEarningsPage() {
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`pb-2 text-sm font-medium transition-all relative -mb-[9px] ${
+              className={`pb-2 text-sm font-medium transition-all relative -mb-2.25 ${
                 period === p
                   ? 'text-foreground border-b-2 border-foreground'
                   : 'text-muted-foreground hover:text-foreground'
@@ -367,7 +383,7 @@ export default function SupplierEarningsPage() {
                 <div key={bar.label} className="flex-1 flex flex-col items-center gap-2 group">
                   <div className="w-full flex items-end justify-center" style={{ height: 100 }}>
                     <div
-                      className={`w-full max-w-[40px] rounded-[3px] transition-all duration-300 ${bar.isToday ? 'bg-foreground' : 'bg-muted group-hover:bg-muted-foreground/30'}`}
+                      className={`w-full max-w-10 rounded-sm transition-all duration-300 ${bar.isToday ? 'bg-foreground' : 'bg-muted group-hover:bg-muted-foreground/30'}`}
                       style={{ height: `${Math.max(heightPct, bar.amount > 0 ? 4 : 1)}%` }}
                       title={euro(bar.amount)}
                     />

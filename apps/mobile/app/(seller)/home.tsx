@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { Inbox, LayoutGrid, FileText, Wallet, Bell, ArrowRight } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 
@@ -42,6 +43,7 @@ export default function SellerHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [pendingCount, setPendingCount] = useState<number | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -54,6 +56,10 @@ export default function SellerHomeScreen() {
           ).length;
           setPendingCount(pending);
         })
+        .catch(() => {});
+      api.notifications
+        .unreadCount(token)
+        .then((res) => setUnreadCount(res.count))
         .catch(() => {});
     }, [token]),
   );
@@ -104,6 +110,21 @@ export default function SellerHomeScreen() {
           }}
         >
           <Bell size={22} color="#111827" />
+          {unreadCount > 0 && (
+            <View
+              style={{
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                width: 9,
+                height: 9,
+                borderRadius: 5,
+                backgroundColor: '#ef4444',
+                borderWidth: 2,
+                borderColor: '#ffffff',
+              }}
+            />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -288,7 +309,7 @@ export default function SellerHomeScreen() {
                 </>
               )
             ) : (
-              <View style={{ flex: 1 }} />
+              <SkeletonCard count={2} />
             )}
           </TouchableOpacity>
         </View>

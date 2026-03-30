@@ -18,6 +18,7 @@ import {
   Alert,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useFocusEffect } from 'expo-router';
 import {
   FileText,
@@ -419,10 +420,8 @@ export default function SellerQuotesScreen() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <ScreenContainer bg="white">
-      <View style={styles.header}>
-        <Text style={styles.heroTitle}>{sq.title}</Text>
-      </View>
+    <ScreenContainer standalone bg="white">
+      <ScreenHeader title={sq.title} />
 
       {!loading && requests.length > 0 && (
         <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>

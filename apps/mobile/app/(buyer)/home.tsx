@@ -116,6 +116,7 @@ export default function HomeScreen() {
   const [skipOrders, setSkipOrders] = useState<SkipHireOrder[]>([]);
   const [transportOrders, setTransportOrders] = useState<ApiTransportJob[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -146,6 +147,7 @@ export default function HomeScreen() {
         setOrders(mats as ApiOrder[]);
         setSkipOrders(skips as SkipHireOrder[]);
         setTransportOrders(reqs as ApiTransportJob[]);
+        setLoading(false);
       });
       api.notifications
         .unreadCount(token)
@@ -217,10 +219,36 @@ export default function HomeScreen() {
           date: o.createdAt,
         }),
       );
-    // Add skips and transport similarly... skipping for brevity
+    skipOrders
+      .filter((o) => !SKIP_ACTIVE_STATUSES.has(o.status))
+      .forEach((o) =>
+        items.push({
+          id: o.id,
+          num: `#${o.orderNumber}`,
+          sub: o.location ?? '—',
+          status: o.status === 'COMPLETED' ? 'Pabeigts' : o.status,
+          kind: 'skip',
+          date: o.createdAt,
+        }),
+      );
+    transportOrders
+      .filter((o) => !TJ_ACTIVE_STATUSES.has(o.status))
+      .forEach((o) =>
+        items.push({
+          id: o.id,
+          num: `#${o.jobNumber}`,
+          sub: o.deliveryCity ?? '—',
+          status: o.status === 'DELIVERED' ? 'Piegādāts' : o.status,
+          kind: 'transport',
+          date: o.pickupDate,
+        }),
+      );
+    items.sort((a, b) => new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime());
     return items.slice(0, 5);
   };
   const recentOrders = getRecentItems();
+
+  const isNewUser = recentOrders.length === 0 && activeCount === 0;
 
   const navToActive = () => {
     if (!activeItem) return;
@@ -359,8 +387,55 @@ export default function HomeScreen() {
                 <ChevronRight size={16} color="#d1d5db" />
               </TouchableOpacity>
             ))
+          ) : loading ? (
+            <View style={{ gap: 10, padding: 4 }}>
+              {[1, 2, 3].map((i) => (
+                <View
+                  key={i}
+                  style={{
+                    height: 52,
+                    backgroundColor: '#f3f4f6',
+                    borderRadius: 10,
+                    opacity: 1 - i * 0.15,
+                  }}
+                />
+              ))}
+            </View>
+          ) : isNewUser ? (
+            <View style={s.onboardingCard}>
+              <View style={s.onboardingIconRow}>
+                <View style={[s.onboardingIconBubble, { backgroundColor: '#eff6ff' }]}>
+                  <HardHat size={22} color="#3b82f6" />
+                </View>
+                <View style={[s.onboardingIconBubble, { backgroundColor: '#fef3c7' }]}>
+                  <Package size={22} color="#f59e0b" />
+                </View>
+                <View style={[s.onboardingIconBubble, { backgroundColor: '#fef2f2' }]}>
+                  <Trash2 size={22} color="#ef4444" />
+                </View>
+                <View style={[s.onboardingIconBubble, { backgroundColor: '#ecfdf5' }]}>
+                  <Truck size={22} color="#10b981" />
+                </View>
+              </View>
+              <Text style={s.onboardingTitle}>Sveicināti B3Hub!</Text>
+              <Text style={s.onboardingSubtitle}>
+                Pasūtiet celtniecības materiālus, konteinerus, transportu vai atkritumu izvešanu —
+                viss vienā vietā.
+              </Text>
+              <TouchableOpacity
+                style={s.onboardingBtn}
+                onPress={() => {
+                  haptics.light();
+                  router.push('/(buyer)/catalog' as any);
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={s.onboardingBtnText}>Atvērt katalogu</Text>
+                <ChevronRight size={18} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
           ) : (
-            <Text style={s.emptyRecent}>Nav nesenu pasūtījumu</Text>
+            <Text style={s.emptyRecent}>Pabeigti pasūtījumi parādīsies šeit</Text>
           )}
         </ScrollView>
       </View>
@@ -545,5 +620,57 @@ const s = StyleSheet.create({
     color: '#9ca3af',
     marginTop: 20,
     fontSize: 14,
+  },
+
+  // Onboarding card
+  onboardingCard: {
+    marginHorizontal: 20,
+    marginTop: 8,
+    backgroundColor: '#f9fafb',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  onboardingIconRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  onboardingIconBubble: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  onboardingTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  onboardingSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 21,
+    marginBottom: 20,
+  },
+  onboardingBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    gap: 6,
+  },
+  onboardingBtnText: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 15,
   },
 });

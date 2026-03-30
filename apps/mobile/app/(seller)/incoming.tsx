@@ -14,7 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
@@ -314,6 +314,7 @@ function OrderCard({
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function IncomingScreen() {
   const { token } = useAuth();
+  const router = useRouter();
   const toast = useToast();
   const [orders, setOrders] = useState<IncomingOrder[]>([]);
   const [fetching, setFetching] = useState(true);
@@ -434,10 +435,6 @@ export default function IncomingScreen() {
 
   return (
     <ScreenContainer bg="white">
-      <View style={styles.header}>
-        <Text style={styles.heroTitle}>Ienākošie</Text>
-      </View>
-
       {/* Filter Tabs */}
       {orders.length > 0 && (
         <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
@@ -508,6 +505,15 @@ export default function IncomingScreen() {
                 ? 'Šobrīd nav neviena aktīva pasūtījuma.'
                 : 'Šajā kategorijā pašlaik nav neviena pasūtījuma.'}
             </Text>
+            {orders.length === 0 && (
+              <TouchableOpacity
+                style={styles.emptyCta}
+                onPress={() => router.push('/(seller)/catalog' as any)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.emptyCtaText}>Pārbaudīt katalogu →</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           visibleOrders.map((order) => (
@@ -649,6 +655,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emptyDesc: { fontSize: 16, color: '#6b7280', textAlign: 'center', lineHeight: 24 },
+  emptyCta: {
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    backgroundColor: '#111827',
+    borderRadius: 12,
+  },
+  emptyCtaText: { fontSize: 15, fontWeight: '600', color: '#ffffff' },
 });
 
 const modalStyles = StyleSheet.create({

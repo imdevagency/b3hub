@@ -257,7 +257,7 @@ export default function TransportJobDetailScreen() {
   };
 
   return (
-    <ScreenContainer standalone topInset={0} bg="#f9fafb">
+    <ScreenContainer topInset={0} bg="#f9fafb">
       {/* ── MAP SECTION ── */}
       <View style={{ height: MAP_H, backgroundColor: '#e5e7eb' }}>
         <BaseMap

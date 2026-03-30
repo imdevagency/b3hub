@@ -17,7 +17,8 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Plus, Pencil, Trash2, Truck, ChevronRight } from 'lucide-react-native';
+import { Plus, Pencil, Trash2, Truck, ChevronRight } from 'lucide-react-native';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -372,29 +373,22 @@ export default function VehiclesScreen() {
   };
 
   return (
-    <ScreenContainer bg="#ffffff" standalone>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-          <ArrowLeft size={24} color="#111827" />
-        </TouchableOpacity>
-
-        <Text style={s.headerTitle} numberOfLines={1}>
-          Mani transporti
-        </Text>
-
-        {!isReadOnly ? (
-          <TouchableOpacity
-            style={s.addBtn}
-            onPress={() => openModal()}
-            activeOpacity={0.8}
-            hitSlop={8}
-          >
-            <Plus size={20} color="#fff" />
-          </TouchableOpacity>
-        ) : (
-          <View style={{ width: 36 }} />
-        )}
-      </View>
+    <ScreenContainer standalone bg="#ffffff">
+      <ScreenHeader
+        title="Mani transporti"
+        rightAction={
+          !isReadOnly ? (
+            <TouchableOpacity
+              style={s.addBtn}
+              onPress={() => openModal()}
+              activeOpacity={0.8}
+              hitSlop={8}
+            >
+              <Plus size={20} color="#fff" />
+            </TouchableOpacity>
+          ) : undefined
+        }
+      />
 
       <FlatList
         data={vehicles}

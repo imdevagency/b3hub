@@ -166,7 +166,7 @@ export default function CertificatesScreen() {
   const pending = records.filter((r) => !r.certificateUrl);
 
   return (
-    <ScreenContainer bg="#f2f2f7" standalone>
+    <ScreenContainer standalone bg="#f2f2f7">
       <ScreenHeader title="Sertifikāti" />
 
       {loading ? (

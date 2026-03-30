@@ -31,5 +31,22 @@ export const paymentsApi = {
       headers: { Authorization: `Bearer ${token}` },
     });
   },
+
+  /**
+   * Buyer reports an issue with a delivered order.
+   * Flags the order for admin review and sends admin notifications.
+   */
+  reportDispute: async (
+    orderId: string,
+    reason: string,
+    details: string | undefined,
+    token: string,
+  ): Promise<{ ok: boolean; message: string }> => {
+    return apiFetch(`payments/dispute/${orderId}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason, details }),
+    });
+  },
 };
 

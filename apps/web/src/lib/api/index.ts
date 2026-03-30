@@ -24,4 +24,5 @@ export * from './recycling-centers';
 export * from './framework-contracts';
 export * from './containers';
 export * from './payments';
+export * from './projects';
 

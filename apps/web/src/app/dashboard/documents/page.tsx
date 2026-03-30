@@ -231,7 +231,7 @@ export default function DocumentsPage() {
   }).length;
 
   return (
-    <div className="w-full h-full pb-20 space-y-10 max-w-6xl mx-auto">
+    <div className="w-full h-full pb-20 space-y-10">
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-4 border-b border-border/40">
         <div>

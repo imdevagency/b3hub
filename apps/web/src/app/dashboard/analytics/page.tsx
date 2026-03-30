@@ -59,7 +59,7 @@ function MonthlyChart({ data, label }: { data: MonthlyValue[]; label: string }) 
             <div key={d.month} className="flex flex-col items-center gap-2 flex-1 group">
               <div className="w-full flex items-end justify-center h-full relative">
                 <div
-                  className={`w-full max-w-[32px] transition-all rounded-t-sm ${
+                  className={`w-full max-w-8 transition-all rounded-t-sm ${
                     isLatest
                       ? 'bg-foreground'
                       : 'bg-muted-foreground/20 group-hover:bg-muted-foreground/40'

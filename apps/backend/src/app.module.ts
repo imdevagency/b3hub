@@ -37,6 +37,7 @@ import { CompanyMembersModule } from './company-members/company-members.module';
 import { MapsModule } from './maps/maps.module';
 import { PaymentsModule } from './payments/payments.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { ProjectsModule } from './projects/projects.module';
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     MapsModule,
     PaymentsModule,
     AnalyticsModule,
+    ProjectsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -150,8 +150,8 @@ export default function SkipOrderDetailScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer bg="#f9fafb">
-        <ScreenHeader title="" />
+      <ScreenContainer standalone bg="#f4f5f7">
+        <ScreenHeader title="Skip noma" />
         <SkeletonDetail />
       </ScreenContainer>
     );
@@ -192,7 +192,7 @@ export default function SkipOrderDetailScreen() {
   };
 
   return (
-    <ScreenContainer bg="#f9fafb">
+    <ScreenContainer standalone bg="#f4f5f7">
       {/* ── Header ── */}
       <ScreenHeader
         title={`#${order.orderNumber}`}
