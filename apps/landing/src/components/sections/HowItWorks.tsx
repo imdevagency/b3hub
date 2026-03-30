@@ -6,8 +6,6 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001';
 const roles = [
   {
     icon: ShoppingCart,
-    color: 'bg-blue-50',
-    iconColor: 'text-blue-600',
     title: 'Pircējs',
     tagline: 'Celtniecības uzņēmumi un privātpersonas',
     steps: [
@@ -20,8 +18,6 @@ const roles = [
   },
   {
     icon: Package,
-    color: 'bg-red-50',
-    iconColor: 'text-primary',
     title: 'Pārdevējs',
     tagline: 'Karjeru un izgāztuvju operatori',
     steps: [
@@ -35,8 +31,6 @@ const roles = [
   },
   {
     icon: Truck,
-    color: 'bg-green-50',
-    iconColor: 'text-green-600',
     title: 'Pārvadātājs',
     tagline: 'Kravas transporta uzņēmumi un šoferi',
     steps: [
@@ -51,17 +45,14 @@ const roles = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="bg-white py-24 sm:py-32">
+    <section id="how-it-works" className="bg-white py-32 sm:py-40 border-t border-gray-200">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center mb-16">
-          <h2 className="text-base font-semibold leading-7 text-primary uppercase tracking-wide">
-            Kā tas darbojas
-          </h2>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            Viena platforma — trīs lomas
+        <div className="mx-auto max-w-2xl text-center mb-24">
+          <p className="mt-2 text-4xl font-bold tracking-tighter text-black sm:text-5xl">
+            Viena platforma. Trīs lomas.
           </p>
-          <p className="mt-4 text-lg text-gray-600">
-            Neatkarīgi no jūsu lomas B3Hub nodrošina visu, kas nepieciešams efektīvai darbībai.
+          <p className="mt-6 text-lg text-gray-500">
+            Neatkarīgi no jūsu lomas B3Hub nodrošina visu nepieciešamo vienotā sistēmā.
           </p>
         </div>
 
@@ -69,49 +60,61 @@ export function HowItWorks() {
           {roles.map((role) => (
             <div
               key={role.title}
-              className={`relative rounded-2xl border p-8 flex flex-col ${
+              className={`relative border p-8 flex flex-col ${
                 role.featured
-                  ? 'border-red-200 shadow-lg ring-1 ring-red-100'
-                  : 'border-gray-200 shadow-sm'
+                  ? 'border-black bg-black text-white'
+                  : 'border-gray-200 bg-white text-black'
               }`}
             >
               {role.featured && (
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                  <span className="rounded-full bg-primary px-4 py-1 text-xs font-bold text-white shadow">
-                    Populārākais
+                  <span className="bg-white px-3 py-1 text-xs font-bold tracking-widest text-black border border-black uppercase">
+                    Piegādātājiem
                   </span>
                 </div>
               )}
 
-              <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center gap-4 mb-8">
                 <div
-                  className={`w-12 h-12 rounded-xl ${role.color} flex items-center justify-center`}
+                  className={`w-12 h-12 flex items-center justify-center border ${
+                    role.featured ? 'border-white/20' : 'border-gray-200'
+                  }`}
                 >
-                  <role.icon className={`h-6 w-6 ${role.iconColor}`} />
+                  <role.icon className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-gray-900">{role.title}</p>
-                  <p className="text-sm text-gray-500">{role.tagline}</p>
+                  <p className="text-xl font-bold">{role.title}</p>
+                  <p className={`text-sm ${role.featured ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {role.tagline}
+                  </p>
                 </div>
               </div>
 
-              <ol className="space-y-3 flex-1 mb-8">
+              <ol className="space-y-4 flex-1 mb-10">
                 {role.steps.map((step, i) => (
                   <li key={i} className="flex items-start gap-3">
-                    <span className="shrink-0 w-5 h-5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold flex items-center justify-center mt-0.5">
+                    <span
+                      className={`shrink-0 w-6 h-6 text-xs font-bold flex items-center justify-center border ${
+                        role.featured ? 'border-white/20 text-white' : 'border-gray-200 text-black'
+                      }`}
+                    >
                       {i + 1}
                     </span>
-                    <span className="text-sm text-gray-600">{step}</span>
+                    <span
+                      className={`text-sm pt-0.5 ${role.featured ? 'text-gray-300' : 'text-gray-600'}`}
+                    >
+                      {step}
+                    </span>
                   </li>
                 ))}
               </ol>
 
               <Link
                 href={role.cta.href}
-                className={`block w-full text-center rounded-xl px-5 py-3 text-sm font-semibold transition-colors ${
+                className={`block w-full text-center px-5 py-3 text-sm font-medium transition-colors border ${
                   role.featured
-                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                    : 'border border-gray-300 text-gray-700 hover:border-primary/50 hover:text-primary'
+                    ? 'bg-white text-black hover:bg-gray-100'
+                    : 'bg-black text-white hover:bg-gray-800'
                 }`}
               >
                 {role.cta.label}

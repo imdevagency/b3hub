@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { CalendarDays, Clock, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { getAllPosts } from '@/lib/blog';
@@ -17,59 +17,58 @@ export default function BlogPage() {
   return (
     <>
       <Navbar />
-      <main>
-        <section className="bg-gray-50 py-24 sm:py-32">
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <div className="mx-auto max-w-2xl text-center mb-16">
-              <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-                B3Hub Blogs
-              </h1>
-              <p className="mt-6 text-lg leading-8 text-gray-600">
-                Nozares padomi, loģistikas ieskati un jaunumi no celtniecības platformas komandas.
-              </p>
-            </div>
+      <main className="bg-background w-full min-h-screen">
+        <section className="pt-32 pb-24 md:pt-48 md:pb-32 px-6 lg:px-12 max-w-7xl mx-auto">
+          <div className="max-w-3xl mb-24">
+            <h1 className="text-6xl md:text-8xl font-medium tracking-tighter text-foreground mb-6 leading-[0.9]">
+              Vēstis & <br /> Ieskati.
+            </h1>
+            <p className="text-xl md:text-2xl text-muted-foreground font-light tracking-tight max-w-lg">
+              Celtniecības loģistika, platformas jaunumi un viedokļi no B3Hub komandas.
+            </p>
+          </div>
 
-            <div className="mx-auto max-w-4xl space-y-8">
-              {posts.map((post) => (
-                <article
-                  key={post.slug}
-                  className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
-                    <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-primary">
-                      {post.category}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <CalendarDays className="h-4 w-4" />
-                      {new Date(post.date).toLocaleDateString('lv-LV', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      {post.readingTime} min lasīšana
-                    </span>
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-3">
-                    <Link
-                      href={`/blog/${post.slug}`}
-                      className="hover:text-primary transition-colors"
-                    >
+          <div className="flex flex-col border-t border-border">
+            {posts.map((post) => (
+              <article
+                key={post.slug}
+                className="relative group border-b border-border py-12 flex flex-col md:flex-row gap-4 md:gap-12 items-start hover:bg-muted/30 transition-colors -mx-6 px-6 lg:-mx-12 lg:px-12"
+              >
+                {/* Meta column */}
+                <div className="md:w-1/4 flex md:flex-col items-center md:items-start gap-3 md:gap-2 text-muted-foreground md:pt-2">
+                  <span className="text-sm font-bold tracking-widest uppercase text-foreground">
+                    {post.category}
+                  </span>
+                  <span className="hidden md:block w-4 h-[1px] bg-border my-1" />
+                  <span className="text-sm font-light">
+                    {new Date(post.date).toLocaleDateString('lv-LV', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                    })}
+                  </span>
+                  <span className="text-sm font-light before:content-['•'] before:mr-3 md:before:hidden">
+                    {post.readingTime} min
+                  </span>
+                </div>
+
+                {/* Content column */}
+                <div className="md:w-3/4 flex flex-col gap-4">
+                  <h2 className="text-3xl md:text-4xl font-medium tracking-tight text-foreground transition-colors">
+                    <Link href={`/blog/${post.slug}`} className="focus:outline-none">
+                      <span className="absolute inset-0 z-10" aria-hidden="true" />
                       {post.title}
                     </Link>
                   </h2>
-                  <p className="text-gray-600 leading-7">{post.excerpt}</p>
-                  <Link
-                    href={`/blog/${post.slug}`}
-                    className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:gap-2 transition-all"
-                  >
-                    Lasīt vairāk <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </article>
-              ))}
-            </div>
+                  <p className="text-lg text-muted-foreground font-light leading-relaxed max-w-2xl">
+                    {post.excerpt}
+                  </p>
+                  <div className="flex items-center text-primary font-medium mt-2 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                    Lasīt vairāk <ArrowRight className="ml-2 w-5 h-5" />
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
         </section>
       </main>

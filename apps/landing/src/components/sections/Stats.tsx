@@ -7,24 +7,26 @@ const stats = [
 
 export function Stats() {
   return (
-    <section className="bg-gray-50 py-24 sm:py-32">
+    <section className="bg-black py-32 sm:py-40">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl lg:max-w-none">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-              Uzticami Uzņēmumiem Visā Latvijā
+          <div className="text-center mb-24">
+            <h2 className="text-4xl font-bold tracking-tighter text-white sm:text-5xl">
+              Cipari runā paši par sevi.
             </h2>
-            <p className="mt-4 text-lg leading-8 text-gray-600">
-              Pievienojieties uzņēmumiem, kas jau izmanto B3Hub, lai optimizētu savu darbību
+            <p className="mt-6 text-lg text-white/50">
+              Pievienojieties uzņēmumiem, kas jau izmanto B3Hub infrastruktūru.
             </p>
           </div>
-          <dl className="mt-16 grid grid-cols-1 gap-0.5 overflow-hidden rounded-2xl text-center sm:grid-cols-2 lg:grid-cols-4">
+          <dl className="grid grid-cols-1 gap-px bg-white/10 border border-white/10 sm:grid-cols-2 lg:grid-cols-4">
             {stats.map((stat) => (
-              <div key={stat.id} className="flex flex-col bg-white p-8">
-                <dt className="text-sm font-semibold leading-6 text-gray-600">{stat.name}</dt>
-                <dd className="order-first text-3xl font-semibold tracking-tight text-primary">
+              <div key={stat.id} className="flex flex-col bg-black p-12 text-center">
+                <dd className="text-5xl font-bold tracking-tighter text-white mb-4">
                   {stat.value}
                 </dd>
+                <dt className="text-sm font-medium tracking-widest uppercase text-white/40">
+                  {stat.name}
+                </dt>
               </div>
             ))}
           </dl>

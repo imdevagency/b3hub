@@ -26,42 +26,44 @@ const features = [
   },
   {
     name: 'Drošs un Uzticams',
-    description: 'Uzņēmuma līmeņa drošība ar šifrētu datu glabāšanu un divpakāpju autentifikāciju.',
+    description: 'Uzņēmuma līmeņa drošība ar šifrētu datu glabāšanu un uzlabotu arhitektūru.',
     icon: Shield,
   },
   {
     name: 'Zibens Ātrs',
     description:
-      'Izveidots ar modernajām tehnoloģijām optimālai veiktspējai tīmekļa un mobilajās platformās.',
+      'Piekļuve sistēmai reāllaikā — gan no biroja, gan no būvlaukuma izmantojot mobilo lietotni.',
     icon: Zap,
   },
 ];
 
 export function Features() {
   return (
-    <section id="features" className="bg-white py-24 sm:py-32">
+    <section id="features" className="bg-gray-50 py-32 sm:py-40 border-t border-gray-200">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-base font-semibold leading-7 text-primary">Viss, kas nepieciešams</h2>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            Jaudīgas Funkcijas Moderniem Uzņēmumiem
+        <div className="mx-auto max-w-2xl text-center mb-24">
+          <p className="mt-2 text-4xl font-bold tracking-tighter text-black sm:text-5xl">
+            Viss, kas nepieciešams.
           </p>
-          <p className="mt-6 text-lg leading-8 text-gray-600">
-            B3Hub nodrošina visus rīkus, kas nepieciešami efektīvai materiālu un pasūtījumu
-            pārvaldībai.
+          <p className="mt-6 text-lg text-gray-500">
+            Platforma, kas automatizē, seko un dokumentē. Sistēma radīta profesionāļiem.
           </p>
         </div>
-        <div className="mx-auto mt-16 max-w-7xl sm:mt-20 lg:mt-24">
-          <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-10 lg:max-w-none lg:grid-cols-3 lg:gap-y-16">
+        <div className="mx-auto mt-16 max-w-7xl">
+          <dl className="grid grid-cols-1 gap-px bg-gray-200 border border-gray-200 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => (
-              <div key={feature.name} className="relative pl-16">
-                <dt className="text-base font-semibold leading-7 text-gray-900">
-                  <div className="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                    <feature.icon className="h-6 w-6 text-white" aria-hidden="true" />
+              <div key={feature.name} className="bg-white p-10 hover:bg-gray-50 transition-colors">
+                <dt className="text-lg font-bold text-black mb-4">
+                  <div className="mb-6 flex h-12 w-12 items-center justify-center border border-gray-200">
+                    <feature.icon
+                      className="h-5 w-5 text-black"
+                      aria-hidden="true"
+                      strokeWidth={1.5}
+                    />
                   </div>
                   {feature.name}
                 </dt>
-                <dd className="mt-2 text-base leading-7 text-gray-600">{feature.description}</dd>
+                <dd className="text-sm leading-relaxed text-gray-500">{feature.description}</dd>
               </div>
             ))}
           </dl>

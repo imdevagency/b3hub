@@ -6,8 +6,6 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001';
 const services = [
   {
     icon: Shovel,
-    color: 'bg-amber-50',
-    iconColor: 'text-amber-600',
     title: 'Zemes darbi',
     description:
       'Izrakšana, uzbērumi, planēšana un pamatbedru sagatavošana. Aprīkojums un pieredzējusi brigāde.',
@@ -15,17 +13,13 @@ const services = [
   },
   {
     icon: Hammer,
-    color: 'bg-red-50',
-    iconColor: 'text-primary',
     title: 'Nojaukšana',
     description:
-      'Ēku, sienu un konstrukciju nojaukšana ar mehānizētu aprīkojumu. Atkritumi tiek utilizēti caur B3Hub platformu.',
+      'Ēku, sienu un konstrukciju nojaukšana ar mehānizētu aprīkojumu. Atkritumi tiek utilizēti caur platformu.',
     examples: ['Ēku nojaukšana', 'Sienu demontāža', 'Betona laušana', 'Atkritumu izvešana'],
   },
   {
     icon: HardHat,
-    color: 'bg-stone-100',
-    iconColor: 'text-stone-600',
     title: 'Iebrauktuves un laukumi',
     description:
       'Iebrauktuvju, autostāvvietu un pagalmu ierīkošana ar dolomītu, betonu vai asfalta segumu.',
@@ -33,8 +27,6 @@ const services = [
   },
   {
     icon: Waves,
-    color: 'bg-blue-50',
-    iconColor: 'text-blue-600',
     title: 'Drenāža un komunikācijas',
     description:
       'Lietus ūdens drenāžas sistēmas, pagalmu noteku ierīkošana un inženierkomunikāciju tranšejas.',
@@ -42,8 +34,6 @@ const services = [
   },
   {
     icon: TreePine,
-    color: 'bg-green-50',
-    iconColor: 'text-green-600',
     title: 'Labiekārtošana',
     description:
       'Reljefa veidošana, augsnes piegāde un kultivēšana, apzaļumošanas darbi un dārzu ierīkošana.',
@@ -51,54 +41,49 @@ const services = [
   },
   {
     icon: Shovel,
-    color: 'bg-orange-50',
-    iconColor: 'text-orange-600',
     title: 'Atkritumu utilizācija',
     description:
-      'Celtniecības atkritumu savākšana un nogāde uz B3 laukumu vai sertificētu pārstrādes centru. Apliecība automātiski.',
+      'Celtniecības atkritumu savākšana un nogāde uz pārstrādes centru. Apliecība automātiski.',
     examples: ['Betona atkritumi', 'Grunts utilizācija', 'Gruveši', 'Jumta materiāli'],
   },
 ];
 
 export function ConstructionServices() {
   return (
-    <section id="construction-services" className="bg-gray-50 py-24 sm:py-32">
+    <section
+      id="construction-services"
+      className="bg-white border-t border-gray-200 py-32 sm:py-40"
+    >
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         {/* Header */}
-        <div className="mx-auto max-w-2xl text-center mb-16">
-          <h2 className="text-base font-semibold leading-7 text-primary uppercase tracking-wide">
-            Celtniecības pakalpojumi
-          </h2>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            No digitālā — līdz fiziskam rezultātam
+        <div className="mx-auto max-w-2xl text-center mb-24">
+          <p className="mt-2 text-4xl font-bold tracking-tighter text-black sm:text-5xl">
+            Celtniecības pakalpojumi.
           </p>
-          <p className="mt-6 text-lg leading-8 text-gray-600">
-            B3Hub ne tikai koordinē piegādes. Mūsu komanda izpilda zemes darbus, nojaukšanu un
-            labiekārtošanu — visi darbi noformēti un dokumentēti caur platformu.
+          <p className="mt-6 text-lg text-gray-500">
+            Fiziska izpilde, ko atbalsta digitāla platforma. No nojaukšanas līdz labiekārtošanai.
           </p>
         </div>
 
         {/* Service grid */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-px bg-gray-200 border border-gray-200 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((s) => (
             <div
               key={s.title}
-              className="rounded-2xl bg-white border border-gray-200 p-8 shadow-sm hover:shadow-md transition-shadow flex flex-col"
+              className="bg-white p-8 flex flex-col hover:bg-gray-50 transition-colors"
             >
-              <div
-                className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${s.color} mb-5`}
-              >
-                <s.icon className={`h-6 w-6 ${s.iconColor}`} />
+              <div className="mb-8">
+                <s.icon className="h-6 w-6 text-black" strokeWidth={1.5} />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">{s.title}</h3>
-              <p className="text-sm leading-7 text-gray-600 flex-1">{s.description}</p>
+              <h3 className="text-lg font-bold text-black mb-3">{s.title}</h3>
+              <p className="text-sm leading-relaxed text-gray-500 flex-1">{s.description}</p>
 
               {/* Tag list */}
-              <div className="mt-5 flex flex-wrap gap-2">
+              <div className="mt-8 flex flex-wrap gap-2">
                 {s.examples.map((ex) => (
                   <span
                     key={ex}
-                    className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600"
+                    className="border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-500"
                   >
                     {ex}
                   </span>
@@ -109,24 +94,26 @@ export function ConstructionServices() {
         </div>
 
         {/* CTA */}
-        <div className="mt-16 rounded-2xl bg-primary p-10 text-center">
-          <h3 className="text-2xl font-bold text-white">Nepieciešams aprēķins vai konsultācija?</h3>
-          <p className="mt-3 text-primary-foreground/80 max-w-xl mx-auto">
-            Nosūtiet pieprasījumu caur platformu — mūsu komanda sagatavos piedāvājumu darba dienas
-            laikā.
+        <div className="mt-24 border border-black bg-black p-12 text-center">
+          <h3 className="text-3xl font-bold tracking-tight text-white mb-4">
+            Nepieciešams aprēķins?
+          </h3>
+          <p className="text-gray-400 max-w-xl mx-auto mb-10">
+            Sazinieties ar mums vai izveidojiet pieprasījumu platformā. Gatavojam piedāvājumus
+            vienas darba dienas laikā.
           </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-primary hover:bg-white/90 transition-colors"
+              className="w-full sm:w-auto bg-white px-8 py-3.5 text-sm font-medium text-black hover:bg-gray-100 transition-colors inline-flex items-center justify-center gap-2"
             >
               Sazināties <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href={`${APP_URL}/register`}
-              className="inline-flex items-center gap-2 rounded-xl border-2 border-white/40 px-6 py-3 text-sm font-semibold text-white hover:border-white hover:bg-white/10 transition-colors"
+              className="w-full sm:w-auto border border-white/20 px-8 py-3.5 text-sm font-medium text-white hover:bg-white/10 transition-colors"
             >
-              Izveidot kontu un pasūtīt
+              Atvērt platformu
             </Link>
           </div>
         </div>

@@ -6,87 +6,76 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001';
 const services = [
   {
     icon: Package,
-    color: 'bg-amber-50',
-    iconColor: 'text-amber-600',
     title: 'Materiālu izņemšana',
     description:
       'Iegādājieties materiālus platformā un izņemiet tos B3 laukumā savā transportlīdzeklī. Ideāli privātmāju īpašniekiem un maziem darbuzņēmējiem.',
-    tag: 'Nav nepieciešama kravas mašīna',
+    tag: 'Tūlītēja pieejamība',
   },
   {
     icon: Truck,
-    color: 'bg-green-50',
-    iconColor: 'text-green-600',
     title: 'Atkritumu nodošana',
     description:
-      'Atvediet celtniecības atkritumus un nodododiet tos B3 laukumā. Platforma automātiski ģenerē atkritumu nodošanas apliecību.',
+      'Atvediet celtniecības atkritumus un nododiet tos B3 laukumā. Platforma automātiski ģenerē atkritumu nodošanas apliecību.',
     tag: 'Apliecība automātiski',
   },
   {
     icon: Container,
-    color: 'bg-blue-50',
-    iconColor: 'text-blue-600',
-    title: 'Piekaba nomai',
+    title: 'Piekabe nomai',
     description:
       'Īrējiet piekabi kopā ar materiālu pasūtījumu un pašrocīgi nogādājiet materiālus uz objektu. Noformējiet visu vienā pasūtījumā.',
-    tag: 'Pievienots pasūtījumam',
+    tag: 'Nav vajadzīgs kravas auto',
   },
 ];
 
 export function B3Fields() {
   return (
-    <section id="b3-fields" className="bg-gray-950 py-24 sm:py-32 text-white">
+    <section id="b3-fields" className="bg-black py-32 sm:py-40 text-white">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         {/* Header */}
-        <div className="mx-auto max-w-2xl text-center mb-16">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white/80 mb-6">
+        <div className="mx-auto max-w-2xl text-center mb-24">
+          <div className="inline-flex items-center gap-2 border border-white/20 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white/60 mb-6">
             <MapPin className="h-3.5 w-3.5" />
-            Fiziski atrašanās punkti
+            Fiziskais tīkls
           </div>
-          <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            B3 Laukumi — <span className="text-primary">fiziskais tīkls</span>
-          </h2>
-          <p className="mt-6 text-lg leading-8 text-white/70">
-            B3Hub nav tikai digitāla platforma. Mūsu B3 laukumi ir fiziski izpildes centri visā
-            Latvijā — kur katrs darījums joprojām plūst caur platformu, tikai bez piegādes mašīnas.
+          <p className="text-4xl font-bold tracking-tighter text-white sm:text-5xl">B3 Laukumi.</p>
+          <p className="mt-6 text-lg text-white/50">
+            Fiziski izpildes centri visā Latvijā. Katrs darījums reģistrēts platformā, pat bez mūsu
+            transporta.
           </p>
         </div>
 
         {/* Service cards */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-16">
+        <div className="grid grid-cols-1 gap-px bg-white/10 border border-white/10 sm:grid-cols-3 mb-24">
           {services.map((s) => (
             <div
               key={s.title}
-              className="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm"
+              className="bg-black p-8 hover:bg-white/[0.02] transition-colors flex flex-col"
             >
-              <div
-                className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${s.color} mb-5`}
-              >
-                <s.icon className={`h-6 w-6 ${s.iconColor}`} />
+              <div className="mb-8">
+                <s.icon className="h-6 w-6 text-white" strokeWidth={1.5} />
               </div>
-              <span className="inline-block rounded-full bg-primary/20 px-3 py-0.5 text-xs font-semibold text-primary mb-3">
+              <span className="block text-[10px] font-bold tracking-widest uppercase text-white/40 mb-4">
                 {s.tag}
               </span>
-              <h3 className="text-lg font-bold text-white mb-2">{s.title}</h3>
-              <p className="text-sm leading-7 text-white/60">{s.description}</p>
+              <h3 className="text-xl font-bold text-white mb-3">{s.title}</h3>
+              <p className="text-sm leading-relaxed text-white/50">{s.description}</p>
             </div>
           ))}
         </div>
 
         {/* Bottom banner */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-8 flex flex-col items-center text-center sm:flex-row sm:text-left sm:justify-between gap-6">
+        <div className="border border-white/10 p-12 flex flex-col items-center text-center sm:flex-row sm:text-left sm:justify-between gap-8">
           <div>
-            <p className="text-lg font-bold text-white">
-              Konkurenti var kopēt programmatūru. Fizisku tīklu — ne.
+            <p className="text-xl font-bold tracking-tight text-white mb-1">
+              Programmatūru var nokopēt. Infrastruktūru — ne.
             </p>
-            <p className="mt-1 text-sm text-white/60">
-              Katrs B3 laukums ir pievienojuma punkts tirgus segmentam, kurš nekad nepasūtīja
-              piegādi.
+            <p className="text-sm text-white/50">
+              Katrs B3 laukums ir platformas pievienošanās punkts jaunai auditorijai.
             </p>
           </div>
           <Link
             href={`${APP_URL}/register`}
-            className="shrink-0 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white hover:bg-primary/90 transition-colors"
+            className="shrink-0 bg-white px-8 py-3.5 text-sm font-medium text-black hover:bg-gray-200 transition-colors"
           >
             Atrast tuvāko laukumu →
           </Link>

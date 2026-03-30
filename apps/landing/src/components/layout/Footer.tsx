@@ -1,107 +1,97 @@
 import Link from 'next/link';
-import { Building2 } from 'lucide-react';
 
 const navigation = {
-  product: [
-    { name: 'Materiālu katalogs', href: '/#materials' },
-    { name: 'B3 Laukumi', href: '/#b3-fields' },
-    { name: 'Celtniecības pakalpojumi', href: '/#construction-services' },
-    { name: 'Cenas', href: '/pricing' },
+  platform: [
+    { name: 'Pasūtīt materiālus', href: '/pasutit' },
+    { name: 'Kļūt par pārvadātāju', href: '/parvadat' },
+    { name: 'Pievienot karjeru', href: '/karjeriem' },
+    { name: 'Uzņēmumiem', href: '/buvniekiem' },
   ],
   company: [
     { name: 'Par mums', href: '/about' },
-    { name: 'Blogs', href: '/blog' },
     { name: 'Kontakti', href: '/contact' },
-  ],
-  suppliers: [
-    {
-      name: 'Kļūt par piegādātāju',
-      href: `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001'}/apply`,
-    },
-    {
-      name: 'Kļūt par pārvadātāju',
-      href: `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001'}/apply`,
-    },
+    { name: 'Karjera', href: '/careers' },
   ],
   legal: [
     { name: 'Privātuma politika', href: '/privacy' },
     { name: 'Lietošanas noteikumi', href: '/terms' },
+    { name: 'Sīkdatnes', href: '/cookies' },
   ],
 };
 
 export function Footer() {
   return (
-    <footer className="bg-gray-950 text-gray-400" aria-labelledby="footer-heading">
+    <footer className="bg-black text-gray-400" aria-labelledby="footer-heading">
       <h2 id="footer-heading" className="sr-only">
         Footer
       </h2>
-      <div className="mx-auto max-w-7xl px-6 pb-8 pt-16 sm:pt-24 lg:px-8 lg:pt-32">
-        <div className="xl:grid xl:grid-cols-3 xl:gap-8">
-          {/* Brand */}
-          <div className="space-y-6">
-            <Link href="/" className="flex items-center gap-2">
-              <Building2 className="h-7 w-7 text-primary" />
-              <span className="text-xl font-bold text-white">B3Hub</span>
+      <div className="mx-auto max-w-7xl px-6 pb-8 pt-24 lg:px-12 lg:pt-32">
+        <div className="xl:grid xl:grid-cols-2 xl:gap-8">
+          {/* Brand & Mission - left side */}
+          <div className="space-y-6 xl:col-span-1">
+            <Link href="/" className="inline-block">
+              <span className="text-4xl font-medium tracking-tighter text-white">B3Hub</span>
             </Link>
-            <p className="text-sm leading-6">
-              Celtniecības loģistikas platforma Latvijas un Baltijas tirgum. Savieno pircējus,
-              piegādātājus un pārvadātājus.
-            </p>
-            <p className="text-xs">
-              © {new Date().getFullYear()} B3Hub. Visas tiesības aizsargātas.
+            <p className="max-w-sm text-lg leading-relaxed text-gray-400 font-light tracking-tight">
+              Aizstājam zvanus un e-pastus ar vienotu platformu celtniecības loģistikai.
             </p>
           </div>
 
-          {/* Nav columns */}
-          <div className="mt-16 grid grid-cols-2 gap-8 xl:col-span-2 xl:mt-0 sm:grid-cols-4">
+          {/* Navigation - right side */}
+          <div className="mt-16 grid grid-cols-2 md:grid-cols-3 gap-12 xl:col-span-1 xl:mt-0">
             <div>
-              <h3 className="text-sm font-semibold text-white">Produkts</h3>
-              <ul role="list" className="mt-6 space-y-4">
-                {navigation.product.map((item) => (
+              <h3 className="text-lg font-medium text-white tracking-tight mb-6">Platforma</h3>
+              <ul role="list" className="space-y-4">
+                {navigation.platform.map((item) => (
                   <li key={item.name}>
-                    <Link href={item.href} className="text-sm hover:text-white transition-colors">
+                    <Link href={item.href} className="text-base hover:text-white transition-colors">
                       {item.name}
                     </Link>
                   </li>
                 ))}
               </ul>
             </div>
+
             <div>
-              <h3 className="text-sm font-semibold text-white">Uzņēmums</h3>
-              <ul role="list" className="mt-6 space-y-4">
+              <h3 className="text-lg font-medium text-white tracking-tight mb-6">Uzņēmums</h3>
+              <ul role="list" className="space-y-4">
                 {navigation.company.map((item) => (
                   <li key={item.name}>
-                    <Link href={item.href} className="text-sm hover:text-white transition-colors">
+                    <Link href={item.href} className="text-base hover:text-white transition-colors">
                       {item.name}
                     </Link>
                   </li>
                 ))}
               </ul>
             </div>
+
             <div>
-              <h3 className="text-sm font-semibold text-white">Partneri</h3>
-              <ul role="list" className="mt-6 space-y-4">
-                {navigation.suppliers.map((item) => (
-                  <li key={item.name}>
-                    <Link href={item.href} className="text-sm hover:text-white transition-colors">
-                      {item.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-white">Juridisks</h3>
-              <ul role="list" className="mt-6 space-y-4">
+              <h3 className="text-lg font-medium text-white tracking-tight mb-6">Juridiski</h3>
+              <ul role="list" className="space-y-4">
                 {navigation.legal.map((item) => (
                   <li key={item.name}>
-                    <Link href={item.href} className="text-sm hover:text-white transition-colors">
+                    <Link href={item.href} className="text-base hover:text-white transition-colors">
                       {item.name}
                     </Link>
                   </li>
                 ))}
               </ul>
             </div>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="mt-24 border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-gray-500">
+            © {new Date().getFullYear()} B3Hub. Visas tiesības aizsargātas.
+          </p>
+          <div className="flex gap-6">
+            <Link href="#" className="text-sm text-gray-500 hover:text-white transition-colors">
+              Instagram
+            </Link>
+            <Link href="#" className="text-sm text-gray-500 hover:text-white transition-colors">
+              LinkedIn
+            </Link>
           </div>
         </div>
       </div>

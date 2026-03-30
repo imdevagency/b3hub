@@ -4,34 +4,22 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001';
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden bg-linear-to-b from-red-50 to-white">
-      <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-            Sakārtojiet Savus Materiālu Pasūtījumus ar <span className="text-primary">B3Hub</span>
+    <section className="relative overflow-hidden bg-white">
+      <div className="mx-auto max-w-7xl px-6 py-32 sm:py-48 lg:px-8">
+        <div className="mx-auto max-w-3xl text-center">
+          <h1 className="text-5xl font-bold tracking-tighter text-black sm:text-7xl">
+            Order. Move. Document.
           </h1>
-          <p className="mt-6 text-lg leading-8 text-gray-600">
-            Savienojiet piegādātājus, klientus un vadītājus vienā jaudīgā platformā. Pārvaldiet
-            materiālus, izsekojiet pasūtījumiem un optimizējiet piegādes ķēdi ar ērtumu.
+          <p className="mt-8 text-lg text-gray-500 max-w-2xl mx-auto">
+            The infrastructure layer for Baltic construction logistics. Connect suppliers,
+            contractors and carriers in one transaction flow.
           </p>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+          <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href={`${APP_URL}/register`}
-              className="rounded-md bg-primary px-6 py-3 text-base font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+              className="w-full sm:w-auto bg-black px-8 py-3.5 text-sm font-medium text-white transition-colors hover:bg-gray-800"
             >
-              Sākt bez maksas →
-            </Link>
-            <Link
-              href={`${APP_URL}/apply`}
-              className="rounded-md border-2 border-gray-300 px-6 py-3 text-base font-semibold text-gray-900 hover:border-primary/50 hover:text-primary transition-colors"
-            >
-              Kļūt par piegādātāju
-            </Link>
-            <Link
-              href="#how-it-works"
-              className="text-base font-semibold leading-7 text-gray-900 hover:text-primary transition-colors"
-            >
-              Kā tas darbojas <span aria-hidden="true">↓</span>
+              Atvērt platformu →
             </Link>
           </div>
         </div>
