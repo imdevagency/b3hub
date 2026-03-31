@@ -49,7 +49,7 @@ export function B3Fields() {
           {services.map((s) => (
             <div
               key={s.title}
-              className="bg-black p-8 hover:bg-white/[0.02] transition-colors flex flex-col"
+              className="bg-black p-8 hover:bg-white/2 transition-colors flex flex-col"
             >
               <div className="mb-8">
                 <s.icon className="h-6 w-6 text-white" strokeWidth={1.5} />

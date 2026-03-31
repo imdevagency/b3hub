@@ -246,7 +246,7 @@ export default function ParvadatajemPage() {
                     reāllaikā — bez zvaniem.
                   </p>
                 </div>
-                <div className="absolute right-0 bottom-0 top-0 w-1/2 bg-gradient-to-l from-background/20 to-transparent items-center justify-end pr-8 hidden md:flex">
+                <div className="absolute right-0 bottom-0 top-0 w-1/2 bg-linear-to-l from-background/20 to-transparent items-center justify-end pr-8 hidden md:flex">
                   <div className="w-48 h-32 bg-background/10 backdrop-blur-md border border-white/20 rounded-xl flex items-center justify-center">
                     <span className="text-xl font-bold text-white tracking-widest uppercase">
                       GPS LIVE
@@ -288,7 +288,7 @@ export default function ParvadatajemPage() {
 
             {/* Right: Sticky Phone Mockup */}
             <div className="md:w-1/2 relative hidden md:block">
-              <div className="sticky top-32 w-full max-w-md mx-auto aspect-[9/18] bg-muted/20 border border-border rounded-[3rem] p-4 flex flex-col gap-2 shadow-2xl relative">
+              <div className="sticky top-32 w-full max-w-md mx-auto aspect-9/18 bg-muted/20 border border-border rounded-[3rem] p-4 flex flex-col gap-2 shadow-2xl">
                 {/* Notch */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-border rounded-b-2xl z-20" />
 
@@ -348,7 +348,7 @@ export default function ParvadatajemPage() {
                     <p className="text-sm font-bold self-center">€145</p>
                   </div>
                   {/* Gradient fade */}
-                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-muted/20 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-linear-to-t from-muted/20 to-transparent" />
                 </div>
               </div>
             </div>

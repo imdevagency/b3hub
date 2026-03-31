@@ -71,39 +71,31 @@ const SERVICES = [
     icon: HardHat,
     label: 'Materiāli',
     route: '/(buyer)/catalog',
-    color: '#3b82f6', // blue
-    bg: '#eff6ff',
   },
   {
     id: 'container',
     icon: Package,
     label: 'Konteineri',
     route: '/order',
-    color: '#f59e0b', // amber
-    bg: '#fef3c7',
   },
   {
     id: 'disposal',
     icon: Trash2,
     label: 'Utilizācija',
     route: '/disposal',
-    color: '#ef4444', // red
-    bg: '#fef2f2',
   },
   {
     id: 'freight',
     icon: Truck,
     label: 'Transports',
     route: '/transport',
-    color: '#10b981', // emerald
-    bg: '#ecfdf5',
   },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BOTTOM_PANEL_H = SCREEN_HEIGHT * 0.45;
+const BOTTOM_PANEL_H = SCREEN_HEIGHT * 0.5;
 
 // ── Screen ────────────────────────────────────────────────────────────────
 
@@ -339,22 +331,20 @@ export default function HomeScreen() {
       <View style={[s.panel, { height: BOTTOM_PANEL_H, paddingBottom: insets.bottom }]}>
         {/* Services Row */}
         <Text style={s.sectionTitle}>Pakalpojumi</Text>
-        <View style={s.servicesRow}>
+        <View style={s.servicesGrid}>
           {SERVICES.map((svc, i) => {
             const Icon = svc.icon;
             return (
               <TouchableOpacity
                 key={`${svc.id}-${i}`}
-                style={s.serviceItem}
+                style={s.serviceCard}
                 onPress={() => {
                   haptics.light();
                   router.push(svc.route as any);
                 }}
                 activeOpacity={0.8}
               >
-                <View style={[s.serviceIcon, { backgroundColor: svc.bg }]}>
-                  <Icon size={24} color={svc.color} />
-                </View>
+                <Icon size={28} color="#111827" strokeWidth={2.5} />
                 <Text style={s.serviceLabel}>{svc.label}</Text>
               </TouchableOpacity>
             );
@@ -411,17 +401,17 @@ export default function HomeScreen() {
           ) : isNewUser ? (
             <View style={s.onboardingCard}>
               <View style={s.onboardingIconRow}>
-                <View style={[s.onboardingIconBubble, { backgroundColor: '#eff6ff' }]}>
-                  <HardHat size={22} color="#3b82f6" />
+                <View style={s.onboardingIconBubble}>
+                  <HardHat size={22} color="#111827" strokeWidth={2.5} />
                 </View>
-                <View style={[s.onboardingIconBubble, { backgroundColor: '#fef3c7' }]}>
-                  <Package size={22} color="#f59e0b" />
+                <View style={s.onboardingIconBubble}>
+                  <Package size={22} color="#111827" strokeWidth={2.5} />
                 </View>
-                <View style={[s.onboardingIconBubble, { backgroundColor: '#fef2f2' }]}>
-                  <Trash2 size={22} color="#ef4444" />
+                <View style={s.onboardingIconBubble}>
+                  <Trash2 size={22} color="#111827" strokeWidth={2.5} />
                 </View>
-                <View style={[s.onboardingIconBubble, { backgroundColor: '#ecfdf5' }]}>
-                  <Truck size={22} color="#10b981" />
+                <View style={s.onboardingIconBubble}>
+                  <Truck size={22} color="#111827" strokeWidth={2.5} />
                 </View>
               </View>
               <Text style={s.onboardingTitle}>Sveicināti B3Hub!</Text>
@@ -553,29 +543,26 @@ const s = StyleSheet.create({
     marginLeft: 20,
     marginBottom: 16,
   },
-  servicesRow: {
+  servicesGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    marginBottom: 8,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    rowGap: 12,
   },
-  serviceItem: {
-    alignItems: 'center',
-    gap: 8,
-    width: 70,
-  },
-  serviceIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+  serviceCard: {
+    width: '48%',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'flex-start',
+    gap: 12,
   },
   serviceLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#374151',
-    textAlign: 'center',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
   },
   divider: {
     height: 1,
@@ -649,6 +636,7 @@ const s = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
   },

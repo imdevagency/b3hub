@@ -66,46 +66,37 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
+        {/* Minimal Header */}
+        <View style={[s.header, { paddingTop: insets.top + 8 }]}>
+          <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
+            <ChevronLeft size={24} color="#000" />
+          </TouchableOpacity>
+        </View>
+
         <ScrollView
-          contentContainerStyle={[s.scroll, { paddingTop: insets.top + 16 }]}
+          contentContainerStyle={s.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Back */}
-          <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-            <ChevronLeft size={22} color="#374151" />
-          </TouchableOpacity>
-
-          {/* Logo */}
-          <View style={s.logoWrap}>
-            <View style={s.logoBox}>
-              <Text style={s.logoText}>B3</Text>
-            </View>
-            <Text style={s.title}>{t.login.title}</Text>
-            <Text style={s.subtitle}>
-              {t.login.noAccount}{' '}
-              <Text style={s.link} onPress={() => router.replace('/(auth)/register')}>
-                {t.login.signUp}
-              </Text>
-            </Text>
-          </View>
+          {/* Typographic Hero */}
+          <Text style={s.heroTitle}>Sveiki atpakaļ</Text>
+          <Text style={s.heroSubtitle}>Ievadiet savus datus, lai turpinātu.</Text>
 
           {apiError && (
-            <View style={s.errorBox}>
-              <Text style={s.errorText}>{apiError}</Text>
+            <View style={s.apiErrBox}>
+              <Text style={s.apiErrText}>{apiError}</Text>
             </View>
           )}
 
-          {/* Email */}
+          {/* Email Input */}
           <View style={s.fieldWrap}>
-            <Text style={s.label}>{t.login.email}</Text>
             <Controller
               control={control}
               name="email"
               render={({ field: { onChange, value, onBlur } }) => (
                 <TextInput
-                  style={[s.input, errors.email && s.inputError]}
-                  placeholder={t.login.emailPlaceholder}
+                  style={[s.softInput, errors.email && s.inputErr]}
+                  placeholder="E-pasta adrese"
                   placeholderTextColor="#9ca3af"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -116,25 +107,19 @@ export default function LoginScreen() {
                 />
               )}
             />
-            {errors.email && <Text style={s.fieldError}>{errors.email.message}</Text>}
+            {errors.email && <Text style={s.err}>{errors.email.message}</Text>}
           </View>
 
-          {/* Password */}
+          {/* Password Input */}
           <View style={s.fieldWrap}>
-            <View style={s.labelRow}>
-              <Text style={s.label}>{t.login.password}</Text>
-              <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')} hitSlop={8}>
-                <Text style={[s.link, { color: '#dc2626' }]}>{t.login.forgotPassword}</Text>
-              </TouchableOpacity>
-            </View>
             <Controller
               control={control}
               name="password"
               render={({ field: { onChange, value, onBlur } }) => (
-                <View style={[s.inputRow, errors.password && s.inputRowError]}>
+                <View style={[s.softInputRow, errors.password && s.inputErr]}>
                   <TextInput
                     style={s.inputFlex}
-                    placeholder={t.login.passwordPlaceholder}
+                    placeholder="Parole"
                     placeholderTextColor="#9ca3af"
                     secureTextEntry={!showPw}
                     value={value}
@@ -147,114 +132,165 @@ export default function LoginScreen() {
                     hitSlop={8}
                   >
                     {showPw ? (
-                      <EyeOff size={18} color="#9ca3af" />
+                      <EyeOff size={20} color="#9ca3af" />
                     ) : (
-                      <Eye size={18} color="#9ca3af" />
+                      <Eye size={20} color="#9ca3af" />
                     )}
                   </TouchableOpacity>
                 </View>
               )}
             />
-            {errors.password && <Text style={s.fieldError}>{errors.password.message}</Text>}
+            {errors.password && <Text style={s.err}>{errors.password.message}</Text>}
           </View>
+          
+          <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')} activeOpacity={0.7} style={s.forgotWrap}>
+            <Text style={s.forgotText}>Aizmirsāt paroli?</Text>
+          </TouchableOpacity>
+        </ScrollView>
 
+        {/* Anchored Bottom Action */}
+        <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 24) }]}>
           <TouchableOpacity
             style={[s.primaryBtn, isSubmitting && s.primaryBtnDisabled]}
             onPress={handleSubmit(onSubmit)}
             disabled={isSubmitting}
+            activeOpacity={0.9}
           >
             {isSubmitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={s.primaryBtnText}>{t.login.signIn}</Text>
+              <Text style={s.primaryBtnText}>Pierakstīties</Text>
             )}
           </TouchableOpacity>
-        </ScrollView>
+        </View>
+
       </KeyboardAvoidingView>
     </ScreenContainer>
   );
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#fff' },
-  scroll: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 0, paddingBottom: 40 },
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
   backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 32,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
     backgroundColor: '#fff',
   },
-  inputRowError: { borderColor: '#f87171' },
+  scroll: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+  },
+  
+  // Hero
+  heroTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#000',
+    marginBottom: 8,
+    fontFamily: 'Inter_800ExtraBold',
+  },
+  heroSubtitle: {
+    fontSize: 16,
+    color: '#6b7280',
+    marginBottom: 32,
+    fontFamily: 'Inter_400Regular',
+  },
+
+  // Fields and Soft Inputs
+  fieldWrap: {
+    marginBottom: 16,
+  },
+  softInput: {
+    backgroundColor: '#f3f4f6',
+    borderRadius: 14,
+    paddingHorizontal: 18,
+    height: 56,
+    fontSize: 16,
+    color: '#000',
+    fontFamily: 'Inter_400Regular',
+  },
+  softInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 14,
+    height: 56,
+  },
   inputFlex: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    color: '#111827',
+    paddingHorizontal: 18,
+    height: '100%',
+    fontSize: 16,
+    color: '#000',
+    fontFamily: 'Inter_400Regular',
   },
-  eyeBtn: { paddingHorizontal: 14, paddingVertical: 14 },
-  logoWrap: { alignItems: 'center', marginBottom: 32 },
-  logoBox: {
-    width: 64,
-    height: 64,
-    backgroundColor: '#111827',
+  eyeBtn: {
+    paddingHorizontal: 16,
+    height: '100%',
+    justifyContent: 'center',
+  },
+  inputErr: {
+    borderWidth: 1,
+    borderColor: '#ef4444',
+  },
+  err: { 
+    color: '#ef4444', 
+    fontSize: 13, 
+    marginTop: 6,
+    marginLeft: 4,
+  },
+  
+  forgotWrap: {
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
+  },
+  forgotText: {
+    fontSize: 14,
+    color: '#000',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+  },
+
+  // API Err
+  apiErrBox: {
+    backgroundColor: '#fee2e2',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+  },
+  apiErrText: { 
+    color: '#b91c1c', 
+    fontSize: 14, 
+    fontWeight: '500' 
+  },
+
+  // Footer
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    backgroundColor: '#fff',
+  },
+  primaryBtn: {
+    backgroundColor: '#000',
+    height: 56,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
   },
-  logoText: { color: '#fff', fontSize: 24, fontWeight: '800' },
-  title: { fontSize: 24, fontWeight: '700', fontFamily: 'Inter_700Bold', color: '#111827' },
-  subtitle: { fontSize: 14, color: '#6b7280', marginTop: 6 },
-  link: { color: '#111827', fontWeight: '600' },
-  errorBox: {
-    backgroundColor: '#fef2f2',
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 20,
+  primaryBtnDisabled: {
+    backgroundColor: '#9ca3af',
   },
-  errorText: { color: '#b91c1c', fontSize: 14 },
-  fieldWrap: { marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 6 },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
+  primaryBtnText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
-  input: {
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    color: '#111827',
-    backgroundColor: '#fff',
-  },
-  inputError: { borderColor: '#f87171' },
-  fieldError: { color: '#ef4444', fontSize: 12, marginTop: 4 },
-  primaryBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 100,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  primaryBtnDisabled: { backgroundColor: '#9ca3af' },
-  primaryBtnText: { color: '#fff', fontWeight: '700', fontFamily: 'Inter_700Bold', fontSize: 16 },
 });

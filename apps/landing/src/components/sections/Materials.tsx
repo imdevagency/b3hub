@@ -67,7 +67,7 @@ export function Materials() {
           {materials.map((m) => (
             <div key={m.name} className="bg-white p-8 hover:bg-gray-50 transition-colors">
               <div className="flex items-start justify-between mb-8">
-                <span className="text-3xl grayscale grayscale-100">{m.emoji}</span>
+                <span className="text-3xl grayscale">{m.emoji}</span>
                 <span className="border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-500 tracking-widest uppercase">
                   {m.fractions}
                 </span>

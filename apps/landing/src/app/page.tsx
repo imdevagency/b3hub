@@ -48,7 +48,7 @@ export default function HomePage() {
             </>
           }
         >
-          <div className="w-full h-125 md:h-[750px] bg-muted relative overflow-hidden self-center">
+          <div className="w-full h-125 md:h-187.5 bg-muted relative overflow-hidden self-center">
             <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1541888086925-920a0b4111eb?q=80&w=2670&auto=format&fit=crop')] bg-cover bg-center grayscale contrast-125 hover:scale-105 transition-transform duration-[2s]" />
             <div className="absolute inset-0 bg-black/10" />
           </div>

@@ -1,104 +1,57 @@
-/**
- * register.tsx — Multi-step registration wizard (Schüttflix / Uber style)
- *
- * Step 1: Choose role (BUYER / SUPPLIER / CARRIER) + account kind
- * Step 2: Personal info (name, email, phone)
- * Step 3: Password + create account
- */
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
-  Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
+  StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  StyleSheet,
+  ScrollView,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { StatusBar } from 'expo-status-bar';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { api } from '@/lib/api';
+import { Text } from '@/components/ui/text';
 import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
-import { ChevronLeft, Eye, EyeOff, Check } from 'lucide-react-native';
+import { ChevronLeft, Eye, EyeOff } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 type RoleKey = 'BUYER' | 'SUPPLIER' | 'CARRIER';
 
-// ── Constants ──────────────────────────────────────────────────
 const TOTAL_STEPS = 3;
 
 const ROLES: {
   value: RoleKey;
-  emoji: string;
   title: string;
   desc: string;
-  color: string;
-  bg: string;
 }[] = [
   {
     value: 'BUYER',
-    emoji: '🛒',
     title: 'Pircējs',
     desc: 'Pasūti materiālus, konteinerus un transportu',
-    color: '#b91c1c',
-    bg: '#fef2f2',
   },
   {
     value: 'SUPPLIER',
-    emoji: '📦',
     title: 'Piegādātājs',
-    desc: 'Pārdod materiālus un atbildi uz pieprasījumiem',
-    color: '#059669',
-    bg: '#d1fae5',
+    desc: 'Pārdod materiālus un saņem pasūtījumus',
   },
   {
     value: 'CARRIER',
-    emoji: '🚛',
     title: 'Pārvadātājs',
-    desc: 'Pieņem kravas un nopelni uz katru braucienu',
-    color: '#1d4ed8',
-    bg: '#eff6ff',
+    desc: 'Pieņem un izpildi transporta pasūtījumus',
   },
 ];
 
 const ACCOUNT_KINDS = [
-  { value: true, emoji: '🏢', label: 'Uzņēmums', desc: 'SIA, AS vai IK' },
-  { value: false, emoji: '👤', label: 'Privātpersona', desc: 'Fiziska persona' },
+  { value: true, label: 'Uzņēmums', desc: 'SIA, AS vai IK' },
+  { value: false, label: 'Privātpersona', desc: 'Fiziska persona' },
 ];
 
-// ── Progress bar ───────────────────────────────────────────────
-function ProgressBar({ step }: { step: number }) {
-  const anim = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.timing(anim, {
-      toValue: step / TOTAL_STEPS,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  }, [step]);
-
-  const width = anim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
-
-  return (
-    <View style={pb.track}>
-      <Animated.View style={[pb.fill, { width }]} />
-    </View>
-  );
-}
-
-const pb = StyleSheet.create({
-  track: { height: 3, backgroundColor: '#f3f4f6', borderRadius: 999, marginTop: 12 },
-  fill: { height: 3, backgroundColor: '#111827', borderRadius: 999 },
-});
-
-// ── Password strength ──────────────────────────────────────────
 function pwStrength(pw: string): { label: string; color: string; pct: number } {
   if (pw.length === 0) return { label: '', color: '#e5e7eb', pct: 0 };
   let score = 0;
@@ -108,11 +61,10 @@ function pwStrength(pw: string): { label: string; color: string; pct: number } {
   if (/[^a-zA-Z0-9]/.test(pw)) score++;
   if (score <= 1) return { label: 'Vāja', color: '#ef4444', pct: 0.25 };
   if (score === 2) return { label: 'Vidēja', color: '#9ca3af', pct: 0.5 };
-  if (score === 3) return { label: 'Laba', color: '#eab308', pct: 0.75 };
-  return { label: 'Stipra', color: '#6b7280', pct: 1 };
+  if (score === 3) return { label: 'Laba', color: '#111827', pct: 0.75 };
+  return { label: 'Stipra', color: '#111827', pct: 1 };
 }
 
-// ── Main ───────────────────────────────────────────────────────
 export default function RegisterScreen() {
   const router = useRouter();
   const { setAuth } = useAuth();
@@ -120,14 +72,12 @@ export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
   const isPartnerFlow = partner === '1';
 
-  // In partner flow ("Kļūt par partneri") hide Buyer — partners are Supplier/Carrier
   const visibleRoles = isPartnerFlow ? ROLES.filter((r) => r.value !== 'BUYER') : ROLES;
 
   const [step, setStep] = useState(1);
   const [apiError, setApiError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Form state — partner flow starts with nothing pre-selected
   const [roles, setRoles] = useState<Set<RoleKey>>(
     new Set<RoleKey>(isPartnerFlow ? [] : ['BUYER']),
   );
@@ -146,26 +96,23 @@ export default function RegisterScreen() {
   const needsCompanyInfo = roles.has('SUPPLIER') || roles.has('CARRIER');
   const isBuyerOnly = roles.has('BUYER') && !roles.has('SUPPLIER') && !roles.has('CARRIER');
 
-  // Validation errors shown after pressing Next
   const [errors, setErrors] = useState<Record<string, string>>({});
-
   const strength = pwStrength(password);
 
-  // ── Validate per step ──────────────────────────────────────
   const validate = (): boolean => {
     const e: Record<string, string> = {};
     if (step === 1) {
       if (roles.size === 0) e.roles = 'Izvēlieties vismaz vienu lomu';
     }
     if (step === 2) {
-      if (firstName.trim().length < 2) e.firstName = 'Vismaz 2 rakstzīmes';
-      if (lastName.trim().length < 2) e.lastName = 'Vismaz 2 rakstzīmes';
+      if (firstName.trim().length < 2) e.firstName = 'Nepieciešams vārds';
+      if (lastName.trim().length < 2) e.lastName = 'Nepieciešams uzvārds';
       if (!/^\S+@\S+\.\S+$/.test(email)) e.email = 'Nederīga e-pasta adrese';
       if (needsCompanyInfo && companyName.trim().length < 2)
-        e.companyName = 'Ievadiet uzņēmuma nosaukumu';
+        e.companyName = 'Nepieciešams uzņēmuma nosaukums';
     }
     if (step === 3) {
-      if (password.length < 8) e.password = 'Vismaz 8 rakstzīmes';
+      if (password.length < 8) e.password = 'Parolei jābūt vismaz 8 rakstzīmēm';
       if (password !== confirmPw) e.confirmPw = 'Paroles nesakrīt';
     }
     setErrors(e);
@@ -218,120 +165,107 @@ export default function RegisterScreen() {
     }
   };
 
-  // ── Step 1: Role selection ─────────────────────────────────
   const renderStep1 = () => (
-    <>
-      <Text style={s.stepTitle}>Kā jūs izmantosiet B3Hub?</Text>
-      <Text style={s.stepSub}>
-        Izvēlieties vienu vai vairākas lomas. Tās var pievienot arī vēlāk.
+    <View style={s.stepContent}>
+      <Text
+        className="text-3xl text-black mb-2"
+        style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}
+      >
+        Kā jūs izmantosiet B3Hub?
+      </Text>
+      <Text className="text-base text-gray-500 mb-8" style={{ fontFamily: 'Inter_400Regular' }}>
+        Izvēlieties vienu vai vairākas lomas.
       </Text>
 
-      <View style={s.roleGrid}>
+      <View style={s.grid}>
         {visibleRoles.map((r) => {
           const active = roles.has(r.value);
           return (
             <TouchableOpacity
               key={r.value}
-              style={[s.roleCard, active && { borderColor: r.color, backgroundColor: r.bg }]}
+              style={[s.blockOption, active && s.blockOptionActive]}
               onPress={() => {
                 haptics.light();
                 setRoles((prev) => {
-                  const next = new Set(prev);
-                  if (next.has(r.value)) next.delete(r.value);
-                  else next.add(r.value);
-                  return next;
+                  const n = new Set(prev);
+                  if (n.has(r.value)) n.delete(r.value);
+                  else n.add(r.value);
+                  return n;
                 });
               }}
-              activeOpacity={0.8}
+              activeOpacity={0.9}
             >
-              <View style={s.roleCardHeader}>
-                <Text style={s.roleEmoji}>{r.emoji}</Text>
-                {active ? (
-                  <View style={[s.checkBadge, { backgroundColor: r.color }]}>
-                    <Check size={11} color="#fff" />
-                  </View>
-                ) : (
-                  <View style={s.checkBadgeEmpty}>
-                    <View style={s.checkBadgeEmptyInner} />
-                  </View>
-                )}
-              </View>
-              <Text style={[s.roleTitle, active && { color: r.color }]}>{r.title}</Text>
-              <Text style={s.roleDesc}>{r.desc}</Text>
-              {(r.value === 'SUPPLIER' || r.value === 'CARRIER') && active && (
-                <Text style={[s.pendingHint, { color: r.color }]}>
-                  ⏳ Gaida apstiprināšanu pēc reģistrācijas
-                </Text>
-              )}
+              <Text style={[s.blockTitle, active && s.textWhite]}>{r.title}</Text>
+              <Text style={[s.blockDesc, active && s.textGray300]}>{r.desc}</Text>
             </TouchableOpacity>
           );
         })}
       </View>
-      {errors.roles && <Text style={[s.err, { marginTop: 8 }]}>{errors.roles}</Text>}
+      {errors.roles && <Text style={s.err}>{errors.roles}</Text>}
 
       {isBuyerOnly && (
-        <View style={s.sectionBlock}>
+        <View style={{ marginTop: 32 }}>
           <Text style={s.sectionLabel}>Konta veids</Text>
-          <View style={s.kindRow}>
+          <View style={[s.grid, { flexDirection: 'row' }]}>
             {ACCOUNT_KINDS.map((k) => {
               const active = isCompany === k.value;
               return (
                 <TouchableOpacity
                   key={String(k.value)}
-                  style={[s.kindCard, active && s.kindCardActive]}
+                  style={[s.blockOption, s.flex1, active && s.blockOptionActive]}
                   onPress={() => setIsCompany(k.value)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.9}
                 >
-                  <Text style={s.kindEmoji}>{k.emoji}</Text>
-                  <Text style={[s.kindLabel, active && s.kindLabelActive]}>{k.label}</Text>
-                  <Text style={s.kindDesc}>{k.desc}</Text>
+                  <Text style={[s.blockTitle, active && s.textWhite]}>{k.label}</Text>
+                  <Text style={[s.blockDesc, active && s.textGray300]}>{k.desc}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
         </View>
       )}
-    </>
+    </View>
   );
 
-  // ── Step 2: Personal info ──────────────────────────────────
   const renderStep2 = () => (
-    <>
-      <Text style={s.stepTitle}>Personas dati</Text>
-      <Text style={s.stepSub}>Kā jūs saukt? Mēs nekad nepārdosim jūsu datus.</Text>
+    <View style={s.stepContent}>
+      <Text
+        className="text-3xl text-black mb-2"
+        style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}
+      >
+        Tavi dati
+      </Text>
+      <Text className="text-base text-gray-500 mb-8" style={{ fontFamily: 'Inter_400Regular' }}>
+        Informācija līgumiem un piegādēm.
+      </Text>
 
-      <View style={s.nameRow}>
-        <View style={[s.field, { flex: 1 }]}>
-          <Text style={s.label}>Vārds</Text>
+      <View style={[s.grid, { flexDirection: 'row' }]}>
+        <View style={s.flex1}>
           <TextInput
-            style={[s.input, errors.firstName && s.inputErr]}
-            placeholder="Jānis"
+            style={[s.softInput, errors.firstName && s.inputErr]}
+            placeholder="Vārds"
             placeholderTextColor="#9ca3af"
             value={firstName}
             onChangeText={setFirstName}
             autoCapitalize="words"
           />
-          {errors.firstName && <Text style={s.err}>{errors.firstName}</Text>}
         </View>
-        <View style={[s.field, { flex: 1 }]}>
-          <Text style={s.label}>Uzvārds</Text>
+        <View style={s.flex1}>
           <TextInput
-            style={[s.input, errors.lastName && s.inputErr]}
-            placeholder="Bērziņš"
+            style={[s.softInput, errors.lastName && s.inputErr]}
+            placeholder="Uzvārds"
             placeholderTextColor="#9ca3af"
             value={lastName}
             onChangeText={setLastName}
             autoCapitalize="words"
           />
-          {errors.lastName && <Text style={s.err}>{errors.lastName}</Text>}
         </View>
       </View>
 
-      <View style={s.field}>
-        <Text style={s.label}>E-pasts</Text>
+      <View style={{ marginTop: 12 }}>
         <TextInput
-          style={[s.input, errors.email && s.inputErr]}
-          placeholder="janis@uznemums.lv"
+          style={[s.softInput, errors.email && s.inputErr]}
+          placeholder="E-pasta adrese"
           placeholderTextColor="#9ca3af"
           keyboardType="email-address"
           autoCapitalize="none"
@@ -339,16 +273,12 @@ export default function RegisterScreen() {
           value={email}
           onChangeText={setEmail}
         />
-        {errors.email && <Text style={s.err}>{errors.email}</Text>}
       </View>
 
-      <View style={s.field}>
-        <Text style={s.label}>
-          Tālrunis <Text style={s.optional}>(neobligāts)</Text>
-        </Text>
+      <View style={{ marginTop: 12 }}>
         <TextInput
-          style={s.input}
-          placeholder="+371 2X XXX XXX"
+          style={s.softInput}
+          placeholder="Tālruņa numurs (neobligāts)"
           placeholderTextColor="#9ca3af"
           keyboardType="phone-pad"
           value={phone}
@@ -357,98 +287,84 @@ export default function RegisterScreen() {
       </View>
 
       {needsCompanyInfo && (
-        <>
-          <View style={s.companySeparator}>
-            <View style={s.companySepLine} />
-            <Text style={s.companySepLabel}>Uzņēmuma informācija</Text>
-            <View style={s.companySepLine} />
-          </View>
-
-          <View style={s.field}>
-            <Text style={s.label}>Uzņēmuma nosaukums</Text>
+        <View style={{ marginTop: 24 }}>
+          <Text style={s.sectionLabel}>Uzņēmums</Text>
+          <View style={s.grid}>
             <TextInput
-              style={[s.input, errors.companyName && s.inputErr]}
-              placeholder="SIA Jūsu Uzņēmums"
+              style={[s.softInput, errors.companyName && s.inputErr]}
+              placeholder="Uzņēmuma nosaukums"
               placeholderTextColor="#9ca3af"
               value={companyName}
               onChangeText={setCompanyName}
               autoCapitalize="words"
             />
-            {errors.companyName && <Text style={s.err}>{errors.companyName}</Text>}
-          </View>
-
-          <View style={s.field}>
-            <Text style={s.label}>
-              Reģ. numurs <Text style={s.optional}>(neobligāts)</Text>
-            </Text>
             <TextInput
-              style={s.input}
-              placeholder="40001234567"
+              style={s.softInput}
+              placeholder="Reģistrācijas numurs (neobligāts)"
               placeholderTextColor="#9ca3af"
               keyboardType="number-pad"
               value={regNumber}
               onChangeText={setRegNumber}
             />
           </View>
-        </>
+        </View>
       )}
-    </>
+    </View>
   );
 
-  // ── Step 3: Password ───────────────────────────────────────
   const renderStep3 = () => (
-    <>
-      <Text style={s.stepTitle}>Izveidot paroli</Text>
-      <Text style={s.stepSub}>Vismaz 8 rakstzīmes. Ieteicams izmantot ciparus un simbolus.</Text>
+    <View style={s.stepContent}>
+      <Text
+        className="text-3xl text-black mb-2"
+        style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}
+      >
+        Izveido paroli
+      </Text>
+      <Text className="text-base text-gray-500 mb-8" style={{ fontFamily: 'Inter_400Regular' }}>
+        Drošībai virs visa.
+      </Text>
 
-      <View style={s.field}>
-        <Text style={s.label}>Parole</Text>
-        <View style={[s.inputRow, errors.password && s.inputRowErr]}>
+      <View style={s.grid}>
+        <View style={[s.softInputRow, errors.password && s.inputErr]}>
           <TextInput
-            style={s.inputFlex}
-            placeholder="Ievadiet paroli"
+            style={s.flex1}
+            placeholder="Parole (vismaz 8 simboli)"
             placeholderTextColor="#9ca3af"
             secureTextEntry={!showPw}
             value={password}
             onChangeText={setPassword}
           />
-          <TouchableOpacity style={s.eyeBtn} onPress={() => setShowPw((v) => !v)} hitSlop={8}>
-            {showPw ? <EyeOff size={18} color="#9ca3af" /> : <Eye size={18} color="#9ca3af" />}
+          <TouchableOpacity onPress={() => setShowPw(!showPw)} hitSlop={12}>
+            {showPw ? <EyeOff size={20} color="#9ca3af" /> : <Eye size={20} color="#9ca3af" />}
           </TouchableOpacity>
         </View>
-        {errors.password && <Text style={s.err}>{errors.password}</Text>}
-        {/* Strength bar */}
+
         {password.length > 0 && (
           <View style={s.strengthRow}>
             <View style={s.strengthTrack}>
               <View
                 style={[
                   s.strengthFill,
-                  { width: `${strength.pct * 100}%` as any, backgroundColor: strength.color },
+                  { width: `${strength.pct * 100}%`, backgroundColor: strength.color },
                 ]}
               />
             </View>
-            <Text style={[s.strengthLabel, { color: strength.color }]}>{strength.label}</Text>
           </View>
         )}
-      </View>
 
-      <View style={[s.field, { marginBottom: 24 }]}>
-        <Text style={s.label}>Apstiprināt paroli</Text>
-        <View style={[s.inputRow, errors.confirmPw && s.inputRowErr]}>
+        <View style={[s.softInputRow, errors.confirmPw && s.inputErr]}>
           <TextInput
-            style={s.inputFlex}
-            placeholder="Atkārtojiet paroli"
+            style={s.flex1}
+            placeholder="Atkārto paroli"
             placeholderTextColor="#9ca3af"
             secureTextEntry={!showCpw}
             value={confirmPw}
             onChangeText={setConfirmPw}
           />
-          <TouchableOpacity style={s.eyeBtn} onPress={() => setShowCpw((v) => !v)} hitSlop={8}>
-            {showCpw ? <EyeOff size={18} color="#9ca3af" /> : <Eye size={18} color="#9ca3af" />}
+          <TouchableOpacity onPress={() => setShowCpw(!showCpw)} hitSlop={12}>
+            {showCpw ? <EyeOff size={20} color="#9ca3af" /> : <Eye size={20} color="#9ca3af" />}
           </TouchableOpacity>
         </View>
-        {errors.confirmPw && <Text style={s.err}>{errors.confirmPw}</Text>}
       </View>
 
       {apiError && (
@@ -458,14 +374,11 @@ export default function RegisterScreen() {
       )}
 
       <Text style={s.legalText}>
-        Reģistrējoties, jūs piekrītat mūsu <Text style={s.legalLink}>Lietošanas noteikumiem</Text>{' '}
-        un <Text style={s.legalLink}>Privātuma politikai</Text>.
+        Turpinot, jūs piekrītat mūsu <Text style={s.legalLink}>Noteikumiem</Text> un{' '}
+        <Text style={s.legalLink}>Privātuma politikai</Text>.
       </Text>
-    </>
+    </View>
   );
-
-  // Role count label for header
-  const roleCountLabel = roles.size > 1 ? `${roles.size} lomas` : 'Solis';
 
   return (
     <ScreenContainer standalone bg="#fff" topInset={0}>
@@ -474,17 +387,15 @@ export default function RegisterScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
-        {/* Header bar */}
+        {/* Minimal Header */}
         <View style={[s.header, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity style={s.backBtn} onPress={goBack} activeOpacity={0.7}>
-            <ChevronLeft size={22} color="#374151" />
+            <ChevronLeft size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={s.headerLabel}>
-            Solis {step} no {TOTAL_STEPS}
+          <Text style={s.stepCounter}>
+            {step} / {TOTAL_STEPS}
           </Text>
-          <View style={{ width: 40 }} />
         </View>
-        <ProgressBar step={step} />
 
         <ScrollView
           contentContainerStyle={s.scroll}
@@ -496,34 +407,20 @@ export default function RegisterScreen() {
           {step === 3 && renderStep3()}
         </ScrollView>
 
-        {/* Footer CTA */}
-        <View style={s.footer}>
+        {/* Anchored Bottom Action */}
+        <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 24) }]}>
           <TouchableOpacity
             style={[s.primaryBtn, submitting && s.primaryBtnDisabled]}
             onPress={goNext}
             disabled={submitting}
-            activeOpacity={0.85}
+            activeOpacity={0.9}
           >
             {submitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={s.primaryBtnText}>
-                {step === TOTAL_STEPS ? 'Izveidot kontu' : 'Tālāk'}
-              </Text>
+              <Text style={s.primaryBtnText}>{step === TOTAL_STEPS ? 'Pabeigt' : 'Turpināt'}</Text>
             )}
           </TouchableOpacity>
-
-          {step === 1 && (
-            <TouchableOpacity
-              style={s.signInRow}
-              onPress={() => router.replace('/(auth)/login')}
-              activeOpacity={0.7}
-            >
-              <Text style={s.signInText}>
-                Jau ir konts? <Text style={s.signInLink}>Pierakstīties</Text>
-              </Text>
-            </TouchableOpacity>
-          )}
         </View>
       </KeyboardAvoidingView>
     </ScreenContainer>
@@ -531,185 +428,141 @@ export default function RegisterScreen() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#fff' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 0,
-    paddingBottom: 4,
+    paddingVertical: 12,
   },
   backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#fff',
   },
-  headerLabel: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
-
-  scroll: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16 },
-
-  stepTitle: { fontSize: 26, fontWeight: '800', color: '#111827', marginBottom: 6 },
-  stepSub: { fontSize: 14, color: '#6b7280', lineHeight: 20, marginBottom: 24 },
-
-  checkBadgeEmpty: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#d1d5db',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkBadgeEmptyInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#e5e7eb',
-  },
-  lockedHint: {
-    fontSize: 11,
+  stepCounter: {
+    fontSize: 16,
     fontWeight: '600',
-    marginTop: 4,
+    color: '#000',
+    paddingRight: 16,
+    fontFamily: 'Inter_600SemiBold',
   },
-  pendingHint: {
-    fontSize: 11,
-    marginTop: 4,
+  scroll: {
+    flexGrow: 1,
   },
-  // Company section separator
-  companySeparator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginVertical: 8,
+  stepContent: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
   },
-  companySepLine: { flex: 1, height: 1, backgroundColor: '#e5e7eb' },
-  companySepLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
 
-  // Role grid
-  roleGrid: { gap: 12 },
-  roleCard: {
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+  grid: { gap: 12 },
+  flex1: { flex: 1 },
+
+  // Block Opts
+  blockOption: {
+    backgroundColor: '#f3f4f6', // bg-muted
     borderRadius: 16,
-    padding: 16,
-    backgroundColor: '#fff',
+    padding: 20,
   },
-  roleCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 6,
+  blockOptionActive: {
+    backgroundColor: '#000',
   },
-  roleEmoji: { fontSize: 28 },
-  checkBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+  blockTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 4,
+    fontFamily: 'Inter_700Bold',
   },
-  roleTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 3 },
-  roleDesc: { fontSize: 13, color: '#6b7280', lineHeight: 18 },
+  blockDesc: {
+    fontSize: 14,
+    color: '#6b7280', // text-muted
+    fontFamily: 'Inter_400Regular',
+  },
+  textWhite: { color: '#fff' },
+  textGray300: { color: '#d1d5db' },
 
-  // Account kind
-  sectionBlock: { marginTop: 24 },
-  sectionLabel: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 10 },
-  kindRow: { flexDirection: 'row', gap: 10 },
-  kindCard: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+  // Soft Inputs
+  softInput: {
+    backgroundColor: '#f3f4f6',
     borderRadius: 14,
-    padding: 14,
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    paddingHorizontal: 18,
+    height: 56,
+    fontSize: 16,
+    color: '#000',
+    fontFamily: 'Inter_400Regular',
   },
-  kindCardActive: { borderColor: '#111827', backgroundColor: '#fef2f2' },
-  kindEmoji: { fontSize: 22, marginBottom: 6 },
-  kindLabel: { fontSize: 13, fontWeight: '700', color: '#374151', textAlign: 'center' },
-  kindLabelActive: { color: '#b91c1c' },
-  kindDesc: { fontSize: 11, color: '#9ca3af', textAlign: 'center', marginTop: 2 },
-
-  // Personal info
-  nameRow: { flexDirection: 'row', gap: 12, marginBottom: 0 },
-  field: { marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 6 },
-  optional: { fontWeight: '400', color: '#9ca3af' },
-  input: {
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    color: '#111827',
-    backgroundColor: '#fff',
-  },
-  inputErr: { borderColor: '#f87171' },
-  err: { color: '#ef4444', fontSize: 12, marginTop: 4 },
-  inputRow: {
+  softInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 14,
+    paddingHorizontal: 18,
+    height: 56,
+  },
+  inputErr: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    backgroundColor: '#fff',
+    borderColor: '#ef4444',
   },
-  inputRowErr: { borderColor: '#f87171' },
-  inputFlex: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    color: '#111827',
-  },
-  eyeBtn: { paddingHorizontal: 14, paddingVertical: 14 },
+  err: { color: '#ef4444', fontSize: 13, marginTop: 4, marginLeft: 4 },
 
-  // Password strength
-  strengthRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
-  strengthTrack: { flex: 1, height: 4, backgroundColor: '#f3f4f6', borderRadius: 999 },
-  strengthFill: { height: 4, borderRadius: 999 },
-  strengthLabel: { fontSize: 12, fontWeight: '600', minWidth: 40 },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    marginBottom: 12,
+    letterSpacing: 0.5,
+    fontFamily: 'Inter_700Bold',
+  },
+
+  // Strength
+  strengthRow: { paddingHorizontal: 4, marginVertical: 4 },
+  strengthTrack: { height: 4, backgroundColor: '#e5e7eb', borderRadius: 2 },
+  strengthFill: { height: 4, borderRadius: 2 },
+
+  // API Err
+  apiErrBox: {
+    backgroundColor: '#fee2e2',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 24,
+  },
+  apiErrText: { color: '#b91c1c', fontSize: 14, fontWeight: '500' },
 
   // Legal
-  legalText: { fontSize: 12, color: '#9ca3af', lineHeight: 18, marginBottom: 8 },
-  legalLink: { color: '#111827', fontWeight: '600' },
-
-  // API error
-  apiErrBox: {
-    backgroundColor: '#fef2f2',
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 16,
+  legalText: {
+    fontSize: 13,
+    color: '#6b7280',
+    marginTop: 24,
+    lineHeight: 20,
+    fontFamily: 'Inter_400Regular',
   },
-  apiErrText: { color: '#b91c1c', fontSize: 14 },
+  legalLink: { color: '#000', fontWeight: '600', fontFamily: 'Inter_600SemiBold' },
 
   // Footer
   footer: {
     paddingHorizontal: 24,
-    paddingBottom: 32,
-    paddingTop: 12,
-    gap: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+    paddingTop: 16,
     backgroundColor: '#fff',
   },
   primaryBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 999,
-    paddingVertical: 17,
+    backgroundColor: '#000',
+    height: 56,
+    borderRadius: 16,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  primaryBtnDisabled: { backgroundColor: '#f87171' },
-  primaryBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  signInRow: { alignItems: 'center', paddingVertical: 4 },
-  signInText: { fontSize: 14, color: '#6b7280' },
-  signInLink: { color: '#111827', fontWeight: '700' },
+  primaryBtnDisabled: {
+    backgroundColor: '#9ca3af',
+  },
+  primaryBtnText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+  },
 });

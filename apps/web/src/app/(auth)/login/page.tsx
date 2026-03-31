@@ -10,18 +10,10 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Building2, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { loginUser } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 
@@ -54,27 +46,32 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-linear-to-b from-red-50 to-white px-4 py-12">
-      {/* Logo */}
-      <Link href="/" className="flex items-center gap-2 mb-8">
-        <Building2 className="h-8 w-8 text-primary" />
-        <span className="text-2xl font-bold text-gray-900">B3Hub</span>
-      </Link>
+    <div className="min-h-screen bg-white flex flex-col font-sans">
+      {/* Absolute Header */}
+      <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-10">
+        <a href="http://localhost:3002" className="text-black text-2xl font-bold tracking-tight">
+          B3Hub
+        </a>
+        <Link
+          href="/register"
+          className="text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors px-5 py-2.5 rounded-full"
+        >
+          Reģistrēties
+        </Link>
+      </div>
 
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Laipni atgriezties</CardTitle>
-          <CardDescription>
-            Nav konta?{' '}
-            <Link href="/register" className="text-primary hover:underline font-medium">
-              Reģistrēties bez maksas
-            </Link>
-          </CardDescription>
-        </CardHeader>
+      {/* Main Content Centered */}
+      <div className="flex-1 flex flex-col justify-center items-center px-6 py-20 lg:py-0 w-full animate-in fade-in zoom-in-95 duration-500">
+        <div className="w-full max-w-100">
+          <div className="mb-8">
+            <h1 className="text-4xl font-medium text-gray-900 tracking-tight mb-3">
+              Laipni atgriezties
+            </h1>
+            <p className="text-[15px] text-gray-500">Ievadiet savus datus, lai piekļūtu kontam.</p>
+          </div>
 
-        <CardContent>
           {error && (
-            <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <div className="p-3 text-sm text-red-600 bg-red-50 rounded-xl border border-red-100 mb-6">
               {error}
             </div>
           )}
@@ -86,9 +83,13 @@ export default function LoginPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>E-pasts</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="janis@piemers.lv" {...field} />
+                      <Input
+                        type="email"
+                        placeholder="E-pasts"
+                        className="h-13 px-4 text-[15px] bg-gray-100 border-transparent hover:bg-gray-200 focus:bg-white focus:border-black focus:ring-black focus:ring-2 rounded-xl transition-all placeholder:text-gray-500"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -100,36 +101,45 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center justify-between">
-                      <FormLabel>Parole</FormLabel>
-                      <Link
-                        href="/forgot-password"
-                        className="text-xs text-primary hover:underline"
-                      >
-                        Aizmirsāt paroli?
-                      </Link>
-                    </div>
                     <FormControl>
-                      <Input type="password" placeholder="Jūsu parole" {...field} />
+                      <Input
+                        type="password"
+                        placeholder="Parole"
+                        className="h-13 px-4 text-[15px] bg-gray-100 border-transparent hover:bg-gray-200 focus:bg-white focus:border-black focus:ring-black focus:ring-2 rounded-xl transition-all placeholder:text-gray-500"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+              <Button
+                type="submit"
+                className="w-full h-13 bg-black hover:bg-gray-800 text-white rounded-xl text-[15px] font-medium mt-4 transition-colors shadow-none"
+                disabled={form.formState.isSubmitting}
+              >
                 {form.formState.isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Ienāk…
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Pieteikšanās…
                   </>
                 ) : (
-                  'Ieiet'
+                  'Turpināt'
                 )}
               </Button>
+
+              <div className="text-center mt-6 pt-4">
+                <Link
+                  href="/forgot-password"
+                  className="text-[14px] text-gray-500 hover:text-black font-medium transition-colors"
+                >
+                  Aizmirsāt paroli?
+                </Link>
+              </div>
             </form>
           </Form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

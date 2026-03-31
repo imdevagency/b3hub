@@ -145,7 +145,7 @@ export default function BuvnieckiemPage() {
                   </p>
                 </div>
                 {/* Decorative map mock */}
-                <div className="absolute -right-12 -bottom-12 w-80 h-80 bg-background border border-border rounded-2xl shadow-2xl skew-x-[-5deg] rotate-[5deg] transition-transform group-hover:rotate-0 group-hover:skew-x-0 duration-500 ease-out flex items-center justify-center relative overflow-hidden hidden md:flex">
+                <div className="absolute -right-12 -bottom-12 w-80 h-80 bg-background border border-border rounded-2xl shadow-2xl skew-x-[-5deg] rotate-[5deg] transition-transform group-hover:rotate-0 group-hover:skew-x-0 duration-500 ease-out items-center justify-center overflow-hidden hidden md:flex">
                   <div
                     className="absolute inset-0 opacity-20"
                     style={{
@@ -154,7 +154,7 @@ export default function BuvnieckiemPage() {
                       backgroundSize: '24px 24px',
                     }}
                   />
-                  <div className="w-16 h-16 bg-foreground text-background rounded-full flex items-center justify-center animate-pulse shadow-xl shadow-foreground/20 z-10 z-[2]">
+                  <div className="w-16 h-16 bg-foreground text-background rounded-full flex items-center justify-center animate-pulse shadow-xl shadow-foreground/20 z-2">
                     <span className="font-bold text-lg">Auto</span>
                   </div>
                 </div>
@@ -190,7 +190,7 @@ export default function BuvnieckiemPage() {
                   </p>
                 </div>
                 {/* Decorative element */}
-                <div className="absolute right-0 bottom-0 top-0 w-1/2 bg-gradient-to-l from-background/20 to-transparent items-center justify-end pr-8 hidden md:flex">
+                <div className="absolute right-0 bottom-0 top-0 w-1/2 bg-linear-to-l from-background/20 to-transparent items-center justify-end pr-8 hidden md:flex">
                   <div className="w-48 h-32 bg-background/10 backdrop-blur-md border border-white/20 rounded-xl flex items-center justify-center">
                     <span className="text-xl font-bold text-white tracking-widest uppercase">
                       E-RĒĶINS
@@ -232,7 +232,7 @@ export default function BuvnieckiemPage() {
 
             {/* Right: Sticky Mockup Wrapper */}
             <div className="md:w-1/2 relative hidden md:block">
-              <div className="sticky top-32 w-full max-w-md mx-auto aspect-[9/18] bg-muted/20 border border-border rounded-[3rem] p-4 flex flex-col gap-2 shadow-2xl relative">
+              <div className="sticky top-32 w-full max-w-md mx-auto aspect-9/18 bg-muted/20 border border-border rounded-[3rem] p-4 flex flex-col gap-2 shadow-2xl">
                 {/* Notch */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-border rounded-b-2xl z-20" />
 
@@ -265,7 +265,7 @@ export default function BuvnieckiemPage() {
                     </div>
                   </div>
                   {/* Gradient fade at bottom of mockup */}
-                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-muted/20 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-linear-to-t from-muted/20 to-transparent" />
                 </div>
               </div>
             </div>
