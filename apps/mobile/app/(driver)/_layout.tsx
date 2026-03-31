@@ -4,13 +4,14 @@ import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
-import { Home, ClipboardList, Map, User, Wallet } from 'lucide-react-native';
+import { Home, ClipboardList, Map, User, Wallet, CalendarDays } from 'lucide-react-native';
 import { TopBar } from '@/components/ui/TopBar';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
 import { useUnreadCount } from '@/lib/use-unread-count';
+import { useActiveJob } from '@/lib/use-active-job';
 
 const ACCENT = '#111827';
 
@@ -21,6 +22,7 @@ export default function DriverLayout() {
   const insets = useSafeAreaInsets();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const unreadCount = useUnreadCount();
+  const { hasActiveJob } = useActiveJob();
 
   // Hide the global TopBar on these screens because they implement their own headers (e.g. back buttons) or are full-screen maps.
   const HIDE_TOPBAR_ROUTES = [
@@ -45,11 +47,19 @@ export default function DriverLayout() {
 
   // eslint-disable-next-line react/display-name
   const renderTabBar = useCallback(
-    (props: BottomTabBarProps) => {
-      if (pathname === '/active' || pathname === '/(driver)/active') return null;
-      return <AnimatedTabBar {...props} />;
-    },
-    [pathname],
+    (props: BottomTabBarProps) => (
+      <AnimatedTabBar
+        {...props}
+        onRoutePress={(routeName, defaultHandler) => {
+          if (routeName === 'jobs' && hasActiveJob) {
+            router.push('/(driver)/active');
+          } else {
+            defaultHandler();
+          }
+        }}
+      />
+    ),
+    [hasActiveJob, router],
   );
 
   useEffect(() => {
@@ -91,15 +101,22 @@ export default function DriverLayout() {
           <Tabs.Screen
             name="jobs"
             options={{
-              title: t.tabs.jobs,
-              tabBarIcon: ({ color }) => <ClipboardList size={22} color={color} />,
+              title: hasActiveJob ? t.tabs.active : t.tabs.jobs,
+              tabBarIcon: ({ color }) =>
+                hasActiveJob ? (
+                  <Map size={22} color={color} />
+                ) : (
+                  <ClipboardList size={22} color={color} />
+                ),
+              tabBarBadge: hasActiveJob ? (true as unknown as number) : undefined,
             }}
           />
+          <Tabs.Screen name="active" options={{ href: null }} />
           <Tabs.Screen
-            name="active"
+            name="schedule"
             options={{
-              title: t.tabs.active,
-              tabBarIcon: ({ color }) => <Map size={22} color={color} />,
+              title: t.tabs.schedule,
+              tabBarIcon: ({ color }) => <CalendarDays size={22} color={color} />,
             }}
           />
           <Tabs.Screen
@@ -118,7 +135,6 @@ export default function DriverLayout() {
           />
           <Tabs.Screen name="skips" options={{ href: null }} />
           <Tabs.Screen name="vehicles" options={{ href: null }} />
-          <Tabs.Screen name="schedule" options={{ href: null }} />
         </Tabs>
       </View>
       <Sidebar

@@ -1204,11 +1204,23 @@ export class TransportJobsService {
             transportJobId: id,
             ownerId: order.createdById,
             jobNumber: delivered.jobNumber,
+            pickupAddress: delivered.pickupAddress ?? undefined,
             pickupCity: delivered.pickupCity,
+            deliveryAddress: delivered.deliveryAddress ?? undefined,
             deliveryCity: delivered.deliveryCity,
             driverName: driver
               ? `${driver.firstName} ${driver.lastName}`
               : undefined,
+            driverPhone: driver?.phone ?? undefined,
+            vehiclePlate: delivered.vehicle?.licensePlate ?? undefined,
+            cargoType: delivered.cargoType ?? undefined,
+            cargoWeightKg: delivered.cargoWeight
+              ? Number(delivered.cargoWeight)
+              : undefined,
+            actualWeightKg: delivered.actualWeightKg ?? undefined,
+            orderNumber: delivered.order?.orderNumber ?? undefined,
+            siteContactName: delivered.order?.siteContactName ?? undefined,
+            deliveredAt: new Date(),
           })
           .catch(() => {});
 

@@ -29,6 +29,7 @@ import { EmailService } from '../email/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
 import { PaymentsService } from '../payments/payments.service';
+import { InvoicesService } from '../invoices/invoices.service';
 
 @Injectable()
 export class OrdersService {
@@ -60,6 +61,7 @@ export class OrdersService {
     private email: EmailService,
     private notifications: NotificationsService,
     private payments: PaymentsService,
+    private invoices: InvoicesService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, currentUser: RequestingUser) {
@@ -987,7 +989,7 @@ export class OrdersService {
     });
     const dueDate = this.parseDueDateFromTerms(buyerProfile?.paymentTerms);
 
-    await this.prisma.invoice.create({
+    const inv = await this.prisma.invoice.create({
       data: {
         invoiceNumber,
         orderId: order.id,
@@ -998,9 +1000,30 @@ export class OrdersService {
         dueDate,
         paymentStatus: PaymentStatus.PENDING,
       },
+      select: { id: true },
     });
 
     this.logger.log(`Invoice ${invoiceNumber} created for order ${order.id}`);
+
+    // Auto-email the invoice PDF to the buyer (fire-and-forget, non-fatal)
+    const buyer = await this.prisma.user.findUnique({
+      where: { id: order.createdById },
+      select: { email: true, firstName: true, lastName: true },
+    });
+    if (buyer?.email) {
+      this.invoices
+        .emailInvoice(
+          inv.id,
+          buyer.email,
+          [buyer.firstName, buyer.lastName].filter(Boolean).join(' ') ||
+            buyer.email,
+        )
+        .catch((err) =>
+          this.logger.warn(
+            `Auto-email invoice ${inv.id} failed: ${(err as Error).message}`,
+          ),
+        );
+    }
   }
 
   private async generateInvoiceNumber(): Promise<string> {

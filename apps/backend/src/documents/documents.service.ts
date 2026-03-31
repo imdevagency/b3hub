@@ -6,6 +6,7 @@
  */
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import {
   DocumentEntityType,
   DocumentLinkRole,
@@ -15,12 +16,16 @@ import {
 } from '@prisma/client';
 import { QueryDocumentsDto } from './dto/query-documents.dto';
 import { CreateDocumentDto } from './dto/create-document.dto';
+import PDFDocument from 'pdfkit';
 
 @Injectable()
 export class DocumentsService {
   private readonly logger = new Logger(DocumentsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly supabase: SupabaseService,
+  ) {}
 
   /** List all documents visible to the requesting user */
   async findAll(userId: string, query: QueryDocumentsDto) {
@@ -294,34 +299,232 @@ export class DocumentsService {
   }
 
   /**
-   * Auto-generate a delivery note (CMR) when a transport job is delivered.
-   * Called internally by TransportJobsService.
+   * Auto-generate a waste processing certificate when a waste record is created.
+   * Called by RecyclingCentersService after a successful waste record creation.
    */
-  async generateDeliveryNote(
-    params: {
-      orderId?: string;
-      transportJobId?: string;
-      ownerId: string;
-      jobNumber: string;
-      pickupCity: string;
-      deliveryCity: string;
-      driverName?: string;
-    },
-    pdfUrl?: string,
-  ) {
+  async generateWasteCertificate(params: {
+    ownerId: string;
+    wasteRecordId: string;
+    centerId?: string;
+    centerName?: string;
+    centerCity?: string;
+    wasteType?: string;
+    weightKg?: number;
+    recyclableWeightKg?: number;
+    recyclingRate?: number;
+    processedDate?: Date;
+  }) {
+    const dateStr = (params.processedDate ?? new Date()).toLocaleDateString(
+      'lv-LV',
+    );
+    const certNumber = `WC${Date.now().toString(36).toUpperCase()}`;
+
+    let fileUrl: string | undefined;
+    try {
+      const pdfBuffer = await this.buildWasteCertPdf({
+        ...params,
+        certNumber,
+        dateStr,
+      });
+      const storagePath = `waste-certs/${params.wasteRecordId}.pdf`;
+      await this.supabase.uploadFile('documents', storagePath, pdfBuffer);
+      fileUrl = this.supabase.getPublicUrl('documents', storagePath);
+    } catch (err) {
+      this.logger.warn(
+        `Waste certificate PDF failed for record ${params.wasteRecordId}: ${(err as Error).message}`,
+      );
+    }
+
     return this.prisma.document.create({
       data: {
-        title: `Delivery Note — ${params.jobNumber}`,
+        title: `Atkritumu sertifikāts ${certNumber} — ${dateStr}`,
+        type: DocumentType.WASTE_CERTIFICATE,
+        status: DocumentStatus.ISSUED,
+        fileUrl,
+        mimeType: 'application/pdf',
+        ownerId: params.ownerId,
+        isGenerated: true,
+        issuedBy: params.centerName,
+        notes: params.wasteType
+          ? `Atkritumu veids: ${params.wasteType}${params.weightKg ? ` · Svars: ${(params.weightKg / 1000).toFixed(3)} t` : ''}`
+          : undefined,
+        links: {
+          create: {
+            entityType: DocumentEntityType.WASTE_RECORD,
+            entityId: params.wasteRecordId,
+            role: DocumentLinkRole.PRIMARY,
+          },
+        },
+      },
+    });
+  }
+
+  /** Build a waste processing certificate PDF buffer. */
+  private buildWasteCertPdf(params: {
+    certNumber: string;
+    dateStr: string;
+    centerName?: string;
+    centerCity?: string;
+    wasteType?: string;
+    weightKg?: number;
+    recyclableWeightKg?: number;
+    recyclingRate?: number;
+  }): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      const chunks: Buffer[] = [];
+      doc.on('data', (c: Buffer) => chunks.push(c));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      // ── Header ────────────────────────────────────────────────────────────
+      doc
+        .fontSize(22)
+        .font('Helvetica-Bold')
+        .text('B3Hub', 50, 50)
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text('b3hub.lv  |  support@b3hub.lv', 50, 76);
+
+      doc
+        .fontSize(19)
+        .font('Helvetica-Bold')
+        .fillColor('#111827')
+        .text('ATKRITUMU SERTIFIKĀTS', 0, 50, { align: 'right' });
+
+      doc
+        .fontSize(10)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text(`#${params.certNumber}`, 0, 74, { align: 'right' });
+
+      doc.moveTo(50, 100).lineTo(545, 100).strokeColor('#e5e7eb').stroke();
+
+      // ── Details ───────────────────────────────────────────────────────────
+      doc.fillColor('#111827').fontSize(10).font('Helvetica');
+      const y = 116;
+      const label = (text: string, row: number) =>
+        doc.text(text, 50, y + row * 20);
+      const value = (text: string, row: number) =>
+        doc.text(text, 220, y + row * 20);
+
+      label('Datums:', 0);
+      value(params.dateStr, 0);
+
+      if (params.centerName) {
+        label('Pārstrādes centrs:', 1);
+        value(
+          `${params.centerName}${params.centerCity ? `, ${params.centerCity}` : ''}`,
+          1,
+        );
+      }
+
+      if (params.wasteType) {
+        label('Atkritumu veids:', 2);
+        value(params.wasteType, 2);
+      }
+
+      if (params.weightKg !== undefined) {
+        label('Kopējais svars:', 3);
+        value(`${(params.weightKg / 1000).toFixed(3)} t`, 3);
+      }
+
+      if (params.recyclableWeightKg !== undefined) {
+        label('Pārstrādātais svars:', 4);
+        value(`${(params.recyclableWeightKg / 1000).toFixed(3)} t`, 4);
+      }
+
+      if (params.recyclingRate !== undefined) {
+        label('Pārstrādes koeficients:', 5);
+        value(`${params.recyclingRate.toFixed(1)} %`, 5);
+      }
+
+      const stampY = y + 7 * 20;
+      doc
+        .moveTo(50, stampY)
+        .lineTo(545, stampY)
+        .strokeColor('#e5e7eb')
+        .stroke();
+      doc
+        .fontSize(13)
+        .font('Helvetica-Bold')
+        .fillColor('#16a34a')
+        .text('PĀRSTRĀDĀTS ✓', 50, stampY + 12)
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text(
+          `Apstiprināts B3Hub platformā · ${params.dateStr}`,
+          50,
+          stampY + 32,
+        );
+
+      doc
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#9ca3af')
+        .text(
+          'B3Hub SIA  |  Rīga, Latvija  |  support@b3hub.lv  |  b3hub.lv',
+          50,
+          750,
+          { align: 'center' },
+        );
+
+      doc.end();
+    });
+  }
+
+
+   * Generates a PDF, uploads it to Supabase Storage, and creates a Document record.
+   * Called internally by TransportJobsService on job DELIVERED transition.
+   */
+  async generateDeliveryNote(params: {
+    orderId?: string;
+    transportJobId?: string;
+    ownerId: string;
+    jobNumber: string;
+    pickupAddress?: string;
+    pickupCity: string;
+    deliveryAddress?: string;
+    deliveryCity: string;
+    driverName?: string;
+    driverPhone?: string;
+    vehiclePlate?: string;
+    cargoType?: string;
+    cargoWeightKg?: number;
+    actualWeightKg?: number;
+    orderNumber?: string;
+    siteContactName?: string;
+    deliveredAt?: Date;
+  }) {
+    let fileUrl: string | undefined;
+
+    try {
+      const pdfBuffer = await this.buildCmrPdf(params);
+      const storagePath = `cmr/${params.transportJobId ?? params.jobNumber}.pdf`;
+      await this.supabase.uploadFile('documents', storagePath, pdfBuffer);
+      fileUrl = this.supabase.getPublicUrl('documents', storagePath);
+    } catch (err) {
+      this.logger.warn(
+        `CMR PDF generation/upload failed for job ${params.jobNumber}: ${(err as Error).message}`,
+      );
+      // Fall through — still create the document record without a file URL
+    }
+
+    return this.prisma.document.create({
+      data: {
+        title: `Pavadzīme / CMR — ${params.jobNumber}`,
         type: DocumentType.DELIVERY_NOTE,
         status: DocumentStatus.ISSUED,
-        fileUrl: pdfUrl,
+        fileUrl,
         mimeType: 'application/pdf',
         orderId: params.orderId,
         transportJobId: params.transportJobId,
         ownerId: params.ownerId,
         isGenerated: true,
         notes: `${params.pickupCity} → ${params.deliveryCity}${
-          params.driverName ? ` · Driver: ${params.driverName}` : ''
+          params.driverName ? ` · Šoferis: ${params.driverName}` : ''
         }`,
         links: {
           create: [
@@ -346,6 +549,198 @@ export class DocumentsService {
           ],
         },
       },
+    });
+  }
+
+  /** Build a CMR / delivery note PDF buffer. */
+  private buildCmrPdf(params: {
+    jobNumber: string;
+    pickupAddress?: string;
+    pickupCity: string;
+    deliveryAddress?: string;
+    deliveryCity: string;
+    driverName?: string;
+    driverPhone?: string;
+    vehiclePlate?: string;
+    cargoType?: string;
+    cargoWeightKg?: number;
+    actualWeightKg?: number;
+    orderNumber?: string;
+    siteContactName?: string;
+    deliveredAt?: Date;
+  }): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      const chunks: Buffer[] = [];
+      doc.on('data', (c: Buffer) => chunks.push(c));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      const dateStr = (params.deliveredAt ?? new Date()).toLocaleDateString(
+        'lv-LV',
+      );
+      const weightDisplay = params.actualWeightKg
+        ? `${(params.actualWeightKg / 1000).toFixed(3)} t (faktiskais)`
+        : params.cargoWeightKg
+          ? `${(params.cargoWeightKg / 1000).toFixed(3)} t`
+          : '—';
+
+      // ── Header ──────────────────────────────────────────────────────────
+      doc
+        .fontSize(22)
+        .font('Helvetica-Bold')
+        .text('B3Hub', 50, 50)
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text('b3hub.lv  |  support@b3hub.lv', 50, 76);
+
+      doc
+        .fontSize(22)
+        .font('Helvetica-Bold')
+        .fillColor('#111827')
+        .text('PAVADZĪME / CMR', 0, 50, { align: 'right' });
+
+      doc
+        .fontSize(10)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text(`#${params.jobNumber}`, 0, 76, { align: 'right' });
+
+      // ── Divider ─────────────────────────────────────────────────────────
+      doc.moveTo(50, 100).lineTo(545, 100).strokeColor('#e5e7eb').stroke();
+
+      // ── Meta row ────────────────────────────────────────────────────────
+      doc.fillColor('#111827').fontSize(10).font('Helvetica');
+      const metaY = 114;
+      doc.text('Datums:', 50, metaY).text(dateStr, 180, metaY);
+      if (params.orderNumber) {
+        doc
+          .text('Pasūtījums:', 50, metaY + 18)
+          .text(`#${params.orderNumber}`, 180, metaY + 18);
+      }
+
+      // ── Route section ───────────────────────────────────────────────────
+      const routeY = params.orderNumber ? 172 : 154;
+      doc
+        .moveTo(50, routeY)
+        .lineTo(545, routeY)
+        .strokeColor('#e5e7eb')
+        .stroke();
+      doc
+        .fontSize(10)
+        .font('Helvetica-Bold')
+        .fillColor('#374151')
+        .text('MARŠRUTS', 50, routeY + 10)
+        .font('Helvetica')
+        .fillColor('#111827');
+
+      const fromAddr = [params.pickupAddress, params.pickupCity]
+        .filter(Boolean)
+        .join(', ');
+      const toAddr = [params.deliveryAddress, params.deliveryCity]
+        .filter(Boolean)
+        .join(', ');
+
+      doc
+        .fontSize(10)
+        .text('No (iekraušana):', 50, routeY + 28)
+        .text(fromAddr || params.pickupCity, 180, routeY + 28);
+      doc
+        .text('Uz (izkraušana):', 50, routeY + 46)
+        .text(toAddr || params.deliveryCity, 180, routeY + 46);
+
+      if (params.siteContactName) {
+        doc
+          .text('Saņēmējs:', 50, routeY + 64)
+          .text(params.siteContactName, 180, routeY + 64);
+      }
+
+      // ── Cargo section ───────────────────────────────────────────────────
+      const cargoY = routeY + (params.siteContactName ? 100 : 82);
+      doc
+        .moveTo(50, cargoY)
+        .lineTo(545, cargoY)
+        .strokeColor('#e5e7eb')
+        .stroke();
+      doc
+        .font('Helvetica-Bold')
+        .text('KRAVA', 50, cargoY + 10)
+        .font('Helvetica')
+        .fillColor('#111827');
+
+      if (params.cargoType) {
+        doc
+          .text('Kravas veids:', 50, cargoY + 28)
+          .text(params.cargoType, 180, cargoY + 28);
+      }
+      doc
+        .text('Svars:', 50, cargoY + 46)
+        .text(weightDisplay, 180, cargoY + 46);
+
+      // ── Transport section ────────────────────────────────────────────────
+      const transY = cargoY + 86;
+      doc
+        .moveTo(50, transY)
+        .lineTo(545, transY)
+        .strokeColor('#e5e7eb')
+        .stroke();
+      doc
+        .font('Helvetica-Bold')
+        .text('PĀRVADĀTĀJS', 50, transY + 10)
+        .font('Helvetica')
+        .fillColor('#111827');
+
+      if (params.driverName) {
+        doc
+          .text('Šoferis:', 50, transY + 28)
+          .text(params.driverName, 180, transY + 28);
+      }
+      if (params.driverPhone) {
+        doc
+          .text('Telefons:', 50, transY + 46)
+          .text(params.driverPhone, 180, transY + 46);
+      }
+      if (params.vehiclePlate) {
+        doc
+          .text('Transportlīdzeklis:', 50, transY + 64)
+          .text(params.vehiclePlate, 180, transY + 64);
+      }
+
+      // ── Status stamp ────────────────────────────────────────────────────
+      const stampY = transY + 110;
+      doc
+        .moveTo(50, stampY)
+        .lineTo(545, stampY)
+        .strokeColor('#e5e7eb')
+        .stroke();
+      doc
+        .fontSize(13)
+        .font('Helvetica-Bold')
+        .fillColor('#16a34a')
+        .text('PIEGĀDĀTS ✓', 50, stampY + 12)
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text(
+          `Apstiprināts B3Hub platformā · ${dateStr}`,
+          50,
+          stampY + 32,
+        );
+
+      // ── Footer ───────────────────────────────────────────────────────────
+      doc
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#9ca3af')
+        .text(
+          'B3Hub SIA  |  Rīga, Latvija  |  support@b3hub.lv  |  b3hub.lv',
+          50,
+          750,
+          { align: 'center' },
+        );
+
+      doc.end();
     });
   }
 }

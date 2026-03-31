@@ -16,6 +16,7 @@ import { UpdateRecyclingCenterDto } from './dto/update-recycling-center.dto';
 import { QueryRecyclingCentersDto } from './dto/query-recycling-centers.dto';
 import { CreateWasteRecordDto } from './dto/create-waste-record.dto';
 import { UpdateWasteRecordDto } from './dto/update-waste-record.dto';
+import { DocumentsService } from '../documents/documents.service';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -23,7 +24,10 @@ import { UpdateWasteRecordDto } from './dto/update-waste-record.dto';
 export class RecyclingCentersService {
   private readonly logger = new Logger(RecyclingCentersService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly documents: DocumentsService,
+  ) {}
 
   // ── Recycling Center CRUD ─────────────────────────────────────────────────
 
@@ -173,7 +177,7 @@ export class RecyclingCentersService {
     if (center.companyId !== companyId)
       throw new ForbiddenException('Not your recycling center');
 
-    return this.prisma.wasteRecord.create({
+    const record = await this.prisma.wasteRecord.create({
       data: {
         recyclingCenterId: centerId,
         containerOrderId: dto.containerOrderId ?? null,
@@ -190,6 +194,32 @@ export class RecyclingCentersService {
         recyclingCenter: { select: { id: true, name: true, city: true } },
       },
     });
+
+    // Auto-generate WASTE_CERTIFICATE document (fire-and-forget, non-fatal)
+    this.documents
+      .generateWasteCertificate({
+        ownerId: companyId,
+        wasteRecordId: record.id,
+        centerId,
+        centerName: record.recyclingCenter.name,
+        centerCity: record.recyclingCenter.city ?? undefined,
+        wasteType: record.wasteType ?? undefined,
+        weightKg: record.weight ? Number(record.weight) * 1000 : undefined,
+        recyclableWeightKg: record.recyclableWeight
+          ? Number(record.recyclableWeight) * 1000
+          : undefined,
+        recyclingRate: record.recyclingRate
+          ? Number(record.recyclingRate)
+          : undefined,
+        processedDate: record.processedDate ?? undefined,
+      })
+      .catch((err) =>
+        this.logger.warn(
+          `Waste cert generation failed for record ${record.id}: ${(err as Error).message}`,
+        ),
+      );
+
+    return record;
   }
 
   /** Carrier/Admin: get all waste records for a center */

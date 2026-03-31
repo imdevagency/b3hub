@@ -10,6 +10,15 @@ import { haptics } from '@/lib/haptics';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import type { Route } from '@react-navigation/native';
 
+/** Config for a raised CTA button inserted in the centre of the tab row. */
+export interface CtaTabConfig {
+  /** Icon element rendered inside the pill (should be already coloured white). */
+  icon: React.ReactNode;
+  /** Called when the user taps the CTA button. */
+  onPress: () => void;
+  accessibilityLabel?: string;
+}
+
 const TAB_HEIGHT = 56;
 
 const SPRING_BASE = {
@@ -24,6 +33,17 @@ interface AnimatedTabBarProps extends BottomTabBarProps {
   activeTint?: string;
   /** Inactive icon + label color. Default #9ca3af */
   inactiveTint?: string;
+  /**
+   * When provided, a raised pill button is injected in the centre of the tab row.
+   * It does not correspond to any route — pressing it calls `ctaTab.onPress`.
+   */
+  ctaTab?: CtaTabConfig;
+  /**
+   * Optional press interceptor.  When a tab is pressed, this is called with the
+   * route name and a `defaultHandler` that performs the standard navigation.
+   * If omitted, `defaultHandler` is invoked directly.
+   */
+  onRoutePress?: (routeName: string, defaultHandler: () => void) => void;
 }
 
 function TabItem({
@@ -95,12 +115,31 @@ function TabItem({
   );
 }
 
+function CtaButton({ config }: { config: CtaTabConfig }) {
+  return (
+    <TouchableOpacity
+      style={styles.ctaWrap}
+      onPress={() => {
+        haptics.selection();
+        config.onPress();
+      }}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={config.accessibilityLabel ?? 'Pasūtīt'}
+    >
+      <View style={styles.ctaPill}>{config.icon}</View>
+    </TouchableOpacity>
+  );
+}
+
 export function AnimatedTabBar({
   state,
   descriptors,
   navigation,
   activeTint = '#111827',
   inactiveTint = '#9ca3af',
+  ctaTab,
+  onRoutePress,
 }: AnimatedTabBarProps) {
   const insets = useSafeAreaInsets();
   const bottomInset = insets.bottom;
@@ -118,16 +157,23 @@ export function AnimatedTabBar({
   const handlePress = useCallback(
     (route: Route<string>, isFocused: boolean) => {
       haptics.selection();
-      const event = navigation.emit({
-        type: 'tabPress',
-        target: route.key,
-        canPreventDefault: true,
-      });
-      if (!isFocused && !event.defaultPrevented) {
-        navigation.navigate(route.name);
+      const defaultHandler = () => {
+        const event = navigation.emit({
+          type: 'tabPress',
+          target: route.key,
+          canPreventDefault: true,
+        });
+        if (!isFocused && !event.defaultPrevented) {
+          navigation.navigate(route.name);
+        }
+      };
+      if (onRoutePress) {
+        onRoutePress(route.name, defaultHandler);
+      } else {
+        defaultHandler();
       }
     },
-    [navigation],
+    [navigation, onRoutePress],
   );
 
   const handleLongPress = useCallback(
@@ -137,26 +183,32 @@ export function AnimatedTabBar({
     [navigation],
   );
 
+  // CTA is inserted after the centre-left tab so it visually sits in the middle.
+  const ctaInsertIndex = ctaTab ? Math.ceil(visibleRoutes.length / 2) : -1;
+
   return (
     <View style={[styles.container, { paddingBottom: bottomInset }]}>
       {/* Tab items — dot indicator is per-item, no sliding bar */}
       <View style={styles.row}>
-        {visibleRoutes.map((route: Route<string>) => {
+        {visibleRoutes.map((route: Route<string>, visibleIdx: number) => {
           const fullIdx = state.routes.findIndex((r: Route<string>) => r.key === route.key);
           const isFocused = state.index === fullIdx;
           return (
-            <TabItem
-              key={route.key}
-              route={route}
-              isFocused={isFocused}
-              descriptor={descriptors[route.key]}
-              onPress={() => handlePress(route, isFocused)}
-              onLongPress={() => handleLongPress(route)}
-              activeTint={activeTint}
-              inactiveTint={inactiveTint}
-            />
+            <React.Fragment key={route.key}>
+              {ctaTab && visibleIdx === ctaInsertIndex && <CtaButton config={ctaTab} />}
+              <TabItem
+                route={route}
+                isFocused={isFocused}
+                descriptor={descriptors[route.key]}
+                onPress={() => handlePress(route, isFocused)}
+                onLongPress={() => handleLongPress(route)}
+                activeTint={activeTint}
+                inactiveTint={inactiveTint}
+              />
+            </React.Fragment>
           );
         })}
+        {ctaTab && ctaInsertIndex === visibleRoutes.length && <CtaButton config={ctaTab} />}
       </View>
     </View>
   );
@@ -210,5 +262,25 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '800',
     lineHeight: 13,
+  },
+  ctaWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaPill: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+    // Raise the pill above the tab bar line
+    marginBottom: 6,
   },
 });

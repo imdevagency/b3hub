@@ -4,13 +4,14 @@ import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
-import { Home, Inbox, LayoutGrid, Wallet, User } from 'lucide-react-native';
+import { Home, Inbox, LayoutGrid, FileText, User } from 'lucide-react-native';
 import { TopBar } from '@/components/ui/TopBar';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
 import { useUnreadCount } from '@/lib/use-unread-count';
+import { useOpenQuoteCount } from '@/lib/use-open-quote-count';
 
 const ACCENT = '#111827';
 
@@ -21,6 +22,7 @@ export default function SellerLayout() {
   const insets = useSafeAreaInsets();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const unreadCount = useUnreadCount();
+  const openQuoteCount = useOpenQuoteCount();
 
   // Seller home renders its own greeting header — no layout TopBar or padding on that screen
   const isHome = pathname === '/(seller)/home' || pathname === '/home';
@@ -82,14 +84,15 @@ export default function SellerLayout() {
               tabBarIcon: ({ color }) => <LayoutGrid size={22} color={color} />,
             }}
           />
+          <Tabs.Screen name="earnings" options={{ href: null }} />
           <Tabs.Screen
-            name="earnings"
+            name="quotes"
             options={{
-              title: t.tabs.earnings,
-              tabBarIcon: ({ color }) => <Wallet size={22} color={color} />,
+              title: t.tabs.quotes,
+              tabBarIcon: ({ color }) => <FileText size={22} color={color} />,
+              tabBarBadge: openQuoteCount > 0 ? openQuoteCount : undefined,
             }}
           />
-          <Tabs.Screen name="quotes" options={{ href: null }} />
           <Tabs.Screen
             name="profile"
             options={{
