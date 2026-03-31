@@ -173,8 +173,14 @@ export const authApi = {
       body: JSON.stringify(prefs),
     }),
 
-  providerApplications: {
-    /** Get the current user's own applications */
+  /** Permanently anonymise and deactivate the current user's account (Apple guideline 5.1.1). */
+  deleteAccount: (token: string) =>
+    apiFetch<void>('/auth/me', {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  providerApplications: {    /** Get the current user's own applications */
     mine: (token: string) =>
       apiFetch<ProviderApplication[]>('/provider-applications/mine', {
         headers: { Authorization: `Bearer ${token}` },

@@ -198,6 +198,7 @@ export const lv = {
     services: 'Pakalpojumi',
     activity: 'Aktivitāte',
     account: 'Konts',
+    order: 'Pasūtīt',
     orders: 'Pasūtījumi',
     profile: 'Profils',
     jobs: 'Darbi',

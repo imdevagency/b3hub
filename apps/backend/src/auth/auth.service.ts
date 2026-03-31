@@ -547,6 +547,39 @@ export class AuthService {
     return { token, refreshToken: newRefreshToken };
   }
 
+  /**
+   * Anonymise and deactivate a user account.
+   * Hard-deleting is not safe because many FK relations lack cascade rules.
+   * Anonymisation satisfies Apple guideline 5.1.1 and GDPR Art. 17.
+   */
+  async deleteAccount(userId: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        // Replace all PII with anonymised placeholders
+        email: `deleted_${userId}@deleted.b3hub.lv`,
+        phone: null,
+        firstName: 'Deleted',
+        lastName: 'User',
+        avatar: null,
+        password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10),
+        // Revoke all tokens
+        refreshToken: null,
+        refreshTokenExpiry: null,
+        resetToken: null,
+        resetTokenExpiry: null,
+        pushToken: null,
+        // Lock the account permanently
+        status: 'DEACTIVATED',
+      },
+    });
+
+    this.logger.log(`Account anonymised and deactivated: ${userId}`);
+  }
+
   /** Revoke a user's refresh token (logout). */
   async revokeRefreshToken(userId: string) {
     await this.prisma.$executeRaw`

@@ -259,83 +259,81 @@ export default function OrderRequestWizard() {
 
   const renderSpecs = () => (
     <ScrollView
-      contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 24 }}
+      contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 32 }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      {/* Category badge */}
-      <View style={s.catBadge}>
-        <Text style={s.catBadgeText}>
-          {CATEGORY_LABELS[category as MaterialCategory] ?? category}
-        </Text>
-      </View>
-
-      {/* Material name */}
+      {/* Material Block */}
       <View style={s.field}>
-        <Text style={s.fieldLabel}>Frakcija / Precizējums</Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 8,
+          }}
+        >
+          <Text style={s.fieldLabel}>Materiāls</Text>
+          <View style={s.catBadgeMin}>
+            <Text style={s.catBadgeTextMin}>
+              {CATEGORY_LABELS[category as MaterialCategory] ?? category}
+            </Text>
+          </View>
+        </View>
         <TextInput
           style={s.textInput}
           value={materialName}
           onChangeText={setMaterialName}
-          placeholder="piem., 16/32 mm, C25/30"
+          placeholder="Frakcija, precizējums (piem., 16/32 mm)"
           placeholderTextColor="#9ca3af"
         />
       </View>
 
-      {/* Quantity stepper */}
+      {/* Quantity & Unit Block */}
       <View style={s.field}>
-        <Text style={s.fieldLabel}>Daudzums</Text>
+        <Text style={[s.fieldLabel, { marginBottom: 16, textAlign: 'center' }]}>Daudzums</Text>
+
         <View style={s.stepperRow}>
           <TouchableOpacity
             style={s.stepBtn}
             onPress={() => setQuantity((q) => Math.max(1, q - stepAmt))}
             activeOpacity={0.8}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Minus size={20} color="#111827" />
+            <Minus size={24} color="#111827" />
           </TouchableOpacity>
+
           <View style={s.stepperValueWrap}>
             <Text style={s.stepperValue}>{quantity}</Text>
-            <Text style={s.stepperUnit}>{UNIT_SHORT[unit]}</Text>
           </View>
+
           <TouchableOpacity
             style={s.stepBtn}
             onPress={() => setQuantity((q) => q + stepAmt)}
             activeOpacity={0.8}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Plus size={20} color="#111827" />
+            <Plus size={24} color="#111827" />
           </TouchableOpacity>
         </View>
-        {/* Quick values */}
-        <View style={s.quickRow}>
-          {quickValues.map((n) => (
-            <TouchableOpacity
-              key={n}
-              style={[s.quickBtn, quantity === n && s.quickBtnActive]}
-              onPress={() => setQuantity(n)}
-              activeOpacity={0.8}
-            >
-              <Text style={[s.quickBtnText, quantity === n && s.quickBtnTextActive]}>
-                {n} {UNIT_SHORT[unit]}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
 
-      {/* Unit chips */}
-      <View style={s.field}>
-        <Text style={s.fieldLabel}>Mērvienība</Text>
-        <View style={s.chipRow}>
-          {UNITS.map((u) => (
-            <TouchableOpacity
-              key={u}
-              style={[s.chip, unit === u && s.chipActive]}
-              onPress={() => setUnit(u)}
-              activeOpacity={0.8}
-            >
-              <Text style={[s.chipText, unit === u && s.chipTextActive]}>{UNIT_LABEL[u]}</Text>
-            </TouchableOpacity>
-          ))}
+        {/* Units seamless toggle */}
+        <View style={s.unitToggleRow}>
+          {UNITS.map((u) => {
+            const isActive = unit === u;
+            return (
+              <TouchableOpacity
+                key={u}
+                style={[s.unitToggleBtn, isActive && s.unitToggleBtnActive]}
+                onPress={() => setUnit(u)}
+                activeOpacity={0.8}
+              >
+                <Text style={[s.unitToggleText, isActive && s.unitToggleTextActive]}>
+                  {UNIT_LABEL[u]}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
@@ -348,7 +346,7 @@ export default function OrderRequestWizard() {
           style={[s.textInput, s.textArea]}
           value={notes}
           onChangeText={setNotes}
-          placeholder="piem., frakcionēts 0-16, nesasaldēts..."
+          placeholder="piem., piegāde ar mazo auto, nesasaldēts..."
           placeholderTextColor="#9ca3af"
           multiline
           numberOfLines={3}
@@ -426,7 +424,12 @@ export default function OrderRequestWizard() {
             borderRadius: 16,
             overflow: 'hidden',
             borderWidth: 1,
-            borderColor: '#e5e7eb',
+            borderColor: '#F9FAFB',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.08,
+            shadowRadius: 12,
+            elevation: 4,
           }}
           enableSwipeMonths
         />
@@ -702,35 +705,47 @@ const s = StyleSheet.create({
   // ── Specs step ──
   catBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#F4F5F7',
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
-  catBadgeText: { fontSize: 13, fontWeight: '700', color: '#374151' },
+  catBadgeMin: {
+    backgroundColor: '#F4F5F7',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  catBadgeTextMin: { fontSize: 12, fontFamily: 'Inter_600SemiBold', color: '#6b7280' },
 
-  field: { gap: 8 },
+  field: { gap: 10 },
   fieldLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#111827',
-    letterSpacing: 0.1,
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#9ca3af', // lighter label since the form is focused
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   textInput: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 13,
+    paddingVertical: 18, // taller tap target
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'Inter_600SemiBold',
     color: '#111827',
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 1,
   },
   textArea: {
-    height: 90,
+    height: 100,
     textAlignVertical: 'top',
-    paddingTop: 12,
+    paddingTop: 16,
   },
 
   // ── Quantity stepper ──
@@ -738,175 +753,210 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
-    paddingVertical: 4,
+    paddingVertical: 8,
   },
   stepBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: '#f1f5f9',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  stepperValueWrap: { flex: 1, alignItems: 'center', gap: 2 },
+  stepperValueWrap: { flex: 1, alignItems: 'center' },
   stepperValue: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: '#111827',
-    letterSpacing: -1,
+    fontSize: 56, // Massive quantity size
+    fontFamily: 'Inter_800ExtraBold',
+    color: '#000000',
+    letterSpacing: -2,
+    includeFontPadding: false,
   },
-  stepperUnit: { fontSize: 14, color: '#6b7280', fontWeight: '600' },
-  quickRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 8 },
-  quickBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f1f5f9',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  quickBtnActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  quickBtnText: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  quickBtnTextActive: { color: '#fff' },
 
-  // ── Unit chips ──
-  chipRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderRadius: 24,
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+  // ── Unit Toggle ──
+  unitToggleRow: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    backgroundColor: '#F4F5F7',
+    borderRadius: 16,
+    padding: 4,
+    marginTop: 8,
   },
-  chipActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  chipText: { fontSize: 14, fontWeight: '600', color: '#374151' },
-  chipTextActive: { color: '#fff' },
+  unitToggleBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+  },
+  unitToggleBtnActive: {
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  unitToggleText: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#9ca3af',
+  },
+  unitToggleTextActive: {
+    color: '#111827',
+  },
 
   // ── When step ──
-  stepSub: { fontSize: 15, color: '#4b5563', fontWeight: '500', lineHeight: 22 },
+  stepSub: { fontSize: 15, color: '#6b7280', fontFamily: 'Inter_500Medium', lineHeight: 22 },
   asapCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
     borderRadius: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#F4F5F7',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: 'transparent',
     gap: 12,
   },
-  asapCardActive: { borderColor: '#111827', borderWidth: 2, padding: 15 },
+  asapCardActive: {
+    backgroundColor: '#ffffff',
+    borderColor: '#111827',
+    borderWidth: 2,
+    padding: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
   asapIcon: {
     width: 44,
     height: 44,
-    borderRadius: 12,
-    backgroundColor: '#f8fafc',
+    borderRadius: 22,
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  asapIconActive: { backgroundColor: '#f1f5f9' },
-  asapTitle: { fontSize: 15, fontWeight: '700', color: '#374151' },
+  asapIconActive: { backgroundColor: '#F4F5F7', shadowOpacity: 0, elevation: 0 },
+  asapTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#111827' },
   asapTitleActive: { color: '#111827' },
-  asapSub: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+  asapSub: { fontSize: 13, color: '#6b7280', marginTop: 2, fontFamily: 'Inter_500Medium' },
   hint: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#fef3c7',
-    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#F4F5F7',
+    borderRadius: 12,
+    marginTop: 8,
   },
-  hintText: { fontSize: 13, color: '#92400e', lineHeight: 18 },
+  hintText: { fontSize: 13, color: '#4b5563', lineHeight: 18, fontFamily: 'Inter_500Medium' },
 
   // ── Offers step ──
   offersTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 22,
+    fontFamily: 'Inter_700Bold',
     color: '#111827',
     letterSpacing: -0.5,
   },
   offersSub: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#6b7280',
-    fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
     marginTop: -8,
   },
   rfqBox: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderStyle: 'dashed',
-    backgroundColor: '#f9fafb',
+    borderColor: '#E5E7EB',
+    backgroundColor: '#ffffff',
     padding: 16,
     gap: 12,
   },
   rfqIconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#dbeafe',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F4F5F7',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rfqTitle: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  rfqSub: { fontSize: 13, color: '#6b7280', lineHeight: 18, marginTop: 2 },
+  rfqTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#111827' },
+  rfqSub: {
+    fontSize: 14,
+    color: '#6b7280',
+    lineHeight: 20,
+    marginTop: 4,
+    fontFamily: 'Inter_500Medium',
+  },
   rfqBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#111827',
-    backgroundColor: '#fff',
+    borderRadius: 100,
+    backgroundColor: '#F4F5F7',
   },
-  rfqBtnText: { fontSize: 14, fontWeight: '700', color: '#111827' },
+  rfqBtnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: '#111827' },
 
   // ── Success state ──
-  successWrap: { alignItems: 'center', paddingVertical: 24, gap: 10 },
+  successWrap: { alignItems: 'center', paddingVertical: 32, gap: 12 },
   successIconBg: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: '#111827',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   successTitle: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: 26,
+    fontFamily: 'Inter_700Bold',
     color: '#111827',
     letterSpacing: -0.5,
   },
-  successNum: { fontSize: 16, fontWeight: '600', color: '#6b7280' },
+  successNum: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#6b7280' },
   successSub: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#6b7280',
     textAlign: 'center',
-    lineHeight: 20,
-    marginTop: 4,
+    lineHeight: 22,
+    marginTop: 8,
     paddingHorizontal: 16,
+    fontFamily: 'Inter_500Medium',
   },
   summaryCard: {
     borderRadius: 16,
+    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#f9fafb',
+    borderColor: '#F9FAFB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
     overflow: 'hidden',
     marginTop: 8,
   },
   summaryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 14,
+    gap: 16,
+    padding: 16,
   },
-  summaryText: { flex: 1, fontSize: 14, color: '#374151', fontWeight: '500' },
+  summaryText: { flex: 1, fontSize: 15, color: '#111827', fontFamily: 'Inter_500Medium' },
   summaryDivider: {
     height: 1,
-    backgroundColor: '#e5e7eb',
-    marginHorizontal: 14,
+    backgroundColor: '#F4F5F7',
+    marginHorizontal: 16,
   },
 });
 
@@ -915,59 +965,71 @@ const s = StyleSheet.create({
 const oc = StyleSheet.create({
   card: {
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
+    borderWidth: 2,
+    borderColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+    marginBottom: 8,
     overflow: 'hidden',
   },
   cardBest: { borderColor: '#111827' },
   top: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: 14,
+    padding: 16,
     gap: 12,
   },
-  supplierName: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  supplierCity: { fontSize: 13, color: '#6b7280', marginTop: 1 },
+  supplierName: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#111827' },
+  supplierCity: { fontSize: 14, color: '#6b7280', marginTop: 2, fontFamily: 'Inter_500Medium' },
   bestBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#dcfce7',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
+    backgroundColor: '#111827',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 20,
   },
   bestText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#166534',
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#ffffff',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   price: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 22,
+    fontFamily: 'Inter_700Bold',
     color: '#111827',
     letterSpacing: -0.5,
   },
-  priceUnit: { fontSize: 12, color: '#6b7280', marginTop: 1 },
+  priceUnit: {
+    fontSize: 13,
+    color: '#6b7280',
+    marginTop: 2,
+    fontFamily: 'Inter_500Medium',
+    textAlign: 'right',
+  },
   meta: {
     flexDirection: 'row',
-    gap: 14,
-    paddingHorizontal: 14,
-    paddingBottom: 12,
+    gap: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  metaText: { fontSize: 14, color: '#6b7280', fontFamily: 'Inter_500Medium' },
   btn: {
-    margin: 10,
-    marginTop: 4,
-    backgroundColor: '#111827',
-    borderRadius: 12,
-    paddingVertical: 13,
+    margin: 12,
+    marginTop: 0,
+    backgroundColor: '#F4F5F7',
+    borderRadius: 100,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  btnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  btnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: '#111827' },
 });

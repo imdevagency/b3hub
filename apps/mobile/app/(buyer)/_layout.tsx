@@ -4,7 +4,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
-import { Home, ClipboardList, User, Plus } from 'lucide-react-native';
+import { Home, ClipboardList, User, ShoppingCart } from 'lucide-react-native';
 import { TopBar } from '@/components/ui/TopBar';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
@@ -22,19 +22,7 @@ export default function BuyerLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const unreadCount = useUnreadCount();
   // eslint-disable-next-line react/display-name
-  const renderTabBar = useCallback(
-    (props: BottomTabBarProps) => (
-      <AnimatedTabBar
-        {...props}
-        ctaTab={{
-          icon: <Plus size={26} color="#fff" />,
-          onPress: () => router.push('/(buyer)/new-order'),
-          accessibilityLabel: 'Jauns pasūtījums',
-        }}
-      />
-    ),
-    [router],
-  );
+  const renderTabBar = useCallback((props: BottomTabBarProps) => <AnimatedTabBar {...props} />, []);
 
   // Home tab is full-screen map — no TopBar or status-bar padding
   const isHome = pathname === '/(buyer)/home' || pathname === '/home';
@@ -46,6 +34,7 @@ export default function BuyerLayout() {
     pathname.includes('/invoices') ||
     pathname.includes('/certificates') ||
     pathname.includes('/team') ||
+    pathname.includes('/new-order') ||
     pathname.includes('/orders') ||
     pathname.includes('/order') ||
     pathname.includes('/profile') ||
@@ -110,7 +99,13 @@ export default function BuyerLayout() {
             }}
           />
           <Tabs.Screen name="order/[id]" options={{ href: null }} />
-          <Tabs.Screen name="new-order" options={{ href: null }} />
+          <Tabs.Screen
+            name="new-order"
+            options={{
+              title: t.tabs.order,
+              tabBarIcon: ({ color }) => <ShoppingCart size={22} color={color} />,
+            }}
+          />
           <Tabs.Screen name="skip-order/[id]" options={{ href: null }} />
           <Tabs.Screen name="rfq/[id]" options={{ href: null }} />
           <Tabs.Screen name="invoices" options={{ href: null }} />

@@ -9,8 +9,11 @@ import {
   Body,
   Get,
   Patch,
+  Delete,
   UseGuards,
   UnauthorizedException,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
@@ -114,5 +117,17 @@ export class AuthController {
     @Body() dto: UpdateNotificationPrefsDto,
   ) {
     return this.authService.updateNotificationPrefs(user.userId, dto);
+  }
+
+  /**
+   * Permanently anonymise and deactivate the caller's account.
+   * Required by Apple App Store guideline 5.1.1.
+   * Uses anonymisation rather than hard-delete to preserve FK integrity.
+   */
+  @Delete('me')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteAccount(@CurrentUser() user: RequestingUser) {
+    await this.authService.deleteAccount(user.userId);
   }
 }

@@ -77,9 +77,16 @@ export default function OrdersScreen() {
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: '#f3f4f6',
+              backgroundColor: '#ffffff',
               alignItems: 'center',
               justifyContent: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 8,
+              elevation: 2,
+              borderWidth: 1,
+              borderColor: '#F9FAFB',
             }}
           >
             <Plus size={24} color="#111827" />
@@ -158,14 +165,14 @@ export default function OrdersScreen() {
               router.push('/(buyer)/catalog');
             }}
           >
-            <View style={[s.sheetIcon, { backgroundColor: '#eff6ff' }]}>
-              <Package size={24} color="#3b82f6" />
+            <View style={s.sheetIcon}>
+              <Package size={24} color="#111827" strokeWidth={1.5} />
             </View>
             <View style={s.sheetText}>
               <Text style={s.sheetOptionTitle}>Materiāli</Text>
               <Text style={s.sheetOptionDesc}>Smiltis, šķembas, melnzeme</Text>
             </View>
-            <ChevronRight size={20} color="#cbd5e1" />
+            <ChevronRight size={20} color="#E5E7EB" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -175,14 +182,14 @@ export default function OrdersScreen() {
               router.push('/(buyer)/skip-order/new');
             }}
           >
-            <View style={[s.sheetIcon, { backgroundColor: '#f0fdf4' }]}>
-              <Trash2 size={24} color="#22c55e" />
+            <View style={s.sheetIcon}>
+              <Trash2 size={24} color="#111827" strokeWidth={1.5} />
             </View>
             <View style={s.sheetText}>
               <Text style={s.sheetOptionTitle}>Konteiners</Text>
               <Text style={s.sheetOptionDesc}>Būvgružu izvešana</Text>
             </View>
-            <ChevronRight size={20} color="#cbd5e1" />
+            <ChevronRight size={20} color="#E5E7EB" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -192,14 +199,14 @@ export default function OrdersScreen() {
               router.push('/(buyer)/rfq/new');
             }}
           >
-            <View style={[s.sheetIcon, { backgroundColor: '#fff7ed' }]}>
-              <FileText size={24} color="#f97316" />
+            <View style={s.sheetIcon}>
+              <FileText size={24} color="#111827" strokeWidth={1.5} />
             </View>
             <View style={s.sheetText}>
               <Text style={s.sheetOptionTitle}>Cenu aptauja (RFQ)</Text>
               <Text style={s.sheetOptionDesc}>Specifiski apjomi vai materiāli</Text>
             </View>
-            <ChevronRight size={20} color="#cbd5e1" />
+            <ChevronRight size={20} color="#E5E7EB" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -209,14 +216,14 @@ export default function OrdersScreen() {
               router.push('/(buyer)/transport-job/new');
             }}
           >
-            <View style={[s.sheetIcon, { backgroundColor: '#f1f5f9' }]}>
-              <Truck size={24} color="#64748b" />
+            <View style={s.sheetIcon}>
+              <Truck size={24} color="#111827" strokeWidth={1.5} />
             </View>
             <View style={s.sheetText}>
               <Text style={s.sheetOptionTitle}>Transports A → B</Text>
               <Text style={s.sheetOptionDesc}>Tikai pārvadājums</Text>
             </View>
-            <ChevronRight size={20} color="#cbd5e1" />
+            <ChevronRight size={20} color="#E5E7EB" />
           </TouchableOpacity>
         </View>
       </BottomSheet>
@@ -522,47 +529,52 @@ function formatStatus(status: string) {
 const s = StyleSheet.create({
   filterContainer: {
     paddingTop: 12,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     paddingBottom: 12,
   },
   filterContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     gap: 8,
   },
   chip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   chipActive: {
     backgroundColor: '#111827',
+    borderColor: '#111827',
   },
   chipText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: '#4b5563',
   },
   chipTextActive: {
-    color: '#fff',
+    color: '#ffffff',
   },
 
   list: {
-    padding: 20,
+    padding: 16,
     gap: 16,
     paddingBottom: 100,
   },
 
   // Cards
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     borderRadius: 20,
     padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.08,
     shadowRadius: 12,
-    elevation: 3,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F9FAFB',
     marginBottom: 4, // Spacing handled by gap in FlatList usually, but gap not always supported on older RN
   },
   cardHeader: {
@@ -703,9 +715,9 @@ const s = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: '#111827',
-    marginBottom: 24,
+    marginBottom: 16,
     paddingHorizontal: 24,
   },
   sheetOption: {
@@ -718,7 +730,8 @@ const s = StyleSheet.create({
   sheetIcon: {
     width: 48,
     height: 48,
-    borderRadius: 16,
+    borderRadius: 24,
+    backgroundColor: '#F4F5F7',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -727,12 +740,12 @@ const s = StyleSheet.create({
   },
   sheetOptionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: '#111827',
     marginBottom: 2,
   },
   sheetOptionDesc: {
     fontSize: 14,
-    color: '#64748b',
+    color: '#6b7280',
   },
 });

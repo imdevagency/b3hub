@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import {
@@ -33,6 +33,10 @@ const CATEGORY_META: Record<MaterialCategory, CatMeta> = {
   CLAY: { bg: '#ffedd5', accent: '#c2410c', icon: Layers },
   OTHER: { bg: '#f3f4f6', accent: '#6b7280', icon: MoreHorizontal },
 };
+
+const { width } = Dimensions.get('window');
+// Screen width minus padding (16*2=32) minus gap (16) divided by 2 items per row
+const cardWidth = (width - 48) / 2;
 
 // ── Category Card ──────────────────────────────────────────────────────────
 
@@ -85,9 +89,9 @@ export default function CatalogScreen() {
   };
 
   return (
-    <ScreenContainer standalone>
+    <ScreenContainer standalone bg="#ffffff">
       {/* Header */}
-      <ScreenHeader title="Materiāli" />
+      <ScreenHeader title="Materiāli" style={{ backgroundColor: '#ffffff' }} />
 
       {/* Category grid */}
       <ScrollView contentContainerStyle={s.grid} showsVerticalScrollIndicator={false}>
@@ -103,25 +107,28 @@ export default function CatalogScreen() {
 
 const s = StyleSheet.create({
   grid: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
     paddingBottom: 40,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 16,
   },
 
   card: {
-    width: '48%', // Fluid 2-col grid
+    width: cardWidth,
+    aspectRatio: 1, // Make them perfect squares
     backgroundColor: '#ffffff',
     borderRadius: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F9FAFB',
     padding: 16,
     position: 'relative',
-    height: 124,
     justifyContent: 'space-between',
   },
 
@@ -137,6 +144,14 @@ const s = StyleSheet.create({
     position: 'absolute',
     top: 16,
     right: 16,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
   cardText: {
@@ -144,7 +159,7 @@ const s = StyleSheet.create({
   },
   cardName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: '#111827',
     letterSpacing: -0.3,
   },

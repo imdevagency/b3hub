@@ -153,23 +153,23 @@ const wl = StyleSheet.create({
   // title area — left-aligned, below header
   titleArea: {
     paddingHorizontal: 24,
-    paddingBottom: 16,
-    paddingTop: 0,
+    paddingBottom: 24,
+    paddingTop: 8,
   },
   stepCaption: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
+    fontFamily: 'Inter_700Bold',
     color: '#9ca3af',
-    letterSpacing: 0.8,
+    letterSpacing: 1.0,
     textTransform: 'uppercase',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   title: {
-    fontSize: 26,
-    fontWeight: '800',
+    fontSize: 32,
+    fontFamily: 'Inter_800ExtraBold',
     color: '#111827',
-    letterSpacing: -0.5,
-    lineHeight: 32,
+    letterSpacing: -1,
+    lineHeight: 38,
   },
 
   // content
@@ -177,27 +177,27 @@ const wl = StyleSheet.create({
 
   // footer — pill CTA, no top border
   footer: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingHorizontal: 24,
+    paddingTop: 16,
     backgroundColor: '#fff',
   },
   cta: {
     backgroundColor: '#111827',
-    borderRadius: 100,
-    paddingVertical: 17,
+    borderRadius: 16,
+    paddingVertical: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
+    shadowColor: '#111827',
     shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
     elevation: 4,
   },
   ctaDisabled: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#F4F5F7',
     shadowOpacity: 0,
     elevation: 0,
   },
-  ctaText: { fontSize: 16, fontWeight: '700', color: '#fff', letterSpacing: 0.1 },
+  ctaText: { fontSize: 17, fontFamily: 'Inter_600SemiBold', color: '#fff' },
   ctaTextDisabled: { color: '#9ca3af' },
 });

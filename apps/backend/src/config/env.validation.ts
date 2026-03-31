@@ -32,9 +32,15 @@ class EnvironmentVariables {
   @IsOptional()
   PORT: number = 3000;
 
+  /** Primary CORS allowlist key */
   @IsString()
   @IsOptional()
   ALLOWED_ORIGIN?: string;
+
+  /** Legacy alias — use ALLOWED_ORIGIN in new deployments */
+  @IsString()
+  @IsOptional()
+  CORS_ORIGIN?: string;
 
   // ── Auth ─────────────────────────────────────────────────────────────────
 

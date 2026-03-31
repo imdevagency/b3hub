@@ -13,18 +13,33 @@ on:
       - 'apps/mobile/**'
       - 'packages/**'
       - 'package.json'
+  # Trigger a full native EAS build manually (e.g. when adding a new native dep,
+  # changing permissions, or bumping the app version).
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'EAS build profile'
+        required: true
+        default: 'preview'
+        type: choice
+        options: [development, preview, production]
+      platform:
+        description: 'Platform'
+        required: true
+        default: 'all'
+        type: choice
+        options: [ios, android, all]
 
 jobs:
-  ci:
+  # ── Type check (every push / PR) ─────────────────────────────────────────
+  type-check:
     name: Type Check
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -36,24 +51,22 @@ jobs:
         run: npx tsc --noEmit
         working-directory: apps/mobile
 
-  eas-build:
-    name: EAS Build (Production)
-    needs: ci
+  # ── OTA update → staging (develop branch) ────────────────────────────────
+  ota-staging:
+    name: OTA Update → staging
+    needs: type-check
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Setup Expo
-        uses: expo/expo-github-action@v8
+      - uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
@@ -61,10 +74,70 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build on EAS (Android)
+      - name: Publish OTA update to staging channel
         working-directory: apps/mobile
-        run: eas build --platform android --non-interactive --profile production
+        run: eas update --channel staging --message "${{ github.event.head_commit.message }}" --non-interactive
 
-      - name: Build on EAS (iOS)
+  # ── OTA update → production (main branch) ────────────────────────────────
+  ota-production:
+    name: OTA Update → production
+    needs: type-check
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Publish OTA update to production channel
         working-directory: apps/mobile
-        run: eas build --platform ios --non-interactive --profile production
+        run: eas update --channel production --message "${{ github.event.head_commit.message }}" --non-interactive
+
+  # ── Native EAS build (manual only via workflow_dispatch) ─────────────────
+  # Trigger this when you: add a native package, change permissions, bump
+  # version for an App Store release, or change app.config.ts native sections.
+  eas-build:
+    name: EAS Native Build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: EAS Build
+        working-directory: apps/mobile
+        run: |
+          PLATFORM="${{ github.event.inputs.platform }}"
+          PROFILE="${{ github.event.inputs.profile }}"
+          if [ "$PLATFORM" = "all" ]; then
+            eas build --platform android --profile "$PROFILE" --non-interactive &
+            eas build --platform ios --profile "$PROFILE" --non-interactive &
+            wait
+          else
+            eas build --platform "$PLATFORM" --profile "$PROFILE" --non-interactive
+          fi

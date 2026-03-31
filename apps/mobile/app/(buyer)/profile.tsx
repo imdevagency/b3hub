@@ -21,6 +21,7 @@ import {
   X,
   Check,
   LogOut,
+  Trash2,
   ChevronRight,
   Phone,
   AlertCircle,
@@ -216,6 +217,31 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Dzēst kontu',
+      'Vai tiešām vēlaties neatgriezeniski dzēst savu kontu? Visi jūsu personas dati tiks dzēsti. Šo darbību nevar atsaukt.',
+      [
+        { text: 'Atcelt', style: 'cancel' },
+        {
+          text: 'Dzēst kontu',
+          style: 'destructive',
+          onPress: async () => {
+            if (!token) return;
+            try {
+              await api.deleteAccount(token);
+              await logout();
+              router.replace('/(auth)/welcome');
+            } catch {
+              haptics.error();
+              toast.error('Neizdevās dzēst kontu. Lūdzu, mēģiniet vēlreiz.');
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const openEdit = () => {
     setForm({
       firstName: user?.firstName ?? '',
@@ -350,6 +376,12 @@ export default function ProfileScreen() {
 
           <View style={s.menuFooter}>
             <MenuItem icon={LogOut} label="Iziet" onPress={handleLogout} isDestructive />
+            <MenuItem
+              icon={Trash2}
+              label="Dzēst kontu"
+              onPress={handleDeleteAccount}
+              isDestructive
+            />
           </View>
         </View>
       </ScrollView>
