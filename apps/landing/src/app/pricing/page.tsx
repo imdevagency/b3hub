@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { Hero } from '@/components/layout/Hero';
+import { Container } from '@/components/layout/Container';
+import { CTAButton } from '@/components/ui/cta-button';
 
 export const metadata: Metadata = {
   title: 'Cenas',
@@ -18,7 +20,7 @@ const plans = [
     price: 'Bezmaksas',
     description: 'Pasūtiet materiālus un izsekojiet piegādēm bez abonēšanas maksas.',
     href: `${APP_URL}/register`,
-    cta: 'Reģistrēties',
+    cta: 'Sākt bez maksas',
     featured: false,
     features: [
       'Neierobežoti pasūtījumi',
@@ -40,25 +42,45 @@ const plans = [
       'Neierobežoti materiālu ieraksti',
       'Pasūtījumu pārvaldība',
       'Automātiskie rēķini',
-      'Piegάdes koordinācija',
+      'Piegādes koordinācija',
       'Analītika un pārskati',
       'Prioritārs atbalsts',
     ],
   },
   {
     name: 'Pārvadātājs',
-    price: 'Komisija',
-    description: 'Mēs iekasējam nelielu komisiju no katras sekmīgas piegādes.',
+    price: '8%',
+    period: ' komisija',
+    description: 'Mēs iekasējam 8% komisiju no katras sekmīgas piegādes. Bez ikmēneša maksas.',
     href: `${APP_URL}/apply`,
     cta: 'Pieteikties',
     featured: false,
     features: [
       'Piekļuve visiem transporta darbiem',
       'Darbu izvēle brīvi',
-      'Ātrie maksājumi',
+      'Izmaksa nākamajā darba dienā',
       'Digitālie pavadraksti',
-      'Maršrutu plānošana',
+      'Maršrutu plānošana lietotnē',
     ],
+  },
+];
+
+const faq = [
+  {
+    q: 'Vai ir kādi papildu maksājumi?',
+    a: 'Nē. Pircējiem nav nekādu maksu. Piegādātājiem ir fiksēta €49/mēn abonēšana — bez komisijas. Pārvadātājiem 8% komisija no katras piegādes un nekas vairāk.',
+  },
+  {
+    q: 'Kā notiek maksājumi pārvadātājiem?',
+    a: 'Izmaksa tiek veikta nākamajā darba dienā pēc piegādes apstiprināšanas. Minimālā izmaksa €10.',
+  },
+  {
+    q: 'Vai var atcelt piegādātāja abonementu?',
+    a: 'Jā, jelkad. Nav iesaistīšanās perioda un nav soda naudas. Pārtrauc no nākamā rēķina perioda.',
+  },
+  {
+    q: 'Kas ir iekļauts €49 plānā?',
+    a: 'Visi uzskaitītie rīki: katalogu saraksti, automātiskie dokumenti, analītika un prioritārs atbalsts. Nav neviena "premium" papildinājuma.',
   },
 ];
 
@@ -66,90 +88,116 @@ export default function PricingPage() {
   return (
     <>
       <Navbar />
-      <main>
-        <section className="bg-gray-50 py-24 sm:py-32">
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <div className="mx-auto max-w-2xl text-center">
-              <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-                Vienkāršas, pārredzamas cenas
-              </h1>
-              <p className="mt-6 text-lg leading-8 text-gray-600">
-                Izvēlieties plānu, kas atbilst jūsu lomai platformā. Nav slēpto maksu.
-              </p>
-            </div>
+      <main className="bg-background text-foreground">
+        {/* ── HERO ── */}
+        <Hero
+          eyebrow="Cenas"
+          title={
+            <>
+              Vienkāršas,
+              <br />
+              pārredzamas.
+            </>
+          }
+          subtitle="Nav slēpto maksu. Nav pārsteigumu. Katrai lomai savs modelis."
+          align="center"
+        />
 
-            <div className="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-3 max-w-5xl mx-auto">
-              {plans.map((plan) => (
-                <div
-                  key={plan.name}
-                  className={`relative flex flex-col rounded-2xl p-8 ${
-                    plan.featured
-                      ? 'bg-primary text-white shadow-2xl ring-2 ring-primary'
-                      : 'bg-white border border-gray-200 shadow-sm'
-                  }`}
-                >
-                  {plan.featured && (
-                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                      <span className="rounded-full bg-white px-4 py-1 text-xs font-bold text-primary shadow">
-                        Populārākais
-                      </span>
-                    </div>
-                  )}
-                  <h2
-                    className={`text-lg font-semibold ${plan.featured ? 'text-white' : 'text-gray-900'}`}
+        {/* ── PLANS ── */}
+        <Container as="section" className="pb-32 border-t border-border pt-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border">
+            {plans.map((plan) => (
+              <div
+                key={plan.name}
+                className={`flex flex-col p-10 gap-8 relative ${
+                  plan.featured ? 'bg-foreground text-background' : 'bg-background text-foreground'
+                }`}
+              >
+                {plan.featured && (
+                  <span className="absolute top-6 right-6 text-xs font-bold tracking-widest uppercase text-background/50">
+                    Populārākais
+                  </span>
+                )}
+
+                {/* Name + price */}
+                <div className="flex flex-col gap-3">
+                  <p
+                    className={`text-sm font-bold tracking-widest uppercase ${plan.featured ? 'text-background/50' : 'text-muted-foreground'}`}
                   >
                     {plan.name}
-                  </h2>
-                  <div className="mt-4 flex items-baseline gap-1">
-                    <span
-                      className={`text-4xl font-bold tracking-tight ${plan.featured ? 'text-white' : 'text-gray-900'}`}
-                    >
+                  </p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-5xl font-bold tracking-tighter leading-none">
                       {plan.price}
                     </span>
                     {plan.period && (
                       <span
-                        className={`text-sm ${plan.featured ? 'text-white/80' : 'text-gray-500'}`}
+                        className={`text-base ${plan.featured ? 'text-background/60' : 'text-muted-foreground'}`}
                       >
                         {plan.period}
                       </span>
                     )}
                   </div>
                   <p
-                    className={`mt-4 text-sm ${plan.featured ? 'text-white/80' : 'text-gray-600'}`}
+                    className={`text-sm font-light leading-relaxed ${plan.featured ? 'text-background/60' : 'text-muted-foreground'}`}
                   >
                     {plan.description}
                   </p>
-
-                  <ul className="mt-8 space-y-3 flex-1">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-3">
-                        <Check
-                          className={`h-5 w-5 shrink-0 mt-0.5 ${plan.featured ? 'text-white' : 'text-primary'}`}
-                        />
-                        <span
-                          className={`text-sm ${plan.featured ? 'text-white/90' : 'text-gray-600'}`}
-                        >
-                          {f}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <Link
-                    href={plan.href}
-                    className={`mt-10 block w-full text-center rounded-xl px-5 py-3 text-sm font-semibold transition-colors ${
-                      plan.featured
-                        ? 'bg-white text-primary hover:bg-white/90'
-                        : 'bg-primary text-white hover:bg-primary/90'
-                    }`}
-                  >
-                    {plan.cta}
-                  </Link>
                 </div>
-              ))}
-            </div>
+
+                {/* Features */}
+                <ul className="flex flex-col gap-3 flex-1">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-3">
+                      <Check
+                        className={`h-4 w-4 shrink-0 mt-0.5 ${plan.featured ? 'text-background/50' : 'text-foreground'}`}
+                        strokeWidth={2.5}
+                      />
+                      <span
+                        className={`text-sm font-light ${plan.featured ? 'text-background/80' : 'text-muted-foreground'}`}
+                      >
+                        {f}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* CTA */}
+                <CTAButton
+                  href={plan.href}
+                  variant={plan.featured ? 'inverted' : 'primary'}
+                  className="w-full justify-center"
+                >
+                  {plan.cta}
+                </CTAButton>
+              </div>
+            ))}
           </div>
-        </section>
+        </Container>
+
+        {/* ── FAQ ── */}
+        <Container as="section" className="pb-32 border-t border-border pt-16">
+          <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-16 md:mb-24">
+            Biežāk uzdotie jautājumi
+          </h2>
+          <div className="flex flex-col">
+            {faq.map(({ q, a }) => (
+              <div
+                key={q}
+                className="flex flex-col md:flex-row gap-4 md:gap-12 py-10 border-t border-border"
+              >
+                <div className="md:w-1/2">
+                  <h3 className="text-2xl font-medium tracking-tight">{q}</h3>
+                </div>
+                <div className="md:w-1/2">
+                  <p className="text-muted-foreground font-light text-lg md:text-xl leading-relaxed">
+                    {a}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Container>
       </main>
       <Footer />
     </>

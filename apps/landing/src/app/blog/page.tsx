@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { Hero } from '@/components/layout/Hero';
 import { Container } from '@/components/layout/Container';
 import { getAllPosts } from '@/lib/blog';
 
@@ -19,16 +20,17 @@ export default function BlogPage() {
     <>
       <Navbar />
       <main className="bg-background w-full min-h-screen">
-        <Container as="section" className="pt-32 pb-24 md:pt-48 md:pb-32">
-          <div className="max-w-3xl mb-24">
-            <h1 className="text-6xl md:text-8xl font-medium tracking-tighter text-foreground mb-6 leading-[0.9]">
+        <Hero
+          eyebrow="Blogs"
+          title={
+            <>
               Vēstis & <br /> Ieskati.
-            </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground font-light tracking-tight max-w-lg">
-              Celtniecības loģistika, platformas jaunumi un viedokļi no B3Hub komandas.
-            </p>
-          </div>
+            </>
+          }
+          subtitle="Celtniecības loģistika, platformas jaunumi un viedokļi no B3Hub komandas."
+        />
 
+        <Container as="section" className="py-24">
           <div className="flex flex-col border-t border-border">
             {posts.map((post) => (
               <article
@@ -40,7 +42,7 @@ export default function BlogPage() {
                   <span className="text-sm font-bold tracking-widest uppercase text-foreground">
                     {post.category}
                   </span>
-                  <span className="hidden md:block w-4 h-[1px] bg-border my-1" />
+                  <span className="hidden md:block w-4 h-px bg-border my-1" />
                   <span className="text-sm font-light">
                     {new Date(post.date).toLocaleDateString('lv-LV', {
                       day: '2-digit',

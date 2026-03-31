@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { CTAButton } from '@/components/ui/cta-button';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -51,12 +52,9 @@ export function Navbar() {
             >
               Ienākt
             </Link>
-            <Link
-              href={`${APP_URL}/register`}
-              className="bg-foreground text-background px-5 py-2.5 rounded-lg text-sm font-medium hover:scale-105 transition-transform"
-            >
+            <CTAButton href={`${APP_URL}/register`} variant="primary" size="sm">
               Sākt darbu
-            </Link>
+            </CTAButton>
           </div>
 
           {/* Mobile toggle */}
@@ -99,13 +97,15 @@ export function Navbar() {
             >
               Ienākt
             </Link>
-            <Link
+            <CTAButton
               href={`${APP_URL}/register`}
-              className="bg-foreground text-background text-center py-4 rounded-xl text-xl font-medium mt-2"
+              variant="primary"
+              size="lg"
+              className="text-center w-full mt-2"
               onClick={() => setMobileOpen(false)}
             >
               Sākt darbu
-            </Link>
+            </CTAButton>
           </div>
         </nav>
       </div>
