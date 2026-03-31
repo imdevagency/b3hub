@@ -7,7 +7,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { validateEnv } from './config/env.validation';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { SentryModule, SentryGlobalFilter } from '@sentry/nestjs/setup';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -41,6 +42,7 @@ import { ProjectsModule } from './projects/projects.module';
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       validate: validateEnv,
@@ -86,6 +88,8 @@ import { ProjectsModule } from './projects/projects.module';
   controllers: [AppController],
   providers: [
     AppService,
+    // Sentry global filter — must be first so it captures all unhandled errors
+    { provide: APP_FILTER, useClass: SentryGlobalFilter },
     // Apply throttle guard globally — individual endpoints can override with @Throttle()
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],

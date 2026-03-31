@@ -77,11 +77,30 @@ class EnvironmentVariables {
   @IsOptional()
   SUPABASE_ANON_KEY?: string;
 
+  // ── Stripe payments ──────────────────────────────────────────────────────
+
+  /** Secret key (sk_live_* in production, sk_test_* in dev). */
+  @IsString()
+  @IsOptional()
+  STRIPE_SECRET_KEY?: string;
+
+  /** Webhook signing secret (whsec_*) from the Stripe dashboard. */
+  @IsString()
+  @IsOptional()
+  STRIPE_WEBHOOK_SECRET?: string;
+
   // ── Google Maps (server-side only key) ──────────────────────────────────
 
   @IsString()
   @IsOptional()
   GOOGLE_MAPS_SERVER_API_KEY?: string;
+
+  // ── Sentry (error monitoring) ────────────────────────────────────────────
+
+  /** If absent, errors are only logged to console. */
+  @IsString()
+  @IsOptional()
+  SENTRY_DSN?: string;
 }
 
 /**

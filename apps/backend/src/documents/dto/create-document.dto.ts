@@ -1,9 +1,11 @@
 import {
   IsArray,
   IsEnum,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
+  Max,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -44,11 +46,20 @@ export class CreateDocumentDto {
 
   @IsOptional()
   @IsString()
+  @IsIn([
+    'application/pdf',
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ])
   mimeType?: string;
 
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(20 * 1024 * 1024) // 20 MB hard cap
   fileSize?: number;
 
   @IsOptional()

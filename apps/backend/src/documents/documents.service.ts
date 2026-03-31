@@ -475,7 +475,7 @@ export class DocumentsService {
     });
   }
 
-
+  /**
    * Generates a PDF, uploads it to Supabase Storage, and creates a Document record.
    * Called internally by TransportJobsService on job DELIVERED transition.
    */

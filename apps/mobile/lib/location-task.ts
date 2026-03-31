@@ -11,6 +11,15 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Guarded require for expo-secure-store (unavailable in Expo Go)
+let SecureStore: typeof import('expo-secure-store') | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  SecureStore = require('expo-secure-store');
+} catch {
+  // Expo Go — will fall back to AsyncStorage for token read
+}
+
 // Storage keys shared with auth-context and active.tsx
 const TOKEN_KEY = 'b3hub_token';
 export const ACTIVE_JOB_KEY = 'b3hub_active_job_id';
@@ -45,7 +54,9 @@ if (TaskManager && Location) {
 
     try {
       const [token, jobId] = await Promise.all([
-        AsyncStorage.getItem(TOKEN_KEY),
+        SecureStore
+          ? SecureStore.getItemAsync(TOKEN_KEY)
+          : AsyncStorage.getItem(TOKEN_KEY),
         AsyncStorage.getItem(ACTIVE_JOB_KEY),
       ]);
       if (!token || !jobId) return;

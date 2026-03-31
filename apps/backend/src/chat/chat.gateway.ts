@@ -21,8 +21,29 @@ import { ConfigService } from '@nestjs/config';
 
 @WebSocketGateway({
   cors: {
-    origin: '*', // tighten in production
-    credentials: false,
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      // Mirror the same CORS logic as the REST API in main.ts
+      const raw =
+        process.env.ALLOWED_ORIGIN ?? process.env.CORS_ORIGIN ?? '';
+      const allowed = raw
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean);
+      if (
+        process.env.NODE_ENV !== 'production' ||
+        !allowed.length ||
+        !origin ||
+        allowed.includes(origin)
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
   },
   namespace: '/chat',
 })

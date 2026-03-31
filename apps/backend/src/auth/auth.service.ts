@@ -9,6 +9,7 @@ import {
   Logger,
   UnauthorizedException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
@@ -22,6 +23,8 @@ import { LoginDto } from './dto/login.dto';
 
 const REFRESH_TOKEN_BYTES = 48; // 384 bits — opaque, URL-safe
 const REFRESH_TOKEN_TTL_DAYS = 30;
+const MAX_FAILED_ATTEMPTS = 5; // lock after 5 consecutive failures
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
 @Injectable()
 export class AuthService {
@@ -159,10 +162,35 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // Check account lockout
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const secondsLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 1000);
+      throw new ForbiddenException(
+        `Account temporarily locked. Try again in ${secondsLeft} seconds.`,
+      );
+    }
+
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
+      const attempts = (user.failedLoginAttempts ?? 0) + 1;
+      const shouldLock = attempts >= MAX_FAILED_ATTEMPTS;
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLoginAttempts: attempts,
+          lockedUntil: shouldLock ? new Date(Date.now() + LOCKOUT_DURATION_MS) : null,
+        },
+      });
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Reset lockout counters on successful authentication
+    if ((user.failedLoginAttempts ?? 0) > 0 || user.lockedUntil) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { failedLoginAttempts: 0, lockedUntil: null },
+      });
     }
 
     // Check if user is active

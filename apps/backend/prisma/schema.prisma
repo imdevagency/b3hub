@@ -330,6 +330,8 @@ model User {
   resetTokenExpiry   DateTime? // token expiry (1h window)
   refreshToken       String? // hashed refresh token (30-day sliding window)
   refreshTokenExpiry DateTime? // refresh token expiry
+  failedLoginAttempts Int       @default(0) // consecutive failed login attempts
+  lockedUntil        DateTime? // account locked until this timestamp
 
   // Notification preferences
   notifPush         Boolean @default(true)

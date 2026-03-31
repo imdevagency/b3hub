@@ -1,0 +1,27 @@
+# Railway deployment config for b3hub backend
+# Docs: https://docs.railway.com/reference/railway-toml
+
+[build]
+builder = "DOCKERFILE"
+# Path relative to repo root (Railway uses repo root as build context)
+dockerfilePath = "apps/backend/Dockerfile"
+
+[deploy]
+# No /health endpoint yet — use root to confirm process is alive
+# Once /api/v1/health is added to the backend, change this to "/api/v1/health"
+healthcheckPath = "/"
+healthcheckTimeout = 60
+restartPolicyType = "on-failure"
+restartPolicyMaxRetries = 3
+
+# Required environment variables (set in Railway dashboard per environment):
+#
+#   DATABASE_URL              — Supabase pooled connection string (pgBouncer)
+#   DIRECT_URL                — Supabase direct connection string (for migrations)
+#   JWT_SECRET                — Same value as Supabase JWT secret
+#   SUPABASE_URL              — https://<project>.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY — Service role key from Supabase dashboard
+#   SUPABASE_ANON_KEY         — Anon/public key from Supabase dashboard
+#   SUPABASE_STORAGE_BUCKET   — e.g. "b3hub-uploads"
+#   CORS_ORIGINS              — Comma-separated allowed origins
+#   PORT                      — Railway injects this automatically (default 3000)

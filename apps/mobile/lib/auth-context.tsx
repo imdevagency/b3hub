@@ -3,6 +3,28 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { api, User } from './api';
 
+// ── SecureStore: guarded dynamic require ──────────────────────────────────────
+// expo-secure-store requires a native dev/production build.
+// In Expo Go the native module is unavailable — fall back to AsyncStorage so
+// the app still runs during development. Tokens are stored securely in real builds.
+let SecureStore: typeof import('expo-secure-store') | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  SecureStore = require('expo-secure-store');
+} catch {
+  // Expo Go — SecureStore unavailable, AsyncStorage used as fallback
+}
+
+/** Thin wrappers that use SecureStore when available, AsyncStorage otherwise. */
+const storage = {
+  getItem: (key: string) =>
+    SecureStore ? SecureStore.getItemAsync(key) : AsyncStorage.getItem(key),
+  setItem: (key: string, value: string) =>
+    SecureStore ? SecureStore.setItemAsync(key, value) : AsyncStorage.setItem(key, value),
+  deleteItem: (key: string) =>
+    SecureStore ? SecureStore.deleteItemAsync(key) : AsyncStorage.removeItem(key),
+};
+
 // ── Push notifications: guarded dynamic require ───────────────────────────────
 // expo-notifications requires a custom dev build (native module 'ExpoPushTokenManager').
 // When running in Expo Go the require will throw — catch it and disable push
@@ -94,9 +116,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /** Persist and set a new access + refresh token pair, then schedule proactive refresh. */
   const applyTokens = async (newToken: string, newRefreshToken: string) => {
-    await AsyncStorage.multiSet([
-      [TOKEN_KEY, newToken],
-      [REFRESH_TOKEN_KEY, newRefreshToken],
+    await Promise.all([
+      storage.setItem(TOKEN_KEY, newToken),
+      storage.setItem(REFRESH_TOKEN_KEY, newRefreshToken),
     ]);
     setToken(newToken);
     scheduleRefresh(newToken, newRefreshToken);
@@ -121,7 +143,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const clearSession = async () => {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
-    await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY, REFRESH_TOKEN_KEY]);
+    await Promise.all([
+      storage.deleteItem(TOKEN_KEY),
+      storage.deleteItem(USER_KEY),
+      storage.deleteItem(REFRESH_TOKEN_KEY),
+    ]);
     setUser(null);
     setToken(null);
   };
@@ -130,9 +156,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Load token + cached user from storage — no network call needed here.
     // isLoading resolves immediately from disk, keeping the startup spinner fast.
     Promise.all([
-      AsyncStorage.getItem(TOKEN_KEY),
-      AsyncStorage.getItem(USER_KEY),
-      AsyncStorage.getItem(REFRESH_TOKEN_KEY),
+      storage.getItem(TOKEN_KEY),
+      storage.getItem(USER_KEY),
+      storage.getItem(REFRESH_TOKEN_KEY),
     ])
       .then(async ([storedToken, storedUser, storedRefreshToken]) => {
         if (!storedToken || !storedUser) return;
@@ -144,9 +170,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             const res = await api.refreshToken(storedRefreshToken);
             activeToken = res.token;
-            await AsyncStorage.multiSet([
-              [TOKEN_KEY, res.token],
-              [REFRESH_TOKEN_KEY, res.refreshToken],
+            await Promise.all([
+              storage.setItem(TOKEN_KEY, res.token),
+              storage.setItem(REFRESH_TOKEN_KEY, res.refreshToken),
             ]);
           } catch {
             // Refresh token also expired — force login
@@ -164,7 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .getMe(activeToken)
           .then((freshUser) => {
             setUser(freshUser);
-            AsyncStorage.setItem(USER_KEY, JSON.stringify(freshUser));
+            storage.setItem(USER_KEY, JSON.stringify(freshUser));
           })
           .catch((err: unknown) => {
             // Only clear session on genuine auth failure (401/Unauthorized).
@@ -185,10 +211,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setAuth = async (user: User, token: string, refreshToken: string) => {
-    await AsyncStorage.multiSet([
-      [TOKEN_KEY, token],
-      [USER_KEY, JSON.stringify(user)],
-      [REFRESH_TOKEN_KEY, refreshToken],
+    await Promise.all([
+      storage.setItem(TOKEN_KEY, token),
+      storage.setItem(USER_KEY, JSON.stringify(user)),
+      storage.setItem(REFRESH_TOKEN_KEY, refreshToken),
     ]);
     setUser(user);
     setToken(token);
@@ -213,7 +239,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /** Update only the cached user object (e.g. after a profile edit). Tokens unchanged. */
   const updateUser = async (updatedUser: User) => {
     setUser(updatedUser);
-    await AsyncStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+    await storage.setItem(USER_KEY, JSON.stringify(updatedUser));
   };
 
   return (
