@@ -344,11 +344,7 @@ export default function ProfileScreen() {
             onPress={openEdit}
           />
           {user?.company && (
-            <MenuItem
-              icon={Building2}
-              label="Uzņēmums"
-              value={user.company.name}
-            />
+            <MenuItem icon={Building2} label="Uzņēmums" value={user.company.name} />
           )}
           <MenuItem icon={Shield} label="Konta veids" value={accountTypeLabel} />
           <MenuItem
@@ -363,7 +359,8 @@ export default function ProfileScreen() {
             icon={Bell}
             label="Paziņojumi"
             value={
-              [user?.notifOrderUpdates, user?.notifJobAlerts, user?.notifPush].filter(Boolean).length === 0
+              [user?.notifOrderUpdates, user?.notifJobAlerts, user?.notifPush].filter(Boolean)
+                .length === 0
                 ? 'Izslēgti'
                 : user?.notifPush === false
                   ? 'Tikai lietotnē'

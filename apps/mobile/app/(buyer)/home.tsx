@@ -199,11 +199,14 @@ export default function HomeScreen() {
         id: skip.id,
         num: `#${skip.orderNumber}`,
         sub: skip.location ?? '—',
-        status: ({
-          PENDING: 'Gaida apstiprinājumu',
-          CONFIRMED: 'Apstiprināts',
-          DELIVERED: 'Piegādāts',
-        } as Record<string, string>)[skip.status] ?? skip.status,
+        status:
+          (
+            {
+              PENDING: 'Gaida apstiprinājumu',
+              CONFIRMED: 'Apstiprināts',
+              DELIVERED: 'Piegādāts',
+            } as Record<string, string>
+          )[skip.status] ?? skip.status,
         dotColor: '#f59e0b',
         kind: 'skip',
       };
@@ -213,14 +216,17 @@ export default function HomeScreen() {
         id: tj.id,
         num: `#${tj.jobNumber}`,
         sub: tj.pickupCity ?? '—',
-        status: ({
-          ACCEPTED: 'Pieņemts',
-          EN_ROUTE_PICKUP: 'Brauc uz iekraušanu',
-          AT_PICKUP: 'Iekraujas',
-          LOADED: 'Iekrauts',
-          EN_ROUTE_DELIVERY: 'Brauc uz piegādi',
-          AT_DELIVERY: 'Piegādā',
-        } as Record<string, string>)[tj.status] ?? tj.status,
+        status:
+          (
+            {
+              ACCEPTED: 'Pieņemts',
+              EN_ROUTE_PICKUP: 'Brauc uz iekraušanu',
+              AT_PICKUP: 'Iekraujas',
+              LOADED: 'Iekrauts',
+              EN_ROUTE_DELIVERY: 'Brauc uz piegādi',
+              AT_DELIVERY: 'Piegādā',
+            } as Record<string, string>
+          )[tj.status] ?? tj.status,
         dotColor: '#3b82f6',
         kind: 'transport',
       };
@@ -401,7 +407,9 @@ export default function HomeScreen() {
                   <View style={s.serviceChipIcon}>
                     <Icon size={24} color="#111827" strokeWidth={2} />
                   </View>
-                  <Text style={s.serviceLabel} numberOfLines={2}>{svc.label}</Text>
+                  <Text style={s.serviceLabel} numberOfLines={2}>
+                    {svc.label}
+                  </Text>
                 </TouchableOpacity>
               );
             })}

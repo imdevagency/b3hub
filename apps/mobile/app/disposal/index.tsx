@@ -261,10 +261,18 @@ export default function DisposalWizard() {
       const jn = result?.jobNumber ?? '';
       // Save address if user opted in
       if (saveAddress && picked && token) {
-        api.savedAddresses.create(
-          { label: picked.address.split(',')[0], address: picked.address, city: picked.city ?? '', lat: picked.lat, lng: picked.lng },
-          token,
-        ).catch(() => {});
+        api.savedAddresses
+          .create(
+            {
+              label: picked.address.split(',')[0],
+              address: picked.address,
+              city: picked.city ?? '',
+              lat: picked.lat,
+              lng: picked.lng,
+            },
+            token,
+          )
+          .catch(() => {});
       }
       // Store confirmed disposal in context for access in confirmation screen
       setConfirmedDisposal({
@@ -544,7 +552,13 @@ export default function DisposalWizard() {
             {/* Pickup window */}
             <Text style={[s.sectionLabel, { marginTop: 4 }]}>Vēlamais savākšanas laiks</Text>
             <View style={s.windowRow}>
-              {([['ANY', 'Jebkurā laikā'], ['AM', 'Rīts  8–12'], ['PM', 'Diena  12–17']] as const).map(([val, label]) => (
+              {(
+                [
+                  ['ANY', 'Jebkurā laikā'],
+                  ['AM', 'Rīts  8–12'],
+                  ['PM', 'Diena  12–17'],
+                ] as const
+              ).map(([val, label]) => (
                 <TouchableOpacity
                   key={val}
                   style={[s.windowChip, pickupWindow === val && s.windowChipActive]}
@@ -641,7 +655,9 @@ export default function DisposalWizard() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.saveAddrLabel}>Saglabāt šo adresi</Text>
-                  <Text style={s.saveAddrSub} numberOfLines={1}>{picked.address.split(',')[0]}</Text>
+                  <Text style={s.saveAddrSub} numberOfLines={1}>
+                    {picked.address.split(',')[0]}
+                  </Text>
                 </View>
                 <Bookmark size={16} color={saveAddress ? '#111827' : '#9ca3af'} />
               </TouchableOpacity>
@@ -858,8 +874,28 @@ const s = StyleSheet.create({
   windowChipTextActive: { color: '#fff' },
 
   // Save address toggle
-  saveAddrRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14, backgroundColor: '#f9fafb', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', marginBottom: 12 },
-  saveAddrCheck: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: '#d1d5db', backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  saveAddrRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginBottom: 12,
+  },
+  saveAddrCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#d1d5db',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   saveAddrCheckActive: { backgroundColor: '#111827', borderColor: '#111827' },
   saveAddrLabel: { fontSize: 14, fontWeight: '600', color: '#111827' },
   saveAddrSub: { fontSize: 12, color: '#6b7280', marginTop: 1 },

@@ -443,7 +443,12 @@ export default function SellerQuotesScreen() {
             onPress={() => setCategoryFilter(null)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.filterChipText, categoryFilter === null && styles.filterChipTextActive]}>
+            <Text
+              style={[
+                styles.filterChipText,
+                categoryFilter === null && styles.filterChipTextActive,
+              ]}
+            >
               Visi ({requests.length})
             </Text>
           </TouchableOpacity>
@@ -511,9 +516,7 @@ export default function SellerQuotesScreen() {
                 <FileText size={32} color="#9ca3af" />
               </View>
               <Text style={styles.emptyTitle}>Nav rezultātu</Text>
-              <Text style={styles.emptyDesc}>
-                Šajā kategorijā pašlaik nav aktīvu pieprasījumu.
-              </Text>
+              <Text style={styles.emptyDesc}>Šajā kategorijā pašlaik nav aktīvu pieprasījumu.</Text>
               <TouchableOpacity
                 style={styles.emptyBtn}
                 onPress={() => setCategoryFilter(null)}

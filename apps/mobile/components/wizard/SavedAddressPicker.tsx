@@ -78,16 +78,8 @@ export function SavedAddressPicker({ onPick, currentAddress }: Props) {
   return (
     <>
       {/* ── Chip button ───────────────────────────────────────────────── */}
-      <TouchableOpacity
-        style={styles.chip}
-        onPress={() => setOpen(true)}
-        activeOpacity={0.7}
-      >
-        <Bookmark
-          size={14}
-          color={c.primary}
-          style={{ marginRight: 6 }}
-        />
+      <TouchableOpacity style={styles.chip} onPress={() => setOpen(true)} activeOpacity={0.7}>
+        <Bookmark size={14} color={c.primary} style={{ marginRight: 6 }} />
         <Text style={styles.chipText}>Saglabātās adreses</Text>
       </TouchableOpacity>
 
@@ -128,8 +120,7 @@ export function SavedAddressPicker({ onPick, currentAddress }: Props) {
               ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
               renderItem={({ item }) => {
                 const isActive =
-                  currentAddress?.address === item.address &&
-                  currentAddress?.city === item.city;
+                  currentAddress?.address === item.address && currentAddress?.city === item.city;
                 return (
                   <TouchableOpacity
                     style={[styles.row, isActive && styles.rowActive]}
@@ -138,19 +129,14 @@ export function SavedAddressPicker({ onPick, currentAddress }: Props) {
                     disabled={!item.lat || !item.lng}
                   >
                     <View style={styles.rowIcon}>
-                      <MapPin
-                        size={18}
-                        color={isActive ? c.primary : c.textMuted}
-                      />
+                      <MapPin size={18} color={isActive ? c.primary : c.textMuted} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         <Text style={[styles.rowLabel, isActive && styles.rowLabelActive]}>
                           {item.label}
                         </Text>
-                        {item.isDefault && (
-                          <Star size={12} color={c.primary} fill={c.primary} />
-                        )}
+                        {item.isDefault && <Star size={12} color={c.primary} fill={c.primary} />}
                       </View>
                       <Text style={styles.rowAddr} numberOfLines={1}>
                         {item.address}, {item.city}

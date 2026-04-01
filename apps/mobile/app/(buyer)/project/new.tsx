@@ -285,7 +285,9 @@ function Field({
 }
 
 function Divider() {
-  return <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: -spacing.md }} />;
+  return (
+    <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: -spacing.md }} />
+  );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────

@@ -31,7 +31,9 @@ export default function AboutPage() {
           <div className="mx-auto max-w-4xl px-6 lg:px-8">
             <div className="grid grid-cols-1 gap-16 lg:grid-cols-2 lg:items-start">
               <div>
-                <h2 className="text-3xl font-semibold tracking-tight text-foreground">Mūsu misija</h2>
+                <h2 className="text-3xl font-semibold tracking-tight text-foreground">
+                  Mūsu misija
+                </h2>
                 <p className="mt-6 text-lg leading-8 text-muted-foreground">
                   Latvijas un Baltijas celtniecības nozare joprojām paļaujas uz telefona zvaniem,
                   papīra dokumentiem un neefektīviem procesiem. B3Hub maina to — digitalizējot visu

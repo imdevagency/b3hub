@@ -100,7 +100,10 @@ function ListingCard({
     <TouchableOpacity
       style={s.card}
       onPress={() => onEdit(material)}
-      onLongPress={() => { haptics.medium(); onQuickEdit(material); }}
+      onLongPress={() => {
+        haptics.medium();
+        onQuickEdit(material);
+      }}
       delayLongPress={400}
       activeOpacity={0.7}
     >
@@ -684,7 +687,9 @@ export default function SellerCatalog() {
               </TouchableOpacity>
             </View>
           ) : (
-            materials.map((m) => <ListingCard key={m.id} material={m} onEdit={openEdit} onQuickEdit={setQuickTarget} />)
+            materials.map((m) => (
+              <ListingCard key={m.id} material={m} onEdit={openEdit} onQuickEdit={setQuickTarget} />
+            ))
           )}
         </ScrollView>
       )}
@@ -703,7 +708,7 @@ export default function SellerCatalog() {
         visible={!!quickTarget}
         onClose={() => setQuickTarget(null)}
         onSaved={(updated) => {
-          setMaterials((prev) => prev.map((m) => m.id === updated.id ? updated : m));
+          setMaterials((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
         }}
         token={token ?? ''}
       />

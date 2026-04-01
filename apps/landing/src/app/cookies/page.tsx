@@ -64,9 +64,9 @@ export default function CookiesPage() {
           <div className="max-w-3xl">
             <h2 className="text-lg font-semibold text-foreground mb-3">Kas ir sīkdatnes?</h2>
             <p className="text-muted-foreground leading-7">
-              Sīkdatnes ir nelielas teksta datnes, ko tīmekļa vietne saglabā jūsu ierīcē, kad apmeklējat
-              to. Tās palīdz atcerēties jūsu preferences, nodrošina drošu pieteikšanos un ļauj mums
-              analizēt platformas lietojumu, lai to pastāvīgi uzlabotu.
+              Sīkdatnes ir nelielas teksta datnes, ko tīmekļa vietne saglabā jūsu ierīcē, kad
+              apmeklējat to. Tās palīdz atcerēties jūsu preferences, nodrošina drošu pieteikšanos un
+              ļauj mums analizēt platformas lietojumu, lai to pastāvīgi uzlabotu.
             </p>
           </div>
         </Container>
@@ -80,7 +80,9 @@ export default function CookiesPage() {
                 <tr className="border-b border-border">
                   <th className="text-left py-3 pr-6 font-semibold text-foreground">Veids</th>
                   <th className="text-left py-3 pr-6 font-semibold text-foreground">Nolūks</th>
-                  <th className="text-left py-3 pr-6 font-semibold text-foreground">Glabāšanas laiks</th>
+                  <th className="text-left py-3 pr-6 font-semibold text-foreground">
+                    Glabāšanas laiks
+                  </th>
                   <th className="text-left py-3 font-semibold text-foreground">Var atteikties?</th>
                 </tr>
               </thead>
@@ -88,7 +90,9 @@ export default function CookiesPage() {
                 {cookieTypes.map((row) => (
                   <tr key={row.type} className="border-b border-border/50 last:border-0">
                     <td className="py-4 pr-6 font-medium text-foreground align-top">{row.type}</td>
-                    <td className="py-4 pr-6 text-muted-foreground leading-6 align-top">{row.purpose}</td>
+                    <td className="py-4 pr-6 text-muted-foreground leading-6 align-top">
+                      {row.purpose}
+                    </td>
                     <td className="py-4 pr-6 text-muted-foreground align-top">{row.duration}</td>
                     <td className="py-4 text-muted-foreground align-top">{row.canOptOut}</td>
                   </tr>
@@ -102,26 +106,32 @@ export default function CookiesPage() {
         <Container as="section" className="py-16">
           <div className="max-w-3xl space-y-10">
             <div>
-              <h2 className="text-lg font-semibold text-foreground mb-3">Kā pārvaldīt sīkdatnes?</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-3">
+                Kā pārvaldīt sīkdatnes?
+              </h2>
               <p className="text-muted-foreground leading-7">
-                Izvēles sīkdatnes var atspējot mūsu sīkdatņu iestatījumu panelī (parādās pirmajā apmeklējuma
-                reizē). Varat arī mainīt sīkdatņu iestatījumus tieši savā pārlūkprogrammā — instrukcijas
-                atšķiras atkarībā no pārlūkprogrammas. Ņemiet vērā, ka obligāti nepieciešamo sīkdatņu
-                atspējošana var liegt piekļuvi platformas funkcijām.
+                Izvēles sīkdatnes var atspējot mūsu sīkdatņu iestatījumu panelī (parādās pirmajā
+                apmeklējuma reizē). Varat arī mainīt sīkdatņu iestatījumus tieši savā
+                pārlūkprogrammā — instrukcijas atšķiras atkarībā no pārlūkprogrammas. Ņemiet vērā,
+                ka obligāti nepieciešamo sīkdatņu atspējošana var liegt piekļuvi platformas
+                funkcijām.
               </p>
             </div>
             <div>
               <h2 className="text-lg font-semibold text-foreground mb-3">Izmaiņas politikā</h2>
               <p className="text-muted-foreground leading-7">
-                Šī politika var tikt atjaunināta. Būtiskas izmaiņas tiks paziņotas platformā vai pa e-pastu.
-                Pēdējais atjauninājums: 2025. gads.
+                Šī politika var tikt atjaunināta. Būtiskas izmaiņas tiks paziņotas platformā vai pa
+                e-pastu. Pēdējais atjauninājums: 2025. gads.
               </p>
             </div>
             <div>
               <h2 className="text-lg font-semibold text-foreground mb-3">Kontakti</h2>
               <p className="text-muted-foreground leading-7">
                 Jautājumu gadījumā par sīkdatņu lietošanu sazinieties ar mums:{' '}
-                <a href="mailto:info@b3hub.lv" className="text-foreground underline underline-offset-4">
+                <a
+                  href="mailto:info@b3hub.lv"
+                  className="text-foreground underline underline-offset-4"
+                >
                   info@b3hub.lv
                 </a>
               </p>

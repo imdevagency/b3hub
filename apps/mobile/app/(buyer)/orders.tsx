@@ -343,7 +343,9 @@ function MaterialOrderCard({ order }: { order: any }) {
         <View style={s.typeRow}>
           <Package size={16} color="#64748b" />
           <Text style={s.orderId}>Materiāli</Text>
-          <Text style={[s.orderId, { color: '#94a3b8', fontWeight: '400' as const }]}>· #{order.orderNumber}</Text>
+          <Text style={[s.orderId, { color: '#94a3b8', fontWeight: '400' as const }]}>
+            · #{order.orderNumber}
+          </Text>
         </View>
         <View style={[s.statusBadge, { backgroundColor: statusColors.bg }]}>
           <Text style={[s.statusText, { color: statusColors.text }]}>
@@ -579,7 +581,8 @@ function SkipOrderCard({ order }: { order: any }) {
           <Package size={16} color="#64748b" />
           <Text style={s.orderId}>Konteiners</Text>
           <Text style={[s.orderId, { color: '#94a3b8', fontWeight: '400' as const }]}>
-            {' '}· #{order.orderNumber}
+            {' '}
+            · #{order.orderNumber}
           </Text>
         </View>
         <View style={[s.statusBadge, { backgroundColor: statusColors.bg }]}>

@@ -44,10 +44,7 @@ export function OfflineBanner() {
   return (
     <Animated.View
       pointerEvents="none"
-      style={[
-        styles.banner,
-        { paddingTop: insets.top + 8, transform: [{ translateY }] },
-      ]}
+      style={[styles.banner, { paddingTop: insets.top + 8, transform: [{ translateY }] }]}
     >
       <View style={styles.row}>
         <WifiOff size={14} color="#fff" strokeWidth={2} />

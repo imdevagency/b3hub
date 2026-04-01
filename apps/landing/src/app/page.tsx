@@ -231,7 +231,11 @@ export default function HomePage() {
                 role: 'Piegādātājs / Karjers',
                 price: '€49',
                 note: 'mēnesī, bez komisijas.',
-                items: ['Neierobežoti materiālu ieraksti', 'Automātiskie rēķini', 'Piegādes koordinācija'],
+                items: [
+                  'Neierobežoti materiālu ieraksti',
+                  'Automātiskie rēķini',
+                  'Piegādes koordinācija',
+                ],
                 featured: true,
               },
               {

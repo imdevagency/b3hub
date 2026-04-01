@@ -70,7 +70,10 @@ export default function DriverHomeScreen() {
       if (!token) return;
       api.transportJobs
         .myActive(token)
-        .then((job) => { setHasActiveJob(!!job); setFetchError(false); })
+        .then((job) => {
+          setHasActiveJob(!!job);
+          setFetchError(false);
+        })
         .catch(() => setFetchError(true));
       api.transportJobs
         .available(token)

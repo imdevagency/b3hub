@@ -22,7 +22,16 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { MapPin, Camera, Trash2, Link2, ChevronDown, ChevronUp, Bookmark, Check } from 'lucide-react-native';
+import {
+  MapPin,
+  Camera,
+  Trash2,
+  Link2,
+  ChevronDown,
+  ChevronUp,
+  Bookmark,
+  Check,
+} from 'lucide-react-native';
 import { useOrder } from '@/lib/order-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -177,10 +186,18 @@ export default function OrderWizard() {
       }
       // Save address if user opted in
       if (saveAddress && picked && token) {
-        api.savedAddresses.create(
-          { label: picked.address.split(',')[0], address: picked.address, city: picked.city ?? '', lat: picked.lat, lng: picked.lng },
-          token,
-        ).catch(() => {});
+        api.savedAddresses
+          .create(
+            {
+              label: picked.address.split(',')[0],
+              address: picked.address,
+              city: picked.city ?? '',
+              lat: picked.lat,
+              lng: picked.lng,
+            },
+            token,
+          )
+          .catch(() => {});
       }
       haptics.success();
       setConfirmedOrder(order);
@@ -352,14 +369,22 @@ export default function OrderWizard() {
             {/* Delivery window */}
             <Text style={[s.sectionLabel, { marginTop: 16 }]}>Vēlamais piegādes laiks</Text>
             <View style={s.windowRow}>
-              {([['ANY', 'Jebkurā laikā'], ['AM', 'Rīts  8–12'], ['PM', 'Diena  12–17']] as const).map(([val, label]) => (
+              {(
+                [
+                  ['ANY', 'Jebkurā laikā'],
+                  ['AM', 'Rīts  8–12'],
+                  ['PM', 'Diena  12–17'],
+                ] as const
+              ).map(([val, label]) => (
                 <TouchableOpacity
                   key={val}
                   style={[s.windowChip, deliveryWindow === val && s.windowChipActive]}
                   onPress={() => setDeliveryWindow(val)}
                   activeOpacity={0.75}
                 >
-                  <Text style={[s.windowChipText, deliveryWindow === val && s.windowChipTextActive]}>
+                  <Text
+                    style={[s.windowChipText, deliveryWindow === val && s.windowChipTextActive]}
+                  >
                     {label}
                   </Text>
                 </TouchableOpacity>
@@ -434,7 +459,9 @@ export default function OrderWizard() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.saveAddrLabel}>Saglabāt šo adresi</Text>
-                  <Text style={s.saveAddrSub} numberOfLines={1}>{picked.address.split(',')[0]}</Text>
+                  <Text style={s.saveAddrSub} numberOfLines={1}>
+                    {picked.address.split(',')[0]}
+                  </Text>
                 </View>
                 <Bookmark size={16} color={saveAddress ? '#111827' : '#9ca3af'} />
               </TouchableOpacity>

@@ -732,8 +732,22 @@ export default function ActiveJobScreen() {
         </Text>
 
         {/* Progress stepper */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: '600', letterSpacing: 0.5 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 8,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 11,
+              color: 'rgba(255,255,255,0.5)',
+              fontWeight: '600',
+              letterSpacing: 0.5,
+            }}
+          >
             SOLIS {currentIndex + 1}/{STATUS_STEPS.length}
           </Text>
           <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>

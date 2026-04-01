@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  TextInput,
+} from 'react-native';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -22,7 +30,12 @@ import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { MaterialCategory, ApiMaterial } from '@/lib/api';
-import { CATEGORY_LABELS, MATERIAL_CATEGORIES, DEFAULT_MATERIAL_NAMES, UNIT_SHORT } from '@/lib/materials';
+import {
+  CATEGORY_LABELS,
+  MATERIAL_CATEGORIES,
+  DEFAULT_MATERIAL_NAMES,
+  UNIT_SHORT,
+} from '@/lib/materials';
 
 // ── Category metadata ──────────────────────────────────────────────────────
 
@@ -94,11 +107,14 @@ function MaterialSearchCard({ material, onPress }: { material: ApiMaterial; onPr
       </View>
       <View style={sr.body}>
         <View style={sr.nameRow}>
-          <Text style={sr.name} numberOfLines={1}>{material.name}</Text>
+          <Text style={sr.name} numberOfLines={1}>
+            {material.name}
+          </Text>
           {material.isRecycled && <Leaf size={12} color="#16a34a" fill="#16a34a" />}
         </View>
         <Text style={sr.meta}>
-          {material.supplier.name}{material.supplier.city ? ` · ${material.supplier.city}` : ''}
+          {material.supplier.name}
+          {material.supplier.city ? ` · ${material.supplier.city}` : ''}
         </Text>
       </View>
       <View style={sr.priceCol}>
@@ -140,7 +156,9 @@ export default function CatalogScreen() {
         setSearching(false);
       }
     }, 350);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [query, token]);
 
   const handleCategory = (category: MaterialCategory) => {
@@ -228,7 +246,11 @@ export default function CatalogScreen() {
         </ScrollView>
       ) : (
         /* ── Category grid ── */
-        <ScrollView contentContainerStyle={s.grid} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={s.grid}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           {MATERIAL_CATEGORIES.map((cat) => (
             <CategoryCard key={cat} category={cat} onPress={() => handleCategory(cat)} />
           ))}

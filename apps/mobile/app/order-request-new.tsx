@@ -724,7 +724,9 @@ function OfferCard({
         ) : null}
         {offer.minOrder ? (
           <View style={oc.metaItem}>
-            <Text style={oc.metaText}>Min: {offer.minOrder} {UNIT_SHORT[unit] ?? unit}</Text>
+            <Text style={oc.metaText}>
+              Min: {offer.minOrder} {UNIT_SHORT[unit] ?? unit}
+            </Text>
           </View>
         ) : null}
       </View>

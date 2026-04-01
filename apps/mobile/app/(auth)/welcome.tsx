@@ -46,11 +46,13 @@ export default function WelcomeScreen() {
 
           {/* Feature bullets */}
           <View style={styles.featureList}>
-            {([
-              { Icon: Package, text: 'Materiāli, transports, konteineri — vienā vietā' },
-              { Icon: MapPin, text: 'GPS izsekošana reāllaikā' },
-              { Icon: FileText, text: 'Dokumenti automātiski — bez papīriem' },
-            ] as const).map(({ Icon, text }) => (
+            {(
+              [
+                { Icon: Package, text: 'Materiāli, transports, konteineri — vienā vietā' },
+                { Icon: MapPin, text: 'GPS izsekošana reāllaikā' },
+                { Icon: FileText, text: 'Dokumenti automātiski — bez papīriem' },
+              ] as const
+            ).map(({ Icon, text }) => (
               <View key={text} style={styles.featureRow}>
                 <Icon size={18} color="#6b7280" strokeWidth={1.5} />
                 <Text style={styles.featureText}>{text}</Text>

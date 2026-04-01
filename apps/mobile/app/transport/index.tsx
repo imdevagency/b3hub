@@ -41,9 +41,27 @@ const VEHICLE_OPTIONS: {
   fromPrice: number;
   pricePerKm: number;
 }[] = [
-  { type: 'TIPPER_SMALL', label: 'Mazā pašizgāzēja', sub: 'līdz 5 t · 6 m³', fromPrice: 89, pricePerKm: 1.5 },
-  { type: 'TIPPER_LARGE', label: 'Lielā pašizgāzēja', sub: 'līdz 15 t · 18 m³', fromPrice: 149, pricePerKm: 2.0 },
-  { type: 'ARTICULATED_TIPPER', label: 'Puspiekabe', sub: 'līdz 25 t · 90 m³', fromPrice: 219, pricePerKm: 3.0 },
+  {
+    type: 'TIPPER_SMALL',
+    label: 'Mazā pašizgāzēja',
+    sub: 'līdz 5 t · 6 m³',
+    fromPrice: 89,
+    pricePerKm: 1.5,
+  },
+  {
+    type: 'TIPPER_LARGE',
+    label: 'Lielā pašizgāzēja',
+    sub: 'līdz 15 t · 18 m³',
+    fromPrice: 149,
+    pricePerKm: 2.0,
+  },
+  {
+    type: 'ARTICULATED_TIPPER',
+    label: 'Puspiekabe',
+    sub: 'līdz 25 t · 90 m³',
+    fromPrice: 219,
+    pricePerKm: 3.0,
+  },
 ];
 
 const CARGO_PRESETS = ['Smiltis', 'Šķembas/grants', 'Betons', 'Koks', 'Metāls', 'Būvgruži', 'Cits'];
@@ -394,7 +412,10 @@ export default function TransportWizard() {
                   <TouchableOpacity
                     key="today"
                     style={[s.dayChip, s.dayChipAsap, active && s.dayChipActive]}
-                    onPress={() => { setSelectedDay(iso); setRequestedDate(iso); }}
+                    onPress={() => {
+                      setSelectedDay(iso);
+                      setRequestedDate(iso);
+                    }}
                     activeOpacity={0.75}
                   >
                     <Text style={[s.dayDow, active && s.dayActive]}>🔴</Text>
@@ -426,7 +447,13 @@ export default function TransportWizard() {
             {/* Pickup window */}
             <Text style={[s.sectionLabel, { marginTop: 4 }]}>Vēlamais iekraušanas laiks</Text>
             <View style={s.windowRow}>
-              {([['ANY', 'Jebkurā laikā'], ['AM', 'Rīts  8–12'], ['PM', 'Diena  12–17']] as const).map(([val, label]) => (
+              {(
+                [
+                  ['ANY', 'Jebkurā laikā'],
+                  ['AM', 'Rīts  8–12'],
+                  ['PM', 'Diena  12–17'],
+                ] as const
+              ).map(([val, label]) => (
                 <TouchableOpacity
                   key={val}
                   style={[s.windowChip, pickupWindow === val && s.windowChipActive]}

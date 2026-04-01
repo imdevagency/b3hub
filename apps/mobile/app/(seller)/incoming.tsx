@@ -253,7 +253,9 @@ function OrderCard({
             <Text style={styles.priceText}>€{order.price.toFixed(0)}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
-              <Text style={[styles.statusText, { color: statusInfo.color }]}>{statusInfo.text}</Text>
+              <Text style={[styles.statusText, { color: statusInfo.color }]}>
+                {statusInfo.text}
+              </Text>
             </View>
           </View>
         </View>

@@ -111,98 +111,109 @@ export default function ChangePasswordScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-        {/* Current password */}
-        <Text style={s.label}>Esošā parole</Text>
-        <View style={s.inputRow}>
-          <TextInput
-            style={s.input}
-            value={currentPw}
-            onChangeText={setCurrentPw}
-            secureTextEntry={!showCurrent}
-            placeholder="Jūsu pašreizējā parole"
-            placeholderTextColor="#9ca3af"
-            autoCapitalize="none"
-          />
-          <TouchableOpacity onPress={() => setShowCurrent((v) => !v)} hitSlop={8} style={s.eyeBtn}>
-            {showCurrent ? <EyeOff size={18} color="#6b7280" /> : <Eye size={18} color="#6b7280" />}
-          </TouchableOpacity>
-        </View>
+          {/* Current password */}
+          <Text style={s.label}>Esošā parole</Text>
+          <View style={s.inputRow}>
+            <TextInput
+              style={s.input}
+              value={currentPw}
+              onChangeText={setCurrentPw}
+              secureTextEntry={!showCurrent}
+              placeholder="Jūsu pašreizējā parole"
+              placeholderTextColor="#9ca3af"
+              autoCapitalize="none"
+            />
+            <TouchableOpacity
+              onPress={() => setShowCurrent((v) => !v)}
+              hitSlop={8}
+              style={s.eyeBtn}
+            >
+              {showCurrent ? (
+                <EyeOff size={18} color="#6b7280" />
+              ) : (
+                <Eye size={18} color="#6b7280" />
+              )}
+            </TouchableOpacity>
+          </View>
 
-        {/* New password */}
-        <Text style={[s.label, { marginTop: 16 }]}>Jaunā parole</Text>
-        <View style={s.inputRow}>
-          <TextInput
-            style={s.input}
-            value={newPw}
-            onChangeText={setNewPw}
-            secureTextEntry={!showNew}
-            placeholder="Vismaz 8 rakstzīmes"
-            placeholderTextColor="#9ca3af"
-            autoCapitalize="none"
-          />
-          <TouchableOpacity onPress={() => setShowNew((v) => !v)} hitSlop={8} style={s.eyeBtn}>
-            {showNew ? <EyeOff size={18} color="#6b7280" /> : <Eye size={18} color="#6b7280" />}
-          </TouchableOpacity>
-        </View>
+          {/* New password */}
+          <Text style={[s.label, { marginTop: 16 }]}>Jaunā parole</Text>
+          <View style={s.inputRow}>
+            <TextInput
+              style={s.input}
+              value={newPw}
+              onChangeText={setNewPw}
+              secureTextEntry={!showNew}
+              placeholder="Vismaz 8 rakstzīmes"
+              placeholderTextColor="#9ca3af"
+              autoCapitalize="none"
+            />
+            <TouchableOpacity onPress={() => setShowNew((v) => !v)} hitSlop={8} style={s.eyeBtn}>
+              {showNew ? <EyeOff size={18} color="#6b7280" /> : <Eye size={18} color="#6b7280" />}
+            </TouchableOpacity>
+          </View>
 
-        {/* Strength bars */}
-        {newPw.length > 0 && (
-          <View style={s.strengthWrap}>
-            <View style={s.strengthBars}>
-              {[1, 2, 3, 4].map((i) => (
-                <View
-                  key={i}
-                  style={[s.strengthBar, { backgroundColor: i <= score ? meta.color : '#e5e7eb' }]}
-                />
-              ))}
+          {/* Strength bars */}
+          {newPw.length > 0 && (
+            <View style={s.strengthWrap}>
+              <View style={s.strengthBars}>
+                {[1, 2, 3, 4].map((i) => (
+                  <View
+                    key={i}
+                    style={[
+                      s.strengthBar,
+                      { backgroundColor: i <= score ? meta.color : '#e5e7eb' },
+                    ]}
+                  />
+                ))}
+              </View>
+              {meta.label ? (
+                <Text style={[s.strengthLabel, { color: meta.color }]}>{meta.label}</Text>
+              ) : null}
             </View>
-            {meta.label ? (
-              <Text style={[s.strengthLabel, { color: meta.color }]}>{meta.label}</Text>
-            ) : null}
-          </View>
-        )}
-
-        {/* Confirm password */}
-        <Text style={[s.label, { marginTop: 16 }]}>Atkārtot jauno paroli</Text>
-        <View style={s.inputRow}>
-          <TextInput
-            style={s.input}
-            value={confirmPw}
-            onChangeText={setConfirmPw}
-            secureTextEntry
-            placeholder="Atkārtojiet jauno paroli"
-            placeholderTextColor="#9ca3af"
-            autoCapitalize="none"
-          />
-        </View>
-
-        {/* Feedback banner */}
-        {feedback && (
-          <View style={[s.banner, feedback.ok ? s.bannerSuccess : s.bannerError]}>
-            {feedback.ok ? (
-              <CheckCircle2 size={16} color="#15803d" />
-            ) : (
-              <AlertCircle size={16} color="#b91c1c" />
-            )}
-            <Text style={[s.bannerText, { color: feedback.ok ? '#15803d' : '#b91c1c' }]}>
-              {feedback.msg}
-            </Text>
-          </View>
-        )}
-
-        {/* Submit */}
-        <TouchableOpacity
-          style={[s.btn, (loading || !currentPw || !newPw || !confirmPw) && s.btnDisabled]}
-          onPress={handleSubmit}
-          disabled={loading || !currentPw || !newPw || !confirmPw}
-          activeOpacity={0.8}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={s.btnText}>Nomainīt paroli</Text>
           )}
-        </TouchableOpacity>
+
+          {/* Confirm password */}
+          <Text style={[s.label, { marginTop: 16 }]}>Atkārtot jauno paroli</Text>
+          <View style={s.inputRow}>
+            <TextInput
+              style={s.input}
+              value={confirmPw}
+              onChangeText={setConfirmPw}
+              secureTextEntry
+              placeholder="Atkārtojiet jauno paroli"
+              placeholderTextColor="#9ca3af"
+              autoCapitalize="none"
+            />
+          </View>
+
+          {/* Feedback banner */}
+          {feedback && (
+            <View style={[s.banner, feedback.ok ? s.bannerSuccess : s.bannerError]}>
+              {feedback.ok ? (
+                <CheckCircle2 size={16} color="#15803d" />
+              ) : (
+                <AlertCircle size={16} color="#b91c1c" />
+              )}
+              <Text style={[s.bannerText, { color: feedback.ok ? '#15803d' : '#b91c1c' }]}>
+                {feedback.msg}
+              </Text>
+            </View>
+          )}
+
+          {/* Submit */}
+          <TouchableOpacity
+            style={[s.btn, (loading || !currentPw || !newPw || !confirmPw) && s.btnDisabled]}
+            onPress={handleSubmit}
+            disabled={loading || !currentPw || !newPw || !confirmPw}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={s.btnText}>Nomainīt paroli</Text>
+            )}
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </ScreenContainer>

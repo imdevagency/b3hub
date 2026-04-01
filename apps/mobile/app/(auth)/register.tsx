@@ -380,8 +380,14 @@ export default function RegisterScreen() {
 
       <Text style={s.legalText}>
         Turpinot, jūs piekrītat mūsu{' '}
-        <Text style={s.legalLink} onPress={() => Linking.openURL('https://b3hub.lv/terms')}>Noteikumiem</Text> un{' '}
-        <Text style={s.legalLink} onPress={() => Linking.openURL('https://b3hub.lv/privacy')}>Privātuma politikai</Text>.
+        <Text style={s.legalLink} onPress={() => Linking.openURL('https://b3hub.lv/terms')}>
+          Noteikumiem
+        </Text>{' '}
+        un{' '}
+        <Text style={s.legalLink} onPress={() => Linking.openURL('https://b3hub.lv/privacy')}>
+          Privātuma politikai
+        </Text>
+        .
       </Text>
     </View>
   );
