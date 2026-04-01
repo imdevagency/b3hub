@@ -314,9 +314,7 @@ function MaterialOrderCard({ order }: { order: any }) {
       <View style={s.cardFooter}>
         <Text style={s.price}>{order.totalAmount != null ? `€${order.totalAmount}` : '—'}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          {activeJob && driverName && (
-            <Text style={s.driverNameText}>{driverName}</Text>
-          )}
+          {activeJob && driverName && <Text style={s.driverNameText}>{driverName}</Text>}
           {activeJob && (
             <TouchableOpacity
               style={s.liveChip}
