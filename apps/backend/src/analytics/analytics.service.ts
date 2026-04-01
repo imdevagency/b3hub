@@ -168,22 +168,24 @@ export class AnalyticsService {
   }
 
   private async getPerformanceStats(companyId: string) {
-    const [reviews, totalOrders, completedOrders] = await Promise.all([
-      this.prisma.review.aggregate({
-        where: { companyId },
-        _avg: { rating: true },
-        _count: { id: true },
-      }),
-      this.prisma.order.count({
-        where: { items: { some: { material: { supplierId: companyId } } } },
-      }),
-      this.prisma.order.count({
-        where: {
-          status: OrderStatus.COMPLETED,
-          items: { some: { material: { supplierId: companyId } } },
-        },
-      }),
-    ]);
+    const [reviews, totalOrders, completedOrders, onTimeRate] =
+      await Promise.all([
+        this.prisma.review.aggregate({
+          where: { companyId },
+          _avg: { rating: true },
+          _count: { id: true },
+        }),
+        this.prisma.order.count({
+          where: { items: { some: { material: { supplierId: companyId } } } },
+        }),
+        this.prisma.order.count({
+          where: {
+            status: OrderStatus.COMPLETED,
+            items: { some: { material: { supplierId: companyId } } },
+          },
+        }),
+        this.getOnTimeDeliveryRate(companyId),
+      ]);
 
     const completionRate =
       totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0;
@@ -194,7 +196,58 @@ export class AnalyticsService {
       totalOrders,
       completedOrders,
       completionRate,
+      onTimeRate,
     };
+  }
+
+  /** On-time delivery rate: % of DELIVERED transport jobs where actual
+   *  delivery (statusUpdatedAt) was at or before the planned deliveryDate + 30 min. */
+  private async getOnTimeDeliveryRate(companyId: string): Promise<number> {
+    const jobs = await this.prisma.transportJob.findMany({
+      where: {
+        status: 'DELIVERED',
+        order: {
+          items: { some: { material: { supplierId: companyId } } },
+        },
+      },
+      select: { deliveryDate: true, statusUpdatedAt: true },
+    });
+
+    if (jobs.length === 0) return 0;
+
+    const onTimeCount = jobs.filter((j) => {
+      if (!j.statusUpdatedAt) return true; // no timestamp = assume on time
+      const graceMs = 30 * 60 * 1000; // 30 min grace
+      return j.statusUpdatedAt.getTime() <= j.deliveryDate.getTime() + graceMs;
+    }).length;
+
+    return Math.round((onTimeCount / jobs.length) * 100);
+  }
+
+  /** Public supplier performance scores — for buyer catalog and admin views */
+  async getSupplierScores() {
+    const suppliers = await this.prisma.company.findMany({
+      where: { materials: { some: { active: true } } },
+      select: {
+        id: true,
+        name: true,
+        city: true,
+        companyType: true,
+        rating: true,
+      },
+    });
+
+    const scores = await Promise.all(
+      suppliers.map(async (s) => ({
+        companyId: s.id,
+        name: s.name,
+        city: s.city,
+        companyType: s.companyType,
+        ...(await this.getPerformanceStats(s.id)),
+      })),
+    );
+
+    return scores.sort((a, b) => b.avgRating - a.avgRating);
   }
 
   private async getTopMaterials(companyId: string) {

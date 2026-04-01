@@ -282,6 +282,17 @@ enum QuoteResponseStatus {
   EXPIRED
 }
 
+enum SurchargeType {
+  FUEL          // Fuel levy
+  WAITING_TIME  // Truck waiting at loading/unloading site
+  WEEKEND       // Weekend / public holiday delivery
+  OVERWEIGHT    // Cargo exceeds standard weight limit
+  NARROW_ACCESS // Restricted site access (pump required, crane etc.)
+  REMOTE_AREA   // Out-of-zone delivery surcharge
+  TOLL          // Road toll pass-through
+  OTHER         // Catch-all
+}
+
 // ================================
 // PAYMENTS
 // ================================
@@ -550,6 +561,7 @@ model Order {
   transportJobs   TransportJob[]
   invoices        Invoice[]
   payment         Payment?
+  surcharges      OrderSurcharge[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1424,4 +1436,27 @@ model Project {
 
   @@index([companyId])
   @@map("projects")
+}
+
+// ── Surcharge line items ─────────────────────────────────────────────────────
+// Billable levies added to an order after initial placement:
+// fuel, waiting time, weekend rates, overweight, toll pass-throughs.
+// Each surcharge is a separate signed line item on the order.
+
+model OrderSurcharge {
+  id    String @id @default(cuid())
+
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId String
+
+  type     SurchargeType
+  label    String         // Human-readable description shown on invoice
+  amount   Float          // EUR; positive = charge to buyer
+  currency String         @default("EUR")
+  billable Boolean        @default(true) // false = internal cost record only
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@map("order_surcharges")
 }

@@ -43,6 +43,11 @@ interface AnimatedTabBarProps extends BottomTabBarProps {
    * route name and a `defaultHandler` that performs the standard navigation.
    * If omitted, `defaultHandler` is invoked directly.
    */
+  /**
+   * Maps hidden route names to a visible route that should appear active in their place.
+   * e.g. { active: 'jobs' } makes the `jobs` tab highlight when the hidden `active` route is shown.
+   */
+  hiddenRouteAliases?: Record<string, string>;
   onRoutePress?: (routeName: string, defaultHandler: () => void) => void;
 }
 
@@ -139,6 +144,7 @@ export function AnimatedTabBar({
   activeTint = '#111827',
   inactiveTint = '#9ca3af',
   ctaTab,
+  hiddenRouteAliases,
   onRoutePress,
 }: AnimatedTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -192,7 +198,11 @@ export function AnimatedTabBar({
       <View style={styles.row}>
         {visibleRoutes.map((route: Route<string>, visibleIdx: number) => {
           const fullIdx = state.routes.findIndex((r: Route<string>) => r.key === route.key);
-          const isFocused = state.index === fullIdx;
+          const currentRouteName = state.routes[state.index]?.name;
+          // If the active route is hidden (e.g. 'active') and has an alias (e.g. 'jobs'),
+          // highlight the aliased tab instead.
+          const aliasedName = hiddenRouteAliases?.[currentRouteName] ?? null;
+          const isFocused = aliasedName ? aliasedName === route.name : state.index === fullIdx;
           return (
             <React.Fragment key={route.key}>
               {ctaTab && visibleIdx === ctaInsertIndex && <CtaButton config={ctaTab} />}

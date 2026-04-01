@@ -23,6 +23,7 @@ import { haptics } from '@/lib/haptics';
 import { SELLER_ORDER_STATUS } from '@/lib/materials';
 import { useToast } from '@/components/ui/Toast';
 import { api, type ApiOrder } from '@/lib/api';
+import { useLiveUpdates } from '@/lib/use-live-updates';
 import { X, Square, CheckSquare2, MapPin, Inbox, AlertCircle } from 'lucide-react-native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -313,7 +314,7 @@ function OrderCard({
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function IncomingScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
   const toast = useToast();
   const [orders, setOrders] = useState<IncomingOrder[]>([]);
@@ -345,6 +346,17 @@ export default function IncomingScreen() {
       fetchOrders();
     }, [fetchOrders]),
   );
+
+  // ── Live push: new orders from buyers arrive in real-time ─────────────────
+  const { sellerNewOrder } = useLiveUpdates({
+    sellerCompanyId: user?.company?.id ?? null,
+    token,
+  });
+  useEffect(() => {
+    if (sellerNewOrder) {
+      fetchOrders(true);
+    }
+  }, [sellerNewOrder]);
 
   const handleConfirm = async (id: string) => {
     if (!token) return;

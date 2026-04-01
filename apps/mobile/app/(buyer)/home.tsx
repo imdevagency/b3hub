@@ -399,36 +399,15 @@ export default function HomeScreen() {
               ))}
             </View>
           ) : isNewUser ? (
-            <View style={s.onboardingCard}>
-              <View style={s.onboardingIconRow}>
-                <View style={s.onboardingIconBubble}>
-                  <HardHat size={22} color="#111827" strokeWidth={2.5} />
-                </View>
-                <View style={s.onboardingIconBubble}>
-                  <Package size={22} color="#111827" strokeWidth={2.5} />
-                </View>
-                <View style={s.onboardingIconBubble}>
-                  <Trash2 size={22} color="#111827" strokeWidth={2.5} />
-                </View>
-                <View style={s.onboardingIconBubble}>
-                  <Truck size={22} color="#111827" strokeWidth={2.5} />
-                </View>
-              </View>
-              <Text style={s.onboardingTitle}>Sveicināti B3Hub!</Text>
-              <Text style={s.onboardingSubtitle}>
-                Pasūtiet celtniecības materiālus, konteinerus, transportu vai atkritumu izvešanu —
-                viss vienā vietā.
-              </Text>
+            <View style={s.emptyHint}>
+              <Text style={s.emptyHintText}>Nav jaunu pasūtījumu</Text>
               <TouchableOpacity
-                style={s.onboardingBtn}
                 onPress={() => {
                   haptics.light();
                   router.push('/(buyer)/catalog' as any);
                 }}
-                activeOpacity={0.85}
               >
-                <Text style={s.onboardingBtnText}>Atvērt katalogu</Text>
-                <ChevronRight size={18} color="#ffffff" />
+                <Text style={s.emptyHintLink}>Sākt pasūtīt →</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -617,55 +596,20 @@ const s = StyleSheet.create({
   },
 
   // Onboarding card
-  onboardingCard: {
-    marginHorizontal: 20,
-    marginTop: 8,
-    backgroundColor: '#f9fafb',
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  onboardingIconRow: {
+  emptyHint: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
-  onboardingIconBubble: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#f3f4f6',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 12,
   },
-  onboardingTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  onboardingSubtitle: {
+  emptyHintText: {
     fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
-    lineHeight: 21,
-    marginBottom: 20,
+    color: '#9ca3af',
   },
-  onboardingBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#111827',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    gap: 6,
-  },
-  onboardingBtnText: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 15,
+  emptyHintLink: {
+    fontSize: 14,
+    color: '#111827',
+    fontWeight: '600',
   },
 });

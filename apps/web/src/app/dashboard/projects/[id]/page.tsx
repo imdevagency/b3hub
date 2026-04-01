@@ -17,6 +17,7 @@ import {
   Pencil,
   X,
   Building2,
+  Leaf,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { PageSpinner } from '@/components/ui/page-spinner';
@@ -580,7 +581,7 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* P&L stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard label="Līguma vērtība" value={fmtMoney(project.contractValue)} icon={Euro} />
         <StatCard
           label="Materiālu izmaksas"
@@ -594,6 +595,9 @@ export default function ProjectDetailPage() {
           positive={!isNegativeMargin}
         />
         <StatCard label="Pasūtījumi" value={String(project.orderCount)} icon={CheckCircle2} />
+        {project.co2Tonnes > 0 && (
+          <StatCard label="CO₂ emisijas" value={`${project.co2Tonnes}t`} icon={Leaf} />
+        )}
       </div>
 
       {/* Spend progress */}

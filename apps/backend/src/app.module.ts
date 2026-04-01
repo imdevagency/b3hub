@@ -39,6 +39,7 @@ import { MapsModule } from './maps/maps.module';
 import { PaymentsModule } from './payments/payments.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ProjectsModule } from './projects/projects.module';
+import { UpdatesModule } from './updates/updates.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { ProjectsModule } from './projects/projects.module';
     PaymentsModule,
     AnalyticsModule,
     ProjectsModule,
+    UpdatesModule,
   ],
   controllers: [AppController],
   providers: [

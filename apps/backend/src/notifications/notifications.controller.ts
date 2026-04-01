@@ -6,6 +6,8 @@ import {
   Controller,
   Get,
   Patch,
+  Post,
+  Body,
   Param,
   Query,
   UseGuards,
@@ -50,5 +52,25 @@ export class NotificationsController {
   @Patch(':id/read')
   markRead(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.notificationsService.markRead(id, user.userId);
+  }
+
+  /**
+   * POST /notifications/test
+   * Dev-only: send a test notification to any userId without auth.
+   * Only active when NODE_ENV=development.
+   */
+  @Post('test')
+  async sendTest(
+    @Body() body: { userId: string; title?: string; message?: string },
+  ) {
+    if (process.env.NODE_ENV !== 'development') {
+      return { error: 'Only available in development' };
+    }
+    return this.notificationsService.create({
+      userId: body.userId,
+      type: 'SYSTEM',
+      title: body.title ?? 'Dev Test',
+      message: body.message ?? 'Test notification from local dev script',
+    });
   }
 }

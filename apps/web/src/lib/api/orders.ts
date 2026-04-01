@@ -44,6 +44,7 @@ export interface ApiOrder {
       phone: string | null;
     } | null;
   }[];
+  surcharges?: ApiOrderSurcharge[];
   createdAt: string;
 }
 
@@ -160,9 +161,28 @@ export async function createCartOrder(
   });
 }
 
-// WasteType is exported from ./containers.ts
 export type DisposalTruckType = 'TIPPER_SMALL' | 'TIPPER_LARGE' | 'ARTICULATED_TIPPER';
 export type TransportVehicleType = 'TIPPER_SMALL' | 'TIPPER_LARGE' | 'ARTICULATED_TIPPER';
+
+export type SurchargeType =
+  | 'FUEL'
+  | 'WAITING_TIME'
+  | 'WEEKEND'
+  | 'OVERWEIGHT'
+  | 'NARROW_ACCESS'
+  | 'REMOTE_AREA'
+  | 'TOLL'
+  | 'OTHER';
+
+export interface ApiOrderSurcharge {
+  id: string;
+  type: SurchargeType;
+  label: string;
+  amount: number;
+  currency: string;
+  billable: boolean;
+  createdAt: string;
+}
 
 export interface CreateDisposalOrderInput {
   pickupAddress: string;
@@ -217,5 +237,34 @@ export async function createTransportOrder(input: CreateTransportOrderInput, tok
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
+  });
+}
+
+export async function getOrder(id: string, token: string): Promise<ApiOrder> {
+  return apiFetch<ApiOrder>(`/orders/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function addOrderSurcharge(
+  orderId: string,
+  dto: { type: SurchargeType; label: string; amount: number; billable?: boolean },
+  token: string,
+): Promise<ApiOrderSurcharge> {
+  return apiFetch<ApiOrderSurcharge>(`/orders/${orderId}/surcharges`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function removeOrderSurcharge(
+  orderId: string,
+  surchargeId: string,
+  token: string,
+): Promise<void> {
+  await apiFetch(`/orders/${orderId}/surcharges/${surchargeId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
   });
 }

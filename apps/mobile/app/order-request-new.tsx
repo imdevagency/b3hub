@@ -39,6 +39,7 @@ import {
   Clock,
   Zap as ZapIcon,
   CheckCircle2,
+  Lock,
 } from 'lucide-react-native';
 import { Calendar as RNCalendar } from 'react-native-calendars';
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
@@ -255,44 +256,75 @@ export default function OrderRequestWizard() {
       ? handleSendRFQ
       : goNext;
 
+  // Whether the caller pre-selected a specific material (came from a catalog product row)
+  const hasPrefill = !!params.prefillMaterial;
+
   // ── Step renders ──────────────────────────────────────────────────────────
 
   const renderSpecs = () => (
     <ScrollView
-      contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 32 }}
+      contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      {/* Material Block */}
-      <View style={s.field}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 8,
-          }}
-        >
-          <Text style={s.fieldLabel}>Materiāls</Text>
-          <View style={s.catBadgeMin}>
+      {/* Material block */}
+      {hasPrefill ? (
+        /* ── Ultimate Minimal Locked State ── */
+        <View style={{ alignItems: 'center', marginTop: 24, marginBottom: 48 }}>
+          <View style={[s.catBadgeMin, { marginBottom: 12 }]}>
             <Text style={s.catBadgeTextMin}>
               {CATEGORY_LABELS[category as MaterialCategory] ?? category}
             </Text>
           </View>
+          <View
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 24 }}
+          >
+            <Text
+              style={{
+                fontSize: 32,
+                fontFamily: 'Inter_800ExtraBold',
+                color: '#111827',
+                textAlign: 'center',
+                flexShrink: 1,
+                lineHeight: 38,
+              }}
+            >
+              {materialName}
+            </Text>
+            <Lock size={20} color="#E5E7EB" style={{ marginTop: 4 }} />
+          </View>
         </View>
-        <TextInput
-          style={s.textInput}
-          value={materialName}
-          onChangeText={setMaterialName}
-          placeholder="Frakcija, precizējums (piem., 16/32 mm)"
-          placeholderTextColor="#9ca3af"
-        />
-      </View>
+      ) : (
+        /* ── Open: user arrived via category only — let them describe ── */
+        <View style={{ marginBottom: 40, marginTop: 16 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 8,
+            }}
+          >
+            <Text style={s.fieldLabel}>Materiāls</Text>
+            <View style={s.catBadgeMin}>
+              <Text style={s.catBadgeTextMin}>
+                {CATEGORY_LABELS[category as MaterialCategory] ?? category}
+              </Text>
+            </View>
+          </View>
 
-      {/* Quantity & Unit Block */}
-      <View style={s.field}>
-        <Text style={[s.fieldLabel, { marginBottom: 16, textAlign: 'center' }]}>Daudzums</Text>
+          <TextInput
+            style={s.textInput}
+            value={materialName}
+            onChangeText={setMaterialName}
+            placeholder="Frakcija, precizējums (piem., 16/32 mm)"
+            placeholderTextColor="#9ca3af"
+          />
+        </View>
+      )}
 
+      {/* Hero Quantity & Unit Stepper */}
+      <View style={{ alignItems: 'center', marginBottom: 48 }}>
         <View style={s.stepperRow}>
           <TouchableOpacity
             style={s.stepBtn}
@@ -752,8 +784,9 @@ const s = StyleSheet.create({
   stepperRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    paddingVertical: 8,
+    justifyContent: 'center',
+    gap: 32,
+    paddingVertical: 12,
   },
   stepBtn: {
     width: 64,
@@ -764,16 +797,16 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
     elevation: 4,
   },
-  stepperValueWrap: { flex: 1, alignItems: 'center' },
+  stepperValueWrap: { minWidth: 100, alignItems: 'center' },
   stepperValue: {
-    fontSize: 56, // Massive quantity size
+    fontSize: 72, // Mega large quantity size
     fontFamily: 'Inter_800ExtraBold',
-    color: '#000000',
-    letterSpacing: -2,
+    color: '#111827',
+    letterSpacing: -2.5,
     includeFontPadding: false,
   },
 
@@ -783,12 +816,12 @@ const s = StyleSheet.create({
     alignSelf: 'center',
     backgroundColor: '#F4F5F7',
     borderRadius: 16,
-    padding: 4,
-    marginTop: 8,
+    padding: 6,
+    marginTop: 16,
   },
   unitToggleBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     borderRadius: 12,
   },
   unitToggleBtnActive: {

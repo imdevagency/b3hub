@@ -164,15 +164,15 @@ export default function OrdersScreen() {
               setShowTypePicker(false);
               router.push('/(buyer)/catalog');
             }}
+            activeOpacity={0.7}
           >
-            <View style={s.sheetIcon}>
-              <Package size={24} color="#111827" strokeWidth={1.5} />
+            <View style={s.uberIconBox}>
+              <Package size={28} color="#111827" strokeWidth={1.5} />
             </View>
             <View style={s.sheetText}>
-              <Text style={s.sheetOptionTitle}>Materiāli</Text>
-              <Text style={s.sheetOptionDesc}>Smiltis, šķembas, melnzeme</Text>
+              <Text style={s.uberOptionTitle}>Materiāli</Text>
+              <Text style={s.uberOptionDesc}>Smiltis, šķembas, melnzeme</Text>
             </View>
-            <ChevronRight size={20} color="#E5E7EB" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -181,15 +181,15 @@ export default function OrdersScreen() {
               setShowTypePicker(false);
               router.push('/(buyer)/skip-order/new');
             }}
+            activeOpacity={0.7}
           >
-            <View style={s.sheetIcon}>
-              <Trash2 size={24} color="#111827" strokeWidth={1.5} />
+            <View style={s.uberIconBox}>
+              <Trash2 size={28} color="#111827" strokeWidth={1.5} />
             </View>
             <View style={s.sheetText}>
-              <Text style={s.sheetOptionTitle}>Konteiners</Text>
-              <Text style={s.sheetOptionDesc}>Būvgružu izvešana</Text>
+              <Text style={s.uberOptionTitle}>Konteiners</Text>
+              <Text style={s.uberOptionDesc}>Būvgružu izvešana</Text>
             </View>
-            <ChevronRight size={20} color="#E5E7EB" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -198,15 +198,15 @@ export default function OrdersScreen() {
               setShowTypePicker(false);
               router.push('/(buyer)/rfq/new');
             }}
+            activeOpacity={0.7}
           >
-            <View style={s.sheetIcon}>
-              <FileText size={24} color="#111827" strokeWidth={1.5} />
+            <View style={s.uberIconBox}>
+              <FileText size={28} color="#111827" strokeWidth={1.5} />
             </View>
             <View style={s.sheetText}>
-              <Text style={s.sheetOptionTitle}>Cenu aptauja (RFQ)</Text>
-              <Text style={s.sheetOptionDesc}>Specifiski apjomi vai materiāli</Text>
+              <Text style={s.uberOptionTitle}>Cenu aptauja (RFQ)</Text>
+              <Text style={s.uberOptionDesc}>Specifiski apjomi vai materiāli</Text>
             </View>
-            <ChevronRight size={20} color="#E5E7EB" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -215,15 +215,15 @@ export default function OrdersScreen() {
               setShowTypePicker(false);
               router.push('/(buyer)/transport-job/new');
             }}
+            activeOpacity={0.7}
           >
-            <View style={s.sheetIcon}>
-              <Truck size={24} color="#111827" strokeWidth={1.5} />
+            <View style={s.uberIconBox}>
+              <Truck size={28} color="#111827" strokeWidth={1.5} />
             </View>
             <View style={s.sheetText}>
-              <Text style={s.sheetOptionTitle}>Transports A → B</Text>
-              <Text style={s.sheetOptionDesc}>Tikai pārvadājums</Text>
+              <Text style={s.uberOptionTitle}>Transports A → B</Text>
+              <Text style={s.uberOptionDesc}>Tikai pārvadājums</Text>
             </View>
-            <ChevronRight size={20} color="#E5E7EB" />
           </TouchableOpacity>
         </View>
       </BottomSheet>
@@ -269,6 +269,10 @@ function MaterialOrderCard({ order }: { order: any }) {
   const firstItemName = order.items?.[0]?.product?.name || 'Materiālu pasūtījums';
   const displayTitle = itemsCount > 1 ? `${firstItemName} +${itemsCount - 1}` : firstItemName;
   const activeJob = order.transportJobs?.find((j: any) => DRIVER_TRANSIT_STATUSES.has(j.status));
+  const activeDriver = activeJob?.driver;
+  const driverName = activeDriver?.firstName
+    ? `${activeDriver.firstName} ${activeDriver.lastName ? activeDriver.lastName.charAt(0) + '.' : ''}`
+    : null;
 
   return (
     <TouchableOpacity
@@ -309,21 +313,26 @@ function MaterialOrderCard({ order }: { order: any }) {
 
       <View style={s.cardFooter}>
         <Text style={s.price}>{order.totalAmount != null ? `€${order.totalAmount}` : '—'}</Text>
-        {activeJob && (
-          <TouchableOpacity
-            style={s.liveChip}
-            onPress={(e) => {
-              e.stopPropagation();
-              router.push(`/(buyer)/transport-job/${activeJob.id}` as any);
-            }}
-            activeOpacity={0.8}
-          >
-            <View style={s.liveChipDot} />
-            <Text style={s.liveChipText}>Live</Text>
-          </TouchableOpacity>
-        )}
-        <View style={s.chevronBox}>
-          <ChevronRight size={18} color="#94a3b8" />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          {activeJob && driverName && (
+            <Text style={s.driverNameText}>{driverName}</Text>
+          )}
+          {activeJob && (
+            <TouchableOpacity
+              style={s.liveChip}
+              onPress={(e) => {
+                e.stopPropagation();
+                router.push(`/(buyer)/transport-job/${activeJob.id}` as any);
+              }}
+              activeOpacity={0.8}
+            >
+              <View style={s.liveChipDot} />
+              <Text style={s.liveChipText}>Live</Text>
+            </TouchableOpacity>
+          )}
+          <View style={s.chevronBox}>
+            <ChevronRight size={18} color="#94a3b8" />
+          </View>
         </View>
       </View>
     </TouchableOpacity>
@@ -590,7 +599,7 @@ const s = StyleSheet.create({
   },
   orderId: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: '#64748b',
     textTransform: 'uppercase',
   },
@@ -601,12 +610,12 @@ const s = StyleSheet.create({
   },
   statusText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     textTransform: 'uppercase',
   },
   cardTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: '#111827',
     marginBottom: 12,
     lineHeight: 24,
@@ -621,6 +630,7 @@ const s = StyleSheet.create({
   },
   metaText: {
     fontSize: 14,
+    fontFamily: 'Inter_500Medium',
     color: '#64748b',
     flex: 1,
   },
@@ -635,7 +645,7 @@ const s = StyleSheet.create({
   },
   price: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: '#111827',
   },
   chevronBox: {
@@ -650,23 +660,21 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#111827',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
   },
   liveChipDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#ffffff',
   },
   liveChipText: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#3b82f6',
+    fontFamily: 'Inter_700Bold',
+    color: '#ffffff',
   },
 
   // Empty State
@@ -686,12 +694,13 @@ const s = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'Inter_700Bold',
     color: '#111827',
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 15,
+    fontFamily: 'Inter_500Medium',
     color: '#64748b',
     textAlign: 'center',
     maxWidth: 240,
@@ -705,47 +714,57 @@ const s = StyleSheet.create({
   },
   emptyButtonText: {
     color: '#fff',
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 15,
+  },
+
+  driverNameText: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#4b5563',
   },
 
   // Sheet
   sheetContent: {
     paddingBottom: 40,
+    paddingTop: 8,
   },
   sheetTitle: {
-    fontSize: 20,
-    fontFamily: 'Inter_700Bold',
+    fontSize: 24,
+    fontFamily: 'Inter_800ExtraBold',
     color: '#111827',
-    marginBottom: 16,
+    marginBottom: 24,
     paddingHorizontal: 24,
+    letterSpacing: -0.5,
   },
   sheetOption: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingVertical: 12,
     gap: 16,
   },
-  sheetIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  uberIconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
     backgroundColor: '#F4F5F7',
     alignItems: 'center',
     justifyContent: 'center',
   },
   sheetText: {
     flex: 1,
+    justifyContent: 'center',
+    gap: 2,
   },
-  sheetOptionTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter_600SemiBold',
+  uberOptionTitle: {
+    fontSize: 17,
+    fontFamily: 'Inter_700Bold',
     color: '#111827',
-    marginBottom: 2,
   },
-  sheetOptionDesc: {
+  uberOptionDesc: {
     fontSize: 14,
-    color: '#6b7280',
+    fontFamily: 'Inter_500Medium',
+    color: '#64748b',
   },
 });

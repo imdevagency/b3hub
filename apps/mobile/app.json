@@ -1,0 +1,83 @@
+{
+  "expo": {
+    "name": "b3hub",
+    "slug": "b3hub",
+    "scheme": "b3hub",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["ios", "android"],
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "lv.b3hub.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "B3Hub needs your location to track deliveries.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "B3Hub uses your location in the background to send GPS updates during active transport jobs.",
+        "NSCameraUsageDescription": "B3Hub needs camera access to take delivery proof photos.",
+        "NSPhotoLibraryUsageDescription": "B3Hub needs photo library access for delivery documents."
+      }
+    },
+    "android": {
+      "package": "lv.b3hub.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png",
+        "backgroundColor": "./assets/android-icon-background.png"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "B3Hub uses your location in the background to send GPS updates during active transport jobs."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#111827"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "B3Hub needs photo library access for delivery documents.",
+          "cameraPermission": "B3Hub needs camera access to take delivery proof photos."
+        }
+      ],
+      "expo-secure-store",
+      "@stripe/stripe-react-native"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "25e69070-6330-48d2-9576-5b35e6966384"
+      }
+    },
+    "owner": "b3hub",
+    "updates": {
+      "url": "https://u.expo.dev/25e69070-6330-48d2-9576-5b35e6966384"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
+  }
+}

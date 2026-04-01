@@ -272,6 +272,9 @@ export default function AnalyticsPage() {
         {seller && (
           <StatValue label="Izpilde" value={pct(seller.performanceStats.completionRate)} />
         )}
+        {seller && seller.performanceStats.onTimeRate > 0 && (
+          <StatValue label="Laicīgums" value={pct(seller.performanceStats.onTimeRate)} />
+        )}
         {carrier && <StatValue label="Ienākumi" value={euro(totalEarnings)} />}
         {carrier && (
           <StatValue label="Noslodze" value={pct(carrier.fleetUtilization.utilizationRate)} />

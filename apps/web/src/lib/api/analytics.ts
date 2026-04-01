@@ -40,6 +40,9 @@ export interface SellerPerformanceStats {
   avgRating: number;
   completionRate: number;
   totalOrders: number;
+  completedOrders: number;
+  onTimeRate: number;
+  totalReviews: number;
 }
 
 export interface TopMaterial {
@@ -77,8 +80,23 @@ export interface AnalyticsOverview {
 
 // ─── Functions ─────────────────────────────────────────────────────────────
 
+export interface SupplierScore {
+  supplierId: string;
+  name: string;
+  avgRating: number;
+  totalReviews: number;
+  totalOrders: number;
+  completedOrders: number;
+  completionRate: number;
+  onTimeRate: number;
+}
+
 export async function getAnalyticsOverview(token: string): Promise<AnalyticsOverview> {
   return apiFetch<AnalyticsOverview>('/analytics/overview', {
     headers: { Authorization: `Bearer ${token}` },
   });
+}
+
+export async function getSuppliersPerformance(): Promise<SupplierScore[]> {
+  return apiFetch<SupplierScore[]>('/analytics/suppliers');
 }

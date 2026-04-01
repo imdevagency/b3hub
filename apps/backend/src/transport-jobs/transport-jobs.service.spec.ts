@@ -34,7 +34,12 @@ describe('TransportJobsService', () => {
     generateWeighingSlip: jest.fn(),
   } as any;
 
-  const service = new TransportJobsService(prisma, notifications, documents);
+  const updates = {
+    broadcastJobStatus: jest.fn(),
+    broadcastJobLocation: jest.fn(),
+  } as any;
+
+  const service = new TransportJobsService(prisma, notifications, documents, updates);
 
   beforeEach(() => {
     jest.clearAllMocks();

@@ -27,6 +27,7 @@ import {
   TransportExceptionType,
 } from '@/lib/api';
 import { startLocationTracking, stopLocationTracking } from '@/lib/location-task';
+import { useLiveUpdates } from '@/lib/use-live-updates';
 import { JobRouteMap } from '@/components/ui/JobRouteMap';
 import { haptics } from '@/lib/haptics';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
@@ -321,6 +322,14 @@ export default function ActiveJobScreen() {
     }, [fetchActiveJob]),
   );
 
+  // ── Live status push from server ──────────────────────────────
+  const { jobStatus: liveJobStatus } = useLiveUpdates({ jobId: job?.id ?? null, token });
+  useEffect(() => {
+    if (liveJobStatus) {
+      fetchActiveJob();
+    }
+  }, [liveJobStatus]);
+
   // ── Foreground GPS watcher — live map dot only ────────────────
   useEffect(() => {
     let active = true;
@@ -613,7 +622,7 @@ export default function ActiveJobScreen() {
         {job.sla?.isOverdue && (
           <View style={styles.slaBadge}>
             <Clock size={16} color="#dc2626" />
-            <Text style={styles.slaText}>-{job.sla.overdueMinutes} min</Text>
+            <Text style={styles.slaText}>{job.sla.overdueMinutes} min kavējas</Text>
           </View>
         )}
       </View>
@@ -740,7 +749,7 @@ export default function ActiveJobScreen() {
         <View style={styles.actionRow}>
           {nextStatus ? (
             <TouchableOpacity style={[styles.primaryButton]} onPress={handleUpdateStatus}>
-              <Text style={styles.primaryButtonText}>
+              <Text style={styles.primaryButtonText} className="font-bold">
                 {currentStatus === 'AT_DELIVERY'
                   ? t.deliveryProof.title
                   : currentStatus === 'AT_PICKUP'
@@ -748,7 +757,9 @@ export default function ActiveJobScreen() {
                     : t.activeJob.status[nextStatus]}
               </Text>
               {currentStatus !== 'AT_DELIVERY' && (
-                <Text style={{ color: '#ffffff80', fontSize: 18 }}>→</Text>
+                <Text className="font-bold" style={{ color: '#ffffff80', fontSize: 18 }}>
+                  →
+                </Text>
               )}
             </TouchableOpacity>
           ) : (
@@ -1360,7 +1371,6 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '700',
   },
   completedBanner: {
     flex: 1,

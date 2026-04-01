@@ -46,7 +46,7 @@ export default function NewOrderScreen() {
 
   return (
     <ScreenContainer standalone bg="#ffffff">
-      <ScreenHeader title="Jauns pasūtījums" style={{ backgroundColor: '#ffffff' }} />
+      <ScreenHeader title="Jauns pasūtījums" />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 32 }}

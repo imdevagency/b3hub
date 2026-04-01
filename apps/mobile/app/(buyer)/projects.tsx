@@ -196,7 +196,7 @@ export default function ProjectsScreen() {
           <EmptyState
             icon={<Building2 size={40} color={colors.textMuted} />}
             title="Nav projektu"
-            description="Jūsu projekti parādīsies šeit"
+            subtitle="Jūsu projekti parādīsies šeit"
           />
         }
       />

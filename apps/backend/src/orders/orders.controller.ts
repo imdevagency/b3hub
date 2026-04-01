@@ -10,6 +10,7 @@ import {
   Body,
   Patch,
   Param,
+  Delete,
   UseGuards,
   Query,
 } from '@nestjs/common';
@@ -18,6 +19,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { CreateDisposalOrderDto } from './dto/create-disposal-order.dto';
 import { CreateFreightOrderDto } from './dto/create-freight-order.dto';
+import { CreateSurchargeDto } from './dto/create-surcharge.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { OrderStatus } from '@prisma/client';
@@ -106,5 +108,25 @@ export class OrdersController {
   @Post(':id/cancel')
   cancel(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.ordersService.cancel(id, user);
+  }
+
+  /** POST /orders/:id/surcharges — add a surcharge line item (seller / admin only) */
+  @Post(':id/surcharges')
+  addSurcharge(
+    @Param('id') id: string,
+    @Body() dto: CreateSurchargeDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.ordersService.addSurcharge(id, dto, user);
+  }
+
+  /** DELETE /orders/:id/surcharges/:surchargeId — remove a surcharge line item */
+  @Delete(':id/surcharges/:surchargeId')
+  removeSurcharge(
+    @Param('id') id: string,
+    @Param('surchargeId') surchargeId: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.ordersService.removeSurcharge(id, surchargeId, user);
   }
 }

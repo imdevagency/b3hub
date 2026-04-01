@@ -75,9 +75,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       resizeMode: 'contain',
       backgroundColor: '#ffffff',
     },
-    runtimeVersion: {
-      policy: 'appVersion',
-    },
+    // runtimeVersion: sdkVersion for development so Expo Go recognises the runtime.
+    // appVersion for production/staging so OTA updates are strictly versioned.
+    runtimeVersion:
+      APP_VARIANT === 'development'
+        ? { policy: 'sdkVersion' }
+        : { policy: 'appVersion' },
     updates: {
       url: easProjectId ? `https://u.expo.dev/${easProjectId}` : undefined,
       enabled: APP_VARIANT !== 'development',
@@ -103,6 +106,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           'B3Hub nepārtraukti izseko jūsu atrašanās vietu aktīvu piegāžu laikā, arī fonā.',
         NSLocationAlwaysUsageDescription:
           'B3Hub nepārtraukti izseko jūsu atrašanās vietu aktīvu piegāžu laikā, arī fonā.',
+        NSLocationWhenInUseUsageDescription:
+          'B3Hub izmanto jūsu atrašanās vietu navigācijai un piegāžu izsekošanai.',
+        NSCameraUsageDescription:
+          'B3Hub izmanto kameru, lai uzņemtu piegādes apstiprinājuma fotoattēlus.',
+        NSPhotoLibraryUsageDescription:
+          'B3Hub var piekļūt jūsu foto bibliotēkai, lai atlasītu piegādes pierādījuma attēlus.',
         UIBackgroundModes: ['location', 'fetch'],
       },
     },

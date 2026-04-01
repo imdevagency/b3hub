@@ -50,6 +50,7 @@ export default function DriverLayout() {
     (props: BottomTabBarProps) => (
       <AnimatedTabBar
         {...props}
+        hiddenRouteAliases={{ active: 'jobs' }}
         onRoutePress={(routeName, defaultHandler) => {
           if (routeName === 'jobs' && hasActiveJob) {
             router.push('/(driver)/active');

@@ -33,6 +33,7 @@ import {
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
 import { DocumentsService } from '../documents/documents.service';
+import { UpdatesGateway } from '../updates/updates.gateway';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 
 // Valid next-state transitions for a driver
@@ -56,6 +57,7 @@ export class TransportJobsService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly documents: DocumentsService,
+    private readonly updates: UpdatesGateway,
   ) {}
 
   private isDispatcher(user: RequestingUser): boolean {
@@ -1089,6 +1091,20 @@ export class TransportJobsService {
       }
     }
 
+    // Broadcast real-time status change to subscribed clients (fire-and-forget)
+    this.updates.broadcastJobStatus({
+      jobId: updatedJob.id,
+      status: dto.status,
+      orderId: orderId ?? undefined,
+    });
+
+    // Broadcast real-time status change to subscribed clients (fire-and-forget)
+    this.updates.broadcastJobStatus({
+      jobId: updatedJob.id,
+      status: dto.status,
+      orderId: orderId ?? undefined,
+    });
+
     return updatedJob;
   }
 
@@ -1116,6 +1132,9 @@ export class TransportJobsService {
       where: { userId: driverId },
       data: { currentLocation: location },
     });
+
+    // Broadcast real-time location to subscribed clients (fire-and-forget)
+    this.updates.broadcastJobLocation({ jobId: id, lat: dto.lat, lng: dto.lng });
 
     return location;
   }

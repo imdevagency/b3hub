@@ -15,7 +15,7 @@ import {
 import { useRouter } from 'expo-router';
 import { haptics } from '@/lib/haptics';
 import type { MaterialCategory } from '@/lib/api';
-import { CATEGORY_LABELS, MATERIAL_CATEGORIES } from '@/lib/materials';
+import { CATEGORY_LABELS, MATERIAL_CATEGORIES, DEFAULT_MATERIAL_NAMES } from '@/lib/materials';
 
 // ── Category metadata ──────────────────────────────────────────────────────
 
@@ -84,14 +84,17 @@ export default function CatalogScreen() {
   const handleCategory = (category: MaterialCategory) => {
     router.push({
       pathname: '/order-request-new',
-      params: { initialCategory: category },
+      params: {
+        initialCategory: category,
+        prefillMaterial: DEFAULT_MATERIAL_NAMES[category] || undefined,
+      },
     });
   };
 
   return (
     <ScreenContainer standalone bg="#ffffff">
       {/* Header */}
-      <ScreenHeader title="Materiāli" style={{ backgroundColor: '#ffffff' }} />
+      <ScreenHeader title="Materiāli" />
 
       {/* Category grid */}
       <ScrollView contentContainerStyle={s.grid} showsVerticalScrollIndicator={false}>

@@ -37,6 +37,7 @@ import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { useOrderDetail } from '@/lib/use-order-detail';
+import { useLiveUpdates } from '@/lib/use-live-updates';
 import { t } from '@/lib/translations';
 import { RatingModal } from '@/components/ui/RatingModal';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -73,6 +74,20 @@ export default function OrderDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { order, setOrder, loading, alreadyRated, documents, reload: load } = useOrderDetail(id);
+
+  // Live status updates via WebSocket — no pull-to-refresh needed for status changes
+  const { orderStatus: liveStatus, jobLocation: liveLocation } = useLiveUpdates({
+    orderId: id ?? null,
+    jobId: order?.transportJobs?.[0]?.id ?? null,
+    token,
+  });
+
+  // When the server pushes a new status, update the local order copy immediately
+  React.useEffect(() => {
+    if (liveStatus && order && liveStatus !== order.status) {
+      setOrder((prev) => (prev ? { ...prev, status: liveStatus } : prev));
+    }
+  }, [liveStatus, order?.status]);
   const [actionLoading, setActionLoading] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [showDispute, setShowDispute] = useState(false);

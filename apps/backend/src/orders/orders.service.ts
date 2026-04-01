@@ -16,6 +16,7 @@ import { CreateDisposalOrderDto } from './dto/create-disposal-order.dto';
 import { CreateFreightOrderDto } from './dto/create-freight-order.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { CreateSurchargeDto } from './dto/create-surcharge.dto';
 import {
   OrderStatus,
   OrderType,
@@ -30,6 +31,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
 import { PaymentsService } from '../payments/payments.service';
 import { InvoicesService } from '../invoices/invoices.service';
+import { UpdatesGateway } from '../updates/updates.gateway';
 
 @Injectable()
 export class OrdersService {
@@ -62,6 +64,7 @@ export class OrdersService {
     private notifications: NotificationsService,
     private payments: PaymentsService,
     private invoices: InvoicesService,
+    private updates: UpdatesGateway,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, currentUser: RequestingUser) {
@@ -292,6 +295,9 @@ export class OrdersService {
     });
     const supplierIds = [...new Set(items.map((i) => i.material.supplierId))];
     for (const supplierId of supplierIds) {
+      // Push real-time event to seller's WebSocket room (fire-and-forget)
+      this.updates.broadcastSellerNewOrder({ companyId: supplierId, orderId, orderNumber });
+
       const users = await this.prisma.user.findMany({
         where: { companyId: supplierId },
         select: { id: true },
@@ -494,6 +500,7 @@ export class OrdersService {
           },
         },
         invoices: true,
+        surcharges: true,
       },
     });
 
@@ -700,6 +707,9 @@ export class OrdersService {
         .create({ userId: order.createdById, ...notif, data: { orderId: id } })
         .catch(() => null);
     }
+
+    // Broadcast real-time status change to subscribed clients (fire-and-forget)
+    this.updates.broadcastOrderStatus({ orderId: id, status });
 
     return updated;
   }
@@ -1247,5 +1257,61 @@ export class OrdersService {
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const number = (count + 1).toString().padStart(5, '0');
     return `ORD${year}${month}${number}`;
+  }
+
+  /** Add a surcharge line item to an order. Only the seller or ADMIN may do this. */
+  async addSurcharge(
+    orderId: string,
+    dto: CreateSurchargeDto,
+    currentUser: RequestingUser,
+  ) {
+    const order = await this.findOne(orderId, currentUser);
+
+    // Only the seller (supplier) or ADMIN may attach surcharges
+    if (
+      currentUser.userType !== 'ADMIN' &&
+      !currentUser.canSell
+    ) {
+      throw new ForbiddenException(
+        'Only sellers and admins can add surcharges to an order',
+      );
+    }
+
+    return this.prisma.orderSurcharge.create({
+      data: {
+        orderId: order.id,
+        type: dto.type,
+        label: dto.label,
+        amount: dto.amount,
+        billable: dto.billable ?? true,
+      },
+    });
+  }
+
+  /** Remove a surcharge line item. Only the seller or ADMIN may do this. */
+  async removeSurcharge(
+    orderId: string,
+    surchargeId: string,
+    currentUser: RequestingUser,
+  ) {
+    await this.findOne(orderId, currentUser);
+
+    if (
+      currentUser.userType !== 'ADMIN' &&
+      !currentUser.canSell
+    ) {
+      throw new ForbiddenException(
+        'Only sellers and admins can remove surcharges from an order',
+      );
+    }
+
+    const surcharge = await this.prisma.orderSurcharge.findUnique({
+      where: { id: surchargeId },
+    });
+    if (!surcharge || surcharge.orderId !== orderId) {
+      throw new NotFoundException(`Surcharge ${surchargeId} not found on order ${orderId}`);
+    }
+
+    return this.prisma.orderSurcharge.delete({ where: { id: surchargeId } });
   }
 }

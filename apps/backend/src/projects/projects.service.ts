@@ -24,6 +24,17 @@ const COMMITTED_STATUSES: OrderStatus[] = [
   OrderStatus.COMPLETED,
 ];
 
+/** kg CO₂ emitted per km driven (laden, European HGV averages) */
+const CO2_FACTORS: Record<string, number> = {
+  DUMP_TRUCK: 1.1,
+  FLATBED_TRUCK: 0.9,
+  SEMI_TRAILER: 0.8,
+  HOOK_LIFT: 1.0,
+  SKIP_LOADER: 0.9,
+  TANKER: 0.9,
+  VAN: 0.25,
+};
+
 @Injectable()
 export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
@@ -53,7 +64,16 @@ export class ProjectsService {
       include: {
         _count: { select: { orders: true } },
         orders: {
-          select: { total: true, status: true },
+          select: {
+            total: true,
+            status: true,
+            transportJobs: {
+              select: {
+                distanceKm: true,
+                vehicle: { select: { vehicleType: true } },
+              },
+            },
+          },
         },
       },
     });
@@ -87,6 +107,12 @@ export class ProjectsService {
                 unit: true,
                 unitPrice: true,
                 total: true,
+              },
+            },
+            transportJobs: {
+              select: {
+                distanceKm: true,
+                vehicle: { select: { vehicleType: true } },
               },
             },
           },
@@ -212,17 +238,28 @@ export class ProjectsService {
         contractValue: true,
         budgetAmount: true,
         orders: {
-          select: { total: true, status: true },
+          select: {
+            total: true,
+            status: true,
+            transportJobs: {
+              select: {
+                distanceKm: true,
+                vehicle: { select: { vehicleType: true } },
+              },
+            },
+          },
         },
       },
     });
 
     if (!project) throw new NotFoundException('Project not found');
 
+    const allJobs = project.orders.flatMap((o) => o.transportJobs);
     return this.computeFinancials(
       project.contractValue,
       project.budgetAmount,
       project.orders,
+      allJobs,
     );
   }
 
@@ -232,6 +269,7 @@ export class ProjectsService {
     contractValue: number,
     budgetAmount: number | null,
     orders: { total: number; status: string }[],
+    transportJobs: { distanceKm: number | null; vehicle: { vehicleType: string } | null }[] = [],
   ) {
     const materialCosts = orders
       .filter((o) => COMMITTED_STATUSES.includes(o.status as OrderStatus))
@@ -249,6 +287,14 @@ export class ProjectsService {
         ? (materialCosts / budgetAmount) * 100
         : null;
 
+    const co2Kg = transportJobs.reduce((sum, j) => {
+      if (!j.distanceKm) return sum;
+      const factor = j.vehicle
+        ? (CO2_FACTORS[j.vehicle.vehicleType] ?? 0.9)
+        : 0.9;
+      return sum + j.distanceKm * factor;
+    }, 0);
+
     return {
       contractValue,
       budgetAmount,
@@ -258,6 +304,8 @@ export class ProjectsService {
       marginPct: Math.round(marginPct * 10) / 10,
       budgetUsedPct:
         budgetUsedPct !== null ? Math.round(budgetUsedPct * 10) / 10 : null,
+      co2Kg: Math.round(co2Kg * 10) / 10,
+      co2Tonnes: Math.round(co2Kg / 100) / 10,
     };
   }
 
@@ -277,12 +325,18 @@ export class ProjectsService {
     createdAt: Date;
     updatedAt: Date;
     _count: { orders: number };
-    orders: { total: number; status: string }[];
+    orders: {
+      total: number;
+      status: string;
+      transportJobs: { distanceKm: number | null; vehicle: { vehicleType: string } | null }[];
+    }[];
   }) {
+    const allJobs = p.orders.flatMap((o) => o.transportJobs);
     const financials = this.computeFinancials(
       p.contractValue,
       p.budgetAmount,
       p.orders,
+      allJobs,
     );
     return {
       id: p.id,
@@ -337,12 +391,15 @@ export class ProjectsService {
         unitPrice: number;
         total: number;
       }[];
+      transportJobs: { distanceKm: number | null; vehicle: { vehicleType: string } | null }[];
     }[];
   }) {
+    const allJobs = p.orders.flatMap((o) => o.transportJobs);
     const financials = this.computeFinancials(
       p.contractValue,
       p.budgetAmount,
       p.orders,
+      allJobs,
     );
     return {
       id: p.id,
@@ -356,7 +413,7 @@ export class ProjectsService {
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
       createdBy: p.createdBy,
-      orders: p.orders,
+      orders: p.orders.map(({ transportJobs: _tj, ...rest }) => rest),
       orderCount: p.orders.length,
       ...financials,
     };

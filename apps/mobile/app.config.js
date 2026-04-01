@@ -6,10 +6,19 @@ const appJson = require('./app.json');
 
 module.exports = () => {
   const base = appJson.expo;
-  const googleMapsKey =
+  // Generic key first (unrestricted, safe for HTTP API calls).
+  // Falls back to platform-specific keys so dev still works in Expo Go.
+  // For iOS build: prefer iOS-restricted key; for Android: prefer Android-restricted key.
+  // Since app.config.js runs server-side (no Platform.OS), we inject both platform
+  // keys into their respective native config blocks below.
+  const genericKey =
     process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ||
     process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ||
     '';
+  const iosKey = genericKey || process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_IOS || '';
+  const androidKey = genericKey || process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID || '';
+  // extra.googleMapsApiKey is read by the runtime helper — use whichever is available
+  const googleMapsKey = genericKey || iosKey || androidKey;
 
   return {
     ...base,
@@ -17,7 +26,7 @@ module.exports = () => {
       ...base.ios,
       config: {
         ...(base.ios?.config || {}),
-        googleMapsApiKey: googleMapsKey,
+        googleMapsApiKey: iosKey,
       },
     },
     android: {
@@ -26,7 +35,7 @@ module.exports = () => {
         ...(base.android?.config || {}),
         googleMaps: {
           ...(base.android?.config?.googleMaps || {}),
-          apiKey: googleMapsKey || 'AIzaSyBNIZk1VBorD3kU02BNjz_2m4Dlek_gsx8',
+          apiKey: androidKey,
         },
       },
     },

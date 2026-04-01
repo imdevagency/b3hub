@@ -17,6 +17,8 @@ export interface ApiProjectFinancials {
   grossMargin: number;
   marginPct: number;
   budgetUsedPct: number | null;
+  co2Kg: number;
+  co2Tonnes: number;
 }
 
 export interface ApiProjectOrder {

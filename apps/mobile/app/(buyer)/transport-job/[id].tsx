@@ -29,6 +29,7 @@ import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { CATEGORY_LABELS } from '@/lib/materials';
 import { useTransportJob, ACTIVE_STATUSES } from '@/lib/use-transport-job';
+import { useLiveUpdates } from '@/lib/use-live-updates';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { formatDate, formatDateTime } from '@/lib/format';
@@ -176,31 +177,24 @@ export default function TransportJobDetailScreen() {
   const [cancelling, setCancelling] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const locationPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ── Poll driver GPS every 10 s while job is active ────────────────
-  useEffect(() => {
-    if (!token || !id || !job) return;
-    if (!ACTIVE_STATUSES.has(job.status)) {
-      setDriverLocation(null);
-      return;
+  // Live driver GPS + job status via WebSocket — replaces the 10 s polling loop
+  const { jobLocation: liveLocation, jobStatus: liveJobStatus } = useLiveUpdates({
+    jobId: typeof id === 'string' ? id : null,
+    token,
+  });
+
+  // Apply live GPS updates reactively
+  React.useEffect(() => {
+    if (liveLocation) {
+      setDriverLocation({ lat: liveLocation.lat, lng: liveLocation.lng });
     }
-    const poll = async () => {
-      try {
-        const loc = await api.transportJobs.getLocation(String(id), token);
-        if (loc.currentLocation) {
-          setDriverLocation({ lat: loc.currentLocation.lat, lng: loc.currentLocation.lng });
-        }
-      } catch {
-        // silent — don't interrupt UX
-      }
-    };
-    poll();
-    locationPollRef.current = setInterval(poll, 10_000);
-    return () => {
-      if (locationPollRef.current) clearInterval(locationPollRef.current);
-    };
-  }, [token, id, job?.status]);
+  }, [liveLocation]);
+
+  // When the server pushes a job status change, reload to get full updated job object
+  React.useEffect(() => {
+    if (liveJobStatus) loadJob();
+  }, [liveJobStatus]);
 
   // Route between pickup and delivery
   const pickup =
