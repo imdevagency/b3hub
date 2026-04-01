@@ -225,42 +225,46 @@ function OrderCard({
   onReject,
   onStartLoading,
   actioning,
+  onPress,
 }: {
   order: IncomingOrder;
   onConfirm: (id: string) => void;
   onReject: (id: string) => void;
   onStartLoading: (id: string) => void;
   actioning: string | null;
+  onPress: () => void;
 }) {
   const isBusy = actioning === order.id;
   const statusInfo = getMinimalStatus(order.status);
 
   return (
     <View style={styles.card}>
-      <View style={styles.cardTop}>
-        <View style={styles.cardTopLeft}>
-          <Text style={styles.materialText}>
-            {order.material} • {order.weightTonnes}t
-          </Text>
-          <Text style={styles.buyerText}>
-            {order.buyerName} ({order.requestedDate})
-          </Text>
-        </View>
-        <View style={styles.cardTopRight}>
-          <Text style={styles.priceText}>€{order.price.toFixed(0)}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
-            <Text style={[styles.statusText, { color: statusInfo.color }]}>{statusInfo.text}</Text>
+      <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+        <View style={styles.cardTop}>
+          <View style={styles.cardTopLeft}>
+            <Text style={styles.materialText}>
+              {order.material} • {order.weightTonnes}t
+            </Text>
+            <Text style={styles.buyerText}>
+              {order.buyerName} ({order.requestedDate})
+            </Text>
+          </View>
+          <View style={styles.cardTopRight}>
+            <Text style={styles.priceText}>€{order.price.toFixed(0)}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
+              <Text style={[styles.statusText, { color: statusInfo.color }]}>{statusInfo.text}</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <View style={styles.addressRow}>
-        <MapPin size={14} color="#9ca3af" />
-        <Text style={styles.addressText} numberOfLines={1}>
-          {order.deliveryAddress}
-        </Text>
-      </View>
+        <View style={styles.addressRow}>
+          <MapPin size={14} color="#9ca3af" />
+          <Text style={styles.addressText} numberOfLines={1}>
+            {order.deliveryAddress}
+          </Text>
+        </View>
+      </TouchableOpacity>
 
       {/* Actions */}
       {order.status === 'PENDING' && (
@@ -536,6 +540,7 @@ export default function IncomingScreen() {
               onReject={handleReject}
               onStartLoading={handleStartLoading}
               actioning={actioning}
+              onPress={() => router.push(`/(seller)/order/${order.id}` as any)}
             />
           ))
         )}

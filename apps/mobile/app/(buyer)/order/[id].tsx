@@ -10,6 +10,7 @@ import {
   Linking,
   Image,
   TextInput,
+  RefreshControl,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -74,6 +75,13 @@ export default function OrderDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { order, setOrder, loading, alreadyRated, documents, reload: load } = useOrderDetail(id);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    load();
+    setTimeout(() => setRefreshing(false), 1200);
+  };
 
   // Live status updates via WebSocket — no pull-to-refresh needed for status changes
   const { orderStatus: liveStatus, jobLocation: liveLocation } = useLiveUpdates({
@@ -240,7 +248,11 @@ export default function OrderDetailScreen() {
         rightAction={<StatusPill label={st.label} bg={st.bg} color={st.color} />}
       />
 
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={s.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         {/* ── Horizontal status stepper ─────────────────────────── */}
         {order.status !== 'CANCELLED' && (
           <View style={s.stepperCard}>
@@ -394,6 +406,12 @@ export default function OrderDetailScreen() {
             label="Datums"
             value={order.deliveryDate ? formatDate(order.deliveryDate) : null}
           />
+          {order.deliveryWindow && order.deliveryWindow !== 'ANY' && (
+            <DetailRow
+              label="Piegādes laiks"
+              value={order.deliveryWindow === 'AM' ? 'Rīts (8–12)' : 'Diena (12–17)'}
+            />
+          )}
           <DetailRow label="Kontaktpersona" value={order.siteContactName} />
           <DetailRow label="Tālrunis" value={order.siteContactPhone} />
           {order.siteContactPhone && (

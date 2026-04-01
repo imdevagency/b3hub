@@ -8,7 +8,9 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  RefreshControl,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -16,6 +18,7 @@ import { SIZE_LABEL } from '@/lib/materials';
 import {
   MapPin,
   CalendarDays,
+  Clock,
   Trash2,
   Package,
   Phone,
@@ -25,6 +28,7 @@ import {
   FileText,
   XCircle,
   RotateCcw,
+  Copy,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -138,7 +142,15 @@ export default function SkipOrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
   const router = useRouter();
-  const { order, setOrder, loading, error } = useSkipOrder(id);
+  const { order, setOrder, loading, error, reload } = useSkipOrder(id);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    reload();
+    // reload sets loading, but doesn't resolve a promise — give it a moment
+    setTimeout(() => setRefreshing(false), 1000);
+  };
   const [showRating, setShowRating] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
@@ -166,7 +178,11 @@ export default function SkipOrderDetailScreen() {
 
   const handleCancel = () => {
     haptics.heavy();
-    Alert.alert('Atcelt pasūtījumu?', 'Šo darbību nevar atsaukt.', [
+    const cancelMsg =
+      order.status === 'CONFIRMED'
+        ? 'Konteiners jau ir piešķirts pārvadātājam. Atcelšana pēc apstiprināšanas var radīt papildu izmaksas. Sazinies ar mums, lai noskaidrotu atmaksas nosacījumus.'
+        : 'Pasūtījums vēl nav apstiprināts. Atcelšana ir bezmaksas.';
+    Alert.alert('Atcelt pasūtījumu?', cancelMsg, [
       { text: 'Nē', style: 'cancel' },
       {
         text: 'Atcelt',
@@ -197,10 +213,28 @@ export default function SkipOrderDetailScreen() {
       {/* ── Header ── */}
       <ScreenHeader
         title={`#${order.orderNumber}`}
-        rightAction={<StatusPill label={status.label} bg={status.bg} color={status.color} />}
+        rightAction={
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <TouchableOpacity
+              onPress={async () => {
+                await Clipboard.setStringAsync(order.orderNumber);
+                haptics.success();
+              }}
+              hitSlop={8}
+              activeOpacity={0.6}
+            >
+              <Copy size={16} color="#6b7280" />
+            </TouchableOpacity>
+            <StatusPill label={status.label} bg={status.bg} color={status.color} />
+          </View>
+        }
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={s.scroll}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         {/* ── Status timeline ── */}
         <View style={s.section}>
           <SectionLabel label="Statuss" style={{ marginBottom: 8, marginTop: 0 }} />
@@ -217,6 +251,13 @@ export default function SkipOrderDetailScreen() {
               value={formatDate(order.deliveryDate)}
               icon={CalendarDays}
             />
+            {order.deliveryWindow && order.deliveryWindow !== 'ANY' && (
+              <Row
+                label="Piegādes laiks"
+                value={order.deliveryWindow === 'AM' ? 'Rīts (8–12)' : 'Diena (12–17)'}
+                icon={Clock}
+              />
+            )}
             <Row
               label="Konteinera izmērs"
               value={SIZE_LABEL[order.skipSize] ?? order.skipSize}
@@ -265,6 +306,30 @@ export default function SkipOrderDetailScreen() {
                   </View>
                 </TouchableOpacity>
               ) : null}
+            </View>
+          </View>
+        )}
+
+        {/* ── Support contact (fallback when no operator contact set) ── */}
+        {!order.contactName && !order.contactEmail && !order.contactPhone && (
+          <View style={s.section}>
+            <SectionLabel label="Palīdzība" style={{ marginBottom: 8, marginTop: 0 }} />
+            <View style={s.card}>
+              <TouchableOpacity
+                style={s.row}
+                onPress={() =>
+                  Linking.openURL('mailto:info@b3hub.lv').catch(() =>
+                    Alert.alert('Kļūda', 'Neizdevās atvērt e-pasta lietotni'),
+                  )
+                }
+                activeOpacity={0.7}
+              >
+                <Mail size={15} color="#6b7280" style={{ marginTop: 1 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={s.rowLabel}>Sazinies ar mums</Text>
+                  <Text style={[s.rowValue, { color: '#2563eb' }]}>info@b3hub.lv</Text>
+                </View>
+              </TouchableOpacity>
             </View>
           </View>
         )}

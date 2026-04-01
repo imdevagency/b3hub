@@ -300,6 +300,11 @@ function JobCard({
         >
           €{job.priceTotal.toFixed(0)}
         </Text>
+        {job.distanceKm > 0 && (
+          <Text style={{ fontSize: 13, color: '#9ca3af', fontWeight: '600', marginTop: 2 }}>
+            €{(job.priceTotal / job.distanceKm).toFixed(2)}/km
+          </Text>
+        )}
         <View style={{ alignItems: 'flex-end' }}>
           <View
             style={{
@@ -360,7 +365,7 @@ function JobCard({
         }}
       >
         <Text style={{ fontSize: 13, color: '#4b5563', fontWeight: '600' }} numberOfLines={1}>
-          {job.vehicleType} · {job.weightTonnes}t · {job.payload}
+          {job.vehicleType} · {job.weightTonnes}t · {job.payload} · {job.date}
         </Text>
       </View>
     </TouchableOpacity>
@@ -608,11 +613,17 @@ export default function JobsScreen() {
           <EmptyState
             icon={<Search size={32} color="#9ca3af" />}
             title={t.jobs.empty}
-            subtitle={t.jobs.emptyDesc}
+            subtitle={
+              activeFilter
+                ? t.jobs.emptyDesc
+                : 'Jauni darbi parādās katru rītu. Ieslēdz paziņojumus, lai saņemtu brīdinājumus par jauniem darbiem.'
+            }
             action={
-              <TouchableOpacity style={styles.emptyResetBtn} onPress={handleReset}>
-                <Text style={styles.emptyResetBtnText}>{t.jobSearch.resetFilter}</Text>
-              </TouchableOpacity>
+              activeFilter ? (
+                <TouchableOpacity style={styles.emptyResetBtn} onPress={handleReset}>
+                  <Text style={styles.emptyResetBtnText}>{t.jobSearch.resetFilter}</Text>
+                </TouchableOpacity>
+              ) : undefined
             }
           />
         }

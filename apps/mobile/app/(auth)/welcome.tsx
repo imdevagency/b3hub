@@ -5,6 +5,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Text } from '@/components/ui/text';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Package, MapPin, FileText } from 'lucide-react-native';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -42,6 +43,20 @@ export default function WelcomeScreen() {
           >
             Viss tavai būvei.{'\n'}Materiāli un transports vienā lietotnē.
           </Text>
+
+          {/* Feature bullets */}
+          <View style={styles.featureList}>
+            {([
+              { Icon: Package, text: 'Materiāli, transports, konteineri — vienā vietā' },
+              { Icon: MapPin, text: 'GPS izsekošana reāllaikā' },
+              { Icon: FileText, text: 'Dokumenti automātiski — bez papīriem' },
+            ] as const).map(({ Icon, text }) => (
+              <View key={text} style={styles.featureRow}>
+                <Icon size={18} color="#6b7280" strokeWidth={1.5} />
+                <Text style={styles.featureText}>{text}</Text>
+              </View>
+            ))}
+          </View>
         </View>
 
         {/* Bottom: Action Area */}
@@ -79,3 +94,22 @@ export default function WelcomeScreen() {
     </ScreenContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  featureList: {
+    marginTop: 36,
+    gap: 16,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  featureText: {
+    fontSize: 15,
+    color: '#6b7280',
+    fontFamily: 'Inter_400Regular',
+    flex: 1,
+    lineHeight: 22,
+  },
+});

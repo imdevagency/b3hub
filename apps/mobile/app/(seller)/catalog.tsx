@@ -25,12 +25,16 @@ import {
   ChevronDown,
   Check,
   X,
+  Zap,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { CATEGORY_LABELS, DEFAULT_MATERIAL_NAMES, UNIT_SHORT } from '@/lib/materials';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useToast } from '@/components/ui/Toast';
+import { haptics } from '@/lib/haptics';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import type { ApiMaterial, MaterialCategory, MaterialUnit } from '@/lib/api';
 
 // ── Constants ──────────────────────────────────────────────────
@@ -84,14 +88,22 @@ const BLANK_FORM: ListingForm = {
 function ListingCard({
   material,
   onEdit,
+  onQuickEdit,
 }: {
   material: ApiMaterial;
   onEdit: (m: ApiMaterial) => void;
+  onQuickEdit: (m: ApiMaterial) => void;
 }) {
   const catTheme = CATEGORY_COLOR[material.category] ?? { bg: '#f3f4f6', color: '#6b7280' };
 
   return (
-    <TouchableOpacity style={s.card} onPress={() => onEdit(material)} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={s.card}
+      onPress={() => onEdit(material)}
+      onLongPress={() => { haptics.medium(); onQuickEdit(material); }}
+      delayLongPress={400}
+      activeOpacity={0.7}
+    >
       <View style={[s.iconBox, { backgroundColor: catTheme.bg }]}>
         <PackageSearch size={22} color={catTheme.color} />
       </View>
@@ -101,9 +113,12 @@ function ListingCard({
           <Text style={s.cardName} numberOfLines={1}>
             {material.name}
           </Text>
-          <Text style={s.cardPrice}>
-            €{material.basePrice.toFixed(2)} / {UNIT_SHORT[material.unit]}
-          </Text>
+          <View style={s.priceRow}>
+            <Text style={s.cardPrice}>
+              €{material.basePrice.toFixed(2)} / {UNIT_SHORT[material.unit]}
+            </Text>
+            <Zap size={12} color="#9ca3af" />
+          </View>
         </View>
 
         <View style={s.cardRowBottom}>
@@ -128,6 +143,141 @@ function ListingCard({
     </TouchableOpacity>
   );
 }
+
+// ── Quick Edit Sheet ───────────────────────────────────────────
+
+function QuickEditSheet({
+  material,
+  visible,
+  onClose,
+  onSaved,
+  token,
+}: {
+  material: ApiMaterial | null;
+  visible: boolean;
+  onClose: () => void;
+  onSaved: (updated: ApiMaterial) => void;
+  token: string;
+}) {
+  const toast = useToast();
+  const [price, setPrice] = useState('');
+  const [inStock, setInStock] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (material && visible) {
+      setPrice(String(material.basePrice));
+      setInStock(material.inStock);
+    }
+  }, [material, visible]);
+
+  if (!material) return null;
+
+  const handleSave = async () => {
+    if (!token) return;
+    const p = parseFloat(price.replace(',', '.'));
+    if (isNaN(p) || p <= 0) {
+      Alert.alert('Kļūda', 'Ievadiet derīgu cenu.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const updated = await api.materials.update(material.id, { basePrice: p, inStock }, token);
+      haptics.success();
+      toast.success('Sludinājums atjaunināts!');
+      onSaved(updated);
+      onClose();
+    } catch {
+      haptics.error();
+      toast.error('Neizdevās saglabāt.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <BottomSheet visible={visible} onClose={onClose} title={material.name} scrollable={false}>
+      <View style={{ gap: 16, paddingBottom: 8 }}>
+        {/* Price */}
+        <View style={qs.row}>
+          <Text style={qs.label}>Cena (€/{UNIT_SHORT[material.unit]})</Text>
+          <View style={qs.inputWrap}>
+            <Text style={qs.euro}>€</Text>
+            <TextInput
+              style={qs.input}
+              value={price}
+              onChangeText={setPrice}
+              keyboardType="decimal-pad"
+              selectTextOnFocus
+              placeholderTextColor="#9ca3af"
+            />
+          </View>
+        </View>
+
+        {/* In stock toggle */}
+        <View style={qs.toggleRow}>
+          <Text style={qs.label}>Pieejams noliktavā</Text>
+          <Switch
+            value={inStock}
+            onValueChange={setInStock}
+            trackColor={{ true: '#111827', false: '#e5e7eb' }}
+            thumbColor="#fff"
+          />
+        </View>
+
+        {/* Save */}
+        <TouchableOpacity
+          style={[qs.saveBtn, saving && { opacity: 0.6 }]}
+          onPress={handleSave}
+          disabled={saving}
+          activeOpacity={0.85}
+        >
+          {saving ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={qs.saveBtnText}>Saglabāt</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </BottomSheet>
+  );
+}
+
+const qs = StyleSheet.create({
+  row: { gap: 6 },
+  label: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  inputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 48,
+    gap: 4,
+  },
+  euro: { fontSize: 16, color: '#374151', fontWeight: '600' },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#111827',
+    paddingVertical: 0,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  saveBtn: {
+    height: 50,
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+});
 
 // ── Listing Modal ──────────────────────────────────────────────
 
@@ -394,12 +544,14 @@ function ListingModal({
 
 export default function SellerCatalog() {
   const { user, token } = useAuth();
+  const toast = useToast();
   const [materials, setMaterials] = useState<ApiMaterial[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editing, setEditing] = useState<ApiMaterial | null>(null);
   const [saving, setSaving] = useState(false);
+  const [quickTarget, setQuickTarget] = useState<ApiMaterial | null>(null);
 
   const load = useCallback(
     async (refresh = false) => {
@@ -453,6 +605,7 @@ export default function SellerCatalog() {
         await api.materials.create(payload as Parameters<typeof api.materials.create>[0], token);
       }
       setModalVisible(false);
+      toast.success(editing?.id ? 'Sludinājums atjaunināts!' : 'Sludinājums izveidots!');
       load();
     } catch (err: unknown) {
       Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās saglabāt');
@@ -531,7 +684,7 @@ export default function SellerCatalog() {
               </TouchableOpacity>
             </View>
           ) : (
-            materials.map((m) => <ListingCard key={m.id} material={m} onEdit={openEdit} />)
+            materials.map((m) => <ListingCard key={m.id} material={m} onEdit={openEdit} onQuickEdit={setQuickTarget} />)
           )}
         </ScrollView>
       )}
@@ -543,6 +696,16 @@ export default function SellerCatalog() {
         onSave={handleSave}
         onDelete={handleDelete}
         saving={saving}
+      />
+
+      <QuickEditSheet
+        material={quickTarget}
+        visible={!!quickTarget}
+        onClose={() => setQuickTarget(null)}
+        onSaved={(updated) => {
+          setMaterials((prev) => prev.map((m) => m.id === updated.id ? updated : m));
+        }}
+        token={token ?? ''}
       />
     </ScreenContainer>
   );
@@ -610,6 +773,7 @@ const s = StyleSheet.create({
   cardBody: { flex: 1, gap: 4 },
   cardRowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardName: { fontSize: 16, fontWeight: '700', color: '#111827', flex: 1, paddingRight: 8 },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   cardPrice: { fontSize: 16, fontWeight: '700', color: '#111827' },
 
   cardRowBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

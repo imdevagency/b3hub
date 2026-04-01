@@ -49,6 +49,8 @@ export interface CreateSkipHireInput {
   wasteCategory: SkipWasteCategory;
   skipSize: SkipSize;
   deliveryDate: string;
+  /** 'AM' | 'PM' | 'ANY' — preferred delivery window */
+  deliveryWindow?: string;
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;

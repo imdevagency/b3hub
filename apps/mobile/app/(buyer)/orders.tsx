@@ -7,6 +7,7 @@ import {
   ScrollView,
   RefreshControl,
   FlatList,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -24,6 +25,8 @@ import {
   Calendar,
   AlertCircle,
   Link2,
+  Search,
+  X,
 } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { lv } from 'date-fns/locale';
@@ -36,10 +39,13 @@ export default function OrdersScreen() {
   const {
     filtered,
     loading,
-    refreshing, // Fixed: use refreshing from hook
-    onRefresh: refresh, // Renamed for clarity
+    refreshing,
+    onRefresh: refresh,
     filter,
     setFilter,
+    query,
+    setQuery,
+    error,
   } = useOrders();
 
   const [showTypePicker, setShowTypePicker] = useState(false);
@@ -129,6 +135,27 @@ export default function OrdersScreen() {
         </ScrollView>
       </View>
 
+      {/* ── Search ───────────────────────────────────────────── */}
+      <View style={s.searchRow}>
+        <Search size={16} color="#9ca3af" style={{ marginRight: 8 }} />
+        <TextInput
+          style={s.searchInput}
+          placeholder="Meklēt pēc adreses, materiāla..."
+          placeholderTextColor="#9ca3af"
+          value={query}
+          onChangeText={setQuery}
+          returnKeyType="search"
+          clearButtonMode="never"
+          autoCorrect={false}
+          autoCapitalize="none"
+        />
+        {query.length > 0 && (
+          <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
+            <X size={16} color="#9ca3af" />
+          </TouchableOpacity>
+        )}
+      </View>
+
       {/* ── List ─────────────────────────────────────────────── */}
       <FlatList
         style={{ flex: 1 }}
@@ -136,12 +163,22 @@ export default function OrdersScreen() {
         keyExtractor={(item) => `${item.kind}-${item.data.id}`}
         renderItem={renderItem}
         contentContainerStyle={s.list}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         contentInsetAdjustmentBehavior="never"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
         ListEmptyComponent={
           loading && !refreshing ? (
             <View style={{ gap: 16 }}>
               <SkeletonCard count={3} />
+            </View>
+          ) : error ? (
+            <View style={s.emptyState}>
+              <Text style={s.emptyTitle}>Neizdevās ielādēt</Text>
+              <Text style={s.emptyText}>Pārbaudiet interneta savienojumu un mēģiniet vēlreiz.</Text>
+              <TouchableOpacity style={s.emptyButton} onPress={() => refresh()} activeOpacity={0.8}>
+                <Text style={s.emptyButtonText}>Mēģināt vēlreiz</Text>
+              </TouchableOpacity>
             </View>
           ) : (
             <View style={s.emptyState}>
@@ -305,7 +342,8 @@ function MaterialOrderCard({ order }: { order: any }) {
       <View style={s.cardHeader}>
         <View style={s.typeRow}>
           <Package size={16} color="#64748b" />
-          <Text style={s.orderId}>#{order.orderNumber}</Text>
+          <Text style={s.orderId}>Materiāli</Text>
+          <Text style={[s.orderId, { color: '#94a3b8', fontWeight: '400' as const }]}>· #{order.orderNumber}</Text>
         </View>
         <View style={[s.statusBadge, { backgroundColor: statusColors.bg }]}>
           <Text style={[s.statusText, { color: statusColors.text }]}>
@@ -402,7 +440,7 @@ function DisposalOrderCard({ req }: { req: any }) {
         <View style={s.metaItem}>
           <MapPin size={14} color="#94a3b8" />
           <Text style={s.metaText} numberOfLines={1}>
-            {req.deliveryAddress || 'Utilizācijas vieta'}
+            Atkritumu izvešana
           </Text>
         </View>
         <View style={s.metaItem}>
@@ -465,7 +503,7 @@ function TransportRequestCard({ req }: { req: any }) {
 
       {/* Spacer to align footer height if needed, or remove if content adjusts */}
       <View style={s.cardFooter}>
-        <Text style={s.price}>—</Text>
+        <Text style={s.price}>{req.rate != null && req.rate > 0 ? `no €${req.rate}` : '—'}</Text>
         <View style={s.chevronBox}>
           <ChevronRight size={18} color="#94a3b8" />
         </View>
@@ -538,8 +576,11 @@ function SkipOrderCard({ order }: { order: any }) {
     >
       <View style={s.cardHeader}>
         <View style={s.typeRow}>
-          <Trash2 size={16} color="#64748b" />
-          <Text style={s.orderId}>#{order.orderNumber}</Text>
+          <Package size={16} color="#64748b" />
+          <Text style={s.orderId}>Konteiners</Text>
+          <Text style={[s.orderId, { color: '#94a3b8', fontWeight: '400' as const }]}>
+            {' '}· #{order.orderNumber}
+          </Text>
         </View>
         <View style={[s.statusBadge, { backgroundColor: statusColors.bg }]}>
           <Text style={[s.statusText, { color: statusColors.text }]}>
@@ -630,6 +671,22 @@ const s = StyleSheet.create({
   filterContent: {
     paddingHorizontal: 16,
     gap: 8,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#111827',
+    paddingVertical: 0,
   },
   chip: {
     paddingHorizontal: 16,

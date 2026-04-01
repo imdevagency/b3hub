@@ -12,6 +12,8 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -99,12 +101,16 @@ export default function ChangePasswordScreen() {
     <ScreenContainer standalone>
       <ScreenHeader title="Nomainiēt paroli" />
 
-      <ScrollView
-        style={s.scroll}
-        contentContainerStyle={s.content}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
       >
+        <ScrollView
+          style={s.scroll}
+          contentContainerStyle={s.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         {/* Current password */}
         <Text style={s.label}>Esošā parole</Text>
         <View style={s.inputRow}>
@@ -197,7 +203,8 @@ export default function ChangePasswordScreen() {
             <Text style={s.btnText}>Nomainīt paroli</Text>
           )}
         </TouchableOpacity>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </ScreenContainer>
   );
 }

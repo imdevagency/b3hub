@@ -75,6 +75,10 @@ export class CreateOrderDto {
   @IsString()
   siteContactPhone?: string;
 
+  @IsOptional()
+  @IsString()
+  projectId?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => OrderItemDto)

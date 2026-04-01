@@ -8,6 +8,31 @@ import type { SkipHireOrder, ApiOrder, ApiTransportJob, QuoteRequest } from './a
 
 export type FilterKey = 'ALL' | 'ACTIVE' | 'DONE' | 'CANCELLED';
 
+/** Extract a plain-text searchable string from any unified order. */
+export function orderSearchText(item: UnifiedOrder): string {
+  const d = item.data as any;
+  const parts: string[] = [];
+  // order number / job number
+  if (d.orderNumber) parts.push(d.orderNumber);
+  if (d.jobNumber) parts.push(d.jobNumber);
+  // address
+  if (d.deliveryAddress) parts.push(d.deliveryAddress);
+  if (d.deliveryCity) parts.push(d.deliveryCity);
+  if (d.pickupAddress) parts.push(d.pickupAddress);
+  if (d.dropoffAddress) parts.push(d.dropoffAddress);
+  if (d.fromCity) parts.push(d.fromCity);
+  if (d.toCity) parts.push(d.toCity);
+  // material
+  if (d.material?.name) parts.push(d.material.name);
+  if (d.items) (d.items as any[]).forEach((i) => { if (i.material?.name) parts.push(i.material.name); });
+  // RFQ
+  if (d.title) parts.push(d.title);
+  // supplier / buyer names
+  if (d.supplier?.name) parts.push(d.supplier.name);
+  if (d.buyer?.name) parts.push(d.buyer.name);
+  return parts.join(' ').toLowerCase();
+}
+
 export type UnifiedOrder =
   | { kind: 'skip'; data: SkipHireOrder; sortDate: number; isActive: boolean }
   | { kind: 'material'; data: ApiOrder; sortDate: number; isActive: boolean }
@@ -75,6 +100,8 @@ export function useOrders() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterKey>('ALL');
+  const [query, setQuery] = useState('');
+  const [error, setError] = useState(false);
 
   const load = useCallback(
     async (showSkeleton = true) => {
@@ -93,6 +120,7 @@ export function useOrders() {
       setMatOrders(matRes.status === 'fulfilled' && Array.isArray(matRes.value) ? matRes.value : []);
       setReqOrders(reqRes.status === 'fulfilled' && Array.isArray(reqRes.value) ? reqRes.value : []);
       setRfqOrders(rfqRes.status === 'fulfilled' && Array.isArray(rfqRes.value) ? rfqRes.value : []);
+      setError([skipRes, matRes, reqRes, rfqRes].every((r) => r.status === 'rejected'));
       setLoading(false);
       setRefreshing(false);
     },
@@ -152,8 +180,7 @@ export function useOrders() {
   }, [skipOrders, matOrders, reqOrders, rfqOrders]);
 
   const filtered = useMemo(() => {
-    if (filter === 'ALL') return unified;
-    return unified.filter((item) => {
+    let list = filter === 'ALL' ? unified : unified.filter((item) => {
       const bucket =
         item.kind === 'skip'
           ? skipBucket(item.data.status)
@@ -164,7 +191,12 @@ export function useOrders() {
               : matBucket(item.data.status);
       return bucket === filter;
     });
-  }, [unified, filter]);
+    if (query.trim().length >= 2) {
+      const q = query.trim().toLowerCase();
+      list = list.filter((item) => orderSearchText(item).includes(q));
+    }
+    return list;
+  }, [unified, filter, query]);
 
   const counts = useMemo(() => {
     const c: Record<FilterKey, number> = { ALL: unified.length, ACTIVE: 0, DONE: 0, CANCELLED: 0 };
@@ -188,8 +220,11 @@ export function useOrders() {
     onRefresh,
     filter,
     setFilter,
+    query,
+    setQuery,
     unified,
     filtered,
     counts,
+    error,
   };
 }

@@ -732,6 +732,14 @@ export default function ActiveJobScreen() {
         </Text>
 
         {/* Progress stepper */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: '600', letterSpacing: 0.5 }}>
+            SOLIS {currentIndex + 1}/{STATUS_STEPS.length}
+          </Text>
+          <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>
+            {t.activeJob.status[currentStatus] ?? currentStatus}
+          </Text>
+        </View>
         <View style={styles.stepperRow}>
           {STATUS_STEPS.map((step, i) => (
             <View
@@ -754,7 +762,13 @@ export default function ActiveJobScreen() {
                   ? t.deliveryProof.title
                   : currentStatus === 'AT_PICKUP'
                     ? 'Apstiprināt kravu'
-                    : t.activeJob.status[nextStatus]}
+                    : currentStatus === 'LOADED'
+                      ? 'Dodos uz piegādi →'
+                      : currentStatus === 'EN_ROUTE_PICKUP'
+                        ? 'Esmu iekraušanas vietā →'
+                        : currentStatus === 'EN_ROUTE_DELIVERY'
+                          ? 'Esmu piegādes vietā →'
+                          : t.activeJob.status[nextStatus]}
               </Text>
               {currentStatus !== 'AT_DELIVERY' && (
                 <Text className="font-bold" style={{ color: '#ffffff80', fontSize: 18 }}>

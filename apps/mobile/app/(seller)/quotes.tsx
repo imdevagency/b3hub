@@ -365,6 +365,7 @@ export default function SellerQuotesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [modalRequest, setModalRequest] = useState<OpenQuoteRequest | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   // Track which request IDs we've responded to this session (for instant UI feedback)
   const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set());
 
@@ -419,15 +420,59 @@ export default function SellerQuotesScreen() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
+  // Categories that actually appear in the current request list
+  const activeCategories = Array.from(new Set(requests.map((r) => r.materialCategory)));
+  const filteredRequests = categoryFilter
+    ? requests.filter((r) => r.materialCategory === categoryFilter)
+    : requests;
+
   return (
     <ScreenContainer standalone bg="white">
       <ScreenHeader title={sq.title} />
 
-      {!loading && requests.length > 0 && (
+      {/* Category filter chips */}
+      {!loading && activeCategories.length > 1 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterBar}
+          contentContainerStyle={styles.filterBarContent}
+        >
+          <TouchableOpacity
+            style={[styles.filterChip, categoryFilter === null && styles.filterChipActive]}
+            onPress={() => setCategoryFilter(null)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.filterChipText, categoryFilter === null && styles.filterChipTextActive]}>
+              Visi ({requests.length})
+            </Text>
+          </TouchableOpacity>
+          {activeCategories.map((cat) => {
+            const count = requests.filter((r) => r.materialCategory === cat).length;
+            const label = sq.categories[cat] ?? cat;
+            const isActive = categoryFilter === cat;
+            return (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.filterChip, isActive && styles.filterChipActive]}
+                onPress={() => setCategoryFilter((prev) => (prev === cat ? null : cat))}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
+                  {label} · {count}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
+
+      {!loading && filteredRequests.length > 0 && (
         <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
           <View style={styles.countChip}>
             <Text style={styles.countChipText}>
-              {requests.length} aktīv{requests.length === 1 ? 's' : 'i'}
+              {filteredRequests.length} aktīv{filteredRequests.length === 1 ? 's' : 'i'}
+              {categoryFilter ? ` · ${sq.categories[categoryFilter] ?? categoryFilter}` : ''}
             </Text>
           </View>
         </View>
@@ -460,8 +505,25 @@ export default function SellerQuotesScreen() {
                 <Text style={styles.emptyBtnText}>Atjaunot sarakstu</Text>
               </TouchableOpacity>
             </View>
+          ) : filteredRequests.length === 0 ? (
+            <View style={styles.emptyWrap}>
+              <View style={styles.emptyIconWrap}>
+                <FileText size={32} color="#9ca3af" />
+              </View>
+              <Text style={styles.emptyTitle}>Nav rezultātu</Text>
+              <Text style={styles.emptyDesc}>
+                Šajā kategorijā pašlaik nav aktīvu pieprasījumu.
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyBtn}
+                onPress={() => setCategoryFilter(null)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.emptyBtnText}>Rādīt visus</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
-            requests.map((req) => (
+            filteredRequests.map((req) => (
               <RequestCard
                 key={req.id}
                 request={req}
@@ -518,6 +580,25 @@ const styles = StyleSheet.create({
 
   list: { flex: 1 },
   listContent: { paddingHorizontal: 16, paddingBottom: 40 },
+
+  filterBar: { flexGrow: 0, marginBottom: 4 },
+  filterBarContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+    flexDirection: 'row',
+  },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#ffffff',
+  },
+  filterChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  filterChipText: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  filterChipTextActive: { color: '#ffffff' },
 
   emptyWrap: {
     alignItems: 'center',

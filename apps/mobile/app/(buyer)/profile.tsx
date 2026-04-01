@@ -33,6 +33,7 @@ import {
   Bell,
   Activity,
   ArrowUpDown,
+  Building2,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -211,7 +212,6 @@ export default function ProfileScreen() {
         style: 'destructive',
         onPress: async () => {
           await logout();
-          router.replace('/(auth)/welcome');
         },
       },
     ]);
@@ -231,7 +231,6 @@ export default function ProfileScreen() {
             try {
               await api.deleteAccount(token);
               await logout();
-              router.replace('/(auth)/welcome');
             } catch {
               haptics.error();
               toast.error('Neizdevās dzēst kontu. Lūdzu, mēģiniet vēlreiz.');
@@ -344,6 +343,13 @@ export default function ProfileScreen() {
             value={user?.phone || 'Nav norādīts'}
             onPress={openEdit}
           />
+          {user?.company && (
+            <MenuItem
+              icon={Building2}
+              label="Uzņēmums"
+              value={user.company.name}
+            />
+          )}
           <MenuItem icon={Shield} label="Konta veids" value={accountTypeLabel} />
           <MenuItem
             icon={Activity}
@@ -356,6 +362,13 @@ export default function ProfileScreen() {
           <MenuItem
             icon={Bell}
             label="Paziņojumi"
+            value={
+              [user?.notifOrderUpdates, user?.notifJobAlerts, user?.notifPush].filter(Boolean).length === 0
+                ? 'Izslēgti'
+                : user?.notifPush === false
+                  ? 'Tikai lietotnē'
+                  : 'Ieslēgti'
+            }
             onPress={() => router.push('/notifications' as any)}
           />
           <MenuItem

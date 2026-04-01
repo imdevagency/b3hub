@@ -88,5 +88,5 @@ export const api = {
   ...projectsApi,
 
   // ── Saved addresses ──────────────────────────────────────────────────
-  ...savedAddressesApi,
+  savedAddresses: savedAddressesApi,
 };

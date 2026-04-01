@@ -9,6 +9,7 @@ import {
   ScrollView,
   Animated,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -78,9 +79,7 @@ export default function RegisterScreen() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const [roles, setRoles] = useState<Set<RoleKey>>(
-    new Set<RoleKey>(isPartnerFlow ? [] : ['BUYER']),
-  );
+  const [roles, setRoles] = useState<Set<RoleKey>>(new Set<RoleKey>());
   const [isCompany, setIsCompany] = useState(true);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -249,6 +248,7 @@ export default function RegisterScreen() {
             onChangeText={setFirstName}
             autoCapitalize="words"
           />
+          {errors.firstName && <Text style={s.err}>{errors.firstName}</Text>}
         </View>
         <View style={s.flex1}>
           <TextInput
@@ -259,6 +259,7 @@ export default function RegisterScreen() {
             onChangeText={setLastName}
             autoCapitalize="words"
           />
+          {errors.lastName && <Text style={s.err}>{errors.lastName}</Text>}
         </View>
       </View>
 
@@ -273,6 +274,7 @@ export default function RegisterScreen() {
           value={email}
           onChangeText={setEmail}
         />
+        {errors.email && <Text style={s.err}>{errors.email}</Text>}
       </View>
 
       <View style={{ marginTop: 12 }}>
@@ -298,6 +300,7 @@ export default function RegisterScreen() {
               onChangeText={setCompanyName}
               autoCapitalize="words"
             />
+            {errors.companyName && <Text style={s.err}>{errors.companyName}</Text>}
             <TextInput
               style={s.softInput}
               placeholder="Reģistrācijas numurs (neobligāts)"
@@ -338,6 +341,7 @@ export default function RegisterScreen() {
             {showPw ? <EyeOff size={20} color="#9ca3af" /> : <Eye size={20} color="#9ca3af" />}
           </TouchableOpacity>
         </View>
+        {errors.password && <Text style={s.err}>{errors.password}</Text>}
 
         {password.length > 0 && (
           <View style={s.strengthRow}>
@@ -365,6 +369,7 @@ export default function RegisterScreen() {
             {showCpw ? <EyeOff size={20} color="#9ca3af" /> : <Eye size={20} color="#9ca3af" />}
           </TouchableOpacity>
         </View>
+        {errors.confirmPw && <Text style={s.err}>{errors.confirmPw}</Text>}
       </View>
 
       {apiError && (
@@ -374,8 +379,9 @@ export default function RegisterScreen() {
       )}
 
       <Text style={s.legalText}>
-        Turpinot, jūs piekrītat mūsu <Text style={s.legalLink}>Noteikumiem</Text> un{' '}
-        <Text style={s.legalLink}>Privātuma politikai</Text>.
+        Turpinot, jūs piekrītat mūsu{' '}
+        <Text style={s.legalLink} onPress={() => Linking.openURL('https://b3hub.lv/terms')}>Noteikumiem</Text> un{' '}
+        <Text style={s.legalLink} onPress={() => Linking.openURL('https://b3hub.lv/privacy')}>Privātuma politikai</Text>.
       </Text>
     </View>
   );

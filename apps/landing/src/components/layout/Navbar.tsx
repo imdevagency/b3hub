@@ -14,6 +14,7 @@ const navItems = [
   { label: 'Pārvadātājiem', href: '/parvadatajiem' },
   { label: 'Karjeriem', href: '/karjeriem' },
   { label: 'B3 Fields', href: '/b3-fields' },
+  { label: 'Cenas', href: '/pricing' },
   { label: 'Blogs', href: '/blog' },
 ];
 

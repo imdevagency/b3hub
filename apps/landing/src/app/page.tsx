@@ -2,7 +2,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Hero } from '@/components/layout/Hero';
 import { Container } from '@/components/layout/Container';
-import { ArrowRight, Truck, HardHat, Pickaxe } from 'lucide-react';
+import { ArrowRight, Truck, HardHat, Pickaxe, Star, Check } from 'lucide-react';
 import Link from 'next/link';
 import { CTAButton } from '@/components/ui/cta-button';
 
@@ -151,7 +151,121 @@ export default function HomePage() {
           </div>
         </Container>
 
-        {/* ── 4. TRUST — stats + app download ── */}
+        {/* ── 4. TESTIMONIALS ── */}
+        <Container as="section" className="py-24 border-t border-border">
+          <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-16">
+            Ko saka klienti
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                quote:
+                  '"Agrāk zvani un e-pasti aizņēma pusi dienas. Tagad pasūtījums iet cauri 10 minūtēs un dokumenti ir automātiski. B3Hub ir mainījis mūsu darba kārtību."',
+                name: 'Māris Kalniņš',
+                role: 'Būvdarbu vadītājs, SIA Latvijas Būve',
+                stars: 5,
+              },
+              {
+                quote:
+                  '"Kā karjers mēs saņemam pasūtījumus pa nakti — bez telefona zvaniem. Cenas ir fiksētas un rēķini ģenerējas automātiski. Ietaupām 2 stundu admin darbu dienā."',
+                name: 'Andris Ozols',
+                role: 'Direktors, Granīts SIA',
+                stars: 5,
+              },
+              {
+                quote:
+                  '"Darbus saņemu telefona ekrānā. Nav jāzvana dispečeram, nav papīru. Izmaksa nākamajā dienā — tas ir svarīgi, kad strādā kā pašnodarbinātais."',
+                name: 'Jānis Bērziņš',
+                role: 'Neatkarīgais pārvadātājs',
+                stars: 5,
+              },
+            ].map(({ quote, name, role, stars }) => (
+              <div
+                key={name}
+                className="border border-border p-8 flex flex-col gap-6 hover:border-foreground/30 transition-colors"
+              >
+                <div className="flex gap-1">
+                  {Array.from({ length: stars }).map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-foreground text-foreground" />
+                  ))}
+                </div>
+                <p className="text-muted-foreground font-light leading-relaxed flex-1">{quote}</p>
+                <div>
+                  <p className="text-sm font-semibold tracking-tight">{name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{role}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Container>
+
+        {/* ── 5. PRICING TEASER ── */}
+        <Container as="section" className="py-24 border-t border-border">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 mb-16">
+            <div>
+              <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-4">
+                Cenas
+              </p>
+              <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-none">
+                Pārredzamas,
+                <br />
+                bez pārsteigumiem.
+              </h2>
+            </div>
+            <Link
+              href="/pricing"
+              className="flex items-center text-sm font-bold tracking-wide uppercase gap-2 hover:gap-3 transition-all shrink-0"
+            >
+              Skatīt pilnas cenas <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:divide-x divide-border">
+            {[
+              {
+                role: 'Būvnieks / Pasūtītājs',
+                price: 'Bezmaksas',
+                note: 'Bez abonēšanas.',
+                items: ['Neierobežoti pasūtījumi', 'Dokumenti un rēķini', 'Reāllaika izsekošana'],
+              },
+              {
+                role: 'Piegādātājs / Karjers',
+                price: '€49',
+                note: 'mēnesī, bez komisijas.',
+                items: ['Neierobežoti materiālu ieraksti', 'Automātiskie rēķini', 'Piegādes koordinācija'],
+                featured: true,
+              },
+              {
+                role: 'Pārvadātājs / Šoferis',
+                price: '8%',
+                note: 'komisija no piegādes. Bez ikmēneša maksas.',
+                items: ['Izmaksa nākamajā dienā', 'Darbu izvēle brīvi', 'Digitālie pavadraksti'],
+              },
+            ].map(({ role, price, note, items, featured }) => (
+              <div
+                key={role}
+                className={`md:px-12 first:pl-0 last:pr-0 py-8 md:py-0 flex flex-col gap-6 ${featured ? 'md:relative' : ''}`}
+              >
+                <div>
+                  <p className="text-xs font-bold tracking-widest uppercase text-muted-foreground mb-3">
+                    {role}
+                  </p>
+                  <p className="text-5xl font-medium tracking-tighter leading-none">{price}</p>
+                  <p className="text-sm text-muted-foreground mt-2 font-light">{note}</p>
+                </div>
+                <ul className="flex flex-col gap-2.5">
+                  {items.map((item) => (
+                    <li key={item} className="flex items-center gap-2.5 text-sm">
+                      <Check className="w-4 h-4 shrink-0 text-foreground" strokeWidth={2.5} />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </Container>
+
+        {/* ── 6. TRUST — stats + app download ── */}
         <section className="w-full border-t border-border">
           <Container className="py-24">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-16">
@@ -214,7 +328,7 @@ export default function HomePage() {
           </Container>
         </section>
 
-        {/* ── 5. FINAL CTA ── */}
+        {/* ── 7. FINAL CTA ── */}
         <section className="w-full py-32 bg-foreground">
           <Container className="flex flex-col md:flex-row items-center justify-between gap-12">
             <h2 className="text-5xl md:text-7xl font-medium tracking-tighter text-background leading-none">

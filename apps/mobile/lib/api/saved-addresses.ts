@@ -24,18 +24,35 @@ export interface CreateSavedAddressInput {
 export interface UpdateSavedAddressInput extends Partial<CreateSavedAddressInput> {}
 
 export const savedAddressesApi = {
-  list: (): Promise<SavedAddress[]> =>
-    apiFetch('/saved-addresses', { method: 'GET' }),
+  list: (token: string): Promise<SavedAddress[]> =>
+    apiFetch('/saved-addresses', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
 
-  create: (data: CreateSavedAddressInput): Promise<SavedAddress> =>
-    apiFetch('/saved-addresses', { method: 'POST', body: JSON.stringify(data) }),
+  create: (data: CreateSavedAddressInput, token: string): Promise<SavedAddress> =>
+    apiFetch('/saved-addresses', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    }),
 
-  update: (id: string, data: UpdateSavedAddressInput): Promise<SavedAddress> =>
-    apiFetch(`/saved-addresses/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  update: (id: string, data: UpdateSavedAddressInput, token: string): Promise<SavedAddress> =>
+    apiFetch(`/saved-addresses/${id}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    }),
 
-  remove: (id: string): Promise<{ success: boolean }> =>
-    apiFetch(`/saved-addresses/${id}`, { method: 'DELETE' }),
+  remove: (id: string, token: string): Promise<{ success: boolean }> =>
+    apiFetch(`/saved-addresses/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
 
-  setDefault: (id: string): Promise<SavedAddress> =>
-    apiFetch(`/saved-addresses/${id}/set-default`, { method: 'PATCH' }),
+  setDefault: (id: string, token: string): Promise<SavedAddress> =>
+    apiFetch(`/saved-addresses/${id}/set-default`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
 };

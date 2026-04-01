@@ -43,6 +43,7 @@ export default function DriverHomeScreen() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [todayEarnings, setTodayEarnings] = useState<number | null>(null);
   const [loadingJobs, setLoadingJobs] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
 
   // Fly camera to driver's current location once on mount
   useEffect(() => {
@@ -69,16 +70,18 @@ export default function DriverHomeScreen() {
       if (!token) return;
       api.transportJobs
         .myActive(token)
-        .then((job) => setHasActiveJob(!!job))
-        .catch(() => {});
+        .then((job) => { setHasActiveJob(!!job); setFetchError(false); })
+        .catch(() => setFetchError(true));
       api.transportJobs
         .available(token)
         .then((jobs: ApiTransportJob[]) => {
           setAvailableJobs(Array.isArray(jobs) ? jobs : []);
           setLoadingJobs(false);
+          setFetchError(false);
         })
         .catch(() => {
           setLoadingJobs(false);
+          setFetchError(true);
         });
       api.notifications
         .unreadCount(token)
@@ -219,7 +222,12 @@ export default function DriverHomeScreen() {
         </TouchableOpacity>
 
         {/* Empty hint — only when not loading and no jobs nearby */}
-        {!hasActiveJob && !loadingJobs && availableCount === 0 && (
+        {fetchError && (
+          <Text style={[s.noJobsHint, { color: '#ef4444' }]}>
+            Neizdevās ielādēt datus — pārbaudiet savienojumu
+          </Text>
+        )}
+        {!fetchError && !hasActiveJob && !loadingJobs && availableCount === 0 && (
           <Text style={s.noJobsHint}>Nav pieejamo darbu jūsu reģionā</Text>
         )}
 

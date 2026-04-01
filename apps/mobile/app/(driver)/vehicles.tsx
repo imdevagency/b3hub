@@ -23,6 +23,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useToast } from '@/components/ui/Toast';
 import type { ApiVehicle, VehicleType } from '@/lib/api';
 
 // ── Constants ──────────────────────────────────────────────────
@@ -280,6 +281,7 @@ function VehicleModal({
 export default function VehiclesScreen() {
   const { token, user } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const [vehicles, setVehicles] = useState<ApiVehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -336,6 +338,7 @@ export default function VehiclesScreen() {
         await api.vehicles.create(payload as any, token);
       }
       setModalVisible(false);
+      toast.success(editing?.id ? 'Transports atjaunināts!' : 'Transports pievienots!');
       load();
     } catch (err: unknown) {
       Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās saglabāt');

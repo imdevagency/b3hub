@@ -18,6 +18,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import {
   Users,
   UserPlus,
@@ -521,8 +522,8 @@ export default function TeamScreen() {
 
       {/* List */}
       {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#111827" />
+        <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+          <SkeletonCard count={4} />
         </View>
       ) : (
         <FlatList

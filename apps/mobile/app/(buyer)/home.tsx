@@ -23,10 +23,12 @@ import {
   ChevronRight,
   Bell,
   Menu,
+  AlertCircle,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useToast } from '@/components/ui/Toast';
 import { BaseMap } from '@/components/map/BaseMap';
 
@@ -110,7 +112,7 @@ const SERVICES = [
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BOTTOM_PANEL_H = SCREEN_HEIGHT * 0.5;
+const BOTTOM_PANEL_H = SCREEN_HEIGHT * 0.58;
 
 // ── Screen ────────────────────────────────────────────────────────────────
 
@@ -197,7 +199,11 @@ export default function HomeScreen() {
         id: skip.id,
         num: `#${skip.orderNumber}`,
         sub: skip.location ?? '—',
-        status: skip.status === 'PENDING' ? 'Gaida apstiprinājumu' : skip.status,
+        status: ({
+          PENDING: 'Gaida apstiprinājumu',
+          CONFIRMED: 'Apstiprināts',
+          DELIVERED: 'Piegādāts',
+        } as Record<string, string>)[skip.status] ?? skip.status,
         dotColor: '#f59e0b',
         kind: 'skip',
       };
@@ -207,7 +213,14 @@ export default function HomeScreen() {
         id: tj.id,
         num: `#${tj.jobNumber}`,
         sub: tj.pickupCity ?? '—',
-        status: tj.status === 'ACCEPTED' ? 'Pieņemts' : tj.status,
+        status: ({
+          ACCEPTED: 'Pieņemts',
+          EN_ROUTE_PICKUP: 'Brauc uz iekraušanu',
+          AT_PICKUP: 'Iekraujas',
+          LOADED: 'Iekrauts',
+          EN_ROUTE_DELIVERY: 'Brauc uz piegādi',
+          AT_DELIVERY: 'Piegādā',
+        } as Record<string, string>)[tj.status] ?? tj.status,
         dotColor: '#3b82f6',
         kind: 'transport',
       };
@@ -344,26 +357,62 @@ export default function HomeScreen() {
 
       {/* ─── Fixed Bottom Panel ──────────────────────────── */}
       <View style={[s.panel, { height: BOTTOM_PANEL_H, paddingBottom: insets.bottom }]}>
+        {/* Profile completion nudge */}
+        {user && (!user.phone || !user.companyId) && (
+          <TouchableOpacity
+            style={s.profileNudge}
+            activeOpacity={0.8}
+            onPress={() => {
+              haptics.light();
+              router.push('/(buyer)/profile' as any);
+            }}
+          >
+            <AlertCircle size={16} color="#b45309" />
+            <Text style={s.profileNudgeText}>
+              {!user.phone
+                ? 'Pievienojiet tālruni, lai veiktu pasūtījumus'
+                : 'Pievienojiet uzņēmuma profilu, lai aktivizētu pasūtījumus'}
+            </Text>
+            <ChevronRight size={14} color="#b45309" />
+          </TouchableOpacity>
+        )}
+
         {/* Services Row */}
         <Text style={s.sectionTitle}>Pakalpojumi</Text>
-        <View style={s.servicesGrid}>
-          {SERVICES.map((svc, i) => {
-            const Icon = svc.icon;
-            return (
-              <TouchableOpacity
-                key={`${svc.id}-${i}`}
-                style={s.serviceCard}
-                onPress={() => {
-                  haptics.light();
-                  router.push(svc.route as any);
-                }}
-                activeOpacity={0.8}
-              >
-                <Icon size={28} color="#111827" strokeWidth={2.5} />
-                <Text style={s.serviceLabel}>{svc.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
+        <View style={{ position: 'relative' }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={s.servicesRow}
+            style={s.servicesScroll}
+          >
+            {SERVICES.map((svc, i) => {
+              const Icon = svc.icon;
+              return (
+                <TouchableOpacity
+                  key={`${svc.id}-${i}`}
+                  style={s.serviceChip}
+                  onPress={() => {
+                    haptics.light();
+                    router.push(svc.route as any);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <View style={s.serviceChipIcon}>
+                    <Icon size={24} color="#111827" strokeWidth={2} />
+                  </View>
+                  <Text style={s.serviceLabel} numberOfLines={2}>{svc.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+          <LinearGradient
+            colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.95)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            pointerEvents="none"
+            style={s.servicesGradient}
+          />
         </View>
 
         {/* Recent Activity */}
@@ -539,37 +588,60 @@ const s = StyleSheet.create({
     zIndex: 40,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: '#111827',
     marginLeft: 20,
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  servicesGrid: {
+  servicesScroll: {
+    marginBottom: 4,
+  },
+  servicesGradient: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 48,
+  },
+  servicesRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    marginBottom: 20,
-    rowGap: 12,
+    gap: 10,
+    paddingBottom: 8,
   },
-  serviceCard: {
-    width: '48%',
+  serviceChip: {
+    width: 88,
     backgroundColor: '#f3f4f6',
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'flex-start',
-    gap: 12,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    gap: 8,
+  },
+  serviceChipIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
   },
   serviceLabel: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
     color: '#111827',
+    textAlign: 'center',
   },
   divider: {
     height: 1,
     backgroundColor: '#f3f4f6',
-    marginVertical: 20,
+    marginVertical: 12,
     marginHorizontal: 20,
   },
   recentHeader: {
@@ -634,5 +706,24 @@ const s = StyleSheet.create({
     fontSize: 14,
     color: '#111827',
     fontWeight: '600',
+  },
+  profileNudge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#fef3c7',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+  },
+  profileNudgeText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#92400e',
+    fontWeight: '500',
   },
 });

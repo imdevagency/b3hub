@@ -215,6 +215,7 @@ export class OrdersService {
         notes: orderData.notes,
         siteContactName: orderData.siteContactName,
         siteContactPhone: orderData.siteContactPhone,
+        projectId: orderData.projectId ?? null,
         subtotal,
         tax,
         total,

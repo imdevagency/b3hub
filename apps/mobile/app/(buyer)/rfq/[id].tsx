@@ -243,6 +243,9 @@ export default function RfqDetailScreen() {
                 </Text>
               </View>
               <View style={ss.etaChip}>
+                <Text style={{ fontSize: 10, color: '#9ca3af', fontWeight: '500' as const, lineHeight: 13 }}>
+                  Piegāde
+                </Text>
                 <Text style={ss.etaText}>{resp.etaDays} d.</Text>
               </View>
             </View>

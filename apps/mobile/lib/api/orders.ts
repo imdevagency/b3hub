@@ -28,6 +28,8 @@ export interface CreateDisposalOrderInput {
   estimatedWeight: number;
   description?: string;
   requestedDate: string;
+  /** 'AM' | 'PM' | 'ANY' — preferred pickup window */
+  pickupWindow?: string;
   siteContactName?: string;
   siteContactPhone?: string;
   notes?: string;
@@ -50,6 +52,8 @@ export interface CreateTransportOrderInput {
   loadDescription: string;
   estimatedWeight?: number;
   requestedDate: string;
+  /** 'AM' | 'PM' | 'ANY' — preferred pickup/delivery window */
+  pickupWindow?: string;
   siteContactName?: string;
   siteContactPhone?: string;
   notes?: string;
@@ -93,6 +97,7 @@ export interface ApiOrder {
   deliveryAddress: string;
   deliveryCity: string;
   deliveryDate: string | null;
+  deliveryWindow?: string | null;
   total: number;
   currency: string;
   siteContactName: string | null;

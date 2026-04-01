@@ -100,6 +100,7 @@ export function SkipSizeStep({
 
                 <View style={{ alignItems: 'flex-end', gap: 6 }}>
                   <Text style={[s3.price, isSel && { color: size.color }]}>€{size.price}</Text>
+                  <Text style={s3.minHire}>7 dienu min.</Text>
                   {isSel && (
                     <View style={[s3.checkCircle, { backgroundColor: size.color }]}>
                       <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>✓</Text>
@@ -146,6 +147,7 @@ const s3 = StyleSheet.create({
   vol: { fontSize: 13, color: '#6b7280', marginTop: 1 },
   desc: { fontSize: 11, color: '#9ca3af', marginTop: 1 },
   price: { fontSize: 18, fontWeight: '700', color: '#374151' },
+  minHire: { fontSize: 10, color: '#9ca3af', fontWeight: '500' },
   checkCircle: {
     width: 22,
     height: 22,

@@ -145,7 +145,6 @@ export default function SettingsScreen() {
         style: 'destructive',
         onPress: async () => {
           await logout();
-          router.replace('/(auth)/welcome' as import('expo-router').Href);
         },
       },
     ]);

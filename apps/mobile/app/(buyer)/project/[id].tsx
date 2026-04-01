@@ -163,7 +163,12 @@ export default function ProjectDetailScreen() {
         title="Projekts"
         rightAction={
           <TouchableOpacity
-            onPress={() => router.push('/(buyer)/catalog' as any)}
+            onPress={() =>
+              router.push({
+                pathname: '/(buyer)/catalog',
+                params: { projectId: project.id },
+              } as any)
+            }
             style={{ padding: 4 }}
             activeOpacity={0.7}
           >

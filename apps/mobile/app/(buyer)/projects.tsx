@@ -11,7 +11,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiProject, type ProjectStatus } from '@/lib/api';
 import { formatDateShort } from '@/lib/format';
-import { Building2, Package, MapPin, Calendar } from 'lucide-react-native';
+import { Building2, Package, MapPin, Calendar, Plus } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -179,7 +179,24 @@ export default function ProjectsScreen() {
 
   return (
     <ScreenContainer standalone bg="#ffffff">
-      <ScreenHeader title="Projekti" />
+      <ScreenHeader
+        title="Projekti"
+        rightAction={
+          <TouchableOpacity
+            onPress={() => router.push('/(buyer)/project/new' as any)}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            activeOpacity={0.7}
+          >
+            <Plus size={22} color="#111827" />
+          </TouchableOpacity>
+        }
+      />
 
       <FlatList
         data={projects}
@@ -197,6 +214,15 @@ export default function ProjectsScreen() {
             icon={<Building2 size={40} color={colors.textMuted} />}
             title="Nav projektu"
             subtitle="Jūsu projekti parādīsies šeit"
+            action={
+              <TouchableOpacity
+                onPress={() => router.push('/(buyer)/project/new' as any)}
+                style={styles.createBtn}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.createBtnText}>Jauns projekts</Text>
+              </TouchableOpacity>
+            }
           />
         }
       />
@@ -234,6 +260,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
+  },
+  createBtn: {
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: '#111827',
+    borderRadius: radius.md,
+  },
+  createBtnText: {
+    color: '#ffffff',
+    fontSize: fontSizes.sm,
+    fontWeight: '600' as const,
   },
   card: {
     backgroundColor: colors.bgCard,

@@ -182,7 +182,6 @@ export function Sidebar({ visible, onClose, role, accentColor }: SidebarProps) {
         onPress: async () => {
           onClose();
           await logout();
-          router.replace('/(auth)/welcome' as any);
         },
       },
     ]);

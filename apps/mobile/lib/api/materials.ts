@@ -44,6 +44,7 @@ export interface SupplierOffer {
   distanceKm: number | null;
   etaDays: number;
   isInstant: true;
+  minOrder?: number | null;
   deliveryRadiusKm: number | null;
   supplier: {
     id: string;
@@ -114,6 +115,7 @@ export const materialsApi = {
         siteContactName?: string;
         siteContactPhone?: string;
         notes?: string;
+        projectId?: string;
       },
       token: string,
     ) =>
@@ -138,6 +140,7 @@ export const materialsApi = {
           siteContactName: input.siteContactName,
           siteContactPhone: input.siteContactPhone,
           notes: input.notes,
+          projectId: input.projectId ?? undefined,
         }),
       }),
 

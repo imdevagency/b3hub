@@ -39,10 +39,11 @@ const VEHICLE_OPTIONS: {
   label: string;
   sub: string;
   fromPrice: number;
+  pricePerKm: number;
 }[] = [
-  { type: 'TIPPER_SMALL', label: 'Mazā pašizgāzēja', sub: 'līdz 5 t · 6 m³', fromPrice: 89 },
-  { type: 'TIPPER_LARGE', label: 'Lielā pašizgāzēja', sub: 'līdz 15 t · 18 m³', fromPrice: 149 },
-  { type: 'ARTICULATED_TIPPER', label: 'Puspiekabe', sub: 'līdz 25 t · 90 m³', fromPrice: 219 },
+  { type: 'TIPPER_SMALL', label: 'Mazā pašizgāzēja', sub: 'līdz 5 t · 6 m³', fromPrice: 89, pricePerKm: 1.5 },
+  { type: 'TIPPER_LARGE', label: 'Lielā pašizgāzēja', sub: 'līdz 15 t · 18 m³', fromPrice: 149, pricePerKm: 2.0 },
+  { type: 'ARTICULATED_TIPPER', label: 'Puspiekabe', sub: 'līdz 25 t · 90 m³', fromPrice: 219, pricePerKm: 3.0 },
 ];
 
 const CARGO_PRESETS = ['Smiltis', 'Šķembas/grants', 'Betons', 'Koks', 'Metāls', 'Būvgruži', 'Cits'];
@@ -91,6 +92,7 @@ export default function TransportWizard() {
   const [activeDesc, setActiveDesc] = useState('');
   const [weightText, setWeightText] = useState('');
   const [selectedDay, setSelectedDay] = useState<string>(DAY_OPTIONS[0].iso);
+  const [pickupWindow, setPickupWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
 
   const [submitting, setSubmitting] = useState(false);
   const [siteContactName, setSiteContactName] = useState(() =>
@@ -105,7 +107,8 @@ export default function TransportWizard() {
     step >= 3 && dropoffStop ? dropoffStop : null,
   );
 
-  const currentVehiclePrice = VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle)?.fromPrice;
+  const currentVehicle = VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle);
+  const currentVehiclePrice = currentVehicle?.fromPrice;
 
   // ── Handlers ──────────────────────────────────────────────────
   const handlePickupConfirm = useCallback(
@@ -151,6 +154,7 @@ export default function TransportWizard() {
           loadDescription: activeDesc,
           estimatedWeight: weightText ? parseFloat(weightText) : undefined,
           requestedDate: selectedDay,
+          pickupWindow: pickupWindow !== 'ANY' ? pickupWindow : undefined,
           siteContactName: siteContactName || undefined,
           siteContactPhone: siteContactPhone || undefined,
           notes: notes || undefined,
@@ -185,6 +189,7 @@ export default function TransportWizard() {
     activeDesc,
     weightText,
     selectedDay,
+    pickupWindow,
     pickupPicked,
     dropoffPicked,
     state,
@@ -195,12 +200,13 @@ export default function TransportWizard() {
   ]);
 
   const step3Valid = selectedVehicle !== null;
-  const step4Valid = selectedDay !== null;
+  const step4Valid = !!selectedDay && !!siteContactName.trim();
 
   const ctaDisabled =
     (step === 1 && !pickupPicked) ||
     (step === 2 && !dropoffPicked) ||
     (step === 3 && !step3Valid) ||
+    (step === 4 && !step4Valid) ||
     submitting;
 
   const ctaLabel =
@@ -377,8 +383,26 @@ export default function TransportWizard() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              style={{ marginBottom: 20 }}
+              style={{ marginBottom: 12 }}
             >
+              {/* ASAP / today chip */}
+              {(() => {
+                const today = new Date();
+                const iso = today.toISOString().split('T')[0];
+                const active = selectedDay === iso;
+                return (
+                  <TouchableOpacity
+                    key="today"
+                    style={[s.dayChip, s.dayChipAsap, active && s.dayChipActive]}
+                    onPress={() => { setSelectedDay(iso); setRequestedDate(iso); }}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[s.dayDow, active && s.dayActive]}>🔴</Text>
+                    <Text style={[s.dayNum, active && s.dayActive]}>Šodien</Text>
+                    <Text style={[s.dayMon, active && s.dayActiveSub]}>steidzami</Text>
+                  </TouchableOpacity>
+                );
+              })()}
               {DAY_OPTIONS.map((d) => {
                 const active = selectedDay === d.iso;
                 return (
@@ -398,6 +422,23 @@ export default function TransportWizard() {
                 );
               })}
             </ScrollView>
+
+            {/* Pickup window */}
+            <Text style={[s.sectionLabel, { marginTop: 4 }]}>Vēlamais iekraušanas laiks</Text>
+            <View style={s.windowRow}>
+              {([['ANY', 'Jebkurā laikā'], ['AM', 'Rīts  8–12'], ['PM', 'Diena  12–17']] as const).map(([val, label]) => (
+                <TouchableOpacity
+                  key={val}
+                  style={[s.windowChip, pickupWindow === val && s.windowChipActive]}
+                  onPress={() => setPickupWindow(val)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[s.windowChipText, pickupWindow === val && s.windowChipTextActive]}>
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             <Text style={s.sectionLabel}>Maršruts</Text>
             <View style={s.summaryCard}>
@@ -422,7 +463,14 @@ export default function TransportWizard() {
               />
               <DetailRow label="Krava" value={activeDesc || '—'} />
               {currentVehiclePrice && (
-                <DetailRow label="Orientējošā cena" value={`no €${currentVehiclePrice}`} />
+                <DetailRow
+                  label="Orientējošā cena"
+                  value={
+                    route && currentVehicle
+                      ? `~€${Math.round(currentVehicle.fromPrice + route.distanceKm * currentVehicle.pricePerKm)}`
+                      : `no €${currentVehiclePrice}`
+                  }
+                />
               )}
             </View>
 
@@ -445,7 +493,7 @@ export default function TransportWizard() {
               />
               <TextInput
                 style={[s.input, s.inputMulti]}
-                placeholder="Piezīmes un norādījumi (neobligāti)"
+                placeholder="Piezīmes un norādījumi (piem., bīstamas kravas brīdinājumi, iekraušanas instrukcijas)"
                 placeholderTextColor="#9ca3af"
                 multiline
                 value={notes}
@@ -613,11 +661,26 @@ const s = StyleSheet.create({
     minWidth: 54,
   },
   dayChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  dayChipAsap: { borderColor: '#fca5a5', backgroundColor: '#fff7f7', minWidth: 62 },
   dayDow: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
   dayNum: { fontSize: 20, fontWeight: '700', color: '#111827', marginVertical: 2 },
   dayMon: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
   dayActive: { color: '#fff' },
   dayActiveSub: { color: '#d1d5db' },
+  windowRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
+  windowChip: {
+    flex: 1,
+    paddingVertical: 9,
+    paddingHorizontal: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
+    alignItems: 'center',
+  },
+  windowChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  windowChipText: { fontSize: 12, color: '#6b7280', fontWeight: '500', textAlign: 'center' },
+  windowChipTextActive: { color: '#fff' },
 
   // Summary card
   summaryCard: {

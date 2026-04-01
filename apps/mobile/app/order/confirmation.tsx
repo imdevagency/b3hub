@@ -1,10 +1,11 @@
 import { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import { useOrder } from '@/lib/order-context';
 import { t } from '@/lib/translations';
-import { CheckCircle2 } from 'lucide-react-native';
+import { CheckCircle2, Copy } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 
 function formatDisplay(iso: string): string {
@@ -107,10 +108,20 @@ export default function OrderConfirmation() {
 
         <Animated.View style={{ opacity: cardOpacity, transform: [{ translateY: cardY }] }}>
           {/* Order number highlight card */}
-          <View style={s.orderNumCard}>
-            <Text style={s.orderNumLabel}>{t.skipHire.confirmation.orderNumber}</Text>
-            <Text style={s.orderNum}>{order.orderNumber}</Text>
-          </View>
+          <TouchableOpacity
+            style={s.orderNumCard}
+            onPress={async () => {
+              await Clipboard.setStringAsync(order.orderNumber);
+              haptics.success();
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={s.orderNumLabel}>{t.skipHire.confirmation.orderNumber}</Text>
+              <Text style={s.orderNum}>{order.orderNumber}</Text>
+            </View>
+            <Copy size={16} color="#6b7280" />
+          </TouchableOpacity>
 
           {/* Order details */}
           <View style={s.detailsCard}>

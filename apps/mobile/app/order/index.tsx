@@ -8,7 +8,7 @@
  *   Step 4 – Date + Contact + Confirm
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { MapPin, Camera, Trash2, Link2, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { MapPin, Camera, Trash2, Link2, ChevronDown, ChevronUp, Bookmark, Check } from 'lucide-react-native';
 import { useOrder } from '@/lib/order-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -67,6 +67,8 @@ export default function OrderWizard() {
   );
   const [selectedSize, setSelectedSizeState] = useState<SkipSize | null>(state.skipSize);
   const [selectedDay, setSelectedDay] = useState<string>(toISO(addDays(today, 1)));
+  const [deliveryWindow, setDeliveryWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
+  const [saveAddress, setSaveAddress] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [contactName, setContactName] = useState(() =>
     `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
@@ -157,6 +159,7 @@ export default function OrderWizard() {
           wasteCategory: state.wasteCategory,
           skipSize: state.skipSize,
           deliveryDate: selectedDay,
+          deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
           contactName: contactName || undefined,
           contactPhone: contactPhone || undefined,
           notes: notes || undefined,
@@ -172,6 +175,13 @@ export default function OrderWizard() {
           // Non-fatal: linking failed silently — order is still created
         }
       }
+      // Save address if user opted in
+      if (saveAddress && picked && token) {
+        api.savedAddresses.create(
+          { label: picked.address.split(',')[0], address: picked.address, city: picked.city ?? '', lat: picked.lat, lng: picked.lng },
+          token,
+        ).catch(() => {});
+      }
       haptics.success();
       setConfirmedOrder(order);
       router.push('/order/confirmation');
@@ -186,6 +196,8 @@ export default function OrderWizard() {
     token,
     state,
     selectedDay,
+    deliveryWindow,
+    saveAddress,
     contactName,
     contactPhone,
     notes,
@@ -297,6 +309,23 @@ export default function OrderWizard() {
           >
             <Text style={s.sectionLabel}>Piegādes datums</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.dayStrip}>
+              {/* ASAP / today chip */}
+              {(() => {
+                const iso = toISO(today);
+                const active = selectedDay === iso;
+                return (
+                  <TouchableOpacity
+                    key="today"
+                    style={[s.dayChip, s.dayChipAsap, active && s.dayChipActive]}
+                    onPress={() => setSelectedDay(iso)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[s.dayDow, active && s.dayActive]}>🔴</Text>
+                    <Text style={[s.dayNum, active && s.dayActive]}>Šodien</Text>
+                    <Text style={[s.dayMon, active && s.dayActiveSub]}>steidzami</Text>
+                  </TouchableOpacity>
+                );
+              })()}
               {Array.from({ length: 14 }, (_, i) => {
                 const d = addDays(today, i + 1);
                 const iso = toISO(d);
@@ -319,6 +348,23 @@ export default function OrderWizard() {
                 );
               })}
             </ScrollView>
+
+            {/* Delivery window */}
+            <Text style={[s.sectionLabel, { marginTop: 16 }]}>Vēlamais piegādes laiks</Text>
+            <View style={s.windowRow}>
+              {([['ANY', 'Jebkurā laikā'], ['AM', 'Rīts  8–12'], ['PM', 'Diena  12–17']] as const).map(([val, label]) => (
+                <TouchableOpacity
+                  key={val}
+                  style={[s.windowChip, deliveryWindow === val && s.windowChipActive]}
+                  onPress={() => setDeliveryWindow(val)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[s.windowChipText, deliveryWindow === val && s.windowChipTextActive]}>
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             {/* Summary */}
             <Text style={[s.sectionLabel, { marginTop: 20 }]}>Kopsavilkums</Text>
@@ -343,7 +389,9 @@ export default function OrderWizard() {
                   selectedSize ? (t.skipHire.step3.sizes[selectedSize]?.label ?? selectedSize) : '—'
                 }
               />
-              <DetailRow label="Cena" value={`€${price} + PVN`} />
+              <DetailRow label="Cena (bez PVN)" value={`€${price}`} />
+              <DetailRow label="PVN 21%" value={`€${(price * 0.21).toFixed(2)}`} />
+              <DetailRow label="Kopā apmaksāt" value={`€${(price * 1.21).toFixed(2)}`} />
             </View>
 
             {/* Contact */}
@@ -366,13 +414,31 @@ export default function OrderWizard() {
               />
               <TextInput
                 style={[s.input, s.inputMulti]}
-                placeholder="Piezīmes (neobligāti)"
+                placeholder="Piezīmes (piem., piekļuves kods, vārtu atvēršana)"
                 placeholderTextColor="#9ca3af"
                 multiline
                 value={notes}
                 onChangeText={setNotes}
               />
             </View>
+
+            {/* Save address toggle */}
+            {picked && (
+              <TouchableOpacity
+                style={s.saveAddrRow}
+                onPress={() => setSaveAddress((v) => !v)}
+                activeOpacity={0.7}
+              >
+                <View style={[s.saveAddrCheck, saveAddress && s.saveAddrCheckActive]}>
+                  {saveAddress && <Check size={12} color="#fff" strokeWidth={2.5} />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.saveAddrLabel}>Saglabāt šo adresi</Text>
+                  <Text style={s.saveAddrSub} numberOfLines={1}>{picked.address.split(',')[0]}</Text>
+                </View>
+                <Bookmark size={16} color={saveAddress ? '#111827' : '#9ca3af'} />
+              </TouchableOpacity>
+            )}
 
             <Text style={[s.sectionLabel, { marginTop: 20 }]}>
               Izkraušanas punkta foto (neobligāti)
@@ -545,11 +611,30 @@ const s = StyleSheet.create({
     minWidth: 54,
   },
   dayChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  dayChipAsap: { borderColor: '#fca5a5', backgroundColor: '#fff7f7', minWidth: 62 },
   dayDow: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
   dayNum: { fontSize: 20, fontWeight: '700', color: '#111827', marginVertical: 2 },
   dayMon: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
   dayActive: { color: '#fff' },
   dayActiveSub: { color: '#9ca3af' },
+  windowRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 20,
+  },
+  windowChip: {
+    flex: 1,
+    paddingVertical: 9,
+    paddingHorizontal: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
+    alignItems: 'center',
+  },
+  windowChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  windowChipText: { fontSize: 12, color: '#6b7280', fontWeight: '500', textAlign: 'center' },
+  windowChipTextActive: { color: '#fff' },
   summaryCard: {
     backgroundColor: '#f9fafb',
     borderRadius: 14,
@@ -596,6 +681,31 @@ const s = StyleSheet.create({
     color: '#111827',
   },
   inputMulti: { height: 80, textAlignVertical: 'top' },
+  saveAddrRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginBottom: 12,
+  },
+  saveAddrCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#d1d5db',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveAddrCheckActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  saveAddrLabel: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  saveAddrSub: { fontSize: 12, color: '#6b7280', marginTop: 1 },
   photoCard: {
     backgroundColor: '#f9fafb',
     borderWidth: 1,

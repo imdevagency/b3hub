@@ -24,6 +24,7 @@ import {
 import { Bookmark, MapPin, Star, X } from 'lucide-react-native';
 import { colors as c, spacing, radius, fontSizes } from '@/lib/theme';
 import { savedAddressesApi, SavedAddress } from '@/lib/api/saved-addresses';
+import { useAuth } from '@/lib/auth-context';
 import type { PickedAddress } from './InlineAddressStep';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -41,21 +42,23 @@ type Props = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function SavedAddressPicker({ onPick, currentAddress }: Props) {
+  const { token } = useAuth();
   const [open, setOpen] = useState(false);
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
+    if (!token) return;
     setLoading(true);
     try {
-      const data = await savedAddressesApi.list();
+      const data = await savedAddressesApi.list(token);
       setAddresses(data);
     } catch {
       // Silent fail — button just shows empty state
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     if (open) load();

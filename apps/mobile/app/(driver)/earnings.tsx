@@ -307,9 +307,9 @@ export default function EarningsScreen() {
       >
         {user?.isCompany && user.payoutEnabled === false && (
           <View className="mb-4 mx-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-            <Text className="text-orange-900 font-bold mb-1">Enable Payouts</Text>
+            <Text className="text-orange-900 font-bold mb-1">Aktivizēt izmaksas</Text>
             <Text className="text-orange-800 text-sm mb-3">
-              Setup your bank account to receive earnings.
+              Pievienojiet bankas kontu, lai saņemtu izpeļņu.
             </Text>
             <TouchableOpacity
               onPress={handleSetupPayouts}
@@ -319,7 +319,7 @@ export default function EarningsScreen() {
               {setupLoading ? (
                 <ActivityIndicator color="white" size="small" />
               ) : (
-                <Text className="text-white font-medium">Setup with Stripe</Text>
+                <Text className="text-white font-medium">Iestaītīt ar Stripe</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -389,6 +389,7 @@ export default function EarningsScreen() {
                   key={item.id}
                   style={[s.listItem, i < filteredHistory.length - 1 && s.listBorder]}
                   activeOpacity={0.7}
+                  onPress={() => router.push(`/(buyer)/transport-job/${item.id}` as any)}
                 >
                   <View style={s.listLeft}>
                     {/* Time or Date only if not strictly visible in header context, but here we show date */}

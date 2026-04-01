@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Alert,
   Linking,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -35,6 +36,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { TJB_STATUS } from '@/lib/materials';
 import { BaseMap, RouteLayer, useRoute } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
@@ -175,6 +177,12 @@ export default function TransportJobDetailScreen() {
   const cameraRef = useRef<CameraRefHandle | null>(null);
 
   const { job, loading, reload: loadJob } = useTransportJob(id);
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadJob();
+    setRefreshing(false);
+  }, [loadJob]);
   const [cancelling, setCancelling] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -352,9 +360,7 @@ export default function TransportJobDetailScreen() {
 
       {/* ── CONTENT SECTION ── */}
       {loading ? (
-        <View style={s.center}>
-          <ActivityIndicator color="#111827" size="large" />
-        </View>
+        <SkeletonDetail />
       ) : !job ? (
         <View style={s.center}>
           <Package size={48} color="#d1d5db" />
@@ -364,7 +370,11 @@ export default function TransportJobDetailScreen() {
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={s.scroll}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
           {/* Job number + type header */}
           <View style={s.jobHeader}>
             <View style={{ flex: 1 }}>
@@ -440,7 +450,21 @@ export default function TransportJobDetailScreen() {
               label="Izbraukšanas datums"
               value={formatDate(job.pickupDate)}
             />
+            {job.pickupWindow && job.pickupWindow !== 'ANY' && (
+              <InfoRow
+                icon={Clock}
+                label="Laika logs (iekraušana)"
+                value={job.pickupWindow === 'AM' ? 'Rīts (8–12)' : 'Diena (12–17)'}
+              />
+            )}
             <InfoRow icon={Clock} label="Piegādes datums" value={formatDate(job.deliveryDate)} />
+            {job.deliveryWindow && job.deliveryWindow !== 'ANY' && (
+              <InfoRow
+                icon={Clock}
+                label="Laika logs (piegāde)"
+                value={job.deliveryWindow === 'AM' ? 'Rīts (8–12)' : 'Diena (12–17)'}
+              />
+            )}
           </View>
 
           {/* Driver card */}
@@ -467,6 +491,39 @@ export default function TransportJobDetailScreen() {
                     onPress={() => {
                       haptics.light();
                       Linking.openURL(`tel:${job.driver!.phone}`);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Phone size={14} color="#fff" strokeWidth={2} />
+                    <Text style={s.callBtnText}>Zvanīt</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          )}
+
+          {/* Site contact card */}
+          {(job.order?.siteContactName || job.order?.siteContactPhone) && (
+            <View style={s.card}>
+              <Text style={s.cardTitle}>Kontaktpersona</Text>
+              <View style={s.driverRow}>
+                <View style={s.driverAvatar}>
+                  <User size={20} color="#374151" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  {job.order.siteContactName && (
+                    <Text style={s.driverName}>{job.order.siteContactName}</Text>
+                  )}
+                  {job.order.siteContactPhone && (
+                    <Text style={s.driverSub}>{job.order.siteContactPhone}</Text>
+                  )}
+                </View>
+                {job.order?.siteContactPhone && (
+                  <TouchableOpacity
+                    style={s.callBtn}
+                    onPress={() => {
+                      haptics.light();
+                      Linking.openURL(`tel:${job.order!.siteContactPhone}`);
                     }}
                     activeOpacity={0.8}
                   >

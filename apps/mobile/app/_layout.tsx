@@ -5,11 +5,13 @@
  */
 import '../global.css';
 import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '@/lib/auth-context';
 import { ModeProvider } from '@/lib/mode-context';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { SCREEN } from '@/lib/transitions';
 import React, { useEffect, useRef } from 'react';
 import { Text, TextInput, View } from 'react-native';
@@ -117,6 +119,8 @@ export default function RootLayout() {
           <AuthProvider>
             <ModeProvider>
               <ToastProvider>
+                <StatusBar style="dark" />
+                <OfflineBanner />
                 {StripeProvider && STRIPE_PK ? (
                   <StripeProvider publishableKey={STRIPE_PK}>
                     <Stack

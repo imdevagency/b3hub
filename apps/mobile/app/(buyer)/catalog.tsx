@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, TextInput } from 'react-native';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import {
@@ -11,11 +12,17 @@ import {
   Zap,
   MoreHorizontal,
   Box,
+  Search,
+  X,
+  Package,
+  FolderOpen,
 } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { haptics } from '@/lib/haptics';
-import type { MaterialCategory } from '@/lib/api';
-import { CATEGORY_LABELS, MATERIAL_CATEGORIES, DEFAULT_MATERIAL_NAMES } from '@/lib/materials';
+import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
+import type { MaterialCategory, ApiMaterial } from '@/lib/api';
+import { CATEGORY_LABELS, MATERIAL_CATEGORIES, DEFAULT_MATERIAL_NAMES, UNIT_SHORT } from '@/lib/materials';
 
 // ── Category metadata ──────────────────────────────────────────────────────
 
@@ -76,10 +83,65 @@ function CategoryCard({ category, onPress }: { category: MaterialCategory; onPre
   );
 }
 
+// ── Search result card ─────────────────────────────────────────────────────
+
+function MaterialSearchCard({ material, onPress }: { material: ApiMaterial; onPress: () => void }) {
+  const catTheme = CATEGORY_META[material.category] ?? { bg: '#f3f4f6', accent: '#6b7280' };
+  return (
+    <TouchableOpacity style={sr.card} onPress={onPress} activeOpacity={0.7}>
+      <View style={[sr.iconBox, { backgroundColor: catTheme.bg }]}>
+        <Package size={18} color={catTheme.accent} />
+      </View>
+      <View style={sr.body}>
+        <View style={sr.nameRow}>
+          <Text style={sr.name} numberOfLines={1}>{material.name}</Text>
+          {material.isRecycled && <Leaf size={12} color="#16a34a" fill="#16a34a" />}
+        </View>
+        <Text style={sr.meta}>
+          {material.supplier.name}{material.supplier.city ? ` · ${material.supplier.city}` : ''}
+        </Text>
+      </View>
+      <View style={sr.priceCol}>
+        <Text style={sr.price}>€{material.basePrice.toFixed(2)}</Text>
+        <Text style={sr.unit}>/{UNIT_SHORT[material.unit] ?? material.unit}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 // ── Screen ─────────────────────────────────────────────────────────────────
 
 export default function CatalogScreen() {
   const router = useRouter();
+  const { token } = useAuth();
+  const params = useLocalSearchParams<{ projectId?: string }>();
+  const projectId = params.projectId;
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<ApiMaterial[]>([]);
+  const [searching, setSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const q = query.trim();
+    if (q.length < 2) {
+      setResults([]);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const data = await api.materials.getAll(token ?? '', { search: q });
+        setResults(Array.isArray(data) ? data : []);
+      } catch {
+        setResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 350);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [query, token]);
 
   const handleCategory = (category: MaterialCategory) => {
     router.push({
@@ -87,21 +149,91 @@ export default function CatalogScreen() {
       params: {
         initialCategory: category,
         prefillMaterial: DEFAULT_MATERIAL_NAMES[category] || undefined,
+        projectId: projectId || undefined,
       },
     });
   };
 
+  const handleMaterial = (material: ApiMaterial) => {
+    haptics.light();
+    router.push({
+      pathname: '/order-request-new',
+      params: {
+        initialCategory: material.category,
+        prefillMaterial: material.name,
+        materialId: material.id,
+        projectId: projectId || undefined,
+      },
+    });
+  };
+
+  const showSearch = query.trim().length >= 2;
+
   return (
     <ScreenContainer standalone bg="#ffffff">
-      {/* Header */}
       <ScreenHeader title="Materiāli" />
 
-      {/* Category grid */}
-      <ScrollView contentContainerStyle={s.grid} showsVerticalScrollIndicator={false}>
-        {MATERIAL_CATEGORIES.map((cat) => (
-          <CategoryCard key={cat} category={cat} onPress={() => handleCategory(cat)} />
-        ))}
-      </ScrollView>
+      {/* Project context banner */}
+      {projectId ? (
+        <View style={s.projectBanner}>
+          <FolderOpen size={14} color="#1d4ed8" />
+          <Text style={s.projectBannerText}>Pasūtījums tiks piesaistīts projektam</Text>
+        </View>
+      ) : null}
+
+      {/* Search bar */}
+      <View style={s.searchRow}>
+        <Search size={16} color="#9ca3af" />
+        <TextInput
+          style={s.searchInput}
+          placeholder="Meklēt materiālu..."
+          placeholderTextColor="#9ca3af"
+          value={query}
+          onChangeText={setQuery}
+          returnKeyType="search"
+          autoCorrect={false}
+          autoCapitalize="none"
+          clearButtonMode="never"
+        />
+        {query.length > 0 && (
+          <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
+            <X size={16} color="#9ca3af" />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {showSearch ? (
+        /* ── Search results ── */
+        <ScrollView
+          contentContainerStyle={s.resultsList}
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+        >
+          {searching ? (
+            <View style={{ padding: 16 }}>
+              <SkeletonCard count={4} />
+            </View>
+          ) : results.length === 0 ? (
+            <View style={s.noResults}>
+              <Package size={32} color="#d1d5db" />
+              <Text style={s.noResultsText}>Nav rezultātu</Text>
+              <Text style={s.noResultsSub}>Mēģiniet citu nosaukumu vai izvēlieties kategoriju</Text>
+            </View>
+          ) : (
+            results.map((m) => (
+              <MaterialSearchCard key={m.id} material={m} onPress={() => handleMaterial(m)} />
+            ))
+          )}
+        </ScrollView>
+      ) : (
+        /* ── Category grid ── */
+        <ScrollView contentContainerStyle={s.grid} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          {MATERIAL_CATEGORIES.map((cat) => (
+            <CategoryCard key={cat} category={cat} onPress={() => handleCategory(cat)} />
+          ))}
+        </ScrollView>
+      )}
     </ScreenContainer>
   );
 }
@@ -109,6 +241,64 @@ export default function CatalogScreen() {
 // ── Styles ─────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
+  projectBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginHorizontal: 16,
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#eff6ff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  projectBannerText: {
+    fontSize: 12,
+    color: '#1d4ed8',
+    fontWeight: '500',
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 12,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#111827',
+    paddingVertical: 0,
+  },
+  resultsList: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 40,
+    gap: 4,
+  },
+  noResults: {
+    alignItems: 'center',
+    paddingTop: 60,
+    gap: 8,
+  },
+  noResultsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  noResultsSub: {
+    fontSize: 13,
+    color: '#9ca3af',
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
   grid: {
     paddingHorizontal: 16,
     paddingTop: 16,
@@ -120,7 +310,7 @@ const s = StyleSheet.create({
 
   card: {
     width: cardWidth,
-    aspectRatio: 1, // Make them perfect squares
+    aspectRatio: 1,
     backgroundColor: '#ffffff',
     borderRadius: 16,
     shadowColor: '#000',
@@ -165,5 +355,57 @@ const s = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
     color: '#111827',
     letterSpacing: -0.3,
+  },
+});
+
+// ── Search result card styles ───────────────────────────────────────────────
+
+const sr = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 4,
+    gap: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#f3f4f6',
+  },
+  iconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  body: {
+    flex: 1,
+    gap: 3,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  name: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    flex: 1,
+  },
+  meta: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  priceCol: {
+    alignItems: 'flex-end',
+  },
+  price: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  unit: {
+    fontSize: 11,
+    color: '#9ca3af',
   },
 });

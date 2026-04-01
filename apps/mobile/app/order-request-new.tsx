@@ -86,6 +86,7 @@ export default function OrderRequestWizard() {
     prefillMaterial?: string;
     prefillAddress?: string;
     prefillCity?: string;
+    projectId?: string;
   }>();
 
   const category = (params.initialCategory ?? '') as MaterialCategory;
@@ -172,6 +173,13 @@ export default function OrderRequestWizard() {
   // ── Submit: buyer selects a specific supplier offer ──
   const handleSelectOffer = async (offer: SupplierOffer) => {
     if (!token || !pickedAddress) return;
+    // Validate min order quantity
+    if (offer.minOrder && quantity < offer.minOrder) {
+      setSubmitError(
+        `Minimālais pasūtījuma daudzums šim piegādātājam ir ${offer.minOrder} ${UNIT_SHORT[unit] ?? unit}`,
+      );
+      return;
+    }
     setSubmitting(true);
     setSubmitError('');
     try {
@@ -188,6 +196,7 @@ export default function OrderRequestWizard() {
           siteContactName: contactName || undefined,
           siteContactPhone: contactPhone || undefined,
           notes: notes || undefined,
+          projectId: params.projectId || undefined,
         },
         token,
       );
@@ -711,6 +720,11 @@ function OfferCard({
           <View style={oc.metaItem}>
             <ZapIcon size={13} color="#d97706" />
             <Text style={[oc.metaText, { color: '#d97706', fontWeight: '600' }]}>Tūlītējs</Text>
+          </View>
+        ) : null}
+        {offer.minOrder ? (
+          <View style={oc.metaItem}>
+            <Text style={oc.metaText}>Min: {offer.minOrder} {UNIT_SHORT[unit] ?? unit}</Text>
           </View>
         ) : null}
       </View>
