@@ -4,11 +4,20 @@
  */
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
-import { ArrowLeft, Package, MapPin, CalendarDays, ClipboardList } from 'lucide-react';
+import {
+  ArrowLeft,
+  Package,
+  MapPin,
+  CalendarDays,
+  ClipboardList,
+  Link2,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import Link from 'next/link';
 
 // Import steps and types
@@ -17,7 +26,15 @@ import { Step2Address } from '@/components/order/steps/Step2Address';
 import { Step3DateOffers, type Offer } from '@/components/order/steps/Step3DateOffers';
 import { Step4ContactForm } from '@/components/order/steps/Step4ContactForm';
 import { OrderConfirmation } from '@/components/order/OrderConfirmation';
-import { createSkipHireOrder, mapWasteCategory, mapSkipSize, type SkipHireOrder } from '@/lib/api';
+import {
+  createSkipHireOrder,
+  mapWasteCategory,
+  mapSkipSize,
+  getMyOrders,
+  linkSkipOrder,
+  type SkipHireOrder,
+  type ApiOrder,
+} from '@/lib/api';
 
 // For map
 import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
@@ -31,20 +48,26 @@ const STEPS = [
   { label: 'Apstiprināt', icon: ClipboardList },
 ];
 
-export default function SkipHireOrderPage() {
+function SkipHireOrderPageInner() {
   const router = useRouter();
-  const { token } = useAuth();
+  const searchParams = useSearchParams();
+  const { token, user } = useAuth();
 
   const [step, setStep] = useState(1);
   const [confirmedOrder, setConfirmedOrder] = useState<SkipHireOrder | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  const [size, setSize] = useState('');
-  const [wasteType, setWasteType] = useState('');
-  const [address, setAddress] = useState('');
-  const [lat, setLat] = useState<number>();
-  const [lng, setLng] = useState<number>();
+  // Pre-fill from URL params for "Order Again" and "Intent-first" flows.
+  const [size, setSize] = useState(searchParams.get('size') ?? '');
+  const [wasteType, setWasteType] = useState(searchParams.get('waste') ?? '');
+  const [address, setAddress] = useState(searchParams.get('address') ?? '');
+  const [lat, setLat] = useState<number | undefined>(
+    searchParams.get('lat') ? parseFloat(searchParams.get('lat')!) : undefined,
+  );
+  const [lng, setLng] = useState<number | undefined>(
+    searchParams.get('lng') ? parseFloat(searchParams.get('lng')!) : undefined,
+  );
   const [deliveryDate, setDeliveryDate] = useState('');
   const [hirePeriodDays, setHirePeriodDays] = useState(14);
   const [selectedOfferId, setSelectedOfferId] = useState('');
@@ -53,6 +76,45 @@ export default function SkipHireOrderPage() {
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [notes, setNotes] = useState('');
+  const [contactPrefilled, setContactPrefilled] = useState(false);
+
+  // Material order linking (Stage 2)
+  const [matOrders, setMatOrders] = useState<ApiOrder[]>([]);
+  const [matOrdersLoading, setMatOrdersLoading] = useState(false);
+  const [linkedMaterialOrderId, setLinkedMaterialOrderId] = useState<string | null>(null);
+  const [showMatLink, setShowMatLink] = useState(false);
+
+  // If URL has address pre-filled and step 1 is complete, start at step 2.
+  useEffect(() => {
+    if (searchParams.get('address') && size && wasteType) {
+      setStep(2);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Pre-fill contact from authenticated user profile.
+  useEffect(() => {
+    if (user && !contactPrefilled) {
+      const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+      if (fullName || user.email || user.phone) {
+        setContactName(fullName || '');
+        setContactEmail(user.email || '');
+        setContactPhone(user.phone || '');
+        setContactPrefilled(true);
+      }
+    }
+  }, [user, contactPrefilled]);
+
+  // Load unlinked material orders when user reaches step 4
+  useEffect(() => {
+    if (step !== 4 || !token || matOrders.length > 0) return;
+    setMatOrdersLoading(true);
+    getMyOrders(token)
+      .then((data) => setMatOrders(data.filter((o) => !o.linkedSkipOrder)))
+      .catch(() => {})
+      .finally(() => setMatOrdersLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, token]);
 
   // Map refs
   const mapDivRef = useRef<HTMLDivElement>(null);
@@ -195,6 +257,14 @@ export default function SkipHireOrderPage() {
         },
         token,
       );
+      // Link to material order if one was selected
+      if (linkedMaterialOrderId) {
+        try {
+          await linkSkipOrder(linkedMaterialOrderId, result.id, token);
+        } catch {
+          // Non-fatal — skip order is created, linking failed silently
+        }
+      }
       setConfirmedOrder(result);
     } catch (err) {
       setSubmitError(
@@ -214,6 +284,10 @@ export default function SkipHireOrderPage() {
     setDeliveryDate('');
     setSelectedOfferId('');
     setSelectedOffer(null);
+    setContactPrefilled(false); // re-triggers pre-fill from user
+    setLinkedMaterialOrderId(null);
+    setMatOrders([]);
+    setShowMatLink(false);
   };
 
   if (confirmedOrder) {
@@ -340,7 +414,86 @@ export default function SkipHireOrderPage() {
             )}
 
             {step === 4 && (
-              <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
+              <div className="animate-in fade-in slide-in-from-bottom-2 pb-6 space-y-4">
+                {/* Link to material order */}
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowMatLink((v) => !v)}
+                    className="w-full flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                  >
+                    <Link2 className="h-4 w-4 shrink-0" />
+                    <span className="flex-1 text-left">
+                      {linkedMaterialOrderId
+                        ? `Saistīts: #${matOrders.find((o) => o.id === linkedMaterialOrderId)?.orderNumber ?? '...'}`
+                        : 'Saistīt ar materiālu pasūtījumu (neobligāti)'}
+                    </span>
+                    {showMatLink ? (
+                      <ChevronUp className="h-4 w-4 shrink-0" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 shrink-0" />
+                    )}
+                  </button>
+
+                  {showMatLink && (
+                    <div className="rounded-xl border border-border overflow-hidden">
+                      {matOrdersLoading ? (
+                        <div className="p-4 text-sm text-center text-muted-foreground">
+                          Ielādē...
+                        </div>
+                      ) : matOrders.length === 0 ? (
+                        <div className="p-4 text-sm text-center text-muted-foreground">
+                          Nav aktīvu materiālu pasūtījumu
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-border">
+                          {linkedMaterialOrderId && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLinkedMaterialOrderId(null);
+                                setShowMatLink(false);
+                              }}
+                              className="w-full px-4 py-3 text-left text-sm text-muted-foreground hover:bg-muted/40 transition-colors"
+                            >
+                              Noņemt saiti
+                            </button>
+                          )}
+                          {matOrders.map((o) => {
+                            const selected = o.id === linkedMaterialOrderId;
+                            const name = o.items?.[0]?.material?.name ?? '—';
+                            return (
+                              <button
+                                key={o.id}
+                                type="button"
+                                onClick={() => {
+                                  setLinkedMaterialOrderId(o.id);
+                                  setShowMatLink(false);
+                                }}
+                                className={`w-full px-4 py-3 text-left text-sm flex items-center justify-between transition-colors ${
+                                  selected
+                                    ? 'bg-emerald-600 text-white'
+                                    : 'hover:bg-muted/40 text-foreground'
+                                }`}
+                              >
+                                <div>
+                                  <span className="font-semibold">#{o.orderNumber}</span>
+                                  <span
+                                    className={`ml-2 ${selected ? 'text-emerald-100' : 'text-muted-foreground'}`}
+                                  >
+                                    {name}
+                                  </span>
+                                </div>
+                                {selected && <span className="text-xs font-bold">✓</span>}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <Step4ContactForm
                   name={contactName}
                   email={contactEmail}
@@ -365,6 +518,7 @@ export default function SkipHireOrderPage() {
                   onBack={() => setStep(3)}
                   submitting={submitting}
                   error={submitError}
+                  preFilledFromProfile={contactPrefilled}
                 />
               </div>
             )}
@@ -390,5 +544,13 @@ export default function SkipHireOrderPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SkipHireOrderPage() {
+  return (
+    <Suspense>
+      <SkipHireOrderPageInner />
+    </Suspense>
   );
 }

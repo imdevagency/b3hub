@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
-import { HardHat, Package, Trash2, Truck } from 'lucide-react-native';
+import { HardHat, Package, Trash2, Truck, FileText } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { haptics } from '@/lib/haptics';
@@ -9,7 +9,6 @@ import { haptics } from '@/lib/haptics';
 // ── Service definitions ────────────────────────────────────────────────────
 
 const { width } = Dimensions.get('window');
-// Screen width minus padding (16*2=32) minus gap (16) divided by 2 items per row
 const cardWidth = (width - 48) / 2;
 
 const SERVICES = [
@@ -17,25 +16,36 @@ const SERVICES = [
     id: 'materials',
     icon: HardHat,
     label: 'Materiāli',
+    sub: 'Smiltis, grants, šķembas, betona izstrādājumi',
     route: '/(buyer)/catalog',
   },
   {
     id: 'container',
     icon: Package,
     label: 'Konteineri',
+    sub: 'Konteiners uz vietas — jūs piepildāt, mēs aizvedām',
     route: '/order',
   },
   {
     id: 'disposal',
     icon: Trash2,
     label: 'Utilizācija',
+    sub: 'Kravas auto iebrauc, iekrauj un aizved atkritumus',
     route: '/disposal',
   },
   {
     id: 'freight',
     icon: Truck,
     label: 'Transports',
+    sub: 'Kravu pārvadāšana no A uz B',
     route: '/transport',
+  },
+  {
+    id: 'rfq',
+    icon: FileText,
+    label: 'Cenu aptauja',
+    sub: 'Aprakstiet vajadzību — piegādātāji piedāvā cenu',
+    route: '/order-request-new',
   },
 ] as const;
 
@@ -46,7 +56,7 @@ export default function NewOrderScreen() {
 
   return (
     <ScreenContainer standalone bg="#ffffff">
-      <ScreenHeader title="Jauns pasūtījums" />
+      <ScreenHeader title="Jauns pasūtījums" onBack={null} />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 32 }}
@@ -62,7 +72,7 @@ export default function NewOrderScreen() {
                 activeOpacity={0.7}
                 style={{
                   width: cardWidth,
-                  aspectRatio: 1, // Make them perfect squares
+                  minHeight: cardWidth * 1.1,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.08,
@@ -76,15 +86,24 @@ export default function NewOrderScreen() {
                   router.push(svc.route as any);
                 }}
               >
-                <Text
-                  className="text-text-primary text-lg font-semibold tracking-tight"
-                  style={{ fontFamily: 'Inter_600SemiBold' }}
-                >
-                  {svc.label}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    className="text-text-primary text-base font-semibold tracking-tight"
+                    style={{ fontFamily: 'Inter_600SemiBold' }}
+                  >
+                    {svc.label}
+                  </Text>
+                  <Text
+                    className="text-text-muted text-xs mt-1 leading-4"
+                    style={{ fontFamily: 'Inter_400Regular' }}
+                    numberOfLines={3}
+                  >
+                    {svc.sub}
+                  </Text>
+                </View>
 
-                <View className="self-end mt-auto bg-subtle p-3 rounded-full">
-                  <Icon size={32} color="#111827" strokeWidth={1.5} />
+                <View className="self-end mt-3 bg-subtle p-3 rounded-full">
+                  <Icon size={28} color="#111827" strokeWidth={1.5} />
                 </View>
               </TouchableOpacity>
             );

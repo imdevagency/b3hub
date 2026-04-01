@@ -32,15 +32,12 @@ applyTo: 'apps/mobile/**'
 
 ### Buyer — `(buyer)/_layout.tsx`
 
-| #   | Tab name              | Route     | Icon            | Badge         |
-| --- | --------------------- | --------- | --------------- | ------------- |
-| 1   | Sākums (Home)         | `home`    | `Home`          | —             |
-| 2   | Aktivitāte (Activity) | `orders`  | `ClipboardList` | `unreadCount` |
-| 3   | Konts (Account)       | `profile` | `User`          | —             |
-
-**Sidebar overflow (hamburger):** Catalog, Projects, Invoices, Certificates, Team, Framework Contracts, RFQ, Skip Hire orders. These are secondary — correct to keep out of tabs.
-
-**Gap:** Only 3 tabs. Could add a 4th **"Pasūtīt" (Order)** tab pointing to the primary order wizard — high-frequency action currently buried.
+| #   | Tab name              | Route       | Icon            | Badge         |
+| --- | --------------------- | ----------- | --------------- | ------------- |
+| 1   | Sākums (Home)         | `home`      | `Home`          | —             |
+| 2   | Aktivitāte (Activity) | `orders`    | `ClipboardList` | `unreadCount` |
+| 3   | Pasūtīt (Order)       | `new-order` | `ShoppingCart`  | —             |
+| 4   | Profils (Profile)     | `profile`   | `User`          | —             |
 
 ---
 
@@ -53,8 +50,6 @@ applyTo: 'apps/mobile/**'
 | 3   | Katalogs (Catalog)   | `catalog`  | `LayoutGrid` | —     |
 | 4   | Ienākumi (Earnings)  | `earnings` | `Wallet`     | —     |
 | 5   | Profils (Profile)    | `profile`  | `User`       | —     |
-
-**Note:** Quotes (`quotes`) is `href: null` — accessible only via deep link from incoming orders. Consider adding unread badge to Incoming tab to replace the need for a Quotes tab.
 
 ---
 

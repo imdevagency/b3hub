@@ -40,6 +40,8 @@ import { PaymentsModule } from './payments/payments.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ProjectsModule } from './projects/projects.module';
 import { UpdatesModule } from './updates/updates.module';
+import { HealthModule } from './health/health.module';
+import { SavedAddressesModule } from './saved-addresses/saved-addresses.module';
 
 @Module({
   imports: [
@@ -86,6 +88,8 @@ import { UpdatesModule } from './updates/updates.module';
     AnalyticsModule,
     ProjectsModule,
     UpdatesModule,
+    HealthModule,
+    SavedAddressesModule,
   ],
   controllers: [AppController],
   providers: [

@@ -19,6 +19,7 @@ export * from './documents';
 export * from './chat';
 export * from './containers';
 export * from './payments';
+export * from './saved-addresses';
 
 export * from './company';
 export * from './projects';
@@ -40,6 +41,7 @@ import { containersApi } from './containers';
 import { companyApi } from './company';
 import { paymentsApi } from './payments';
 import { projectsApi } from './projects';
+import { savedAddressesApi } from './saved-addresses';
 
 // ─── Assembled api object ─────────────────────────────────────────────────
 /**
@@ -84,4 +86,7 @@ export const api = {
 
   // ── Projects ─────────────────────────────────────────────────────────
   ...projectsApi,
+
+  // ── Saved addresses ──────────────────────────────────────────────────
+  ...savedAddressesApi,
 };

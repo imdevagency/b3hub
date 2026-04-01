@@ -14,6 +14,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import {
   Plus,
   Package,
+  HardHat,
   Truck,
   FileText,
   Clock,
@@ -22,6 +23,7 @@ import {
   Trash2,
   Calendar,
   AlertCircle,
+  Link2,
 } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { lv } from 'date-fns/locale';
@@ -55,6 +57,8 @@ export default function OrdersScreen() {
         return <MaterialOrderCard order={item.data} />;
       case 'transport':
         return <TransportRequestCard req={item.data} />;
+      case 'disposal':
+        return <DisposalOrderCard req={item.data} />;
       case 'rfq':
         return <RfqCard rfq={item.data} />;
       case 'skip':
@@ -69,7 +73,8 @@ export default function OrdersScreen() {
       {/* ── Header ───────────────────────────────────────────── */}
       <ScreenHeader
         title="Pasūtījumi"
-        rightAction={
+        onBack={null}
+        right={
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={handleNewOrder}
@@ -167,7 +172,7 @@ export default function OrdersScreen() {
             activeOpacity={0.7}
           >
             <View style={s.uberIconBox}>
-              <Package size={28} color="#111827" strokeWidth={1.5} />
+              <HardHat size={28} color="#111827" strokeWidth={1.5} />
             </View>
             <View style={s.sheetText}>
               <Text style={s.uberOptionTitle}>Materiāli</Text>
@@ -179,16 +184,16 @@ export default function OrdersScreen() {
             style={s.sheetOption}
             onPress={() => {
               setShowTypePicker(false);
-              router.push('/(buyer)/skip-order/new');
+              router.push('/order');
             }}
             activeOpacity={0.7}
           >
             <View style={s.uberIconBox}>
-              <Trash2 size={28} color="#111827" strokeWidth={1.5} />
+              <Package size={28} color="#111827" strokeWidth={1.5} />
             </View>
             <View style={s.sheetText}>
               <Text style={s.uberOptionTitle}>Konteiners</Text>
-              <Text style={s.uberOptionDesc}>Būvgružu izvešana</Text>
+              <Text style={s.uberOptionDesc}>Konteiners uz vietas (noma)</Text>
             </View>
           </TouchableOpacity>
 
@@ -196,7 +201,24 @@ export default function OrdersScreen() {
             style={s.sheetOption}
             onPress={() => {
               setShowTypePicker(false);
-              router.push('/(buyer)/rfq/new');
+              router.push('/disposal');
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={s.uberIconBox}>
+              <Trash2 size={28} color="#111827" strokeWidth={1.5} />
+            </View>
+            <View style={s.sheetText}>
+              <Text style={s.uberOptionTitle}>Utilizācija</Text>
+              <Text style={s.uberOptionDesc}>Atkritumu izvešana no objekta</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={s.sheetOption}
+            onPress={() => {
+              setShowTypePicker(false);
+              router.push('/order-request-new');
             }}
             activeOpacity={0.7}
           >
@@ -213,7 +235,7 @@ export default function OrdersScreen() {
             style={s.sheetOption}
             onPress={() => {
               setShowTypePicker(false);
-              router.push('/(buyer)/transport-job/new');
+              router.push('/transport');
             }}
             activeOpacity={0.7}
           >
@@ -314,6 +336,19 @@ function MaterialOrderCard({ order }: { order: any }) {
       <View style={s.cardFooter}>
         <Text style={s.price}>{order.totalAmount != null ? `€${order.totalAmount}` : '—'}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          {order.linkedSkipOrder && (
+            <TouchableOpacity
+              style={s.linkedSkipChip}
+              onPress={(e) => {
+                e.stopPropagation();
+                router.push(`/(buyer)/skip-order/${order.linkedSkipOrder.id}` as any);
+              }}
+              activeOpacity={0.8}
+            >
+              <Link2 size={11} color="#059669" />
+              <Text style={s.linkedSkipChipText}>Konteiners</Text>
+            </TouchableOpacity>
+          )}
           {activeJob && driverName && <Text style={s.driverNameText}>{driverName}</Text>}
           {activeJob && (
             <TouchableOpacity
@@ -331,6 +366,59 @@ function MaterialOrderCard({ order }: { order: any }) {
           <View style={s.chevronBox}>
             <ChevronRight size={18} color="#94a3b8" />
           </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function DisposalOrderCard({ req }: { req: any }) {
+  const router = useRouter();
+  const statusColors = getStatusColors(req.status);
+
+  return (
+    <TouchableOpacity
+      style={s.card}
+      activeOpacity={0.9}
+      onPress={() => router.push(`/(buyer)/transport-job/${req.id}`)}
+    >
+      <View style={s.cardHeader}>
+        <View style={s.typeRow}>
+          <Trash2 size={16} color="#64748b" />
+          <Text style={s.orderId}>Utilizācija</Text>
+        </View>
+        <View style={[s.statusBadge, { backgroundColor: statusColors.bg }]}>
+          <Text style={[s.statusText, { color: statusColors.text }]}>
+            {formatStatus(req.status)}
+          </Text>
+        </View>
+      </View>
+
+      <Text style={s.cardTitle} numberOfLines={2}>
+        {(req.pickupAddress ?? '').split(',')[0] || 'Izvešanas vieta'}
+      </Text>
+
+      <View style={s.cardMeta}>
+        <View style={s.metaItem}>
+          <MapPin size={14} color="#94a3b8" />
+          <Text style={s.metaText} numberOfLines={1}>
+            {req.deliveryAddress || 'Utilizācijas vieta'}
+          </Text>
+        </View>
+        <View style={s.metaItem}>
+          <Calendar size={14} color="#94a3b8" />
+          <Text style={s.metaText}>
+            {req.pickupDate
+              ? format(new Date(req.pickupDate), 'd. MMM', { locale: lv })
+              : 'Pēc vienošanās'}
+          </Text>
+        </View>
+      </View>
+
+      <View style={s.cardFooter}>
+        <Text style={s.price}>{req.rate != null ? `€${req.rate}` : '—'}</Text>
+        <View style={s.chevronBox}>
+          <ChevronRight size={18} color="#94a3b8" />
         </View>
       </View>
     </TouchableOpacity>
@@ -673,6 +761,20 @@ const s = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'Inter_700Bold',
     color: '#ffffff',
+  },
+  linkedSkipChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#d1fae5',
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  linkedSkipChipText: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#059669',
   },
 
   // Empty State

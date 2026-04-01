@@ -1,9 +1,9 @@
 /**
  * Container / Skip-Hire wizard — full-screen step pages.
  *
- * Step order mirrors the web flow (Type → Where → When/Confirm):
- *   Step 1 – Container size  (Step3Size)
- *   Step 2 – Waste type      (Step2WasteType)
+ * Step order mirrors the web flow (waste first, then size):
+ *   Step 1 – Waste type      (SkipWasteStep)
+ *   Step 2 – Container size  (SkipSizeStep)
  *   Step 3 – Delivery address (InlineAddressStep)
  *   Step 4 – Date + Contact + Confirm
  */
@@ -22,19 +22,20 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { MapPin, Camera, Trash2 } from 'lucide-react-native';
+import { MapPin, Camera, Trash2, Link2, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useOrder } from '@/lib/order-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
-import type { SkipSize, SkipWasteCategory } from '@/lib/api';
+import type { SkipSize, SkipWasteCategory, ApiOrder } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { SKIP_PRICES, toISO, addDays } from '@/components/order/skip-hire-types';
-import { Step2WasteType } from '@/components/order/Step2WasteType';
-import { Step3Size } from '@/components/order/Step3Size';
+import { SkipWasteStep } from '@/components/order/SkipWasteStep';
+import { SkipSizeStep } from '@/components/order/SkipSizeStep';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
+import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
 
 // ── Types ─────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
@@ -75,6 +76,12 @@ export default function OrderWizard() {
   const [unloadingPointPhotoUrl, setUnloadingPointPhotoUrl] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
 
+  // ── Material order linking (Stage 2) ─────────────────────────────────
+  const [matOrders, setMatOrders] = useState<ApiOrder[]>([]);
+  const [matOrdersLoading, setMatOrdersLoading] = useState(false);
+  const [linkedMaterialOrderId, setLinkedMaterialOrderId] = useState<string | null>(null);
+  const [showMatLink, setShowMatLink] = useState(false);
+
   // ── Handlers ──────────────────────────────────────────────────
   const handlePickConfirm = useCallback(
     (p: PickedAddress) => {
@@ -100,6 +107,17 @@ export default function OrderWizard() {
     [setSkipSize],
   );
 
+  // Load unlinked material orders when user reaches step 4
+  useEffect(() => {
+    if (step !== 4 || !token || matOrders.length > 0) return;
+    setMatOrdersLoading(true);
+    api.orders
+      .myOrders(token)
+      .then((data) => setMatOrders(data.filter((o) => !o.linkedSkipOrder)))
+      .catch(() => {})
+      .finally(() => setMatOrdersLoading(false));
+  }, [step, token, matOrders.length]);
+
   const goBack = useCallback(() => {
     if (step === 1) {
       if (router.canGoBack()) router.back();
@@ -112,8 +130,8 @@ export default function OrderWizard() {
   const ctaLabel = step === 4 ? `Pasūtīt — €${price}` : 'Turpināt';
 
   const ctaDisabled =
-    (step === 1 && !selectedSize) ||
-    (step === 2 && !selectedWaste) ||
+    (step === 1 && !selectedWaste) ||
+    (step === 2 && !selectedSize) ||
     (step === 3 && !picked) ||
     submitting;
 
@@ -146,6 +164,14 @@ export default function OrderWizard() {
         },
         token ?? undefined,
       );
+      // Link to material order if one was selected
+      if (linkedMaterialOrderId && token) {
+        try {
+          await api.orders.linkSkipOrder(linkedMaterialOrderId, order.id, token);
+        } catch {
+          // Non-fatal: linking failed silently — order is still created
+        }
+      }
       haptics.success();
       setConfirmedOrder(order);
       router.push('/order/confirmation');
@@ -164,6 +190,7 @@ export default function OrderWizard() {
     contactPhone,
     notes,
     unloadingPointPhotoUrl,
+    linkedMaterialOrderId,
     setDeliveryDate,
     setConfirmedOrder,
     router,
@@ -215,10 +242,10 @@ export default function OrderWizard() {
   }, [pickUnloadingPhoto]);
 
   const STEP_TITLES: Record<Step, string> = {
-    1: t.skipHire.step3.title, // "Konteinera izmērs" — size first (matches web step 1)
-    2: t.skipHire.step2.title, // "Atkritumu veids" — waste second (matches web step 1 reveal)
-    3: 'Piegādes adrese', // Address third (matches web step 2 "Adrese")
-    4: 'Apstiprini pasūtījumu', // Confirm last (matches web step 4 "Apstiprināt")
+    1: t.skipHire.step2.title, // "Atkritumu veids" — waste first (matches web step 1)
+    2: t.skipHire.step3.title, // "Konteinera izmērs" — size second (matches web step 1 reveal)
+    3: 'Piegādes adrese',
+    4: 'Apstiprini pasūtījumu',
   };
 
   return (
@@ -237,22 +264,29 @@ export default function OrderWizard() {
         ctaDisabled={ctaDisabled}
         ctaLoading={submitting}
       >
-        {/* ── Step 1: Container size (matches web step 1 — choose container type first) ── */}
+        {/* ── Step 1: Waste type — always shown first (matches web) ── */}
         {step === 1 && (
           <View style={{ flex: 1 }}>
-            <Step3Size selected={selectedSize} onSelect={handleSizeSelect} />
+            <SkipWasteStep selected={selectedWaste} onSelect={handleWasteSelect} />
           </View>
         )}
 
-        {/* ── Step 2: Waste type (matches web step 1 reveal — waste after size) ── */}
+        {/* ── Step 2: Container size — chosen after waste type (matches web) ── */}
         {step === 2 && (
           <View style={{ flex: 1 }}>
-            <Step2WasteType selected={selectedWaste} onSelect={handleWasteSelect} />
+            <SkipSizeStep selected={selectedSize} onSelect={handleSizeSelect} />
           </View>
         )}
 
         {/* ── Step 3: Delivery address (matches web step 2 "Adrese") ── */}
-        {step === 3 && <InlineAddressStep picked={picked} onPick={handlePickConfirm} />}
+        {step === 3 && (
+          <View style={{ flex: 1 }}>
+            <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+              <SavedAddressPicker onPick={handlePickConfirm} currentAddress={picked} />
+            </View>
+            <InlineAddressStep picked={picked} onPick={handlePickConfirm} />
+          </View>
+        )}
 
         {/* ── Step 4: Date + Contact + Confirm (matches web step 4 "Apstiprināt") ── */}
         {step === 4 && (
@@ -378,6 +412,82 @@ export default function OrderWizard() {
                 </TouchableOpacity>
               )}
             </View>
+            {/* ── Link to material order (optional) ── */}
+            <Text style={[s.sectionLabel, { marginTop: 20 }]}>Saistīt ar materiālu pasūtījumu</Text>
+            <TouchableOpacity
+              style={s.matLinkToggle}
+              onPress={() => setShowMatLink((v) => !v)}
+              activeOpacity={0.75}
+            >
+              <Link2 size={14} color="#059669" />
+              <Text style={s.matLinkToggleText}>
+                {linkedMaterialOrderId
+                  ? `Saistīts: #${matOrders.find((o) => o.id === linkedMaterialOrderId)?.orderNumber ?? '...'}`
+                  : 'Izvēlēties pasūtījumu (neobligāti)'}
+              </Text>
+              {showMatLink ? (
+                <ChevronUp size={14} color="#6b7280" />
+              ) : (
+                <ChevronDown size={14} color="#6b7280" />
+              )}
+            </TouchableOpacity>
+
+            {showMatLink && (
+              <View style={s.matOrderList}>
+                {matOrdersLoading ? (
+                  <ActivityIndicator size="small" color="#374151" style={{ margin: 12 }} />
+                ) : matOrders.length === 0 ? (
+                  <Text style={s.matOrderEmpty}>Nav aktīvu materiālu pasūtījumu</Text>
+                ) : (
+                  <>
+                    {linkedMaterialOrderId && (
+                      <TouchableOpacity
+                        style={s.matOrderRow}
+                        onPress={() => setLinkedMaterialOrderId(null)}
+                        activeOpacity={0.75}
+                      >
+                        <Text style={[s.matOrderNum, { color: '#6b7280' }]}>Noņemt saiti</Text>
+                      </TouchableOpacity>
+                    )}
+                    {matOrders.map((o) => {
+                      const selected = o.id === linkedMaterialOrderId;
+                      const name = o.items?.[0]?.material?.name ?? '—';
+                      return (
+                        <TouchableOpacity
+                          key={o.id}
+                          style={[s.matOrderRow, selected && s.matOrderRowActive]}
+                          onPress={() => {
+                            setLinkedMaterialOrderId(o.id);
+                            setShowMatLink(false);
+                          }}
+                          activeOpacity={0.75}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <Text style={[s.matOrderNum, selected && { color: '#fff' }]}>
+                              #{o.orderNumber}
+                            </Text>
+                            <Text
+                              style={[s.matOrderName, selected && { color: '#d1fae5' }]}
+                              numberOfLines={1}
+                            >
+                              {name}
+                            </Text>
+                          </View>
+                          {selected && (
+                            <View style={s.matOrderCheck}>
+                              <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>
+                                ✓
+                              </Text>
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </>
+                )}
+              </View>
+            )}
+
             <View style={{ height: 16 }} />
           </ScrollView>
         )}
@@ -528,6 +638,69 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(17,24,39,0.84)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Mat order linking styles
+  matLinkToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  matLinkToggleText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#059669',
+    fontWeight: '600',
+  },
+  matOrderList: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  matOrderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e5e7eb',
+    backgroundColor: '#fff',
+  },
+  matOrderRowActive: {
+    backgroundColor: '#059669',
+  },
+  matOrderNum: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  matOrderName: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  matOrderEmpty: {
+    fontSize: 13,
+    color: '#9ca3af',
+    textAlign: 'center',
+    padding: 16,
+  },
+  matOrderCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
   },
   successRoot: {
     flex: 1,

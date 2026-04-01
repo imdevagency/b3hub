@@ -46,6 +46,15 @@ export interface ApiOrder {
   }[];
   surcharges?: ApiOrderSurcharge[];
   createdAt: string;
+  linkedSkipOrder?: {
+    id: string;
+    orderNumber: string;
+    skipSize: string;
+    wasteCategory: string;
+    status: string;
+    deliveryDate: string | null;
+    price: number;
+  } | null;
 }
 
 export interface CartOrderItem {
@@ -97,6 +106,18 @@ export async function cancelOrder(id: string, token: string): Promise<ApiOrder> 
   return apiFetch<ApiOrder>(`/orders/${id}/cancel`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function linkSkipOrder(
+  orderId: string,
+  skipHireOrderId: string | null,
+  token: string,
+): Promise<ApiOrder> {
+  return apiFetch<ApiOrder>(`/orders/${orderId}/link-skip`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ skipHireOrderId }),
   });
 }
 

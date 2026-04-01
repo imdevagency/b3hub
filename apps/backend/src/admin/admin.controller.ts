@@ -8,6 +8,13 @@ import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { IsBoolean, IsNumber, IsOptional, Min } from 'class-validator';
+
+class UpdateCompanyDto {
+  @IsOptional() @IsBoolean() verified?: boolean;
+  @IsOptional() @IsBoolean() payoutEnabled?: boolean;
+  @IsOptional() @IsNumber() @Min(0) commissionRate?: number;
+}
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
@@ -30,5 +37,29 @@ export class AdminController {
   @Patch('users/:id')
   updateUser(@Param('id') id: string, @Body() body: UpdateUserDto) {
     return this.service.updateUser(id, body);
+  }
+
+  /** GET /admin/orders — all orders */
+  @Get('orders')
+  getOrders() {
+    return this.service.getOrders();
+  }
+
+  /** GET /admin/jobs — all transport jobs */
+  @Get('jobs')
+  getTransportJobs() {
+    return this.service.getTransportJobs();
+  }
+
+  /** GET /admin/companies — all companies */
+  @Get('companies')
+  getCompanies() {
+    return this.service.getCompanies();
+  }
+
+  /** PATCH /admin/companies/:id — update company flags */
+  @Patch('companies/:id')
+  updateCompany(@Param('id') id: string, @Body() body: UpdateCompanyDto) {
+    return this.service.updateCompany(id, body);
   }
 }

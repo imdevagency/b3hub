@@ -94,8 +94,108 @@ export class AdminService {
     return updatedUser;
   }
 
+  async getOrders() {
+    return this.prisma.order.findMany({
+      select: {
+        id: true,
+        orderNumber: true,
+        orderType: true,
+        status: true,
+        paymentStatus: true,
+        total: true,
+        currency: true,
+        deliveryCity: true,
+        deliveryDate: true,
+        createdAt: true,
+        buyer: {
+          select: { id: true, firstName: true, lastName: true, email: true, company: { select: { id: true, name: true } } },
+        },
+        items: { select: { id: true } },
+        transportJobs: { select: { id: true, status: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+    });
+  }
+
+  async getTransportJobs() {
+    return this.prisma.transportJob.findMany({
+      select: {
+        id: true,
+        jobNumber: true,
+        jobType: true,
+        status: true,
+        cargoType: true,
+        cargoWeight: true,
+        rate: true,
+        currency: true,
+        pickupCity: true,
+        deliveryCity: true,
+        pickupDate: true,
+        deliveryDate: true,
+        createdAt: true,
+        order: { select: { id: true, orderNumber: true } },
+        carrier: { select: { id: true, name: true } },
+        driver: { select: { id: true, firstName: true, lastName: true } },
+        vehicle: { select: { id: true, make: true, model: true, licensePlate: true } },
+        exceptions: { where: { status: 'OPEN' }, select: { id: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+    });
+  }
+
+  async getCompanies() {
+    return this.prisma.company.findMany({
+      select: {
+        id: true,
+        name: true,
+        legalName: true,
+        companyType: true,
+        email: true,
+        phone: true,
+        city: true,
+        country: true,
+        verified: true,
+        payoutEnabled: true,
+        commissionRate: true,
+        createdAt: true,
+        _count: { select: { users: true, orders: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async updateCompany(
+    id: string,
+    data: { verified?: boolean; commissionRate?: number; payoutEnabled?: boolean },
+  ) {
+    const company = await this.prisma.company.findUnique({ where: { id } });
+    if (!company) throw new NotFoundException('Company not found');
+    this.logger.log(`Admin updated company ${id}`);
+    return this.prisma.company.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        name: true,
+        legalName: true,
+        companyType: true,
+        email: true,
+        phone: true,
+        city: true,
+        country: true,
+        verified: true,
+        payoutEnabled: true,
+        commissionRate: true,
+        createdAt: true,
+        _count: { select: { users: true, orders: true } },
+      },
+    });
+  }
+
   async getStats() {
-    const [totalUsers, totalOrders, pendingApplications, activeJobs] =
+    const [totalUsers, totalOrders, pendingApplications, activeJobs, totalCompanies] =
       await Promise.all([
         this.prisma.user.count(),
         this.prisma.order.count(),
@@ -114,7 +214,8 @@ export class AdminService {
             },
           },
         }),
+        this.prisma.company.count(),
       ]);
-    return { totalUsers, totalOrders, pendingApplications, activeJobs };
+    return { totalUsers, totalOrders, pendingApplications, activeJobs, totalCompanies };
   }
 }

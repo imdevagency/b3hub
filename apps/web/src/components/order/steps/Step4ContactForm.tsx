@@ -1,10 +1,13 @@
 /**
  * Step4ContactForm — Order wizard step 4 (contact details).
  * Collects contact name, phone, and any special delivery instructions.
+ * When preFilledFromProfile is true, shows a "pre-filled from profile" badge
+ * and lets the user collapse the contact section.
  */
 'use client';
 
-import { Loader2, MapPin, Package, CalendarDays, Tag } from 'lucide-react';
+import { useState } from 'react';
+import { Loader2, MapPin, Package, CalendarDays, Tag, UserCheck, ChevronDown } from 'lucide-react';
 import { SKIP_SIZES, WASTE_TYPES } from './Step1Container';
 
 interface OrderSummary {
@@ -31,6 +34,8 @@ interface Props extends ContactValues {
   onBack: () => void;
   submitting: boolean;
   error: string;
+  /** When true, shows "pre-filled from your profile" chip and collapses the form by default. */
+  preFilledFromProfile?: boolean;
 }
 
 function fmtDate(iso: string) {
@@ -60,10 +65,14 @@ export function Step4ContactForm({
   onBack,
   submitting,
   error,
+  preFilledFromProfile = false,
 }: Props) {
   const set =
     (k: keyof ContactValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       onChange(k, e.target.value);
+
+  // When contact data is pre-filled from profile, collapse the form by default.
+  const [contactExpanded, setContactExpanded] = useState(!preFilledFromProfile);
 
   const sizeInfo = SKIP_SIZES.find((s) => s.id === summary.size);
   const wasteInfo = WASTE_TYPES.find((w) => w.id === summary.wasteType);
@@ -138,59 +147,87 @@ export function Step4ContactForm({
 
       {/* Contact form */}
       <div className="space-y-3">
-        <p className="text-sm font-semibold text-gray-700">Kontaktinformācija</p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-gray-700">Kontaktinformācija</p>
+          {preFilledFromProfile && (
+            <button
+              type="button"
+              onClick={() => setContactExpanded((v) => !v)}
+              className="flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+            >
+              <UserCheck className="size-3" />
+              No profila
+              <ChevronDown
+                className={`size-3 transition-transform ${contactExpanded ? 'rotate-180' : ''}`}
+              />
+            </button>
+          )}
+        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">
-              Vārds, uzvārds *
-            </label>
-            <input
-              type="text"
-              placeholder="Jānis Bērziņš"
-              value={name}
-              onChange={set('name')}
-              required
-              className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
-            />
+        {!contactExpanded && preFilledFromProfile && (
+          <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800 space-y-0.5">
+            <p className="font-semibold">{name}</p>
+            <p className="text-xs text-emerald-600">
+              {email} · {phone}
+            </p>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Tālrunis *</label>
-            <input
-              type="tel"
-              placeholder="+371 2000 0000"
-              value={phone}
-              onChange={set('phone')}
-              required
-              className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
-            />
+        )}
+
+        {contactExpanded && (
+          <div className="space-y-3 animate-in fade-in slide-in-from-top-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  Vārds, uzvārds *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Jānis Bērziņš"
+                  value={name}
+                  onChange={set('name')}
+                  required
+                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">Tālrunis *</label>
+                <input
+                  type="tel"
+                  placeholder="+371 2000 0000"
+                  value={phone}
+                  onChange={set('phone')}
+                  required
+                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">E-pasts *</label>
+              <input
+                type="email"
+                placeholder="janis@example.lv"
+                value={email}
+                onChange={set('email')}
+                required
+                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                Piezīmes (neobligāts)
+              </label>
+              <textarea
+                rows={2}
+                placeholder="Piekļuves instrukcijas, vārtejas kods, kontaktpersona uz vietas..."
+                value={notes}
+                onChange={set('notes')}
+                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10 resize-none"
+              />
+            </div>
           </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">E-pasts *</label>
-          <input
-            type="email"
-            placeholder="janis@example.lv"
-            value={email}
-            onChange={set('email')}
-            required
-            className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">
-            Piezīmes (neobligāts)
-          </label>
-          <textarea
-            rows={2}
-            placeholder="Piekļuves instrukcijas, vārtejas kods, kontaktpersona uz vietas..."
-            value={notes}
-            onChange={set('notes')}
-            className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10 resize-none"
-          />
-        </div>
+        )}
       </div>
 
       {error && (

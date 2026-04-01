@@ -278,7 +278,7 @@ export default function ProfileScreen() {
 
   return (
     <ScreenContainer standalone bg="white">
-      <ScreenHeader title="Profils" />
+      <ScreenHeader title="Profils" onBack={null} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}

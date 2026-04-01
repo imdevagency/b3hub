@@ -91,19 +91,19 @@ export default function BuyerLayout() {
               href: null,
             }}
           />
-          <Tabs.Screen
-            name="profile"
-            options={{
-              title: t.tabs.account,
-              tabBarIcon: ({ color }) => <User size={22} color={color} />,
-            }}
-          />
           <Tabs.Screen name="order/[id]" options={{ href: null }} />
           <Tabs.Screen
             name="new-order"
             options={{
               title: t.tabs.order,
               tabBarIcon: ({ color }) => <ShoppingCart size={22} color={color} />,
+            }}
+          />
+          <Tabs.Screen
+            name="profile"
+            options={{
+              title: t.tabs.profile,
+              tabBarIcon: ({ color }) => <User size={22} color={color} />,
             }}
           />
           <Tabs.Screen name="skip-order/[id]" options={{ href: null }} />

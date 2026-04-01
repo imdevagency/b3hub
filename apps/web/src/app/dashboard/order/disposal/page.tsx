@@ -39,6 +39,48 @@ const WASTE_TYPES: { id: WasteType; label: string; emoji: string }[] = [
   { id: 'SOIL', label: 'Zeme / Augsne', emoji: '🌱' },
 ];
 
+const VOLUME_PRESETS: {
+  key: string;
+  label: string;
+  sublabel: string;
+  truckType: 'TIPPER_SMALL' | 'TIPPER_LARGE' | 'ARTICULATED_TIPPER';
+  truckCount: number;
+  fromPrice: number;
+}[] = [
+  {
+    key: 'sm',
+    label: 'Neliela',
+    sublabel: '~8 m³ · ~5 t · 1 mašīna',
+    truckType: 'TIPPER_SMALL',
+    truckCount: 1,
+    fromPrice: 89,
+  },
+  {
+    key: 'md',
+    label: 'Vidēja',
+    sublabel: '~12 m³ · ~10 t · 1 mašīna',
+    truckType: 'TIPPER_LARGE',
+    truckCount: 1,
+    fromPrice: 149,
+  },
+  {
+    key: 'lg',
+    label: 'Liela',
+    sublabel: '~18 m³ · ~15 t · smagā tehnika',
+    truckType: 'ARTICULATED_TIPPER',
+    truckCount: 1,
+    fromPrice: 219,
+  },
+  {
+    key: 'xl',
+    label: 'Ļoti liela',
+    sublabel: '~36 m³ · ~26 t · 2 mašīnas',
+    truckType: 'ARTICULATED_TIPPER',
+    truckCount: 2,
+    fromPrice: 399,
+  },
+];
+
 // Default map center: Riga
 const DEFAULT_CENTER = { lat: 56.9496, lng: 24.1052 };
 
@@ -56,7 +98,8 @@ export default function DisposalOrderPage() {
   const [lng, setLng] = useState<number>();
 
   const [wasteType, setWasteType] = useState<WasteType | ''>('');
-  const [truckCount, setTruckCount] = useState<number>(1);
+  const [selectedVolume, setSelectedVolume] = useState<string>('md');
+  const selectedPreset = VOLUME_PRESETS.find((p) => p.key === selectedVolume) ?? VOLUME_PRESETS[1];
 
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
@@ -200,9 +243,9 @@ export default function DisposalOrderPage() {
           pickupLat: lat,
           pickupLng: lng,
           wasteType,
-          truckType: 'TIPPER_LARGE',
-          truckCount,
-          estimatedWeight: 1000 * truckCount,
+          truckType: selectedPreset.truckType,
+          truckCount: selectedPreset.truckCount,
+          estimatedWeight: 1000 * selectedPreset.truckCount,
           requestedDate: new Date(date).toISOString(),
           notes,
           siteContactName: siteContactName || undefined,
@@ -330,29 +373,30 @@ export default function DisposalOrderPage() {
                     ))}
                   </div>
 
-                  <div>
-                    <Label className="text-sm font-semibold">Kravu / Mašīnu skaits</Label>
-                    <div className="flex items-center gap-4 mt-2.5">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="rounded-full"
-                        onClick={() => setTruckCount(Math.max(1, truckCount - 1))}
-                      >
-                        -
-                      </Button>
-                      <span className="text-2xl font-bold w-10 text-center tabular-nums">
-                        {truckCount}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="rounded-full"
-                        onClick={() => setTruckCount(truckCount + 1)}
-                      >
-                        +
-                      </Button>
-                      <span className="text-sm text-muted-foreground">≈ {truckCount * 10}t</span>
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-foreground">Apjoms</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {VOLUME_PRESETS.map((preset) => (
+                        <button
+                          key={preset.key}
+                          type="button"
+                          onClick={() => setSelectedVolume(preset.key)}
+                          className={`flex flex-col gap-0.5 p-3.5 rounded-xl text-left transition-all border-2 ${
+                            selectedVolume === preset.key
+                              ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
+                              : 'border-transparent bg-muted/60 hover:bg-muted'
+                          }`}
+                        >
+                          <span className="font-semibold text-sm">{preset.label}</span>
+                          <span className="text-xs text-muted-foreground">{preset.sublabel}</span>
+                          <span className="text-xs font-semibold text-primary mt-1">
+                            no €{preset.fromPrice}
+                          </span>
+                          {selectedVolume === preset.key && (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-1" />
+                          )}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -412,7 +456,8 @@ export default function DisposalOrderPage() {
                       <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-muted-foreground">Veids:</span>
                       <span className="font-medium">
-                        {WASTE_TYPES.find((t) => t.id === wasteType)?.label} × {truckCount}
+                        {WASTE_TYPES.find((t) => t.id === wasteType)?.label} ·{' '}
+                        {selectedPreset.label}
                       </span>
                     </div>
                   </div>

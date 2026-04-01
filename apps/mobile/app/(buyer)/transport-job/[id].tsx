@@ -23,6 +23,7 @@ import {
   Clock,
   XCircle,
   Navigation,
+  RotateCcw,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -506,7 +507,21 @@ export default function TransportJobDetailScreen() {
               <Text style={s.cancelBtnText}>{cancelling ? 'Atceļ...' : 'Atcelt pasūtījumu'}</Text>
             </TouchableOpacity>
           )}
-
+          {(job.status === 'DELIVERED' || job.status === 'CANCELLED') && (
+            <TouchableOpacity
+              style={s.reorderBtn}
+              onPress={() => {
+                haptics.medium();
+                router.push({
+                  pathname: isDisposal ? '/disposal' : '/transport',
+                });
+              }}
+              activeOpacity={0.85}
+            >
+              <RotateCcw size={16} color="#fff" />
+              <Text style={s.reorderBtnText}>Pasūtīt vēlreiz</Text>
+            </TouchableOpacity>
+          )}
           <View style={{ height: 40 }} />
         </ScrollView>
       )}
@@ -787,4 +802,15 @@ const s = StyleSheet.create({
     borderColor: '#fca5a5',
   },
   cancelBtnText: { fontSize: 15, fontWeight: '600', color: '#b91c1c' },
+  reorderBtn: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#111827',
+    borderRadius: 14,
+    paddingVertical: 14,
+  },
+  reorderBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
 });

@@ -123,6 +123,15 @@ export interface ApiOrder {
       createdAt: string;
     } | null;
   }[];
+  linkedSkipOrder?: {
+    id: string;
+    orderNumber: string;
+    skipSize: string;
+    wasteCategory: string;
+    status: string;
+    deliveryDate: string;
+    price: number;
+  } | null;
   createdAt: string;
 }
 
@@ -183,6 +192,13 @@ export const ordersApi = {
       apiFetch<ApiOrder>(`/orders/${id}/start-loading`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    linkSkipOrder: (orderId: string, skipHireOrderId: string | null, token: string) =>
+      apiFetch<ApiOrder>(`/orders/${orderId}/link-skip`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skipHireOrderId }),
       }),
   },
 };

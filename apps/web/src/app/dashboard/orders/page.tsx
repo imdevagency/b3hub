@@ -31,10 +31,12 @@ import { useMode } from '@/lib/mode-context';
 import {
   ArrowRight,
   CheckCircle,
+  Link2,
   Package,
   Phone,
   Plus,
   RefreshCw,
+  RotateCcw,
   Search,
   Trash2,
   Truck,
@@ -42,6 +44,24 @@ import {
   X,
   Zap,
 } from 'lucide-react';
+
+// ── Order-again helpers ───────────────────────────────────────────────────────
+
+function skipSizeToWizardId(size: string): string {
+  return size.toLowerCase(); // MINI→mini, MIDI→midi, BUILDERS→builders, LARGE→large
+}
+
+function wasteCategoryToWizardId(cat: string): string {
+  const map: Record<string, string> = {
+    MIXED: 'mixed',
+    GREEN_GARDEN: 'green',
+    CONCRETE_RUBBLE: 'rubble',
+    WOOD: 'wood',
+    METAL_SCRAP: 'metal',
+    ELECTRONICS_WEEE: 'electronics',
+  };
+  return map[cat] ?? 'mixed';
+}
 
 function QuickStat({ value, label, alert }: { value: string; label: string; alert?: boolean }) {
   return (
@@ -821,8 +841,8 @@ function BuyerView({ token }: { token: string }) {
                       </div>
                     </div>
 
-                    {/* Financials */}
-                    <div className="flex-1 flex flex-col justify-between pt-4 sm:pt-0">
+                    {/* Financials + Order again */}
+                    <div className="flex-1 flex flex-col justify-between pt-4 sm:pt-0 gap-3">
                       <div className="flex flex-row sm:flex-col justify-between sm:justify-start items-center sm:items-end gap-1">
                         <span className="text-sm text-muted-foreground sm:text-right">Cena</span>
                         <div className="text-lg font-bold tabular-nums">
@@ -832,6 +852,13 @@ function BuyerView({ token }: { token: string }) {
                           </span>
                         </div>
                       </div>
+                      <Link
+                        href={`/dashboard/order/skip-hire?size=${skipSizeToWizardId(o.skipSize)}&waste=${wasteCategoryToWizardId(o.wasteCategory)}`}
+                        className="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-background hover:bg-muted/60 px-3 py-2 text-xs font-semibold text-foreground transition-colors"
+                      >
+                        <RotateCcw className="size-3" />
+                        Pasūtīt vēlreiz
+                      </Link>
                     </div>
                   </div>
                 </div>
@@ -958,6 +985,21 @@ function BuyerView({ token }: { token: string }) {
                     </div>
                   </div>
                 </div>
+
+                {/* Linked skip order badge */}
+                {o.linkedSkipOrder && (
+                  <div className="mt-3 pt-3 border-t border-border/40">
+                    <Link
+                      href={`/dashboard/order/skip-hire?linkedOrderId=${o.linkedSkipOrder.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Link2 className="size-3" />
+                      Konteiners #{o.linkedSkipOrder.orderNumber} ·{' '}
+                      {SKIP_SIZE_LABEL[o.linkedSkipOrder.skipSize] ?? o.linkedSkipOrder.skipSize}
+                    </Link>
+                  </div>
+                )}
               </div>
             );
           })}

@@ -9,7 +9,16 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { getAdminStats, type AdminStats } from '@/lib/api/admin';
-import { Users, ClipboardList, Truck, BarChart3, RefreshCw, ArrowRight } from 'lucide-react';
+import {
+  Users,
+  ClipboardList,
+  Truck,
+  BarChart3,
+  Building2,
+  RefreshCw,
+  ArrowRight,
+  ShieldCheck,
+} from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -82,7 +91,7 @@ export default function AdminOverviewPage() {
     <div className="space-y-6">
       <PageHeader title="Administrācija" description="Pārskats par platformas darbību" />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         <StatCard
           label="Lietotāji"
           value={stats?.totalUsers ?? 0}
@@ -91,16 +100,25 @@ export default function AdminOverviewPage() {
           href="/dashboard/admin/users"
         />
         <StatCard
+          label="Uzņēmumi"
+          value={stats?.totalCompanies ?? 0}
+          icon={Building2}
+          color="bg-indigo-50 text-indigo-700"
+          href="/dashboard/admin/companies"
+        />
+        <StatCard
           label="Pasūtījumi"
           value={stats?.totalOrders ?? 0}
           icon={BarChart3}
           color="bg-purple-50 text-purple-700"
+          href="/dashboard/admin/orders"
         />
         <StatCard
           label="Aktīvie darbi"
           value={stats?.activeJobs ?? 0}
           icon={Truck}
           color="bg-amber-50 text-amber-700"
+          href="/dashboard/admin/jobs"
         />
         <StatCard
           label="Gaidošie pieteikumi"
@@ -111,7 +129,7 @@ export default function AdminOverviewPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Link
           href="/dashboard/admin/users"
           className="flex items-center justify-between bg-white border rounded-2xl p-5 shadow-sm hover:border-gray-300 transition-colors group"
@@ -123,11 +141,41 @@ export default function AdminOverviewPage() {
           <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500" />
         </Link>
         <Link
+          href="/dashboard/admin/companies"
+          className="flex items-center justify-between bg-white border rounded-2xl p-5 shadow-sm hover:border-gray-300 transition-colors group"
+        >
+          <div className="flex items-center gap-3">
+            <Building2 className="h-5 w-5 text-indigo-600" />
+            <span className="font-semibold text-gray-900">Uzņēmumi</span>
+          </div>
+          <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500" />
+        </Link>
+        <Link
+          href="/dashboard/admin/orders"
+          className="flex items-center justify-between bg-white border rounded-2xl p-5 shadow-sm hover:border-gray-300 transition-colors group"
+        >
+          <div className="flex items-center gap-3">
+            <BarChart3 className="h-5 w-5 text-purple-600" />
+            <span className="font-semibold text-gray-900">Visi pasūtījumi</span>
+          </div>
+          <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500" />
+        </Link>
+        <Link
+          href="/dashboard/admin/jobs"
+          className="flex items-center justify-between bg-white border rounded-2xl p-5 shadow-sm hover:border-gray-300 transition-colors group"
+        >
+          <div className="flex items-center gap-3">
+            <Truck className="h-5 w-5 text-amber-600" />
+            <span className="font-semibold text-gray-900">Transporta darbi</span>
+          </div>
+          <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500" />
+        </Link>
+        <Link
           href="/dashboard/admin/applications"
           className="flex items-center justify-between bg-white border rounded-2xl p-5 shadow-sm hover:border-gray-300 transition-colors group"
         >
           <div className="flex items-center gap-3">
-            <ClipboardList className="h-5 w-5 text-primary" />
+            <ShieldCheck className="h-5 w-5 text-primary" />
             <div>
               <span className="font-semibold text-gray-900">Piegādātāju pieteikumi</span>
               {!!stats?.pendingApplications && (

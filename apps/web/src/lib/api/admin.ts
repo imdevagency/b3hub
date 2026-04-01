@@ -142,10 +142,106 @@ export interface AdminStats {
   totalOrders: number;
   pendingApplications: number;
   activeJobs: number;
+  totalCompanies: number;
 }
 
 export async function getAdminStats(token: string): Promise<AdminStats> {
   return apiFetch<AdminStats>('/admin/stats', {
     headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ─── Admin Orders ───────────────────────────────────────────────────────────
+
+export interface AdminOrder {
+  id: string;
+  orderNumber: string;
+  orderType: string;
+  status: string;
+  paymentStatus: string;
+  total: number;
+  currency: string;
+  deliveryCity: string;
+  deliveryDate: string | null;
+  createdAt: string;
+  buyer: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+    company: { id: string; name: string } | null;
+  };
+  items: { id: string }[];
+  transportJobs: { id: string; status: string }[];
+}
+
+export async function adminGetOrders(token: string): Promise<AdminOrder[]> {
+  return apiFetch<AdminOrder[]>('/admin/orders', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ─── Admin Transport Jobs ───────────────────────────────────────────────────
+
+export interface AdminTransportJob {
+  id: string;
+  jobNumber: string;
+  jobType: string;
+  status: string;
+  cargoType: string;
+  cargoWeight: number | null;
+  rate: number;
+  currency: string;
+  pickupCity: string;
+  deliveryCity: string;
+  pickupDate: string;
+  deliveryDate: string;
+  createdAt: string;
+  order: { id: string; orderNumber: string } | null;
+  carrier: { id: string; name: string } | null;
+  driver: { id: string; firstName: string; lastName: string } | null;
+  vehicle: { id: string; make: string; model: string; licensePlate: string } | null;
+  exceptions: { id: string }[];
+}
+
+export async function adminGetTransportJobs(token: string): Promise<AdminTransportJob[]> {
+  return apiFetch<AdminTransportJob[]>('/admin/jobs', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ─── Admin Companies ────────────────────────────────────────────────────────
+
+export interface AdminCompany {
+  id: string;
+  name: string;
+  legalName: string;
+  companyType: string;
+  email: string;
+  phone: string;
+  city: string;
+  country: string;
+  verified: boolean;
+  payoutEnabled: boolean;
+  commissionRate: number;
+  createdAt: string;
+  _count: { users: number; orders: number };
+}
+
+export async function adminGetCompanies(token: string): Promise<AdminCompany[]> {
+  return apiFetch<AdminCompany[]>('/admin/companies', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminUpdateCompany(
+  id: string,
+  data: Partial<{ verified: boolean; payoutEnabled: boolean; commissionRate: number }>,
+  token: string,
+): Promise<AdminCompany> {
+  return apiFetch<AdminCompany>(`/admin/companies/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
   });
 }

@@ -45,6 +45,7 @@ import type { WasteType, DisposalTruckType } from '@/lib/api';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
+import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
 
 // ── Types ─────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
@@ -83,27 +84,18 @@ const VOLUME_PRESETS: Array<{
   fromPrice: number;
 }> = [
   {
-    key: 'xs',
+    key: 'sm',
     label: 'Neliela',
-    sublabel: '~5 m³ / ~4 t',
+    sublabel: '~8 m³ · ~5 t · 1 mašīna',
     icon: Package,
     truckType: 'TIPPER_SMALL',
     truckCount: 1,
     fromPrice: 89,
   },
   {
-    key: 'sm',
-    label: 'Vidēja',
-    sublabel: '~10 m³ / ~8 t',
-    icon: Box,
-    truckType: 'TIPPER_SMALL',
-    truckCount: 1,
-    fromPrice: 89,
-  },
-  {
     key: 'md',
-    label: 'Liela',
-    sublabel: '~18 m³ / ~14 t',
+    label: 'Vidēja',
+    sublabel: '~12 m³ · ~10 t · 1 mašīna',
     icon: Truck,
     truckType: 'TIPPER_LARGE',
     truckCount: 1,
@@ -111,12 +103,21 @@ const VOLUME_PRESETS: Array<{
   },
   {
     key: 'lg',
+    label: 'Liela',
+    sublabel: '~18 m³ · ~15 t · smagā tehnika',
+    icon: Building2,
+    truckType: 'ARTICULATED_TIPPER',
+    truckCount: 1,
+    fromPrice: 219,
+  },
+  {
+    key: 'xl',
     label: 'Ļoti liela',
-    sublabel: '~36 m³ / ~26 t',
+    sublabel: '~36 m³ · ~26 t · 2 mašīnas',
     icon: Building2,
     truckType: 'ARTICULATED_TIPPER',
     truckCount: 2,
-    fromPrice: 219,
+    fromPrice: 399,
   },
 ];
 
@@ -390,7 +391,14 @@ export default function DisposalWizard() {
         )}
 
         {/* ── Step 2: Location ── */}
-        {step === 2 && <InlineAddressStep picked={picked} onPick={handlePickConfirm} />}
+        {step === 2 && (
+          <View style={{ flex: 1 }}>
+            <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+              <SavedAddressPicker onPick={handlePickConfirm} currentAddress={picked} />
+            </View>
+            <InlineAddressStep picked={picked} onPick={handlePickConfirm} />
+          </View>
+        )}
 
         {/* ── Step 3: Volume ── */}
         {step === 3 && (

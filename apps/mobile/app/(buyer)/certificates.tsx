@@ -144,14 +144,16 @@ export default function CertificatesScreen() {
   const [records, setRecords] = useState<ApiWasteRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
+    setError(false);
     try {
       const res = await api.recyclingCenters.myDisposalRecords(token);
       setRecords(res);
     } catch {
-      // silent
+      setError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -171,6 +173,27 @@ export default function CertificatesScreen() {
 
       {loading ? (
         <ActivityIndicator color="#16a34a" style={{ marginTop: 40 }} />
+      ) : error ? (
+        <View style={s.empty}>
+          <ShieldCheck size={52} color="#fca5a5" />
+          <Text style={s.emptyTitle}>Neizdevās ielādēt</Text>
+          <Text style={s.emptyDesc}>Pārbaudiet savienojumu un mēģiniet vēlreiz.</Text>
+          <TouchableOpacity
+            onPress={() => {
+              setLoading(true);
+              load();
+            }}
+            style={{
+              marginTop: 16,
+              paddingHorizontal: 24,
+              paddingVertical: 10,
+              backgroundColor: '#111827',
+              borderRadius: 100,
+            }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>Mēģināt vēlreiz</Text>
+          </TouchableOpacity>
+        </View>
       ) : records.length === 0 ? (
         <View style={s.empty}>
           <ShieldCheck size={52} color="#d1d5db" />

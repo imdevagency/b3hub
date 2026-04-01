@@ -24,6 +24,7 @@ import {
   Star,
   FileText,
   XCircle,
+  RotateCcw,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -296,6 +297,22 @@ export default function SkipOrderDetailScreen() {
           </TouchableOpacity>
         )}
 
+        {(order.status === 'COLLECTED' ||
+          order.status === 'COMPLETED' ||
+          order.status === 'CANCELLED') && (
+          <TouchableOpacity
+            style={s.reorderBtn}
+            onPress={() => {
+              haptics.medium();
+              router.push('/order');
+            }}
+            activeOpacity={0.85}
+          >
+            <RotateCcw size={16} color="#fff" />
+            <Text style={s.reorderBtnText}>Pasūtīt vēlreiz</Text>
+          </TouchableOpacity>
+        )}
+
         <View style={{ height: 32 }} />
       </ScrollView>
 
@@ -412,6 +429,17 @@ const s = StyleSheet.create({
     backgroundColor: '#fff7f7',
   },
   cancelBtnText: { fontSize: 15, fontWeight: '600', color: '#b91c1c' },
+  reorderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#111827',
+    borderRadius: 100,
+    paddingVertical: 16,
+    marginTop: 8,
+  },
+  reorderBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
 
   // ── Timeline ──
   timeline: { paddingLeft: 4, paddingVertical: 4 },

@@ -12,6 +12,7 @@ export type UnifiedOrder =
   | { kind: 'skip'; data: SkipHireOrder; sortDate: number; isActive: boolean }
   | { kind: 'material'; data: ApiOrder; sortDate: number; isActive: boolean }
   | { kind: 'transport'; data: ApiTransportJob; sortDate: number; isActive: boolean }
+  | { kind: 'disposal'; data: ApiTransportJob; sortDate: number; isActive: boolean }
   | { kind: 'rfq'; data: QuoteRequest; sortDate: number; isActive: boolean };
 
 // ── Bucket helpers (exported for use in card components) ──────
@@ -130,7 +131,7 @@ export function useOrders() {
     });
     reqOrders.forEach((o) => {
       list.push({
-        kind: 'transport',
+        kind: o.jobType === 'WASTE_COLLECTION' ? 'disposal' : 'transport',
         data: o,
         sortDate: o.pickupDate ? new Date(o.pickupDate).getTime() : Date.now(),
         isActive: reqBucket(o.status) === 'ACTIVE',
@@ -156,7 +157,7 @@ export function useOrders() {
       const bucket =
         item.kind === 'skip'
           ? skipBucket(item.data.status)
-          : item.kind === 'transport'
+          : item.kind === 'transport' || item.kind === 'disposal'
             ? reqBucket(item.data.status)
             : item.kind === 'rfq'
               ? rfqBucket(item.data.status)
@@ -171,7 +172,7 @@ export function useOrders() {
       const b =
         item.kind === 'skip'
           ? skipBucket(item.data.status)
-          : item.kind === 'transport'
+          : item.kind === 'transport' || item.kind === 'disposal'
             ? reqBucket(item.data.status)
             : item.kind === 'rfq'
               ? rfqBucket(item.data.status)

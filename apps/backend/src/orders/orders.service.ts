@@ -359,6 +359,17 @@ export class OrdersService {
               },
             },
           },
+          linkedSkipOrder: {
+            select: {
+              id: true,
+              orderNumber: true,
+              skipSize: true,
+              wasteCategory: true,
+              status: true,
+              deliveryDate: true,
+              price: true,
+            },
+          },
         },
         orderBy: {
           createdAt: 'desc',
@@ -501,6 +512,18 @@ export class OrdersService {
         },
         invoices: true,
         surcharges: true,
+        linkedSkipOrder: {
+          select: {
+            id: true,
+            orderNumber: true,
+            skipSize: true,
+            wasteCategory: true,
+            status: true,
+            deliveryDate: true,
+            price: true,
+            location: true,
+          },
+        },
       },
     });
 
@@ -1313,5 +1336,56 @@ export class OrdersService {
     }
 
     return this.prisma.orderSurcharge.delete({ where: { id: surchargeId } });
+  }
+
+  /**
+   * Link (or unlink) a SkipHireOrder to a material Order.
+   * Pass skipHireOrderId=null to remove an existing link.
+   */
+  async linkSkipOrder(
+    orderId: string,
+    skipHireOrderId: string | null,
+    currentUser: RequestingUser,
+  ) {
+    const order = await this.findOne(orderId, currentUser);
+
+    // Only the buyer who created the order or an admin may link
+    if (
+      currentUser.userType !== 'ADMIN' &&
+      order.createdById !== currentUser.userId
+    ) {
+      throw new ForbiddenException('Only the order owner or an admin can link a skip hire order');
+    }
+
+    if (skipHireOrderId) {
+      const skip = await this.prisma.skipHireOrder.findUnique({
+        where: { id: skipHireOrderId },
+        select: { id: true, linkedMaterialOrder: { select: { id: true } } },
+      });
+      if (!skip) {
+        throw new NotFoundException(`SkipHireOrder ${skipHireOrderId} not found`);
+      }
+      if (skip.linkedMaterialOrder && skip.linkedMaterialOrder.id !== orderId) {
+        throw new BadRequestException('That skip hire order is already linked to a different material order');
+      }
+    }
+
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: { linkedSkipOrderId: skipHireOrderId },
+      include: {
+        linkedSkipOrder: {
+          select: {
+            id: true,
+            orderNumber: true,
+            skipSize: true,
+            wasteCategory: true,
+            status: true,
+            deliveryDate: true,
+            price: true,
+          },
+        },
+      },
+    });
   }
 }

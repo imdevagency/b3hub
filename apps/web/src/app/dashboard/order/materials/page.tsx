@@ -12,17 +12,27 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
-import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
+import {
+  loadGoogleMapsScript,
+  AddressAutocomplete,
+  type PlaceAddress,
+} from '@/components/ui/AddressAutocomplete';
 import { createCartOrder, type ApiOrder } from '@/lib/api';
 
 import {
   ArrowLeft,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   ClipboardList,
   Layers,
+  Loader2,
   MapPin,
+  Minus,
+  Plus,
   ReceiptText,
+  UserCheck,
+  Zap,
 } from 'lucide-react';
 
 import { MatStep1What, type SelectedItem } from '@/components/order/steps/MatStep1What';
@@ -136,20 +146,248 @@ function MaterialsConfirmation({
   );
 }
 
+// ── Quick checkout (single-pane form used when coming from catalog) ────────────────────────────
+
+interface QuickCheckoutProps {
+  items: SelectedItem[];
+  onItemsChange: (items: SelectedItem[]) => void;
+  address: string;
+  onAddressChange: (v: string) => void;
+  deliveryDate: string;
+  onDeliveryDateChange: (v: string) => void;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  notes: string;
+  onContactChange: (k: 'name' | 'email' | 'phone' | 'notes', v: string) => void;
+  preFilledFromProfile: boolean;
+  onSubmit: () => void;
+  onBack: () => void;
+  submitting: boolean;
+  error: string;
+}
+
+function MaterialsQuickCheckout({
+  items,
+  onItemsChange,
+  address,
+  onAddressChange,
+  deliveryDate,
+  onDeliveryDateChange,
+  contactName,
+  contactEmail,
+  contactPhone,
+  notes,
+  onContactChange,
+  preFilledFromProfile,
+  onSubmit,
+  onBack,
+  submitting,
+  error,
+}: QuickCheckoutProps) {
+  const [contactExpanded, setContactExpanded] = useState(!preFilledFromProfile);
+
+  const subtotal = items.reduce((s, i) => s + i.material.basePrice * i.qty, 0);
+  const total = subtotal * 1.21;
+
+  const canSubmit =
+    address.trim().length > 5 &&
+    items.length > 0 &&
+    contactName.trim().length >= 2 &&
+    contactEmail.includes('@') &&
+    contactPhone.trim().length >= 6;
+
+  function adjustQty(materialId: string, delta: number) {
+    onItemsChange(
+      items
+        .map((i) => (i.material.id === materialId ? { ...i, qty: Math.max(1, i.qty + delta) } : i))
+        .filter((i) => i.qty > 0),
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-xl font-bold text-gray-900">Ātrā pasūtīšana</h2>
+        <p className="text-sm text-gray-500">Aizpildiet visus laukus un apstipriniet</p>
+      </div>
+
+      {/* Materials */}
+      <div className="rounded-2xl border-2 border-gray-100 overflow-hidden">
+        <div className="bg-primary px-4 py-2.5">
+          <p className="text-xs font-bold text-white uppercase tracking-wider">Materiāli</p>
+        </div>
+        <div className="divide-y divide-gray-100">
+          {items.map((item) => (
+            <div key={item.material.id} className="flex items-center gap-3 px-4 py-3">
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-gray-900 truncate">{item.material.name}</p>
+                <p className="text-xs text-gray-500">{item.material.supplier.name}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => adjustQty(item.material.id, -1)}
+                  className="size-7 flex items-center justify-center rounded-lg bg-muted hover:bg-muted/80 transition-colors"
+                >
+                  <Minus className="size-3" />
+                </button>
+                <span className="w-10 text-center text-sm font-semibold tabular-nums">
+                  {item.qty}
+                </span>
+                <button
+                  onClick={() => adjustQty(item.material.id, 1)}
+                  className="size-7 flex items-center justify-center rounded-lg bg-muted hover:bg-muted/80 transition-colors"
+                >
+                  <Plus className="size-3" />
+                </button>
+              </div>
+              <span className="w-20 text-right text-sm font-bold text-primary tabular-nums">
+                €{(item.qty * item.material.basePrice).toFixed(2)}
+              </span>
+            </div>
+          ))}
+          <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 text-sm font-bold">
+            <span className="text-gray-500">Kopā (iekļ. PVN 21%)</span>
+            <span className="text-primary text-base">€{total.toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Address */}
+      <div>
+        <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 mb-1.5">
+          <MapPin className="size-3.5 text-gray-400" /> Piegādes adrese *
+        </label>
+        <AddressAutocomplete
+          value={address}
+          onChange={onAddressChange}
+          onSelect={(p: PlaceAddress) => onAddressChange(p.address + (p.city ? `, ${p.city}` : ''))}
+          placeholder="Ielas nosaukums, mājas nr., pilsēta"
+          required
+        />
+      </div>
+
+      {/* Date */}
+      <div>
+        <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 mb-1.5">
+          <CalendarDays className="size-3.5 text-gray-400" /> Vēlamais piegādes datums
+        </label>
+        <input
+          type="date"
+          value={deliveryDate}
+          onChange={(e) => onDeliveryDateChange(e.target.value)}
+          min={new Date().toISOString().split('T')[0]}
+          className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
+        />
+      </div>
+
+      {/* Contact */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-gray-700">Kontaktinformācija</p>
+          {preFilledFromProfile && (
+            <button
+              type="button"
+              onClick={() => setContactExpanded((v) => !v)}
+              className="flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+            >
+              <UserCheck className="size-3" />
+              No profila
+              <ChevronDown
+                className={`size-3 transition-transform ${contactExpanded ? 'rotate-180' : ''}`}
+              />
+            </button>
+          )}
+        </div>
+        {!contactExpanded && preFilledFromProfile ? (
+          <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800 space-y-0.5">
+            <p className="font-semibold">{contactName}</p>
+            <p className="text-xs text-emerald-600">
+              {contactEmail} · {contactPhone}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="text"
+                placeholder="Vārds, uzvārds *"
+                value={contactName}
+                onChange={(e) => onContactChange('name', e.target.value)}
+                className="rounded-xl border-2 border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-primary"
+              />
+              <input
+                type="tel"
+                placeholder="Tālrunis *"
+                value={contactPhone}
+                onChange={(e) => onContactChange('phone', e.target.value)}
+                className="rounded-xl border-2 border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-primary"
+              />
+            </div>
+            <input
+              type="email"
+              placeholder="E-pasts *"
+              value={contactEmail}
+              onChange={(e) => onContactChange('email', e.target.value)}
+              className="w-full rounded-xl border-2 border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-primary"
+            />
+            <textarea
+              rows={2}
+              placeholder="Piezīmes (piekļuve, vārtejas kods...)"
+              value={notes}
+              onChange={(e) => onContactChange('notes', e.target.value)}
+              className="w-full rounded-xl border-2 border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-primary resize-none"
+            />
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          {error}
+        </p>
+      )}
+
+      <div className="flex gap-3 pt-1">
+        <button
+          onClick={onBack}
+          disabled={submitting}
+          className="flex-1 rounded-2xl border-2 border-gray-200 py-3.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+        >
+          Mainīt materiālus
+        </button>
+        <button
+          onClick={onSubmit}
+          disabled={!canSubmit || submitting}
+          className="flex-2 flex items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-base font-bold text-white shadow-md transition-all hover:bg-primary/90 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
+        >
+          {submitting ? <Loader2 className="size-4 animate-spin" /> : <Zap className="size-4" />}
+          {submitting ? 'Apstrādā...' : 'Pasūtīt'}
+        </button>
+      </div>
+      <p className="text-xs text-center text-gray-400 -mt-2">
+        Pasūtot jūs piekrītat B3Hub lietošanas noteikumiem
+      </p>
+    </div>
+  );
+}
+
 // ── Inner wizard (needs useSearchParams → must be inside Suspense) ────────────
 
 function MaterialsOrderWizard() {
   const searchParams = useSearchParams();
   const initialMaterialId = searchParams.get('materialId') ?? undefined;
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
 
   // ── Wizard state ──────────────────────────────────────────────────────────
   const [step, setStep] = useState(1);
+  const [quickMode] = useState(!!initialMaterialId); // single-pane checkout when coming from catalog
   const [confirmedOrder, setConfirmedOrder] = useState<ApiOrder | null>(null);
   const [confirmedItems, setConfirmedItems] = useState<SelectedItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [contactPrefilled, setContactPrefilled] = useState(false);
 
   // Step 1 — What
   const [items, setItems] = useState<SelectedItem[]>([]);
@@ -181,6 +419,19 @@ function MaterialsOrderWizard() {
   useEffect(() => {
     if (!token) router.push('/');
   }, [token, router]);
+
+  // Pre-fill contact from authenticated user profile.
+  useEffect(() => {
+    if (user && !contactPrefilled) {
+      const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+      if (fullName || user.email || user.phone) {
+        setContactName(fullName || '');
+        setContactEmail(user.email || '');
+        setContactPhone(user.phone || '');
+        setContactPrefilled(true);
+      }
+    }
+  }, [user, contactPrefilled]);
 
   // ── Map init ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -433,7 +684,36 @@ function MaterialsOrderWizard() {
               </div>
             )}
 
-            {step === 2 && (
+            {/* Quick checkout — single pane for catalog deep-links */}
+            {step > 1 && quickMode && (
+              <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
+                <MaterialsQuickCheckout
+                  items={items}
+                  onItemsChange={setItems}
+                  address={address}
+                  onAddressChange={(v) => setAddress(v)}
+                  deliveryDate={deliveryDate}
+                  onDeliveryDateChange={setDeliveryDate}
+                  contactName={contactName}
+                  contactEmail={contactEmail}
+                  contactPhone={contactPhone}
+                  notes={notes}
+                  onContactChange={(k, v) => {
+                    if (k === 'name') setContactName(v);
+                    else if (k === 'email') setContactEmail(v);
+                    else if (k === 'phone') setContactPhone(v);
+                    else if (k === 'notes') setNotes(v);
+                  }}
+                  preFilledFromProfile={contactPrefilled}
+                  onSubmit={handleSubmit}
+                  onBack={() => setStep(1)}
+                  submitting={submitting}
+                  error={submitError}
+                />
+              </div>
+            )}
+
+            {step === 2 && !quickMode && (
               <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
                 <Step2Address
                   value={address}
@@ -447,7 +727,7 @@ function MaterialsOrderWizard() {
               </div>
             )}
 
-            {step === 3 && (
+            {step === 3 && !quickMode && (
               <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
                 <MatStep3When
                   deliveryDate={deliveryDate}
@@ -458,7 +738,7 @@ function MaterialsOrderWizard() {
               </div>
             )}
 
-            {step === 4 && (
+            {step === 4 && !quickMode && (
               <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
                 <MatStep4Who
                   items={items}
@@ -478,6 +758,7 @@ function MaterialsOrderWizard() {
                   onBack={() => setStep(3)}
                   submitting={submitting}
                   error={submitError}
+                  preFilledFromProfile={contactPrefilled}
                 />
               </div>
             )}

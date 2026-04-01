@@ -7,9 +7,7 @@ builder = "DOCKERFILE"
 dockerfilePath = "apps/backend/Dockerfile"
 
 [deploy]
-# No /health endpoint yet — use root to confirm process is alive
-# Once /api/v1/health is added to the backend, change this to "/api/v1/health"
-healthcheckPath = "/"
+healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 60
 restartPolicyType = "on-failure"
 restartPolicyMaxRetries = 3

@@ -378,6 +378,7 @@ model User {
   projects                    Project[]
   reportedTransportExceptions TransportJobException[] @relation("ExceptionReporter")
   resolvedTransportExceptions TransportJobException[] @relation("ExceptionResolver")
+  savedAddresses              SavedAddress[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -554,6 +555,10 @@ model Order {
   // Project association (optional — retrospective tagging)
   project   Project? @relation(fields: [projectId], references: [id])
   projectId String?
+
+  // Combo order — optional link to a skip hire order that delivers/collects the material
+  linkedSkipOrder   SkipHireOrder? @relation("LinkedMaterialOrder", fields: [linkedSkipOrderId], references: [id])
+  linkedSkipOrderId String?        @unique
 
   // Relations
   items           OrderItem[]
@@ -1123,6 +1128,9 @@ model SkipHireOrder {
   lat Float?
   lng Float?
 
+  // Reverse relation — the material order that this skip is linked to (if any)
+  linkedMaterialOrder Order? @relation("LinkedMaterialOrder")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1459,4 +1467,23 @@ model OrderSurcharge {
 
   @@index([orderId])
   @@map("order_surcharges")
+}
+
+model SavedAddress {
+  id    String @id @default(cuid())
+  label String          // e.g. "Mājas", "Objekts 14A", "Noliktava"
+  address  String        // Full formatted address
+  city     String
+  lat      Float?
+  lng      Float?
+  isDefault Boolean     @default(false)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("saved_addresses")
 }

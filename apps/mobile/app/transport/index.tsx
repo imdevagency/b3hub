@@ -27,6 +27,7 @@ import { useRoute } from '@/components/map';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
+import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
 
 // ── Types ─────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
@@ -241,16 +242,28 @@ export default function TransportWizard() {
         ctaLoading={submitting}
       >
         {/* ── Step 1: Pickup ── */}
-        {step === 1 && <InlineAddressStep picked={pickupPicked} onPick={handlePickupConfirm} />}
+        {step === 1 && (
+          <View style={{ flex: 1 }}>
+            <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+              <SavedAddressPicker onPick={handlePickupConfirm} currentAddress={pickupPicked} />
+            </View>
+            <InlineAddressStep picked={pickupPicked} onPick={handlePickupConfirm} />
+          </View>
+        )}
 
         {/* ── Step 2: Dropoff ── */}
         {step === 2 && (
-          <InlineAddressStep
-            picked={dropoffPicked}
-            onPick={handleDropoffConfirm}
-            contextAddress={pickupPicked ?? undefined}
-            contextIcon="from"
-          />
+          <View style={{ flex: 1 }}>
+            <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+              <SavedAddressPicker onPick={handleDropoffConfirm} currentAddress={dropoffPicked} />
+            </View>
+            <InlineAddressStep
+              picked={dropoffPicked}
+              onPick={handleDropoffConfirm}
+              contextAddress={pickupPicked ?? undefined}
+              contextIcon="from"
+            />
+          </View>
         )}
 
         {/* ── Step 3: Vehicle + Cargo ── */}

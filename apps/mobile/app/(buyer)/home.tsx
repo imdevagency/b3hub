@@ -14,7 +14,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiOrder, SkipHireOrder, ApiTransportJob } from '@/lib/api';
-import { HardHat, Trash2, Truck, Package, ChevronRight, Bell, Menu } from 'lucide-react-native';
+import {
+  HardHat,
+  Trash2,
+  Truck,
+  Package,
+  FileText,
+  ChevronRight,
+  Bell,
+  Menu,
+} from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -75,20 +84,26 @@ const SERVICES = [
   {
     id: 'container',
     icon: Package,
-    label: 'Konteineri',
+    label: 'Konteineri (noma)',
     route: '/order',
   },
   {
     id: 'disposal',
     icon: Trash2,
-    label: 'Utilizācija',
+    label: 'Utilizācija (izvešana)',
     route: '/disposal',
   },
   {
-    id: 'freight',
+    id: 'transport',
     icon: Truck,
     label: 'Transports',
     route: '/transport',
+  },
+  {
+    id: 'rfq',
+    icon: FileText,
+    label: 'Cenu aptauja',
+    route: '/order-request-new',
   },
 ];
 
@@ -370,7 +385,15 @@ export default function HomeScreen() {
               <TouchableOpacity
                 key={item.id}
                 style={s.recentRow}
-                onPress={() => router.push(`/(buyer)/order/${item.id}` as any)}
+                onPress={() => {
+                  const route =
+                    item.kind === 'skip'
+                      ? `/(buyer)/skip-order/${item.id}`
+                      : item.kind === 'transport'
+                        ? `/(buyer)/transport-job/${item.id}`
+                        : `/(buyer)/order/${item.id}`;
+                  router.push(route as any);
+                }}
               >
                 <View style={s.recentIconSmall}>
                   <Package size={16} color="#6b7280" />

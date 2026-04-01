@@ -5,7 +5,7 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Package, MapPin, CalendarDays, ClipboardList, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createSkipHireOrder, mapWasteCategory, mapSkipSize, type SkipHireOrder } from '@/lib/api';
@@ -14,6 +14,7 @@ import { Step2Address } from './steps/Step2Address';
 import { Step3DateOffers, type Offer } from './steps/Step3DateOffers';
 import { Step4ContactForm } from './steps/Step4ContactForm';
 import { OrderConfirmation } from './OrderConfirmation';
+import { useAuth } from '@/lib/auth-context';
 
 // ── Steps meta ────────────────────────────────────────────────────────────────
 
@@ -58,14 +59,34 @@ const INITIAL: WizardState = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function OrderWizard({ token }: { token?: string } = {}) {
+export function OrderWizard({ token: tokenProp }: { token?: string } = {}) {
+  const { user, token: authToken } = useAuth();
+  const token = tokenProp ?? authToken ?? undefined;
+
   const [step, setStep] = useState(1);
   const [state, setState] = useState<WizardState>(INITIAL);
+  const [contactPrefilled, setContactPrefilled] = useState(false);
   const [animating, setAnimating] = useState(false);
   const [direction, setDirection] = useState<'fwd' | 'bck'>('fwd');
   const [confirmedOrder, setConfirmedOrder] = useState<SkipHireOrder | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+
+  // Pre-fill contact fields from the authenticated user's profile.
+  useEffect(() => {
+    if (user && !contactPrefilled) {
+      const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+      if (fullName || user.email || user.phone) {
+        setState((s) => ({
+          ...s,
+          contactName: fullName || s.contactName,
+          contactEmail: user.email || s.contactEmail,
+          contactPhone: user.phone || s.contactPhone,
+        }));
+        setContactPrefilled(true);
+      }
+    }
+  }, [user, contactPrefilled]);
 
   function navigate(to: number) {
     if (animating) return;
@@ -125,6 +146,7 @@ export function OrderWizard({ token }: { token?: string } = {}) {
     setState(INITIAL);
     setStep(1);
     setSubmitError('');
+    setContactPrefilled(false); // will re-trigger useEffect to pre-fill from user again
   }
 
   // ── Animation class ───────────────────────────────────────────────────────
@@ -268,6 +290,7 @@ export function OrderWizard({ token }: { token?: string } = {}) {
                 onBack={() => navigate(3)}
                 submitting={submitting}
                 error={submitError}
+                preFilledFromProfile={contactPrefilled}
               />
             )}
           </div>

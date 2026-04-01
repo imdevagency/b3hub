@@ -36,6 +36,7 @@ import {
   Settings,
   ShieldCheck,
   Star,
+  Truck,
   Users,
   X,
 } from 'lucide-react';
@@ -353,6 +354,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         label: 'Lietotāji',
         href: '/dashboard/admin/users',
         icon: Users,
+      });
+      map.set('/dashboard/admin/companies', {
+        label: 'Uzņēmumi',
+        href: '/dashboard/admin/companies',
+        icon: Building2,
+      });
+      map.set('/dashboard/admin/orders', {
+        label: 'Pasūtījumi',
+        href: '/dashboard/admin/orders',
+        icon: ClipboardList,
+      });
+      map.set('/dashboard/admin/jobs', {
+        label: 'Transporta darbi',
+        href: '/dashboard/admin/jobs',
+        icon: Truck,
       });
       map.set('/dashboard/admin/applications', {
         label: 'Pieteikumi',
@@ -689,6 +705,42 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Link href="/dashboard/admin/users">
                     <Users className="size-4 shrink-0" />
                     <span>Lietotāji</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Uzņēmumi"
+                  isActive={pathname === '/dashboard/admin/companies'}
+                >
+                  <Link href="/dashboard/admin/companies">
+                    <Building2 className="size-4 shrink-0" />
+                    <span>Uzņēmumi</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Pasūtījumi"
+                  isActive={pathname === '/dashboard/admin/orders'}
+                >
+                  <Link href="/dashboard/admin/orders">
+                    <ClipboardList className="size-4 shrink-0" />
+                    <span>Pasūtījumi</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Transporta darbi"
+                  isActive={pathname === '/dashboard/admin/jobs'}
+                >
+                  <Link href="/dashboard/admin/jobs">
+                    <Truck className="size-4 shrink-0" />
+                    <span>Transporta darbi</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
