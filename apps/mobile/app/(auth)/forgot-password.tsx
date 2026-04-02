@@ -94,6 +94,7 @@ export default function ForgotPasswordScreen() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
+                  maxLength={100}
                   value={email}
                   onChangeText={setEmail}
                   onSubmitEditing={handleSubmit}

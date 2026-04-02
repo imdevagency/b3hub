@@ -117,8 +117,14 @@ interface PositionDraft {
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 export default function FrameworkContractsScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
+
+  const canManageContracts =
+    user?.companyRole === 'OWNER' ||
+    user?.companyRole === 'MANAGER' ||
+    !!user?.permCreateContracts ||
+    !!user?.permReleaseCallOffs;
 
   const [contracts, setContracts] = useState<ApiFrameworkContract[]>([]);
   const [loading, setLoading] = useState(true);
@@ -355,24 +361,26 @@ export default function FrameworkContractsScreen() {
       <ScreenHeader
         title="Rāmjlīgumi"
         rightAction={
-          <TouchableOpacity
-            onPress={() => {
-              haptics.light();
-              setCreateVisible(true);
-            }}
-            hitSlop={10}
-            activeOpacity={0.6}
-            style={{
-              width: 40,
-              height: 40,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 20,
-              backgroundColor: '#f3f4f6',
-            }}
-          >
-            <Plus size={24} color="#111827" />
-          </TouchableOpacity>
+          canManageContracts ? (
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                setCreateVisible(true);
+              }}
+              hitSlop={10}
+              activeOpacity={0.6}
+              style={{
+                width: 40,
+                height: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 20,
+                backgroundColor: '#f3f4f6',
+              }}
+            >
+              <Plus size={24} color="#111827" />
+            </TouchableOpacity>
+          ) : undefined
         }
       />
       {/**/}
@@ -398,33 +406,35 @@ export default function FrameworkContractsScreen() {
               tintColor="#000"
             />
           }
-          ListEmptyComponent={
+            ListEmptyComponent={
             <EmptyState
               icon={<Package size={42} color="#9ca3af" />}
               title="Nav aktīvu projektu"
               subtitle="Sāciet jaunu projektu, lai veiktu pasūtījumus."
               action={
-                <TouchableOpacity
-                  onPress={() => {
-                    haptics.light();
-                    setCreateVisible(true);
-                  }}
-                  activeOpacity={0.8}
-                  style={{
-                    marginTop: 20,
-                    backgroundColor: '#111827',
-                    paddingHorizontal: 24,
-                    paddingVertical: 14,
-                    borderRadius: 12,
-                    shadowColor: '#000',
-                    shadowOpacity: 0.1,
-                    shadowRadius: 4,
-                  }}
-                >
-                  <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>
-                    Izveidot projektu
-                  </Text>
-                </TouchableOpacity>
+                canManageContracts ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      haptics.light();
+                      setCreateVisible(true);
+                    }}
+                    activeOpacity={0.8}
+                    style={{
+                      marginTop: 20,
+                      backgroundColor: '#111827',
+                      paddingHorizontal: 24,
+                      paddingVertical: 14,
+                      borderRadius: 12,
+                      shadowColor: '#000',
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                    }}
+                  >
+                    <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>
+                      Izveidot projektu
+                    </Text>
+                  </TouchableOpacity>
+                ) : undefined
               }
             />
           }

@@ -18,6 +18,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/text';
 import { colors, spacing, radius, fontSizes } from '@/lib/tokens';
+import { haptics } from '@/lib/haptics';
 
 // ─── Status config ────────────────────────────────────────────────────────
 
@@ -183,7 +184,7 @@ export default function ProjectsScreen() {
         title="Projekti"
         rightAction={
           <TouchableOpacity
-            onPress={() => router.push('/(buyer)/project/new' as any)}
+            onPress={() => { haptics.light(); router.push('/(buyer)/project/new' as any); }}
             style={{
               width: 36,
               height: 36,
@@ -204,7 +205,7 @@ export default function ProjectsScreen() {
         renderItem={({ item }) => (
           <ProjectCard
             project={item}
-            onPress={() => router.push(`/(buyer)/project/${item.id}` as any)}
+            onPress={() => { haptics.light(); router.push(`/(buyer)/project/${item.id}` as any); }}
           />
         )}
         contentContainerStyle={projects.length === 0 ? styles.emptyContainer : styles.list}

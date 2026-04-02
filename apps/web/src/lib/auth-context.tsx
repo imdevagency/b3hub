@@ -48,12 +48,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .then((u) => {
           setUser(normalizeUserModes(u));
           setToken(storedToken);
-          // Ensure cookie is synced for middleware on every page load
-          document.cookie = `b3hub_token=${storedToken}; path=/; max-age=604800; samesite=lax`;
+          // Ensure HttpOnly cookie is synced for middleware on every page load
+          fetch('/api/auth/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: storedToken }),
+          }).catch(() => null);
         })
         .catch(() => {
           localStorage.removeItem('b3hub_token');
-          document.cookie = 'b3hub_token=; path=/; max-age=0';
+          fetch('/api/auth/session', { method: 'DELETE' }).catch(() => null);
         })
         .finally(() => setIsLoading(false));
     } else {
@@ -66,8 +70,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(normalizeUserModes(user));
     setToken(token);
     localStorage.setItem('b3hub_token', token);
-    // Mirror to a cookie so Next.js middleware can gate dashboard routes
-    document.cookie = `b3hub_token=${token}; path=/; max-age=604800; samesite=lax`;
+    // Set HttpOnly cookie via server route so middleware can gate dashboard routes
+    fetch('/api/auth/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    }).catch(() => null);
 
     // Some endpoints return a lightweight user object. Refresh full profile for
     // consistent role-mode switching state.
@@ -80,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setToken(null);
     localStorage.removeItem('b3hub_token');
-    document.cookie = 'b3hub_token=; path=/; max-age=0';
+    fetch('/api/auth/session', { method: 'DELETE' }).catch(() => null);
   };
 
   return (

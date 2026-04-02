@@ -102,13 +102,24 @@ export class ProviderApplicationsService {
 
     // If linked to a user, grant capabilities and set OWNER role
     if (app.userId) {
+      // Fetch user to check if they already have a companyId
+      const linkedUser = await this.prisma.user.findUnique({
+        where: { id: app.userId },
+        select: { companyId: true },
+      });
+
       await this.prisma.user.update({
         where: { id: app.userId },
         data: {
           ...(app.appliesForSell && { canSell: true }),
           ...(app.appliesForTransport && { canTransport: true }),
-          // First person to be approved for a company is its owner
-          companyRole: 'OWNER',
+          // Only promote to OWNER when the user is already tied to a company.
+          // Without a companyId, setting companyRole produces an inconsistent state
+          // (OWNER with no company). The admin onboarding flow should create the
+          // Company record separately and link it before or after approval.
+          ...(linkedUser?.companyId && { companyRole: 'OWNER' }),
+          // Bump tokenVersion so any in-flight JWT is invalidated on next request.
+          tokenVersion: { increment: 1 },
         },
       });
     }

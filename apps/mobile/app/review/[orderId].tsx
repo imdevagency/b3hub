@@ -29,6 +29,7 @@ import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { colors, spacing, radius, shadows, fontSizes } from '@/lib/theme';
 import { Star, CheckCircle } from 'lucide-react-native';
+import { SkeletonDetail } from '@/components/ui/Skeleton';
 
 // ─── Star row ─────────────────────────────────────────────────────────────
 
@@ -144,9 +145,7 @@ export default function ReviewScreen() {
           showsVerticalScrollIndicator={false}
         >
           {checking ? (
-            <View style={s.center}>
-              <ActivityIndicator size="large" color={colors.primary} />
-            </View>
+            <SkeletonDetail />
           ) : done ? (
             /* ── Success state ──────────────────────────────────── */
             <View style={s.successWrap}>

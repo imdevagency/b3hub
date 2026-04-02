@@ -20,10 +20,13 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 
-function canViewFinancials(_user: RequestingUser): boolean {
-  // All authenticated buyers can view and manage their own invoices.
-  // The service layer (buyerAccess) scopes results to the user's own orders only.
-  return true;
+function canViewFinancials(user: RequestingUser): boolean {
+  // Company OWNERs and MANAGERs always have financial access.
+  // Other company members require the explicit permViewFinancials flag.
+  // Solo users (no company) always have access to their own invoices.
+  if (!user.companyId) return true;
+  if (user.companyRole === 'OWNER' || user.companyRole === 'MANAGER') return true;
+  return user.permViewFinancials === true;
 }
 
 @Controller('invoices')

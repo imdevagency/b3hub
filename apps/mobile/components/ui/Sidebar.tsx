@@ -51,8 +51,17 @@ interface MenuItem {
   route: string;
 }
 
-function buildItems(role: Role, isCompany: boolean): MenuItem[] {
+interface BuildItemsUser {
+  isCompany?: boolean;
+  companyRole?: string;
+  permCreateContracts?: boolean;
+  permReleaseCallOffs?: boolean;
+  canSkipHire?: boolean;
+}
+
+function buildItems(role: Role, user: BuildItemsUser | null | undefined): MenuItem[] {
   const items: MenuItem[] = [];
+  const isCompany = user?.isCompany ?? false;
 
   if (role === 'seller') {
     items.push({
@@ -63,11 +72,13 @@ function buildItems(role: Role, isCompany: boolean): MenuItem[] {
   }
 
   if (role === 'driver') {
-    items.push({
-      icon: (c) => <Trash2 size={20} color={c} />,
-      label: 'Konteineri',
-      route: '/(driver)/skips',
-    });
+    if (user?.canSkipHire) {
+      items.push({
+        icon: (c) => <Trash2 size={20} color={c} />,
+        label: 'Konteineri',
+        route: '/(driver)/skips',
+      });
+    }
     items.push({
       icon: (c) => <Truck size={20} color={c} />,
       label: 'Transportlīdzekļi',
@@ -87,21 +98,33 @@ function buildItems(role: Role, isCompany: boolean): MenuItem[] {
         route: '/(buyer)/team',
       });
     }
-    items.push({
-      icon: (c) => <FileText size={20} color={c} />,
-      label: 'Projekti',
-      route: '/(buyer)/framework-contracts',
-    });
+    // Framework contracts: company members with contract management access
+    const canViewContracts =
+      isCompany &&
+      (user?.companyRole === 'OWNER' ||
+        user?.companyRole === 'MANAGER' ||
+        !!user?.permCreateContracts ||
+        !!user?.permReleaseCallOffs);
+    if (canViewContracts) {
+      items.push({
+        icon: (c) => <FileText size={20} color={c} />,
+        label: 'Projekti',
+        route: '/(buyer)/framework-contracts',
+      });
+    }
     items.push({
       icon: (c) => <Receipt size={20} color={c} />,
       label: 'Rēķini',
       route: '/(buyer)/invoices',
     });
-    items.push({
-      icon: (c) => <ShieldCheck size={20} color={c} />,
-      label: 'Sertifikāti',
-      route: '/(buyer)/certificates',
-    });
+    // Certificates: only for skip-hire operators
+    if (user?.canSkipHire) {
+      items.push({
+        icon: (c) => <ShieldCheck size={20} color={c} />,
+        label: 'Sertifikāti',
+        route: '/(buyer)/certificates',
+      });
+    }
   }
 
   items.push({
@@ -128,7 +151,7 @@ export function Sidebar({ visible, onClose, role, accentColor }: SidebarProps) {
 
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase();
   const fullName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
-  const items = buildItems(role, user?.isCompany ?? false);
+  const items = buildItems(role, user);
 
   useEffect(() => {
     if (visible) {

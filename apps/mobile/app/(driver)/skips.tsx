@@ -417,7 +417,7 @@ function SkipsMapView({ orders, onStatusUpdate, updatingId }: MapViewProps) {
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function CarrierSkipsScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [orders, setOrders] = useState<SkipHireOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -475,6 +475,19 @@ export default function CarrierSkipsScreen() {
 
   const toDeliver = orders.filter((o) => o.status === 'CONFIRMED');
   const toCollect = orders.filter((o) => o.status === 'DELIVERED');
+
+  if (!user?.canSkipHire) {
+    return (
+      <ScreenContainer standalone bg="#f2f2f7">
+        <ScreenHeader title={cs.title} />
+        <EmptyState
+          icon={<Trash2 size={42} color="#9ca3af" />}
+          title="Nav pieejams"
+          subtitle="Konteineru pārvaldība ir pieejama tikai apstiprinātu operatoru kontiem."
+        />
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer standalone bg="#f2f2f7">

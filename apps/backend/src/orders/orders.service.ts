@@ -45,12 +45,10 @@ export class OrdersService {
     [OrderStatus.CONFIRMED]: [
       OrderStatus.IN_PROGRESS,
       OrderStatus.DELIVERED,
-      OrderStatus.COMPLETED,
       OrderStatus.CANCELLED,
     ],
     [OrderStatus.IN_PROGRESS]: [
       OrderStatus.DELIVERED,
-      OrderStatus.COMPLETED,
       OrderStatus.CANCELLED,
     ],
     [OrderStatus.DELIVERED]: [OrderStatus.COMPLETED],
@@ -90,6 +88,16 @@ export class OrdersService {
       throw new BadRequestException(
         'Material orders require a buyer company linked to the authenticated user',
       );
+    }
+
+    // Delivery date must not be in the past
+    if (orderData.deliveryDate) {
+      const deliveryDate = new Date(orderData.deliveryDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (deliveryDate < today) {
+        throw new BadRequestException('Delivery date must be today or in the future');
+      }
     }
 
     // ── Enrich items and group by supplier ────────────────────────────────────
@@ -145,7 +153,7 @@ export class OrdersService {
           where: { userId },
           data: { creditUsed: { increment: grandTotal } },
         })
-        .catch(() => null);
+        .catch((err) => this.logger.error(`Failed to increment creditUsed for buyer ${userId}`, err));
     }
 
     // ── Create one order per supplier ─────────────────────────────────────────
@@ -595,7 +603,10 @@ export class OrdersService {
   async updateStatus(id: string, status: OrderStatus) {
     const order = await this.prisma.order.findUnique({
       where: { id },
-      include: { invoices: { select: { id: true } } },
+      include: {
+        invoices: { select: { id: true } },
+        createdBy: { select: { email: true, firstName: true, lastName: true } },
+      },
     });
     if (!order) throw new NotFoundException(`Order ${id} not found`);
 
@@ -660,7 +671,7 @@ export class OrdersService {
             where: { userId: order.createdById },
             data: { creditUsed: { decrement: Number(order.total) } },
           })
-          .catch(() => null);
+          .catch((err) => this.logger.error(`Failed to release credit for buyer ${order.createdById} on order cancellation ${id}`, err));
       }
 
       // Cancel all transport jobs for this order that are still in a pre-delivery state
@@ -735,6 +746,20 @@ export class OrdersService {
     // Broadcast real-time status change to subscribed clients (fire-and-forget)
     this.updates.broadcastOrderStatus({ orderId: id, status });
 
+    // Email buyer on key status transitions (fire-and-forget)
+    const buyerEmail = order.createdBy?.email;
+    if (buyerEmail && (['CONFIRMED', 'DELIVERED', 'CANCELLED'] as string[]).includes(status)) {
+      const buyerName = [order.createdBy?.firstName, order.createdBy?.lastName]
+        .filter(Boolean)
+        .join(' ');
+      this.email
+        .sendOrderStatusUpdate(buyerEmail, buyerName, {
+          orderNumber: order.orderNumber,
+          status,
+        })
+        .catch(() => null);
+    }
+
     return updated;
   }
 
@@ -792,6 +817,10 @@ export class OrdersService {
 
   async cancel(id: string, currentUser: RequestingUser) {
     const order = await this.findOne(id, currentUser);
+
+    if (order.status === OrderStatus.CANCELLED) {
+      return order; // Already cancelled — no-op, do NOT decrement credit twice
+    }
 
     if (
       order.status === OrderStatus.DELIVERED ||
@@ -853,7 +882,7 @@ export class OrdersService {
           where: { userId: order.createdById },
           data: { creditUsed: { decrement: Number(order.total) } },
         })
-        .catch(() => null);
+        .catch((err) => this.logger.error(`Failed to release credit for buyer ${order.createdById} on cancel ${id}`, err));
     }
 
     // Notify buyer (if someone else cancelled on their behalf)
@@ -1126,7 +1155,9 @@ export class OrdersService {
         deliveryDate: pickupDate,
         cargoType,
         cargoWeight: totalWeight,
-        rate: orderTotal,
+        // Use the explicit delivery fee as the driver rate; fall back to 0 so
+        // the dispatcher can set the correct rate before dispatching.
+        rate: orderData.deliveryFee ?? 0,
         currency: 'EUR',
         status: TransportJobStatus.AVAILABLE,
       },

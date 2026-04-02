@@ -18,6 +18,7 @@ import { api, type ApiOrder, paymentsApi } from '@/lib/api';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { haptics } from '@/lib/haptics';
+import { useToast } from '@/components/ui/Toast';
 
 // ── Types & helpers ───────────────────────────────────────────────────────
 
@@ -212,6 +213,7 @@ type Period = 'today' | 'week' | 'month';
 export default function SellerEarningsScreen() {
   const { token, user } = useAuth();
   const router = useRouter();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [setupLoading, setSetupLoading] = useState(false);
@@ -236,7 +238,6 @@ export default function SellerEarningsScreen() {
         Alert.alert('Kļūda', 'Neizdevās iegūt saiti.');
       }
     } catch (err: any) {
-      console.error(err);
       Alert.alert('Kļūda', err.message || 'Neizdevās savienoties ar Stripe.');
     } finally {
       setSetupLoading(false);
@@ -257,7 +258,7 @@ export default function SellerEarningsScreen() {
         setHistory(h);
         setDailyChart(dc);
       } catch (e) {
-        // silent fail
+        if (!silent) showToast('Kļūda ielādējot datus', 'error');
       } finally {
         setLoading(false);
         setRefreshing(false);

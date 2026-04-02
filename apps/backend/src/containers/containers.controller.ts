@@ -6,6 +6,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -23,6 +24,16 @@ import { QueryContainersDto } from './dto/query-containers.dto';
 import { CreateContainerOrderDto } from './dto/create-container-order.dto';
 import { UpdateContainerOrderStatusDto } from './dto/update-container-order-status.dto';
 
+/** Asserts the caller is an approved carrier operator. */
+function assertIsCarrier(user: RequestingUser): void {
+  if (!user.canSkipHire && !user.canTransport) {
+    throw new ForbiddenException('Only approved carriers can manage containers');
+  }
+  if (!user.companyId) {
+    throw new ForbiddenException('A linked carrier company is required');
+  }
+}
+
 @Controller('containers')
 @UseGuards(JwtAuthGuard)
 export class ContainersController {
@@ -33,16 +44,14 @@ export class ContainersController {
   /** POST /containers — carrier adds a container to their fleet */
   @Post()
   create(@Body() dto: CreateContainerDto, @CurrentUser() user: RequestingUser) {
-    if (!user.companyId) {
-      return { error: 'Company account required' };
-    }
-    return this.service.create(dto, user.companyId);
+    assertIsCarrier(user);
+    return this.service.create(dto, user.companyId!);
   }
 
   /** GET /containers/mine — carrier sees their own fleet */
   @Get('mine')
   findMine(@CurrentUser() user: RequestingUser) {
-    // companyId is always present for carrier accounts
+    assertIsCarrier(user);
     return this.service.findMine(user.companyId!);
   }
 
@@ -67,6 +76,7 @@ export class ContainersController {
     @Body() dto: UpdateContainerOrderStatusDto,
     @CurrentUser() user: RequestingUser,
   ) {
+    assertIsCarrier(user);
     return this.service.updateOrderStatus(id, dto, user.companyId!);
   }
 
@@ -91,12 +101,14 @@ export class ContainersController {
     @Body() dto: UpdateContainerDto,
     @CurrentUser() user: RequestingUser,
   ) {
+    assertIsCarrier(user);
     return this.service.update(id, dto, user.companyId!);
   }
 
   /** DELETE /containers/:id — carrier removes container */
   @Delete(':id')
   remove(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+    assertIsCarrier(user);
     return this.service.remove(id, user.companyId!);
   }
 

@@ -26,6 +26,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import type { ApiNotification } from '@/lib/api';
+import { haptics } from '@/lib/haptics';
 
 type LucideIcon = React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
 interface TypeInfo {
@@ -109,6 +110,7 @@ function NotifCard({
   const router = useRouter();
 
   const handlePress = () => {
+    haptics.light();
     if (!notif.isRead) onMarkRead(notif.id);
     const path = deepLinkPath(notif);
     if (path) router.push(path as Parameters<typeof router.push>[0]);
@@ -235,6 +237,7 @@ export default function NotificationsScreen() {
   };
 
   const markAllRead = async () => {
+    haptics.light();
     if (!token) return;
     setMarkingAll(true);
     try {

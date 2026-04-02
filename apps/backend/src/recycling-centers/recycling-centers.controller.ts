@@ -6,6 +6,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -23,6 +24,15 @@ import { QueryRecyclingCentersDto } from './dto/query-recycling-centers.dto';
 import { CreateWasteRecordDto } from './dto/create-waste-record.dto';
 import { UpdateWasteRecordDto } from './dto/update-waste-record.dto';
 
+/** Asserts caller is an approved carrier operator (canSkipHire or canTransport). */
+function assertIsCarrierOp(user: RequestingUser): void {
+  if (!user.canSkipHire && !user.canTransport) {
+    throw new ForbiddenException(
+      'Only approved carriers can manage recycling centers',
+    );
+  }
+}
+
 @Controller('recycling-centers')
 @UseGuards(JwtAuthGuard)
 export class RecyclingCentersController {
@@ -36,8 +46,11 @@ export class RecyclingCentersController {
     @Body() dto: CreateRecyclingCenterDto,
     @CurrentUser() user: RequestingUser,
   ) {
-    // companyId is always present for carrier accounts
-    return this.service.create(dto, user.companyId!);
+    assertIsCarrierOp(user);
+    if (!user.companyId) {
+      throw new ForbiddenException('A linked company is required to create a recycling center');
+    }
+    return this.service.create(dto, user.companyId);
   }
 
   /** GET /recycling-centers — public list with optional filters */
@@ -49,7 +62,11 @@ export class RecyclingCentersController {
   /** GET /recycling-centers/mine — carrier's own centers */
   @Get('mine')
   findMine(@CurrentUser() user: RequestingUser) {
-    return this.service.findMine(user.companyId!);
+    assertIsCarrierOp(user);
+    if (!user.companyId) {
+      throw new ForbiddenException('A linked company is required');
+    }
+    return this.service.findMine(user.companyId);
   }
 
   /** GET /recycling-centers/disposal/mine — buyer's disposal records */
@@ -71,13 +88,17 @@ export class RecyclingCentersController {
     @Body() dto: UpdateRecyclingCenterDto,
     @CurrentUser() user: RequestingUser,
   ) {
-    return this.service.update(id, dto, user.companyId!);
+    assertIsCarrierOp(user);
+    if (!user.companyId) throw new ForbiddenException('A linked company is required');
+    return this.service.update(id, dto, user.companyId);
   }
 
   /** DELETE /recycling-centers/:id — carrier deactivates their center */
   @Delete(':id')
   deactivate(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
-    return this.service.deactivate(id, user.companyId!);
+    assertIsCarrierOp(user);
+    if (!user.companyId) throw new ForbiddenException('A linked company is required');
+    return this.service.deactivate(id, user.companyId);
   }
 
   // ── Waste Records ─────────────────────────────────────────────────────────
@@ -89,7 +110,9 @@ export class RecyclingCentersController {
     @Body() dto: CreateWasteRecordDto,
     @CurrentUser() user: RequestingUser,
   ) {
-    return this.service.createWasteRecord(centerId, dto, user.companyId!);
+    assertIsCarrierOp(user);
+    if (!user.companyId) throw new ForbiddenException('A linked company is required');
+    return this.service.createWasteRecord(centerId, dto, user.companyId);
   }
 
   /** GET /recycling-centers/:centerId/waste-records — center's intake history */
@@ -98,7 +121,9 @@ export class RecyclingCentersController {
     @Param('centerId') centerId: string,
     @CurrentUser() user: RequestingUser,
   ) {
-    return this.service.getWasteRecords(centerId, user.companyId!);
+    assertIsCarrierOp(user);
+    if (!user.companyId) throw new ForbiddenException('A linked company is required');
+    return this.service.getWasteRecords(centerId, user.companyId);
   }
 
   /** PATCH /recycling-centers/:centerId/waste-records/:recordId — update processing / add certificate */
@@ -109,11 +134,13 @@ export class RecyclingCentersController {
     @Body() dto: UpdateWasteRecordDto,
     @CurrentUser() user: RequestingUser,
   ) {
+    assertIsCarrierOp(user);
+    if (!user.companyId) throw new ForbiddenException('A linked company is required');
     return this.service.updateWasteRecord(
       centerId,
       recordId,
       dto,
-      user.companyId!,
+      user.companyId,
     );
   }
 }

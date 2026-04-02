@@ -33,6 +33,7 @@ import { lv } from 'date-fns/locale';
 import { useOrders, type FilterKey } from '@/lib/use-orders';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { haptics } from '@/lib/haptics';
 
 export default function OrdersScreen() {
   const router = useRouter();
@@ -50,9 +51,10 @@ export default function OrdersScreen() {
 
   const [showTypePicker, setShowTypePicker] = useState(false);
 
-  const handleFilterChange = (key: FilterKey) => setFilter(key);
+  const handleFilterChange = (key: FilterKey) => { haptics.light(); setFilter(key); };
 
   const handleNewOrder = () => {
+    haptics.light();
     setShowTypePicker(true);
   };
 
@@ -203,6 +205,7 @@ export default function OrdersScreen() {
           <TouchableOpacity
             style={s.sheetOption}
             onPress={() => {
+              haptics.light();
               setShowTypePicker(false);
               router.push('/(buyer)/catalog');
             }}
@@ -220,6 +223,7 @@ export default function OrdersScreen() {
           <TouchableOpacity
             style={s.sheetOption}
             onPress={() => {
+              haptics.light();
               setShowTypePicker(false);
               router.push('/order');
             }}
@@ -237,6 +241,7 @@ export default function OrdersScreen() {
           <TouchableOpacity
             style={s.sheetOption}
             onPress={() => {
+              haptics.light();
               setShowTypePicker(false);
               router.push('/disposal');
             }}
@@ -254,6 +259,7 @@ export default function OrdersScreen() {
           <TouchableOpacity
             style={s.sheetOption}
             onPress={() => {
+              haptics.light();
               setShowTypePicker(false);
               router.push('/order-request-new');
             }}

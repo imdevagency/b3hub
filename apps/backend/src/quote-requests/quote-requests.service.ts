@@ -13,6 +13,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
+import { EmailService } from '../email/email.service';
 import { CreateQuoteRequestDto } from './dto/create-quote-request.dto';
 import { CreateQuoteResponseDto } from './dto/create-quote-response.dto';
 import {
@@ -44,6 +45,7 @@ export class QuoteRequestsService {
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService,
+    private email: EmailService,
   ) {}
 
   // ── Buyer: create request ────────────────────────────────────
@@ -69,7 +71,46 @@ export class QuoteRequestsService {
     this.logger.log(
       `Quote request ${request.requestNumber} created by user ${userId}`,
     );
+
+    // Notify sellers who stock this material category
+    this.notifySellersOfNewRfq(request).catch(() => {});
+
     return request;
+  }
+
+  private async notifySellersOfNewRfq(request: {
+    id: string;
+    requestNumber: string;
+    materialCategory: string;
+    materialName: string | null;
+    quantity: number;
+    unit: string;
+    deliveryCity: string;
+  }) {
+    const sellers = await this.prisma.user.findMany({
+      where: {
+        canSell: true,
+        email: { not: null },
+        company: {
+          materials: { some: { category: request.materialCategory as any, inStock: true } },
+        },
+      },
+      select: { id: true, email: true, firstName: true, lastName: true },
+    });
+
+    for (const seller of sellers) {
+      if (!seller.email) continue;
+      const sellerName = `${seller.firstName ?? ''} ${seller.lastName ?? ''}`.trim();
+      this.email
+        .sendQuoteRequestReceived(seller.email, sellerName, {
+          requestNumber: request.requestNumber,
+          category: request.materialCategory,
+          quantity: request.quantity,
+          unit: request.unit,
+          city: request.deliveryCity,
+        })
+        .catch(() => {});
+    }
   }
 
   // ── Buyer: get single request with responses ─────────────────

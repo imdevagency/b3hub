@@ -18,6 +18,7 @@ import { ApiChatMessage } from '@/lib/api';
 import { useChat } from '@/lib/use-chat';
 import { useState } from 'react';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { haptics } from '@/lib/haptics';
 
 export default function ChatScreen() {
   const { jobId, title } = useLocalSearchParams<{ jobId: string; title?: string }>();
@@ -43,6 +44,7 @@ export default function ChatScreen() {
 
   const handleSend = async () => {
     if (!input.trim() || sending) return;
+    haptics.light();
     const text = input.trim();
     setInput('');
     try {

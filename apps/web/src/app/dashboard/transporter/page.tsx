@@ -115,6 +115,7 @@ export default function TransporterDashboardPage() {
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
+    else if (!isLoading && user && !user.canTransport) router.push('/dashboard');
   }, [user, isLoading, router]);
 
   useEffect(() => {

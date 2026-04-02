@@ -66,6 +66,9 @@ export default function DriverLayout() {
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace('/(auth)/welcome');
+    } else if (!isLoading && user && !user.canTransport) {
+      // User is logged in but not an approved driver — send to buyer home
+      router.replace('/(buyer)/home');
     }
   }, [user, isLoading]);
 

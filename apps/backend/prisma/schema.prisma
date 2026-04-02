@@ -343,6 +343,8 @@ model User {
   refreshTokenExpiry DateTime? // refresh token expiry
   failedLoginAttempts Int       @default(0) // consecutive failed login attempts
   lockedUntil        DateTime? // account locked until this timestamp
+  termsAcceptedAt    DateTime? // timestamp when user accepted T&C / Privacy Policy
+  tokenVersion       Int       @default(0) // incremented on capability/role changes; JWT claims become stale if lower
 
   // Notification preferences
   notifPush         Boolean @default(true)
@@ -416,6 +418,10 @@ model Company {
   stripeConnectId String? // Stripe Connect Express account ID
   commissionRate  Float   @default(10.0) // Platform fee percentage
   payoutEnabled   Boolean @default(false)
+
+  // Geo coordinates (set during onboarding — used for delivery-radius filtering in catalog)
+  lat Float? // WGS-84 latitude of warehouse / base location
+  lng Float? // WGS-84 longitude of warehouse / base location
 
   // Carrier operational area
   serviceRadiusKm Int? // Max km radius from base city for skip-hire jobs (null = no restriction)

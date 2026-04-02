@@ -24,6 +24,7 @@ import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { Camera, Trash2, CheckCircle2, PenLine } from 'lucide-react-native';
+import { haptics } from '@/lib/haptics';
 
 const PAD_HEIGHT = 200;
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -136,6 +137,7 @@ export default function DeliveryProofScreen() {
         },
         token,
       );
+      haptics.success();
       Alert.alert(t.deliveryProof.successTitle, t.deliveryProof.successMessage, [
         { text: 'OK', onPress: () => router.replace('/(driver)/jobs') },
       ]);
@@ -172,6 +174,7 @@ export default function DeliveryProofScreen() {
             placeholder={t.deliveryProof.recipientNamePlaceholder}
             placeholderTextColor="#9ca3af"
             returnKeyType="done"
+            maxLength={100}
           />
         </View>
 
@@ -264,6 +267,7 @@ export default function DeliveryProofScreen() {
             multiline
             numberOfLines={3}
             textAlignVertical="top"
+            maxLength={500}
           />
         </View>
 

@@ -237,7 +237,7 @@ export class PaymentsService {
           include: {
             material: {
               include: {
-                supplier: { select: { id: true, stripeConnectId: true } },
+                supplier: { select: { id: true, stripeConnectId: true, commissionRate: true } },
               },
             },
           },
@@ -260,8 +260,12 @@ export class PaymentsService {
     if (!order) throw new BadRequestException('Order not found');
 
     const totalCents = Math.round(Number(order.total) * 100);
-    const PLATFORM_FEE_PERCENT = 0.05;
-    const platformFeeCents = Math.round(totalCents * PLATFORM_FEE_PERCENT);
+    // Use the highest commissionRate among suppliers on this order, defaulting to 10%
+    const supplierRates = order.items.map(
+      (i) => i.material.supplier.commissionRate ?? 10,
+    );
+    const commissionPct = Math.max(...supplierRates) / 100;
+    const platformFeeCents = Math.round(totalCents * commissionPct);
     const payoutCents = totalCents - platformFeeCents;
 
     // Determine if a driver is involved
@@ -402,13 +406,13 @@ export class PaymentsService {
               where: { orderId },
               data: { status: 'AUTHORIZED' },
             })
-            .catch(() => null);
+            .catch((err) => this.logger.error(`Webhook DB sync failed for payment on order ${orderId}`, err));
           await this.prisma.order
             .update({
               where: { id: orderId },
               data: { paymentStatus: 'AUTHORIZED' },
             })
-            .catch(() => null);
+            .catch((err) => this.logger.error(`Webhook DB sync failed for order ${orderId} paymentStatus AUTHORIZED`, err));
         }
         break;
       }
@@ -422,13 +426,13 @@ export class PaymentsService {
               where: { orderId },
               data: { status: 'CAPTURED' },
             })
-            .catch(() => null);
+            .catch((err) => this.logger.error(`Webhook DB sync failed for payment on order ${orderId}`, err));
           await this.prisma.order
             .update({
               where: { id: orderId },
               data: { paymentStatus: 'CAPTURED' },
             })
-            .catch(() => null);
+            .catch((err) => this.logger.error(`Webhook DB sync failed for order ${orderId} paymentStatus CAPTURED`, err));
         }
         break;
       }
@@ -442,13 +446,13 @@ export class PaymentsService {
               where: { orderId },
               data: { status: 'FAILED' },
             })
-            .catch(() => null);
+            .catch((err) => this.logger.error(`Webhook DB sync failed for payment on order ${orderId}`, err));
           await this.prisma.order
             .update({
               where: { id: orderId },
               data: { paymentStatus: 'FAILED' },
             })
-            .catch(() => null);
+            .catch((err) => this.logger.error(`Webhook DB sync failed for order ${orderId} paymentStatus FAILED`, err));
         }
         break;
       }
@@ -466,13 +470,13 @@ export class PaymentsService {
                 where: { id: payment.id },
                 data: { status: 'REFUNDED' },
               })
-              .catch(() => null);
+              .catch((err) => this.logger.error(`Webhook DB sync failed for payment ${payment.id} REFUNDED`, err));
             await this.prisma.order
               .update({
                 where: { id: payment.orderId },
                 data: { paymentStatus: 'REFUNDED' },
               })
-              .catch(() => null);
+              .catch((err) => this.logger.error(`Webhook DB sync failed for order ${payment.orderId} paymentStatus REFUNDED`, err));
           }
         }
         break;

@@ -11,6 +11,7 @@ import { api } from '@/lib/api';
 import type { ApiChatRoom } from '@/lib/api';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SkeletonJobRow } from '@/components/ui/Skeleton';
+import { haptics } from '@/lib/haptics';
 import { t } from '@/lib/translations';
 import { colors, spacing, radius, shadows } from '@/lib/theme';
 import {
@@ -206,7 +207,8 @@ export default function MessagesScreen() {
           renderItem={({ item }) => (
             <RoomCard
               item={item}
-              onPress={() =>
+              onPress={() => {
+                haptics.light();
                 router.push({
                   pathname: '/chat/[jobId]',
                   params: {
@@ -217,8 +219,8 @@ export default function MessagesScreen() {
                         ? 'Atkritumu izvešana'
                         : 'Kravas pārvadāšana'),
                   },
-                } as any)
-              }
+                } as any);
+              }}
             />
           )}
           refreshControl={

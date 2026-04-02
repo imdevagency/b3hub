@@ -106,6 +106,7 @@ export default function RegisterPage() {
       const payload = {
         ...rest,
         roles: [userType],
+        termsAccepted: true,
       };
       const res = await registerUser(payload);
       setAuth(res.user, res.token);
@@ -119,7 +120,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-white flex flex-col font-sans">
       {/* Absolute Header */}
       <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-10">
-        <a href="http://localhost:3002" className="text-black text-2xl font-bold tracking-tight">
+        <a href={process.env.NEXT_PUBLIC_LANDING_URL || 'https://b3hub.lv'} className="text-black text-2xl font-bold tracking-tight">
           B3Hub
         </a>
         <Link

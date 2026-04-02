@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (1376 lines, 33 models, 34 enums).
+Schema: `apps/backend/prisma/schema.prisma` (1496 lines, 36 models, 36 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -44,6 +44,10 @@ DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL`
 - `MapsModule`
 - `PaymentsModule`
 - `AnalyticsModule`
+- `ProjectsModule`
+- `UpdatesModule`
+- `HealthModule`
+- `SavedAddressesModule`
 
 ---
 
@@ -93,8 +97,10 @@ npm run db:seed           # reseed demo data
 | `NotificationType` | ORDER_CREATED ORDER_CONFIRMED ORDER_CANCELLED ORDER_DELIVERED TRANSPORT_ASSIGNED TRANSPORT_STARTED TRANSPORT_COMPLETED PAYMENT_RECEIVED QUOTE_RECEIVED QUOTE_ACCEPTED SYSTEM_ALERT |
 | `QuoteRequestStatus` | PENDING QUOTED ACCEPTED CANCELLED EXPIRED |
 | `FrameworkContractStatus` | DRAFT ACTIVE COMPLETED EXPIRED CANCELLED |
+| `ProjectStatus` | PLANNING ACTIVE COMPLETED ON_HOLD |
 | `FrameworkPositionType` | MATERIAL_DELIVERY WASTE_DISPOSAL FREIGHT_TRANSPORT |
 | `QuoteResponseStatus` | PENDING ACCEPTED REJECTED EXPIRED |
+| `SurchargeType` | FUEL WAITING_TIME WEEKEND OVERWEIGHT NARROW_ACCESS REMOTE_AREA TOLL OTHER |
 | `DocumentType` | INVOICE WEIGHING_SLIP DELIVERY_PROOF WASTE_CERTIFICATE DELIVERY_NOTE CONTRACT OTHER |
 | `DocumentStatus` | DRAFT ISSUED SIGNED ARCHIVED |
 | `DocumentEntityType` | ORDER INVOICE TRANSPORT_JOB WASTE_RECORD SKIP_HIRE_ORDER FRAMEWORK_CONTRACT FRAMEWORK_POSITION COMPANY PROJECT |
@@ -112,16 +118,16 @@ npm run db:seed           # reseed demo data
 ---
 
 ### User — `@@map("users")`  
-**Fields:** `id`: String @id @default(cuid(), `email`: String? @unique, `phone`: String? @unique, `password`: String, `firstName`: String, `lastName`: String, `avatar`: String?, `isCompany`: Boolean @default(false), `canSell`: Boolean @default(false), `canTransport`: Boolean @default(false), `canSkipHire`: Boolean @default(false), `emailVerified`: Boolean @default(false), `phoneVerified`: Boolean @default(false), `pushToken`: String?, `resetToken`: String?, `resetTokenExpiry`: DateTime?, `refreshToken`: String?, `refreshTokenExpiry`: DateTime?, `notifPush`: Boolean @default(true), `notifOrderUpdates`: Boolean @default(true), `notifJobAlerts`: Boolean @default(true), `notifMarketing`: Boolean @default(false), `permCreateContracts`: Boolean @default(false), `permReleaseCallOffs`: Boolean @default(false), `permManageOrders`: Boolean @default(false), `permViewFinancials`: Boolean @default(false), `permManageTeam`: Boolean @default(false), `companyId`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `email`: String? @unique, `phone`: String? @unique, `password`: String, `firstName`: String, `lastName`: String, `avatar`: String?, `isCompany`: Boolean @default(false), `canSell`: Boolean @default(false), `canTransport`: Boolean @default(false), `canSkipHire`: Boolean @default(false), `emailVerified`: Boolean @default(false), `phoneVerified`: Boolean @default(false), `pushToken`: String?, `resetToken`: String?, `resetTokenExpiry`: DateTime?, `refreshToken`: String?, `refreshTokenExpiry`: DateTime?, `failedLoginAttempts`: Int @default(0), `lockedUntil`: DateTime?, `termsAcceptedAt`: DateTime?, `tokenVersion`: Int @default(0), `notifPush`: Boolean @default(true), `notifOrderUpdates`: Boolean @default(true), `notifJobAlerts`: Boolean @default(true), `notifMarketing`: Boolean @default(false), `permCreateContracts`: Boolean @default(false), `permReleaseCallOffs`: Boolean @default(false), `permManageOrders`: Boolean @default(false), `permViewFinancials`: Boolean @default(false), `permManageTeam`: Boolean @default(false), `companyId`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `userType`: UserType (@default(BUYER)), `companyRole`?: CompanyRole, `status`: UserStatus (@default(ACTIVE))  
-**Relations:** → Company?, DriverProfile?, BuyerProfile?, Order, TransportJob, TransportJob, Notification, Vehicle, QuoteRequest, Review, ChatMessage, FrameworkContract, TransportJobException, TransportJobException
+**Relations:** → Company?, DriverProfile?, BuyerProfile?, Order, TransportJob, TransportJob, Notification, Vehicle, QuoteRequest, Review, ChatMessage, FrameworkContract, Project, TransportJobException, TransportJobException, SavedAddress
 
 ---
 
 ### Company — `@@map("companies")`  
-**Fields:** `id`: String @id @default(cuid(), `name`: String, `legalName`: String, `registrationNum`: String? @unique, `taxId`: String?, `email`: String, `phone`: String, `website`: String?, `street`: String, `city`: String, `state`: String, `postalCode`: String, `country`: String @default("DE"), `description`: String?, `logo`: String?, `verified`: Boolean @default(false), `rating`: Float?, `stripeConnectId`: String?, `commissionRate`: Float @default(10.0), `payoutEnabled`: Boolean @default(false), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `name`: String, `legalName`: String, `registrationNum`: String? @unique, `taxId`: String?, `email`: String, `phone`: String, `website`: String?, `street`: String, `city`: String, `state`: String, `postalCode`: String, `country`: String @default("DE"), `description`: String?, `logo`: String?, `verified`: Boolean @default(false), `rating`: Float?, `stripeConnectId`: String?, `commissionRate`: Float @default(10.0), `payoutEnabled`: Boolean @default(false), `lat`: Float?, `lng`: Float?, `serviceRadiusKm`: Int?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `companyType`: CompanyType  
-**Relations:** → User, Material, Container, Vehicle, Order, RecyclingCenter, TransportJob, QuoteResponse, CarrierPricing, CarrierServiceZone, CarrierAvailability, SkipHireOrder, Review, FrameworkContract, FrameworkContract
+**Relations:** → User, Material, Container, Vehicle, Order, RecyclingCenter, TransportJob, QuoteResponse, CarrierPricing, CarrierServiceZone, CarrierAvailability, SkipHireOrder, Review, FrameworkContract, FrameworkContract, Project
 
 ---
 
@@ -140,9 +146,9 @@ npm run db:seed           # reseed demo data
 ---
 
 ### Order — `@@map("orders")`  
-**Fields:** `id`: String @id @default(cuid(), `orderNumber`: String @unique, `buyerId`: String, `createdById`: String, `deliveryAddress`: String, `deliveryCity`: String, `deliveryState`: String, `deliveryPostal`: String, `deliveryDate`: DateTime?, `deliveryWindow`: String?, `subtotal`: Float, `tax`: Float, `deliveryFee`: Float, `total`: Float, `currency`: String @default("EUR"), `siteContactName`: String?, `siteContactPhone`: String?, `notes`: String?, `internalNotes`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `orderNumber`: String @unique, `buyerId`: String, `createdById`: String, `deliveryAddress`: String, `deliveryCity`: String, `deliveryState`: String, `deliveryPostal`: String, `deliveryDate`: DateTime?, `deliveryWindow`: String?, `subtotal`: Float, `tax`: Float, `deliveryFee`: Float, `total`: Float, `currency`: String @default("EUR"), `siteContactName`: String?, `siteContactPhone`: String?, `notes`: String?, `internalNotes`: String?, `projectId`: String?, `linkedSkipOrderId`: String? @unique, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `orderType`: OrderType, `status`: OrderStatus, `paymentStatus`: PaymentStatus  
-**Relations:** → Company, User, OrderItem, ContainerOrder, TransportJob, Invoice, Payment?
+**Relations:** → Company, User, Project?, SkipHireOrder?, OrderItem, ContainerOrder, TransportJob, Invoice, Payment?, OrderSurcharge
 
 ---
 
@@ -244,7 +250,7 @@ npm run db:seed           # reseed demo data
 ### SkipHireOrder — `@@map("skip_hire_orders")`  
 **Fields:** `id`: String @id @default(cuid(), `orderNumber`: String @unique, `location`: String, `deliveryDate`: DateTime, `price`: Float, `currency`: String @default("EUR"), `contactName`: String?, `contactEmail`: String?, `contactPhone`: String?, `userId`: String?, `notes`: String?, `unloadingPointPhotoUrl`: String?, `carrierId`: String?, `lat`: Float?, `lng`: Float?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `wasteCategory`: SkipWasteCategory, `skipSize`: SkipSize, `status`: SkipHireStatus (@default(PENDING))  
-**Relations:** → Company?
+**Relations:** → Company?, Order?
 
 ---
 
@@ -322,6 +328,26 @@ npm run db:seed           # reseed demo data
 **Fields:** `id`: String @id @default(cuid(), `contractId`: String, `description`: String, `agreedQty`: Float, `unit`: String @default("t"), `unitPrice`: Float?, `pickupAddress`: String?, `pickupCity`: String?, `deliveryAddress`: String?, `deliveryCity`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `positionType`: FrameworkPositionType  
 **Relations:** → FrameworkContract, TransportJob
+
+---
+
+### Project — `@@map("projects")`  
+**Fields:** `id`: String @id @default(cuid(), `name`: String, `description`: String?, `clientName`: String?, `siteAddress`: String?, `contractValue`: Float, `budgetAmount`: Float?, `startDate`: DateTime?, `endDate`: DateTime?, `companyId`: String, `createdById`: String, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `status`: ProjectStatus (@default(PLANNING))  
+**Relations:** → Company, User, Order
+
+---
+
+### OrderSurcharge — `@@map("order_surcharges")`  
+**Fields:** `id`: String @id @default(cuid(), `orderId`: String, `label`: String, `amount`: Float, `currency`: String @default("EUR"), `billable`: Boolean @default(true), `createdAt`: DateTime @default(now()  
+**Enum fields:** `type`: SurchargeType  
+**Relations:** → Order
+
+---
+
+### SavedAddress — `@@map("saved_addresses")`  
+**Fields:** `id`: String @id @default(cuid(), `label`: String, `address`: String, `city`: String, `lat`: Float?, `lng`: Float?, `isDefault`: Boolean @default(false), `userId`: String, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Relations:** → User
 
 ---
 

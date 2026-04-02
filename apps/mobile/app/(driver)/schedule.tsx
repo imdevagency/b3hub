@@ -3,7 +3,7 @@
  * Shows online/offline status toggle + weekly availability schedule.
  */
 import React, { useCallback, useState } from 'react';
-import { View, Text, ScrollView, Switch, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Switch, ActivityIndicator, RefreshControl } from 'react-native';
 import { useToast } from '@/components/ui/Toast';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -17,6 +17,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api, type DriverAvailability, type DriverWeeklySlot } from '@/lib/api';
 import { colors } from '@/lib/theme';
 import { CalendarDays, Wifi, WifiOff } from 'lucide-react-native';
+import { haptics } from '@/lib/haptics';
 
 const DAY_FULL = [
   'Svētdiena',
@@ -82,12 +83,14 @@ export default function ScheduleScreen() {
   const toast = useToast();
   const [profile, setProfile] = useState<DriverAvailability | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [updatingDays, setUpdatingDays] = useState<Set<number>>(new Set());
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (isRefresh = false) => {
     if (!token) return;
-    setLoading(true);
+    if (!isRefresh) setLoading(true);
+    else setRefreshing(true);
     try {
       const data = await api.driverSchedule.getStatus(token);
       setProfile(data);
@@ -95,6 +98,7 @@ export default function ScheduleScreen() {
       toast.error('Neizdevās ielādēt grafiku.');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [token]);
 
@@ -106,6 +110,7 @@ export default function ScheduleScreen() {
 
   const handleToggleOnline = async (value: boolean) => {
     if (!token || toggling) return;
+    haptics.light();
     setToggling(true);
     setProfile((prev) => (prev ? { ...prev, isOnline: value, effectiveOnline: value } : prev));
     try {
@@ -190,6 +195,9 @@ export default function ScheduleScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />
+        }
       >
         {loading ? (
           <View className="p-4 gap-4">

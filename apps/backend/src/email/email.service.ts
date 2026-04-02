@@ -280,6 +280,109 @@ export class EmailService {
 
   // ── Private helpers ────────────────────────────────────────────────────────
 
+  /** Notify buyer when an order's status changes to CONFIRMED, DELIVERED, or CANCELLED */
+  async sendOrderStatusUpdate(
+    to: string,
+    buyerName: string,
+    order: { orderNumber: string; status: string },
+  ) {
+    const STATUS_COPY: Record<string, { subject: string; title: string; body: string }> = {
+      CONFIRMED: {
+        subject: `Pasūtījums #${order.orderNumber} apstiprināts — B3Hub`,
+        title: 'Pasūtījums apstiprināts!',
+        body: `<p>Labdien, ${buyerName}!</p><p>Jūsu pasūtījums <strong>#${order.orderNumber}</strong> ir <strong>apstiprināts</strong> no piegādātāja puses. Piegāde tiks veikta saskaņā ar norādīto grafiku.</p>`,
+      },
+      DELIVERED: {
+        subject: `Pasūtījums #${order.orderNumber} piegādāts — B3Hub`,
+        title: 'Pasūtījums piegādāts!',
+        body: `<p>Labdien, ${buyerName}!</p><p>Pasūtījums <strong>#${order.orderNumber}</strong> ir <strong>piegādāts</strong>. Ja ir jebkādas neatbilstības, lūdzu vērsieties pie mums 48 stundu laikā.</p>`,
+      },
+      CANCELLED: {
+        subject: `Pasūtījums #${order.orderNumber} atcelts — B3Hub`,
+        title: 'Pasūtījums atcelts',
+        body: `<p>Labdien, ${buyerName}!</p><p>Pasūtījums <strong>#${order.orderNumber}</strong> ir <strong>atcelts</strong>. Ja maksājums tika iekasēts, atmaksa tiks apstrādāta 3–5 darba dienu laikā.</p>`,
+      },
+    };
+
+    const copy = STATUS_COPY[order.status];
+    if (!copy) return; // unknown status — skip
+
+    await this.send({
+      to,
+      subject: copy.subject,
+      html: this.base({
+        title: copy.title,
+        body: copy.body,
+        cta: {
+          label: 'Skatīt pasūtījumu',
+          url: `${this.webUrl}/dashboard/orders`,
+        },
+      }),
+    });
+  }
+
+  /** Notify a seller when they receive a new quote request (RFQ) */
+  async sendQuoteRequestReceived(
+    to: string,
+    sellerName: string,
+    rfq: { requestNumber: string; category: string; quantity: number; unit: string; city: string },
+  ) {
+    await this.send({
+      to,
+      subject: `Jauns cenu pieprasījums — B3Hub`,
+      html: this.base({
+        title: 'Saņemts jauns cenu pieprasījums',
+        body: `
+          <p>Labdien, ${sellerName}!</p>
+          <p>Jūs saņēmāt jaunu cenu pieprasījumu <strong>#${rfq.requestNumber}</strong>:</p>
+          <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:14px">
+            <tr><td style="padding:6px 0;color:#6b7280">Kategorija</td><td style="padding:6px 0;font-weight:600">${rfq.category}</td></tr>
+            <tr><td style="padding:6px 0;color:#6b7280">Daudzums</td><td style="padding:6px 0;font-weight:600">${rfq.quantity} ${rfq.unit}</td></tr>
+            <tr><td style="padding:6px 0;color:#6b7280">Piegādes pilsēta</td><td style="padding:6px 0;font-weight:600">${rfq.city}</td></tr>
+          </table>
+          <p>Atbildiet uz pieprasījumu pēc iespējas ātrāk, lai palielinātu iespēju iegūt darījumu.</p>
+        `,
+        cta: {
+          label: 'Skatīt pieprasījumu',
+          url: `${this.webUrl}/dashboard/quote-requests`,
+        },
+      }),
+    });
+  }
+
+  /** Notify a driver when they are assigned to a new transport job */
+  async sendDriverJobAssigned(
+    to: string,
+    driverName: string,
+    job: { jobNumber: string; pickupCity: string; deliveryCity: string; scheduledDate?: Date },
+  ) {
+    const dateStr = job.scheduledDate
+      ? job.scheduledDate.toLocaleDateString('lv-LV')
+      : 'pēc vienošanās';
+
+    await this.send({
+      to,
+      subject: `Jums piešķirts transporta darbs — B3Hub`,
+      html: this.base({
+        title: `Jauns darbs #${job.jobNumber}`,
+        body: `
+          <p>Labdien, ${driverName}!</p>
+          <p>Jums ir piešķirts jauns transporta darbs:</p>
+          <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:14px">
+            <tr><td style="padding:6px 0;color:#6b7280">Iekraušanas vieta</td><td style="padding:6px 0;font-weight:600">${job.pickupCity}</td></tr>
+            <tr><td style="padding:6px 0;color:#6b7280">Piegādes vieta</td><td style="padding:6px 0;font-weight:600">${job.deliveryCity}</td></tr>
+            <tr><td style="padding:6px 0;color:#6b7280">Datums</td><td style="padding:6px 0;font-weight:600">${dateStr}</td></tr>
+          </table>
+          <p>Pieņemiet vai noraidiet darbu B3Hub lietotnē.</p>
+        `,
+        cta: {
+          label: 'Atvērt lietotni',
+          url: `${this.webUrl}/dashboard`,
+        },
+      }),
+    });
+  }
+
   private async send(opts: { to: string; subject: string; html: string }) {
     if (!this.enabled || !this.resend) {
       // Dev mode: log the email to console so developers can see it

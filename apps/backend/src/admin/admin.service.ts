@@ -49,6 +49,12 @@ export class AdminService {
     const hasCreditUpdate =
       data.creditLimit !== undefined || data.paymentTerms !== undefined;
 
+    const capabilityChanged =
+      data.canSell !== undefined ||
+      data.canTransport !== undefined ||
+      data.canSkipHire !== undefined ||
+      data.userType !== undefined;
+
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: {
@@ -63,6 +69,8 @@ export class AdminService {
         ...(data.userType !== undefined && {
           userType: data.userType,
         }),
+        // Invalidate in-flight JWTs when capabilities or role change.
+        ...(capabilityChanged && { tokenVersion: { increment: 1 } }),
       },
       select: this.userSelect,
     });

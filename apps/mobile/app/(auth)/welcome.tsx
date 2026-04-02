@@ -6,6 +6,7 @@ import { Text } from '@/components/ui/text';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Package, MapPin, FileText } from 'lucide-react-native';
+import { haptics } from '@/lib/haptics';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -66,7 +67,7 @@ export default function WelcomeScreen() {
           <TouchableOpacity
             className="w-full h-14 bg-white rounded-xl items-center justify-center flex-row"
             activeOpacity={0.8}
-            onPress={() => router.push('/(auth)/register')}
+            onPress={() => { haptics.light(); router.push('/(auth)/register'); }}
           >
             <Text
               className="text-lg text-black"
@@ -79,7 +80,7 @@ export default function WelcomeScreen() {
           <TouchableOpacity
             className="w-full h-14 items-center justify-center"
             activeOpacity={0.8}
-            onPress={() => router.push('/(auth)/login')}
+            onPress={() => { haptics.light(); router.push('/(auth)/login'); }}
           >
             <Text className="text-lg text-text-disabled">
               Jau ir konts?{' '}

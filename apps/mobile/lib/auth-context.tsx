@@ -31,11 +31,14 @@ const storage = {
 // silently so the rest of the app continues to work.
 let _Notifications: typeof import('expo-notifications') | null = null;
 let _Device: typeof import('expo-device') | null = null;
+let _Constants: typeof import('expo-constants') | null = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   _Notifications = require('expo-notifications');
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   _Device = require('expo-device');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  _Constants = require('expo-constants');
 } catch {
   // Expo Go — push notifications unavailable
 }
@@ -81,7 +84,10 @@ async function registerForPushNotifications(): Promise<string | null> {
       });
     }
 
-    const { data } = await _Notifications.getExpoPushTokenAsync();
+    const projectId = _Constants?.default?.expoConfig?.extra?.eas?.projectId as string | undefined;
+    const { data } = await _Notifications.getExpoPushTokenAsync(
+      projectId ? { projectId } : undefined,
+    );
     return data;
   } catch {
     return null; // Any native error — degrade silently

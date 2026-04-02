@@ -16,6 +16,8 @@ import { ShieldCheck, FileDown, Recycle, Clock, ExternalLink } from 'lucide-reac
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiWasteRecord, WasteType } from '@/lib/api';
+import { SkeletonCard } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -140,7 +142,7 @@ function RecordCard({ item }: { item: ApiWasteRecord }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function CertificatesScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [records, setRecords] = useState<ApiWasteRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -164,6 +166,19 @@ export default function CertificatesScreen() {
     load();
   }, [load]);
 
+  if (!user?.canSkipHire) {
+    return (
+      <ScreenContainer standalone bg="#f2f2f7">
+        <ScreenHeader title="Sertifikāti" />
+        <EmptyState
+          icon={<ShieldCheck size={42} color="#9ca3af" />}
+          title="Nav pieejams"
+          subtitle="Atkritumu sertifikāti ir pieejami tikai apstiprinātu konteineru operatoriem."
+        />
+      </ScreenContainer>
+    );
+  }
+
   const certified = records.filter((r) => !!r.certificateUrl);
   const pending = records.filter((r) => !r.certificateUrl);
 
@@ -172,7 +187,7 @@ export default function CertificatesScreen() {
       <ScreenHeader title="Sertifikāti" />
 
       {loading ? (
-        <ActivityIndicator color="#16a34a" style={{ marginTop: 40 }} />
+        <SkeletonCard count={4} />
       ) : error ? (
         <View style={s.empty}>
           <ShieldCheck size={52} color="#fca5a5" />

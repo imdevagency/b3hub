@@ -63,6 +63,7 @@ export class MaterialsService {
       orderBy: {
         createdAt: 'desc',
       },
+      take: 500,
     });
   }
 
@@ -212,6 +213,8 @@ export class MaterialsService {
             logo: true,
             rating: true,
             phone: true,
+            lat: true,
+            lng: true,
           },
         },
       },
@@ -221,22 +224,27 @@ export class MaterialsService {
     // If coordinates provided, filter by delivery radius and add distance
     let results = listings.map((m) => {
       let distanceKm: number | null = null;
-      if (params.lat != null && params.lng != null) {
-        // Haversine approximation (good enough for ~100 km)
+      if (params.lat != null && params.lng != null && m.supplier.lat != null && m.supplier.lng != null) {
+        // Haversine approximation (good enough for ~500 km)
         const R = 6371;
-        const dLat = ((params.lat - 56.9) * Math.PI) / 180; // placeholder; needs actual supplier coords
-        const dLng = ((params.lng - 24.1) * Math.PI) / 180;
+        const suppLat = m.supplier.lat;
+        const suppLng = m.supplier.lng;
+        const dLat = ((params.lat - suppLat) * Math.PI) / 180;
+        const dLng = ((params.lng - suppLng) * Math.PI) / 180;
         const a =
           Math.sin(dLat / 2) ** 2 +
-          Math.cos((56.9 * Math.PI) / 180) *
+          Math.cos((suppLat * Math.PI) / 180) *
             Math.cos((params.lat * Math.PI) / 180) *
             Math.sin(dLng / 2) ** 2;
         distanceKm = Math.round(
           R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)),
         );
       }
+      // Strip internal lat/lng from the response payload
+      const { lat: _lat, lng: _lng, ...supplierPublic } = m.supplier;
       return {
         ...m,
+        supplier: supplierPublic,
         distanceKm,
         totalPrice: Math.round(m.basePrice * params.quantity * 100) / 100,
         etaDays: 1,
@@ -245,6 +253,7 @@ export class MaterialsService {
     });
 
     // Filter out suppliers whose radius is set and buyer is outside it
+    // Suppliers without coordinates are always included (distance unknown = assume in range)
     if (params.lat != null && params.lng != null) {
       results = results.filter(
         (r) =>

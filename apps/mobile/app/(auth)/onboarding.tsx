@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { haptics } from '@/lib/haptics';
 import {
   ShoppingCart,
   MapPin,
@@ -118,11 +119,13 @@ export default function OnboardingScreen() {
         : BUYER_SLIDES;
 
   const finish = async () => {
+    haptics.success();
     await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
     router.replace('/');
   };
 
   const next = () => {
+    haptics.light();
     if (activeIndex < slides.length - 1) {
       flatRef.current?.scrollToIndex({ index: activeIndex + 1, animated: true });
       setActiveIndex(activeIndex + 1);

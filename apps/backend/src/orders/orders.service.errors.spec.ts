@@ -9,6 +9,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { TransportJobsService } from '../transport-jobs/transport-jobs.service';
+import { PaymentsService } from '../payments/payments.service';
+import { InvoicesService } from '../invoices/invoices.service';
+import { UpdatesGateway } from '../updates/updates.gateway';
 import { OrderStatus } from '@prisma/client';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 
@@ -31,6 +34,8 @@ describe('OrdersService — Error Handling', () => {
       transportJob: {
         create: jest.fn(),
         count: jest.fn().mockResolvedValue(0),
+        findMany: jest.fn().mockResolvedValue([]),
+        updateMany: jest.fn().mockResolvedValue({}),
       },
       skipHireOrder: {
         count: jest.fn().mockResolvedValue(0),
@@ -46,6 +51,14 @@ describe('OrdersService — Error Handling', () => {
         count: jest.fn().mockResolvedValue(0),
         aggregate: jest.fn().mockResolvedValue({ _sum: { total: 0 } }),
       },
+      buyerProfile: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      invoice: {
+        create: jest.fn().mockResolvedValue({ id: 'inv-1' }),
+        count: jest.fn().mockResolvedValue(0),
+      },
     };
 
     const mockEmail = {
@@ -56,6 +69,20 @@ describe('OrdersService — Error Handling', () => {
       create: jest.fn().mockResolvedValue(null),
     };
     const mockTransportJobs = { create: jest.fn() };
+    const mockPayments = {
+      createPaymentIntent: jest.fn().mockResolvedValue({}),
+      capturePayment: jest.fn().mockResolvedValue({}),
+      releaseFunds: jest.fn().mockResolvedValue({}),
+    };
+    const mockInvoices = {
+      createForOrder: jest.fn().mockResolvedValue({}),
+      generateForOrder: jest.fn().mockResolvedValue({}),
+      emailInvoice: jest.fn().mockResolvedValue({}),
+    };
+    const mockUpdates = {
+      broadcastOrderStatus: jest.fn(),
+      broadcastJobStatus: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -64,6 +91,9 @@ describe('OrdersService — Error Handling', () => {
         { provide: EmailService, useValue: mockEmail },
         { provide: NotificationsService, useValue: mockNotifications },
         { provide: TransportJobsService, useValue: mockTransportJobs },
+        { provide: PaymentsService, useValue: mockPayments },
+        { provide: InvoicesService, useValue: mockInvoices },
+        { provide: UpdatesGateway, useValue: mockUpdates },
       ],
     }).compile();
 
@@ -234,7 +264,7 @@ describe('OrdersService — Error Handling', () => {
   });
 
   describe('create — supplier isolation', () => {
-    it('blocks mixed-supplier carts', async () => {
+    it('splits multi-supplier carts into separate orders', async () => {
       (prisma.material.findUnique as jest.Mock)
         .mockResolvedValueOnce({
           id: 'm1',
@@ -247,6 +277,14 @@ describe('OrdersService — Error Handling', () => {
           supplierId: 'supplier-b',
         });
 
+      (prisma.order.create as jest.Mock).mockResolvedValue({
+        id: 'order-1',
+        orderNumber: 'ORD-001',
+        buyer: { email: null, name: 'Test', phone: null },
+        orderType: 'MATERIAL',
+        items: [],
+      });
+
       const user = {
         id: 'u1',
         userId: 'u1',
@@ -257,23 +295,25 @@ describe('OrdersService — Error Handling', () => {
         canTransport: false,
       } as Partial<RequestingUser> as RequestingUser;
 
-      await expect(
-        service.create(
-          {
-            orderType: 'MATERIAL',
-            deliveryAddress: 'Brivibas 1',
-            deliveryCity: 'Riga',
-            deliveryState: 'LV',
-            deliveryPostal: 'LV-1010',
-            deliveryFee: 0,
-            items: [
-              { materialId: 'm1', quantity: 1, unit: 'TONNE', unitPrice: 10 },
-              { materialId: 'm2', quantity: 1, unit: 'TONNE', unitPrice: 20 },
-            ],
-          },
-          user,
-        ),
-      ).rejects.toThrow(BadRequestException);
+      const result = await service.create(
+        {
+          orderType: 'MATERIAL',
+          deliveryAddress: 'Brivibas 1',
+          deliveryCity: 'Riga',
+          deliveryState: 'LV',
+          deliveryPostal: 'LV-1010',
+          deliveryFee: 0,
+          items: [
+            { materialId: 'm1', quantity: 1, unit: 'TONNE', unitPrice: 10 },
+            { materialId: 'm2', quantity: 1, unit: 'TONNE', unitPrice: 20 },
+          ],
+        },
+        user,
+      );
+
+      // Multi-supplier cart is split into two orders
+      expect(result).toHaveProperty('orders');
+      expect((result as any).orders).toHaveLength(2);
     });
   });
 
@@ -390,6 +430,149 @@ describe('OrdersService — Error Handling', () => {
       (prisma.order.findMany as jest.Mock).mockResolvedValue([]);
 
       await expect(service.getDashboardStats(buyer)).resolves.toBeDefined();
+    });
+  });
+
+  describe('create — transport-only user guard', () => {
+    it('blocks transport-only accounts from creating material orders', async () => {
+      const driver = {
+        id: 'driver-1',
+        userId: 'driver-1',
+        userType: 'BUYER' as const,
+        isCompany: true,
+        companyId: 'carrier-co',
+        canSell: false,
+        canTransport: true,
+        canSkipHire: false,
+      } as Partial<RequestingUser> as RequestingUser;
+
+      await expect(
+        service.create(
+          {
+            orderType: 'MATERIAL',
+            deliveryAddress: 'Brivibas 1',
+            deliveryCity: 'Riga',
+            deliveryState: 'LV',
+            deliveryPostal: 'LV-1010',
+            deliveryFee: 0,
+            items: [{ materialId: 'm1', quantity: 1, unit: 'TONNE', unitPrice: 10 }],
+          },
+          driver,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('create — buyer company guard', () => {
+    it('throws BadRequestException when buyer has no linked company', async () => {
+      const userWithoutCompany = {
+        id: 'u1',
+        userId: 'u1',
+        userType: 'BUYER' as const,
+        isCompany: false,
+        companyId: undefined,
+        canSell: false,
+        canTransport: false,
+      } as Partial<RequestingUser> as RequestingUser;
+
+      await expect(
+        service.create(
+          {
+            orderType: 'MATERIAL',
+            deliveryAddress: 'Brivibas 1',
+            deliveryCity: 'Riga',
+            deliveryState: 'LV',
+            deliveryPostal: 'LV-1010',
+            deliveryFee: 0,
+            items: [{ materialId: 'm1', quantity: 1, unit: 'TONNE', unitPrice: 10 }],
+          },
+          userWithoutCompany,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('create — credit limit guard', () => {
+    it('throws BadRequestException when order total exceeds remaining credit', async () => {
+      (prisma.material.findUnique as jest.Mock).mockResolvedValue({
+        id: 'm1',
+        basePrice: 1000,
+        supplierId: 'supplier-a',
+      });
+
+      // Mock buyerProfile with 500 credit remaining
+      (prisma as any).buyerProfile = {
+        findUnique: jest.fn().mockResolvedValue({
+          creditLimit: 500,
+          creditUsed: 200,
+        }),
+        update: jest.fn().mockResolvedValue({}),
+      };
+
+      const buyer = {
+        id: 'u1',
+        userId: 'u1',
+        userType: 'BUYER' as const,
+        isCompany: true,
+        companyId: 'buyer-co',
+        canSell: false,
+        canTransport: false,
+      } as Partial<RequestingUser> as RequestingUser;
+
+      await expect(
+        service.create(
+          {
+            orderType: 'MATERIAL',
+            deliveryAddress: 'Brivibas 1',
+            deliveryCity: 'Riga',
+            deliveryState: 'LV',
+            deliveryPostal: 'LV-1010',
+            deliveryFee: 0,
+            items: [{ materialId: 'm1', quantity: 1, unit: 'TONNE', unitPrice: 1000 }],
+          },
+          buyer,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('updateStatus — full allowed transition map', () => {
+    const cases: Array<{ from: OrderStatus; to: OrderStatus; allowed: boolean }> = [
+      { from: OrderStatus.DRAFT, to: OrderStatus.PENDING, allowed: true },
+      { from: OrderStatus.DRAFT, to: OrderStatus.CANCELLED, allowed: true },
+      { from: OrderStatus.PENDING, to: OrderStatus.CONFIRMED, allowed: true },
+      { from: OrderStatus.PENDING, to: OrderStatus.CANCELLED, allowed: true },
+      { from: OrderStatus.CONFIRMED, to: OrderStatus.IN_PROGRESS, allowed: true },
+      { from: OrderStatus.CONFIRMED, to: OrderStatus.DELIVERED, allowed: true },
+      { from: OrderStatus.CONFIRMED, to: OrderStatus.COMPLETED, allowed: true },
+      { from: OrderStatus.DELIVERED, to: OrderStatus.COMPLETED, allowed: true },
+      // Illegal transitions
+      { from: OrderStatus.PENDING, to: OrderStatus.DELIVERED, allowed: false },
+      { from: OrderStatus.COMPLETED, to: OrderStatus.PENDING, allowed: false },
+      { from: OrderStatus.DELIVERED, to: OrderStatus.CANCELLED, allowed: false },
+    ];
+
+    cases.forEach(({ from, to, allowed }) => {
+      it(`${allowed ? 'allows' : 'blocks'} ${from} → ${to}`, async () => {
+        (prisma.order.findUnique as jest.Mock).mockResolvedValue({
+          id: 'order-1',
+          status: from,
+          invoices: [],
+          orderNumber: 'ORD-1',
+          createdById: 'buyer1',
+        });
+        if (allowed) {
+          (prisma.order.update as jest.Mock).mockResolvedValue({
+            id: 'order-1',
+            status: to,
+          });
+          await expect(service.updateStatus('order-1', to)).resolves.toBeDefined();
+        } else {
+          await expect(service.updateStatus('order-1', to)).rejects.toThrow(
+            BadRequestException,
+          );
+        }
+      });
     });
   });
 });

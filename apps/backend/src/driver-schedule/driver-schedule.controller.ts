@@ -6,6 +6,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -26,6 +27,12 @@ import type { RequestingUser } from '../common/types/requesting-user.interface';
 export class DriverScheduleController {
   constructor(private readonly service: DriverScheduleService) {}
 
+  private assertIsDriver(user: RequestingUser): void {
+    if (!user.canTransport) {
+      throw new ForbiddenException('Only approved drivers can manage their schedule');
+    }
+  }
+
   /**
    * GET /driver-schedule
    * Returns the driver's full availability state:
@@ -33,6 +40,7 @@ export class DriverScheduleController {
    */
   @Get()
   getMyAvailability(@CurrentUser() user: RequestingUser) {
+    this.assertIsDriver(user);
     return this.service.getMyAvailability(user.userId);
   }
 
@@ -46,6 +54,7 @@ export class DriverScheduleController {
     @CurrentUser() user: RequestingUser,
     @Body() dto: ToggleOnlineDto,
   ) {
+    this.assertIsDriver(user);
     return this.service.toggleOnline(user.userId, dto);
   }
 
@@ -59,6 +68,7 @@ export class DriverScheduleController {
     @CurrentUser() user: RequestingUser,
     @Body() dto: UpdateScheduleDto,
   ) {
+    this.assertIsDriver(user);
     return this.service.updateSchedule(user.userId, dto);
   }
 
@@ -69,6 +79,7 @@ export class DriverScheduleController {
    */
   @Post('blocks')
   blockDate(@CurrentUser() user: RequestingUser, @Body() dto: BlockDateDto) {
+    this.assertIsDriver(user);
     return this.service.blockDate(user.userId, dto);
   }
 
@@ -78,6 +89,7 @@ export class DriverScheduleController {
    */
   @Delete('blocks/:id')
   unblockDate(@CurrentUser() user: RequestingUser, @Param('id') id: string) {
+    this.assertIsDriver(user);
     return this.service.unblockDate(user.userId, id);
   }
 }

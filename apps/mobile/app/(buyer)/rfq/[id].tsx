@@ -28,6 +28,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { haptics } from '@/lib/haptics';
+import { SkeletonDetail } from '@/components/ui/Skeleton';
 
 // ── Status helpers ─────────────────────────────────────────────
 
@@ -120,9 +121,7 @@ export default function RfqDetailScreen() {
   if (loading) {
     return (
       <ScreenContainer standalone bg="#ffffff">
-        <View style={ss.center}>
-          <ActivityIndicator color="#111827" />
-        </View>
+        <SkeletonDetail />
       </ScreenContainer>
     );
   }

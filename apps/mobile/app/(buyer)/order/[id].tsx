@@ -573,7 +573,7 @@ export default function OrderDetailScreen() {
             </View>
           )}
           {/* Re-order button */}
-          {order.status === 'DELIVERED' && (
+          {(order.status === 'DELIVERED' || order.status === 'COMPLETED') && (
             <TouchableOpacity
               style={s.reorderBtn}
               onPress={() =>

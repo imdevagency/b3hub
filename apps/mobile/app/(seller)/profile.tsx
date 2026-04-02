@@ -400,6 +400,7 @@ export default function ProfileScreen() {
                 onChangeText={set('firstName')}
                 placeholder="Vārds"
                 placeholderTextColor="#9ca3af"
+                maxLength={80}
               />
             </View>
             <View style={s.fieldGroup}>
@@ -410,6 +411,7 @@ export default function ProfileScreen() {
                 onChangeText={set('lastName')}
                 placeholder="Uzvārds"
                 placeholderTextColor="#9ca3af"
+                maxLength={80}
               />
             </View>
             <View style={s.fieldGroup}>
@@ -421,6 +423,7 @@ export default function ProfileScreen() {
                 placeholder="+371 20000000"
                 placeholderTextColor="#9ca3af"
                 keyboardType="phone-pad"
+                maxLength={20}
               />
             </View>
             <TouchableOpacity

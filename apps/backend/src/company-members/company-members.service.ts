@@ -185,7 +185,7 @@ export class CompanyMembersService {
       updateData.permManageTeam = dto.permManageTeam;
     return this.prisma.user.update({
       where: { id: targetUserId },
-      data: updateData,
+      data: { ...updateData, tokenVersion: { increment: 1 } },
       select: MEMBER_SELECT,
     });
   }
@@ -217,6 +217,7 @@ export class CompanyMembersService {
         permManageOrders: false,
         permViewFinancials: false,
         permManageTeam: false,
+        tokenVersion: { increment: 1 },
       },
     });
     return { ok: true };

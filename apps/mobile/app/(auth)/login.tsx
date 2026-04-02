@@ -101,6 +101,7 @@ export default function LoginScreen() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
+                  maxLength={100}
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
@@ -122,6 +123,7 @@ export default function LoginScreen() {
                     placeholder="Parole"
                     placeholderTextColor="#9ca3af"
                     secureTextEntry={!showPw}
+                    maxLength={100}
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}

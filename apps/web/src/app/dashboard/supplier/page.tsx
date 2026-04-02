@@ -86,6 +86,7 @@ export default function SupplierDashboardPage() {
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
+    else if (!isLoading && user && !user.canSell) router.push('/dashboard');
   }, [user, isLoading, router]);
 
   useEffect(() => {

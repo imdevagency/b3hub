@@ -92,6 +92,7 @@ export class ChatService {
     return this.prisma.chatMessage.findMany({
       where: { transportJobId: jobId },
       orderBy: { createdAt: 'asc' },
+      take: 300,
       select: {
         id: true,
         senderId: true,

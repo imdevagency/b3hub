@@ -49,7 +49,6 @@ export class AuthService {
       companyName,
       regNumber,
     } = registerDto;
-
     // Check if user already exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
@@ -73,6 +72,7 @@ export class AuthService {
         userType: 'BUYER',
         isCompany: isCompany ?? roles.some((r) => r !== 'BUYER'),
         companyId,
+        termsAcceptedAt: new Date(),
       },
       select: {
         id: true,
@@ -85,11 +85,18 @@ export class AuthService {
         canTransport: true,
         canSkipHire: true,
         companyRole: true,
+        permCreateContracts: true,
+        permReleaseCallOffs: true,
+        permManageOrders: true,
+        permViewFinancials: true,
+        permManageTeam: true,
+        tokenVersion: true,
         status: true,
         company: {
           select: {
             id: true,
             name: true,
+            payoutEnabled: true,
           },
         },
       },
@@ -125,6 +132,15 @@ export class AuthService {
       user.canSkipHire,
       user.company?.id,
       user.companyRole ?? undefined,
+      {
+        permCreateContracts: user.permCreateContracts ?? false,
+        permReleaseCallOffs: user.permReleaseCallOffs ?? false,
+        permManageOrders: user.permManageOrders ?? false,
+        permViewFinancials: user.permViewFinancials ?? false,
+        permManageTeam: user.permManageTeam ?? false,
+      },
+      user.company?.payoutEnabled ?? false,
+      user.tokenVersion ?? 0,
     );
 
     // Send welcome email (non-blocking)
@@ -501,13 +517,14 @@ export class AuthService {
         permViewFinancials: boolean;
         permManageTeam: boolean;
         refreshTokenExpiry: Date | null;
+        tokenVersion: number;
         payoutEnabled: boolean | null;
       }[]
     >`
       SELECT u.id, u.email, u."userType", u."isCompany", u."canSell", u."canTransport", u."canSkipHire",
              u."companyId", u."companyRole",
              u."permCreateContracts", u."permReleaseCallOffs", u."permManageOrders",
-             u."permViewFinancials", u."permManageTeam", u."refreshTokenExpiry",
+             u."permViewFinancials", u."permManageTeam", u."refreshTokenExpiry", u."tokenVersion",
              c."payoutEnabled"
       FROM users u
       LEFT JOIN companies c ON u."companyId" = c.id
@@ -542,6 +559,7 @@ export class AuthService {
         permManageTeam: user.permManageTeam,
       },
       user.payoutEnabled ?? false,
+      user.tokenVersion ?? 0,
     );
 
     return { token, refreshToken: newRefreshToken };
@@ -606,6 +624,7 @@ export class AuthService {
       permManageTeam: boolean;
     },
     payoutEnabled?: boolean,
+    tokenVersion?: number,
   ): string {
     const payload = {
       sub: userId,
@@ -623,6 +642,7 @@ export class AuthService {
       permViewFinancials: permissions?.permViewFinancials ?? false,
       permManageTeam: permissions?.permManageTeam ?? false,
       payoutEnabled: payoutEnabled ?? false,
+      tokenVersion: tokenVersion ?? 0,
     };
     return this.jwtService.sign(payload);
   }

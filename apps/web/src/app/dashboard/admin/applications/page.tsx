@@ -5,6 +5,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import {
   getProviderApplications,
@@ -184,11 +185,18 @@ const FILTERS: { value: Filter; label: string }[] = [
 ];
 
 export default function AdminApplicationsPage() {
-  const { token } = useAuth();
+  const { user, token, isLoading } = useAuth();
+  const router = useRouter();
   const [apps, setApps] = useState<ProviderApplication[]>([]);
   const [filter, setFilter] = useState<Filter>('PENDING');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && (!user || user.userType !== 'ADMIN')) {
+      router.replace('/dashboard');
+    }
+  }, [user, isLoading, router]);
 
   const load = useCallback(
     async (f: Filter) => {

@@ -33,6 +33,9 @@ export default function SellerLayout() {
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace('/(auth)/welcome');
+    } else if (!isLoading && user && !user.canSell) {
+      // User is logged in but not an approved seller — send to buyer home
+      router.replace('/(buyer)/home');
     }
   }, [user, isLoading]);
 

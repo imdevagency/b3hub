@@ -9,6 +9,7 @@ import {
   Dimensions,
   Linking,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -20,6 +21,7 @@ import { api, type ApiTransportJob } from '@/lib/api';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { haptics } from '@/lib/haptics';
+import { useToast } from '@/components/ui/Toast';
 
 // ── Types & helpers ───────────────────────────────────────────────────────
 
@@ -203,7 +205,9 @@ type Period = 'today' | 'week' | 'month';
 export default function EarningsScreen() {
   const { user, token } = useAuth();
   const router = useRouter();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<Period>('week');
   const [setupLoading, setSetupLoading] = useState(false);
   const [stats, setStats] = useState<EarningsStats>({
@@ -227,15 +231,15 @@ export default function EarningsScreen() {
         Alert.alert('Kļūda', 'Neizdevās iegūt saiti.');
       }
     } catch (err: any) {
-      console.error(err);
       Alert.alert('Kļūda', err.message || 'Neizdevās savienoties ar Stripe.');
     } finally {
       setSetupLoading(false);
     }
   };
 
-  const fetchEarnings = useCallback(async () => {
+  const fetchEarnings = useCallback(async (isRefresh = false) => {
     if (!token) return;
+    if (isRefresh) setRefreshing(true);
     try {
       const jobs = await api.transportJobs.myJobs(token);
       const { stats: s, history: h, dailyChart: dc } = computeStats(jobs);
@@ -243,9 +247,10 @@ export default function EarningsScreen() {
       setHistory(h);
       setDailyChart(dc);
     } catch (e) {
-      // silent fail or toast
+      showToast('Kļūda ielādējot datus', 'error');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [token]);
 
@@ -304,6 +309,9 @@ export default function EarningsScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => fetchEarnings(true)} />
+        }
       >
         {user?.isCompany && user.payoutEnabled === false && (
           <View className="mb-4 mx-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">

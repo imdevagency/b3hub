@@ -152,6 +152,7 @@ export default function RegisterScreen() {
         companyName: companyName.trim() || undefined,
         regNumber: regNumber.trim() || undefined,
         password,
+        termsAccepted: true,
       });
       await setAuth(res.user, res.token, res.refreshToken);
       haptics.success();
@@ -247,6 +248,7 @@ export default function RegisterScreen() {
             value={firstName}
             onChangeText={setFirstName}
             autoCapitalize="words"
+            maxLength={80}
           />
           {errors.firstName && <Text style={s.err}>{errors.firstName}</Text>}
         </View>
@@ -258,6 +260,7 @@ export default function RegisterScreen() {
             value={lastName}
             onChangeText={setLastName}
             autoCapitalize="words"
+            maxLength={80}
           />
           {errors.lastName && <Text style={s.err}>{errors.lastName}</Text>}
         </View>
@@ -271,6 +274,7 @@ export default function RegisterScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           autoComplete="email"
+          maxLength={100}
           value={email}
           onChangeText={setEmail}
         />
@@ -283,6 +287,7 @@ export default function RegisterScreen() {
           placeholder="Tālruņa numurs (neobligāts)"
           placeholderTextColor="#9ca3af"
           keyboardType="phone-pad"
+          maxLength={20}
           value={phone}
           onChangeText={setPhone}
         />
@@ -299,6 +304,7 @@ export default function RegisterScreen() {
               value={companyName}
               onChangeText={setCompanyName}
               autoCapitalize="words"
+              maxLength={100}
             />
             {errors.companyName && <Text style={s.err}>{errors.companyName}</Text>}
             <TextInput
@@ -306,6 +312,7 @@ export default function RegisterScreen() {
               placeholder="Reģistrācijas numurs (neobligāts)"
               placeholderTextColor="#9ca3af"
               keyboardType="number-pad"
+              maxLength={12}
               value={regNumber}
               onChangeText={setRegNumber}
             />
@@ -334,6 +341,7 @@ export default function RegisterScreen() {
             placeholder="Parole (vismaz 8 simboli)"
             placeholderTextColor="#9ca3af"
             secureTextEntry={!showPw}
+            maxLength={100}
             value={password}
             onChangeText={setPassword}
           />
@@ -362,6 +370,7 @@ export default function RegisterScreen() {
             placeholder="Atkārto paroli"
             placeholderTextColor="#9ca3af"
             secureTextEntry={!showCpw}
+            maxLength={100}
             value={confirmPw}
             onChangeText={setConfirmPw}
           />

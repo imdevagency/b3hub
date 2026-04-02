@@ -34,6 +34,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
 import { DocumentsService } from '../documents/documents.service';
 import { UpdatesGateway } from '../updates/updates.gateway';
+import { EmailService } from '../email/email.service';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 
 // Valid next-state transitions for a driver
@@ -58,6 +59,7 @@ export class TransportJobsService {
     private readonly notifications: NotificationsService,
     private readonly documents: DocumentsService,
     private readonly updates: UpdatesGateway,
+    private readonly email: EmailService,
   ) {}
 
   private isDispatcher(user: RequestingUser): boolean {
@@ -892,6 +894,7 @@ export class TransportJobsService {
   ) {
     const driver = await this.prisma.user.findUnique({
       where: { id: driverId },
+      select: { id: true, firstName: true, lastName: true, email: true, canTransport: true },
     });
     if (!driver || !driver.canTransport) {
       throw new BadRequestException('User is not a valid driver');
@@ -925,6 +928,18 @@ export class TransportJobsService {
         data: { jobId: updated.id },
       })
       .catch(() => {});
+
+    if (driver.email) {
+      const driverName = `${driver.firstName ?? ''} ${driver.lastName ?? ''}`.trim();
+      this.email
+        .sendDriverJobAssigned(driver.email, driverName, {
+          jobNumber: updated.jobNumber,
+          pickupCity: updated.pickupCity,
+          deliveryCity: updated.deliveryCity,
+          scheduledDate: updated.pickupDate,
+        })
+        .catch(() => {});
+    }
 
     return updated;
   }
@@ -1098,13 +1113,6 @@ export class TransportJobsService {
       orderId: orderId ?? undefined,
     });
 
-    // Broadcast real-time status change to subscribed clients (fire-and-forget)
-    this.updates.broadcastJobStatus({
-      jobId: updatedJob.id,
-      status: dto.status,
-      orderId: orderId ?? undefined,
-    });
-
     return updatedJob;
   }
 
@@ -1254,7 +1262,12 @@ export class TransportJobsService {
               where: { id: job.orderId },
               data: { status: OrderStatus.DELIVERED },
             })
-            .catch(() => {});
+            .catch((err) =>
+              this.logger.error(
+                `Failed to auto-advance order ${job.orderId} to DELIVERED after delivery proof`,
+                err,
+              ),
+            );
         }
       }
     }

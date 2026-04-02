@@ -218,6 +218,9 @@ export class TransportJobsController {
    */
   @Post(':id/accept')
   accept(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+    if (!user.canTransport) {
+      throw new ForbiddenException('Only approved drivers can accept transport jobs');
+    }
     return this.service.accept(id, user.userId);
   }
 

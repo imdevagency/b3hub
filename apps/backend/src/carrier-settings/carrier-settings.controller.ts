@@ -6,6 +6,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -24,6 +25,15 @@ import { CreateZoneDto } from './dto/create-zone.dto';
 import { SetPriceDto } from './dto/set-price.dto';
 import { SetRadiusDto } from './dto/set-radius.dto';
 
+/** Asserts the caller is an approved carrier (canSkipHire or canTransport). */
+function assertIsCarrier(user: RequestingUser): void {
+  if (!user.canSkipHire && !user.canTransport) {
+    throw new ForbiddenException(
+      'Only approved carriers can access carrier settings',
+    );
+  }
+}
+
 @Controller('carrier-settings')
 @UseGuards(JwtAuthGuard)
 export class CarrierSettingsController {
@@ -34,6 +44,7 @@ export class CarrierSettingsController {
   /** GET /api/v1/carrier-settings/pricing — list my pricing table */
   @Get('pricing')
   getPricing(@Request() req: Express.Request & { user: RequestingUser }) {
+    assertIsCarrier(req.user);
     return this.service.getPricing(req.user.userId);
   }
 
@@ -44,6 +55,7 @@ export class CarrierSettingsController {
     @Body() dto: SetPriceDto,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
+    assertIsCarrier(req.user);
     return this.service.setPrice(req.user.userId, size, dto.price);
   }
 
@@ -54,6 +66,7 @@ export class CarrierSettingsController {
     @Param('size') size: SkipSize,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
+    assertIsCarrier(req.user);
     return this.service.deletePrice(req.user.userId, size);
   }
 
@@ -62,6 +75,7 @@ export class CarrierSettingsController {
   /** GET /api/v1/carrier-settings/zones — list my service zones */
   @Get('zones')
   getZones(@Request() req: Express.Request & { user: RequestingUser }) {
+    assertIsCarrier(req.user);
     return this.service.getZones(req.user.userId);
   }
 
@@ -72,6 +86,7 @@ export class CarrierSettingsController {
     @Body() dto: CreateZoneDto,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
+    assertIsCarrier(req.user);
     return this.service.addZone(req.user.userId, dto);
   }
 
@@ -82,6 +97,7 @@ export class CarrierSettingsController {
     @Param('id') id: string,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
+    assertIsCarrier(req.user);
     return this.service.removeZone(req.user.userId, id);
   }
 
@@ -90,6 +106,7 @@ export class CarrierSettingsController {
   /** GET /api/v1/carrier-settings/availability — list my blocked dates */
   @Get('availability')
   getBlocked(@Request() req: Express.Request & { user: RequestingUser }) {
+    assertIsCarrier(req.user);
     return this.service.getBlocked(req.user.userId);
   }
 
@@ -100,6 +117,7 @@ export class CarrierSettingsController {
     @Body() dto: BlockDateDto,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
+    assertIsCarrier(req.user);
     return this.service.blockDate(req.user.userId, dto);
   }
 
@@ -110,6 +128,7 @@ export class CarrierSettingsController {
     @Param('id') id: string,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
+    assertIsCarrier(req.user);
     return this.service.unblockDate(req.user.userId, id);
   }
 
@@ -118,6 +137,7 @@ export class CarrierSettingsController {
   /** GET /api/v1/carrier-settings/radius — get my service radius */
   @Get('radius')
   getRadius(@Request() req: Express.Request & { user: RequestingUser }) {
+    assertIsCarrier(req.user);
     return this.service.getRadius(req.user.userId);
   }
 
@@ -127,6 +147,7 @@ export class CarrierSettingsController {
     @Body() dto: SetRadiusDto,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
+    assertIsCarrier(req.user);
     return this.service.setRadius(req.user.userId, dto.radiusKm);
   }
 }

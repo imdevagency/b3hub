@@ -338,7 +338,7 @@ export default function IncomingScreen() {
         const data = await api.orders.myOrders(token);
         setOrders(data.map(mapApiOrder));
       } catch (e) {
-        // silent
+        if (!isRefresh) toast.error('Kļūda ielādējot pasūtījumus');
       } finally {
         setFetching(false);
         setRefreshing(false);

@@ -36,8 +36,8 @@ export function useOrderDetail(id: string | undefined) {
           // Non-critical — documents may not be generated yet
         }
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // order stays null — screen will show empty state
     } finally {
       setLoading(false);
     }

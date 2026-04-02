@@ -47,6 +47,7 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import { t } from '@/lib/translations';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { haptics } from '@/lib/haptics';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -136,6 +137,7 @@ function ProposalModal({ request, visible, onClose, onSuccess, token }: Proposal
         token,
       );
       setDone(true);
+      haptics.success();
       setTimeout(() => {
         onSuccess(request.id);
         onClose();
@@ -191,7 +193,7 @@ function ProposalModal({ request, visible, onClose, onSuccess, token }: Proposal
           <View style={styles.stepper}>
             <TouchableOpacity
               style={styles.stepBtn}
-              onPress={() => setEtaDays((d) => Math.max(1, d - 1))}
+              onPress={() => { haptics.light(); setEtaDays((d) => Math.max(1, d - 1)); }}
               hitSlop={8}
             >
               <Minus size={18} color={ACCENT} />
@@ -199,7 +201,7 @@ function ProposalModal({ request, visible, onClose, onSuccess, token }: Proposal
             <Text style={styles.stepValue}>{etaDays}</Text>
             <TouchableOpacity
               style={styles.stepBtn}
-              onPress={() => setEtaDays((d) => Math.min(30, d + 1))}
+              onPress={() => { haptics.light(); setEtaDays((d) => Math.min(30, d + 1)); }}
               hitSlop={8}
             >
               <Plus size={18} color={ACCENT} />

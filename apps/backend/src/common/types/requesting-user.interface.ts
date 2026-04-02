@@ -18,4 +18,5 @@ export interface RequestingUser {
   permViewFinancials: boolean;
   permManageTeam: boolean;
   payoutEnabled?: boolean;
+  tokenVersion?: number; // incremented on capability/role changes; stale JWTs are rejected
 }

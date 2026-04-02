@@ -67,6 +67,8 @@ export interface RegisterInput {
   companyId?: string;
   companyName?: string;
   regNumber?: string;
+  /** Must be true — user accepted T&C and Privacy Policy */
+  termsAccepted: boolean;
 }
 
 export interface LoginInput {

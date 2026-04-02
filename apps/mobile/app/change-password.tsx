@@ -122,6 +122,7 @@ export default function ChangePasswordScreen() {
               placeholder="Jūsu pašreizējā parole"
               placeholderTextColor="#9ca3af"
               autoCapitalize="none"
+              maxLength={100}
             />
             <TouchableOpacity
               onPress={() => setShowCurrent((v) => !v)}
@@ -147,6 +148,7 @@ export default function ChangePasswordScreen() {
               placeholder="Vismaz 8 rakstzīmes"
               placeholderTextColor="#9ca3af"
               autoCapitalize="none"
+              maxLength={100}
             />
             <TouchableOpacity onPress={() => setShowNew((v) => !v)} hitSlop={8} style={s.eyeBtn}>
               {showNew ? <EyeOff size={18} color="#6b7280" /> : <Eye size={18} color="#6b7280" />}
@@ -184,6 +186,7 @@ export default function ChangePasswordScreen() {
               placeholder="Atkārtojiet jauno paroli"
               placeholderTextColor="#9ca3af"
               autoCapitalize="none"
+              maxLength={100}
             />
           </View>
 

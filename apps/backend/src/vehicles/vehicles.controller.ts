@@ -39,6 +39,9 @@ export class VehiclesController {
     @Body() dto: CreateVehicleDto,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
+    if (!req.user.canTransport && req.user.userType !== 'ADMIN') {
+      throw new ForbiddenException('Only approved transport operators can register vehicles');
+    }
     const role = req.user.companyRole;
     if (req.user.isCompany && (role === 'DRIVER' || role === 'MEMBER')) {
       throw new ForbiddenException(
@@ -54,6 +57,9 @@ export class VehiclesController {
    */
   @Get()
   findAll(@Request() req: Express.Request & { user: RequestingUser }) {
+    if (!req.user.canTransport && req.user.userType !== 'ADMIN') {
+      throw new ForbiddenException('Only approved transport operators can view vehicles');
+    }
     return this.vehiclesService.findMine(req.user.userId);
   }
 
@@ -63,6 +69,9 @@ export class VehiclesController {
    */
   @Get('count')
   count(@Request() req: Express.Request & { user: RequestingUser }) {
+    if (!req.user.canTransport && req.user.userType !== 'ADMIN') {
+      throw new ForbiddenException('Only approved transport operators can view vehicle counts');
+    }
     return this.vehiclesService
       .countMine(req.user.userId)
       .then((count) => ({ count }));
@@ -77,6 +86,9 @@ export class VehiclesController {
     @Param('id') id: string,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
+    if (!req.user.canTransport && req.user.userType !== 'ADMIN') {
+      throw new ForbiddenException('Only approved transport operators can view vehicles');
+    }
     return this.vehiclesService.findOne(id, req.user.userId);
   }
 
@@ -90,6 +102,9 @@ export class VehiclesController {
     @Body() dto: UpdateVehicleDto,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
+    if (!req.user.canTransport && req.user.userType !== 'ADMIN') {
+      throw new ForbiddenException('Only approved transport operators can update vehicles');
+    }
     const role = req.user.companyRole;
     if (req.user.isCompany && (role === 'DRIVER' || role === 'MEMBER')) {
       throw new ForbiddenException(
@@ -109,6 +124,9 @@ export class VehiclesController {
     @Param('id') id: string,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
+    if (!req.user.canTransport && req.user.userType !== 'ADMIN') {
+      throw new ForbiddenException('Only approved transport operators can remove vehicles');
+    }
     const role = req.user.companyRole;
     if (req.user.isCompany && (role === 'DRIVER' || role === 'MEMBER')) {
       throw new ForbiddenException(

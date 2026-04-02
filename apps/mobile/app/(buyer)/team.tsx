@@ -430,7 +430,6 @@ export default function TeamScreen() {
         const data = await api.companyMembers.list(token);
         setMembers(data);
       } catch (e: unknown) {
-        console.error(e);
         showToast('Kļūda ielādējot datus', 'error');
       } finally {
         setLoading(false);

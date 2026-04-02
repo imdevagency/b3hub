@@ -23,6 +23,7 @@ import {
   type FrameworkContractStatus,
   type CreateCallOffInput,
 } from '@/lib/api';
+import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { formatDate, formatDateShort } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -299,9 +300,7 @@ export default function FrameworkContractDetailScreen() {
   if (loading) {
     return (
       <ScreenContainer standalone bg="#ffffff">
-        <View style={s.center}>
-          <ActivityIndicator color="#111827" size="large" />
-        </View>
+        <SkeletonDetail />
       </ScreenContainer>
     );
   }

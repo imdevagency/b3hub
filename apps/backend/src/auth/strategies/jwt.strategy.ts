@@ -2,11 +2,14 @@
  * Passport JWT strategy.
  * Extracts the Bearer token from Authorization header, verifies against
  * JWT_SECRET, and maps the payload to a RequestingUser placed on req.user.
+ * Also validates tokenVersion against the DB to reject stale tokens issued
+ * before a capability or role change.
  */
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../../prisma/prisma.service';
 import type { RequestingUser } from '../../common/types/requesting-user.interface.js';
 
 interface JwtPayload {
@@ -25,11 +28,15 @@ interface JwtPayload {
   permViewFinancials?: boolean;
   permManageTeam?: boolean;
   payoutEnabled?: boolean;
+  tokenVersion?: number;
 }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(config: ConfigService) {
+  constructor(
+    config: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -37,7 +44,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  validate(payload: JwtPayload): RequestingUser {
+  async validate(payload: JwtPayload): Promise<RequestingUser> {
+    // Reject tokens whose tokenVersion is behind the DB value.
+    // This invalidates JWTs mid-session when capabilities or roles change.
+    const tokenVer = payload.tokenVersion ?? 0;
+    const dbUser = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { tokenVersion: true },
+    });
+    if (!dbUser || dbUser.tokenVersion > tokenVer) {
+      throw new UnauthorizedException('Token has been invalidated. Please log in again.');
+    }
+
     return {
       id: payload.sub,
       userId: payload.sub,
@@ -55,6 +73,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       permViewFinancials: payload.permViewFinancials ?? false,
       permManageTeam: payload.permManageTeam ?? false,
       payoutEnabled: payload.payoutEnabled ?? false,
+      tokenVersion: tokenVer,
     };
   }
 }
