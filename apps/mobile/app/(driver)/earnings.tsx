@@ -237,22 +237,25 @@ export default function EarningsScreen() {
     }
   };
 
-  const fetchEarnings = useCallback(async (isRefresh = false) => {
-    if (!token) return;
-    if (isRefresh) setRefreshing(true);
-    try {
-      const jobs = await api.transportJobs.myJobs(token);
-      const { stats: s, history: h, dailyChart: dc } = computeStats(jobs);
-      setStats(s);
-      setHistory(h);
-      setDailyChart(dc);
-    } catch (e) {
-      showToast('Kļūda ielādējot datus', 'error');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [token]);
+  const fetchEarnings = useCallback(
+    async (isRefresh = false) => {
+      if (!token) return;
+      if (isRefresh) setRefreshing(true);
+      try {
+        const jobs = await api.transportJobs.myJobs(token);
+        const { stats: s, history: h, dailyChart: dc } = computeStats(jobs);
+        setStats(s);
+        setHistory(h);
+        setDailyChart(dc);
+      } catch (e) {
+        showToast('Kļūda ielādējot datus', 'error');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [token],
+  );
 
   useFocusEffect(
     useCallback(() => {

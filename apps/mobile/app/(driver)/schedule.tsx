@@ -87,20 +87,23 @@ export default function ScheduleScreen() {
   const [toggling, setToggling] = useState(false);
   const [updatingDays, setUpdatingDays] = useState<Set<number>>(new Set());
 
-  const load = useCallback(async (isRefresh = false) => {
-    if (!token) return;
-    if (!isRefresh) setLoading(true);
-    else setRefreshing(true);
-    try {
-      const data = await api.driverSchedule.getStatus(token);
-      setProfile(data);
-    } catch {
-      toast.error('Neizdevās ielādēt grafiku.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [token]);
+  const load = useCallback(
+    async (isRefresh = false) => {
+      if (!token) return;
+      if (!isRefresh) setLoading(true);
+      else setRefreshing(true);
+      try {
+        const data = await api.driverSchedule.getStatus(token);
+        setProfile(data);
+      } catch {
+        toast.error('Neizdevās ielādēt grafiku.');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [token],
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -195,9 +198,7 @@ export default function ScheduleScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
       >
         {loading ? (
           <View className="p-4 gap-4">

@@ -51,7 +51,10 @@ export default function OrdersScreen() {
 
   const [showTypePicker, setShowTypePicker] = useState(false);
 
-  const handleFilterChange = (key: FilterKey) => { haptics.light(); setFilter(key); };
+  const handleFilterChange = (key: FilterKey) => {
+    haptics.light();
+    setFilter(key);
+  };
 
   const handleNewOrder = () => {
     haptics.light();

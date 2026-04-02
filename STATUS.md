@@ -71,44 +71,44 @@ Each row is a product feature domain.
 
 ### Recently Fixed (this session)
 
-| Item                                                                    | Status | Impact         |
-| ----------------------------------------------------------------------- | ------ | -------------- |
-| Mobile disposal confirmation                                            | ✅     | UX consistency |
-| Backend pagination on list endpoints                                    | ✅     | Performance    |
-| Transport dispatcher SLA exception panel                                | ✅     | UX/Workflows   |
-| Web sidebar grouped collapsible IA                                      | ✅     | UX/Navigation  |
-| Web sidebar recent pages quick access                                   | ✅     | UX/Navigation  |
-| Web sidebar dynamic signal badges                                       | ✅     | UX/Navigation  |
-| Web single role switcher (topbar only)                                  | ✅     | UX/Navigation  |
-| Order flow hardening                                                    | ✅     | Security/Ops   |
-| Web buyer sidebar: Konteineri → skip-hire, admin redirect, CTA fixed    | ✅     | UX/Navigation  |
-| Mobile seller + driver profiles: role-switch row added                  | ✅     | UX/Navigation  |
-| Mobile seller `_layout.tsx`: stale `title` on hidden quotes tab removed | ✅     | Code quality   |
-| Stale `containers` route removed from copilot-instructions.md           | ✅     | Docs accuracy  |
-| `project/new` hidden from tab bar (was showing erroneously)             | ✅     | UX/Navigation  |
-| Pull-to-refresh added to `(driver)/earnings` and `(driver)/schedule`    | ✅     | UX/Field use   |
-| Reorder button now shows on both `DELIVERED` and `COMPLETED` orders     | ✅     | UX/Buyer       |
-| `(buyer)/framework-contract/[id]` initial load: spinner → SkeletonDetail| ✅    | UX/Performance |
-| Supplier geo-distance: `lat`/`lng` added to Company schema; haversine uses real coords | ✅ | Backend/Geo |
-| Per-company commission rate: `commissionRate` field now used in Stripe payment split | ✅ | Backend/Payments |
-| T&C acceptance: `termsAcceptedAt` persisted on user creation (schema + all register paths) | ✅ | Backend/Auth |
-| Order status emails: CONFIRMED/DELIVERED/CANCELLED trigger buyer email via Resend | ✅ | Backend/Email |
-| Driver job assignment emails: `sendDriverJobAssigned` wired in `applyAssignment` | ✅ | Backend/Email |
-| Seller RFQ notification emails: `sendQuoteRequestReceived` wired on quote-request creation | ✅ | Backend/Email |
-| Web JWT cookie: replaced JS-writable `document.cookie` with HttpOnly server-side cookie via `/api/auth/session` | ✅ | Web/Security |
+| Item                                                                                                            | Status | Impact           |
+| --------------------------------------------------------------------------------------------------------------- | ------ | ---------------- |
+| Mobile disposal confirmation                                                                                    | ✅     | UX consistency   |
+| Backend pagination on list endpoints                                                                            | ✅     | Performance      |
+| Transport dispatcher SLA exception panel                                                                        | ✅     | UX/Workflows     |
+| Web sidebar grouped collapsible IA                                                                              | ✅     | UX/Navigation    |
+| Web sidebar recent pages quick access                                                                           | ✅     | UX/Navigation    |
+| Web sidebar dynamic signal badges                                                                               | ✅     | UX/Navigation    |
+| Web single role switcher (topbar only)                                                                          | ✅     | UX/Navigation    |
+| Order flow hardening                                                                                            | ✅     | Security/Ops     |
+| Web buyer sidebar: Konteineri → skip-hire, admin redirect, CTA fixed                                            | ✅     | UX/Navigation    |
+| Mobile seller + driver profiles: role-switch row added                                                          | ✅     | UX/Navigation    |
+| Mobile seller `_layout.tsx`: stale `title` on hidden quotes tab removed                                         | ✅     | Code quality     |
+| Stale `containers` route removed from copilot-instructions.md                                                   | ✅     | Docs accuracy    |
+| `project/new` hidden from tab bar (was showing erroneously)                                                     | ✅     | UX/Navigation    |
+| Pull-to-refresh added to `(driver)/earnings` and `(driver)/schedule`                                            | ✅     | UX/Field use     |
+| Reorder button now shows on both `DELIVERED` and `COMPLETED` orders                                             | ✅     | UX/Buyer         |
+| `(buyer)/framework-contract/[id]` initial load: spinner → SkeletonDetail                                        | ✅     | UX/Performance   |
+| Supplier geo-distance: `lat`/`lng` added to Company schema; haversine uses real coords                          | ✅     | Backend/Geo      |
+| Per-company commission rate: `commissionRate` field now used in Stripe payment split                            | ✅     | Backend/Payments |
+| T&C acceptance: `termsAcceptedAt` persisted on user creation (schema + all register paths)                      | ✅     | Backend/Auth     |
+| Order status emails: CONFIRMED/DELIVERED/CANCELLED trigger buyer email via Resend                               | ✅     | Backend/Email    |
+| Driver job assignment emails: `sendDriverJobAssigned` wired in `applyAssignment`                                | ✅     | Backend/Email    |
+| Seller RFQ notification emails: `sendQuoteRequestReceived` wired on quote-request creation                      | ✅     | Backend/Email    |
+| Web JWT cookie: replaced JS-writable `document.cookie` with HttpOnly server-side cookie via `/api/auth/session` | ✅     | Web/Security     |
 
 ### Outstanding Gaps
 
-| Gap                                                                                       | Impact                | Area              |
-| ----------------------------------------------------------------------------------------- | --------------------- | ----------------- |
-| ~~Stripe payment integration missing~~                                                    | ~~No payment flow~~   | ~~Backend + all~~ |
-| Verify Stripe publishable keys + native dev build for mobile payment sheet                | Runtime readiness     | Web + mobile      |
-| ~~Mixed-supplier material carts are blocked until order-group splitting is implemented~~  | ~~Marketplace scale~~ | ~~Orders~~        |
-| Language switcher — app is Latvian-only; no Russian translations; no UI toggle            | User comfort (Baltic market has significant Russian-speaking population) | Mobile |
-| In-app support contact — no way to reach B3Hub from inside the app if something goes wrong | User trust / support  | Mobile + Web |
-| Onboarding flow after provider approval — new sellers/drivers land in full UI with no first-step guidance | Activation rate | Mobile |
-| Delivery window / time slot selection — buyers can't specify preferred delivery time in order form | Order logistics | Mobile + Backend |
-| Offline proof capture queuing — if signal drops at delivery point, proof submission fails silently | Field reliability | Mobile |
+| Gap                                                                                                       | Impact                                                                   | Area              |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ----------------- |
+| ~~Stripe payment integration missing~~                                                                    | ~~No payment flow~~                                                      | ~~Backend + all~~ |
+| Verify Stripe publishable keys + native dev build for mobile payment sheet                                | Runtime readiness                                                        | Web + mobile      |
+| ~~Mixed-supplier material carts are blocked until order-group splitting is implemented~~                  | ~~Marketplace scale~~                                                    | ~~Orders~~        |
+| Language switcher — app is Latvian-only; no Russian translations; no UI toggle                            | User comfort (Baltic market has significant Russian-speaking population) | Mobile            |
+| In-app support contact — no way to reach B3Hub from inside the app if something goes wrong                | User trust / support                                                     | Mobile + Web      |
+| Onboarding flow after provider approval — new sellers/drivers land in full UI with no first-step guidance | Activation rate                                                          | Mobile            |
+| Delivery window / time slot selection — buyers can't specify preferred delivery time in order form        | Order logistics                                                          | Mobile + Backend  |
+| Offline proof capture queuing — if signal drops at delivery point, proof submission fails silently        | Field reliability                                                        | Mobile            |
 
 ---
 
@@ -129,6 +129,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Backend Modules
 
 <!-- GEN:status-backend-modules -->
+
 - admin
 - analytics
 - auth
@@ -163,6 +164,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Web Pages
 
 <!-- GEN:status-web-pages -->
+
 - (auth)/login
 - (auth)/register
 - (root)
@@ -225,6 +227,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Mobile Screens
 
 <!-- GEN:status-mobile-screens -->
+
 - (auth)/apply-role
 - (auth)/forgot-password
 - (auth)/login

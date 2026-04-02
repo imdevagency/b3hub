@@ -406,7 +406,7 @@ export default function FrameworkContractsScreen() {
               tintColor="#000"
             />
           }
-            ListEmptyComponent={
+          ListEmptyComponent={
             <EmptyState
               icon={<Package size={42} color="#9ca3af" />}
               title="Nav aktīvu projektu"
