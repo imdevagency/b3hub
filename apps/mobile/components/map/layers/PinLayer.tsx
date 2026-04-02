@@ -12,7 +12,13 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Marker } from 'react-native-maps';
+
+let Marker: any = null;
+try {
+  Marker = require('react-native-maps').Marker;
+} catch {
+  /* Expo Go */
+}
 
 export type PinType = 'pickup' | 'delivery' | 'return' | 'current' | 'custom';
 
@@ -25,6 +31,7 @@ interface Props {
 }
 
 export function PinLayer({ id, coordinate, type = 'custom', label, color = '#6b7280' }: Props) {
+  if (!Marker) return null;
   return (
     <Marker
       key={id}

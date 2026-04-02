@@ -141,6 +141,13 @@ export class DriverScheduleService {
     const profile = await this.requireDriverProfile(userId);
     const blockedDate = new Date(dto.date);
 
+    // Reject past dates — blocking them is meaningless
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (blockedDate < today) {
+      throw new ForbiddenException('Cannot block a date in the past');
+    }
+
     return this.prisma.driverDateBlock.upsert({
       where: {
         driverProfileId_blockedDate: {

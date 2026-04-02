@@ -4,6 +4,7 @@
  * zone-based pricing, and vehicle-type-specific overrides.
  */
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -113,6 +114,11 @@ export class CarrierSettingsService {
   async blockDate(userId: string, dto: BlockDateDto) {
     const company = await this.requireCarrierCompany(userId);
     const blockedDate = new Date(dto.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (blockedDate < today) {
+      throw new BadRequestException('Cannot block a date in the past');
+    }
     return this.prisma.carrierAvailability.upsert({
       where: {
         carrierId_blockedDate: { carrierId: company.id, blockedDate },

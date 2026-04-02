@@ -91,6 +91,7 @@ export default function GaragePage() {
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
+    else if (!isLoading && user && !user.canTransport) router.push('/dashboard');
   }, [user, isLoading, router]);
 
   // Company drivers/members can view vehicles but cannot add, edit, or delete

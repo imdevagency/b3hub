@@ -71,15 +71,22 @@ export class FrameworkContractsService {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  private async generateContractNumber(): Promise<string> {
-    const year = new Date().getFullYear().toString().slice(2);
-    const count = await this.prisma.frameworkContract.count();
-    return `FC${year}-${String(count + 1).padStart(4, '0')}`;
+  private generateContractNumber(): string {
+    const date = new Date();
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const ms = (Date.now() % 100_000).toString().padStart(5, '0');
+    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    return `FC${year}${month}${ms}${rand}`;
   }
 
-  private async generateJobNumber(): Promise<string> {
-    const count = await this.prisma.transportJob.count();
-    return `TJ-${String(count + 1).padStart(6, '0')}`;
+  private generateJobNumber(): string {
+    const date = new Date();
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const ms = (Date.now() % 100_000).toString().padStart(5, '0');
+    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    return `TRJ${year}${month}${ms}${rand}`;
   }
 
   private async assertOwner(
@@ -89,7 +96,7 @@ export class FrameworkContractsService {
   ) {
     const contract = await this.prisma.frameworkContract.findUnique({
       where: { id: contractId },
-      select: { buyerId: true, createdById: true, supplierId: true },
+      select: { buyerId: true, createdById: true, supplierId: true, status: true },
     });
     if (!contract) throw new NotFoundException('Framework contract not found');
     const isBuyer =
@@ -135,6 +142,11 @@ export class FrameworkContractsService {
     // Only the buyer side can activate; supplier can view but not activate
     if (contract.buyerId !== companyId && contract.createdById !== userId) {
       throw new ForbiddenException('Only the buyer can activate a contract');
+    }
+    if (contract.status !== FrameworkContractStatus.DRAFT) {
+      throw new BadRequestException(
+        `Cannot activate a contract that is already ${contract.status}`,
+      );
     }
     const updated = await this.prisma.frameworkContract.update({
       where: { id: contractId },
@@ -211,7 +223,7 @@ export class FrameworkContractsService {
       );
     }
 
-    const contractNumber = await this.generateContractNumber();
+    const contractNumber = this.generateContractNumber();
 
     const contract = await this.prisma.frameworkContract.create({
       data: {
@@ -344,6 +356,17 @@ export class FrameworkContractsService {
     });
     if (!position) throw new NotFoundException('Position not found');
 
+    // Ensure the contract is active before releasing a call-off
+    const parentContract = await this.prisma.frameworkContract.findUnique({
+      where: { id: contractId },
+      select: { status: true },
+    });
+    if (parentContract?.status !== FrameworkContractStatus.ACTIVE) {
+      throw new BadRequestException(
+        'Call-offs can only be created on an ACTIVE contract',
+      );
+    }
+
     // Check contingent: sum delivered + in-progress call-offs
     const consumed = position.callOffs
       .filter((j) => j.status !== 'CANCELLED')
@@ -355,7 +378,7 @@ export class FrameworkContractsService {
       );
     }
 
-    const jobNumber = await this.generateJobNumber();
+    const jobNumber = this.generateJobNumber();
 
     const jobTypeMap: Record<string, TransportJobType> = {
       MATERIAL_DELIVERY: TransportJobType.MATERIAL_DELIVERY,

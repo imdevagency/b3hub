@@ -28,7 +28,16 @@ import {
 import { haptics } from '@/lib/haptics';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { LinearGradient } from 'expo-linear-gradient';
+// Guard: expo-linear-gradient requires a native build (not available in Expo Go)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let LinearGradient: React.ComponentType<any>;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  LinearGradient = require('expo-linear-gradient').LinearGradient;
+} catch {
+  LinearGradient = ({ style, children }: { style?: object; children?: React.ReactNode }) =>
+    React.createElement(View, { style }, children);
+}
 import { useToast } from '@/components/ui/Toast';
 import { BaseMap } from '@/components/map/BaseMap';
 
@@ -364,7 +373,7 @@ export default function HomeScreen() {
       {/* ─── Fixed Bottom Panel ──────────────────────────── */}
       <View style={[s.panel, { height: BOTTOM_PANEL_H, paddingBottom: insets.bottom }]}>
         {/* Profile completion nudge */}
-        {user && (!user.phone || !user.companyId) && (
+        {user && (!user.phone || (user.isCompany && !user.company?.id)) && (
           <TouchableOpacity
             style={s.profileNudge}
             activeOpacity={0.8}

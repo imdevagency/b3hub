@@ -102,9 +102,11 @@ export class MaterialsService {
 
     if (
       currentUser &&
-      currentUser.userType !== 'ADMIN' &&
-      currentUser.companyId
+      currentUser.userType !== 'ADMIN'
     ) {
+      if (!currentUser.companyId) {
+        throw new ForbiddenException('Your account is not linked to a company');
+      }
       if (material.supplierId !== currentUser.companyId) {
         throw new ForbiddenException('You do not own this material');
       }
@@ -133,9 +135,11 @@ export class MaterialsService {
 
     if (
       currentUser &&
-      currentUser.userType !== 'ADMIN' &&
-      currentUser.companyId
+      currentUser.userType !== 'ADMIN'
     ) {
+      if (!currentUser.companyId) {
+        throw new ForbiddenException('Your account is not linked to a company');
+      }
       if (material.supplierId !== currentUser.companyId) {
         throw new ForbiddenException('You do not own this material');
       }

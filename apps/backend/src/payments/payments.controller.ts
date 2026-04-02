@@ -9,6 +9,7 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
@@ -61,6 +62,11 @@ export class PaymentsController {
   @Post('onboard')
   @UseGuards(JwtAuthGuard)
   createConnectLink(@CurrentUser() user: RequestingUser) {
+    if (!user.canSell && !user.canTransport && !user.canSkipHire) {
+      throw new ForbiddenException(
+        'Only approved sellers or carriers can onboard for payouts',
+      );
+    }
     return this.paymentsService.createConnectAccountLink(user);
   }
 

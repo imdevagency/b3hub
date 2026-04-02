@@ -53,7 +53,7 @@ interface MenuItem {
 
 interface BuildItemsUser {
   isCompany?: boolean;
-  companyRole?: string;
+  companyRole?: string | null;
   permCreateContracts?: boolean;
   permReleaseCallOffs?: boolean;
   canSkipHire?: boolean;

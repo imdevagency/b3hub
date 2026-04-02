@@ -12,6 +12,7 @@ import { Server, Socket } from 'socket.io';
 import * as jwt from 'jsonwebtoken';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../prisma/prisma.service';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Gateway
@@ -54,7 +55,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(ChatGateway.name);
   private readonly jwtSecret: string;
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {
     this.jwtSecret = this.config.get<string>('JWT_SECRET') ?? 'your-secret-key';
   }
 
@@ -90,11 +94,33 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   /** Client emits this to start receiving messages for a job. */
   @SubscribeMessage('joinJob')
-  handleJoinJob(
+  async handleJoinJob(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { jobId: string },
   ) {
     if (!data?.jobId) throw new WsException('jobId is required');
+
+    const userId = (client.data as Record<string, string>).userId;
+    if (!userId) throw new WsException('Not authenticated');
+
+    // Authorise: only the driver or the buyer may subscribe to a job room.
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id: data.jobId },
+      select: {
+        driverId: true,
+        requestedById: true,
+        order: { select: { createdById: true } },
+      },
+    });
+    if (!job) throw new WsException('Transport job not found');
+
+    const isParticipant =
+      job.driverId === userId ||
+      job.requestedById === userId ||
+      job.order?.createdById === userId;
+
+    if (!isParticipant) throw new WsException('Access denied');
+
     const room = `job:${data.jobId}`;
     void client.join(room);
     this.logger.debug(

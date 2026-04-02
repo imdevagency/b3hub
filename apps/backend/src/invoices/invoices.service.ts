@@ -155,16 +155,28 @@ export class InvoicesService {
   async markAsPaid(invoiceId: string, userId: string, companyId?: string) {
     const invoice = await this.prisma.invoice.findFirst({
       where: { id: invoiceId, order: this.buyerAccess(userId, companyId) },
+      select: { id: true, orderId: true, paymentStatus: true },
     });
     if (!invoice) throw new NotFoundException('Invoice not found');
+    // Idempotency — already paid, return without side-effects
+    if (invoice.paymentStatus === PaymentStatus.PAID) {
+      return this.prisma.invoice.findUnique({ where: { id: invoiceId } });
+    }
     this.logger.log(`Invoice ${invoiceId} marked as paid by user ${userId}`);
-    return this.prisma.invoice.update({
-      where: { id: invoiceId },
-      data: {
-        paymentStatus: PaymentStatus.PAID,
-        paidDate: new Date(),
-      },
-    });
+    const [updatedInvoice] = await this.prisma.$transaction([
+      this.prisma.invoice.update({
+        where: { id: invoiceId },
+        data: {
+          paymentStatus: PaymentStatus.PAID,
+          paidDate: new Date(),
+        },
+      }),
+      this.prisma.order.update({
+        where: { id: invoice.orderId },
+        data: { paymentStatus: PaymentStatus.PAID },
+      }),
+    ]);
+    return updatedInvoice;
   }
 
   /** Admin/internal: get all unpaid invoices */

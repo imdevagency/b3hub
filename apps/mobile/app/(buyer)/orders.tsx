@@ -85,7 +85,7 @@ export default function OrdersScreen() {
       <ScreenHeader
         title="Pasūtījumi"
         onBack={null}
-        right={
+        rightAction={
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={handleNewOrder}

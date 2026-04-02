@@ -50,7 +50,7 @@ export class QuoteRequestsService {
 
   // ── Buyer: create request ────────────────────────────────────
   async create(dto: CreateQuoteRequestDto, userId: string) {
-    const requestNumber = await this.generateRequestNumber();
+    const requestNumber = this.generateRequestNumber();
     const request = await this.prisma.quoteRequest.create({
       data: {
         requestNumber,
@@ -166,6 +166,11 @@ export class QuoteRequestsService {
     if (response.status !== QuoteResponseStatus.PENDING) {
       throw new BadRequestException('This response is no longer available');
     }
+    if (response.validUntil && response.validUntil < new Date()) {
+      throw new BadRequestException(
+        'This quote has expired and can no longer be accepted',
+      );
+    }
 
     // Transact: mark request accepted, mark chosen response accepted,
     //           mark others rejected, create the order
@@ -195,7 +200,8 @@ export class QuoteRequestsService {
         },
       });
 
-      const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}`;
+      const _d = new Date();
+      const orderNumber = `ORD${_d.getFullYear().toString().slice(-2)}${(_d.getMonth() + 1).toString().padStart(2, '0')}${(Date.now() % 100_000).toString().padStart(5, '0')}${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
       const unitPrice = response.pricePerUnit;
       const subtotal = Math.round(unitPrice * req.quantity * 100) / 100;
       const tax = Math.round(subtotal * 0.21 * 100) / 100;
@@ -293,9 +299,8 @@ export class QuoteRequestsService {
       });
 
       if (supplier) {
-        const jobCount = await this.prisma.transportJob.count();
-        const d = new Date();
-        const jobNumber = `TRJ${d.getFullYear().toString().slice(-2)}${(d.getMonth() + 1).toString().padStart(2, '0')}${(jobCount + 1).toString().padStart(5, '0')}`;
+        const _jd = new Date();
+        const jobNumber = `TRJ${_jd.getFullYear().toString().slice(-2)}${(_jd.getMonth() + 1).toString().padStart(2, '0')}${(Date.now() % 100_000).toString().padStart(5, '0')}${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
         const pickupDate = new Date();
         pickupDate.setDate(pickupDate.getDate() + (response.etaDays ?? 1));
 
@@ -319,6 +324,7 @@ export class QuoteRequestsService {
             rate: order.total,
             currency: 'EUR',
             status: TransportJobStatus.AVAILABLE,
+            requestedById: userId,
           },
         });
 
@@ -353,6 +359,17 @@ export class QuoteRequestsService {
     ) {
       throw new BadRequestException(
         'This request is no longer accepting responses',
+      );
+    }
+
+    // Prevent duplicate/spam responses from the same supplier
+    const duplicate = await this.prisma.quoteResponse.findFirst({
+      where: { requestId, supplierId: companyId, status: QuoteResponseStatus.PENDING },
+      select: { id: true },
+    });
+    if (duplicate) {
+      throw new BadRequestException(
+        'You have already submitted a response for this request',
       );
     }
 
@@ -404,7 +421,6 @@ export class QuoteRequestsService {
           },
         },
         include: {
-          buyer: { select: { firstName: true, lastName: true } },
           responses: { select: { supplierId: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -432,9 +448,12 @@ export class QuoteRequestsService {
   }
 
   // ─── Helpers ─────────────────────────────────────────────────
-  private async generateRequestNumber(): Promise<string> {
-    const count = await this.prisma.quoteRequest.count();
-    const seq = String(count + 1).padStart(5, '0');
-    return `QR-${seq}`;
+  private generateRequestNumber(): string {
+    const date = new Date();
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const ms = (Date.now() % 100_000).toString().padStart(5, '0');
+    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    return `QR${year}${month}${ms}${rand}`;
   }
 }

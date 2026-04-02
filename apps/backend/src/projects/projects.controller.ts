@@ -31,6 +31,13 @@ function isOwnerOrManager(user: RequestingUser): boolean {
   );
 }
 
+function canViewFinancials(user: RequestingUser): boolean {
+  if (!user.companyId) return false;
+  if (!user.companyRole) return true; // sole owner
+  if (user.companyRole === 'OWNER' || user.companyRole === 'MANAGER') return true;
+  return user.permViewFinancials === true;
+}
+
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
 export class ProjectsController {
@@ -54,6 +61,11 @@ export class ProjectsController {
   /** GET /projects/:id/financials — P&L snapshot */
   @Get(':id/financials')
   getFinancials(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+    if (!canViewFinancials(user)) {
+      throw new ForbiddenException(
+        'You do not have permission to view project financials',
+      );
+    }
     return this.service.getFinancials(id, user.companyId);
   }
 

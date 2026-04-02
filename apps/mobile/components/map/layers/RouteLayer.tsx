@@ -5,7 +5,13 @@
  * Must be placed inside a <BaseMap>.
  */
 import React from 'react';
-import { Polyline } from 'react-native-maps';
+
+let Polyline: any = null;
+try {
+  Polyline = require('react-native-maps').Polyline;
+} catch {
+  /* Expo Go */
+}
 
 interface Props {
   id: string;
@@ -22,7 +28,7 @@ export function RouteLayer({
   width = 4,
   dashed = false,
 }: Props) {
-  if (coordinates.length < 2) return null;
+  if (coordinates.length < 2 || !Polyline) return null;
   return (
     <Polyline
       key={id}

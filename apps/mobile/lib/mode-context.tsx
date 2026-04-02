@@ -51,6 +51,15 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
     setModeState(defaultModeForUser(user));
   }, [user?.id]);
 
+  // Re-validate current mode if capabilities change mid-session (e.g. admin revokes canSell).
+  // availableModes already recomputes via useMemo; this effect reacts to the result.
+  useEffect(() => {
+    if (!availableModes.includes(mode)) {
+      setModeState(defaultModeForUser(user));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableModes]);
+
   const setMode = (newMode: AppMode) => {
     if (availableModes.includes(newMode)) {
       setModeState(newMode);

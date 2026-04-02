@@ -17,16 +17,23 @@ import { ProviderApplicationsService } from './provider-applications.service';
 import { CreateProviderApplicationDto } from './dto/create-provider-application.dto';
 import type { RequestingUser } from '../common/types/requesting-user.interface.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
 
 @Controller('provider-applications')
 export class ProviderApplicationsController {
   constructor(private readonly service: ProviderApplicationsService) {}
 
-  /** POST /provider-applications — public, anyone can apply */
+  /** POST /provider-applications — public, anyone can apply; JWT optional to bind to account */
+  @UseGuards(OptionalJwtAuthGuard)
   @Post()
-  create(@Body() dto: CreateProviderApplicationDto) {
-    return this.service.create(dto);
+  create(
+    @Body() dto: CreateProviderApplicationDto,
+    @Request() req: Express.Request & { user?: RequestingUser },
+  ) {
+    // Use the authenticated user's ID if present; ignore any client-supplied userId
+    const authenticatedUserId = req.user?.userId ?? undefined;
+    return this.service.create(dto, authenticatedUserId);
   }
 
   /** GET /provider-applications/mine — authenticated user's own applications */

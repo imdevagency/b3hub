@@ -66,7 +66,7 @@ export default function SellerOrderDetailScreen() {
   const { token } = useAuth();
   const router = useRouter();
   const toast = useToast();
-  const { order, loading, refresh } = useOrderDetail(id);
+  const { order, loading, reload: refresh } = useOrderDetail(id);
   const [actioning, setActioning] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
@@ -202,12 +202,12 @@ export default function SellerOrderDetailScreen() {
         {order.buyer && (
           <InfoSection icon={<User size={14} color="#6b7280" />} title="Pircējs">
             <DetailRow label="Vārds" value={order.buyer.name} />
-            {order.buyer.phone && (
+            {order.buyer?.phone && (
               <TouchableOpacity
                 activeOpacity={0.7}
                 style={s.phoneRow}
                 onPress={() =>
-                  Linking.openURL(`tel:${order.buyer.phone}`).catch(() =>
+                  Linking.openURL(`tel:${order.buyer?.phone}`).catch(() =>
                     Alert.alert('Kļūda', 'Neizdevās iniciēt zvanu'),
                   )
                 }
@@ -215,11 +215,11 @@ export default function SellerOrderDetailScreen() {
                 <Text style={s.phoneLabel}>Tālrunis</Text>
                 <View style={s.phoneRight}>
                   <Phone size={13} color={colors.primary} />
-                  <Text style={s.phoneValue}>{order.buyer.phone}</Text>
+                  <Text style={s.phoneValue}>{order.buyer?.phone}</Text>
                 </View>
               </TouchableOpacity>
             )}
-            {order.buyer.email && <DetailRow label="E-pasts" value={order.buyer.email} last />}
+            {order.buyer?.email && <DetailRow label="E-pasts" value={order.buyer?.email} last />}
           </InfoSection>
         )}
 
@@ -330,7 +330,7 @@ const s = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1.5,
     borderColor: colors.border,
-    backgroundColor: colors.card,
+    backgroundColor: colors.bgCard,
   },
   btnOutlineText: {
     fontSize: fontSizes.sm,

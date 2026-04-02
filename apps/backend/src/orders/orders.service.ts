@@ -111,10 +111,29 @@ export class OrdersService {
     for (const item of items) {
       const material = await this.prisma.material.findUnique({
         where: { id: item.materialId },
-        select: { id: true, basePrice: true, supplierId: true },
+        select: { id: true, basePrice: true, supplierId: true, active: true, inStock: true, stockQty: true, minOrder: true, maxOrder: true },
       });
       if (!material) {
         throw new NotFoundException(`Material ${item.materialId} not found`);
+      }
+      if (!material.active || !material.inStock) {
+        throw new BadRequestException(`Material ${item.materialId} is not available`);
+      }
+      // Enforce stockQty when the supplier tracks it
+      if (material.stockQty != null && item.quantity > material.stockQty) {
+        throw new BadRequestException(
+          `Insufficient stock for material ${item.materialId}: requested ${item.quantity}, available ${material.stockQty}`,
+        );
+      }
+      if (material.minOrder != null && item.quantity < material.minOrder) {
+        throw new BadRequestException(
+          `Order quantity ${item.quantity} is below minimum order of ${material.minOrder} for material ${item.materialId}`,
+        );
+      }
+      if (material.maxOrder != null && item.quantity > material.maxOrder) {
+        throw new BadRequestException(
+          `Order quantity ${item.quantity} exceeds maximum order of ${material.maxOrder} for material ${item.materialId}`,
+        );
       }
       const enriched: EnrichedItem = {
         ...item,
@@ -197,7 +216,7 @@ export class OrdersService {
     buyerCompanyId: string,
     userId: string,
   ) {
-    const orderNumber = await this.generateOrderNumber();
+    const orderNumber = this.generateOrderNumber();
     const subtotal = items.reduce(
       (sum, i) => sum + i.resolvedUnitPrice * i.quantity,
       0,
@@ -1044,7 +1063,7 @@ export class OrdersService {
     currency: string;
     createdById: string;
   }): Promise<void> {
-    const invoiceNumber = await this.generateInvoiceNumber();
+    const invoiceNumber = this.generateInvoiceNumber();
 
     const buyerProfile = await this.prisma.buyerProfile.findUnique({
       where: { userId: order.createdById },
@@ -1089,13 +1108,13 @@ export class OrdersService {
     }
   }
 
-  private async generateInvoiceNumber(): Promise<string> {
-    const count = await this.prisma.invoice.count();
+  private generateInvoiceNumber(): string {
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const number = (count + 1).toString().padStart(5, '0');
-    return `INV${year}${month}${number}`;
+    const ms = (Date.now() % 100_000).toString().padStart(5, '0');
+    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    return `INV${year}${month}${ms}${rand}`;
   }
 
   /**
@@ -1136,7 +1155,7 @@ export class OrdersService {
     const pickupDate = orderData.deliveryDate
       ? new Date(orderData.deliveryDate)
       : new Date();
-    const jobNumber = await this.generateTransportJobNumber();
+    const jobNumber = this.generateTransportJobNumber();
 
     await this.prisma.transportJob.create({
       data: {
@@ -1168,13 +1187,13 @@ export class OrdersService {
     );
   }
 
-  private async generateTransportJobNumber(): Promise<string> {
-    const count = await this.prisma.transportJob.count();
+  private generateTransportJobNumber(): string {
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const number = (count + 1).toString().padStart(5, '0');
-    return `TRJ${year}${month}${number}`;
+    const ms = (Date.now() % 100_000).toString().padStart(5, '0');
+    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    return `TRJ${year}${month}${ms}${rand}`;
   }
 
   // ── Disposal Order (WASTE_COLLECTION transport job) ─────────────────────────
@@ -1195,7 +1214,7 @@ export class OrdersService {
 
     const truck = TRUCK_LABELS[dto.truckType] ?? TRUCK_LABELS.TIPPER_LARGE;
     const totalWeight = truck.capacity * dto.truckCount;
-    const jobNumber = await this.generateTransportJobNumber();
+    const jobNumber = this.generateTransportJobNumber();
     const pickupDate = new Date(dto.requestedDate);
 
     // Find nearest recycling center that accepts this waste type
@@ -1210,10 +1229,16 @@ export class OrdersService {
       },
     });
 
-    const deliveryAddress = center?.address ?? 'Utilizācijas centrs';
-    const deliveryCity = center?.city ?? 'TBD';
-    const deliveryState = center?.state ?? '';
-    const deliveryPostal = center?.postalCode ?? '';
+    if (!center) {
+      throw new BadRequestException(
+        `No active recycling center found that accepts waste type "${dto.wasteType}". Please contact support.`,
+      );
+    }
+
+    const deliveryAddress = center.address;
+    const deliveryCity = center.city;
+    const deliveryState = center.state ?? '';
+    const deliveryPostal = center.postalCode ?? '';
 
     const job = await this.prisma.transportJob.create({
       data: {
@@ -1265,7 +1290,7 @@ export class OrdersService {
 
     const vehicle =
       VEHICLE_LABELS[dto.vehicleType] ?? VEHICLE_LABELS.TIPPER_LARGE;
-    const jobNumber = await this.generateTransportJobNumber();
+    const jobNumber = this.generateTransportJobNumber();
     const pickupDate = new Date(dto.requestedDate);
 
     const job = await this.prisma.transportJob.create({
@@ -1305,13 +1330,13 @@ export class OrdersService {
     return job;
   }
 
-  private async generateOrderNumber(): Promise<string> {
-    const count = await this.prisma.order.count();
+  private generateOrderNumber(): string {
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const number = (count + 1).toString().padStart(5, '0');
-    return `ORD${year}${month}${number}`;
+    const ms = (Date.now() % 100_000).toString().padStart(5, '0');
+    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    return `ORD${year}${month}${ms}${rand}`;
   }
 
   /** Add a surcharge line item to an order. Only the seller or ADMIN may do this. */

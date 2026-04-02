@@ -6,7 +6,8 @@
 
 import { useEffect, useState } from 'react';
 import { Bookmark, ChevronDown, ChevronUp, Loader2, LocateFixed, MapPin, Star } from 'lucide-react';
-import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
+import { useAuth } from '@/lib/auth-context';
+import { API_URL } from '@/lib/api/common';
 import { AddressAutocomplete, type PlaceAddress } from '@/components/ui/AddressAutocomplete';
 import { getSavedAddresses, type SavedAddress } from '@/lib/api/saved-addresses';
 
@@ -60,7 +61,7 @@ export function Step2Address({
     setSavedOpen(false);
   }
 
-  const googleKey = getGoogleMapsPublicKey();
+  const { token } = useAuth();
 
   function handleSelect(place: PlaceAddress) {
     const addr = [place.address, place.city].filter(Boolean).join(', ');
@@ -80,20 +81,14 @@ export function Step2Address({
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
         try {
-          if (googleKey) {
-            const res = await fetch(
-              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googleKey}&language=lv`,
-            );
-            const data = await res.json();
-            const addr =
-              data.results?.[0]?.formatted_address ?? `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-            setInput(addr);
-            onAddressChange(addr, lat, lng);
-          } else {
-            const addr = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-            setInput(addr);
-            onAddressChange(addr, lat, lng);
-          }
+          const url = `${API_URL}/maps/reverse-geocode?lat=${lat}&lng=${lng}`;
+          const res = await fetch(url, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          });
+          const data = res.ok ? ((await res.json()) as { address?: string }) : {};
+          const addr = data.address ?? `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          setInput(addr);
+          onAddressChange(addr, lat, lng);
         } catch {
           const addr = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
           setInput(addr);

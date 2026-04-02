@@ -304,11 +304,14 @@ export class PaymentsService {
     // For simplicity split seller payout equally among suppliers when multiple (rare after cart-split)
     const perSupplierCents = Math.round(sellerCents / supplierIds.length);
 
-    for (const item of order.items) {
-      const supplierConnectId = item.material.supplier.stripeConnectId;
+    for (const supplierId of supplierIds) {
+      const supplierItem = order.items.find(
+        (i) => i.material.supplier.id === supplierId,
+      );
+      const supplierConnectId = supplierItem?.material.supplier.stripeConnectId;
       if (!supplierConnectId) {
         this.logger.warn(
-          `Supplier ${item.material.supplier.id} has no Stripe Connect account — skipping transfer`,
+          `Supplier ${supplierId} has no Stripe Connect account — skipping transfer`,
         );
         continue;
       }
@@ -320,15 +323,14 @@ export class PaymentsService {
           destination: supplierConnectId,
           transfer_group: transferGroup,
           ...(chargeId ? { source_transaction: chargeId } : {}),
-          metadata: { orderId, supplierId: item.material.supplier.id },
+          metadata: { orderId, supplierId },
         });
       } catch (err) {
         this.logger.error(
-          `Supplier transfer failed for order ${orderId}: ${(err as Error).message}`,
+          `Supplier transfer failed for order ${orderId} supplier ${supplierId}: ${(err as Error).message}`,
         );
         throw err;
       }
-      break; // one transfer per supplier (items may repeat the same supplier)
     }
 
     // Driver transfer
@@ -530,9 +532,11 @@ export class PaymentsService {
       ? `${order.internalNotes}\n\n${disputeEntry}`
       : disputeEntry;
 
+    // Mark order as IN_PROGRESS (dispute hold) so it cannot be auto-completed
+    // and releaseFunds cannot be triggered while the dispute is open
     await this.prisma.order.update({
       where: { id: orderId },
-      data: { internalNotes: updatedNotes },
+      data: { internalNotes: updatedNotes, status: 'IN_PROGRESS' },
     });
 
     // Notify all admin users

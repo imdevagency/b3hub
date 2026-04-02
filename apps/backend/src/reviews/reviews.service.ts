@@ -57,7 +57,13 @@ export class ReviewsService {
       if (existing)
         throw new ConflictException('You already reviewed this order');
 
-      companyId = order.items[0]?.material?.supplierId ?? order.buyerId;
+      const supplierId = order.items[0]?.material?.supplierId;
+      if (!supplierId) {
+        throw new BadRequestException(
+          'Cannot determine supplier for this order — no items with a supplier found',
+        );
+      }
+      companyId = supplierId;
     } else {
       // Skip-hire order — company to rate is the assigned carrier
       const skipOrder = await this.prisma.skipHireOrder.findUnique({

@@ -5,6 +5,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { getMyOrders, type ApiOrder, setupPayouts } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
@@ -230,11 +231,17 @@ function StatCard({
 
 export default function SupplierEarningsPage() {
   const { user, token } = useAuth();
+  const router = useRouter();
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<Period>('week');
   const [setupLoading, setSetupLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) router.push('/login');
+    else if (user && !user.canSell) router.push('/dashboard');
+  }, [user, router]);
 
   const handleSetupPayouts = async () => {
     try {

@@ -169,11 +169,12 @@ export default function FleetPage() {
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
+    else if (!isLoading && user && !user.canTransport) router.push('/dashboard');
   }, [user, isLoading, router]);
 
   // Company drivers/members are field workers — fleet dispatch is for OWNER/MANAGER only
   useEffect(() => {
-    if (!isLoading && user) {
+    if (!isLoading && user && user.canTransport) {
       const isCompanyDriver =
         user.isCompany && (user.companyRole === 'DRIVER' || user.companyRole === 'MEMBER');
       if (isCompanyDriver) router.replace('/dashboard/orders');

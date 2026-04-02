@@ -13,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
+import { NotificationType } from './dto/create-notification.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
@@ -68,7 +69,7 @@ export class NotificationsController {
     }
     return this.notificationsService.create({
       userId: body.userId,
-      type: 'SYSTEM',
+      type: NotificationType.SYSTEM_ALERT,
       title: body.title ?? 'Dev Test',
       message: body.message ?? 'Test notification from local dev script',
     });

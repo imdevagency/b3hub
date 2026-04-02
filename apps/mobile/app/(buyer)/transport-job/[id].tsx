@@ -40,7 +40,12 @@ import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { TJB_STATUS } from '@/lib/materials';
 import { BaseMap, RouteLayer, useRoute } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
-import { Marker } from 'react-native-maps';
+let Marker: any = null;
+try {
+  Marker = require('react-native-maps').Marker;
+} catch {
+  /* Expo Go */
+}
 
 // ── Constants ──────────────────────────────────────────────────
 

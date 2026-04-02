@@ -24,10 +24,24 @@ export class ProviderApplicationsService {
   ) {}
 
   /** Public — submit a provider application */
-  async create(dto: CreateProviderApplicationDto) {
+  async create(dto: CreateProviderApplicationDto, authenticatedUserId?: string) {
     if (!dto.appliesForSell && !dto.appliesForTransport) {
       throw new BadRequestException(
         'Must apply for at least one capability (sell or transport)',
+      );
+    }
+
+    // Prevent duplicate PENDING applications from the same email or linked user
+    const duplicateWhere = authenticatedUserId
+      ? { OR: [{ email: dto.email }, { userId: authenticatedUserId }] }
+      : { email: dto.email };
+    const existingPending = await this.prisma.providerApplication.findFirst({
+      where: { ...duplicateWhere, status: 'PENDING' },
+      select: { id: true },
+    });
+    if (existingPending) {
+      throw new BadRequestException(
+        'You already have a pending application under review',
       );
     }
 
@@ -44,7 +58,8 @@ export class ProviderApplicationsService {
         appliesForSell: dto.appliesForSell,
         appliesForTransport: dto.appliesForTransport,
         description: dto.description,
-        userId: dto.userId,
+        // Never trust client-provided userId — use the server-verified identity
+        userId: authenticatedUserId ?? null,
       },
     });
 

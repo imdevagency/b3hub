@@ -5,6 +5,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { getMyTransportJobs, type ApiTransportJob, setupPayouts } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
@@ -193,11 +194,17 @@ const PERIOD_LABELS: Record<Period2, string> = {
 
 export default function TransporterEarningsPage() {
   const { user, token } = useAuth();
+  const router = useRouter();
   const [jobs, setJobs] = useState<ApiTransportJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<Period>('week');
   const [setupLoading, setSetupLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) router.push('/login');
+    else if (user && !user.canTransport) router.push('/dashboard');
+  }, [user, router]);
 
   const handleSetupPayouts = async () => {
     try {

@@ -116,7 +116,7 @@ export class AdminService {
         deliveryDate: true,
         createdAt: true,
         buyer: {
-          select: { id: true, firstName: true, lastName: true, email: true, company: { select: { id: true, name: true } } },
+          select: { id: true, name: true, email: true },
         },
         items: { select: { id: true } },
         transportJobs: { select: { id: true, status: true } },

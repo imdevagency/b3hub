@@ -10,7 +10,14 @@ import {
   Linking,
   RefreshControl,
 } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
+// Guard: expo-clipboard requires a native build (not available in Expo Go)
+let Clipboard: { setStringAsync: (text: string) => Promise<void> } | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  Clipboard = require('expo-clipboard');
+} catch {
+  /* Expo Go fallback */
+}
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -217,7 +224,7 @@ export default function SkipOrderDetailScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <TouchableOpacity
               onPress={async () => {
-                await Clipboard.setStringAsync(order.orderNumber);
+                await Clipboard?.setStringAsync(order.orderNumber);
                 haptics.success();
               }}
               hitSlop={8}

@@ -56,7 +56,7 @@ export class SkipHireService {
 
   // ── Create (public — no auth needed) ──────────────────────────
   async create(dto: CreateSkipHireDto, userId?: string) {
-    const orderNumber = await this.generateOrderNumber();
+    const orderNumber = this.generateOrderNumber();
     let price: number;
     const carrierId: string | null = dto.carrierId ?? null;
 
@@ -81,6 +81,12 @@ export class SkipHireService {
       price = carrierPricing.price + (zone?.surcharge ?? 0);
     } else {
       price = SKIP_PRICES[dto.skipSize];
+    }
+
+    if (new Date(dto.deliveryDate) < new Date(new Date().toDateString())) {
+      throw new BadRequestException(
+        'Delivery date must be today or in the future',
+      );
     }
 
     const order = await this.prisma.skipHireOrder.create({
@@ -399,12 +405,12 @@ export class SkipHireService {
   }
 
   // ── Helpers ───────────────────────────────────────────────────
-  private async generateOrderNumber(): Promise<string> {
-    const count = await this.prisma.skipHireOrder.count();
-    const d = new Date();
-    const yy = d.getFullYear().toString().slice(-2);
-    const mm = (d.getMonth() + 1).toString().padStart(2, '0');
-    const seq = (count + 1).toString().padStart(5, '0');
-    return `SKP${yy}${mm}${seq}`;
+  private generateOrderNumber(): string {
+    const date = new Date();
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const ms = (Date.now() % 100_000).toString().padStart(5, '0');
+    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    return `SKP${year}${month}${ms}${rand}`;
   }
 }

@@ -84,6 +84,12 @@ export class AnalyticsService {
     };
 
     for (const inv of invoices) {
+      if (!inv.dueDate) {
+        // No due date set — treat as current (not yet overdue)
+        buckets['current'].count++;
+        buckets['current'].total += inv.total;
+        continue;
+      }
       const daysPast = Math.floor((now - inv.dueDate.getTime()) / 86_400_000);
       const key =
         daysPast <= 0

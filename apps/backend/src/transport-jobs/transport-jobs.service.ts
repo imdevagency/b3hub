@@ -254,7 +254,7 @@ export class TransportJobsService {
   }
 
   async create(dto: CreateTransportJobDto) {
-    const jobNumber = await this.generateJobNumber();
+    const jobNumber = this.generateJobNumber();
     const job = await this.prisma.transportJob.create({
       data: {
         jobNumber,
@@ -314,13 +314,13 @@ export class TransportJobsService {
     );
   }
 
-  private async generateJobNumber(): Promise<string> {
-    const count = await this.prisma.transportJob.count();
+  private generateJobNumber(): string {
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const number = (count + 1).toString().padStart(5, '0');
-    return `TRJ${year}${month}${number}`;
+    const ms = (Date.now() % 100_000).toString().padStart(5, '0');
+    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    return `TRJ${year}${month}${ms}${rand}`;
   }
 
   /**

@@ -5,8 +5,21 @@
  * `cameraRef` API (setCamera / fitBounds) so all callers work unchanged.
  */
 import React, { useRef, useEffect, useCallback } from 'react';
-import { StyleSheet, ViewStyle, StyleProp } from 'react-native';
-import MapView, { PROVIDER_GOOGLE, MapPressEvent, EdgePadding } from 'react-native-maps';
+import { StyleSheet, ViewStyle, StyleProp, View, Text } from 'react-native';
+
+// react-native-maps is not bundled in Expo Go SDK 50+. Guard the import so the
+// app loads in Expo Go and shows a fallback instead of crashing the JS runtime.
+let MapView: any = null;
+let PROVIDER_GOOGLE: any = undefined;
+type MapPressEvent = any;
+type EdgePadding = { top: number; right: number; bottom: number; left: number };
+try {
+  const maps = require('react-native-maps');
+  MapView = maps.default;
+  PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
+} catch {
+  /* Expo Go — react-native-maps not available */
+}
 
 /** Rīga city centre — [longitude, latitude] (Mapbox convention kept for compat). */
 export const RIGA_CENTER: [number, number] = [24.1052, 56.9496];
@@ -162,6 +175,20 @@ export function BaseMap({
 
   const [lng, lat] = center;
   const delta = zoomToDelta(zoom);
+
+  if (!MapView) {
+    return (
+      <View
+        style={[
+          StyleSheet.absoluteFillObject,
+          style as ViewStyle,
+          { backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' },
+        ]}
+      >
+        <Text style={{ color: '#9ca3af', fontSize: 13 }}>Map not available in Expo Go</Text>
+      </View>
+    );
+  }
 
   return (
     <MapView

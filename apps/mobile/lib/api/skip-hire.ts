@@ -38,6 +38,7 @@ export interface SkipHireOrder {
   notes?: string | null;
   unloadingPointPhotoUrl?: string | null;
   carrierId?: string | null;
+  deliveryWindow?: string | null;
   createdAt: string;
   updatedAt: string;
 }

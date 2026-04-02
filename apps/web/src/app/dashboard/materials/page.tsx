@@ -528,7 +528,8 @@ export default function MyMaterialsPage() {
 
   useEffect(() => {
     if (!isLoading && !token) router.push('/');
-  }, [token, isLoading, router]);
+    else if (!isLoading && user && !user.canSell) router.push('/dashboard');
+  }, [token, isLoading, user, router]);
 
   const supplierId = user?.company?.id ?? '';
 

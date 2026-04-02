@@ -182,7 +182,7 @@ export class ProjectsService {
     // Verify all orders belong to this company
     const orders = await this.prisma.order.findMany({
       where: { id: { in: dto.orderIds } },
-      select: { id: true, buyerId: true },
+      select: { id: true, buyerId: true, projectId: true },
     });
 
     const unauthorized = orders.filter((o) => o.buyerId !== companyId);
@@ -194,6 +194,16 @@ export class ProjectsService {
 
     if (orders.length !== dto.orderIds.length) {
       throw new NotFoundException('One or more orders not found');
+    }
+
+    // Warn if any orders are already assigned to a different project
+    const alreadyAssigned = orders.filter(
+      (o) => o.projectId !== null && o.projectId !== id,
+    );
+    if (alreadyAssigned.length > 0) {
+      throw new BadRequestException(
+        `${alreadyAssigned.length} order(s) are already assigned to a different project. Unassign them first.`,
+      );
     }
 
     await this.prisma.order.updateMany({

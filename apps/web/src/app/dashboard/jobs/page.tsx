@@ -43,7 +43,7 @@ import {
   type CreateTransportJobInput,
 } from '@/lib/api';
 import { useAvailableJobs } from '@/hooks/use-available-jobs';
-import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
+import { API_URL } from '@/lib/api/common';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { CalendarDays, Users, CircleCheck } from 'lucide-react';
 
@@ -160,21 +160,28 @@ function resolveCityCoords(
 
 async function geocodeCity(
   city: string,
-  apiKey: string,
+  token: string | null,
 ): Promise<{ lat: number; lng: number } | null> {
-  if (!apiKey || !city.trim()) return null;
+  if (!city.trim()) return null;
   try {
-    const encoded = encodeURIComponent(`${city}, Latvia`);
-    const res = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encoded}&key=${apiKey}`,
-    );
+    const url = `${API_URL}/maps/autocomplete?input=${encodeURIComponent(city + ', Latvia')}`;
+    const res = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) return null;
     const data = (await res.json()) as {
-      status: string;
-      results: Array<{ geometry: { location: { lat: number; lng: number } } }>;
+      suggestions?: Array<{ place_id: string; description: string }>;
     };
-    if (data.status === 'OK' && data.results[0]) {
-      return data.results[0].geometry.location;
-    }
+    const first = data.suggestions?.[0];
+    if (!first) return null;
+    // Resolve the place_id to lat/lng
+    const detailsUrl = `${API_URL}/maps/place-details?place_id=${encodeURIComponent(first.place_id)}`;
+    const detailsRes = await fetch(detailsUrl, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!detailsRes.ok) return null;
+    const details = (await detailsRes.json()) as { location?: { lat: number; lng: number } };
+    return details.location ?? null;
   } catch {
     // silent
   }
@@ -302,15 +309,14 @@ export default function JobsPage() {
 
   const handleApply = async () => {
     const newFilter = { ...draft };
-    const apiKey = getGoogleMapsPublicKey();
     // Geocode any city names not found in the static lookup
     const toResolve = [newFilter.fromLocation, newFilter.toLocation].filter((loc) => {
       if (!loc.trim()) return false;
       const key = normalizeCity(loc);
       return !geocodeCacheRef.current[key] && !resolveCityCoords(loc, {});
     });
-    if (toResolve.length > 0 && apiKey) {
-      const results = await Promise.all(toResolve.map((c) => geocodeCity(c, apiKey)));
+    if (toResolve.length > 0) {
+      const results = await Promise.all(toResolve.map((c) => geocodeCity(c, token)));
       toResolve.forEach((city, i) => {
         if (results[i]) {
           geocodeCacheRef.current[normalizeCity(city)] = results[i]!;
@@ -345,14 +351,13 @@ export default function JobsPage() {
       toLocation: s.toLocation,
       toRadius: s.toRadius,
     };
-    const apiKey = getGoogleMapsPublicKey();
     const toResolve = [f.fromLocation, f.toLocation].filter((loc) => {
       if (!loc.trim()) return false;
       const key = normalizeCity(loc);
       return !geocodeCacheRef.current[key] && !resolveCityCoords(loc, {});
     });
-    if (toResolve.length > 0 && apiKey) {
-      const results = await Promise.all(toResolve.map((c) => geocodeCity(c, apiKey)));
+    if (toResolve.length > 0) {
+      const results = await Promise.all(toResolve.map((c) => geocodeCity(c, token)));
       toResolve.forEach((city, i) => {
         if (results[i]) geocodeCacheRef.current[normalizeCity(city)] = results[i]!;
       });

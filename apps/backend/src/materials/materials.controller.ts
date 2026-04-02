@@ -41,7 +41,13 @@ export class MaterialsController {
     @CurrentUser() user: RequestingUser,
   ) {
     assertCanSell(user);
-    return this.materialsService.create(createMaterialDto);
+    if (!user.companyId) {
+      throw new ForbiddenException(
+        'Your account is not linked to a company — cannot create a material listing',
+      );
+    }
+    // Force supplierId to the authenticated company — never trust client-provided value
+    return this.materialsService.create({ ...createMaterialDto, supplierId: user.companyId });
   }
 
   @Get()

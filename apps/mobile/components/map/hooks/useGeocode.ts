@@ -1,8 +1,8 @@
 /**
- * useGeocode — Google Maps Geocoding API helpers as a React hook.
+ * useGeocode — Geocoding API helpers as a React hook.
  *
- * Centralises all geocoding logic so AddressPicker and any other screen
- * don't duplicate fetch code.
+ * All requests are proxied through the B3Hub backend (/maps/*), keeping
+ * Google API keys server-side and avoiding platform-restriction errors.
  *
  * Usage:
  *   const { forwardGeocode, reverseGeocode, loading } = useGeocode();
@@ -14,12 +14,8 @@
  *   const suggestions = await forwardGeocode('Brīvības iela');
  */
 import { useState, useCallback } from 'react';
-import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
-
-const GOOGLE_KEY = getGoogleMapsPublicKey();
-const GEOCODE_BASE = 'https://maps.googleapis.com/maps/api/geocode/json';
-const AUTOCOMPLETE_BASE = 'https://maps.googleapis.com/maps/api/place/autocomplete/json';
-const PLACE_DETAILS_BASE = 'https://maps.googleapis.com/maps/api/place/details/json';
+import { useAuth } from '@/lib/auth-context';
+import { API_URL } from '@/lib/api/common';
 
 export interface GeocodeSuggestion {
   id: string; // Google place_id
@@ -31,17 +27,6 @@ export interface GeocodeSuggestion {
 interface GooglePrediction {
   place_id: string;
   description: string;
-}
-
-interface GoogleGeocodeResult {
-  place_id?: string;
-  formatted_address?: string;
-}
-
-interface AddressComponent {
-  types: string[];
-  long_name: string;
-  short_name: string;
 }
 
 export interface AddressWithCity {
@@ -62,6 +47,11 @@ interface UseGeocodeResult {
 
 export function useGeocode(): UseGeocodeResult {
   const [loading, setLoading] = useState(false);
+  const { token } = useAuth();
+
+  const authHeaders = useCallback((): Record<string, string> => {
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }, [token]);
 
   const mapPredictions = useCallback((predictions: GooglePrediction[]): GeocodeSuggestion[] => {
     return predictions.slice(0, 8).map((p) => ({
@@ -72,35 +62,19 @@ export function useGeocode(): UseGeocodeResult {
   }, []);
 
   const fetchAutocomplete = useCallback(
-    async (query: string, useCountryFilter: boolean): Promise<GooglePrediction[]> => {
-      const url =
-        `${AUTOCOMPLETE_BASE}?input=${encodeURIComponent(query)}` +
-        `&language=lv&region=lv&location=56.9496,24.1052&radius=120000` +
-        `${useCountryFilter ? '&components=country:lv|country:lt|country:ee' : ''}` +
-        `&key=${GOOGLE_KEY}`;
-      const res = await fetch(url);
-      const json = await res.json();
-      if (json.status === 'OK') return (json.predictions ?? []) as GooglePrediction[];
-      return [];
+    async (query: string, _useCountryFilter: boolean): Promise<GooglePrediction[]> => {
+      const url = `${API_URL}/maps/autocomplete?input=${encodeURIComponent(query)}`;
+      const res = await fetch(url, { headers: authHeaders() });
+      if (!res.ok) return [];
+      const json = await res.json() as { suggestions?: GooglePrediction[] };
+      return json.suggestions ?? [];
     },
-    [],
+    [authHeaders],
   );
 
-  const fetchAddressFallback = useCallback(async (query: string): Promise<GeocodeSuggestion[]> => {
-    const url =
-      `${GEOCODE_BASE}?address=${encodeURIComponent(query)}` +
-      `&language=lv&region=lv&key=${GOOGLE_KEY}`;
-    const res = await fetch(url);
-    const json = await res.json();
-    if (json.status !== 'OK') return [];
-    return ((json.results ?? []) as GoogleGeocodeResult[])
-      .slice(0, 5)
-      .filter((r) => !!r.place_id && !!r.formatted_address)
-      .map((r) => ({
-        id: r.place_id as string,
-        place_name: r.formatted_address as string,
-        center: [0, 0] as [number, number],
-      }));
+  const fetchAddressFallback = useCallback(async (_query: string): Promise<GeocodeSuggestion[]> => {
+    // Backend autocomplete already fallbacks internally; returning empty here is safe.
+    return [];
   }, []);
 
   const forwardGeocode = useCallback(async (query: string): Promise<GeocodeSuggestion[]> => {
@@ -124,56 +98,52 @@ export function useGeocode(): UseGeocodeResult {
     }
   }, [fetchAutocomplete, mapPredictions, fetchAddressFallback]);
 
-  /** Resolve a place_id → [lng, lat] using Place Details API. */
+  /** Resolve a place_id → [lng, lat] using Place Details API via backend proxy. */
   const resolvePlace = useCallback(
     async (placeId: string): Promise<[number, number] | null> => {
       try {
-        const url =
-          `${PLACE_DETAILS_BASE}?place_id=${encodeURIComponent(placeId)}` +
-          `&fields=geometry&key=${GOOGLE_KEY}`;
-        const res = await fetch(url);
-        const json = await res.json();
-        const loc = json.result?.geometry?.location;
+        const url = `${API_URL}/maps/place-details?place_id=${encodeURIComponent(placeId)}`;
+        const res = await fetch(url, { headers: authHeaders() });
+        if (!res.ok) return null;
+        const json = await res.json() as { location?: { lat: number; lng: number } };
+        const loc = json.location;
         if (!loc) return null;
-        return [loc.lng as number, loc.lat as number];
+        return [loc.lng, loc.lat];
       } catch {
         return null;
       }
     },
-    [],
+    [authHeaders],
   );
 
   const reverseGeocode = useCallback(async (lat: number, lng: number): Promise<string> => {
     setLoading(true);
     try {
-      const url = `${GEOCODE_BASE}?latlng=${lat},${lng}&language=lv&key=${GOOGLE_KEY}`;
-      const res = await fetch(url);
-      const json = await res.json();
-      return (json.results?.[0]?.formatted_address as string | undefined) ?? '';
+      const url = `${API_URL}/maps/reverse-geocode?lat=${lat}&lng=${lng}`;
+      const res = await fetch(url, { headers: authHeaders() });
+      if (!res.ok) return '';
+      const json = await res.json() as { address?: string };
+      return json.address ?? '';
     } catch {
       return '';
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [authHeaders]);
 
   const reverseGeocodeWithCity = useCallback(
     async (lat: number, lng: number): Promise<AddressWithCity> => {
       setLoading(true);
       try {
-        const url = `${GEOCODE_BASE}?latlng=${lat},${lng}&language=lv&key=${GOOGLE_KEY}`;
-        const res = await fetch(url);
-        const json = await res.json();
-        const result = json.results?.[0];
-        if (result) {
-          const address = result.formatted_address as string;
-          const components: AddressComponent[] = result.address_components ?? [];
-          const cityComp = components.find(
-            (c) =>
-              c.types.includes('locality') || c.types.includes('administrative_area_level_2'),
-          );
-          return { address, city: (cityComp?.long_name as string) ?? '' };
-        }
+        const url = `${API_URL}/maps/reverse-geocode?lat=${lat}&lng=${lng}`;
+        const res = await fetch(url, { headers: authHeaders() });
+        if (!res.ok) return { address: `${lat.toFixed(5)}, ${lng.toFixed(5)}`, city: '' };
+        const json = await res.json() as { address?: string };
+        const address = json.address ?? `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        // Extract city from the address string (first comma-separated part after street, if present)
+        const parts = address.split(',').map((s) => s.trim());
+        const city = parts.length >= 2 ? (parts[1] ?? '') : '';
+        return { address, city };
       } catch {
         /* ignore */
       } finally {
@@ -181,7 +151,7 @@ export function useGeocode(): UseGeocodeResult {
       }
       return { address: `${lat.toFixed(5)}, ${lng.toFixed(5)}`, city: '' };
     },
-    [],
+    [authHeaders],
   );
 
   return { forwardGeocode, resolvePlace, reverseGeocode, reverseGeocodeWithCity, loading };

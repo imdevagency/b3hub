@@ -48,7 +48,12 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { api, SkipHireOrder, SkipHireStatus } from '@/lib/api';
 import { BaseMap } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
-import { Marker } from 'react-native-maps';
+let Marker: any = null;
+try {
+  Marker = require('react-native-maps').Marker;
+} catch {
+  /* Expo Go */
+}
 import { t } from '@/lib/translations';
 import { formatDateNumeric } from '@/lib/format';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';

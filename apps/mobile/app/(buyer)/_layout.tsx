@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
+import { useMode, MODE_HOME } from '@/lib/mode-context';
 import { Home, ClipboardList, User, ShoppingCart } from 'lucide-react-native';
 import { TopBar } from '@/components/ui/TopBar';
 import { Sidebar } from '@/components/ui/Sidebar';
@@ -16,6 +17,7 @@ const ACCENT = '#111827';
 
 export default function BuyerLayout() {
   const { user, isLoading } = useAuth();
+  const { availableModes } = useMode();
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
@@ -46,8 +48,12 @@ export default function BuyerLayout() {
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace('/(auth)/welcome');
+    } else if (!isLoading && user && !availableModes.includes('buyer')) {
+      // Pure carrier or pure supplier — they have no buyer mode; send to their home
+      const home = MODE_HOME[availableModes[0] ?? 'buyer'];
+      router.replace(home as any);
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, availableModes]);
 
   if (isLoading) {
     return (

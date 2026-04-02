@@ -1,6 +1,13 @@
 import { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
+// Guard: expo-clipboard requires a native build (not available in Expo Go)
+let Clipboard: { setStringAsync: (text: string) => Promise<void> } | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  Clipboard = require('expo-clipboard');
+} catch {
+  /* Expo Go fallback */
+}
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import { useOrder } from '@/lib/order-context';
@@ -111,7 +118,7 @@ export default function OrderConfirmation() {
           <TouchableOpacity
             style={s.orderNumCard}
             onPress={async () => {
-              await Clipboard.setStringAsync(order.orderNumber);
+              await Clipboard?.setStringAsync(order.orderNumber);
               haptics.success();
             }}
             activeOpacity={0.7}

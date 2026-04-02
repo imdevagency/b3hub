@@ -185,7 +185,7 @@ export class ContainersService {
     const tax = subtotal * 0.21; // 21% VAT
     const total = subtotal + tax;
 
-    const orderNumber = await this.generateOrderNumber();
+    const orderNumber = this.generateOrderNumber();
 
     const order = await this.prisma.order.create({
       data: {
@@ -346,9 +346,12 @@ export class ContainersService {
     return container;
   }
 
-  private async generateOrderNumber(): Promise<string> {
-    const count = await this.prisma.order.count();
-    const pad = String(count + 1).padStart(6, '0');
-    return `ORD-${pad}`;
+  private generateOrderNumber(): string {
+    const date = new Date();
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const ms = (Date.now() % 100_000).toString().padStart(5, '0');
+    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    return `ORD-${year}${month}${ms}${rand}`;
   }
 }

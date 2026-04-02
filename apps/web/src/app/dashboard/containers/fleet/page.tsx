@@ -419,6 +419,7 @@ export default function ContainerFleetPage() {
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
+    else if (!isLoading && user && !user.canSkipHire) router.push('/dashboard');
   }, [user, isLoading, router]);
 
   if (isLoading || !token) {
