@@ -231,6 +231,8 @@ export class CompanyService {
           canTransport: dto.canTransport,
         }),
         ...(dto.canSell !== undefined && { canSell: dto.canSell }),
+        // Invalidate any in-flight JWT so revoked permissions take effect immediately
+        tokenVersion: { increment: 1 },
       },
       select: MEMBER_SELECT,
     });
@@ -253,6 +255,8 @@ export class CompanyService {
       throw new NotFoundException('Member not found in your company');
 
     // Don't delete — deactivate and detach from company
+    // Increment tokenVersion to immediately invalidate any in-flight JWT so the
+    // removed employee cannot act as a company member after removal.
     await this.prisma.user.update({
       where: { id: memberId },
       data: {
@@ -261,6 +265,7 @@ export class CompanyService {
         companyRole: null,
         canSell: false,
         canTransport: false,
+        tokenVersion: { increment: 1 },
       },
     });
   }

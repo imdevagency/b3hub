@@ -259,6 +259,32 @@ export class SkipHireService {
   // ── Update status (admin only) ──────────────────────────────
   async updateStatus(id: string, dto: UpdateSkipHireStatusDto) {
     const existing = await this.findOne(id, undefined, true);
+
+    if (existing.status === dto.status) {
+      return existing; // No-op — already in the requested state
+    }
+
+    // Admins have broader (but not unrestricted) transitions. Terminal states
+    // (COMPLETED, CANCELLED) are one-way — admins cannot re-open them.
+    // This prevents accidental status resets that would confuse the carrier.
+    const ADMIN_ALLOWED: Partial<Record<SkipHireStatus, SkipHireStatus[]>> = {
+      [SkipHireStatus.PENDING]: [SkipHireStatus.CONFIRMED, SkipHireStatus.CANCELLED],
+      [SkipHireStatus.CONFIRMED]: [SkipHireStatus.DELIVERED, SkipHireStatus.CANCELLED],
+      // Admin can revert DELIVERED → CONFIRMED if the skip was placed incorrectly
+      [SkipHireStatus.DELIVERED]: [SkipHireStatus.COLLECTED, SkipHireStatus.CONFIRMED, SkipHireStatus.CANCELLED],
+      [SkipHireStatus.COLLECTED]: [SkipHireStatus.COMPLETED, SkipHireStatus.CANCELLED],
+      // Terminal — no admin override once order is closed
+      [SkipHireStatus.COMPLETED]: [],
+      [SkipHireStatus.CANCELLED]: [],
+    };
+
+    const allowed = ADMIN_ALLOWED[existing.status] ?? [];
+    if (!allowed.includes(dto.status)) {
+      throw new BadRequestException(
+        `Invalid skip hire status transition: ${existing.status} → ${dto.status}`,
+      );
+    }
+
     const updated = await this.prisma.skipHireOrder.update({
       where: { id },
       data: { status: dto.status },

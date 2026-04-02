@@ -105,39 +105,44 @@ export class ProviderApplicationsService {
       throw new BadRequestException('Application is not in PENDING state');
     }
 
-    // Update application
-    const updated = await this.prisma.providerApplication.update({
-      where: { id },
-      data: {
-        status: 'APPROVED',
-        reviewedBy: reviewedByUserId,
-        reviewNote,
-      },
-    });
-
-    // If linked to a user, grant capabilities and set OWNER role
-    if (app.userId) {
-      // Fetch user to check if they already have a companyId
-      const linkedUser = await this.prisma.user.findUnique({
-        where: { id: app.userId },
-        select: { companyId: true },
-      });
-
-      await this.prisma.user.update({
-        where: { id: app.userId },
+    // Wrap both writes in a transaction so the application is never left in
+    // APPROVED state while the user still lacks the capability flags.
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.providerApplication.update({
+        where: { id },
         data: {
-          ...(app.appliesForSell && { canSell: true }),
-          ...(app.appliesForTransport && { canTransport: true }),
-          // Only promote to OWNER when the user is already tied to a company.
-          // Without a companyId, setting companyRole produces an inconsistent state
-          // (OWNER with no company). The admin onboarding flow should create the
-          // Company record separately and link it before or after approval.
-          ...(linkedUser?.companyId && { companyRole: 'OWNER' }),
-          // Bump tokenVersion so any in-flight JWT is invalidated on next request.
-          tokenVersion: { increment: 1 },
+          status: 'APPROVED',
+          reviewedBy: reviewedByUserId,
+          reviewNote,
         },
       });
-    }
+
+      // If linked to a user, grant capabilities and set OWNER role
+      if (app.userId) {
+        // Fetch user to check if they already have a companyId
+        const linkedUser = await tx.user.findUnique({
+          where: { id: app.userId },
+          select: { companyId: true },
+        });
+
+        await tx.user.update({
+          where: { id: app.userId },
+          data: {
+            ...(app.appliesForSell && { canSell: true }),
+            ...(app.appliesForTransport && { canTransport: true }),
+            // Only promote to OWNER when the user is already tied to a company.
+            // Without a companyId, setting companyRole produces an inconsistent state
+            // (OWNER with no company). The admin onboarding flow should create the
+            // Company record separately and link it before or after approval.
+            ...(linkedUser?.companyId && { companyRole: 'OWNER' }),
+            // Bump tokenVersion so any in-flight JWT is invalidated on next request.
+            tokenVersion: { increment: 1 },
+          },
+        });
+      }
+
+      return result;
+    });
 
     // Notify applicant of approval (non-blocking)
     this.email

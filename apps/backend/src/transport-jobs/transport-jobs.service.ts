@@ -36,6 +36,7 @@ import { DocumentsService } from '../documents/documents.service';
 import { UpdatesGateway } from '../updates/updates.gateway';
 import { EmailService } from '../email/email.service';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
+import { PaymentsService } from '../payments/payments.service';
 
 // Valid next-state transitions for a driver
 const NEXT_STATUS: Partial<Record<TransportJobStatus, TransportJobStatus>> = {
@@ -60,6 +61,7 @@ export class TransportJobsService {
     private readonly documents: DocumentsService,
     private readonly updates: UpdatesGateway,
     private readonly email: EmailService,
+    private readonly payments: PaymentsService,
   ) {}
 
   private isDispatcher(user: RequestingUser): boolean {
@@ -155,6 +157,7 @@ export class TransportJobsService {
         id: true,
         orderNumber: true,
         buyerId: true,
+        createdById: true,
         siteContactName: true,
         siteContactPhone: true,
       },
@@ -352,18 +355,25 @@ export class TransportJobsService {
     );
     if (!invoice) return;
 
+    // Only reconcile tonne-based orders — weight cannot be converted to M3/PIECE/LOAD
+    const firstItem = order.items[0];
+    if (firstItem.unit !== 'TONNE') return;
+
     // Convert actual weight to tonnes (same unit as order quantity)
     const actualTonnes = actualWeightKg / 1000;
-    const orderedTonnes = Number(order.items[0].quantity);
+    const orderedTonnes = Number(firstItem.quantity);
 
     // Skip if within 1% tolerance
     const diff = Math.abs(actualTonnes - orderedTonnes);
     if (orderedTonnes === 0 || diff / orderedTonnes < 0.01) return;
 
-    // Recalculate totals based on actual weight
-    const unitPrice = Number(order.items[0].unitPrice);
+    // Recalculate totals based on actual weight; derive tax rate from original order
+    const unitPrice = Number(firstItem.unitPrice);
     const actualSubtotal = Math.round(actualTonnes * unitPrice * 100) / 100;
-    const actualTax = Math.round(actualSubtotal * 0.21 * 100) / 100;
+    const storedSubtotal = Number(order.subtotal);
+    const taxRate =
+      storedSubtotal > 0 ? Number(order.tax) / storedSubtotal : 0.21;
+    const actualTax = Math.round(actualSubtotal * taxRate * 100) / 100;
     const actualTotal = actualSubtotal + actualTax;
     const deliveryFee = Number(order.deliveryFee ?? 0);
 
@@ -714,21 +724,27 @@ export class TransportJobsService {
       );
     }
 
-    const updatedJob = await this.prisma.transportJob.update({
+    // Atomic conditional update: only succeeds if job is still AVAILABLE.
+    // Prevents two drivers racing to accept the same job (last-writer-wins race).
+    const { count } = await this.prisma.transportJob.updateMany({
+      where: { id, status: TransportJobStatus.AVAILABLE },
+      data: { status: TransportJobStatus.ACCEPTED, driverId },
+    });
+    if (count === 0) {
+      throw new BadRequestException('Job is no longer available');
+    }
+
+    const updatedJob = await this.prisma.transportJob.findUniqueOrThrow({
       where: { id },
-      data: {
-        status: TransportJobStatus.ACCEPTED,
-        driverId,
-      },
       select: this.jobSelect,
     });
 
     // Notify buyer if job has an order
-    const buyerId = updatedJob.order?.buyerId ?? undefined;
-    if (buyerId) {
+    const buyerUserId = updatedJob.order?.createdById ?? undefined;
+    if (buyerUserId) {
       this.notifications
         .create({
-          userId: buyerId,
+          userId: buyerUserId,
           type: NotificationType.TRANSPORT_ASSIGNED,
           title: '🚚 Šoferis pieņēmis darbu',
           message: `${updatedJob.jobNumber} • ${updatedJob.pickupCity} → ${updatedJob.deliveryCity}`,
@@ -847,6 +863,92 @@ export class TransportJobsService {
     return updated;
   }
 
+  /**
+   * Admin-only: forcibly reassign a job regardless of its current status.
+   * Used when a driver breaks down, abandons the job, or goes unresponsive
+   * mid-route. The job status is preserved — the new driver inherits the
+   * current state so the timeline remains intact. An exception is logged
+   * automatically and both the removed and new driver are notified.
+   */
+  async forceReassign(
+    id: string,
+    body: AssignDispatchDto & { note?: string },
+  ) {
+    const job = await this.prisma.transportJob.findUnique({ where: { id } });
+    if (!job) throw new NotFoundException('Transport job not found');
+
+    const terminalStatuses: TransportJobStatus[] = [
+      TransportJobStatus.DELIVERED,
+      TransportJobStatus.CANCELLED,
+    ];
+    if (terminalStatuses.includes(job.status)) {
+      throw new BadRequestException(
+        `Job is already ${job.status} — cannot reassign`,
+      );
+    }
+
+    const newDriver = await this.prisma.user.findUnique({
+      where: { id: body.driverId },
+      select: { id: true, firstName: true, canTransport: true },
+    });
+    if (!newDriver || !newDriver.canTransport) {
+      throw new BadRequestException('Target user is not a valid driver');
+    }
+
+    // Update assignment without changing status (driver inherits current stage)
+    const updated = await this.prisma.transportJob.update({
+      where: { id },
+      data: {
+        driverId: body.driverId,
+        vehicleId: body.vehicleId ?? job.vehicleId,
+      },
+      select: this.jobSelect,
+    });
+
+    const note = body.note ?? 'Admin emergency reassignment';
+
+    // Log an exception so the incident is traceable
+    await this.prisma.transportJobException.create({
+      data: {
+        transportJobId: id,
+        type: 'OTHER',
+        notes: `Force-reassigned by admin. ${note}. Previous driver: ${job.driverId ?? 'none'}. New driver: ${body.driverId}.`,
+        reportedById: body.driverId,
+        status: 'RESOLVED',
+        resolution: 'Reassigned by admin',
+        resolvedAt: new Date(),
+      },
+    }).catch((err) =>
+      this.logger.warn(`Could not log force-reassign exception for job ${id}: ${(err as Error).message}`),
+    );
+
+    // Notify old driver they've been removed
+    if (job.driverId && job.driverId !== body.driverId) {
+      this.notifications
+        .create({
+          userId: job.driverId,
+          type: NotificationType.SYSTEM_ALERT,
+          title: 'Darbs noņemts',
+          message: `Darbs ${updated.jobNumber} tika pārsūtīts citam šoferim. Iemesls: ${note}`,
+          data: { jobId: updated.id },
+        })
+        .catch(() => {});
+    }
+
+    // Notify new driver
+    this.notifications
+      .create({
+        userId: body.driverId,
+        type: NotificationType.TRANSPORT_ASSIGNED,
+        title: '🚚 Steidzams darbs piešķirts',
+        message: `${updated.jobNumber} • ${updated.pickupCity} → ${updated.deliveryCity} (pārcelts statusā: ${updated.status})`,
+        data: { jobId: updated.id },
+      })
+      .catch(() => {});
+
+    return updated;
+  }
+
   // ── Dispatcher: unassign pre-dispatch job ─────────────────────
   async unassign(id: string, reason?: string) {
     const job = await this.prisma.transportJob.findUnique({ where: { id } });
@@ -898,6 +1000,14 @@ export class TransportJobsService {
     });
     if (!driver || !driver.canTransport) {
       throw new BadRequestException('User is not a valid driver');
+    }
+
+    // Block dispatcher from assigning a driver who is already mid-job
+    const activeJob = await this.findMyActiveJob(driverId);
+    if (activeJob) {
+      throw new BadRequestException(
+        `Driver already has an active job (${activeJob.jobNumber}). Complete or unassign it first.`,
+      );
     }
 
     if (vehicleId) {
@@ -1251,7 +1361,11 @@ export class TransportJobsService {
           })
           .catch(() => {});
 
-        // Advance the linked order to DELIVERED if it's not already in a terminal state
+        // Advance the linked order to DELIVERED.
+        // Buyer has a 24-hour window to dispute (wrong quantity, damage, etc.).
+        // A scheduled cron in OrdersService auto-advances DELIVERED → COMPLETED
+        // after that window expires and fires releaseFunds(). This protects the
+        // buyer without requiring manual confirmation for every delivery.
         if (
           order.status !== OrderStatus.DELIVERED &&
           order.status !== OrderStatus.COMPLETED &&
@@ -1433,14 +1547,26 @@ export class TransportJobsService {
         : `Lietotājs ${user.userId}`);
     const msg = `Darbs ${job.jobNumber} • ${dto.type} • ${job.pickupCity} → ${job.deliveryCity}`;
 
+    // Human-readable exception type labels for buyer-facing messages
+    const exceptionLabels: Record<string, string> = {
+      DRIVER_NO_SHOW: 'Šoferis neieradās',
+      SUPPLIER_NOT_READY: 'Piegādātājs nav gatavs',
+      WRONG_MATERIAL: 'Nepareizs materiāls',
+      PARTIAL_DELIVERY: 'Daļēja piegāde',
+      REJECTED_DELIVERY: 'Noraidīta piegāde',
+      SITE_CLOSED: 'Objekts slēgts',
+      OVERWEIGHT: 'Pārslogots',
+      OTHER: 'Cits',
+    };
+    const exceptionLabel = exceptionLabels[dto.type] ?? dto.type;
+
     const notifyIds = new Set<string>();
     if (job.driverId && job.driverId !== user.userId)
       notifyIds.add(job.driverId);
     if (job.requestedById && job.requestedById !== user.userId)
       notifyIds.add(job.requestedById);
-    if (job.order?.createdById && job.order.createdById !== user.userId)
-      notifyIds.add(job.order.createdById);
 
+    // Notify dispatcher/driver set
     if (notifyIds.size > 0) {
       this.notifications
         .createForMany(Array.from(notifyIds), {
@@ -1448,6 +1574,21 @@ export class TransportJobsService {
           title: '⚠️ Ziņots izņēmuma gadījums',
           message: `${msg} • Ziņoja: ${actorName}`,
           data: { jobId: id, exceptionId: ex.id },
+        })
+        .catch(() => {});
+    }
+
+    // Send a separate, buyer-friendly notification to the order owner so they
+    // know there is an issue with their delivery and can take action or contact support.
+    const buyerId = job.order?.createdById;
+    if (buyerId && buyerId !== user.userId) {
+      this.notifications
+        .create({
+          userId: buyerId,
+          type: NotificationType.SYSTEM_ALERT,
+          title: `⚠️ Problēma ar jūsu piegādi`,
+          message: `${exceptionLabel} — ${job.pickupCity} → ${job.deliveryCity}. Lūdzu, sekojiet līdzi pasūtījuma statusam vai sazinieties ar atbalstu.`,
+          data: { jobId: id, exceptionId: ex.id, exceptionType: dto.type },
         })
         .catch(() => {});
     }

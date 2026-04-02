@@ -55,11 +55,21 @@ export class MaterialsController {
     @Query('category') category?: string,
     @Query('supplierId') supplierId?: string,
     @Query('isRecycled') isRecycled?: string,
+    @Query('inStock') inStock?: string,
+    @Query('search') search?: string,
+    @Query('priceMax') priceMax?: string,
+    @Query('limit') limit?: string,
+    @Query('skip') skip?: string,
   ) {
     return this.materialsService.findAll({
       category: category as MaterialCategory | undefined,
       supplierId,
-      isRecycled: isRecycled === 'true',
+      isRecycled: isRecycled === 'true' ? true : isRecycled === 'false' ? false : undefined,
+      inStock: inStock === 'true' ? true : undefined,
+      search,
+      priceMax: priceMax != null ? Number(priceMax) : undefined,
+      limit: limit != null ? Number(limit) : undefined,
+      skip: skip != null ? Number(skip) : undefined,
     });
   }
 

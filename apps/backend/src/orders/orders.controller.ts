@@ -13,6 +13,7 @@ import {
   Delete,
   UseGuards,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -108,6 +109,19 @@ export class OrdersController {
   @Post(':id/cancel')
   cancel(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.ordersService.cancel(id, user);
+  }
+
+  /** POST /orders/:id/seller-cancel — seller cancels after confirmation */
+  @Post(':id/seller-cancel')
+  sellerCancel(
+    @Param('id') id: string,
+    @Body('reason') reason: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    if (!reason?.trim()) {
+      throw new BadRequestException('reason is required');
+    }
+    return this.ordersService.sellerCancel(id, reason.trim(), user);
   }
 
   /** POST /orders/:id/surcharges — add a surcharge line item (seller / admin only) */

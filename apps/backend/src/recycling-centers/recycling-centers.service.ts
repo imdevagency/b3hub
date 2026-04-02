@@ -245,7 +245,7 @@ export class RecyclingCentersService {
     return this.prisma.wasteRecord.findMany({
       where: {
         containerOrder: {
-          order: { buyerId: userId },
+          order: { createdById: userId },
         },
       },
       include: {

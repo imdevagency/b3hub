@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
+import { PaymentStatus } from '@prisma/client';
 import { RequestingUser } from '../common/types/requesting-user.interface';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
@@ -94,6 +95,7 @@ export class PaymentsService {
     return {
       clientSecret: paymentIntent.client_secret,
       publishableKey: this.configService.get('STRIPE_PUBLISHABLE_KEY'),
+      paymentIntentId: paymentIntent.id,
     };
   }
 
@@ -203,6 +205,86 @@ export class PaymentsService {
   }
 
   /**
+   * Void or refund payment when an order is cancelled.
+   *
+   * - If the PaymentIntent has not been captured yet → cancel it (no charge at all).
+   * - If it has been captured → issue a full Stripe refund.
+   * - If there is no payment record (e.g. buyer never initiated checkout) → no-op.
+   *
+   * Non-fatal by design — a failed Stripe call should NOT block order cancellation;
+   * the record is logged and requires manual reconciliation.
+   */
+  async voidOrRefund(orderId: string): Promise<void> {
+    if (!this.stripe) {
+      this.logger.warn(
+        `voidOrRefund called for order ${orderId} but Stripe is not configured — skipping`,
+      );
+      return;
+    }
+
+    const payment = await this.prisma.payment.findUnique({
+      where: { orderId },
+    });
+
+    if (!payment?.stripePaymentId) {
+      // Buyer never completed checkout — nothing to void
+      return;
+    }
+
+    if (payment.status === 'RELEASED') {
+      // Funds already transferred; needs manual admin intervention
+      this.logger.warn(
+        `voidOrRefund: order ${orderId} payment already RELEASED — manual refund required`,
+      );
+      return;
+    }
+
+    try {
+      if (payment.status === 'CAPTURED') {
+        // Full refund — charge has already left the buyer's card
+        const chargeId = payment.stripeChargeId;
+        if (chargeId) {
+          await this.stripe.refunds.create({ charge: chargeId });
+        } else {
+          // Retrieve charge ID from the PaymentIntent first
+          const pi = await this.stripe.paymentIntents.retrieve(
+            payment.stripePaymentId,
+          );
+          const resolvedChargeId =
+            typeof pi.latest_charge === 'string'
+              ? pi.latest_charge
+              : (pi.latest_charge?.id ?? null);
+          if (resolvedChargeId) {
+            await this.stripe.refunds.create({ charge: resolvedChargeId });
+          } else {
+            this.logger.warn(
+              `voidOrRefund: no charge found on PaymentIntent for order ${orderId}`,
+            );
+          }
+        }
+        await this.prisma.payment.update({
+          where: { orderId },
+          data: { status: 'REFUNDED' },
+        });
+        this.logger.log(`Order ${orderId} — payment refunded`);
+      } else {
+        // Not yet captured — cancel the authorization (no charge)
+        await this.stripe.paymentIntents.cancel(payment.stripePaymentId);
+        await this.prisma.payment.update({
+          where: { orderId },
+          data: { status: PaymentStatus.REFUNDED },
+        });
+        this.logger.log(`Order ${orderId} — PaymentIntent cancelled (no charge)`);
+      }
+    } catch (err) {
+      this.logger.error(
+        `voidOrRefund failed for order ${orderId}: ${(err as Error).message}`,
+      );
+      // Non-fatal — cancellation proceeds regardless; finance team reconciles manually
+    }
+  }
+
+  /**
    * Release funds (Transfer) to seller and driver via Stripe Connect.
    * Called when order is COMPLETED.
    * Platform keeps a 5% fee; remainder split 80% seller / 20% driver (if job exists).
@@ -244,6 +326,9 @@ export class PaymentsService {
         },
         transportJobs: {
           where: { status: 'DELIVERED' },
+          // Take the most recently delivered job so re-delivery scenarios pay the
+          // correct driver (not the original driver whose job was cancelled / replaced).
+          orderBy: { updatedAt: 'desc' },
           include: {
             driver: {
               select: {
@@ -369,6 +454,42 @@ export class PaymentsService {
       where: { id: orderId },
       data: { paymentStatus: 'RELEASED' },
     });
+
+    // Notify sellers that their payout has been triggered
+    const sellerUserIds = await this.prisma.user.findMany({
+      where: {
+        companyId: { in: supplierIds },
+        company: { isNot: null },
+      },
+      select: { id: true },
+    });
+    if (sellerUserIds.length > 0) {
+      this.notifications
+        .createForMany(
+          sellerUserIds.map((u) => u.id),
+          {
+            type: NotificationType.PAYMENT_RECEIVED,
+            title: 'Maksājums saņemts',
+            message: `Līdzekļi par pasūtījumu #${orderId.slice(-6).toUpperCase()} ir izmaksāti uz jūsu Stripe kontu.`,
+            data: { orderId },
+          },
+        )
+        .catch(() => null);
+    }
+
+    // Notify driver that the job is fully closed and their payout is en route
+    const driverUserId = deliveredJob?.driver?.id;
+    if (driverUserId && driverCents > 0) {
+      this.notifications
+        .create({
+          userId: driverUserId,
+          type: NotificationType.TRANSPORT_COMPLETED,
+          title: 'Darbs pabeigts — izmaksa ceļā',
+          message: `Piegāde ir apstiprināta. Jūsu atalgojums tiek pārskaitīts uz jūsu Stripe kontu.`,
+          data: { orderId },
+        })
+        .catch(() => null);
+    }
   }
 
   /**
@@ -484,6 +605,74 @@ export class PaymentsService {
         break;
       }
 
+      // Stripe externally cancelled the PaymentIntent (e.g. bank / 3DS / expired authorization)
+      case 'payment_intent.canceled': {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        const orderId = pi.metadata?.orderId;
+        if (orderId) {
+          // Only update if the order is still in a pre-capture state — don't clobber COMPLETED/CANCELLED by other paths
+          const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            select: { status: true, paymentStatus: true },
+          });
+          if (order && !['COMPLETED', 'CANCELLED'].includes(order.status)) {
+            await this.prisma.$transaction([
+              this.prisma.payment.update({
+                where: { orderId },
+                data: { status: PaymentStatus.FAILED },
+              }),
+              this.prisma.order.update({
+                where: { id: orderId },
+                data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
+              }),
+            ]).catch((err) =>
+              this.logger.error(`payment_intent.canceled: failed to cancel order ${orderId}`, err),
+            );
+            this.logger.warn(`payment_intent.canceled: order ${orderId} cancelled by Stripe`);
+          }
+        }
+        break;
+      }
+
+      // Stripe Connect account status changed (e.g. seller restricted by Stripe compliance)
+      case 'account.updated': {
+        const account = event.data.object as Stripe.Account;
+        const chargesEnabled = account.charges_enabled ?? false;
+        const payoutsEnabled = account.payouts_enabled ?? false;
+
+        if (!chargesEnabled || !payoutsEnabled) {
+          this.logger.warn(
+            `Stripe Connect account ${account.id} restricted — charges_enabled: ${chargesEnabled}, payouts_enabled: ${payoutsEnabled}`,
+          );
+          // Find the company whose Connect account this is
+          const company = await this.prisma.company.findFirst({
+            where: { stripeConnectId: account.id },
+            select: { id: true, name: true },
+          });
+          // Notify all admins
+          const admins = await this.prisma.user.findMany({
+            where: { userType: 'ADMIN' },
+            select: { id: true },
+          });
+          if (admins.length > 0) {
+            await this.notifications
+              .createForMany(
+                admins.map((a) => a.id),
+                {
+                  type: NotificationType.SYSTEM_ALERT,
+                  title: 'Stripe account restricted',
+                  message: `Stripe Connect account ${account.id}${company ? ` (${company.name})` : ''} has been restricted. charges_enabled=${chargesEnabled}, payouts_enabled=${payoutsEnabled}`,
+                  data: { accountId: account.id, companyId: company?.id ?? null },
+                },
+              )
+              .catch((err) =>
+                this.logger.error(`account.updated: failed to notify admins`, err),
+              );
+          }
+        }
+        break;
+      }
+
       default:
         // Ignore unhandled event types
         break;
@@ -564,5 +753,94 @@ export class PaymentsService {
       message:
         'Sūdzība saņemta. Mēs sazināsimies ar jums 1-2 darba dienu laikā.',
     };
+  }
+
+  /**
+   * Admin resolves an open dispute.
+   *
+   * resolution === 'release' → dispute rejected — funds go to supplier/driver.
+   *   Advances order to COMPLETED and fires releaseFunds().
+   *
+   * resolution === 'refund' → dispute upheld — buyer gets their money back.
+   *   Issues a full Stripe refund and marks order CANCELLED.
+   */
+  async resolveDispute(
+    orderId: string,
+    resolution: 'release' | 'refund',
+    adminNote: string | undefined,
+    admin: RequestingUser,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        createdById: true,
+        internalNotes: true,
+      },
+    });
+
+    if (!order) throw new NotFoundException('Order not found');
+
+    // Allow resolving disputes on DELIVERED or IN_PROGRESS (dispute hold) orders
+    if (order.status !== 'DELIVERED' && order.status !== 'IN_PROGRESS') {
+      throw new BadRequestException(
+        'Dispute can only be resolved on DELIVERED or IN_PROGRESS (disputed) orders',
+      );
+    }
+
+    const noteEntry =
+      `[DISPUTE RESOLVED ${new Date().toISOString()}] Admin: ${admin.userId} ` +
+      `Resolution: ${resolution.toUpperCase()}` +
+      (adminNote ? ` — ${adminNote}` : '');
+
+    const updatedNotes = order.internalNotes
+      ? `${order.internalNotes}\n\n${noteEntry}`
+      : noteEntry;
+
+    if (resolution === 'release') {
+      // Reject dispute — release funds to seller/driver
+      await this.prisma.order.update({
+        where: { id: orderId },
+        data: { status: 'COMPLETED', internalNotes: updatedNotes },
+      });
+      await this.releaseFunds(orderId);
+      this.logger.log(
+        `Dispute RELEASED for order ${order.orderNumber} by admin ${admin.userId}`,
+      );
+      // Notify buyer
+      this.notifications
+        .create({
+          userId: order.createdById,
+          type: NotificationType.SYSTEM_ALERT,
+          title: 'Sūdzība izskatīta',
+          message: `Jūsu sūdzība par pasūtījumu #${order.orderNumber} ir izskatīta. Piegāde apstiprināta.`,
+          data: { orderId },
+        })
+        .catch(() => null);
+    } else {
+      // Uphold dispute — refund buyer, cancel order
+      await this.prisma.order.update({
+        where: { id: orderId },
+        data: { status: 'CANCELLED', internalNotes: updatedNotes },
+      });
+      await this.voidOrRefund(orderId);
+      this.logger.log(
+        `Dispute REFUNDED for order ${order.orderNumber} by admin ${admin.userId}`,
+      );
+      // Notify buyer
+      this.notifications
+        .create({
+          userId: order.createdById,
+          type: NotificationType.SYSTEM_ALERT,
+          title: 'Atmaksa apstiprināta',
+          message: `Jūsu sūdzība par pasūtījumu #${order.orderNumber} ir apstiprināta. Atmaksa tiks apstrādāta 5-10 darba dienu laikā.`,
+          data: { orderId },
+        })
+        .catch(() => null);
+    }
+
+    return { ok: true, resolution };
   }
 }

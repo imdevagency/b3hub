@@ -43,28 +43,52 @@ export class MaterialsService {
     supplierId?: string;
     isRecycled?: boolean;
     inStock?: boolean;
+    search?: string;
+    priceMax?: number;
+    limit?: number;
+    skip?: number;
   }) {
-    return this.prisma.material.findMany({
-      where: {
-        active: true,
-        ...filters,
-      },
-      include: {
-        supplier: {
-          select: {
-            id: true,
-            name: true,
-            logo: true,
-            rating: true,
-            city: true,
+    const { category, supplierId, isRecycled, inStock, search, priceMax, limit = 40, skip = 0 } = filters ?? {};
+
+    const where = {
+      active: true,
+      ...(category ? { category } : {}),
+      ...(supplierId ? { supplierId } : {}),
+      ...(isRecycled != null ? { isRecycled } : {}),
+      ...(inStock ? { inStock: true } : {}),
+      ...(priceMax != null ? { basePrice: { lte: priceMax } } : {}),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' as const } },
+              { description: { contains: search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.material.findMany({
+        where,
+        include: {
+          supplier: {
+            select: {
+              id: true,
+              name: true,
+              logo: true,
+              rating: true,
+              city: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: 500,
-    });
+        orderBy: { createdAt: 'desc' },
+        take: Math.min(limit, 100), // hard cap at 100 per page
+        skip,
+      }),
+      this.prisma.material.count({ where }),
+    ]);
+
+    return { items, total, limit: Math.min(limit, 100), skip, hasMore: skip + items.length < total };
   }
 
   async findOne(id: string) {

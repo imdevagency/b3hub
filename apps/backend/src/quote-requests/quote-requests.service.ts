@@ -10,10 +10,12 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
 import { EmailService } from '../email/email.service';
+import { InvoicesService } from '../invoices/invoices.service';
 import { CreateQuoteRequestDto } from './dto/create-quote-request.dto';
 import { CreateQuoteResponseDto } from './dto/create-quote-response.dto';
 import {
@@ -46,6 +48,7 @@ export class QuoteRequestsService {
     private prisma: PrismaService,
     private notifications: NotificationsService,
     private email: EmailService,
+    private invoices: InvoicesService,
   ) {}
 
   // ── Buyer: create request ────────────────────────────────────
@@ -173,17 +176,38 @@ export class QuoteRequestsService {
     }
 
     // Transact: mark request accepted, mark chosen response accepted,
-    //           mark others rejected, create the order
+    //           mark others rejected, create the order.
+    // All status guards are rechecked *inside* the transaction using updateMany
+    // so that two concurrent acceptResponse calls race safely — only the first
+    // updateMany that finds status=PENDING/QUOTED wins (count > 0); the second
+    // loses the race and receives count=0, triggering a BadRequestException.
     const [, , order] = await this.prisma.$transaction(async (tx) => {
-      const updReq = await tx.quoteRequest.update({
-        where: { id: requestId },
+      const { count: reqCount } = await tx.quoteRequest.updateMany({
+        where: {
+          id: requestId,
+          status: { in: [QuoteRequestStatus.PENDING, QuoteRequestStatus.QUOTED] },
+        },
         data: { status: QuoteRequestStatus.ACCEPTED },
       });
+      if (reqCount === 0) {
+        throw new BadRequestException(
+          'This quote request has already been accepted or is no longer open',
+        );
+      }
 
-      const updResp = await tx.quoteResponse.update({
-        where: { id: responseId },
+      const { count: respCount } = await tx.quoteResponse.updateMany({
+        where: { id: responseId, status: QuoteResponseStatus.PENDING },
         data: { status: QuoteResponseStatus.ACCEPTED },
       });
+      if (respCount === 0) {
+        throw new BadRequestException(
+          'This quote response has already been accepted or is no longer available',
+        );
+      }
+
+      // Keep return shape compatible with downstream destructuring
+      const updReq = await tx.quoteRequest.findUniqueOrThrow({ where: { id: requestId } });
+      const updResp = await tx.quoteResponse.findUniqueOrThrow({ where: { id: responseId } });
 
       // Reject other responses
       await tx.quoteResponse.updateMany({
@@ -217,6 +241,31 @@ export class QuoteRequestsService {
         throw new BadRequestException(
           'Your account is not linked to a company. Please complete your company profile before placing orders.',
         );
+      }
+
+      // Credit limit check — same guard as the direct order flow.
+      // Using a raw UPDATE so the check + increment are atomic (prevents TOCTOU).
+      const creditRows = await tx.$executeRaw`
+        UPDATE buyer_profiles
+        SET "creditUsed" = "creditUsed" + ${total}
+        WHERE "userId" = ${userId}
+          AND "creditLimit" IS NOT NULL
+          AND ("creditLimit" - COALESCE("creditUsed", 0)) >= ${total}
+      `;
+      // If creditRows === 0 the buyer has a limit set but insufficient remaining credit
+      if (creditRows === 0) {
+        const profile = await tx.buyerProfile.findUnique({
+          where: { userId },
+          select: { creditLimit: true, creditUsed: true },
+        });
+        if (profile?.creditLimit != null) {
+          const remaining =
+            Number(profile.creditLimit) - Number(profile.creditUsed ?? 0);
+          throw new BadRequestException(
+            `Insufficient credit. Order total €${total.toFixed(2)} exceeds remaining credit €${remaining.toFixed(2)}.`,
+          );
+        }
+        // No credit limit set — no constraint, proceed
       }
 
       const newOrder = await tx.order.create({
@@ -340,6 +389,27 @@ export class QuoteRequestsService {
       );
     }
 
+    // Auto-generate invoice for this RFQ-derived order (fire-and-forget, non-fatal).
+    // Direct orders spawn their invoice via OrdersService.updateStatus(CONFIRMED);
+    // the RFQ path creates the order inline at CONFIRMED status, so it must call
+    // InvoicesService.createForOrder() explicitly to avoid a missing-invoice gap.
+    this.invoices
+      .createForOrder(
+        {
+          id: order.id,
+          subtotal: Number(order.subtotal ?? 0),
+          tax: Number(order.tax ?? 0),
+          total: Number(order.total),
+          currency: order.currency ?? 'EUR',
+        },
+        userId,
+      )
+      .catch((err) =>
+        this.logger.error(
+          `Failed to auto-generate invoice for RFQ order ${order.id}: ${(err as Error).message}`,
+        ),
+      );
+
     return order;
   }
 
@@ -445,6 +515,44 @@ export class QuoteRequestsService {
         hasMore: skip + limit < total,
       },
     };
+  }
+
+  // ─── Scheduled tasks ──────────────────────────────────────────
+
+  /**
+   * Expire stale quote requests and responses every hour.
+   *
+   * Quote requests open for more than 7 days without resolution are moved to
+   * EXPIRED to keep the RFQ board clean and avoid suppliers/carriers responding
+   * to dead requests. Individual responses whose `validUntil` has passed are
+   * also rejected automatically.
+   */
+  @Cron(CronExpression.EVERY_HOUR)
+  async expireStaleQuotes(): Promise<void> {
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1_000); // 7 days ago
+    const expiredRequests = await this.prisma.quoteRequest.updateMany({
+      where: {
+        status: { in: [QuoteRequestStatus.PENDING, QuoteRequestStatus.QUOTED] },
+        createdAt: { lt: cutoff },
+      },
+      data: { status: QuoteRequestStatus.EXPIRED },
+    });
+
+    // Expire individual responses whose validity window has closed
+    const expiredResponses = await this.prisma.quoteResponse.updateMany({
+      where: {
+        status: QuoteResponseStatus.PENDING,
+        validUntil: { not: null, lt: new Date() },
+      },
+      data: { status: QuoteResponseStatus.REJECTED },
+    });
+
+    if (expiredRequests.count > 0 || expiredResponses.count > 0) {
+      this.logger.log(
+        `Expiry cron: ${expiredRequests.count} quote requests → EXPIRED, ` +
+          `${expiredResponses.count} quote responses → REJECTED`,
+      );
+    }
   }
 
   // ─── Helpers ─────────────────────────────────────────────────

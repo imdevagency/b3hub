@@ -53,7 +53,8 @@ export class AdminService {
       data.canSell !== undefined ||
       data.canTransport !== undefined ||
       data.canSkipHire !== undefined ||
-      data.userType !== undefined;
+      data.userType !== undefined ||
+      data.status !== undefined; // status change (suspend/deactivate) must also invalidate JWTs
 
     const updatedUser = await this.prisma.user.update({
       where: { id },

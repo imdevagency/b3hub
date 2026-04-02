@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
   ForbiddenException,
+  Patch,
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
@@ -17,7 +18,7 @@ import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
-import { IsString, IsOptional, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsOptional, MinLength, MaxLength, IsIn } from 'class-validator';
 
 class ReportDisputeDto {
   @IsString()
@@ -29,6 +30,16 @@ class ReportDisputeDto {
   @IsString()
   @MaxLength(1000)
   details?: string;
+}
+
+class ResolveDisputeDto {
+  @IsIn(['release', 'refund'])
+  resolution!: 'release' | 'refund';
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  adminNote?: string;
 }
 
 @Controller('payments')
@@ -83,5 +94,23 @@ export class PaymentsController {
       dto.details,
       user,
     );
+  }
+
+  /**
+   * PATCH /payments/dispute/:orderId/resolve
+   * Admin-only. Resolves an open dispute by either releasing funds to the seller
+   * (dispute rejected) or issuing a full refund to the buyer (dispute upheld).
+   */
+  @Patch('dispute/:orderId/resolve')
+  @UseGuards(JwtAuthGuard)
+  resolveDispute(
+    @Param('orderId') orderId: string,
+    @Body() dto: ResolveDisputeDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    if (user.userType !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can resolve disputes');
+    }
+    return this.paymentsService.resolveDispute(orderId, dto.resolution, dto.adminNote, user);
   }
 }

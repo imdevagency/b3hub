@@ -11,6 +11,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDisposalOrderDto } from './dto/create-disposal-order.dto';
 import { CreateFreightOrderDto } from './dto/create-freight-order.dto';
@@ -100,6 +101,17 @@ export class OrdersService {
       }
     }
 
+    // Verify the supplied projectId belongs to the buyer's own company (IDOR guard)
+    if (orderData.projectId && currentUser.userType !== 'ADMIN') {
+      const project = await this.prisma.project.findUnique({
+        where: { id: orderData.projectId },
+        select: { companyId: true },
+      });
+      if (!project || project.companyId !== buyerCompanyId) {
+        throw new ForbiddenException('Project does not belong to your company');
+      }
+    }
+
     // ── Enrich items and group by supplier ────────────────────────────────────
     type EnrichedItem = (typeof items)[0] & {
       resolvedUnitPrice: number;
@@ -150,44 +162,81 @@ export class OrdersService {
     const grandTax = grandSubtotal * 0.21; // 21% VAT (Latvia)
     const grandTotal = grandSubtotal + grandTax + (orderData.deliveryFee || 0);
 
-    // ── Credit limit check (whole cart) ──────────────────────────────────────
+    // ── Credit limit check + atomic increment ────────────────────────────────
     const buyerProfile = await this.prisma.buyerProfile.findUnique({
       where: { userId },
       select: { creditLimit: true, creditUsed: true },
     });
     if (buyerProfile?.creditLimit != null) {
-      const remaining =
-        buyerProfile.creditLimit - (buyerProfile.creditUsed ?? 0);
-      if (grandTotal > remaining) {
+      // Use a raw UPDATE with a WHERE guard to atomically check + increment.
+      // This prevents TOCTOU races when two orders are placed simultaneously.
+      const updated = await this.prisma.$executeRaw`
+        UPDATE buyer_profiles
+        SET "creditUsed" = "creditUsed" + ${grandTotal}
+        WHERE "userId" = ${userId}
+          AND "creditLimit" IS NOT NULL
+          AND ("creditLimit" - COALESCE("creditUsed", 0)) >= ${grandTotal}
+      `;
+      if (updated === 0) {
+        const remaining =
+          Number(buyerProfile.creditLimit) - Number(buyerProfile.creditUsed ?? 0);
         throw new BadRequestException(
-          `Order total €${grandTotal.toFixed(2)} exceeds your remaining credit limit of €${remaining.toFixed(2)}`,
+          `Order total \u20ac${grandTotal.toFixed(2)} exceeds your remaining credit limit of \u20ac${remaining.toFixed(2)}`,
         );
       }
     }
 
-    // Increment credit once for the whole cart (non-blocking, best-effort)
-    if (buyerProfile?.creditLimit != null) {
-      this.prisma.buyerProfile
-        .update({
-          where: { userId },
-          data: { creditUsed: { increment: grandTotal } },
-        })
-        .catch((err) => this.logger.error(`Failed to increment creditUsed for buyer ${userId}`, err));
-    }
-
     // ── Create one order per supplier ─────────────────────────────────────────
+    // If any supplier order creation fails mid-loop we roll back the credit that
+    // was already atomically incremented above, and re-throw so the caller sees
+    // an error rather than a partial order state where credit is permanently consumed.
     const createdOrders: Array<
       Awaited<ReturnType<OrdersService['createSupplierOrder']>>
     > = [];
 
-    for (const [, supplierItems] of itemsBySupplier) {
-      const order = await this.createSupplierOrder(
-        supplierItems,
-        orderData,
-        buyerCompanyId,
-        userId,
-      );
-      createdOrders.push(order);
+    try {
+      for (const [, supplierItems] of itemsBySupplier) {
+        const order = await this.createSupplierOrder(
+          supplierItems,
+          orderData,
+          buyerCompanyId,
+          userId,
+        );
+        createdOrders.push(order);
+      }
+    } catch (err) {
+      // Rollback the credit increment so the buyer isn't charged for a failed order.
+      if (buyerProfile?.creditLimit != null) {
+        await this.prisma.$executeRaw`
+          UPDATE buyer_profiles
+          SET "creditUsed" = GREATEST(0, "creditUsed" - ${grandTotal})
+          WHERE "userId" = ${userId}
+        `.catch((rollbackErr) =>
+          this.logger.error(
+            `CRITICAL: credit rollback failed for buyer ${userId} after order creation error. Manual adjustment needed. Original error: ${(err as Error).message}. Rollback error: ${(rollbackErr as Error).message}`,
+          ),
+        );
+      }
+      throw err;
+    }
+
+    // Atomically decrement stockQty for each ordered item.
+    // The pre-check above guards UX; this ensures stock is actually consumed,
+    // and the WHERE guard prevents going below zero under concurrent load.
+    for (const item of items) {
+      this.prisma
+        .$executeRaw`
+          UPDATE materials
+          SET "stockQty" = "stockQty" - ${item.quantity}
+          WHERE id = ${item.materialId}
+            AND "stockQty" IS NOT NULL
+            AND "stockQty" >= ${item.quantity}
+        `
+        .catch((err) =>
+          this.logger.warn(
+            `Stock decrement failed for material ${item.materialId}: ${(err as Error).message}`,
+          ),
+        );
     }
 
     // Single supplier: return the plain order for backward compatibility.
@@ -682,15 +731,16 @@ export class OrdersService {
         );
     }
 
-    // Release credit and cascade-cancel transport jobs when order is cancelled
+    // Release credit and cascade-cancel transport jobs when order is cancelled.
+    // Use raw SQL with GREATEST(0,...) so a credit balance can never go negative
+    // even if two admin/user requests race on the same order.
     if (status === OrderStatus.CANCELLED) {
       if (order.total) {
-        this.prisma.buyerProfile
-          .update({
-            where: { userId: order.createdById },
-            data: { creditUsed: { decrement: Number(order.total) } },
-          })
-          .catch((err) => this.logger.error(`Failed to release credit for buyer ${order.createdById} on order cancellation ${id}`, err));
+        this.prisma.$executeRaw`
+          UPDATE buyer_profiles
+          SET "creditUsed" = GREATEST(0, "creditUsed" - ${Number(order.total)})
+          WHERE "userId" = ${order.createdById}
+        `.catch((err) => this.logger.error(`Failed to release credit for buyer ${order.createdById} on order cancellation ${id}`, err));
       }
 
       // Cancel all transport jobs for this order that are still in a pre-delivery state
@@ -834,6 +884,150 @@ export class OrdersService {
     );
   }
 
+  /**
+   * Seller-initiated cancellation.
+   * A supplier can cancel only if:
+   *  - They supplied at least one item in this order (access guard).
+   *  - The order hasn't progressed beyond CONFIRMED with an active transport job.
+   *    Once a driver has been assigned and accepted the job the supplier must
+   *    escalate through support/admin instead.
+   * Triggers the same cleanup flow as buyer cancel: void/refund, stock restore,
+   * credit release, and buyer notification (with a distinct "seller cancelled" message).
+   */
+  async sellerCancel(id: string, reason: string, currentUser: RequestingUser) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: { include: { material: { select: { supplierId: true } } } },
+        transportJobs: { select: { id: true, status: true, driverId: true } },
+      },
+    });
+
+    if (!order) throw new NotFoundException(`Order with ID ${id} not found`);
+
+    // Access guard — seller must supply at least one item in this order
+    if (currentUser.userType !== 'ADMIN') {
+      if (!currentUser.canSell || !currentUser.companyId) {
+        throw new ForbiddenException('Only approved sellers can cancel orders');
+      }
+      const suppliedByMe = order.items.some(
+        (i) => i.material?.supplierId === currentUser.companyId,
+      );
+      if (!suppliedByMe) {
+        throw new ForbiddenException('You are not a supplier on this order');
+      }
+    }
+
+    if (
+      order.status === OrderStatus.CANCELLED ||
+      order.status === OrderStatus.COMPLETED
+    ) {
+      throw new BadRequestException(
+        `Order is already ${order.status.toLowerCase()} — cannot cancel`,
+      );
+    }
+
+    if (order.status === OrderStatus.DELIVERED) {
+      throw new BadRequestException(
+        'Cannot cancel an order that has already been delivered',
+      );
+    }
+
+    // Block if any transport job is already past ACCEPTED (driver has loaded / is en-route)
+    const blockedStatuses: TransportJobStatus[] = [
+      TransportJobStatus.LOADED,
+      TransportJobStatus.EN_ROUTE_DELIVERY,
+      TransportJobStatus.AT_DELIVERY,
+    ];
+    const driverEnRoute = order.transportJobs.some((j) =>
+      blockedStatuses.includes(j.status),
+    );
+    if (driverEnRoute) {
+      throw new BadRequestException(
+        'A driver has already loaded and is en-route. Contact admin support to resolve.',
+      );
+    }
+
+    // Atomically mark as cancelled (guard against concurrent requests)
+    const { count } = await this.prisma.order.updateMany({
+      where: { id, status: { not: OrderStatus.CANCELLED } },
+      data: { status: OrderStatus.CANCELLED },
+    });
+    if (count === 0) {
+      return this.prisma.order.findUniqueOrThrow({ where: { id } });
+    }
+
+    // Cascade-cancel assigned (but not yet loaded) transport jobs
+    const cancelableJobStatuses: TransportJobStatus[] = [
+      TransportJobStatus.AVAILABLE,
+      TransportJobStatus.ASSIGNED,
+      TransportJobStatus.ACCEPTED,
+      TransportJobStatus.EN_ROUTE_PICKUP,
+      TransportJobStatus.AT_PICKUP,
+    ];
+    const jobsToCancel = order.transportJobs.filter((j) =>
+      cancelableJobStatuses.includes(j.status),
+    );
+    if (jobsToCancel.length > 0) {
+      await this.prisma.transportJob.updateMany({
+        where: { orderId: id, status: { in: cancelableJobStatuses } },
+        data: { status: TransportJobStatus.CANCELLED },
+      });
+      for (const job of jobsToCancel) {
+        if (job.driverId) {
+          this.notifications
+            .create({
+              userId: job.driverId,
+              type: NotificationType.ORDER_CANCELLED,
+              title: 'Darbs atcelts — piegādātājs',
+              message: `Pasūtījums ir atcelts piegādātāja dēļ. Jūsu transporta darbs ir noņemts.`,
+              data: { orderId: id, jobId: job.id },
+            })
+            .catch(() => null);
+        }
+      }
+    }
+
+    // Void / refund payment fire-and-forget
+    this.payments.voidOrRefund(id).catch((err) =>
+      this.logger.error(`voidOrRefund failed on seller-cancel for order ${id}: ${(err as Error).message}`),
+    );
+
+    // Release buyer credit
+    if (order.total) {
+      this.prisma.$executeRaw`
+        UPDATE buyer_profiles
+        SET "creditUsed" = GREATEST(0, "creditUsed" - ${Number(order.total)})
+        WHERE "userId" = ${order.createdById}
+      `.catch((err) =>
+        this.logger.error(`Failed to release credit on seller-cancel for buyer ${order.createdById}: ${(err as Error).message}`),
+      );
+    }
+
+    // Restore stock for each item
+    for (const item of order.items) {
+      if (!item.materialId || !(item as any).quantity) continue;
+      this.prisma.$executeRaw`
+        UPDATE materials
+        SET "stockQty" = "stockQty" + ${(item as any).quantity as number}
+        WHERE id = ${item.materialId} AND "stockQty" IS NOT NULL
+      `.catch(() => null);
+    }
+
+    // Notify buyer with a seller-specific message
+    this.notifications
+      .create({
+        userId: order.createdById,
+        type: NotificationType.ORDER_CANCELLED,
+        title: 'Pasūtījums atcelts (piegādātājs)',
+        message: `Diemžēl piegādātājs atcēla jūsu pasūtījumu #${order.orderNumber}. Iemesls: ${reason}. Ja maksājums tika veikts, tas tiks atmaksāts.`,
+        data: { orderId: id, reason },
+      })
+      .catch(() => null);
+
+    return this.prisma.order.findUniqueOrThrow({ where: { id } });
+  }
+
   async cancel(id: string, currentUser: RequestingUser) {
     const order = await this.findOne(id, currentUser);
 
@@ -850,10 +1044,48 @@ export class OrdersService {
       );
     }
 
-    const updated = await this.prisma.order.update({
-      where: { id },
+    // Block non-admin cancellation once a driver has loaded the truck or is en-route
+    // to the delivery point. At that stage the physical goods are in transit; only
+    // admins can force a cancellation (e.g. to trigger a dispute resolution).
+    if (currentUser.userType !== 'ADMIN') {
+      const activeTransportStatuses: TransportJobStatus[] = [
+        TransportJobStatus.LOADED,
+        TransportJobStatus.EN_ROUTE_DELIVERY,
+        TransportJobStatus.AT_DELIVERY,
+      ];
+      const hasLoadedJob = (order.transportJobs ?? []).some((j) =>
+        activeTransportStatuses.includes(j.status),
+      );
+      if (hasLoadedJob) {
+        throw new BadRequestException(
+          'Cannot cancel this order — the driver has already loaded the materials and is en-route. Contact support to resolve.',
+        );
+      }
+    }
+
+    // Use updateMany with a status guard to atomically guard against a concurrent
+    // cancel request (e.g. user double-taps, or admin and user cancel simultaneously).
+    // Only the request that actually transitions the row from non-CANCELLED → CANCELLED
+    // will have count > 0, ensuring credit is released exactly once.
+    const { count: cancelledCount } = await this.prisma.order.updateMany({
+      where: { id, status: { not: OrderStatus.CANCELLED } },
       data: { status: OrderStatus.CANCELLED },
     });
+
+    if (cancelledCount === 0) {
+      // A concurrent request already cancelled this order; return it without touching credit.
+      return (await this.prisma.order.findUniqueOrThrow({ where: { id } })) as typeof order;
+    }
+
+    // Void the Stripe PaymentIntent or issue a full refund depending on capture state.
+    // Fire-and-forget — payment failure must never block order cancellation.
+    this.payments
+      .voidOrRefund(id)
+      .catch((err) =>
+        this.logger.error(
+          `voidOrRefund failed for order ${id} during cancel: ${(err as Error).message}`,
+        ),
+      );
 
     // Cascade-cancel any transport jobs that are still in progress
     const cancelableStatuses: TransportJobStatus[] = [
@@ -894,15 +1126,37 @@ export class OrdersService {
       }
     }
 
-    // Release credit on cancellation
+    // Release credit on cancellation — use raw SQL with GREATEST(0,...) as a safety
+    // floor so a hypothetical double-decrement can never produce a negative balance.
     if (order.total) {
-      this.prisma.buyerProfile
-        .update({
-          where: { userId: order.createdById },
-          data: { creditUsed: { decrement: Number(order.total) } },
-        })
-        .catch((err) => this.logger.error(`Failed to release credit for buyer ${order.createdById} on cancel ${id}`, err));
+      this.prisma.$executeRaw`
+        UPDATE buyer_profiles
+        SET "creditUsed" = GREATEST(0, "creditUsed" - ${Number(order.total)})
+        WHERE "userId" = ${order.createdById}
+      `.catch((err) => this.logger.error(`Failed to release credit for buyer ${order.createdById} on cancel ${id}`, err));
     }
+
+    // Restore stock for each order item so the supplier's listing reflects
+    // available inventory again. Only restore if the item had a resolved quantity
+    // (not disposal/freight orders that don't consume material stock).
+    const items = (order as any).items as Array<{ materialId?: string | null; quantity?: number | null }> | undefined;
+    if (items?.length) {
+      for (const item of items) {
+        if (!item.materialId || !item.quantity) continue;
+        this.prisma.$executeRaw`
+          UPDATE materials
+          SET "stockQty" = "stockQty" + ${item.quantity}
+          WHERE id = ${item.materialId}
+            AND "stockQty" IS NOT NULL
+        `.catch((err) =>
+          this.logger.warn(
+            `Stock restore failed for material ${item.materialId} on cancel ${id}: ${(err as Error).message}`,
+          ),
+        );
+      }
+    }
+
+    const updated = { ...order, status: OrderStatus.CANCELLED };
 
     // Notify buyer (if someone else cancelled on their behalf)
     this.notifications
@@ -1063,58 +1317,12 @@ export class OrdersService {
     currency: string;
     createdById: string;
   }): Promise<void> {
-    const invoiceNumber = this.generateInvoiceNumber();
-
-    const buyerProfile = await this.prisma.buyerProfile.findUnique({
-      where: { userId: order.createdById },
-      select: { paymentTerms: true },
-    });
-    const dueDate = this.parseDueDateFromTerms(buyerProfile?.paymentTerms);
-
-    const inv = await this.prisma.invoice.create({
-      data: {
-        invoiceNumber,
-        orderId: order.id,
-        subtotal: order.subtotal,
-        tax: order.tax,
-        total: order.total,
-        currency: order.currency,
-        dueDate,
-        paymentStatus: PaymentStatus.PENDING,
-      },
-      select: { id: true },
-    });
-
-    this.logger.log(`Invoice ${invoiceNumber} created for order ${order.id}`);
-
-    // Auto-email the invoice PDF to the buyer (fire-and-forget, non-fatal)
-    const buyer = await this.prisma.user.findUnique({
-      where: { id: order.createdById },
-      select: { email: true, firstName: true, lastName: true },
-    });
-    if (buyer?.email) {
-      this.invoices
-        .emailInvoice(
-          inv.id,
-          buyer.email,
-          [buyer.firstName, buyer.lastName].filter(Boolean).join(' ') ||
-            buyer.email,
-        )
-        .catch((err) =>
-          this.logger.warn(
-            `Auto-email invoice ${inv.id} failed: ${(err as Error).message}`,
-          ),
-        );
-    }
-  }
-
-  private generateInvoiceNumber(): string {
-    const date = new Date();
-    const year = date.getFullYear().toString().slice(-2);
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const ms = (Date.now() % 100_000).toString().padStart(5, '0');
-    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
-    return `INV${year}${month}${ms}${rand}`;
+    // Delegate to InvoicesService so any order-creation path (direct, RFQ, etc.)
+    // produces identical invoice output without duplicating the logic here.
+    await this.invoices.createForOrder(
+      { id: order.id, subtotal: order.subtotal, tax: order.tax, total: order.total, currency: order.currency },
+      order.createdById,
+    );
   }
 
   /**
@@ -1271,6 +1479,13 @@ export class OrdersService {
     this.logger.log(
       `Disposal job ${jobNumber} created (${dto.wasteType} × ${dto.truckCount} trucks from ${dto.pickupCity})`,
     );
+
+    // Notify all active drivers about the new job (fire-and-forget)
+    this.notifyActiveDrivers(
+      `🗑️ Jauns atkritumu izvešanas darbs: ${dto.pickupCity}`,
+      `${dto.wasteType} × ${dto.truckCount} transportlīdzekļi`,
+    ).catch(() => {});
+
     return job;
   }
 
@@ -1327,7 +1542,25 @@ export class OrdersService {
       `Freight job ${jobNumber} created ` +
         `(${dto.pickupCity} → ${dto.dropoffCity}, ${vehicle.label})`,
     );
+
+    // Notify all active drivers about the new job (fire-and-forget)
+    this.notifyActiveDrivers(
+      `🚚 Jauns kravas pārvadājuma darbs: ${dto.pickupCity} → ${dto.dropoffCity}`,
+      `${dto.loadDescription ?? vehicle.label}`,
+    ).catch(() => {});
+
     return job;
+  }
+
+  private async notifyActiveDrivers(title: string, message: string) {
+    const drivers = await this.prisma.user.findMany({
+      where: { canTransport: true, status: 'ACTIVE' },
+      select: { id: true },
+    });
+    await this.notifications.createForMany(
+      drivers.map((d) => d.id),
+      { type: NotificationType.SYSTEM_ALERT, title, message },
+    );
   }
 
   private generateOrderNumber(): string {
@@ -1444,5 +1677,130 @@ export class OrdersService {
         },
       },
     });
+  }
+
+  // ─── Scheduled tasks ─────────────────────────────────────────────────────────
+
+  /**
+   * Auto-complete orders that have been DELIVERED for more than 24 hours without
+   * a buyer dispute. This fires releaseFunds() and pays the seller + driver.
+   *
+   * Construction logistics norm: if the buyer hasn't raised a complaint within
+   * 24 hours of the ePOD being accepted, the delivery is considered accepted.
+   */
+  @Cron(CronExpression.EVERY_HOUR)
+  async autoCompleteDeliveredOrders(): Promise<void> {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1_000); // 24 hrs ago
+
+    const stale = await this.prisma.order.findMany({
+      where: {
+        status: OrderStatus.DELIVERED,
+        updatedAt: { lt: cutoff },
+      },
+      select: { id: true, orderNumber: true },
+    });
+
+    if (stale.length === 0) return;
+
+    for (const order of stale) {
+      try {
+        await this.prisma.order.update({
+          where: { id: order.id },
+          data: { status: OrderStatus.COMPLETED },
+        });
+        // Release funds — fire-and-forget, non-fatal
+        this.payments
+          .releaseFunds(order.id)
+          .catch((err) =>
+            this.logger.error(
+              `autoComplete: releaseFunds failed for order ${order.id}: ${(err as Error).message}`,
+            ),
+          );
+        this.logger.log(
+          `autoCompleteDeliveredOrders: order ${order.orderNumber} auto-completed`,
+        );
+      } catch (err) {
+        this.logger.error(
+          `autoCompleteDeliveredOrders: failed for order ${order.id}: ${(err as Error).message}`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Auto-cancel orders that have been PENDING (awaiting seller confirmation) for
+   * more than 48 hours. In construction logistics a supplier is expected to
+   * confirm or reject within one working day. After 48h with no action:
+   *   - Order → CANCELLED
+   *   - Stripe PaymentIntent → voided/refunded
+   *   - Buyer credit → released
+   *   - Buyer notified
+   *
+   * This prevents funds from being held indefinitely on Stripe for orders that
+   * will never be fulfilled.
+   */
+  @Cron(CronExpression.EVERY_HOUR)
+  async autoCancelStalePendingOrders(): Promise<void> {
+    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1_000); // 48 hrs ago
+
+    const stale = await this.prisma.order.findMany({
+      where: {
+        status: OrderStatus.PENDING,
+        createdAt: { lt: cutoff },
+      },
+      select: { id: true, orderNumber: true, createdById: true, total: true },
+    });
+
+    if (stale.length === 0) return;
+
+    for (const order of stale) {
+      try {
+        const { count } = await this.prisma.order.updateMany({
+          where: { id: order.id, status: OrderStatus.PENDING },
+          data: { status: OrderStatus.CANCELLED },
+        });
+
+        if (count === 0) continue; // Concurrent update beat us
+
+        // Void the Stripe PaymentIntent (fire-and-forget)
+        this.payments.voidOrRefund(order.id).catch((err) =>
+          this.logger.error(
+            `autoCancelStale: voidOrRefund failed for order ${order.id}: ${(err as Error).message}`,
+          ),
+        );
+
+        // Release buyer credit
+        if (order.total) {
+          this.prisma.$executeRaw`
+            UPDATE buyer_profiles
+            SET "creditUsed" = GREATEST(0, "creditUsed" - ${Number(order.total)})
+            WHERE "userId" = ${order.createdById}
+          `.catch((err) =>
+            this.logger.error(
+              `autoCancelStale: credit release failed for order ${order.id}: ${(err as Error).message}`,
+            ),
+          );
+        }
+
+        // Notify buyer
+        this.notifications
+          .create({
+            userId: order.createdById,
+            type: NotificationType.ORDER_CANCELLED,
+            title: 'Pasūtījums atcelts',
+            message: `Pasūtījums #${order.orderNumber} tika automātiski atcelts, jo piegādātājs 48 stundu laikā neapstiprināja pasūtījumu.`,
+            data: { orderId: order.id },
+          })
+          .catch(() => null);
+
+        this.logger.log(
+          `autoCancelStalePendingOrders: order ${order.orderNumber} auto-cancelled (no seller response in 48h)`,
+        );
+      } catch (err) {
+        this.logger.error(
+          `autoCancelStalePendingOrders: failed for order ${order.id}: ${(err as Error).message}`,
+        );
+      }
+    }
   }
 }

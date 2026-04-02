@@ -4,10 +4,10 @@
  * Supports payment-status updates (pending → paid), PDF generation,
  * invoice email delivery, and filtered queries by buyer/supplier/carrier.
  */
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
-import { PaymentStatus, Prisma } from '@prisma/client';
+import { OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
 import PDFDocument from 'pdfkit';
 
 type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PAID' | 'OVERDUE' | 'CANCELLED';
@@ -155,9 +155,19 @@ export class InvoicesService {
   async markAsPaid(invoiceId: string, userId: string, companyId?: string) {
     const invoice = await this.prisma.invoice.findFirst({
       where: { id: invoiceId, order: this.buyerAccess(userId, companyId) },
-      select: { id: true, orderId: true, paymentStatus: true },
+      select: {
+        id: true,
+        orderId: true,
+        paymentStatus: true,
+        total: true,
+        order: { select: { createdById: true } },
+      },
     });
     if (!invoice) throw new NotFoundException('Invoice not found');
+    // Guard: reject payment on a cancelled order to prevent double credit release.
+    // cancel() already decremented creditUsed; marking the invoice PAID would
+    // decrement it again, building a permanent negative balance.
+    if (invoice.orderId) await this.assertOrderNotCancelled(invoice.orderId);
     // Idempotency — already paid, return without side-effects
     if (invoice.paymentStatus === PaymentStatus.PAID) {
       return this.prisma.invoice.findUnique({ where: { id: invoiceId } });
@@ -176,6 +186,25 @@ export class InvoicesService {
         data: { paymentStatus: PaymentStatus.PAID },
       }),
     ]);
+
+    // Release the credit that was reserved when the order was placed.
+    // Symmetric to the increment in orders.service.ts create() — without this
+    // a buyer who pays all their invoices will permanently exhaust their credit line.
+    const buyerUserId = invoice.order?.createdById;
+    if (invoice.total && buyerUserId) {
+      this.prisma.buyerProfile
+        .update({
+          where: { userId: buyerUserId },
+          data: { creditUsed: { decrement: Number(invoice.total) } },
+        })
+        .catch((err) =>
+          this.logger.error(
+            `Failed to release credit for buyer ${buyerUserId} on invoice payment ${invoiceId}`,
+            err,
+          ),
+        );
+    }
+
     return updatedInvoice;
   }
 
@@ -405,5 +434,100 @@ export class InvoicesService {
       },
       pdfBuffer,
     );
+  }
+
+  /**
+   * Create an invoice for a newly-confirmed order and email it to the buyer.
+   * Shared by OrdersService (direct orders) and QuoteRequestsService (RFQ orders)
+   * so both paths produce identical invoice output.
+   *
+   * @param order  The minimal order shape needed to build the invoice
+   * @param buyerUserId  `User.id` of the buyer (createdById) — used for payment terms lookup + email
+   */
+  async createForOrder(
+    order: {
+      id: string;
+      subtotal: number;
+      tax: number;
+      total: number;
+      currency: string;
+    },
+    buyerUserId: string,
+  ): Promise<void> {
+    const invoiceNumber = this.generateInvoiceNumber();
+
+    const buyerProfile = await this.prisma.buyerProfile.findUnique({
+      where: { userId: buyerUserId },
+      select: { paymentTerms: true },
+    });
+    const dueDate = this.parseDueDateFromTerms(buyerProfile?.paymentTerms);
+
+    const inv = await this.prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        orderId: order.id,
+        subtotal: order.subtotal,
+        tax: order.tax,
+        total: order.total,
+        currency: order.currency,
+        dueDate,
+        paymentStatus: PaymentStatus.PENDING,
+      },
+      select: { id: true },
+    });
+
+    this.logger.log(`Invoice ${invoiceNumber} created for order ${order.id}`);
+
+    // Auto-email the invoice PDF to the buyer (fire-and-forget, non-fatal)
+    const buyer = await this.prisma.user.findUnique({
+      where: { id: buyerUserId },
+      select: { email: true, firstName: true, lastName: true },
+    });
+    if (buyer?.email) {
+      this.emailInvoice(
+        inv.id,
+        buyer.email,
+        [buyer.firstName, buyer.lastName].filter(Boolean).join(' ') || buyer.email,
+      ).catch((err) =>
+        this.logger.warn(`Auto-email invoice ${inv.id} failed: ${(err as Error).message}`),
+      );
+    }
+  }
+
+  /**
+   * Guard used by markAsPaid: rejects payment attempts on invoices whose
+   * linked order is already CANCELLED (prevents double credit-release when
+   * cancel() and markAsPaid() are both called on the same order).
+   */
+  async assertOrderNotCancelled(orderId: string): Promise<void> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: { status: true },
+    });
+    if (order?.status === OrderStatus.CANCELLED) {
+      throw new BadRequestException(
+        'Cannot mark invoice as paid: linked order is cancelled.',
+      );
+    }
+  }
+
+  private parseDueDateFromTerms(paymentTerms?: string | null): Date {
+    const now = new Date();
+    if (!paymentTerms || paymentTerms === 'COD') return now;
+    const match = paymentTerms.match(/NET(\d+)/i);
+    if (match) {
+      const days = parseInt(match[1], 10);
+      return new Date(now.getTime() + days * 86_400_000);
+    }
+    return new Date(now.getTime() + 30 * 86_400_000);
+  }
+
+  private generateInvoiceNumber(): string {
+    const date = new Date();
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const ms = (Date.now() % 100_000).toString().padStart(5, '0');
+    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    return `INV${year}${month}${ms}${rand}`;
   }
 }

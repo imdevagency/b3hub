@@ -348,14 +348,6 @@ export class FrameworkContractsService {
   ) {
     await this.assertOwner(contractId, userId, companyId);
 
-    const position = await this.prisma.frameworkPosition.findFirst({
-      where: { id: positionId, contractId },
-      include: {
-        callOffs: { select: { cargoWeight: true, status: true } },
-      },
-    });
-    if (!position) throw new NotFoundException('Position not found');
-
     // Ensure the contract is active before releasing a call-off
     const parentContract = await this.prisma.frameworkContract.findUnique({
       where: { id: contractId },
@@ -367,17 +359,6 @@ export class FrameworkContractsService {
       );
     }
 
-    // Check contingent: sum delivered + in-progress call-offs
-    const consumed = position.callOffs
-      .filter((j) => j.status !== 'CANCELLED')
-      .reduce((sum, j) => sum + (j.cargoWeight ?? 0), 0);
-
-    if (consumed + dto.quantity > position.agreedQty) {
-      throw new BadRequestException(
-        `Exceeds agreed quantity. Remaining: ${(position.agreedQty - consumed).toFixed(2)} ${position.unit}`,
-      );
-    }
-
     const jobNumber = this.generateJobNumber();
 
     const jobTypeMap: Record<string, TransportJobType> = {
@@ -386,41 +367,67 @@ export class FrameworkContractsService {
       FREIGHT_TRANSPORT: TransportJobType.TRANSPORT,
     };
 
-    const job = await this.prisma.transportJob.create({
-      data: {
-        jobNumber,
-        jobType:
-          jobTypeMap[position.positionType] ?? TransportJobType.TRANSPORT,
-        frameworkContractId: contractId,
-        frameworkPositionId: positionId,
-        requestedById: userId,
-        cargoType: position.description,
-        cargoWeight: dto.quantity,
-        pickupAddress: dto.pickupAddress ?? position.pickupAddress ?? '',
-        pickupCity: dto.pickupCity ?? position.pickupCity ?? '',
-        pickupState: '',
-        pickupPostal: '',
-        pickupDate: new Date(dto.pickupDate),
-        deliveryAddress: dto.deliveryAddress ?? position.deliveryAddress ?? '',
-        deliveryCity: dto.deliveryCity ?? position.deliveryCity ?? '',
-        deliveryState: '',
-        deliveryPostal: '',
-        deliveryDate: new Date(dto.deliveryDate),
-        rate: position.unitPrice ?? 0,
-        pricePerTonne: position.unitPrice,
-        currency: 'EUR',
-        status: TransportJobStatus.AVAILABLE,
-      },
-      select: {
-        id: true,
-        jobNumber: true,
-        cargoWeight: true,
-        status: true,
-        pickupDate: true,
-        deliveryDate: true,
-        pickupCity: true,
-        deliveryCity: true,
-      },
+    // Use a transaction with a row-level lock on the position to prevent
+    // concurrent call-offs from simultaneously exceeding agreedQty (TOCTOU).
+    const job = await this.prisma.$transaction(async (tx) => {
+      // Lock the position row for the duration of this transaction
+      await tx.$executeRaw`SELECT id FROM framework_positions WHERE id = ${positionId} FOR UPDATE`;
+
+      const position = await tx.frameworkPosition.findFirst({
+        where: { id: positionId, contractId },
+        include: {
+          callOffs: { select: { cargoWeight: true, status: true } },
+        },
+      });
+      if (!position) throw new NotFoundException('Position not found');
+
+      // Check contingent: sum all non-cancelled call-offs
+      const consumed = position.callOffs
+        .filter((j) => j.status !== 'CANCELLED')
+        .reduce((sum, j) => sum + (j.cargoWeight ?? 0), 0);
+
+      if (consumed + dto.quantity > position.agreedQty) {
+        throw new BadRequestException(
+          `Exceeds agreed quantity. Remaining: ${(position.agreedQty - consumed).toFixed(2)} ${position.unit}`,
+        );
+      }
+
+      return tx.transportJob.create({
+        data: {
+          jobNumber,
+          jobType:
+            jobTypeMap[position.positionType] ?? TransportJobType.TRANSPORT,
+          frameworkContractId: contractId,
+          frameworkPositionId: positionId,
+          requestedById: userId,
+          cargoType: position.description,
+          cargoWeight: dto.quantity,
+          pickupAddress: dto.pickupAddress ?? position.pickupAddress ?? '',
+          pickupCity: dto.pickupCity ?? position.pickupCity ?? '',
+          pickupState: '',
+          pickupPostal: '',
+          pickupDate: new Date(dto.pickupDate),
+          deliveryAddress: dto.deliveryAddress ?? position.deliveryAddress ?? '',
+          deliveryCity: dto.deliveryCity ?? position.deliveryCity ?? '',
+          deliveryState: '',
+          deliveryPostal: '',
+          deliveryDate: new Date(dto.deliveryDate),
+          rate: position.unitPrice ?? 0,
+          pricePerTonne: position.unitPrice,
+          currency: 'EUR',
+          status: TransportJobStatus.AVAILABLE,
+        },
+        select: {
+          id: true,
+          jobNumber: true,
+          cargoWeight: true,
+          status: true,
+          pickupDate: true,
+          deliveryDate: true,
+          pickupCity: true,
+          deliveryCity: true,
+        },
+      });
     });
 
     return job;

@@ -41,10 +41,6 @@ export class RegisterDto {
 
   @IsOptional()
   @IsString()
-  companyId?: string;
-
-  @IsOptional()
-  @IsString()
   phone?: string;
 
   /** Company name — required when roles includes SUPPLIER or CARRIER */

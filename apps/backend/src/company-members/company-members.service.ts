@@ -110,6 +110,8 @@ export class CompanyMembersService {
           permManageOrders: dto.permManageOrders ?? false,
           permViewFinancials: dto.permViewFinancials ?? false,
           permManageTeam: dto.permManageTeam ?? false,
+          // Invalidate any cached JWT so the user's next request reflects the new companyId
+          tokenVersion: { increment: 1 },
         },
         select: MEMBER_SELECT,
       });

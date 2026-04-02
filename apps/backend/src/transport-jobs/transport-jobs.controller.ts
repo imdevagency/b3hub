@@ -261,6 +261,26 @@ export class TransportJobsController {
   }
 
   /**
+   * PATCH /transport-jobs/:id/force-reassign
+   * Admin-only: forcibly reassign a job that is stuck mid-route (any active status).
+   * Used when a driver breaks down, goes unresponsive, or has an emergency.
+   * Automatically logs a RESOLVED exception for traceability.
+   */
+  @Patch(':id/force-reassign')
+  forceReassign(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+    @Body() body: AssignDispatchDto & { note?: string },
+  ) {
+    if (user.userType !== 'ADMIN') {
+      throw new ForbiddenException(
+        'Only admins can force-reassign in-progress jobs',
+      );
+    }
+    return this.service.forceReassign(id, body);
+  }
+
+  /**
    * PATCH /transport-jobs/:id/unassign
    * Dispatcher unassigns a job and returns it to AVAILABLE.
    */

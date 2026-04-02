@@ -561,7 +561,9 @@ export default function SellerCatalog() {
       if (!token || !user) return;
       try {
         refresh ? setRefreshing(true) : setLoading(true);
-        const data = await api.materials.getAll(token, { supplierId: user.id });
+        const companyId = user.company?.id;
+        const params = companyId ? { supplierId: companyId } : undefined;
+        const data = await api.materials.getAll(token, params);
         setMaterials(data);
       } catch (err) {
         Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās ielādēt materiālus');

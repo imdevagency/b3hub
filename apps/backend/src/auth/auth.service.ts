@@ -44,7 +44,6 @@ export class AuthService {
       lastName,
       roles = ['BUYER'],
       isCompany,
-      companyId,
       phone,
       companyName,
       regNumber,
@@ -71,7 +70,6 @@ export class AuthService {
         phone,
         userType: 'BUYER',
         isCompany: isCompany ?? roles.some((r) => r !== 'BUYER'),
-        companyId,
         termsAcceptedAt: new Date(),
       },
       select: {
@@ -233,6 +231,7 @@ export class AuthService {
         permManageTeam: user.permManageTeam ?? false,
       },
       user.company?.payoutEnabled ?? false,
+      user.tokenVersion ?? 0,
     );
 
     // Remove password from response
@@ -505,6 +504,7 @@ export class AuthService {
         id: string;
         email: string | null;
         userType: string;
+        status: string;
         isCompany: boolean;
         canSell: boolean;
         canTransport: boolean;
@@ -521,7 +521,7 @@ export class AuthService {
         payoutEnabled: boolean | null;
       }[]
     >`
-      SELECT u.id, u.email, u."userType", u."isCompany", u."canSell", u."canTransport", u."canSkipHire",
+      SELECT u.id, u.email, u."userType", u.status, u."isCompany", u."canSell", u."canTransport", u."canSkipHire",
              u."companyId", u."companyRole",
              u."permCreateContracts", u."permReleaseCallOffs", u."permManageOrders",
              u."permViewFinancials", u."permManageTeam", u."refreshTokenExpiry", u."tokenVersion",
@@ -536,6 +536,9 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('Invalid refresh token');
     if (!user.refreshTokenExpiry || user.refreshTokenExpiry < new Date()) {
       throw new UnauthorizedException('Refresh token expired');
+    }
+    if (user.status !== 'ACTIVE' && user.status !== 'PENDING') {
+      throw new UnauthorizedException('Account is suspended or deactivated');
     }
 
     // Rolling window — issue a new refresh token on each use
