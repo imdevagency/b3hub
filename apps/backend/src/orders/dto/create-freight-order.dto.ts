@@ -3,7 +3,9 @@ import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 export enum FreightVehicleType {
   TIPPER_SMALL = 'TIPPER_SMALL', // 10 t / 8 m³
   TIPPER_LARGE = 'TIPPER_LARGE', // 18 t / 12 m³
-  ARTICULATED_TIPPER = 'ARTICULATED_TIPPER', // 26 t / 18 m³
+  ARTICULATED_TIPPER = 'ARTICULATED_TIPPER', // 26 t / 22 m³
+  FLATBED = 'FLATBED', // 20 t flatbed / open trailer
+  BOX_TRUCK = 'BOX_TRUCK', // 3.5 t enclosed box truck
 }
 
 export class CreateFreightOrderDto {

@@ -57,6 +57,17 @@ export interface CreateSkipHireInput {
   contactPhone?: string;
   notes?: string;
   unloadingPointPhotoUrl?: string;
+  /** Selected carrier id from a /quotes response — backend derives price from carrier pricing */
+  carrierId?: string;
+}
+
+export interface SkipHireQuote {
+  carrierId: string;
+  carrierName: string;
+  carrierLogo: string | null;
+  carrierRating: number | null;
+  price: number;
+  currency: string;
 }
 
 // ─── API ──────────────────────────────────────────────────────────────────
@@ -69,6 +80,16 @@ export const skipHireApi = {
         ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
         body: JSON.stringify(data),
       }),
+
+    /** Public — returns minimum prices per skip size across verified carriers. */
+    getMarketPrices: () =>
+      apiFetch<Record<SkipSize, number>>('/skip-hire/market-prices'),
+
+    /** Public — returns carrier quotes for given size, location and date. */
+    getQuotes: (params: { size: SkipSize; location: string; date: string }) =>
+      apiFetch<SkipHireQuote[]>(
+        `/skip-hire/quotes?size=${params.size}&location=${encodeURIComponent(params.location)}&date=${params.date}`,
+      ),
 
     getById: (id: string, token: string) =>
       apiFetch<SkipHireOrder>(`/skip-hire/${id}`, {

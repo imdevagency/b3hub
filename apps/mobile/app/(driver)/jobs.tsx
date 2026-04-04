@@ -486,6 +486,21 @@ export default function JobsScreen() {
     });
   }, []);
 
+  // Restore last-used filter on first mount so drivers don't re-enter their radius each session
+  useEffect(() => {
+    AsyncStorage.getItem('@b3hub_driver_last_filter').then((raw) => {
+      if (raw) {
+        try {
+          const f = JSON.parse(raw);
+          setDraft(f);
+          setActiveFilter(f);
+        } catch {
+          /* ignore */
+        }
+      }
+    });
+  }, []);
+
   // Persist saved searches
   useEffect(() => {
     AsyncStorage.setItem(ASYNC_KEY, JSON.stringify(savedSearches));
@@ -505,13 +520,15 @@ export default function JobsScreen() {
         draft.fromLocation.trim() ? geocodeLocation(draft.fromLocation) : Promise.resolve(null),
         draft.toLocation.trim() ? geocodeLocation(draft.toLocation) : Promise.resolve(null),
       ]);
-      setActiveFilter({
+      const newFilter = {
         ...draft,
         fromLat: resolvedFrom?.lat,
         fromLng: resolvedFrom?.lng,
         toLat: resolvedTo?.lat,
         toLng: resolvedTo?.lng,
-      });
+      };
+      setActiveFilter(newFilter);
+      AsyncStorage.setItem('@b3hub_driver_last_filter', JSON.stringify(newFilter)).catch(() => {});
     } finally {
       setGeocoding(false);
       setPanelOpen(false);
@@ -522,6 +539,7 @@ export default function JobsScreen() {
     const empty = { fromLocation: '', fromRadius: 0, toLocation: '', toRadius: 0 };
     setDraft(empty);
     setActiveFilter(null);
+    AsyncStorage.removeItem('@b3hub_driver_last_filter').catch(() => {});
     setPanelOpen(false);
   };
 

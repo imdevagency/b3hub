@@ -1,5 +1,12 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, FlatList, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import {
+  View,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+  RefreshControl,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -68,10 +75,12 @@ const CATEGORY_META: Record<MaterialCategory, CatMeta> = {
 function CategoryCard({
   category,
   hasRecycled,
+  supplierCount,
   onPress,
 }: {
   category: MaterialCategory;
   hasRecycled: boolean;
+  supplierCount: number;
   onPress: () => void;
 }) {
   const meta = CATEGORY_META[category] ?? { bg: '#f3f4f6', accent: '#6b7280', icon: Package };
@@ -111,6 +120,11 @@ function CategoryCard({
             {description}
           </Text>
         ) : null}
+        {supplierCount > 0 && (
+          <Text style={s.catSupplierCount}>
+            {supplierCount} piegādātāj{supplierCount === 1 ? 's' : 'i'}
+          </Text>
+        )}
       </View>
 
       {/* Arrow */}
@@ -131,6 +145,7 @@ export default function CatalogScreen() {
 
   const [allMaterials, setAllMaterials] = useState<ApiMaterial[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState('');
   const [resumeDraft, setResumeDraft] = useState<{
     materialName: string;
@@ -166,28 +181,50 @@ export default function CatalogScreen() {
     }, []),
   );
 
-  // Fetch all materials once — used only for per-category stats on the cards
-  useEffect(() => {
+  // Fetch all materials — reload on every focus so new listings appear
+  useFocusEffect(
+    useCallback(() => {
+      if (!token) return;
+      setLoading(true);
+      api.materials
+        .getAll(token, {})
+        .then((data) => {
+          setAllMaterials(Array.isArray(data) ? data : ((data as any).items ?? []));
+        })
+        .catch(() => setAllMaterials([]))
+        .finally(() => setLoading(false));
+    }, [token]),
+  );
+
+  const handleRefresh = useCallback(() => {
     if (!token) return;
-    setLoading(true);
+    setRefreshing(true);
     api.materials
       .getAll(token, {})
       .then((data) => {
         setAllMaterials(Array.isArray(data) ? data : ((data as any).items ?? []));
       })
-      .catch(() => setAllMaterials([]))
-      .finally(() => setLoading(false));
+      .catch(() => {})
+      .finally(() => setRefreshing(false));
   }, [token]);
 
-  // Per-category: supplier count + recycled flag
+  // Per-category: unique supplier count + recycled flag
   const categoryData = useMemo(() => {
-    const map: Record<string, { supplierCount: number; hasRecycled: boolean }> = {};
+    const map: Record<
+      string,
+      { supplierCount: number; hasRecycled: boolean; supplierIds: Set<string> }
+    > = {};
     for (const m of allMaterials) {
-      if (!map[m.category]) map[m.category] = { supplierCount: 0, hasRecycled: false };
+      if (!map[m.category])
+        map[m.category] = { supplierCount: 0, hasRecycled: false, supplierIds: new Set() };
       if (m.isRecycled) map[m.category].hasRecycled = true;
-      map[m.category].supplierCount++;
+      map[m.category].supplierIds.add(m.supplier.id);
     }
-    return map;
+    const result: Record<string, { supplierCount: number; hasRecycled: boolean }> = {};
+    for (const [cat, d] of Object.entries(map)) {
+      result[cat] = { supplierCount: d.supplierIds.size, hasRecycled: d.hasRecycled };
+    }
+    return result;
   }, [allMaterials]);
 
   // Filter categories by search query, preserving DISPLAY_ORDER
@@ -306,6 +343,7 @@ export default function CatalogScreen() {
               <CategoryCard
                 category={cat}
                 hasRecycled={data.hasRecycled}
+                supplierCount={data.supplierCount}
                 onPress={() => handleCategoryPress(cat)}
               />
             );
@@ -314,6 +352,9 @@ export default function CatalogScreen() {
           showsVerticalScrollIndicator={false}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#111827" />
+          }
         />
       )}
     </ScreenContainer>
@@ -477,6 +518,12 @@ const s = StyleSheet.create({
     color: '#6b7280',
     lineHeight: 17,
     marginTop: 1,
+  },
+  catSupplierCount: {
+    fontSize: 11,
+    color: '#9ca3af',
+    marginTop: 3,
+    fontWeight: '500',
   },
 
   catRight: {

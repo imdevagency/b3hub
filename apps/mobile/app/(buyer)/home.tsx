@@ -8,6 +8,7 @@ import {
   ScrollView,
   Dimensions,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -136,6 +137,7 @@ export default function HomeScreen() {
   const [transportOrders, setTransportOrders] = useState<ApiTransportJob[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const toast = useToast();
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -156,9 +158,10 @@ export default function HomeScreen() {
     return () => loop.stop();
   }, [orders, skipOrders, transportOrders]);
 
-  useFocusEffect(
-    useCallback(() => {
+  const loadData = useCallback(
+    (isRefresh = false) => {
       if (!token) return;
+      if (isRefresh) setRefreshing(true);
       Promise.all([
         api.orders.myOrders(token).catch(() => {
           toast.error('Neizdevās ielādēt pasūtījumus');
@@ -171,12 +174,20 @@ export default function HomeScreen() {
         setSkipOrders(skips as SkipHireOrder[]);
         setTransportOrders(reqs as ApiTransportJob[]);
         setLoading(false);
+        setRefreshing(false);
       });
       api.notifications
         .unreadCount(token)
         .then((res) => setUnreadCount(res.count))
         .catch(() => {});
-    }, [token]),
+    },
+    [token, toast],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData(false);
+    }, [loadData]),
   );
 
   type ActiveItem = {
@@ -445,6 +456,13 @@ export default function HomeScreen() {
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => loadData(true)}
+              tintColor="#111827"
+            />
+          }
         >
           {recentOrders.length > 0 ? (
             recentOrders.map((item) => (

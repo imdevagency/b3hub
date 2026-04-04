@@ -36,7 +36,7 @@ import { useOrder } from '@/lib/order-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
-import type { SkipSize, SkipWasteCategory, ApiOrder } from '@/lib/api';
+import type { SkipSize, SkipWasteCategory, ApiOrder, SkipHireQuote } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { SKIP_PRICES, toISO, addDays } from '@/components/order/skip-hire-types';
 import { SkipWasteStep } from '@/components/order/SkipWasteStep';
@@ -87,11 +87,35 @@ export default function OrderWizard() {
   const [unloadingPointPhotoUrl, setUnloadingPointPhotoUrl] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
 
+  // ── Market prices (fetched from backend on mount) ─────────────────────
+  const [marketPrices, setMarketPrices] = useState<Partial<Record<SkipSize, number>>>(SKIP_PRICES);
+  const [quotes, setQuotes] = useState<SkipHireQuote[]>([]);
+  const [quotesLoading, setQuotesLoading] = useState(false);
+
   // ── Material order linking (Stage 2) ─────────────────────────────────
   const [matOrders, setMatOrders] = useState<ApiOrder[]>([]);
   const [matOrdersLoading, setMatOrdersLoading] = useState(false);
   const [linkedMaterialOrderId, setLinkedMaterialOrderId] = useState<string | null>(null);
   const [showMatLink, setShowMatLink] = useState(false);
+
+  // Fetch market prices once on mount
+  useEffect(() => {
+    api.skipHire
+      .getMarketPrices()
+      .then((prices) => setMarketPrices(prices))
+      .catch(() => {}); // keep SKIP_PRICES fallback
+  }, []);
+
+  // Fetch live quotes when entering step 4 (size + address known)
+  useEffect(() => {
+    if (step !== 4 || !selectedSize || !picked) return;
+    setQuotesLoading(true);
+    api.skipHire
+      .getQuotes({ size: selectedSize, location: picked.address, date: selectedDay })
+      .then((q) => setQuotes(q))
+      .catch(() => setQuotes([]))
+      .finally(() => setQuotesLoading(false));
+  }, [step, selectedSize, picked, selectedDay]);
 
   // ── Handlers ──────────────────────────────────────────────────
   const handlePickConfirm = useCallback(
@@ -118,13 +142,20 @@ export default function OrderWizard() {
     [setSkipSize],
   );
 
-  // Load unlinked material orders when user reaches step 4
+  // Active statuses that make sense to link to a skip hire
+  const ACTIVE_ORDER_STATUSES = ['PENDING', 'CONFIRMED', 'LOADING', 'IN_TRANSIT'];
+
+  // Load unlinked, active material orders when user reaches step 4
   useEffect(() => {
     if (step !== 4 || !token || matOrders.length > 0) return;
     setMatOrdersLoading(true);
     api.orders
       .myOrders(token)
-      .then((data) => setMatOrders(data.filter((o) => !o.linkedSkipOrder)))
+      .then((data) =>
+        setMatOrders(
+          data.filter((o) => !o.linkedSkipOrder && ACTIVE_ORDER_STATUSES.includes(o.status)),
+        ),
+      )
       .catch(() => {})
       .finally(() => setMatOrdersLoading(false));
   }, [step, token, matOrders.length]);
@@ -136,14 +167,21 @@ export default function OrderWizard() {
     } else setStep((s) => (s - 1) as Step);
   }, [step, router]);
 
-  const price = SKIP_PRICES[state.skipSize ?? selectedSize ?? 'MIDI'] ?? 129;
+  // Use best carrier quote price if available, otherwise fall back to market price
+  const activeSize = state.skipSize ?? selectedSize ?? 'MIDI';
+  const price =
+    quotes.length > 0
+      ? quotes[0].price
+      : (marketPrices[activeSize] ?? SKIP_PRICES[activeSize] ?? 129);
 
-  const ctaLabel = step === 4 ? `Pasūtīt — €${price}` : 'Turpināt';
+  const ctaLabel =
+    step === 4 ? (quotesLoading ? 'Ielādē cenas...' : `Pasūtīt — €${price}`) : 'Turpināt';
 
   const ctaDisabled =
     (step === 1 && !selectedWaste) ||
     (step === 2 && !selectedSize) ||
     (step === 3 && !picked) ||
+    (step === 4 && quotesLoading) ||
     submitting;
 
   const onCTA = useCallback(async () => {
@@ -173,6 +211,8 @@ export default function OrderWizard() {
           contactPhone: contactPhone || undefined,
           notes: notes || undefined,
           unloadingPointPhotoUrl: unloadingPointPhotoUrl || undefined,
+          // Pass winning carrier so backend derives price server-side
+          carrierId: quotes[0]?.carrierId || undefined,
         },
         token ?? undefined,
       );
@@ -254,6 +294,16 @@ export default function OrderWizard() {
 
       if (!result.canceled && result.assets?.[0]) {
         const asset = result.assets[0];
+        // Guard against oversized base64 payloads (approx: base64 len × 0.75 = bytes)
+        const MAX_BYTES = 2 * 1024 * 1024; // 2 MB
+        const approxBytes = (asset.base64?.length ?? 0) * 0.75;
+        if (approxBytes > MAX_BYTES) {
+          Alert.alert(
+            'Foto ir pārāk liels',
+            'Lūdzu izvēlieties mazāku attēlu vai fotografējiet no tuvāka attāluma (maks. 2 MB).',
+          );
+          return;
+        }
         const dataUri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
         setUnloadingPointPhotoUrl(dataUri);
       }
@@ -303,7 +353,11 @@ export default function OrderWizard() {
         {/* ── Step 2: Container size — chosen after waste type (matches web) ── */}
         {step === 2 && (
           <View style={{ flex: 1 }}>
-            <SkipSizeStep selected={selectedSize} onSelect={handleSizeSelect} />
+            <SkipSizeStep
+              selected={selectedSize}
+              onSelect={handleSizeSelect}
+              prices={marketPrices}
+            />
           </View>
         )}
 
@@ -334,7 +388,14 @@ export default function OrderWizard() {
                   <TouchableOpacity
                     key="today"
                     style={[s.dayChip, s.dayChipAsap, active && s.dayChipActive]}
-                    onPress={() => setSelectedDay(iso)}
+                    onPress={() => {
+                      setSelectedDay(iso);
+                      Alert.alert(
+                        'Steidzams pasūtījums',
+                        'Šodienas piegāde ir atkarīga no brīvas kapacitātes. Mūsu komanda sazināsies ar jums, lai apstiprinātu iespējamību.',
+                        [{ text: 'Sapratu', style: 'default' }],
+                      );
+                    }}
                     activeOpacity={0.75}
                   >
                     <Text style={[s.dayDow, active && s.dayActive]}>🔴</Text>

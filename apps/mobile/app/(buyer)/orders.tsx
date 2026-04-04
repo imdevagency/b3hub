@@ -397,6 +397,17 @@ function MaterialOrderCard({ order }: { order: any }) {
         {displayTitle}
       </Text>
 
+      {order.project?.name && (
+        <View style={{ flexDirection: 'row', marginBottom: 4 }}>
+          <View style={s.projectPill}>
+            <HardHat size={11} color="#1d4ed8" />
+            <Text style={s.projectPillText} numberOfLines={1}>
+              {order.project.name}
+            </Text>
+          </View>
+        </View>
+      )}
+
       <View style={s.cardMeta}>
         <View style={s.metaItem}>
           <MapPin size={14} color="#94a3b8" />
@@ -407,7 +418,9 @@ function MaterialOrderCard({ order }: { order: any }) {
         <View style={s.metaItem}>
           <Calendar size={14} color="#94a3b8" />
           <Text style={s.metaText}>
-            {format(new Date(order.createdAt), 'd. MMM', { locale: lv })}
+            {order.deliveryDate
+              ? format(new Date(order.deliveryDate), 'd. MMM', { locale: lv })
+              : 'Cik drīz iespējams'}
           </Text>
         </View>
       </View>
@@ -877,6 +890,23 @@ const s = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'Inter_600SemiBold',
     color: '#059669',
+  },
+  projectPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#eff6ff',
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    maxWidth: '80%',
+  },
+  projectPillText: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#1d4ed8',
   },
 
   // Empty State

@@ -35,9 +35,16 @@ interface IncomingOrder {
   orderNumber: string;
   material: string;
   weightTonnes: number;
+  truckCount?: number;
   buyerName: string;
   deliveryAddress: string;
   requestedDate: string;
+  /** 'AM' | 'PM' | 'ANY' — preferred delivery slot */
+  deliveryWindow?: string;
+  /** Free-text buyer notes / site instructions */
+  notes?: string;
+  siteContactName?: string;
+  siteContactPhone?: string;
   price: number;
   status: OrderStatus;
   paymentStatus?: string;
@@ -78,6 +85,11 @@ function mapApiOrder(o: ApiOrder): IncomingOrder {
     status: statusMap[o.status] ?? 'PENDING',
     paymentStatus: o.paymentStatus ?? undefined,
     transportJobId: (o as any).transportJobs?.[0]?.id,
+    deliveryWindow: o.deliveryWindow ?? undefined,
+    notes: o.notes ?? undefined,
+    truckCount: (o as any).truckCount ?? undefined,
+    siteContactName: o.siteContactName ?? undefined,
+    siteContactPhone: o.siteContactPhone ?? undefined,
   };
 }
 
@@ -289,6 +301,31 @@ function OrderCard({
           </Text>
         </View>
 
+        {/* Delivery window + site contact row */}
+        {(order.deliveryWindow && order.deliveryWindow !== 'ANY') || order.siteContactName ? (
+          <View style={styles.metaRow}>
+            {order.deliveryWindow && order.deliveryWindow !== 'ANY' && (
+              <View style={styles.windowPill}>
+                <Text style={styles.windowPillText}>
+                  {order.deliveryWindow === 'AM' ? '🌅 8–12' : '🌤 12–17'}
+                </Text>
+              </View>
+            )}
+            {order.siteContactName && (
+              <Text style={styles.siteContactText} numberOfLines={1}>
+                📞 {order.siteContactName}
+              </Text>
+            )}
+          </View>
+        ) : null}
+
+        {/* Buyer notes preview */}
+        {order.notes ? (
+          <Text style={styles.notesPreview} numberOfLines={1}>
+            📝 {order.notes}
+          </Text>
+        ) : null}
+
         {/* Payment status badge */}
         {order.paymentStatus && (
           <View
@@ -439,7 +476,9 @@ export default function IncomingScreen() {
       if (!isRefresh) setFetching(true);
       try {
         const data = await api.orders.myOrders(token);
-        setOrders(data.map(mapApiOrder));
+        const companyId = user?.company?.id;
+        const sellerOrders = companyId ? data.filter((o) => o.buyer?.id !== companyId) : data;
+        setOrders(sellerOrders.map(mapApiOrder));
       } catch (e) {
         if (!isRefresh) toast.error('Kļūda ielādējot pasūtījumus');
       } finally {
@@ -447,7 +486,7 @@ export default function IncomingScreen() {
         setRefreshing(false);
       }
     },
-    [token],
+    [token, user?.company?.id],
   );
 
   useFocusEffect(
@@ -764,6 +803,19 @@ const styles = StyleSheet.create({
 
   addressRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
   addressText: { fontSize: 14, color: '#4b5563', flex: 1, lineHeight: 20 },
+
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 },
+  windowPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: '#eff6ff',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  windowPillText: { fontSize: 12, fontWeight: '600', color: '#1d4ed8' },
+  siteContactText: { fontSize: 12, color: '#6b7280', flex: 1 },
+  notesPreview: { fontSize: 12, color: '#6b7280', marginTop: 4, fontStyle: 'italic' },
 
   actionsRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
   btnOutline: {

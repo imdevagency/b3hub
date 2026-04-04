@@ -103,6 +103,44 @@ export default function OrderDetailScreen() {
   const [disputeDetails, setDisputeDetails] = useState('');
   const [disputeLoading, setDisputeLoading] = useState(false);
   const [disputeFiled, setDisputeFiled] = useState(false);
+  // Amendment sheet state
+  const [showAmend, setShowAmend] = useState(false);
+  const [amendLoading, setAmendLoading] = useState(false);
+  const [amendDate, setAmendDate] = useState('');
+  const [amendWindow, setAmendWindow] = useState<'AM' | 'PM' | 'ANY'>('ANY');
+  const [amendNotes, setAmendNotes] = useState('');
+  const [amendContact, setAmendContact] = useState('');
+  const [amendPhone, setAmendPhone] = useState('');
+  const openAmend = () => {
+    setAmendDate(order?.deliveryDate ? order.deliveryDate.split('T')[0] : '');
+    setAmendWindow((order?.deliveryWindow as 'AM' | 'PM' | 'ANY') ?? 'ANY');
+    setAmendNotes(order?.notes ?? '');
+    setAmendContact(order?.siteContactName ?? '');
+    setAmendPhone(order?.siteContactPhone ?? '');
+    setShowAmend(true);
+  };
+  const handleAmendSubmit = async () => {
+    if (!token || !order) return;
+    setAmendLoading(true);
+    haptics.light();
+    try {
+      const body: Record<string, string> = {};
+      if (amendDate) body.deliveryDate = amendDate;
+      if (amendWindow) body.deliveryWindow = amendWindow;
+      if (amendNotes !== (order.notes ?? '')) body.notes = amendNotes;
+      if (amendContact !== (order.siteContactName ?? '')) body.siteContactName = amendContact;
+      if (amendPhone !== (order.siteContactPhone ?? '')) body.siteContactPhone = amendPhone;
+      await api.orders.update(order.id, body, token);
+      haptics.success();
+      setShowAmend(false);
+      load();
+    } catch (err: unknown) {
+      haptics.error();
+      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās saglabāt izmaiņas');
+    } finally {
+      setAmendLoading(false);
+    }
+  };
   // Local flag so the UI updates immediately after rating without a reload
   const [ratedLocally, setRatedLocally] = useState(false);
   const hasRated = alreadyRated || ratedLocally;
@@ -254,6 +292,22 @@ export default function OrderDetailScreen() {
     !!stripe;
   const stepperIdx = ORDER_STEPS.findIndex((x) => x.key === order.status);
 
+  // ── Exception banners ──────────────────────────────────────────
+  const allExceptions = order.transportJobs?.flatMap((j) => j.exceptions ?? []) ?? [];
+  const openExceptions = allExceptions.filter((e) => e.status === 'OPEN');
+
+  const EXCEPTION_LABELS: Record<string, string> = {
+    PARTIAL_DELIVERY: 'Daļēja piegāde',
+    WRONG_MATERIAL: 'Nepareizs materiāls',
+    DAMAGE: 'Prece bojāta',
+    REJECTED_DELIVERY: 'Piegāde noraidīta',
+    DRIVER_NO_SHOW: 'Šoferis neierādījās',
+    SUPPLIER_NOT_READY: 'Piegādātājs nav gatavs',
+    SITE_CLOSED: 'Objekts slēgts',
+    OVERWEIGHT: 'Pārsniegts svars',
+    OTHER: 'Cits',
+  };
+
   return (
     <ScreenContainer bg="#f4f5f7">
       {/* Header */}
@@ -300,6 +354,28 @@ export default function OrderDetailScreen() {
             <Text style={s.stepHint}>{ORDER_STEPS[stepperIdx]?.hint ?? ''}</Text>
           </View>
         )}
+
+        {/* ── Open exception banners ────────────────────────────── */}
+        {openExceptions.map((ex) => {
+          const isPartial = ex.type === 'PARTIAL_DELIVERY';
+          const actualQtyMatch = ex.notes?.match(/\[actualQuantity=([0-9.]+)\]/);
+          const actualQty = actualQtyMatch ? parseFloat(actualQtyMatch[1]) : null;
+          const cleanNotes = ex.notes?.replace(/\s*\[actualQuantity=[0-9.]+\]/, '').trim();
+          return (
+            <View key={ex.id} style={s.exceptionBanner}>
+              <AlertTriangle size={16} color="#92400e" style={{ marginTop: 1 }} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={s.exceptionBannerTitle}>{EXCEPTION_LABELS[ex.type] ?? ex.type}</Text>
+                {isPartial && actualQty != null && (
+                  <Text style={s.exceptionBannerMeta}>
+                    Piegādāts: {actualQty} t — pasūtījuma summa atjaunota uz faktisko daudzumu
+                  </Text>
+                )}
+                {cleanNotes ? <Text style={s.exceptionBannerNote}>{cleanNotes}</Text> : null}
+              </View>
+            </View>
+          );
+        })}
 
         {/* Live tracking card — shown whenever a transport job is active */}
         {activeJob && (
@@ -397,6 +473,113 @@ export default function OrderDetailScreen() {
             </InfoSection>
           );
         })()}
+
+        {/* Weight discrepancy alert — when actual ≠ ordered by > 5% */}
+        {(() => {
+          const jobWithWeight = order.transportJobs?.find((j) => (j as any).actualWeightKg != null);
+          if (!jobWithWeight) return null;
+          const actualKg = (jobWithWeight as any).actualWeightKg as number;
+          const orderedKg = order.items.reduce(
+            (sum: number, item: any) => (item.unit === 'T' ? sum + item.quantity * 1000 : sum),
+            0,
+          );
+          if (!orderedKg) return null;
+          const diffPct = Math.abs(actualKg - orderedKg) / orderedKg;
+          if (diffPct < 0.05) return null;
+          const isUnder = actualKg < orderedKg;
+          return (
+            <View
+              style={[
+                s.exceptionBanner,
+                {
+                  backgroundColor: isUnder ? '#fffbeb' : '#eff6ff',
+                  borderColor: isUnder ? '#fcd34d' : '#bfdbfe',
+                },
+              ]}
+            >
+              <AlertTriangle
+                size={16}
+                color={isUnder ? '#92400e' : '#1e40af'}
+                style={{ marginTop: 1 }}
+              />
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={[s.exceptionBannerTitle, { color: isUnder ? '#92400e' : '#1e40af' }]}>
+                  {isUnder ? 'Piegādāts mazāk nekā pasūtīts' : 'Piegādāts vairāk nekā pasūtīts'}
+                </Text>
+                <Text style={s.exceptionBannerMeta}>
+                  Pasūtīts: {(orderedKg / 1000).toFixed(2)} t · Faktiski:{' '}
+                  {(actualKg / 1000).toFixed(2)} t ({isUnder ? '' : '+'}
+                  {((actualKg - orderedKg) / (orderedKg / 100)).toFixed(0)}%)
+                </Text>
+              </View>
+            </View>
+          );
+        })()}
+
+        {/* Per-truck dispatch status — shown when there are transport jobs */}
+        {order.transportJobs &&
+          order.transportJobs.length > 0 &&
+          (() => {
+            const JOB_STATUS_LABELS: Record<string, string> = {
+              PENDING: 'Gaida',
+              ACCEPTED: 'Pieņemts',
+              EN_ROUTE_PICKUP: 'Dodas uz iekraušanu',
+              AT_PICKUP: 'Pie iekraušanas',
+              LOADED: 'Iekrauts',
+              EN_ROUTE_DELIVERY: 'Dodas pie jums',
+              AT_DELIVERY: 'Pie jums',
+              DELIVERED: 'Piegādāts',
+              CANCELLED: 'Atcelts',
+              FAILED: 'Neizdevās',
+            };
+            const JOB_STATUS_COLORS: Record<string, { bg: string; color: string }> = {
+              PENDING: { bg: '#f3f4f6', color: '#6b7280' },
+              ACCEPTED: { bg: '#eff6ff', color: '#1d4ed8' },
+              EN_ROUTE_PICKUP: { bg: '#fffbeb', color: '#92400e' },
+              AT_PICKUP: { bg: '#fffbeb', color: '#92400e' },
+              LOADED: { bg: '#f0fdf4', color: '#166534' },
+              EN_ROUTE_DELIVERY: { bg: '#dcfce7', color: '#15803d' },
+              AT_DELIVERY: { bg: '#dcfce7', color: '#15803d' },
+              DELIVERED: { bg: '#f0fdf4', color: '#166534' },
+              CANCELLED: { bg: '#fef2f2', color: '#b91c1c' },
+              FAILED: { bg: '#fef2f2', color: '#b91c1c' },
+            };
+            return (
+              <InfoSection
+                icon={<Truck size={14} color="#6b7280" />}
+                title={
+                  order.transportJobs.length > 1
+                    ? `Kravas auto (${order.transportJobs.length})`
+                    : 'Kravas auto'
+                }
+              >
+                {order.transportJobs.map((job, i) => {
+                  const sc = JOB_STATUS_COLORS[job.status] ?? { bg: '#f3f4f6', color: '#6b7280' };
+                  const label = JOB_STATUS_LABELS[job.status] ?? job.status;
+                  const driverName = job.driver
+                    ? `${job.driver.firstName} ${job.driver.lastName}`
+                    : null;
+                  const plate = job.vehicle?.licensePlate ?? null;
+                  return (
+                    <TouchableOpacity
+                      key={job.id}
+                      onPress={() => {
+                        haptics.light();
+                        router.push(`/(buyer)/transport-job/${job.id}` as any);
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <DetailRow
+                        label={`Auto ${i + 1}${driverName ? ` · ${driverName}` : ''}${plate ? ` · ${plate}` : ''}`}
+                        value={<StatusPill label={label} bg={sc.bg} color={sc.color} />}
+                        last={i === (order.transportJobs?.length ?? 0) - 1}
+                      />
+                    </TouchableOpacity>
+                  );
+                })}
+              </InfoSection>
+            );
+          })()}
 
         {/* Order items */}
         <InfoSection icon={<Package size={14} color="#6b7280" />} title="Preces">
@@ -632,6 +815,19 @@ export default function OrderDetailScreen() {
               <Text style={s.pendingText}>Pasūtījums gaida apstiprinājumu</Text>
             </View>
           )}
+          {order.status === 'PENDING' && (
+            <TouchableOpacity
+              style={s.amendBtn}
+              onPress={() => {
+                haptics.light();
+                openAmend();
+              }}
+              activeOpacity={0.8}
+            >
+              <CalendarDays size={14} color="#374151" />
+              <Text style={s.amendBtnText}>Labot pasūtījumu</Text>
+            </TouchableOpacity>
+          )}
           {order.status === 'DELIVERED' && (
             <View style={s.deliveredNote}>
               <CheckCircle size={14} color="#111827" />
@@ -800,6 +996,104 @@ export default function OrderDetailScreen() {
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <Text style={s.disputeSubmitBtnText}>Nosūtīt sūdzību</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* Amendment bottom sheet — edit PENDING order */}
+      <BottomSheet
+        visible={showAmend}
+        onClose={() => setShowAmend(false)}
+        title="Labot pasūtījumu"
+        subtitle="Izmaiņas iespējamas, kamēr pasūtījums nav apstiprināts"
+        scrollable
+      >
+        <View style={{ gap: 14, paddingBottom: 8 }}>
+          {/* Delivery date */}
+          <View style={s.amendField}>
+            <Text style={s.amendLabel}>Piegādes datums (GGGG-MM-DD)</Text>
+            <TextInput
+              style={s.amendInput}
+              placeholder="2025-06-15"
+              placeholderTextColor="#9ca3af"
+              value={amendDate}
+              onChangeText={setAmendDate}
+              keyboardType="numbers-and-punctuation"
+              autoCorrect={false}
+            />
+          </View>
+
+          {/* Delivery window */}
+          <View style={s.amendField}>
+            <Text style={s.amendLabel}>Piegādes laiks</Text>
+            <View style={s.amendWindowRow}>
+              {(['AM', 'PM', 'ANY'] as const).map((w) => (
+                <TouchableOpacity
+                  key={w}
+                  style={[s.amendWindowBtn, amendWindow === w && s.amendWindowBtnActive]}
+                  onPress={() => {
+                    haptics.light();
+                    setAmendWindow(w);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[s.amendWindowBtnText, amendWindow === w && s.amendWindowBtnTextActive]}
+                  >
+                    {w === 'AM' ? 'Rīts (8–12)' : w === 'PM' ? 'Diena (12–17)' : 'Jebkurā laikā'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Site contact */}
+          <View style={s.amendField}>
+            <Text style={s.amendLabel}>Kontaktpersona</Text>
+            <TextInput
+              style={s.amendInput}
+              placeholder="Vārds Uzvārds"
+              placeholderTextColor="#9ca3af"
+              value={amendContact}
+              onChangeText={setAmendContact}
+            />
+          </View>
+          <View style={s.amendField}>
+            <Text style={s.amendLabel}>Kontaktpersonas tālrunis</Text>
+            <TextInput
+              style={s.amendInput}
+              placeholder="+371 XXXXXXXX"
+              placeholderTextColor="#9ca3af"
+              value={amendPhone}
+              onChangeText={setAmendPhone}
+              keyboardType="phone-pad"
+            />
+          </View>
+
+          {/* Notes */}
+          <View style={s.amendField}>
+            <Text style={s.amendLabel}>Piezīmes šoferim</Text>
+            <TextInput
+              style={[s.amendInput, { minHeight: 80, textAlignVertical: 'top' }]}
+              placeholder="Piegādes instrukcijas, ieeja objektā..."
+              placeholderTextColor="#9ca3af"
+              multiline
+              value={amendNotes}
+              onChangeText={setAmendNotes}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[s.amendSubmitBtn, amendLoading && { opacity: 0.5 }]}
+            onPress={handleAmendSubmit}
+            disabled={amendLoading}
+            activeOpacity={0.85}
+          >
+            {amendLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={s.amendSubmitBtnText}>Saglabāt izmaiņas</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -1264,6 +1558,61 @@ const s = StyleSheet.create({
     marginLeft: 'auto',
   },
 
+  // Amendment button
+  amendBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#f9fafb',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginTop: 4,
+  },
+  amendBtnText: { fontSize: 14, fontWeight: '600', color: '#374151' },
+
+  // Amendment sheet fields
+  amendField: { gap: 6 },
+  amendLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  amendInput: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#111827',
+  },
+  amendWindowRow: { flexDirection: 'row', gap: 8 },
+  amendWindowBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+  },
+  amendWindowBtnActive: { backgroundColor: '#111827' },
+  amendWindowBtnText: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
+  amendWindowBtnTextActive: { color: '#fff' },
+  amendSubmitBtn: {
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  amendSubmitBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+
   // Report issue button
   reportIssueBtn: {
     flexDirection: 'row',
@@ -1364,5 +1713,31 @@ const s = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 15,
+  },
+
+  // ── Exception banner ──────────────────────────────────────────
+  exceptionBanner: {
+    flexDirection: 'row',
+    gap: 10,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+    borderRadius: 12,
+    padding: 14,
+  },
+  exceptionBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#92400e',
+  },
+  exceptionBannerMeta: {
+    fontSize: 13,
+    color: '#b45309',
+    fontWeight: '500',
+  },
+  exceptionBannerNote: {
+    fontSize: 13,
+    color: '#78350f',
+    marginTop: 2,
   },
 });

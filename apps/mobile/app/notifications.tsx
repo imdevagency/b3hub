@@ -21,6 +21,8 @@ import {
   Banknote,
   FileText,
   Bell,
+  MessageSquare,
+  Receipt,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -52,7 +54,10 @@ const TYPE_INFO: Record<string, TypeInfo> = {
   JOB_AVAILABLE: { Icon: Briefcase, bg: '#f3f4f6', iconColor: '#374151' },
   JOB_ACCEPTED: { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#059669' },
   JOB_COMPLETED: { Icon: Award, bg: '#f3f4f6', iconColor: '#6b7280' },
-  INVOICE_ISSUED: { Icon: FileText, bg: '#f9fafb', iconColor: '#6b7280' },
+  INVOICE_ISSUED: { Icon: Receipt, bg: '#f9fafb', iconColor: '#6b7280' },
+  QUOTE_SUBMITTED: { Icon: MessageSquare, bg: '#f0f9ff', iconColor: '#0369a1' },
+  QUOTE_REQUEST_RECEIVED: { Icon: MessageSquare, bg: '#fef9c3', iconColor: '#a16207' },
+  ORDER_REJECTED: { Icon: XCircle, bg: '#fef2f2', iconColor: '#b91c1c' },
   SYSTEM: { Icon: Bell, bg: '#f3f4f6', iconColor: '#6b7280' },
 };
 const DEFAULT_TYPE_INFO: TypeInfo = { Icon: Bell, bg: '#f3f4f6', iconColor: '#6b7280' };
@@ -81,11 +86,19 @@ function deepLinkPath(notif: ApiNotification): string | null {
     case 'JOB_COMPLETED':
     case 'TRANSPORT_COMPLETED':
       return '/(driver)/earnings';
+    // ── Quote requests ──────────────────────────────────────────
+    case 'QUOTE_SUBMITTED':
+      return d.quoteRequestId ? `/(buyer)/rfq/${d.quoteRequestId}` : '/(buyer)/orders';
+    case 'QUOTE_REQUEST_RECEIVED':
+      return '/(seller)/quotes';
+    // ── Rejected / cancelled ──────────────────────────────────────
+    case 'ORDER_REJECTED':
+      return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/orders';
     // ── Finance / docs ─────────────────────────────────────────
     case 'PAYMENT_RECEIVED':
       return '/(driver)/earnings';
     case 'INVOICE_ISSUED':
-      return '/(seller)/incoming';
+      return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/invoices';
     default:
       return null;
   }

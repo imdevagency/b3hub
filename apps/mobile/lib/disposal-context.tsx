@@ -17,10 +17,12 @@ export interface ConfirmedDisposal {
   jobNumber: string;
   pickupAddress: string;
   wasteType: WasteType;
+  wasteBreakdown: WasteType[]; // full multi-select list before MIXED collapse
   truckType: DisposalTruckType;
   truckCount: number;
   requestedDate: string;
   estimatedWeight: number;
+  fromPrice: number;
 }
 
 interface DisposalContextValue {

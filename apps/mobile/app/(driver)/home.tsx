@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import type { ApiTransportJob } from '@/lib/api';
+import type { ApiTransportJob, ApiVehicle } from '@/lib/api';
 import { BaseMap, PinLayer } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
 import * as Location from 'expo-location';
@@ -25,6 +25,8 @@ import {
   ChevronRight,
   User,
   ListFilter,
+  Truck,
+  ArrowRight,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -48,6 +50,7 @@ export default function DriverHomeScreen() {
 
   const [availableJobs, setAvailableJobs] = useState<ApiTransportJob[]>([]);
   const [hasActiveJob, setHasActiveJob] = useState(false);
+  const [vehicleCount, setVehicleCount] = useState<number | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [todayEarnings, setTodayEarnings] = useState<number | null>(null);
   const [loadingJobs, setLoadingJobs] = useState(true);
@@ -105,6 +108,10 @@ export default function DriverHomeScreen() {
         .unreadCount(token)
         .then((res: { count: number }) => setUnreadCount(res.count))
         .catch(() => {});
+      api.vehicles
+        .getAll(token)
+        .then((vs: ApiVehicle[]) => setVehicleCount(Array.isArray(vs) ? vs.length : 0))
+        .catch(() => setVehicleCount(0));
       api.transportJobs
         .myJobs(token)
         .then((jobs) => {
@@ -255,6 +262,27 @@ export default function DriverHomeScreen() {
             <Text style={s.statLabel}>Nopelnīts šodien</Text>
           </View>
         </View>
+
+        {/* First-run prompt: no vehicles registered yet */}
+        {vehicleCount === 0 && !hasActiveJob && (
+          <TouchableOpacity
+            style={s.vehiclePrompt}
+            activeOpacity={0.8}
+            onPress={() => {
+              haptics.medium();
+              router.push('/(driver)/vehicles');
+            }}
+          >
+            <View style={s.vehiclePromptIcon}>
+              <Truck size={20} color="#ffffff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.vehiclePromptTitle}>Pievienojiet transportlīdzekli</Text>
+              <Text style={s.vehiclePromptSub}>Jums nav reģistrētu auto</Text>
+            </View>
+            <ArrowRight size={16} color="#4b5563" />
+          </TouchableOpacity>
+        )}
 
         {/* Primary Action Button — The Big Button */}
         <TouchableOpacity
@@ -439,6 +467,29 @@ const s = StyleSheet.create({
   primaryActionActive: { backgroundColor: '#059669' },
   primaryActionText: { color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: 0.5 },
   noJobsHint: { fontSize: 13, color: '#9ca3af', textAlign: 'center', marginTop: 10 },
+
+  // Vehicle first-run prompt
+  vehiclePrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#f9fafb',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  vehiclePromptIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  vehiclePromptTitle: { fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 2 },
+  vehiclePromptSub: { fontSize: 12, color: '#6b7280' },
 
   // Quick Actions
   quickGrid: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 12 },

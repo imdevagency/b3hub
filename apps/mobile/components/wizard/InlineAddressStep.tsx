@@ -12,7 +12,7 @@
  *   />
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -27,9 +27,12 @@ import {
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { MapPin, Search, X, Navigation, CheckCircle } from 'lucide-react-native';
+import { MapPin, Search, X, Navigation, CheckCircle, Star } from 'lucide-react-native';
 import { useGeocode } from '@/components/map';
 import type { GeocodeSuggestion } from '@/components/map';
+import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
+import type { SavedAddress } from '@/lib/api';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -82,6 +85,7 @@ export function InlineAddressStep({
   const activeSearchText = useRef<string>('');
   const isSelectingRef = useRef<boolean>(false);
   const { forwardGeocode, resolvePlace, reverseGeocodeWithCity } = useGeocode();
+  const { token } = useAuth();
 
   const [pin, setPin] = useState<{ latitude: number; longitude: number } | null>(
     picked ? { latitude: picked.lat, longitude: picked.lng } : null,
@@ -92,6 +96,15 @@ export function InlineAddressStep({
   const [searching, setSearching] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+
+  useEffect(() => {
+    if (!token) return;
+    api.savedAddresses
+      .list(token)
+      .then(setSavedAddresses)
+      .catch(() => {});
+  }, [token]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -213,6 +226,42 @@ export function InlineAddressStep({
     [applyCoords],
   );
 
+  const handleSavedAddressPick = useCallback(
+    async (addr: SavedAddress) => {
+      Keyboard.dismiss();
+      if (addr.lat != null && addr.lng != null) {
+        const newPin = { latitude: addr.lat, longitude: addr.lng };
+        setPin(newPin);
+        mapRef.current?.animateToRegion(
+          { ...newPin, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+          600,
+        );
+        setQuery(addr.address);
+        onPick({ address: addr.address, lat: addr.lat, lng: addr.lng, city: addr.city });
+      } else {
+        setResolving(true);
+        try {
+          const results = await forwardGeocode(addr.address);
+          if (!results.length) return;
+          const coords = await resolvePlace(results[0].id);
+          if (!coords) return;
+          const [lng, lat] = coords;
+          const newPin = { latitude: lat, longitude: lng };
+          setPin(newPin);
+          mapRef.current?.animateToRegion(
+            { ...newPin, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+            600,
+          );
+          setQuery(addr.address);
+          onPick({ address: addr.address, lat, lng, city: addr.city });
+        } finally {
+          setResolving(false);
+        }
+      }
+    },
+    [onPick, forwardGeocode, resolvePlace],
+  );
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -272,6 +321,36 @@ export function InlineAddressStep({
             </View>
             <View style={s.timelineLine} />
           </View>
+        )}
+
+        {/* Saved address quick-picks — shown when query is empty */}
+        {savedAddresses.length > 0 && !showSugs && query.trim().length === 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={s.savedChipsRow}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={s.savedChipsContent}
+          >
+            {[...savedAddresses]
+              .sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0))
+              .map((addr) => (
+                <TouchableOpacity
+                  key={addr.id}
+                  style={[s.savedChip, addr.isDefault && s.savedChipDefault]}
+                  onPress={() => handleSavedAddressPick(addr)}
+                  activeOpacity={0.75}
+                >
+                  {addr.isDefault && <Star size={11} color="#d97706" fill="#d97706" />}
+                  <Text
+                    style={[s.savedChipText, addr.isDefault && s.savedChipDefaultText]}
+                    numberOfLines={1}
+                  >
+                    {addr.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+          </ScrollView>
         )}
 
         {/* Input */}
@@ -512,4 +591,36 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
   },
   confirmedText: { flex: 1, fontSize: 15, color: '#111827', lineHeight: 22, fontWeight: '600' },
+  savedChipsRow: {
+    marginHorizontal: -20,
+  },
+  savedChipsContent: {
+    paddingHorizontal: 20,
+    gap: 8,
+    flexDirection: 'row',
+  },
+  savedChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  savedChipDefault: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#fde68a',
+  },
+  savedChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#374151',
+    maxWidth: 120,
+  },
+  savedChipDefaultText: {
+    color: '#92400e',
+  },
 });

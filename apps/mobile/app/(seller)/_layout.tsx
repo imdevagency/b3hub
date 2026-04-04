@@ -49,6 +49,7 @@ export default function SellerLayout() {
           options={{
             title: t.tabs.home,
             tabBarIcon: ({ color }) => <Home size={22} color={color} />,
+            tabBarBadge: openQuoteCount > 0 ? openQuoteCount : undefined,
           }}
         />
         <Tabs.Screen
@@ -77,7 +78,6 @@ export default function SellerLayout() {
           options={{
             title: t.tabs.profile,
             tabBarIcon: ({ color }) => <User size={22} color={color} />,
-            tabBarBadge: openQuoteCount > 0 ? openQuoteCount : undefined,
           }}
         />
         <Tabs.Screen name="quotes" options={{ href: null }} />

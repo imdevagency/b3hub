@@ -128,7 +128,14 @@ export interface ApiReturnTripJob extends ApiTransportJob {
 
 // ─── Vehicles ──────────────────────────────────────────────────────────────
 
-export type VehicleType = 'TRUCK' | 'SEMI_TRUCK' | 'TIPPER' | 'FLATBED' | 'VAN' | 'OTHER';
+export type VehicleType =
+  | 'DUMP_TRUCK'
+  | 'FLATBED_TRUCK'
+  | 'SEMI_TRAILER'
+  | 'HOOK_LIFT'
+  | 'SKIP_LOADER'
+  | 'TANKER'
+  | 'VAN';
 
 export interface ApiVehicle {
   id: string;
@@ -137,7 +144,7 @@ export interface ApiVehicle {
   make: string;
   model: string;
   year?: number | null;
-  payloadTonnes?: number | null;
+  capacity?: number | null;
   isActive: boolean;
   createdAt: string;
 }

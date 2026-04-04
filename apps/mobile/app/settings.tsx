@@ -35,6 +35,7 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
+import { useLanguage } from '@/lib/language-context';
 
 const APP_VERSION = '1.0.0';
 const ACCENT = '#111827';
@@ -105,6 +106,7 @@ function LinkRow({
 export default function SettingsScreen() {
   const router = useRouter();
   const { logout, user, token } = useAuth();
+  const { language, setLanguage } = useLanguage();
   const toast = useToast();
 
   // Notification toggles — initialised from backend user prefs
@@ -206,18 +208,26 @@ export default function SettingsScreen() {
         {/* ── Language ──────────────────────────────────── */}
         <SectionHeader label="VALODA" />
         <View style={styles.card}>
-          <View style={styles.row}>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => {
+              haptics.light();
+              language === 'lv' ? setLanguage('ru') : setLanguage('lv');
+            }}
+            activeOpacity={0.7}
+          >
             <View style={styles.rowIcon}>
               <Globe size={18} color="#6b7280" />
             </View>
             <View style={styles.rowBody}>
-              <Text style={styles.rowLabel}>Lietotnes valoda</Text>
-              <Text style={styles.rowDesc}>Latviešu</Text>
+              <Text style={styles.rowLabel}>Lietotnes valoda / Язык</Text>
             </View>
-            <View style={styles.comingSoonBadge}>
-              <Text style={styles.comingSoonText}>Drīzumā</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginRight: 4 }}>
+              <Text style={[styles.langOpt, language === 'lv' && styles.langOptActive]}>LV</Text>
+              <Text style={{ color: '#d1d5db', marginHorizontal: 2 }}>|</Text>
+              <Text style={[styles.langOpt, language === 'ru' && styles.langOptActive]}>RU</Text>
             </View>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* ── Legal & Support ───────────────────────────── */}
@@ -350,6 +360,14 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#9ca3af',
+  },
+  langOpt: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#9ca3af',
+  },
+  langOptActive: {
+    color: '#111827',
   },
   bottom: {
     height: 40,

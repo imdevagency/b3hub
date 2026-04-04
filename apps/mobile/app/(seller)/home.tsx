@@ -7,7 +7,16 @@ import { api } from '@/lib/api';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
-import { Inbox, LayoutGrid, FileText, Wallet, Bell, ArrowRight } from 'lucide-react-native';
+import {
+  Inbox,
+  LayoutGrid,
+  FileText,
+  Wallet,
+  Bell,
+  ArrowRight,
+  Plus,
+  CheckCircle,
+} from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 
 const QUICK_ACTIONS = [
@@ -44,6 +53,7 @@ export default function SellerHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [pendingCount, setPendingCount] = useState<number | null>(null);
+  const [materialCount, setMaterialCount] = useState<number | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const toast = useToast();
@@ -55,7 +65,9 @@ export default function SellerHomeScreen() {
       api.orders
         .myOrders(token)
         .then((orders) => {
-          const pending = orders.filter(
+          const companyId = user?.company?.id;
+          const sellerOrders = companyId ? orders.filter((o) => o.buyer?.id !== companyId) : orders;
+          const pending = sellerOrders.filter(
             (o) => o.status === 'PENDING' || o.status === 'CONFIRMED',
           ).length;
           setPendingCount(pending);
@@ -69,8 +81,21 @@ export default function SellerHomeScreen() {
         .unreadCount(token)
         .then((res) => setUnreadCount(res.count))
         .catch(() => {});
+      // Detect new seller: check if they have any materials listed
+      const companyId = user?.company?.id;
+      if (companyId) {
+        api.materials
+          .getAll(token, { supplierId: companyId })
+          .then((data) => {
+            const items = Array.isArray(data) ? data : ((data as any).items ?? []);
+            setMaterialCount(items.length);
+          })
+          .catch(() => setMaterialCount(null));
+      } else {
+        setMaterialCount(null);
+      }
     },
-    [token, toast],
+    [token, toast, user?.company?.id],
   );
 
   useFocusEffect(
@@ -159,6 +184,96 @@ export default function SellerHomeScreen() {
           />
         }
       >
+        {/* FIRST-RUN ONBOARDING — shown when seller has no materials listed yet */}
+        {materialCount === 0 && pendingCount === 0 && (
+          <View
+            style={{
+              backgroundColor: '#000000',
+              borderRadius: 24,
+              padding: 24,
+              marginBottom: 24,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 20,
+                fontFamily: 'Inter_700Bold',
+                fontWeight: '700',
+                color: '#ffffff',
+                letterSpacing: -0.5,
+                marginBottom: 6,
+              }}
+            >
+              Sāciet pārdot
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                color: '#9ca3af',
+                fontFamily: 'Inter_400Regular',
+                marginBottom: 20,
+                lineHeight: 20,
+              }}
+            >
+              Izpildiet 3 soļus, lai saņemtu pirmo pasūtījumu
+            </Text>
+            {[
+              { icon: Plus, label: 'Pievienojiet materiālus katalogā', route: '/(seller)/catalog' },
+              {
+                icon: CheckCircle,
+                label: 'Apstipriniet ienākošos pasūtījumus',
+                route: '/(seller)/incoming',
+              },
+              { icon: Wallet, label: 'Sekojiet ienākumiem', route: '/(seller)/earnings' },
+            ].map((step, i) => {
+              const Icon = step.icon;
+              return (
+                <TouchableOpacity
+                  key={i}
+                  onPress={() => {
+                    if (!step.route) return;
+                    haptics.light();
+                    router.push(step.route as any);
+                  }}
+                  activeOpacity={step.route ? 0.75 : 1}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    marginBottom: i < 2 ? 16 : 0,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Icon size={18} color="#ffffff" strokeWidth={2} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        color: '#ffffff',
+                        fontFamily: 'Inter_500Medium',
+                        letterSpacing: -0.2,
+                      }}
+                    >
+                      {step.label}
+                    </Text>
+                  </View>
+                  <ArrowRight size={16} color="#6b7280" />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
         {/* STATUS CARD (UBER STYLE) */}
         <View style={{ marginBottom: 24 }}>
           <TouchableOpacity

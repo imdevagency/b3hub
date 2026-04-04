@@ -13,7 +13,12 @@ export type WasteType =
   | 'HAZARDOUS';
 
 export type DisposalTruckType = 'TIPPER_SMALL' | 'TIPPER_LARGE' | 'ARTICULATED_TIPPER';
-export type TransportVehicleType = 'TIPPER_SMALL' | 'TIPPER_LARGE' | 'ARTICULATED_TIPPER';
+export type TransportVehicleType =
+  | 'TIPPER_SMALL'
+  | 'TIPPER_LARGE'
+  | 'ARTICULATED_TIPPER'
+  | 'FLATBED'
+  | 'BOX_TRUCK';
 
 export interface CreateDisposalOrderInput {
   pickupAddress: string;
@@ -144,6 +149,7 @@ export interface ApiOrder {
   currency: string;
   siteContactName: string | null;
   siteContactPhone: string | null;
+  notes?: string | null;
   buyer?: {
     id: string;
     name: string;
@@ -170,6 +176,13 @@ export interface ApiOrder {
       recipientName: string | null;
       createdAt: string;
     } | null;
+    exceptions?: {
+      id: string;
+      type: string;
+      status: string;
+      notes: string;
+      createdAt: string;
+    }[];
   }[];
   linkedSkipOrder?: {
     id: string;
@@ -180,6 +193,7 @@ export interface ApiOrder {
     deliveryDate: string;
     price: number;
   } | null;
+  project?: { id: string; name: string } | null;
   createdAt: string;
 }
 
@@ -222,6 +236,25 @@ export const ordersApi = {
     getOne: (id: string, token: string) =>
       apiFetch<ApiOrder>(`/orders/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    update: (
+      id: string,
+      body: {
+        deliveryDate?: string;
+        deliveryWindow?: string;
+        notes?: string;
+        siteContactName?: string;
+        siteContactPhone?: string;
+        deliveryAddress?: string;
+        deliveryCity?: string;
+      },
+      token: string,
+    ) =>
+      apiFetch<ApiOrder>(`/orders/${id}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       }),
 
     confirm: (id: string, token: string) =>

@@ -2,7 +2,14 @@ import { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { CheckCircle2, Truck, MapPin, CalendarDays, ArrowRight } from 'lucide-react-native';
+import {
+  CheckCircle2,
+  Truck,
+  MapPin,
+  CalendarDays,
+  ArrowRight,
+  Package,
+} from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 
 function formatDate(iso: string): string {
@@ -12,9 +19,11 @@ function formatDate(iso: string): string {
 }
 
 const VEHICLE_LABELS: Record<string, string> = {
-  TIPPER_SMALL: 'Pašizgāzējs (10 t)',
-  TIPPER_LARGE: 'Pašizgāzējs lielais (18 t)',
-  ARTICULATED_TIPPER: 'Sattelkipper (26 t)',
+  TIPPER_SMALL: 'Mazais pašizgāzējs (5 t)',
+  TIPPER_LARGE: 'Lielais pašizgāzējs (15 t)',
+  ARTICULATED_TIPPER: 'Puspiekabe (26 t)',
+  FLATBED: 'Platforma (20 t)',
+  BOX_TRUCK: 'Kravas furgons (3.5 t)',
 };
 
 export default function TransportConfirmation() {
@@ -27,6 +36,8 @@ export default function TransportConfirmation() {
     dropoffCity,
     vehicleType,
     requestedDate,
+    cargo,
+    estimatedPrice,
   } = useLocalSearchParams<{
     jobNumber: string;
     pickupAddress: string;
@@ -35,6 +46,8 @@ export default function TransportConfirmation() {
     dropoffCity: string;
     vehicleType: string;
     requestedDate: string;
+    cargo: string;
+    estimatedPrice: string;
   }>();
 
   const iconScale = useRef(new Animated.Value(0)).current;
@@ -154,6 +167,23 @@ export default function TransportConfirmation() {
           </View>
         ) : null}
 
+        {cargo && cargo !== '—' ? (
+          <View style={s.row}>
+            <Package size={14} color="#6b7280" style={{ marginTop: 1 }} />
+            <View style={{ flex: 1, marginLeft: 8 }}>
+              <Text style={s.rowLabel}>Krava</Text>
+              <Text style={s.rowValue}>{cargo}</Text>
+            </View>
+          </View>
+        ) : null}
+
+        {estimatedPrice ? (
+          <View style={s.estimatedRow}>
+            <Text style={s.estimatedLabel}>Orientējošā cena</Text>
+            <Text style={s.estimatedValue}>{estimatedPrice}</Text>
+          </View>
+        ) : null}
+
         {requestedDate ? (
           <View style={s.row}>
             <CalendarDays size={14} color="#6b7280" style={{ marginTop: 1 }} />
@@ -264,6 +294,17 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'flex-start' },
   rowLabel: { fontSize: 11, color: '#9ca3af', marginBottom: 2 },
   rowValue: { fontSize: 14, fontWeight: '500', color: '#111827' },
+
+  estimatedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  estimatedLabel: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
+  estimatedValue: { fontSize: 16, fontWeight: '700', color: '#111827' },
 
   btns: { paddingHorizontal: 20, gap: 10 },
   btnPrimary: {

@@ -12,7 +12,15 @@ import {
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { MapPin, CalendarDays, Package, Truck, User, Phone } from 'lucide-react-native';
+import {
+  MapPin,
+  CalendarDays,
+  Package,
+  Truck,
+  User,
+  Phone,
+  AlertCircle,
+} from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { InfoSection } from '@/components/ui/InfoSection';
@@ -194,7 +202,14 @@ export default function SellerOrderDetailScreen() {
           <DetailRow label="Adrese" value={order.deliveryAddress} />
           {order.deliveryCity && <DetailRow label="Pilsēta" value={order.deliveryCity} />}
           {order.deliveryDate && (
-            <DetailRow label="Datums" value={formatDate(order.deliveryDate)} last />
+            <DetailRow label="Datums" value={formatDate(order.deliveryDate)} />
+          )}
+          {order.deliveryWindow && order.deliveryWindow !== 'ANY' && (
+            <DetailRow
+              label="Piegādes logs"
+              value={order.deliveryWindow === 'AM' ? 'Rīts (8:00–12:00)' : 'Diena (12:00–17:00)'}
+              last
+            />
           )}
         </InfoSection>
 
@@ -220,6 +235,39 @@ export default function SellerOrderDetailScreen() {
               </TouchableOpacity>
             )}
             {order.buyer?.email && <DetailRow label="E-pasts" value={order.buyer?.email} last />}
+          </InfoSection>
+        )}
+
+        {/* Site contact */}
+        {(order.siteContactName || order.siteContactPhone) && (
+          <InfoSection icon={<Phone size={14} color="#6b7280" />} title="Kontakts uz objekta">
+            {order.siteContactName && <DetailRow label="Vārds" value={order.siteContactName} />}
+            {order.siteContactPhone && (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={s.phoneRow}
+                onPress={() =>
+                  Linking.openURL(`tel:${order.siteContactPhone}`).catch(() =>
+                    Alert.alert('Kļūda', 'Neizdevās iniciēt zvanu'),
+                  )
+                }
+              >
+                <Text style={s.phoneLabel}>Tālrunis</Text>
+                <View style={s.phoneRight}>
+                  <Phone size={13} color={colors.primary} />
+                  <Text style={s.phoneValue}>{order.siteContactPhone}</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+          </InfoSection>
+        )}
+
+        {/* Buyer notes */}
+        {order.notes && (
+          <InfoSection icon={<AlertCircle size={14} color="#6b7280" />} title="Piezīmes">
+            <View style={s.notesBox}>
+              <Text style={s.notesText}>{order.notes}</Text>
+            </View>
           </InfoSection>
         )}
 
@@ -356,5 +404,14 @@ const s = StyleSheet.create({
   } as any,
   btnDisabled: {
     opacity: 0.5,
+  },
+  notesBox: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  notesText: {
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: 20,
   },
 });

@@ -194,6 +194,7 @@ export default function DisposalWizard() {
   };
   const [volumeKey, setVolumeKey] = useState<string>('sm');
   const [desc, setDesc] = useState('');
+  const [weightText, setWeightText] = useState(''); // optional user-estimated weight in tonnes
   const today = new Date();
   const [date, setDate] = useState<Date>(addDays(today, 1));
   const [pickupWindow, setPickupWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
@@ -238,6 +239,16 @@ export default function DisposalWizard() {
     setDescription(desc);
     setRequestedDate(toISO(date));
     setLoading(true);
+    // Derive estimated weight: user input takes priority, fall back to full-truck capacity
+    const parsedWeight = parseFloat(weightText);
+    const estimatedWeight =
+      !isNaN(parsedWeight) && parsedWeight > 0 ? parsedWeight : truck.capacity * preset.truckCount;
+    // Build waste breakdown description prefix for operators
+    const wasteBreakdownNote =
+      selectedWastes.length > 1
+        ? `Atkritumu sastāvs: ${selectedWastes.map((w) => WASTE_LABELS[w]).join(', ')}\n`
+        : '';
+    const fullDescription = wasteBreakdownNote + (desc || '');
     try {
       const result = await api.disposal.create(
         {
@@ -248,8 +259,8 @@ export default function DisposalWizard() {
           wasteType: state.wasteType,
           truckType: preset.truckType,
           truckCount: preset.truckCount,
-          estimatedWeight: truck.capacity * preset.truckCount,
-          description: desc || undefined,
+          estimatedWeight,
+          description: fullDescription || undefined,
           requestedDate: toISO(date),
           pickupWindow: pickupWindow !== 'ANY' ? pickupWindow : undefined,
           siteContactName: contactName || undefined,
@@ -279,10 +290,12 @@ export default function DisposalWizard() {
         jobNumber: jn,
         pickupAddress: state.location ?? '',
         wasteType: state.wasteType,
+        wasteBreakdown: selectedWastes,
         truckType: preset.truckType,
         truckCount: preset.truckCount,
         requestedDate: toISO(date),
-        estimatedWeight: truck.capacity * preset.truckCount,
+        estimatedWeight,
+        fromPrice: preset.fromPrice * preset.truckCount,
       });
       router.replace({
         pathname: '/disposal/confirmation' as never,
@@ -315,6 +328,7 @@ export default function DisposalWizard() {
     contactName,
     contactPhone,
     notes,
+    weightText,
     setTruckType,
     setTruckCount,
     setDescription,
@@ -338,7 +352,15 @@ export default function DisposalWizard() {
     }
     if (step === 1) {
       if (selectedWastes.includes('HAZARDOUS')) {
-        Alert.alert('Bīstami atkritumi', 'Sazinieties ar mums tieši.', [{ text: 'Sapratu' }]);
+        Alert.alert(
+          'Bīstami atkritumi',
+          'Azbesta, krāsu un šķidājinātāju utilizācijai nepieciešama īpaša atļauja.\n\nSazinieties ar mums tieši:',
+          [
+            { text: 'Zvanīt: +371 2000 0000', onPress: () => {} },
+            { text: 'E-pasts: info@b3hub.lv', onPress: () => {} },
+            { text: 'Aizvert', style: 'cancel' },
+          ],
+        );
         return;
       }
     }
@@ -474,6 +496,39 @@ export default function DisposalWizard() {
                 },
               ]}
             >
+              Aptuvenais svars tonnās (neobligāti)
+            </Text>
+            <TextInput
+              style={[
+                s.uberInput,
+                {
+                  backgroundColor: '#fff',
+                  borderRadius: 16,
+                  borderWidth: 1.5,
+                  borderColor: '#f3f4f6',
+                  paddingHorizontal: 16,
+                  marginBottom: 4,
+                },
+              ]}
+              placeholder={`piem., ${truck.capacity * preset.truckCount} t (pilna mašīna)`}
+              placeholderTextColor="#9ca3af"
+              value={weightText}
+              onChangeText={setWeightText}
+              keyboardType="decimal-pad"
+              returnKeyType="done"
+            />
+            <Text
+              style={[
+                s.sectionLabel,
+                {
+                  textTransform: 'none',
+                  color: '#6b7280',
+                  fontSize: 13,
+                  marginLeft: 4,
+                  marginTop: 10,
+                },
+              ]}
+            >
               Papildu informācija (neobligāti)
             </Text>
             <TextInput
@@ -597,7 +652,12 @@ export default function DisposalWizard() {
               <DetailRow
                 icon={Weight}
                 label="Apjoms"
-                value={`${truck.capacity * preset.truckCount} t ≈ ${truck.volume * preset.truckCount} m³`}
+                value={(() => {
+                  const parsed = parseFloat(weightText);
+                  const w =
+                    !isNaN(parsed) && parsed > 0 ? parsed : truck.capacity * preset.truckCount;
+                  return `${w} t ≈ ${truck.volume * preset.truckCount} m³`;
+                })()}
               />
               <DetailRow
                 icon={CreditCard}

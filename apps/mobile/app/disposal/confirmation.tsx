@@ -3,7 +3,14 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated } from '
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
 import { useDisposal } from '@/lib/disposal-context';
-import { CheckCircle2, Recycle, MapPin, CalendarDays, Truck } from 'lucide-react-native';
+import {
+  CheckCircle2,
+  Recycle,
+  MapPin,
+  CalendarDays,
+  Truck,
+  CreditCard,
+} from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 
 function formatDate(iso: string): string {
@@ -100,8 +107,16 @@ export default function DisposalConfirmation() {
     );
   }
 
-  const { jobNumber, pickupAddress, wasteType, truckType, truckCount, requestedDate } =
-    confirmedDisposal;
+  const {
+    jobNumber,
+    pickupAddress,
+    wasteType,
+    wasteBreakdown,
+    truckType,
+    truckCount,
+    requestedDate,
+    fromPrice,
+  } = confirmedDisposal;
 
   return (
     <ScreenContainer standalone bg="#fff">
@@ -149,7 +164,11 @@ export default function DisposalConfirmation() {
             <Recycle size={14} color="#6b7280" style={{ marginTop: 1 }} />
             <View style={{ flex: 1, marginLeft: 8 }}>
               <Text style={s.rowLabel}>Atkritumu veids</Text>
-              <Text style={s.rowValue}>{WASTE_LABELS[wasteType] ?? wasteType}</Text>
+              <Text style={s.rowValue}>
+                {wasteBreakdown && wasteBreakdown.length > 1
+                  ? wasteBreakdown.map((w) => WASTE_LABELS[w] ?? w).join(', ')
+                  : (WASTE_LABELS[wasteType] ?? wasteType)}
+              </Text>
             </View>
           </View>
         ) : null}
@@ -175,6 +194,29 @@ export default function DisposalConfirmation() {
             </View>
           </View>
         ) : null}
+
+        {fromPrice != null && fromPrice > 0 ? (
+          <View style={[s.row, { paddingTop: 10, borderTopWidth: 1, borderTopColor: '#f3f4f6' }]}>
+            <CreditCard size={14} color="#6b7280" style={{ marginTop: 1 }} />
+            <View style={{ flex: 1, marginLeft: 8 }}>
+              <Text style={s.rowLabel}>Orientačjā cena</Text>
+              <Text style={[s.rowValue, { color: '#059669', fontWeight: '700' }]}>
+                no €{fromPrice} + PVN 21%
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Recycling center — assigned by platform after matching */}
+        <View style={[s.row, { paddingTop: 10, borderTopWidth: 1, borderTopColor: '#f3f4f6' }]}>
+          <Recycle size={14} color="#6b7280" style={{ marginTop: 1 }} />
+          <View style={{ flex: 1, marginLeft: 8 }}>
+            <Text style={s.rowLabel}>Pārstrādes centrs</Text>
+            <Text style={[s.rowValue, { color: '#6b7280' }]}>
+              Tiks norīkots — jūs saņemsiet paziņojumu
+            </Text>
+          </View>
+        </View>
       </Animated.View>
 
       {/* Buttons */}

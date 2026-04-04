@@ -30,6 +30,8 @@ export function orderSearchText(item: UnifiedOrder): string {
   // supplier / buyer names
   if (d.supplier?.name) parts.push(d.supplier.name);
   if (d.buyer?.name) parts.push(d.buyer.name);
+  // project
+  if (d.project?.name) parts.push(d.project.name);
   return parts.join(' ').toLowerCase();
 }
 

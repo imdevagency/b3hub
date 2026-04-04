@@ -29,21 +29,23 @@ import type { ApiVehicle, VehicleType } from '@/lib/api';
 // ── Constants ──────────────────────────────────────────────────
 
 const VEHICLE_LABELS: Record<VehicleType, string> = {
-  TRUCK: 'Kravas auto',
-  SEMI_TRUCK: 'Vilcējs',
-  TIPPER: 'Pašizgāzējs',
-  FLATBED: 'Platforma',
+  DUMP_TRUCK: 'Pašizgāzējs',
+  FLATBED_TRUCK: 'Platforma',
+  SEMI_TRAILER: 'Vilcējs ar puspiekabi',
+  HOOK_LIFT: 'Āķa pacēlājs',
+  SKIP_LOADER: 'Konteinerauto',
+  TANKER: 'Cisternauto',
   VAN: 'Furgons',
-  OTHER: 'Cits',
 };
 
 const VEHICLE_ICON: Record<VehicleType, string> = {
-  TRUCK: '🚛',
-  SEMI_TRUCK: '🚚',
-  TIPPER: '🚜',
-  FLATBED: '🛻',
+  DUMP_TRUCK: '🚜',
+  FLATBED_TRUCK: '🛻',
+  SEMI_TRAILER: '🚚',
+  HOOK_LIFT: '🏗️',
+  SKIP_LOADER: '🚛',
+  TANKER: '🛢️',
   VAN: '🚐',
-  OTHER: '🚗',
 };
 
 const TYPES = Object.keys(VEHICLE_LABELS) as VehicleType[];
@@ -54,17 +56,17 @@ interface VehicleForm {
   make: string;
   model: string;
   year: string;
-  payloadTonnes: string;
+  capacity: string;
   isActive: boolean;
 }
 
 const BLANK: VehicleForm = {
   licensePlate: '',
-  vehicleType: 'TIPPER',
+  vehicleType: 'DUMP_TRUCK',
   make: '',
   model: '',
   year: '',
-  payloadTonnes: '',
+  capacity: '',
   isActive: true,
 };
 
@@ -97,7 +99,7 @@ function VehicleCard({
         </View>
         <Text style={s.cardSubtext}>
           {VEHICLE_LABELS[vehicle.vehicleType]}
-          {vehicle.payloadTonnes ? ` • ${vehicle.payloadTonnes}t` : ''}
+          {vehicle.capacity ? ` • ${vehicle.capacity}t` : ''}
         </Text>
       </View>
 
@@ -138,7 +140,7 @@ function VehicleModal({
           make: initial.make ?? '',
           model: initial.model ?? '',
           year: initial.year != null ? String(initial.year) : '',
-          payloadTonnes: initial.payloadTonnes != null ? String(initial.payloadTonnes) : '',
+          capacity: initial.capacity != null ? String(initial.capacity) : '',
           isActive: initial.isActive,
         });
       } else {
@@ -243,8 +245,8 @@ function VehicleModal({
               <TextInput
                 style={s.input}
                 placeholder="20.5"
-                value={form.payloadTonnes}
-                onChangeText={set('payloadTonnes')}
+                value={form.capacity}
+                onChangeText={set('capacity')}
                 keyboardType="decimal-pad"
               />
             </View>
@@ -328,7 +330,7 @@ export default function VehiclesScreen() {
       make: form.make.trim(),
       model: form.model.trim(),
       year: form.year ? Number(form.year) : undefined,
-      payloadTonnes: form.payloadTonnes ? Number(form.payloadTonnes) : undefined,
+      capacity: form.capacity ? Number(form.capacity) : undefined,
       isActive: form.isActive,
     };
     try {

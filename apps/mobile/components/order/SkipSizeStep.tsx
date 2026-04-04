@@ -8,9 +8,12 @@ import { SIZES } from './skip-hire-types';
 export function SkipSizeStep({
   selected,
   onSelect,
+  prices,
 }: {
   selected: SkipSize | null;
   onSelect: (v: SkipSize) => void;
+  /** Live market prices per size — overrides hardcoded SIZES prices when provided */
+  prices?: Partial<Record<SkipSize, number>>;
 }) {
   const scales = useRef(SIZES.map(() => new Animated.Value(1))).current;
   const stagger = useRef(SIZES.map(() => new Animated.Value(0))).current;
@@ -99,7 +102,9 @@ export function SkipSizeStep({
                 </View>
 
                 <View style={{ alignItems: 'flex-end', gap: 6 }}>
-                  <Text style={[s3.price, isSel && { color: size.color }]}>€{size.price}</Text>
+                  <Text style={[s3.price, isSel && { color: size.color }]}>
+                    {prices?.[size.id] != null ? `no €${prices[size.id]}` : `€${size.price}`}
+                  </Text>
                   <Text style={s3.minHire}>7 dienu min.</Text>
                   {isSel && (
                     <View style={[s3.checkCircle, { backgroundColor: size.color }]}>

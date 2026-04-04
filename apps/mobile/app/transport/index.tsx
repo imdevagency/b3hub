@@ -18,7 +18,7 @@ import {
   TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Check, Truck, Weight } from 'lucide-react-native';
+import { Bookmark, Check, Truck, Weight } from 'lucide-react-native';
 import { useTransport } from '@/lib/transport-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -58,9 +58,23 @@ const VEHICLE_OPTIONS: {
   {
     type: 'ARTICULATED_TIPPER',
     label: 'Puspiekabe',
-    sub: 'līdz 25 t · 90 m³',
+    sub: 'līdz 26 t · 22 m³',
     fromPrice: 219,
     pricePerKm: 3.0,
+  },
+  {
+    type: 'FLATBED',
+    label: 'Platforma',
+    sub: 'līdz 20 t · garums 13.6 m',
+    fromPrice: 199,
+    pricePerKm: 2.5,
+  },
+  {
+    type: 'BOX_TRUCK',
+    label: 'Kravas furgons',
+    sub: 'līdz 3.5 t · 20 m³',
+    fromPrice: 79,
+    pricePerKm: 1.2,
   },
 ];
 
@@ -108,11 +122,14 @@ export default function TransportWizard() {
 
   const [selectedVehicle, setSelectedVehicle] = useState<TransportVehicleType | null>(null);
   const [activeDesc, setActiveDesc] = useState('');
+  const [otherText, setOtherText] = useState('');
   const [weightText, setWeightText] = useState('');
   const [selectedDay, setSelectedDay] = useState<string>(DAY_OPTIONS[0].iso);
   const [pickupWindow, setPickupWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
 
   const [submitting, setSubmitting] = useState(false);
+  const [savePickup, setSavePickup] = useState(false);
+  const [saveDropoff, setSaveDropoff] = useState(false);
   const [siteContactName, setSiteContactName] = useState(() =>
     `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
   );
@@ -158,6 +175,7 @@ export default function TransportWizard() {
     if (!user || !token || !pickupStop || !dropoffStop || !selectedVehicle) return;
     setSubmitting(true);
     try {
+      const resolvedDesc = activeDesc === 'Cits' ? otherText.trim() || 'Cits' : activeDesc;
       const job = await api.transport.create(
         {
           pickupAddress: pickupPicked?.address ?? '',
@@ -169,7 +187,7 @@ export default function TransportWizard() {
           dropoffLat: dropoffStop.lat,
           dropoffLng: dropoffStop.lng,
           vehicleType: selectedVehicle,
-          loadDescription: activeDesc,
+          loadDescription: resolvedDesc,
           estimatedWeight: weightText ? parseFloat(weightText) : undefined,
           requestedDate: selectedDay,
           pickupWindow: pickupWindow !== 'ANY' ? pickupWindow : undefined,
@@ -180,6 +198,35 @@ export default function TransportWizard() {
         token,
       );
       const jn = job.jobNumber ?? job.id.slice(0, 8).toUpperCase();
+      // Save addresses if opted in
+      if (savePickup && pickupPicked && token) {
+        api.savedAddresses
+          .create(
+            {
+              label: pickupPicked.address.split(',')[0],
+              address: pickupPicked.address,
+              city: pickupPicked.city ?? '',
+              lat: pickupPicked.lat,
+              lng: pickupPicked.lng,
+            },
+            token,
+          )
+          .catch(() => {});
+      }
+      if (saveDropoff && dropoffPicked && token) {
+        api.savedAddresses
+          .create(
+            {
+              label: dropoffPicked.address.split(',')[0],
+              address: dropoffPicked.address,
+              city: dropoffPicked.city ?? '',
+              lat: dropoffPicked.lat,
+              lng: dropoffPicked.lng,
+            },
+            token,
+          )
+          .catch(() => {});
+      }
       reset();
       router.replace({
         pathname: '/transport/confirmation' as never,
@@ -191,6 +238,12 @@ export default function TransportWizard() {
           dropoffCity: state.dropoffCity ?? '',
           vehicleType: selectedVehicle,
           requestedDate: selectedDay,
+          cargo: activeDesc === 'Cits' ? otherText : activeDesc || '—',
+          estimatedPrice: currentVehiclePrice
+            ? route && currentVehicle
+              ? `~€${Math.round(currentVehicle.fromPrice + route.distanceKm * currentVehicle.pricePerKm)}`
+              : `no €${currentVehiclePrice}`
+            : '',
         },
       } as never);
     } catch (e: unknown) {
@@ -205,6 +258,7 @@ export default function TransportWizard() {
     dropoffStop,
     selectedVehicle,
     activeDesc,
+    otherText,
     weightText,
     selectedDay,
     pickupWindow,
@@ -214,6 +268,8 @@ export default function TransportWizard() {
     siteContactName,
     siteContactPhone,
     notes,
+    savePickup,
+    saveDropoff,
     reset,
   ]);
 
@@ -370,6 +426,19 @@ export default function TransportWizard() {
               })}
             </ScrollView>
 
+            {activeDesc === 'Cits' && (
+              <TextInput
+                style={[s.input, { marginBottom: 16 }]}
+                placeholder="Aprakstiet kravu (piem., iekārtas, mēbeles, paletes)..."
+                placeholderTextColor="#9ca3af"
+                value={otherText}
+                onChangeText={(t) => {
+                  setOtherText(t);
+                  setLoadDescription(t || 'Cits');
+                }}
+              />
+            )}
+
             <Text style={s.sectionLabel}>Svars (neobligāti)</Text>
             <View style={s.weightRow}>
               <Weight size={16} color="#6b7280" style={{ marginRight: 8 }} />
@@ -482,6 +551,44 @@ export default function TransportWizard() {
               )}
             </View>
 
+            {/* Save address toggles */}
+            {pickupPicked && (
+              <TouchableOpacity
+                style={s.saveAddrRow}
+                onPress={() => setSavePickup((v) => !v)}
+                activeOpacity={0.7}
+              >
+                <View style={[s.saveAddrCheck, savePickup && s.saveAddrCheckActive]}>
+                  {savePickup && <Check size={12} color="#fff" strokeWidth={2.5} />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.saveAddrLabel}>Saglabāt ielādes adresi</Text>
+                  <Text style={s.saveAddrSub} numberOfLines={1}>
+                    {pickupPicked.address.split(',')[0]}
+                  </Text>
+                </View>
+                <Bookmark size={16} color={savePickup ? '#111827' : '#9ca3af'} />
+              </TouchableOpacity>
+            )}
+            {dropoffPicked && (
+              <TouchableOpacity
+                style={s.saveAddrRow}
+                onPress={() => setSaveDropoff((v) => !v)}
+                activeOpacity={0.7}
+              >
+                <View style={[s.saveAddrCheck, saveDropoff && s.saveAddrCheckActive]}>
+                  {saveDropoff && <Check size={12} color="#fff" strokeWidth={2.5} />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.saveAddrLabel}>Saglabāt izkraušanas adresi</Text>
+                  <Text style={s.saveAddrSub} numberOfLines={1}>
+                    {dropoffPicked.address.split(',')[0]}
+                  </Text>
+                </View>
+                <Bookmark size={16} color={saveDropoff ? '#111827' : '#9ca3af'} />
+              </TouchableOpacity>
+            )}
+
             <Text style={[s.sectionLabel, { marginTop: 20 }]}>Pasūtījuma detaļas</Text>
             <View style={s.detailCard}>
               <DetailRow
@@ -494,7 +601,9 @@ export default function TransportWizard() {
                   label="Orientējošā cena"
                   value={
                     route && currentVehicle
-                      ? `~€${Math.round(currentVehicle.fromPrice + route.distanceKm * currentVehicle.pricePerKm)}`
+                      ? `~€${Math.round(
+                          currentVehicle.fromPrice + route.distanceKm * currentVehicle.pricePerKm,
+                        )}`
                       : `no €${currentVehiclePrice}`
                   }
                 />
@@ -807,4 +916,31 @@ const s = StyleSheet.create({
     color: '#111827',
   },
   inputMulti: { height: 80, textAlignVertical: 'top' },
+
+  // Save address toggle
+  saveAddrRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginBottom: 8,
+  },
+  saveAddrCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#d1d5db',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveAddrCheckActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  saveAddrLabel: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  saveAddrSub: { fontSize: 12, color: '#6b7280', marginTop: 1 },
 });

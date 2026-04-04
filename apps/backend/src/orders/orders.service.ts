@@ -50,10 +50,7 @@ export class OrdersService {
       OrderStatus.DELIVERED,
       OrderStatus.CANCELLED,
     ],
-    [OrderStatus.IN_PROGRESS]: [
-      OrderStatus.DELIVERED,
-      OrderStatus.CANCELLED,
-    ],
+    [OrderStatus.IN_PROGRESS]: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
     [OrderStatus.DELIVERED]: [OrderStatus.COMPLETED],
     [OrderStatus.COMPLETED]: [],
     [OrderStatus.CANCELLED]: [],
@@ -100,7 +97,9 @@ export class OrdersService {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       if (deliveryDate < today) {
-        throw new BadRequestException('Delivery date must be today or in the future');
+        throw new BadRequestException(
+          'Delivery date must be today or in the future',
+        );
       }
     }
 
@@ -126,13 +125,24 @@ export class OrdersService {
     for (const item of items) {
       const material = await this.prisma.material.findUnique({
         where: { id: item.materialId },
-        select: { id: true, basePrice: true, supplierId: true, active: true, inStock: true, stockQty: true, minOrder: true, maxOrder: true },
+        select: {
+          id: true,
+          basePrice: true,
+          supplierId: true,
+          active: true,
+          inStock: true,
+          stockQty: true,
+          minOrder: true,
+          maxOrder: true,
+        },
       });
       if (!material) {
         throw new NotFoundException(`Material ${item.materialId} not found`);
       }
       if (!material.active || !material.inStock) {
-        throw new BadRequestException(`Material ${item.materialId} is not available`);
+        throw new BadRequestException(
+          `Material ${item.materialId} is not available`,
+        );
       }
       // Enforce stockQty when the supplier tracks it
       if (material.stockQty != null && item.quantity > material.stockQty) {
@@ -155,7 +165,11 @@ export class OrdersService {
         where: { materialId: item.materialId },
         select: { minQty: true, unitPrice: true },
       });
-      const resolvedPrice = this.materials.resolvePrice(material.basePrice, tiers, item.quantity);
+      const resolvedPrice = this.materials.resolvePrice(
+        material.basePrice,
+        tiers,
+        item.quantity,
+      );
       const enriched: EnrichedItem = {
         ...item,
         resolvedUnitPrice: resolvedPrice,
@@ -188,9 +202,14 @@ export class OrdersService {
       `;
       if (updated === 0) {
         const remaining =
-          Number(buyerProfile.creditLimit) - Number(buyerProfile.creditUsed ?? 0);
+          Number(buyerProfile.creditLimit) -
+          Number(buyerProfile.creditUsed ?? 0);
         throw new BadRequestException(
-          `Order total \u20ac${grandTotal.toFixed(2)} exceeds your remaining credit limit of \u20ac${remaining.toFixed(2)}`,
+          `Order total \u20ac${grandTotal.toFixed(
+            2,
+          )} exceeds your remaining credit limit of \u20ac${remaining.toFixed(
+            2,
+          )}`,
         );
       }
     }
@@ -222,7 +241,9 @@ export class OrdersService {
           WHERE "userId" = ${userId}
         `.catch((rollbackErr) => {
           this.logger.error(
-            `CRITICAL: credit rollback failed for buyer ${userId} after order creation error. Manual adjustment needed. Original error: ${(err as Error).message}. Rollback error: ${(rollbackErr as Error).message}`,
+            `CRITICAL: credit rollback failed for buyer ${userId} after order creation error. Manual adjustment needed. Original error: ${
+              (err as Error).message
+            }. Rollback error: ${(rollbackErr as Error).message}`,
           );
           // Alert admins — buyer's creditUsed may be permanently overstated
           this.prisma.user
@@ -234,7 +255,11 @@ export class OrdersService {
                 {
                   type: NotificationType.SYSTEM_ALERT,
                   title: '🚨 Kredīta atgriešana neizdevās',
-                  message: `Pircēja ${userId} pasūtījuma izveidošana neizdevās, bet kredītu atiestatīt nevarēja. Pasūtījuma kļūda: ${(err as Error).message}. Rollback kļūda: ${(rollbackErr as Error).message}. Manuāla iejaukšanās nepieciešama.`,
+                  message: `Pircēja ${userId} pasūtījuma izveidošana neizdevās, bet kredītu atiestatīt nevarēja. Pasūtījuma kļūda: ${
+                    (err as Error).message
+                  }. Rollback kļūda: ${
+                    (rollbackErr as Error).message
+                  }. Manuāla iejaukšanās nepieciešama.`,
                   data: { userId },
                 },
               );
@@ -250,8 +275,7 @@ export class OrdersService {
     // and the WHERE guard prevents going below zero under concurrent load.
     // After decrementing, flip inStock=false and notify the supplier if stockQty hits 0.
     for (const item of items) {
-      this.prisma
-        .$executeRaw`
+      this.prisma.$executeRaw`
           UPDATE materials
           SET "stockQty" = "stockQty" - ${item.quantity}
           WHERE id = ${item.materialId}
@@ -272,7 +296,9 @@ export class OrdersService {
               })
               .catch((err) =>
                 this.logger.warn(
-                  `Failed to set inStock=false for material ${item.materialId}: ${(err as Error).message}`,
+                  `Failed to set inStock=false for material ${
+                    item.materialId
+                  }: ${(err as Error).message}`,
                 ),
               );
 
@@ -304,7 +330,9 @@ export class OrdersService {
         })
         .catch((err) =>
           this.logger.warn(
-            `Stock decrement failed for material ${item.materialId}: ${(err as Error).message}`,
+            `Stock decrement failed for material ${item.materialId}: ${
+              (err as Error).message
+            }`,
           ),
         );
     }
@@ -445,7 +473,11 @@ export class OrdersService {
     const supplierIds = [...new Set(items.map((i) => i.material.supplierId))];
     for (const supplierId of supplierIds) {
       // Push real-time event to seller's WebSocket room (fire-and-forget)
-      this.updates.broadcastSellerNewOrder({ companyId: supplierId, orderId, orderNumber });
+      this.updates.broadcastSellerNewOrder({
+        companyId: supplierId,
+        orderId,
+        orderNumber,
+      });
 
       const users = await this.prisma.user.findMany({
         where: { companyId: supplierId },
@@ -490,6 +522,7 @@ export class OrdersService {
           },
           buyer: {
             select: {
+              id: true,
               name: true,
             },
           },
@@ -518,6 +551,9 @@ export class OrdersService {
               deliveryDate: true,
               price: true,
             },
+          },
+          project: {
+            select: { id: true, name: true },
           },
         },
         orderBy: {
@@ -657,6 +693,16 @@ export class OrdersService {
               select: { id: true, licensePlate: true, vehicleType: true },
             },
             deliveryProof: true,
+            exceptions: {
+              select: {
+                id: true,
+                type: true,
+                status: true,
+                notes: true,
+                createdAt: true,
+              },
+              orderBy: { createdAt: 'desc' },
+            },
           },
         },
         invoices: true,
@@ -784,7 +830,9 @@ export class OrdersService {
     // Capture payment when seller confirms the order (fire-and-forget, non-fatal)
     if (status === OrderStatus.CONFIRMED) {
       this.payments.capturePayment(id).catch(async (err) => {
-        this.logger.error(`capturePayment failed for order ${id}: ${err.message}`);
+        this.logger.error(
+          `capturePayment failed for order ${id}: ${err.message}`,
+        );
 
         // Notify the buyer so they can re-attempt payment
         this.notifications
@@ -851,7 +899,12 @@ export class OrdersService {
           UPDATE buyer_profiles
           SET "creditUsed" = GREATEST(0, "creditUsed" - ${Number(order.total)})
           WHERE "userId" = ${order.createdById}
-        `.catch((err) => this.logger.error(`Failed to release credit for buyer ${order.createdById} on order cancellation ${id}`, err));
+        `.catch((err) =>
+          this.logger.error(
+            `Failed to release credit for buyer ${order.createdById} on order cancellation ${id}`,
+            err,
+          ),
+        );
       }
 
       // Cancel all transport jobs for this order that are still in a pre-delivery state
@@ -928,7 +981,10 @@ export class OrdersService {
 
     // Email buyer on key status transitions (fire-and-forget)
     const buyerEmail = order.createdBy?.email;
-    if (buyerEmail && (['CONFIRMED', 'DELIVERED', 'CANCELLED'] as string[]).includes(status)) {
+    if (
+      buyerEmail &&
+      (['CONFIRMED', 'DELIVERED', 'CANCELLED'] as string[]).includes(status)
+    ) {
       const buyerName = [order.createdBy?.firstName, order.createdBy?.lastName]
         .filter(Boolean)
         .join(' ');
@@ -1100,9 +1156,15 @@ export class OrdersService {
     }
 
     // Void / refund payment fire-and-forget
-    this.payments.voidOrRefund(id).catch((err) =>
-      this.logger.error(`voidOrRefund failed on seller-cancel for order ${id}: ${(err as Error).message}`),
-    );
+    this.payments
+      .voidOrRefund(id)
+      .catch((err) =>
+        this.logger.error(
+          `voidOrRefund failed on seller-cancel for order ${id}: ${
+            (err as Error).message
+          }`,
+        ),
+      );
 
     // Release buyer credit
     if (order.total) {
@@ -1111,7 +1173,11 @@ export class OrdersService {
         SET "creditUsed" = GREATEST(0, "creditUsed" - ${Number(order.total)})
         WHERE "userId" = ${order.createdById}
       `.catch((err) =>
-        this.logger.error(`Failed to release credit on seller-cancel for buyer ${order.createdById}: ${(err as Error).message}`),
+        this.logger.error(
+          `Failed to release credit on seller-cancel for buyer ${
+            order.createdById
+          }: ${(err as Error).message}`,
+        ),
       );
     }
 
@@ -1159,7 +1225,9 @@ export class OrdersService {
         })
         .catch((err) =>
           this.logger.error(
-            `sellerCancel: failed to notify admins for order ${id}: ${(err as Error).message}`,
+            `sellerCancel: failed to notify admins for order ${id}: ${
+              (err as Error).message
+            }`,
           ),
         );
     }
@@ -1213,7 +1281,9 @@ export class OrdersService {
 
     if (cancelledCount === 0) {
       // A concurrent request already cancelled this order; return it without touching credit.
-      return (await this.prisma.order.findUniqueOrThrow({ where: { id } })) as typeof order;
+      return (await this.prisma.order.findUniqueOrThrow({
+        where: { id },
+      })) as typeof order;
     }
 
     // Void the Stripe PaymentIntent or issue a full refund depending on capture state.
@@ -1222,7 +1292,9 @@ export class OrdersService {
       .voidOrRefund(id)
       .catch((err) =>
         this.logger.error(
-          `voidOrRefund failed for order ${id} during cancel: ${(err as Error).message}`,
+          `voidOrRefund failed for order ${id} during cancel: ${
+            (err as Error).message
+          }`,
         ),
       );
 
@@ -1272,13 +1344,20 @@ export class OrdersService {
         UPDATE buyer_profiles
         SET "creditUsed" = GREATEST(0, "creditUsed" - ${Number(order.total)})
         WHERE "userId" = ${order.createdById}
-      `.catch((err) => this.logger.error(`Failed to release credit for buyer ${order.createdById} on cancel ${id}`, err));
+      `.catch((err) =>
+        this.logger.error(
+          `Failed to release credit for buyer ${order.createdById} on cancel ${id}`,
+          err,
+        ),
+      );
     }
 
     // Restore stock for each order item so the supplier's listing reflects
     // available inventory again. Only restore if the item had a resolved quantity
     // (not disposal/freight orders that don't consume material stock).
-    const items = (order as any).items as Array<{ materialId?: string | null; quantity?: number | null }> | undefined;
+    const items = (order as any).items as
+      | Array<{ materialId?: string | null; quantity?: number | null }>
+      | undefined;
     if (items?.length) {
       for (const item of items) {
         if (!item.materialId || !item.quantity) continue;
@@ -1290,7 +1369,9 @@ export class OrdersService {
             AND "stockQty" IS NOT NULL
         `.catch((err) =>
           this.logger.warn(
-            `Stock restore failed for material ${item.materialId} on cancel ${id}: ${(err as Error).message}`,
+            `Stock restore failed for material ${
+              item.materialId
+            } on cancel ${id}: ${(err as Error).message}`,
           ),
         );
       }
@@ -1460,7 +1541,13 @@ export class OrdersService {
     // Delegate to InvoicesService so any order-creation path (direct, RFQ, etc.)
     // produces identical invoice output without duplicating the logic here.
     await this.invoices.createForOrder(
-      { id: order.id, subtotal: order.subtotal, tax: order.tax, total: order.total, currency: order.currency },
+      {
+        id: order.id,
+        subtotal: order.subtotal,
+        tax: order.tax,
+        total: order.total,
+        currency: order.currency,
+      },
       order.createdById,
     );
   }
@@ -1502,7 +1589,9 @@ export class OrdersService {
 
     const totalWeight = items.reduce((sum, item) => sum + item.quantity, 0);
     const cargoType = firstMaterial.name;
-    const baseDate = orderData.deliveryDate ? new Date(orderData.deliveryDate) : new Date();
+    const baseDate = orderData.deliveryDate
+      ? new Date(orderData.deliveryDate)
+      : new Date();
 
     const truckCount = Math.max(1, orderData.truckCount ?? 1);
     const intervalMs = (orderData.truckIntervalMinutes ?? 60) * 60 * 1000;
@@ -1539,7 +1628,9 @@ export class OrdersService {
       });
 
       this.logger.log(
-        `Transport job ${jobNumber} created for order ${orderId} — truck ${i + 1}/${truckCount}` +
+        `Transport job ${jobNumber} created for order ${orderId} — truck ${
+          i + 1
+        }/${truckCount}` +
           ` (pickup: ${firstMaterial.supplier.city} → delivery: ${orderData.deliveryCity}` +
           (truckCount > 1 ? `, departure: ${pickupDate.toISOString()}` : '') +
           `)`,
@@ -1552,7 +1643,9 @@ export class OrdersService {
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const ms = (Date.now() % 100_000).toString().padStart(5, '0');
-    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    const rand = Math.floor(Math.random() * 100)
+      .toString()
+      .padStart(2, '0');
     return `TRJ${year}${month}${ms}${rand}`;
   }
 
@@ -1636,7 +1729,9 @@ export class OrdersService {
     this.notifyActiveDrivers(
       `🗑️ Jauns atkritumu izvešanas darbs: ${dto.pickupCity}`,
       `${dto.wasteType} × ${dto.truckCount} transportlīdzekļi`,
-    ).catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+    ).catch((err) =>
+      this.logger.error(err instanceof Error ? err.message : String(err)),
+    );
 
     return job;
   }
@@ -1651,8 +1746,10 @@ export class OrdersService {
       ARTICULATED_TIPPER: {
         label: 'Artikulētais pašizgāzējs 26t',
         capacity: 26,
-        volume: 18,
+        volume: 22,
       },
+      FLATBED: { label: 'Platforma 20t', capacity: 20, volume: 0 },
+      BOX_TRUCK: { label: 'Kravas furgons 3.5t', capacity: 3.5, volume: 20 },
     };
 
     const vehicle =
@@ -1699,7 +1796,9 @@ export class OrdersService {
     this.notifyActiveDrivers(
       `🚚 Jauns kravas pārvadājuma darbs: ${dto.pickupCity} → ${dto.dropoffCity}`,
       `${dto.loadDescription ?? vehicle.label}`,
-    ).catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+    ).catch((err) =>
+      this.logger.error(err instanceof Error ? err.message : String(err)),
+    );
 
     return job;
   }
@@ -1720,7 +1819,9 @@ export class OrdersService {
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const ms = (Date.now() % 100_000).toString().padStart(5, '0');
-    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    const rand = Math.floor(Math.random() * 100)
+      .toString()
+      .padStart(2, '0');
     return `ORD${year}${month}${ms}${rand}`;
   }
 
@@ -1733,10 +1834,7 @@ export class OrdersService {
     const order = await this.findOne(orderId, currentUser);
 
     // Only the seller (supplier) or ADMIN may attach surcharges
-    if (
-      currentUser.userType !== 'ADMIN' &&
-      !currentUser.canSell
-    ) {
+    if (currentUser.userType !== 'ADMIN' && !currentUser.canSell) {
       throw new ForbiddenException(
         'Only sellers and admins can add surcharges to an order',
       );
@@ -1773,10 +1871,7 @@ export class OrdersService {
   ) {
     const order = await this.findOne(orderId, currentUser);
 
-    if (
-      currentUser.userType !== 'ADMIN' &&
-      !currentUser.canSell
-    ) {
+    if (currentUser.userType !== 'ADMIN' && !currentUser.canSell) {
       throw new ForbiddenException(
         'Only sellers and admins can remove surcharges from an order',
       );
@@ -1786,7 +1881,9 @@ export class OrdersService {
       where: { id: surchargeId },
     });
     if (!surcharge || surcharge.orderId !== orderId) {
-      throw new NotFoundException(`Surcharge ${surchargeId} not found on order ${orderId}`);
+      throw new NotFoundException(
+        `Surcharge ${surchargeId} not found on order ${orderId}`,
+      );
     }
 
     await this.prisma.orderSurcharge.delete({ where: { id: surchargeId } });
@@ -1820,7 +1917,9 @@ export class OrdersService {
       currentUser.userType !== 'ADMIN' &&
       order.createdById !== currentUser.userId
     ) {
-      throw new ForbiddenException('Only the order owner or an admin can link a skip hire order');
+      throw new ForbiddenException(
+        'Only the order owner or an admin can link a skip hire order',
+      );
     }
 
     if (skipHireOrderId) {
@@ -1829,10 +1928,14 @@ export class OrdersService {
         select: { id: true, linkedMaterialOrder: { select: { id: true } } },
       });
       if (!skip) {
-        throw new NotFoundException(`SkipHireOrder ${skipHireOrderId} not found`);
+        throw new NotFoundException(
+          `SkipHireOrder ${skipHireOrderId} not found`,
+        );
       }
       if (skip.linkedMaterialOrder && skip.linkedMaterialOrder.id !== orderId) {
-        throw new BadRequestException('That skip hire order is already linked to a different material order');
+        throw new BadRequestException(
+          'That skip hire order is already linked to a different material order',
+        );
       }
     }
 
@@ -1891,18 +1994,24 @@ export class OrdersService {
           .releaseFunds(order.id)
           .catch((err) =>
             this.logger.error(
-              `autoComplete: releaseFunds failed for order ${order.id}: ${(err as Error).message}`,
+              `autoComplete: releaseFunds failed for order ${order.id}: ${
+                (err as Error).message
+              }`,
             ),
           );
         // Release buyer credit exposure
         if (order.total) {
           this.prisma.$executeRaw`
             UPDATE buyer_profiles
-            SET "creditUsed" = GREATEST(0, "creditUsed" - ${Number(order.total)})
+            SET "creditUsed" = GREATEST(0, "creditUsed" - ${Number(
+              order.total,
+            )})
             WHERE "userId" = ${order.createdById}
           `.catch((err) =>
             this.logger.error(
-              `autoComplete: credit release failed for order ${order.id}: ${(err as Error).message}`,
+              `autoComplete: credit release failed for order ${order.id}: ${
+                (err as Error).message
+              }`,
             ),
           );
         }
@@ -1911,7 +2020,9 @@ export class OrdersService {
         );
       } catch (err) {
         this.logger.error(
-          `autoCompleteDeliveredOrders: failed for order ${order.id}: ${(err as Error).message}`,
+          `autoCompleteDeliveredOrders: failed for order ${order.id}: ${
+            (err as Error).message
+          }`,
         );
       }
     }
@@ -1953,21 +2064,29 @@ export class OrdersService {
         if (count === 0) continue; // Concurrent update beat us
 
         // Void the Stripe PaymentIntent (fire-and-forget)
-        this.payments.voidOrRefund(order.id).catch((err) =>
-          this.logger.error(
-            `autoCancelStale: voidOrRefund failed for order ${order.id}: ${(err as Error).message}`,
-          ),
-        );
+        this.payments
+          .voidOrRefund(order.id)
+          .catch((err) =>
+            this.logger.error(
+              `autoCancelStale: voidOrRefund failed for order ${order.id}: ${
+                (err as Error).message
+              }`,
+            ),
+          );
 
         // Release buyer credit
         if (order.total) {
           this.prisma.$executeRaw`
             UPDATE buyer_profiles
-            SET "creditUsed" = GREATEST(0, "creditUsed" - ${Number(order.total)})
+            SET "creditUsed" = GREATEST(0, "creditUsed" - ${Number(
+              order.total,
+            )})
             WHERE "userId" = ${order.createdById}
           `.catch((err) =>
             this.logger.error(
-              `autoCancelStale: credit release failed for order ${order.id}: ${(err as Error).message}`,
+              `autoCancelStale: credit release failed for order ${order.id}: ${
+                (err as Error).message
+              }`,
             ),
           );
         }
@@ -1988,7 +2107,9 @@ export class OrdersService {
         );
       } catch (err) {
         this.logger.error(
-          `autoCancelStalePendingOrders: failed for order ${order.id}: ${(err as Error).message}`,
+          `autoCancelStalePendingOrders: failed for order ${order.id}: ${
+            (err as Error).message
+          }`,
         );
       }
     }
@@ -1996,7 +2117,10 @@ export class OrdersService {
 
   // ─── Recurring order schedules ─────────────────────────────────────────────
 
-  async createSchedule(dto: CreateOrderScheduleDto, currentUser: RequestingUser) {
+  async createSchedule(
+    dto: CreateOrderScheduleDto,
+    currentUser: RequestingUser,
+  ) {
     const nextRunAt = dto.nextRunAt
       ? new Date(dto.nextRunAt)
       : new Date(Date.now() + 86_400_000); // default: tomorrow
@@ -2031,9 +2155,14 @@ export class OrdersService {
   }
 
   async pauseSchedule(scheduleId: string, currentUser: RequestingUser) {
-    const schedule = await this.prisma.orderSchedule.findUnique({ where: { id: scheduleId } });
+    const schedule = await this.prisma.orderSchedule.findUnique({
+      where: { id: scheduleId },
+    });
     if (!schedule) throw new NotFoundException('Schedule not found');
-    if (schedule.createdById !== currentUser.id && currentUser.userType !== 'ADMIN') {
+    if (
+      schedule.createdById !== currentUser.id &&
+      currentUser.userType !== 'ADMIN'
+    ) {
       throw new ForbiddenException('Not your schedule');
     }
     return this.prisma.orderSchedule.update({
@@ -2043,9 +2172,14 @@ export class OrdersService {
   }
 
   async resumeSchedule(scheduleId: string, currentUser: RequestingUser) {
-    const schedule = await this.prisma.orderSchedule.findUnique({ where: { id: scheduleId } });
+    const schedule = await this.prisma.orderSchedule.findUnique({
+      where: { id: scheduleId },
+    });
     if (!schedule) throw new NotFoundException('Schedule not found');
-    if (schedule.createdById !== currentUser.id && currentUser.userType !== 'ADMIN') {
+    if (
+      schedule.createdById !== currentUser.id &&
+      currentUser.userType !== 'ADMIN'
+    ) {
       throw new ForbiddenException('Not your schedule');
     }
     return this.prisma.orderSchedule.update({
@@ -2055,9 +2189,14 @@ export class OrdersService {
   }
 
   async deleteSchedule(scheduleId: string, currentUser: RequestingUser) {
-    const schedule = await this.prisma.orderSchedule.findUnique({ where: { id: scheduleId } });
+    const schedule = await this.prisma.orderSchedule.findUnique({
+      where: { id: scheduleId },
+    });
     if (!schedule) throw new NotFoundException('Schedule not found');
-    if (schedule.createdById !== currentUser.id && currentUser.userType !== 'ADMIN') {
+    if (
+      schedule.createdById !== currentUser.id &&
+      currentUser.userType !== 'ADMIN'
+    ) {
       throw new ForbiddenException('Not your schedule');
     }
     return this.prisma.orderSchedule.delete({ where: { id: scheduleId } });
@@ -2082,7 +2221,11 @@ export class OrdersService {
 
     for (const schedule of due) {
       try {
-        const items = schedule.itemsSnapshot as { materialId: string; quantity: number; unit: string }[];
+        const items = schedule.itemsSnapshot as {
+          materialId: string;
+          quantity: number;
+          unit: string;
+        }[];
         // Resolve delivery date = nextRunAt date
         const deliveryDate = schedule.nextRunAt.toISOString().split('T')[0];
         const requestingUser: RequestingUser = {
@@ -2110,7 +2253,9 @@ export class OrdersService {
           deliveryDate,
           deliveryWindow: schedule.deliveryWindow ?? undefined,
           deliveryFee: schedule.deliveryFee,
-          notes: schedule.notes ? `[Atkārtots] ${schedule.notes}` : '[Atkārtots pasūtījums]',
+          notes: schedule.notes
+            ? `[Atkārtots] ${schedule.notes}`
+            : '[Atkārtots pasūtījums]',
           siteContactName: schedule.siteContactName ?? undefined,
           siteContactPhone: schedule.siteContactPhone ?? undefined,
           projectId: schedule.projectId ?? undefined,
@@ -2130,17 +2275,24 @@ export class OrdersService {
         });
 
         // Advance nextRunAt
-        const nextRun = new Date(schedule.nextRunAt.getTime() + schedule.intervalDays * 86_400_000);
-        const shouldDisable = schedule.endsAt != null && nextRun > schedule.endsAt;
+        const nextRun = new Date(
+          schedule.nextRunAt.getTime() + schedule.intervalDays * 86_400_000,
+        );
+        const shouldDisable =
+          schedule.endsAt != null && nextRun > schedule.endsAt;
         await this.prisma.orderSchedule.update({
           where: { id: schedule.id },
           data: { nextRunAt: nextRun, enabled: !shouldDisable },
         });
 
-        this.logger.log(`runScheduledOrders: spawned order from schedule ${schedule.id}`);
+        this.logger.log(
+          `runScheduledOrders: spawned order from schedule ${schedule.id}`,
+        );
       } catch (err) {
         this.logger.error(
-          `runScheduledOrders: failed for schedule ${schedule.id}: ${(err as Error).message}`,
+          `runScheduledOrders: failed for schedule ${schedule.id}: ${
+            (err as Error).message
+          }`,
         );
       }
     }

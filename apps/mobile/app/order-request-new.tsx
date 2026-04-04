@@ -1136,6 +1136,21 @@ function OfferCard({
             )}
           </View>
           {offer.supplier.city ? <Text style={oc.supplierCity}>{offer.supplier.city}</Text> : null}
+          {offer.supplier.rating != null && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 }}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <Star
+                  key={n}
+                  size={11}
+                  color="#f59e0b"
+                  fill={n <= Math.round(offer.supplier.rating!) ? '#f59e0b' : 'transparent'}
+                />
+              ))}
+              <Text style={{ fontSize: 11, color: '#6b7280', marginLeft: 2 }}>
+                {offer.supplier.rating!.toFixed(1)}
+              </Text>
+            </View>
+          )}
         </View>
         <View style={{ alignItems: 'flex-end' }}>
           <Text style={oc.price}>€{offer.totalPrice.toFixed(2)}</Text>
