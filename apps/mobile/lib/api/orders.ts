@@ -69,9 +69,44 @@ export interface CreateMaterialOrderInput {
   deliveryCity: string;
   deliveryPostal?: string;
   deliveryDate: string;
+  deliveryWindow?: string;
   siteContactName?: string;
   siteContactPhone?: string;
   notes?: string;
+  projectId?: string;
+}
+
+// ─── Recurring order schedule ─────────────────────────────────────────────
+
+export interface CreateOrderScheduleInput {
+  orderType: string;
+  deliveryAddress: string;
+  deliveryCity: string;
+  deliveryState: string;
+  deliveryPostal: string;
+  deliveryWindow?: string;
+  deliveryFee?: number;
+  notes?: string;
+  siteContactName?: string;
+  siteContactPhone?: string;
+  projectId?: string;
+  items: { materialId: string; quantity: number; unit: string }[];
+  intervalDays: number;
+  nextRunAt?: string;
+  endsAt?: string;
+}
+
+export interface ApiOrderSchedule {
+  id: string;
+  orderType: string;
+  deliveryAddress: string;
+  deliveryCity: string;
+  intervalDays: number;
+  nextRunAt: string;
+  endsAt: string | null;
+  enabled: boolean;
+  itemsSnapshot: { materialId: string; quantity: number; unit: string }[];
+  createdAt: string;
 }
 
 // ─── Order response types ─────────────────────────────────────────────────
@@ -98,6 +133,9 @@ export interface ApiOrder {
   deliveryCity: string;
   deliveryDate: string | null;
   deliveryWindow?: string | null;
+  subtotal: number;
+  tax: number;
+  deliveryFee: number;
   total: number;
   currency: string;
   siteContactName: string | null;
@@ -120,6 +158,7 @@ export interface ApiOrder {
       phone: string | null;
       avatar: string | null;
     } | null;
+    vehicle: { id: string; licensePlate: string; vehicleType: string } | null;
     deliveryProof?: {
       id: string;
       photos: string[];
@@ -204,6 +243,38 @@ export const ordersApi = {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ skipHireOrderId }),
+      }),
+  },
+
+  schedules: {
+    create: (input: CreateOrderScheduleInput, token: string) =>
+      apiFetch<ApiOrderSchedule>('/orders/schedules', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      }),
+
+    list: (token: string) =>
+      apiFetch<ApiOrderSchedule[]>('/orders/schedules', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    pause: (id: string, token: string) =>
+      apiFetch<ApiOrderSchedule>(`/orders/schedules/${id}/pause`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    resume: (id: string, token: string) =>
+      apiFetch<ApiOrderSchedule>(`/orders/schedules/${id}/resume`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    delete: (id: string, token: string) =>
+      apiFetch<void>(`/orders/schedules/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
       }),
   },
 };

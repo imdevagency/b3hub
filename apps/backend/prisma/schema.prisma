@@ -381,6 +381,9 @@ model User {
   reportedTransportExceptions TransportJobException[] @relation("ExceptionReporter")
   resolvedTransportExceptions TransportJobException[] @relation("ExceptionResolver")
   savedAddresses              SavedAddress[]
+  adminAuditLogs              AdminAuditLog[]
+  orderSchedules              OrderSchedule[]
+  raisedDisputes              Dispute[]               @relation("UserDisputes")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -481,9 +484,10 @@ model Material {
   specifications Json?
 
   // Relations
-  supplier   Company     @relation(fields: [supplierId], references: [id])
-  supplierId String
-  orderItems OrderItem[]
+  supplier    Company              @relation(fields: [supplierId], references: [id])
+  supplierId  String
+  orderItems  OrderItem[]
+  priceTiers  MaterialPriceTier[]
 
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -566,6 +570,10 @@ model Order {
   linkedSkipOrder   SkipHireOrder? @relation("LinkedMaterialOrder", fields: [linkedSkipOrderId], references: [id])
   linkedSkipOrderId String?        @unique
 
+  // Recurring order schedule — if this order spawned from a schedule
+  scheduleId String?
+  schedule   OrderSchedule? @relation(fields: [scheduleId], references: [id])
+
   // Relations
   items           OrderItem[]
   containerOrders ContainerOrder[]
@@ -573,11 +581,13 @@ model Order {
   invoices        Invoice[]
   payment         Payment?
   surcharges      OrderSurcharge[]
+  dispute         Dispute?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([projectId])
+  @@index([scheduleId])
   @@map("orders")
 }
 
@@ -725,6 +735,11 @@ model TransportJob {
 
   // Proof of delivery
   deliveryProof DeliveryProof?
+
+  // Auto-dispatch offer
+  offeredToDriverId String?   // current driver being offered this job
+  offerExpiresAt    DateTime? // offer expires at this time (45 seconds from dispatch)
+  declinedDriverIds String[]  @default([]) // driver IDs who declined or timed out
 
   // Relations
   containerDeliveries ContainerOrder[]        @relation("ContainerDelivery")
@@ -1492,4 +1507,130 @@ model SavedAddress {
 
   @@index([userId])
   @@map("saved_addresses")
+}
+
+// ── Admin audit log ──────────────────────────────────────────────────────────
+// Immutable record of every mutating admin action for financial compliance
+// and dispute resolution. Never deleted. Retained for minimum 2 years.
+
+model AdminAuditLog {
+  id String @id @default(cuid())
+
+  adminId    String // who performed the action
+  admin      User   @relation(fields: [adminId], references: [id])
+
+  action     String // e.g. "UPDATE_USER", "APPROVE_APPLICATION", "FORCE_ASSIGN_JOB"
+  entityType String // e.g. "User", "Order", "TransportJob", "Company"
+  entityId   String // primary key of the affected entity
+
+  before     Json?  // snapshot of relevant fields before mutation
+  after      Json?  // snapshot of relevant fields after mutation
+  note       String? // optional free-text reason supplied by the admin
+
+  createdAt  DateTime @default(now())
+
+  @@index([adminId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("admin_audit_logs")
+}
+
+// ── Volume price tiers ───────────────────────────────────────────────────────────────────────
+// Quantity-break pricing: supplier sets tiers, e.g. ≥0 t = €12, ≥10 t = €10, ≥50 t = €8.
+// When an order is placed, the highest matching tier is applied as unitPrice.
+
+model MaterialPriceTier {
+  id         String   @id @default(cuid())
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  materialId String
+
+  minQty    Float  // minimum quantity (inclusive) to qualify for this tier
+  unitPrice Float  // price per unit at this tier
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([materialId])
+  @@map("material_price_tiers")
+}
+
+// ── Order schedule (recurring orders) ───────────────────────────────────────────────────
+// Stores a template for creating a new Order automatically each period.
+// The cron checks nextRunAt daily and clones the template order.
+
+model OrderSchedule {
+  id          String  @id @default(cuid())
+  createdBy   User    @relation(fields: [createdById], references: [id])
+  createdById String
+
+  // The order fields to reproduce each cycle
+  orderType       String   // OrderType enum value stored as string
+  deliveryAddress String
+  deliveryCity    String
+  deliveryState   String
+  deliveryPostal  String
+  deliveryWindow  String?  // e.g. "AM" | "PM" | "ANY"
+  deliveryFee     Float    @default(0)
+  notes           String?
+  siteContactName  String?
+  siteContactPhone String?
+  projectId        String?
+  itemsSnapshot   Json     // Array of {materialId, quantity, unit}
+
+  // Recurrence
+  intervalDays  Int      // 1 = daily, 7 = weekly, 14 = fortnightly, 30 = monthly
+  nextRunAt     DateTime // next time the cron will fire a new order
+  endsAt        DateTime? // optional end date; null = indefinite
+  enabled       Boolean  @default(true)
+
+  // Generated orders
+  orders        Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([nextRunAt])
+  @@index([createdById])
+  @@map("order_schedules")
+}
+
+// ── Dispute / Claims ─────────────────────────────────────────────────────────
+
+enum DisputeReason {
+  SHORT_DELIVERY    // Less material delivered than ordered
+  WRONG_MATERIAL    // Wrong material type or grade
+  DAMAGE            // Property or site damage
+  LATE_DELIVERY     // Delivery significantly later than agreed
+  NO_DELIVERY       // Delivery never arrived
+  QUALITY_ISSUE     // Material quality did not meet spec
+  OTHER
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+model Dispute {
+  id          String        @id @default(cuid())
+  reason      DisputeReason
+  description String
+  status      DisputeStatus @default(OPEN)
+  resolution  String?
+  resolvedAt  DateTime?
+
+  order      Order @relation(fields: [orderId], references: [id])
+  orderId    String @unique // one active dispute per order
+
+  raisedBy   User   @relation("UserDisputes", fields: [raisedById], references: [id])
+  raisedById String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([raisedById])
+  @@map("disputes")
 }

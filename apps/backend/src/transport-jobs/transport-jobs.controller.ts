@@ -277,7 +277,7 @@ export class TransportJobsController {
         'Only admins can force-reassign in-progress jobs',
       );
     }
-    return this.service.forceReassign(id, body);
+    return this.service.forceReassign(id, body, user.userId);
   }
 
   /**

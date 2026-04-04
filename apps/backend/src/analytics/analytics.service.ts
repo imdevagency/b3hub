@@ -14,6 +14,17 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 
+/** kg CO2 emitted per km driven, by vehicle type (HBEFA 3.3 averages, EU) */
+const CO2_KG_PER_KM: Record<string, number> = {
+  DUMP_TRUCK: 0.9,
+  FLATBED_TRUCK: 0.85,
+  SEMI_TRAILER: 1.2,
+  HOOK_LIFT: 0.9,
+  SKIP_LOADER: 0.7,
+  TANKER: 1.1,
+  VAN: 0.35,
+};
+
 @Injectable()
 export class AnalyticsService {
   constructor(private prisma: PrismaService) {}
@@ -42,7 +53,7 @@ export class AnalyticsService {
       : { createdById: userId };
 
     const now = new Date();
-    const [orderBreakdown, arAging, monthlySpend] = await Promise.all([
+    const [orderBreakdown, arAging, monthlySpend, rawItems, deliveredJobs] = await Promise.all([
       // Orders by status
       this.prisma.order.groupBy({
         by: ['status'],
@@ -54,9 +65,37 @@ export class AnalyticsService {
       this.getArAging(userId, companyId),
       // Monthly spend for current year
       this.getMonthlySpend(userId, companyId),
+      // Order items for material category breakdown
+      this.prisma.orderItem.findMany({
+        where: { order: buyerWhere },
+        select: { total: true, quantity: true, material: { select: { category: true } } },
+      }),
+      // Delivered transport jobs for CO2 estimate
+      this.prisma.transportJob.findMany({
+        where: { status: 'DELIVERED', order: buyerWhere, distanceKm: { not: null } },
+        select: { distanceKm: true, requiredVehicleEnum: true },
+      }),
     ]);
 
-    return { orderBreakdown, arAging, monthlySpend, asOf: now.toISOString() };
+    // Material spend breakdown by category
+    const catMap: Record<string, { totalSpent: number; orderCount: number }> = {};
+    for (const item of rawItems) {
+      const cat = item.material.category;
+      if (!catMap[cat]) catMap[cat] = { totalSpent: 0, orderCount: 0 };
+      catMap[cat].totalSpent += item.total;
+      catMap[cat].orderCount++;
+    }
+    const materialBreakdown = Object.entries(catMap)
+      .map(([category, s]) => ({ category, ...s }))
+      .sort((a, b) => b.totalSpent - a.totalSpent);
+
+    // CO2 estimate (kg) across all delivered transport jobs this buyer generated
+    const co2Kg = deliveredJobs.reduce((sum, job) => {
+      const factor = CO2_KG_PER_KM[job.requiredVehicleEnum ?? ''] ?? 0.9;
+      return sum + (job.distanceKm ?? 0) * factor;
+    }, 0);
+
+    return { orderBreakdown, arAging, monthlySpend, materialBreakdown, co2Kg, asOf: now.toISOString() };
   }
 
   private async getArAging(userId: string, companyId?: string) {

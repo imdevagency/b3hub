@@ -6,9 +6,10 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { InvoicesModule } from '../invoices/invoices.module';
 import { UpdatesModule } from '../updates/updates.module';
+import { MaterialsModule } from '../materials/materials.module';
 
 @Module({
-  imports: [PrismaModule, NotificationsModule, PaymentsModule, InvoicesModule, UpdatesModule],
+  imports: [PrismaModule, NotificationsModule, PaymentsModule, InvoicesModule, UpdatesModule, MaterialsModule],
   controllers: [OrdersController],
   providers: [OrdersService],
   exports: [OrdersService],

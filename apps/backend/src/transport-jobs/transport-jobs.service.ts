@@ -11,6 +11,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   DocumentType,
@@ -33,6 +34,7 @@ import {
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
 import { DocumentsService } from '../documents/documents.service';
+import { VAT_RATE } from '../common/constants/tax';
 import { UpdatesGateway } from '../updates/updates.gateway';
 import { EmailService } from '../email/email.service';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
@@ -372,7 +374,7 @@ export class TransportJobsService {
     const actualSubtotal = Math.round(actualTonnes * unitPrice * 100) / 100;
     const storedSubtotal = Number(order.subtotal);
     const taxRate =
-      storedSubtotal > 0 ? Number(order.tax) / storedSubtotal : 0.21;
+      storedSubtotal > 0 ? Number(order.tax) / storedSubtotal : VAT_RATE;
     const actualTax = Math.round(actualSubtotal * taxRate * 100) / 100;
     const actualTotal = actualSubtotal + actualTax;
     const deliveryFee = Number(order.deliveryFee ?? 0);
@@ -873,6 +875,7 @@ export class TransportJobsService {
   async forceReassign(
     id: string,
     body: AssignDispatchDto & { note?: string },
+    adminId?: string,
   ) {
     const job = await this.prisma.transportJob.findUnique({ where: { id } });
     if (!job) throw new NotFoundException('Transport job not found');
@@ -946,6 +949,27 @@ export class TransportJobsService {
       })
       .catch(() => {});
 
+    // Write audit trail
+    if (adminId) {
+      this.prisma.adminAuditLog
+        .create({
+          data: {
+            adminId,
+            action: 'FORCE_REASSIGN_JOB',
+            entityType: 'TransportJob',
+            entityId: id,
+            before: { driverId: job.driverId ?? null, vehicleId: job.vehicleId ?? null },
+            after: { driverId: body.driverId, vehicleId: body.vehicleId ?? job.vehicleId },
+            note: body.note ?? null,
+          },
+        })
+        .catch((err) =>
+          this.logger.warn(
+            `Could not write audit log for force-reassign of job ${id}: ${(err as Error).message}`,
+          ),
+        );
+    }
+
     return updated;
   }
 
@@ -1016,6 +1040,30 @@ export class TransportJobsService {
       });
       if (!vehicle) {
         throw new NotFoundException('Vehicle not found');
+      }
+
+      // Check the vehicle isn't already assigned to another active job
+      const activeJobStatuses = [
+        TransportJobStatus.ASSIGNED,
+        TransportJobStatus.ACCEPTED,
+        TransportJobStatus.EN_ROUTE_PICKUP,
+        TransportJobStatus.AT_PICKUP,
+        TransportJobStatus.LOADED,
+        TransportJobStatus.EN_ROUTE_DELIVERY,
+        TransportJobStatus.AT_DELIVERY,
+      ];
+      const vehicleConflict = await this.prisma.transportJob.findFirst({
+        where: {
+          vehicleId,
+          status: { in: activeJobStatuses },
+          NOT: { id },
+        },
+        select: { jobNumber: true },
+      });
+      if (vehicleConflict) {
+        throw new BadRequestException(
+          `Vehicle is already assigned to active job ${vehicleConflict.jobNumber}. Choose a different vehicle.`,
+        );
       }
     }
 
@@ -1124,6 +1172,45 @@ export class TransportJobsService {
       if (dto.weightKg) {
         this.reconcileInvoiceWeight(orderId, dto.weightKg).catch(() => null);
       }
+
+      // Weigh-bridge discrepancy alert: notify buyer if >5% difference
+      if (dto.weightKg && updatedJob.cargoWeight) {
+        const actualTonnes = dto.weightKg / 1000;
+        const expectedTonnes = Number(updatedJob.cargoWeight);
+        const diffPct = Math.abs(actualTonnes - expectedTonnes) / expectedTonnes * 100;
+        if (diffPct > 5) {
+          // Fetch buyer contact details
+          const orderForAlert = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            select: { createdById: true, orderNumber: true, createdBy: { select: { email: true, firstName: true } } },
+          });
+          const buyer = orderForAlert?.createdBy;
+          if (buyer?.email) {
+            const orderNum = orderForAlert?.orderNumber ?? updatedJob.jobNumber;
+            const buyerName = buyer.firstName ?? 'Klients';
+            this.email
+              .sendWeighDiscrepancy(buyer.email, buyerName, {
+                jobNumber: updatedJob.jobNumber,
+                orderNumber: orderNum,
+                expectedTonnes,
+                actualTonnes,
+                diffPct,
+              })
+              .catch(() => {});
+            if (orderForAlert?.createdById) {
+              this.notifications
+                .create({
+                  userId: orderForAlert.createdById,
+                  type: NotificationType.SYSTEM_ALERT,
+                  title: '⚠️ Svara neatbilstība',
+                  message: `Job #${updatedJob.jobNumber}: ${diffPct.toFixed(1)}% starpība starp pasūtīto (${expectedTonnes.toFixed(1)}t) un svētītāja (${actualTonnes.toFixed(1)}t) svaru`,
+                  data: { jobId: updatedJob.id },
+                })
+                .catch(() => {});
+            }
+          }
+        }
+      }
     }
 
     // Notify relevant parties on key transitions
@@ -1212,7 +1299,11 @@ export class TransportJobsService {
               ? `${driver.firstName} ${driver.lastName}`
               : undefined,
           })
-          .catch(() => {});
+          .catch((err) =>
+            this.logger.error(
+              `generateDeliveryNote failed for job ${updatedJob.id} / order ${orderId}: ${(err as Error).message}`,
+            ),
+          );
       }
     }
 
@@ -1252,7 +1343,20 @@ export class TransportJobsService {
     });
 
     // Broadcast real-time location to subscribed clients (fire-and-forget)
-    this.updates.broadcastJobLocation({ jobId: id, lat: dto.lat, lng: dto.lng });
+    // Compute a lightweight ETA: haversine to destination ÷ 50 km/h average speed.
+    // Use delivery coords when en-route to delivery, pickup coords otherwise.
+    const headingToDelivery =
+      job.status === 'EN_ROUTE_DELIVERY' ||
+      job.status === 'AT_DELIVERY' ||
+      job.status === 'LOADED';
+    const destLat = headingToDelivery ? job.deliveryLat : (job.pickupLat ?? job.deliveryLat);
+    const destLng = headingToDelivery ? job.deliveryLng : (job.pickupLng ?? job.deliveryLng);
+    let estimatedArrivalMin: number | null = null;
+    if (destLat != null && destLng != null) {
+      const distKm = this.haversineKm(dto.lat, dto.lng, destLat, destLng);
+      estimatedArrivalMin = Math.max(1, Math.round((distKm / 50) * 60));
+    }
+    this.updates.broadcastJobLocation({ jobId: id, lat: dto.lat, lng: dto.lng, estimatedArrivalMin });
 
     return location;
   }
@@ -1359,7 +1463,11 @@ export class TransportJobsService {
             siteContactName: delivered.order?.siteContactName ?? undefined,
             deliveredAt: new Date(),
           })
-          .catch(() => {});
+          .catch((err) =>
+            this.logger.error(
+              `generateDeliveryNote failed for job ${id} / order ${job.orderId}: ${(err as Error).message}`,
+            ),
+          );
 
         // Advance the linked order to DELIVERED.
         // Buyer has a 24-hour window to dispute (wrong quantity, damage, etc.).
@@ -1525,11 +1633,20 @@ export class TransportJobsService {
       throw new ForbiddenException('Access denied');
     }
 
+    // PARTIAL_DELIVERY requires an actual quantity so we can adjust the order total
+    if (dto.type === 'PARTIAL_DELIVERY' && (dto.actualQuantity == null || dto.actualQuantity < 0)) {
+      throw new BadRequestException(
+        'actualQuantity is required and must be ≥ 0 when reporting a PARTIAL_DELIVERY',
+      );
+    }
+
     const ex = await this.prisma.transportJobException.create({
       data: {
         transportJobId: id,
         type: dto.type,
-        notes: dto.notes,
+        notes: dto.type === 'PARTIAL_DELIVERY' && dto.actualQuantity != null
+          ? `${dto.notes}\n[actualQuantity=${dto.actualQuantity}]`
+          : dto.notes,
         photoUrls: dto.photoUrls ?? [],
         reportedById: user.userId,
       },
@@ -1539,6 +1656,59 @@ export class TransportJobsService {
         },
       },
     });
+
+    // ── Partial delivery: adjust order total and Stripe authorization ────────
+    // When the driver delivers less than ordered, we proportionally reduce the
+    // order subtotal (tax scales with goods value; delivery fee is fixed).
+    // The updated amount is pushed to the Stripe PaymentIntent immediately so
+    // the buyer is only charged for what was actually delivered.
+    if (dto.type === 'PARTIAL_DELIVERY' && dto.actualQuantity != null && job.order?.id) {
+      try {
+        const order = await this.prisma.order.findUnique({
+          where: { id: job.order.id },
+          include: { items: true },
+        });
+
+        if (order && order.items.length > 0) {
+          const totalPlannedQty = order.items.reduce((sum, item) => sum + item.quantity, 0);
+
+          if (totalPlannedQty > 0 && dto.actualQuantity < totalPlannedQty) {
+            const ratio = dto.actualQuantity / totalPlannedQty;
+            const newSubtotal = order.subtotal * ratio;
+            const newTax = order.tax * ratio;
+            const newTotal = newSubtotal + newTax + order.deliveryFee;
+
+            await this.prisma.$transaction([
+              // Proportionally adjust each order item
+              ...order.items.map((item) =>
+                this.prisma.orderItem.update({
+                  where: { id: item.id },
+                  data: {
+                    quantity: item.quantity * ratio,
+                    total: item.total * ratio,
+                  },
+                }),
+              ),
+              // Update order financial fields
+              this.prisma.order.update({
+                where: { id: order.id },
+                data: { subtotal: newSubtotal, tax: newTax, total: newTotal },
+              }),
+            ]);
+
+            // Sync Stripe PaymentIntent to reduced amount (fire-and-forget from here,
+            // but awaited inside the method so any Stripe error is logged properly)
+            await this.payments.updatePaymentIntentAmount(order.id, newTotal);
+          }
+        }
+      } catch (err) {
+        // Financial adjustment failure must not block the exception record being returned.
+        // Log the error loudly so ops can corrects manually.
+        this.logger.error(
+          `reportException PARTIAL_DELIVERY: failed to adjust order total for job ${id} / order ${job.order?.id}: ${(err as Error).message}`,
+        );
+      }
+    }
 
     const actorName =
       user.email?.trim() ||
@@ -1649,5 +1819,167 @@ export class TransportJobsService {
     }
 
     return resolved;
+  }
+
+  /**
+   * Runs every hour.
+   * Finds transport jobs that were ASSIGNED/ACCEPTED by a driver but never
+   * progressed to IN_PROGRESS within 4 hours of the scheduled pickup time (or
+   * within 6 hours of assignment if no scheduled date is set). These jobs are:
+   *   - Put back to AVAILABLE (driver unassigned)
+   *   - Buyer + original order creator notified so they know to expect a new driver
+   *
+   * Construction logistics norm: if a driver doesn't show up within 4 hours of
+   * the agreed time, the job must be re-opened for another driver to claim.
+   */
+  @Cron(CronExpression.EVERY_HOUR)
+  async releaseStaleAcceptedJobs(): Promise<void> {
+    const now = new Date();
+    const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+
+    const stale = await this.prisma.transportJob.findMany({
+      where: {
+        status: { in: [TransportJobStatus.ASSIGNED, TransportJobStatus.ACCEPTED] },
+        driverId: { not: null },
+        OR: [
+          // Has a pickup date that was more than 4 hours ago
+          {
+            pickupDate: { lt: new Date(now.getTime() - 4 * 60 * 60 * 1000) },
+          },
+          // Or was last updated 6+ hours ago with no pickup date progress
+          {
+            updatedAt: { lt: sixHoursAgo },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        jobNumber: true,
+        driverId: true,
+        requestedById: true,
+        orderId: true,
+        order: { select: { createdById: true } },
+      },
+    });
+
+    for (const job of stale) {
+      await this.prisma.transportJob
+        .update({
+          where: { id: job.id },
+          data: {
+            status: TransportJobStatus.AVAILABLE,
+            driverId: null,
+          },
+        })
+        .catch((err) =>
+          this.logger.error(
+            `releaseStaleAcceptedJobs: failed to reset job ${job.id}: ${(err as Error).message}`,
+          ),
+        );
+
+      // Notify the order creator (buyer) that the job needs a new driver
+      const notifyIds = new Set<string>();
+      if (job.requestedById) notifyIds.add(job.requestedById);
+      if (job.order?.createdById) notifyIds.add(job.order.createdById);
+
+      if (notifyIds.size > 0) {
+        this.notifications
+          .createForMany(Array.from(notifyIds), {
+            type: NotificationType.SYSTEM_ALERT,
+            title: '⚠️ Transporta darbs — vadītājs neieradās',
+            message: `Darbs #${job.jobNumber}: piešķirtais vadītājs nav sācis darbu. Darbs ir atkal pieejams citiem vadītājiem.`,
+            data: { jobId: job.id },
+          })
+          .catch(() => {});
+      }
+
+      this.logger.warn(
+        `releaseStaleAcceptedJobs: job ${job.jobNumber} (${job.id}) reset to AVAILABLE — driver ${job.driverId} did not start`,
+      );
+    }
+  }
+
+  /**
+   * Runs every hour.
+   * Finds AVAILABLE transport jobs that have been sitting without a driver for
+   * more than 24 hours. Notifies the buyer + admins so they can investigate
+   * (e.g. rate too low, area not covered, vehicle type not available).
+   *
+   * Jobs older than 48h with no driver are escalated to admin as critical.
+   */
+  @Cron(CronExpression.EVERY_HOUR)
+  async alertJobsWithNoDriver(): Promise<void> {
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+
+    const unassigned = await this.prisma.transportJob.findMany({
+      where: {
+        status: TransportJobStatus.AVAILABLE,
+        driverId: null,
+        createdAt: { lte: twentyFourHoursAgo },
+      },
+      select: {
+        id: true,
+        jobNumber: true,
+        createdAt: true,
+        requestedById: true,
+        orderId: true,
+        order: { select: { createdById: true, orderNumber: true } },
+      },
+    });
+
+    for (const job of unassigned) {
+      const isCritical = job.createdAt <= fortyEightHoursAgo;
+      const hoursOpen = Math.floor((now.getTime() - job.createdAt.getTime()) / 3_600_000);
+
+      // Notify the buyer / requester
+      const notifyIds = new Set<string>();
+      if (job.requestedById) notifyIds.add(job.requestedById);
+      if (job.order?.createdById) notifyIds.add(job.order.createdById);
+
+      if (notifyIds.size > 0) {
+        this.notifications
+          .createForMany(Array.from(notifyIds), {
+            type: NotificationType.SYSTEM_ALERT,
+            title: isCritical
+              ? '🚨 Transporta darbs bez vadītāja (48h)'
+              : '⚠️ Transporta darbs bez vadītāja (24h)',
+            message: isCritical
+              ? `Darbs #${job.jobNumber} jau ${hoursOpen} stundas gaida vadītāju. Sazinieties ar atbalstu — iespējams, nepieciešams pielāgot nosacījumus.`
+              : `Darbs #${job.jobNumber} jau ${hoursOpen} stundas gaida vadītāju. Mēs meklējam pieejamus vadītājus.`,
+            data: { jobId: job.id },
+          })
+          .catch(() => {});
+      }
+
+      // Escalate critical cases to admin
+      if (isCritical) {
+        const admins = await this.prisma.user.findMany({
+          where: { userType: 'ADMIN' },
+          select: { id: true },
+        });
+        if (admins.length > 0) {
+          this.notifications
+            .createForMany(
+              admins.map((a) => a.id),
+              {
+                type: NotificationType.SYSTEM_ALERT,
+                title: '🚨 Transporta darbs bez vadītāja — 48h',
+                message: `Darbs #${job.jobNumber} (pasūtījums ${job.order?.orderNumber ?? job.orderId}) — ${hoursOpen}h bez vadītāja. Nepieciešama manuāla iejaukšanās.`,
+                data: { jobId: job.id, orderId: job.orderId },
+              },
+            )
+            .catch(() => {});
+        }
+        this.logger.error(
+          `alertJobsWithNoDriver: job ${job.jobNumber} (${job.id}) — CRITICAL: ${hoursOpen}h AVAILABLE with no driver`,
+        );
+      } else {
+        this.logger.warn(
+          `alertJobsWithNoDriver: job ${job.jobNumber} (${job.id}) — ${hoursOpen}h AVAILABLE with no driver`,
+        );
+      }
+    }
   }
 }

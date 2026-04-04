@@ -13,7 +13,19 @@ import {
   type MaterialCategory,
   type MaterialUnit,
 } from '@/lib/api';
-import { Leaf, Loader2, Minus, Package, Plus, Search, Trash2, X } from 'lucide-react';
+import {
+  Calculator,
+  ChevronDown,
+  ChevronUp,
+  Leaf,
+  Loader2,
+  Minus,
+  Package,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { CATEGORY_LABELS, UNIT_SHORT } from '@b3hub/shared';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -21,6 +33,20 @@ import { CATEGORY_LABELS, UNIT_SHORT } from '@b3hub/shared';
 const CATEGORY_LABEL = CATEGORY_LABELS;
 
 const UNIT_LABEL = UNIT_SHORT;
+
+/** Bulk density t/m³ for volume → weight conversion */
+const MATERIAL_DENSITY: Partial<Record<string, number>> = {
+  SAND: 1.6,
+  GRAVEL: 1.8,
+  STONE: 2.7,
+  CONCRETE: 2.4,
+  SOIL: 1.7,
+  RECYCLED_CONCRETE: 1.5,
+  RECYCLED_SOIL: 1.5,
+  ASPHALT: 2.3,
+  CLAY: 1.8,
+  OTHER: 1.7,
+};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -50,6 +76,12 @@ export function MatStep1What({ initialMaterialId, items, onItemsChange, onNext }
   const [activePick, setActivePick] = useState<ApiMaterial | null>(null);
   const [pickQty, setPickQty] = useState(1);
   const [didAutoSelect, setDidAutoSelect] = useState(false);
+
+  // Calculator state (inside picker)
+  const [calcOpen, setCalcOpen] = useState(false);
+  const [calcW, setCalcW] = useState('');
+  const [calcL, setCalcL] = useState('');
+  const [calcD, setCalcD] = useState('');
 
   // ── Data fetching ────────────────────────────────────────────────────────
 
@@ -98,6 +130,10 @@ export function MatStep1What({ initialMaterialId, items, onItemsChange, onNext }
     const s = getStep(m);
     setPickQty(existing?.qty ?? m.minOrder ?? s);
     setActivePick(m);
+    setCalcOpen(false);
+    setCalcW('');
+    setCalcL('');
+    setCalcD('');
   }
 
   function confirmPick() {
@@ -344,6 +380,94 @@ export function MatStep1What({ initialMaterialId, items, onItemsChange, onNext }
                   €{(pickQty * activePick.basePrice).toFixed(2)}
                 </span>
               </div>
+
+              {/* Calculator (only for weight/volume units) */}
+              {(activePick.unit === 'TONNE' || activePick.unit === 'M3') &&
+                (() => {
+                  const w = parseFloat(calcW) || 0;
+                  const l = parseFloat(calcL) || 0;
+                  const d = parseFloat(calcD) || 0;
+                  const m3 = w * l * d;
+                  const density = MATERIAL_DENSITY[activePick.category] ?? 1.7;
+                  const tonnes = m3 * density;
+                  const hasResult = m3 > 0;
+                  const resultValue = activePick.unit === 'TONNE' ? tonnes : m3;
+                  return (
+                    <div className="rounded-xl border bg-muted/20 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setCalcOpen((o) => !o)}
+                        className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-muted/40 transition-colors"
+                      >
+                        <Calculator className="size-4 text-muted-foreground" />
+                        <span className="flex-1 text-sm text-muted-foreground font-medium">
+                          Daudzuma kalkulators
+                        </span>
+                        {calcOpen ? (
+                          <ChevronUp className="size-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="size-4 text-muted-foreground" />
+                        )}
+                      </button>
+                      {calcOpen && (
+                        <div className="px-4 pb-4 space-y-3">
+                          <p className="text-xs text-muted-foreground">
+                            Ievadiet laukuma izmērus (metros), lai aprēķinātu nepieciešamo daudzumu.
+                          </p>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { label: 'Platums', value: calcW, set: setCalcW },
+                              { label: 'Garums', value: calcL, set: setCalcL },
+                              { label: 'Dziļums', value: calcD, set: setCalcD },
+                            ].map(({ label, value, set }) => (
+                              <div key={label}>
+                                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1 block">
+                                  {label} (m)
+                                </label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.1"
+                                  value={value}
+                                  onChange={(e) => set(e.target.value)}
+                                  placeholder="0"
+                                  className="w-full rounded-lg border px-2 py-2 text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          {hasResult && (
+                            <div className="flex items-center gap-3 rounded-lg bg-primary/5 px-3 py-2.5">
+                              <div className="flex-1">
+                                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                                  Aptuveni nepieciešams
+                                </p>
+                                <p className="font-bold text-base mt-0.5">
+                                  {resultValue.toFixed(1)} {UNIT_LABEL[activePick.unit]}
+                                  {activePick.unit === 'TONNE' && (
+                                    <span className="text-xs font-normal text-muted-foreground ml-1">
+                                      ({m3.toFixed(1)} m³)
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPickQty(parseFloat(Math.ceil(resultValue).toFixed(2)));
+                                  setCalcOpen(false);
+                                }}
+                                className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white hover:bg-primary/90 transition-colors shrink-0"
+                              >
+                                Izmantot
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
               <button
                 onClick={confirmPick}

@@ -41,11 +41,17 @@ export class AdminService {
     });
   }
 
-  async updateUser(id: string, data: UpdateUserDto) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+  async updateUser(id: string, data: UpdateUserDto, adminId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true, status: true, userType: true,
+        canSell: true, canTransport: true, canSkipHire: true,
+      },
+    });
     if (!user) throw new NotFoundException('User not found');
 
-    this.logger.log(`Admin updated user ${id}`);
+    this.logger.log(`Admin ${adminId} updated user ${id}`);
     const hasCreditUpdate =
       data.creditLimit !== undefined || data.paymentTerms !== undefined;
 
@@ -94,12 +100,15 @@ export class AdminService {
         },
       });
       // Re-fetch with updated buyerProfile
-      return this.prisma.user.findUnique({
+      const result = await this.prisma.user.findUnique({
         where: { id },
         select: this.userSelect,
       });
+      this.logAdminAction(adminId, 'UPDATE_USER', 'User', id, user, data).catch(() => null);
+      return result;
     }
 
+    this.logAdminAction(adminId, 'UPDATE_USER', 'User', id, user, data).catch(() => null);
     return updatedUser;
   }
 
@@ -178,11 +187,15 @@ export class AdminService {
   async updateCompany(
     id: string,
     data: { verified?: boolean; commissionRate?: number; payoutEnabled?: boolean },
+    adminId: string,
   ) {
-    const company = await this.prisma.company.findUnique({ where: { id } });
+    const company = await this.prisma.company.findUnique({
+      where: { id },
+      select: { id: true, verified: true, commissionRate: true, payoutEnabled: true },
+    });
     if (!company) throw new NotFoundException('Company not found');
-    this.logger.log(`Admin updated company ${id}`);
-    return this.prisma.company.update({
+    this.logger.log(`Admin ${adminId} updated company ${id}`);
+    const result = await this.prisma.company.update({
       where: { id },
       data,
       select: {
@@ -201,6 +214,8 @@ export class AdminService {
         _count: { select: { users: true, orders: true } },
       },
     });
+    this.logAdminAction(adminId, 'UPDATE_COMPANY', 'Company', id, company, data).catch(() => null);
+    return result;
   }
 
   async getStats() {
@@ -226,5 +241,50 @@ export class AdminService {
         this.prisma.company.count(),
       ]);
     return { totalUsers, totalOrders, pendingApplications, activeJobs, totalCompanies };
+  }
+
+  /** GET /admin/audit-logs — recent admin actions for compliance review */
+  async getAuditLogs(limit = 100) {
+    return this.prisma.adminAuditLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: {
+        admin: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+    });
+  }
+
+  /**
+   * Write an immutable audit record for every admin mutation.
+   * Fire-and-forget — a failed write must never block the mutation itself.
+   * Pass `before` = snapshot before update, `after` = the mutation payload.
+   */
+  logAdminAction(
+    adminId: string,
+    action: string,
+    entityType: string,
+    entityId: string,
+    before?: object | null,
+    after?: object | null,
+    note?: string,
+  ): Promise<void> {
+    return this.prisma.adminAuditLog
+      .create({
+        data: {
+          adminId,
+          action,
+          entityType,
+          entityId,
+          before: before ?? undefined,
+          after: after ?? undefined,
+          note: note ?? undefined,
+        },
+      })
+      .then(() => undefined)
+      .catch((err) =>
+        this.logger.error(
+          `Failed to write audit log for ${action} on ${entityType}:${entityId} by admin ${adminId}: ${(err as Error).message}`,
+        ),
+      );
   }
 }

@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
@@ -233,9 +234,28 @@ export class PaymentsService {
 
     if (payment.status === 'RELEASED') {
       // Funds already transferred; needs manual admin intervention
-      this.logger.warn(
-        `voidOrRefund: order ${orderId} payment already RELEASED — manual refund required`,
+      this.logger.error(
+        `voidOrRefund: order ${orderId} payment already RELEASED — manual refund required. Supplier received funds but order is being cancelled.`,
       );
+      const admins = await this.prisma.user.findMany({
+        where: { userType: 'ADMIN' },
+        select: { id: true },
+      });
+      if (admins.length > 0) {
+        await this.notifications
+          .createForMany(
+            admins.map((a) => a.id),
+            {
+              type: NotificationType.SYSTEM_ALERT,
+              title: '🚨 Manuāla atmaksa nepieciešama',
+              message: `Pasūtījums ${orderId} atcelts, taču maksājums jau ir RELEASED — piegādātājs naudu ir saņēmis. Nepieciešama manuāla atmaksa pircējam.`,
+              data: { orderId },
+            },
+          )
+          .catch((e) =>
+            this.logger.error(`Failed to notify admins of RELEASED cancellation: ${(e as Error).message}`),
+          );
+      }
       return;
     }
 
@@ -395,9 +415,28 @@ export class PaymentsService {
       );
       const supplierConnectId = supplierItem?.material.supplier.stripeConnectId;
       if (!supplierConnectId) {
-        this.logger.warn(
-          `Supplier ${supplierId} has no Stripe Connect account — skipping transfer`,
+        this.logger.error(
+          `Supplier ${supplierId} has no Stripe Connect account — skipping transfer for order ${orderId}. Manual payout required.`,
         );
+        const admins = await this.prisma.user.findMany({
+          where: { userType: 'ADMIN' },
+          select: { id: true },
+        });
+        if (admins.length > 0) {
+          await this.notifications
+            .createForMany(
+              admins.map((a) => a.id),
+              {
+                type: NotificationType.SYSTEM_ALERT,
+                title: '🚨 Piegādātāja izmaksa izlaista',
+                message: `Pasūtījums ${orderId}: piegādātājam ${supplierId} nav Stripe Connect konta. Izmaksa netika veikta — nepieciešama manuāla iejaukšanās.`,
+                data: { orderId, supplierId },
+              },
+            )
+            .catch((e) =>
+              this.logger.error(`Failed to notify admins of skipped payout: ${(e as Error).message}`),
+            );
+        }
         continue;
       }
 
@@ -433,7 +472,50 @@ export class PaymentsService {
         this.logger.error(
           `Driver transfer failed for order ${orderId}: ${(err as Error).message}`,
         );
-        // Non-fatal — seller already paid; log and continue
+        // Alert admins — driver was not paid, manual transfer needed
+        const admins = await this.prisma.user.findMany({
+          where: { userType: 'ADMIN' },
+          select: { id: true },
+        });
+        if (admins.length > 0) {
+          await this.notifications
+            .createForMany(
+              admins.map((a) => a.id),
+              {
+                type: NotificationType.SYSTEM_ALERT,
+                title: '🚨 Vadītāja izmaksa neizdevās',
+                message: `Pasūtījums ${orderId}: vadītāja Stripe izmaksa neizdevās — ${(err as Error).message}. Nepieciešama manuāla izmaksa vadītājam ${deliveredJob?.driverId ?? 'nezināms'}.`,
+                data: { orderId, driverId: deliveredJob?.driverId ?? null },
+              },
+            )
+            .catch((notifErr) =>
+              this.logger.error(`Failed to notify admins of driver transfer failure: ${(notifErr as Error).message}`),
+            );
+        }
+      }
+    } else if (!driverConnectId && driverCents > 0) {
+      // Driver has no Stripe Connect account — payout would be silently skipped
+      this.logger.error(
+        `Driver ${deliveredJob?.driverId} has no Stripe Connect account — skipping driver transfer for order ${orderId}. Manual payout required.`,
+      );
+      const admins = await this.prisma.user.findMany({
+        where: { userType: 'ADMIN' },
+        select: { id: true },
+      });
+      if (admins.length > 0) {
+        await this.notifications
+          .createForMany(
+            admins.map((a) => a.id),
+            {
+              type: NotificationType.SYSTEM_ALERT,
+              title: '🚨 Vadītāja izmaksa izlaista',
+              message: `Pasūtījums ${orderId}: vadītājam ${deliveredJob?.driverId ?? 'nezināms'} nav Stripe Connect konta. Izmaksa netika veikta — nepieciešama manuāla iejaukšanās.`,
+              data: { orderId, driverId: deliveredJob?.driverId ?? null },
+            },
+          )
+          .catch((e) =>
+            this.logger.error(`Failed to notify admins of skipped driver payout: ${(e as Error).message}`),
+          );
       }
     }
 
@@ -842,5 +924,135 @@ export class PaymentsService {
     }
 
     return { ok: true, resolution };
+  }
+
+  /**
+   * Runs every 6 hours. Finds orders that are CONFIRMED with an AUTHORIZED payment
+   * whose PaymentIntent is approaching the 7-day Stripe capture window (≥ 6 days old).
+   * Notifies the seller to take action before the authorization expires.
+   *
+   * If an order is older than 7 days (authorization definitely expired) and still
+   * in AUTHORIZED status, we log a warning so admins can investigate manually.
+   */
+  @Cron(CronExpression.EVERY_6_HOURS)
+  async warnExpiringAuthorizations(): Promise<void> {
+    if (!this.stripe) return;
+
+    const now = new Date();
+    const sixDaysAgo = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    // Orders confirmed 6+ days ago with payment still only AUTHORIZED (not captured)
+    const atRisk = await this.prisma.order.findMany({
+      where: {
+        status: 'CONFIRMED',
+        paymentStatus: PaymentStatus.AUTHORIZED,
+        updatedAt: { lte: sixDaysAgo },
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        updatedAt: true,
+        createdById: true,
+        items: {
+          select: { material: { select: { supplierId: true } } },
+          take: 1,
+        },
+      },
+    });
+
+    for (const order of atRisk) {
+      const isExpired = order.updatedAt <= sevenDaysAgo;
+      const supplierId = order.items[0]?.material?.supplierId;
+
+      if (isExpired) {
+        // Authorization has almost certainly expired — log for admin review
+        this.logger.warn(
+          `warnExpiringAuthorizations: order ${order.orderNumber} (${order.id}) has an authorization older than 7 days — capture will likely fail`,
+        );
+      }
+
+      // Notify seller to re-confirm / take action
+      if (supplierId) {
+        const sellerUsers = await this.prisma.user.findMany({
+          where: { companyId: supplierId, canSell: true },
+          select: { id: true },
+        });
+        if (sellerUsers.length > 0) {
+          await this.notifications
+            .createForMany(
+              sellerUsers.map((u) => u.id),
+              {
+                type: NotificationType.SYSTEM_ALERT,
+                title: isExpired
+                  ? '🚨 Maksājuma autorizācija ir beigusies'
+                  : '⚠️ Maksājuma autorizācija drīz beigsies',
+                message: isExpired
+                  ? `Pasūtījums #${order.orderNumber}: maksājuma autorizācija jau ir beidzies. Sazinieties ar atbalstu.`
+                  : `Pasūtījums #${order.orderNumber}: pircēja maksājuma autorizācija beigsies 24 stundu laikā. Apstipriniet pasūtījumu nekavējoties.`,
+                data: { orderId: order.id, isExpired },
+              },
+            )
+            .catch(() => null);
+        }
+      }
+    }
+
+    if (atRisk.length > 0) {
+      this.logger.warn(
+        `warnExpiringAuthorizations: ${atRisk.length} order(s) at risk of expired Stripe authorization`,
+      );
+    }
+  }
+
+  /**
+   * Update the authorized Stripe PaymentIntent amount to match the new order
+   * total (base + all billable surcharges). Only valid while the payment is
+   * PENDING (intent created, not yet authorized) or AUTHORIZED (held but not
+   * yet captured). Throws if the payment is already CAPTURED or RELEASED.
+   *
+   * @param orderId  the order whose payment should be updated
+   * @param newTotal the new total in EUR (float); converted to cents internally
+   */
+  async updatePaymentIntentAmount(orderId: string, newTotal: number): Promise<void> {
+    if (!this.stripe) {
+      this.logger.warn(
+        `updatePaymentIntentAmount: Stripe not configured — skipping for order ${orderId}`,
+      );
+      return;
+    }
+
+    const payment = await this.prisma.payment.findUnique({ where: { orderId } });
+
+    if (!payment || !payment.stripePaymentId) {
+      // No payment intent yet (e.g. buyer hasn't initiated checkout) — nothing to update
+      return;
+    }
+
+    if (payment.status === 'CAPTURED' || payment.status === 'RELEASED') {
+      throw new BadRequestException(
+        `Cannot update payment amount: payment for order ${orderId} is already ${payment.status}. ` +
+          'Apply surcharges as a separate charge or issue a supplementary invoice.',
+      );
+    }
+
+    const amountCents = Math.round(newTotal * 100);
+
+    try {
+      await this.stripe.paymentIntents.update(payment.stripePaymentId, {
+        amount: amountCents,
+      });
+
+      // Keep the Payment record in sync
+      await this.prisma.payment.update({
+        where: { orderId },
+        data: { amount: newTotal },
+      });
+    } catch (error) {
+      this.logger.error(
+        `updatePaymentIntentAmount: failed to update PI ${payment.stripePaymentId} for order ${orderId}: ${(error as Error).message}`,
+      );
+      throw error;
+    }
   }
 }

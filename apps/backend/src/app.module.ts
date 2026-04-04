@@ -43,6 +43,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { UpdatesModule } from './updates/updates.module';
 import { HealthModule } from './health/health.module';
 import { SavedAddressesModule } from './saved-addresses/saved-addresses.module';
+import { DisputesModule } from './disputes/disputes.module';
 
 @Module({
   imports: [
@@ -92,6 +93,7 @@ import { SavedAddressesModule } from './saved-addresses/saved-addresses.module';
     UpdatesModule,
     HealthModule,
     SavedAddressesModule,
+    DisputesModule,
   ],
   controllers: [AppController],
   providers: [

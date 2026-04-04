@@ -24,6 +24,7 @@ import { UpdateContainerDto } from './dto/update-container.dto';
 import { QueryContainersDto } from './dto/query-containers.dto';
 import { CreateContainerOrderDto } from './dto/create-container-order.dto';
 import { UpdateContainerOrderStatusDto } from './dto/update-container-order-status.dto';
+import { VAT_RATE } from '../common/constants/tax';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -182,7 +183,7 @@ export class ContainersService {
       dto.rentalDays * container.rentalPrice +
       container.deliveryFee +
       container.pickupFee;
-    const tax = subtotal * 0.21; // 21% VAT
+    const tax = subtotal * VAT_RATE;
     const total = subtotal + tax;
 
     const orderNumber = this.generateOrderNumber();

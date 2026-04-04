@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { CATEGORY_LABELS } from '@b3hub/shared';
 import {
   getAnalyticsOverview,
   type AnalyticsOverview,
@@ -15,6 +16,7 @@ import {
   type OrderBreakdown,
   type TopMaterial,
   type FleetUtilization,
+  type MaterialSpend,
 } from '@/lib/api';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -188,6 +190,42 @@ function TopMaterialsList({ materials }: { materials: TopMaterial[] }) {
   );
 }
 
+// ── material breakdown ───────────────────────────────────────────────────────
+
+function MaterialBreakdownChart({ breakdown }: { breakdown: MaterialSpend[] }) {
+  const maxSpend = Math.max(...breakdown.map((b) => b.totalSpent), 1);
+  return (
+    <div className="py-6 border-b border-border/40">
+      <h3 className="text-lg font-medium mb-6">Izdevumi pēc Materiāla</h3>
+      {breakdown.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nav datu</p>
+      ) : (
+        <div className="space-y-4">
+          {breakdown.slice(0, 6).map((b) => {
+            const widthPct = Math.round((b.totalSpent / maxSpend) * 100);
+            const label = CATEGORY_LABELS[b.category as keyof typeof CATEGORY_LABELS] ?? b.category;
+            return (
+              <div key={b.category} className="flex flex-col gap-1.5">
+                <div className="flex justify-between text-sm">
+                  <span className="text-foreground">{label}</span>
+                  <span className="font-medium tabular-nums">{euro(b.totalSpent)}</span>
+                </div>
+                <div className="h-1.5 w-full bg-secondary overflow-hidden">
+                  <div
+                    className="h-full bg-foreground transition-all"
+                    style={{ width: `${widthPct}%` }}
+                  />
+                </div>
+                <span className="text-xs text-muted-foreground">{b.orderCount} ieraksti</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── fleet utilisation ─────────────────────────────────────────────────────────
 
 function FleetList({ fleet }: { fleet: FleetUtilization }) {
@@ -262,6 +300,13 @@ export default function AnalyticsPage() {
       {/* ── top KPI row ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-4 mb-12 border-b border-border/40 pb-8">
         {buyer && <StatValue label="Izdevumi" value={euro(totalSpend)} />}
+        {buyer && (buyer.co2Kg ?? 0) > 0 && (
+          <StatValue
+            label="CO₂ piegādēm"
+            value={`${Math.round(buyer.co2Kg).toLocaleString('lv-LV')} kg`}
+            sub="Aprēķināts pēc maršruta"
+          />
+        )}
         {seller && <StatValue label="Ieņēmumi" value={euro(totalRevenue)} />}
         {seller && (
           <StatValue
@@ -286,6 +331,7 @@ export default function AnalyticsPage() {
         {buyer && (
           <div className="space-y-2">
             <MonthlyChart data={buyer.monthlySpend} label="Ikmēneša Izdevumi" />
+            <MaterialBreakdownChart breakdown={buyer.materialBreakdown ?? []} />
             <ArAgingList aging={buyer.arAging} />
             <OrderBreakdownList breakdown={buyer.orderBreakdown} title="Pasūtījumi" />
           </div>

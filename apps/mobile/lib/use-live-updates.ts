@@ -36,6 +36,8 @@ export interface LiveLocationUpdate {
   jobId: string;
   lat: number;
   lng: number;
+  /** Minutes until driver reaches destination. Null when unavailable. */
+  estimatedArrivalMin: number | null;
 }
 
 export interface SellerNewOrderUpdate {

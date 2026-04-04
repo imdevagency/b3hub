@@ -39,13 +39,13 @@ export const paymentsApi = {
   reportDispute: async (
     orderId: string,
     reason: string,
-    details: string | undefined,
+    description: string | undefined,
     token: string,
-  ): Promise<{ ok: boolean; message: string }> => {
-    return apiFetch(`payments/dispute/${orderId}`, {
+  ): Promise<{ id: string; status: string }> => {
+    return apiFetch(`disputes`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason, details }),
+      body: JSON.stringify({ orderId, reason, description: description || reason }),
     });
   },
 };

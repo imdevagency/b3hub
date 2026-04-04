@@ -289,3 +289,69 @@ export async function removeOrderSurcharge(
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ─── Recurring order schedules ─────────────────────────────────────────────
+
+export interface ApiOrderSchedule {
+  id: string;
+  orderType: string;
+  deliveryAddress: string;
+  deliveryCity: string;
+  intervalDays: number;
+  nextRunAt: string;
+  endsAt: string | null;
+  enabled: boolean;
+  itemsSnapshot: { materialId: string; quantity: number; unit: string }[];
+  createdAt: string;
+}
+
+export interface CreateOrderScheduleInput {
+  orderType: string;
+  deliveryAddress: string;
+  deliveryCity: string;
+  deliveryState: string;
+  deliveryPostal: string;
+  items: { materialId: string; quantity: number; unit: string }[];
+  intervalDays: number;
+  nextRunAt?: string;
+  endsAt?: string;
+  notes?: string;
+}
+
+export async function listSchedules(token: string): Promise<ApiOrderSchedule[]> {
+  return apiFetch<ApiOrderSchedule[]>('/orders/schedules', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function createSchedule(
+  data: CreateOrderScheduleInput,
+  token: string,
+): Promise<ApiOrderSchedule> {
+  return apiFetch<ApiOrderSchedule>('/orders/schedules', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function pauseSchedule(id: string, token: string): Promise<ApiOrderSchedule> {
+  return apiFetch<ApiOrderSchedule>(`/orders/schedules/${id}/pause`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function resumeSchedule(id: string, token: string): Promise<ApiOrderSchedule> {
+  return apiFetch<ApiOrderSchedule>(`/orders/schedules/${id}/resume`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function deleteSchedule(id: string, token: string): Promise<void> {
+  await apiFetch(`/orders/schedules/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

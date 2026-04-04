@@ -121,6 +121,7 @@ export default function ActiveJobScreen() {
   const [exceptionsLoading, setExceptionsLoading] = React.useState(false);
   const [exceptionType, setExceptionType] = React.useState<TransportExceptionType>('OTHER');
   const [exceptionNotes, setExceptionNotes] = React.useState('');
+  const [exceptionActualQty, setExceptionActualQty] = React.useState('');
   const [reportingException, setReportingException] = React.useState(false);
   const [resolvingExceptionId, setResolvingExceptionId] = React.useState<string | null>(null);
   const [resolutionById, setResolutionById] = React.useState<Record<string, string>>({});
@@ -234,6 +235,16 @@ export default function ActiveJobScreen() {
       Alert.alert('Norādiet piezīmes', 'Lūdzu aprakstiet situāciju pirms iesniegšanas.');
       return;
     }
+    if (exceptionType === 'PARTIAL_DELIVERY') {
+      const qty = parseFloat(exceptionActualQty);
+      if (!exceptionActualQty || isNaN(qty) || qty <= 0) {
+        Alert.alert(
+          'Norādiet daudzumu',
+          'Daļējai piegādei jānorāda faktiskais piegādātais daudzums.',
+        );
+        return;
+      }
+    }
 
     setReportingException(true);
     try {
@@ -242,11 +253,15 @@ export default function ActiveJobScreen() {
         {
           type: exceptionType,
           notes: trimmed,
+          ...(exceptionType === 'PARTIAL_DELIVERY' && exceptionActualQty
+            ? { actualQuantity: parseFloat(exceptionActualQty) }
+            : {}),
         },
         token,
       );
       setExceptions((prev) => [created, ...prev]);
       setExceptionNotes('');
+      setExceptionActualQty('');
       setExceptionType('OTHER');
       haptics.success();
     } catch (err: unknown) {
@@ -940,6 +955,31 @@ export default function ActiveJobScreen() {
             onChangeText={setExceptionNotes}
             multiline
           />
+
+          {/* Actual quantity — only for PARTIAL_DELIVERY */}
+          {exceptionType === 'PARTIAL_DELIVERY' && (
+            <View>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 }}>
+                Faktiskā piegādātā daudzums
+              </Text>
+              <TextInput
+                style={{
+                  backgroundColor: '#f9fafb',
+                  borderRadius: 12,
+                  padding: 14,
+                  fontSize: 15,
+                  borderWidth: 1,
+                  borderColor: '#e5e7eb',
+                  color: '#111827',
+                }}
+                placeholder="piem. 4.5"
+                placeholderTextColor="#9ca3af"
+                value={exceptionActualQty}
+                onChangeText={setExceptionActualQty}
+                keyboardType="decimal-pad"
+              />
+            </View>
+          )}
 
           {/* Past exceptions list */}
           {exceptions.length > 0 && (

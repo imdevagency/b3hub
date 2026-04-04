@@ -40,6 +40,7 @@ interface IncomingOrder {
   requestedDate: string;
   price: number;
   status: OrderStatus;
+  paymentStatus?: string;
   transportJobId?: string;
 }
 
@@ -75,6 +76,7 @@ function mapApiOrder(o: ApiOrder): IncomingOrder {
         }),
     price: o.total ?? 0,
     status: statusMap[o.status] ?? 'PENDING',
+    paymentStatus: o.paymentStatus ?? undefined,
     transportJobId: (o as any).transportJobs?.[0]?.id,
   };
 }
@@ -266,6 +268,41 @@ function OrderCard({
             {order.deliveryAddress}
           </Text>
         </View>
+
+        {/* Payment status badge */}
+        {order.paymentStatus && (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              marginTop: 6,
+              marginBottom: 2,
+            }}
+          >
+            {order.paymentStatus === 'AUTHORIZED' || order.paymentStatus === 'CAPTURED' ? (
+              <>
+                <View
+                  style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#16a34a' }}
+                />
+                <Text style={{ fontSize: 12, color: '#16a34a', fontWeight: '600' }}>
+                  {order.paymentStatus === 'CAPTURED'
+                    ? 'Maksājums saņemts'
+                    : 'Maksājums autorizēts'}
+                </Text>
+              </>
+            ) : (
+              <>
+                <View
+                  style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#d97706' }}
+                />
+                <Text style={{ fontSize: 12, color: '#d97706', fontWeight: '600' }}>
+                  Gaida apmaksu
+                </Text>
+              </>
+            )}
+          </View>
+        )}
       </TouchableOpacity>
 
       {/* Actions */}

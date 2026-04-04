@@ -63,9 +63,9 @@ try {
 const ORDER_STEPS = [
   { key: 'PENDING', label: 'Pasūtīts', short: 'Gaida', hint: 'Gaida apstiprināšanu' },
   { key: 'CONFIRMED', label: 'Apstiprināts', short: 'Apstip.', hint: 'Pasūtījums apstiprināts' },
-  { key: 'PROCESSING', label: 'Sagatavo', short: 'Sagat.', hint: 'Kravu sagatavo' },
-  { key: 'SHIPPED', label: 'Ceļā', short: 'Ceļā', hint: 'Šoferis dodas uz jums' },
+  { key: 'IN_PROGRESS', label: 'Piegādē', short: 'Ceļā', hint: 'Šoferis dodas uz jums' },
   { key: 'DELIVERED', label: 'Piegādāts', short: 'Piegāde', hint: 'Piegāde pabeigta' },
+  { key: 'COMPLETED', label: 'Pabeigts', short: 'Pabeigts', hint: 'Pasūtījums pabeigts' },
 ];
 
 // ── Main Screen ────────────────────────────────────────────────
@@ -106,6 +106,12 @@ export default function OrderDetailScreen() {
   // Local flag so the UI updates immediately after rating without a reload
   const [ratedLocally, setRatedLocally] = useState(false);
   const hasRated = alreadyRated || ratedLocally;
+  const [etaMin, setEtaMin] = useState<number | null>(null);
+
+  // Update ETA from live driver location broadcasts
+  React.useEffect(() => {
+    if (liveLocation?.estimatedArrivalMin != null) setEtaMin(liveLocation.estimatedArrivalMin);
+  }, [liveLocation]);
 
   // Stripe payment sheet — guarded for Expo Go
   const stripe = useStripe ? useStripe() : null;
@@ -145,12 +151,13 @@ export default function OrderDetailScreen() {
     }
   };
 
-  const DISPUTE_REASONS = [
-    'Krašana nepareiza / trūkst daudzums',
-    'Sagadītā prece neatbilst pasūtītājai',
-    'Prece bojāta piegādes laikā',
-    'Nav saņemta piegāde',
-    'Cits jautājums',
+  const DISPUTE_REASONS: { key: string; label: string }[] = [
+    { key: 'SHORT_DELIVERY', label: 'Krašana nepareiza / trūkst daudzums' },
+    { key: 'WRONG_MATERIAL', label: 'Sagadītā prece neatbilst pasūtītājai' },
+    { key: 'DAMAGE', label: 'Prece bojāta piegādes laikā' },
+    { key: 'NO_DELIVERY', label: 'Nav saņemta piegāde' },
+    { key: 'LATE_DELIVERY', label: 'Piegāde ievērojami kavējas' },
+    { key: 'OTHER', label: 'Cits jautājums' },
   ];
 
   const handleDisputeSubmit = async () => {
@@ -163,7 +170,13 @@ export default function OrderDetailScreen() {
     setDisputeLoading(true);
     haptics.light();
     try {
-      await api.reportDispute(order.id, disputeReason, disputeDetails || undefined, token);
+      const selectedReason = DISPUTE_REASONS.find((r) => r.key === disputeReason);
+      await api.reportDispute(
+        order.id,
+        disputeReason,
+        disputeDetails || selectedReason?.label,
+        token,
+      );
       haptics.success();
       setDisputeFiled(true);
       setShowDispute(false);
@@ -233,6 +246,7 @@ export default function OrderDetailScreen() {
       j.status === 'AT_DELIVERY',
   );
   const driver = activeJob?.driver;
+  const vehicle = activeJob?.vehicle;
   const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status);
   const canPay =
     order.status === 'PENDING' &&
@@ -302,7 +316,9 @@ export default function OrderDetailScreen() {
                 <View style={s.liveDot} />
               </View>
               <View>
-                <Text style={s.liveTrackTitle}>Šoferis ir ceļā</Text>
+                <Text style={s.liveTrackTitle}>
+                  {etaMin != null ? `Pienāks pēc ~${etaMin} min` : 'Šoferis ir ceļā'}
+                </Text>
                 <Text style={s.liveTrackSub}>Izseko piegādi kartē</Text>
               </View>
             </View>
@@ -333,6 +349,12 @@ export default function OrderDetailScreen() {
                   {driver.firstName} {driver.lastName}
                 </Text>
                 {driver.phone ? <Text style={s.driverPhone}>{driver.phone}</Text> : null}
+                {vehicle ? (
+                  <Text style={s.driverPlate}>
+                    {vehicle.licensePlate}
+                    {vehicle.vehicleType ? ` · ${vehicle.vehicleType}` : ''}
+                  </Text>
+                ) : null}
               </View>
               {driver.phone ? (
                 <TouchableOpacity
@@ -390,6 +412,39 @@ export default function OrderDetailScreen() {
               <Text style={s.itemTotal}>€{item.total.toFixed(2)}</Text>
             </View>
           ))}
+          {order.deliveryFee > 0 && (
+            <>
+              <View style={[s.totalRow, { paddingVertical: 6 }]}>
+                <Text style={[s.totalLabel, { fontWeight: '500', color: '#6b7280', fontSize: 13 }]}>
+                  Materiāli
+                </Text>
+                <Text style={[s.totalValue, { fontSize: 14, color: '#374151' }]}>
+                  €{order.subtotal.toFixed(2)}
+                </Text>
+              </View>
+              <View style={[s.totalRow, { paddingVertical: 6 }]}>
+                <Text style={[s.totalLabel, { fontWeight: '500', color: '#6b7280', fontSize: 13 }]}>
+                  Piegāde
+                </Text>
+                <Text style={[s.totalValue, { fontSize: 14, color: '#374151' }]}>
+                  €{order.deliveryFee.toFixed(2)}
+                </Text>
+              </View>
+              {order.tax > 0 && (
+                <View style={[s.totalRow, { paddingVertical: 6 }]}>
+                  <Text
+                    style={[s.totalLabel, { fontWeight: '500', color: '#6b7280', fontSize: 13 }]}
+                  >
+                    PVN
+                  </Text>
+                  <Text style={[s.totalValue, { fontSize: 14, color: '#374151' }]}>
+                    €{order.tax.toFixed(2)}
+                  </Text>
+                </View>
+              )}
+              <View style={{ height: 1, backgroundColor: '#e5e7eb', marginVertical: 6 }} />
+            </>
+          )}
           <View style={s.totalRow}>
             <Text style={s.totalLabel}>Kopā</Text>
             <Text style={s.totalValue}>
@@ -539,6 +594,17 @@ export default function OrderDetailScreen() {
               )}
             </TouchableOpacity>
           )}
+          {/* Fallback message shown in Expo Go where native Stripe SDK is unavailable */}
+          {!stripe &&
+            order.status === 'PENDING' &&
+            (!order.paymentStatus || order.paymentStatus === 'PENDING') && (
+              <View style={s.stripeUnavailableBanner}>
+                <AlertTriangle size={14} color="#d97706" />
+                <Text style={s.stripeUnavailableText}>
+                  Apmaksa jāveic caur B3Hub mājas lapu vai jaunāko lietotnes versiju
+                </Text>
+              </View>
+            )}
           {/* Chat with driver — shown whenever there's an active transport job */}
           {activeJob && (
             <TouchableOpacity
@@ -695,19 +761,21 @@ export default function OrderDetailScreen() {
         <View style={{ gap: 12, paddingBottom: 8 }}>
           {DISPUTE_REASONS.map((r) => (
             <TouchableOpacity
-              key={r}
-              style={[s.disputeReasonRow, disputeReason === r && s.disputeReasonRowActive]}
+              key={r.key}
+              style={[s.disputeReasonRow, disputeReason === r.key && s.disputeReasonRowActive]}
               onPress={() => {
                 haptics.light();
-                setDisputeReason(r);
+                setDisputeReason(r.key);
               }}
               activeOpacity={0.8}
             >
-              <View style={[s.disputeRadio, disputeReason === r && s.disputeRadioActive]}>
-                {disputeReason === r && <View style={s.disputeRadioDot} />}
+              <View style={[s.disputeRadio, disputeReason === r.key && s.disputeRadioActive]}>
+                {disputeReason === r.key && <View style={s.disputeRadioDot} />}
               </View>
-              <Text style={[s.disputeReasonText, disputeReason === r && s.disputeReasonTextActive]}>
-                {r}
+              <Text
+                style={[s.disputeReasonText, disputeReason === r.key && s.disputeReasonTextActive]}
+              >
+                {r.label}
               </Text>
             </TouchableOpacity>
           ))}
@@ -905,6 +973,7 @@ const s = StyleSheet.create({
   driverAvatarInitials: { fontSize: 15, fontWeight: '700', color: '#fff' },
   driverName: { fontSize: 15, fontWeight: '700', color: '#111827' },
   driverPhone: { fontSize: 12, color: '#6b7280', marginTop: 1 },
+  driverPlate: { fontSize: 11, color: '#9ca3af', marginTop: 2, fontFamily: 'monospace' },
   callBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -999,6 +1068,17 @@ const s = StyleSheet.create({
     padding: 16,
   },
   payNowBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  stripeUnavailableBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#fffbeb',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    padding: 12,
+  },
+  stripeUnavailableText: { flex: 1, fontSize: 13, color: '#92400e', lineHeight: 18 },
   rateBtn: {
     flexDirection: 'row',
     alignItems: 'center',

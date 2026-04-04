@@ -43,6 +43,8 @@ export interface JobLocationPayload {
   jobId: string;
   lat: number;
   lng: number;
+  /** Minutes until driver reaches destination (haversine ÷ 50 km/h). Null when destination coords unavailable. */
+  estimatedArrivalMin: number | null;
 }
 
 export interface SellerNewOrderPayload {

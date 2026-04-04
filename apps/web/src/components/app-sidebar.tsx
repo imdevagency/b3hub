@@ -9,6 +9,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
+  AlertTriangle,
   Award,
   Banknote,
   BarChart3,
@@ -92,6 +93,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       icon: ClipboardList,
       items: [
         { label: 'Mani Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
+        { label: 'Regulārie Pasūtījumi', href: '/dashboard/orders/schedules', icon: CalendarClock },
         { label: 'Ietvarlīgumi', href: '/dashboard/framework-contracts', icon: FolderKanban },
         { label: 'Cenu Pieprasījumi', href: '/dashboard/quote-requests', icon: FileQuestion },
         { label: 'Konteineri', href: '/dashboard/skip-hire', icon: Box },
@@ -374,6 +376,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         label: 'Pieteikumi',
         href: '/dashboard/admin/applications',
         icon: ShieldCheck,
+      });
+      map.set('/dashboard/admin/disputes', {
+        label: 'Sūdzības',
+        href: '/dashboard/admin/disputes',
+        icon: AlertTriangle,
       });
     }
 
@@ -753,6 +760,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Link href="/dashboard/admin/applications">
                     <ShieldCheck className="size-4 shrink-0" />
                     <span>Pieteikumi</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Sūdzības"
+                  isActive={pathname === '/dashboard/admin/disputes'}
+                >
+                  <Link href="/dashboard/admin/disputes">
+                    <AlertTriangle className="size-4 shrink-0" />
+                    <span>Sūdzības</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

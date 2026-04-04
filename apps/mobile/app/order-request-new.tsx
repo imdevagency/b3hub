@@ -40,6 +40,9 @@ import {
   Zap as ZapIcon,
   CheckCircle2,
   Lock,
+  Calculator,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react-native';
 import { Calendar as RNCalendar } from 'react-native-calendars';
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
@@ -76,6 +79,20 @@ const STEP_TITLES: Record<Step, string> = {
   offers: 'Piedāvājumi',
 };
 
+/** Bulk density t/m³ for volume → weight conversion */
+const MATERIAL_DENSITY: Partial<Record<string, number>> = {
+  SAND: 1.6,
+  GRAVEL: 1.8,
+  STONE: 2.7,
+  CONCRETE: 2.4,
+  SOIL: 1.7,
+  RECYCLED_CONCRETE: 1.5,
+  RECYCLED_SOIL: 1.5,
+  ASPHALT: 2.3,
+  CLAY: 1.8,
+  OTHER: 1.7,
+};
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function OrderRequestWizard() {
@@ -103,11 +120,21 @@ export default function OrderRequestWizard() {
   const [quantity, setQuantity] = useState(5);
   const [notes, setNotes] = useState('');
 
+  // ── Calculator ──
+  const [calcOpen, setCalcOpen] = useState(false);
+  const [calcW, setCalcW] = useState('');
+  const [calcL, setCalcL] = useState('');
+  const [calcD, setCalcD] = useState('');
+
   // ── Address step ──
   const [pickedAddress, setPickedAddress] = useState<PickedAddress | null>(null);
 
   // ── When step ──
   const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryWindow, setDeliveryWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
+  // Repeat / schedule
+  const [repeatEnabled, setRepeatEnabled] = useState(false);
+  const [repeatInterval, setRepeatInterval] = useState<7 | 14 | 30>(7);
 
   // ── Offers step ──
   const [offers, setOffers] = useState<SupplierOffer[]>([]);
@@ -117,6 +144,7 @@ export default function OrderRequestWizard() {
   const [submitError, setSubmitError] = useState('');
   const [submitted, setSubmitted] = useState<SubmitResult | null>(null);
   const [orderNumber, setOrderNumber] = useState('');
+  const [orderId, setOrderId] = useState('');
   const [rfqNumber, setRfqNumber] = useState('');
   const [rfqId, setRfqId] = useState('');
 
@@ -155,7 +183,11 @@ export default function OrderRequestWizard() {
   // ── Navigation ──
   const goBack = useCallback(() => {
     if (submitted) {
-      router.replace('/(buyer)/orders' as never);
+      if (submitted === 'order' && orderId) {
+        router.replace(`/(buyer)/order/${orderId}` as never);
+      } else {
+        router.replace('/(buyer)/orders' as never);
+      }
       return;
     }
     if (stepIndex === 0) {
@@ -193,6 +225,7 @@ export default function OrderRequestWizard() {
           deliveryAddress: pickedAddress.address,
           deliveryCity: pickedAddress.city,
           deliveryDate: deliveryDate || new Date(Date.now() + 86400000).toISOString().split('T')[0],
+          deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
           siteContactName: contactName || undefined,
           siteContactPhone: contactPhone || undefined,
           notes: notes || undefined,
@@ -200,7 +233,32 @@ export default function OrderRequestWizard() {
         },
         token,
       );
+
+      // Also create a recurring schedule if buyer opted in
+      if (repeatEnabled) {
+        const firstRun = new Date(Date.now() + repeatInterval * 86_400_000).toISOString();
+        await api.schedules.create(
+          {
+            orderType: 'MATERIAL',
+            deliveryAddress: pickedAddress.address,
+            deliveryCity: pickedAddress.city,
+            deliveryState: '',
+            deliveryPostal: '',
+            deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
+            notes: notes || undefined,
+            siteContactName: contactName || undefined,
+            siteContactPhone: contactPhone || undefined,
+            projectId: params.projectId || undefined,
+            items: [{ materialId: offer.id, quantity, unit }],
+            intervalDays: repeatInterval,
+            nextRunAt: firstRun,
+          },
+          token,
+        );
+      }
+
       setOrderNumber(order.orderNumber);
+      setOrderId(order.id);
       setSubmitted('order');
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Kaut kas nogāja greizi.');
@@ -252,7 +310,7 @@ export default function OrderRequestWizard() {
   const ctaLabel = submitted
     ? submitted === 'rfq'
       ? 'Skatīt pieprasījumu'
-      : 'Skatīt pasūtījumus'
+      : 'Skatīt pasūtījumu'
     : step === 'offers'
       ? 'Nosūtīt pieprasījumu'
       : 'Turpināt';
@@ -260,7 +318,7 @@ export default function OrderRequestWizard() {
   const handleCTA = submitted
     ? submitted === 'rfq'
       ? () => router.replace(`/(buyer)/rfq/${rfqId}` as never)
-      : () => router.replace('/(buyer)/orders' as never)
+      : () => router.replace(`/(buyer)/order/${orderId}` as never)
     : step === 'offers'
       ? handleSendRFQ
       : goNext;
@@ -393,6 +451,87 @@ export default function OrderRequestWizard() {
           numberOfLines={3}
         />
       </View>
+
+      {/* Volume Calculator */}
+      {(unit === 'TONNE' || unit === 'M3') && (
+        <View style={s.calcWrap}>
+          <TouchableOpacity
+            style={s.calcHeader}
+            onPress={() => setCalcOpen((o) => !o)}
+            activeOpacity={0.8}
+          >
+            <Calculator size={16} color="#6b7280" />
+            <Text style={s.calcHeaderText}>Daudzuma kalkulators</Text>
+            {calcOpen ? (
+              <ChevronUp size={16} color="#6b7280" />
+            ) : (
+              <ChevronDown size={16} color="#6b7280" />
+            )}
+          </TouchableOpacity>
+
+          {calcOpen &&
+            (() => {
+              const w = parseFloat(calcW) || 0;
+              const l = parseFloat(calcL) || 0;
+              const d = parseFloat(calcD) || 0;
+              const m3 = w * l * d;
+              const density = MATERIAL_DENSITY[category] ?? 1.7;
+              const tonnes = m3 * density;
+              const hasResult = m3 > 0;
+              const resultValue = unit === 'TONNE' ? tonnes : m3;
+              const resultUnit = unit === 'TONNE' ? 't' : 'm³';
+              return (
+                <View style={s.calcBody}>
+                  <Text style={s.calcHint}>
+                    Ievadiet laukuma izmērus, lai aprēķinātu nepieciešamo daudzumu.
+                  </Text>
+                  <View style={s.calcRow}>
+                    {[
+                      { label: 'Platums (m)', value: calcW, set: setCalcW },
+                      { label: 'Garums (m)', value: calcL, set: setCalcL },
+                      { label: 'Dziļums (m)', value: calcD, set: setCalcD },
+                    ].map(({ label, value, set }) => (
+                      <View key={label} style={s.calcField}>
+                        <Text style={s.calcFieldLabel}>{label}</Text>
+                        <TextInput
+                          style={s.calcInput}
+                          value={value}
+                          onChangeText={set}
+                          keyboardType="decimal-pad"
+                          placeholder="0"
+                          placeholderTextColor="#d1d5db"
+                        />
+                      </View>
+                    ))}
+                  </View>
+                  {hasResult && (
+                    <View style={s.calcResult}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.calcResultLabel}>Aptuveni nepieciešams</Text>
+                        <Text style={s.calcResultValue}>
+                          {resultValue.toFixed(1)} {resultUnit}
+                          {unit === 'TONNE' && (
+                            <Text style={s.calcResultSub}> ({m3.toFixed(1)} m³)</Text>
+                          )}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={s.calcApplyBtn}
+                        onPress={() => {
+                          setQuantity(Math.ceil(resultValue));
+                          setCalcOpen(false);
+                        }}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={s.calcApplyText}>Izmantot</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              );
+            })()}
+        </View>
+      )}
     </ScrollView>
   );
 
@@ -479,6 +618,127 @@ export default function OrderRequestWizard() {
           <Text style={s.hintText}>
             Datums ir orientējošs — piegādātājs apstiprinās precīzu laiku.
           </Text>
+        </View>
+
+        {/* Delivery time window */}
+        <View style={{ marginTop: 4 }}>
+          <Text style={[s.fieldLabel, { marginBottom: 10 }]}>Vēlamais piegādes laiks</Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {(['ANY', 'AM', 'PM'] as const).map((w) => {
+              const labels = { ANY: 'Jebkurā laikā', AM: 'Rīts (8–13)', PM: 'Pēcpusdiena (13–18)' };
+              const isActive = deliveryWindow === w;
+              return (
+                <TouchableOpacity
+                  key={w}
+                  style={[
+                    s.unitToggleBtn,
+                    isActive && s.unitToggleBtnActive,
+                    { flex: 1, paddingVertical: 10 },
+                  ]}
+                  onPress={() => setDeliveryWindow(w)}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      s.unitToggleText,
+                      isActive && s.unitToggleTextActive,
+                      { textAlign: 'center' },
+                    ]}
+                  >
+                    {labels[w]}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Repeat / recurring order toggle */}
+        <View style={{ marginTop: 8 }}>
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingVertical: 14,
+              paddingHorizontal: 16,
+              backgroundColor: repeatEnabled ? '#111827' : '#F9FAFB',
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: repeatEnabled ? '#111827' : '#E5E7EB',
+            }}
+            onPress={() => setRepeatEnabled((v) => !v)}
+            activeOpacity={0.8}
+          >
+            <View>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontFamily: 'Inter_600SemiBold',
+                  color: repeatEnabled ? '#fff' : '#111827',
+                }}
+              >
+                Atkārtot pasūtījumu
+              </Text>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: repeatEnabled ? '#D1D5DB' : '#6B7280',
+                  marginTop: 2,
+                }}
+              >
+                Automātiski atjaunot katru nedēļu/mēnesi
+              </Text>
+            </View>
+            <View
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 11,
+                backgroundColor: repeatEnabled ? '#fff' : 'transparent',
+                borderWidth: repeatEnabled ? 0 : 2,
+                borderColor: '#9CA3AF',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {repeatEnabled && <Check size={13} color="#111827" />}
+            </View>
+          </TouchableOpacity>
+
+          {repeatEnabled && (
+            <View style={{ marginTop: 10 }}>
+              <Text style={[s.fieldLabel, { marginBottom: 8 }]}>Atkārtošanas biežums</Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {([7, 14, 30] as const).map((days) => {
+                  const labels = { 7: 'Katru nedēļu', 14: 'Reizi 2 nedēļās', 30: 'Katru mēnesi' };
+                  const active = repeatInterval === days;
+                  return (
+                    <TouchableOpacity
+                      key={days}
+                      style={[
+                        s.unitToggleBtn,
+                        active && s.unitToggleBtnActive,
+                        { flex: 1, paddingVertical: 10 },
+                      ]}
+                      onPress={() => setRepeatInterval(days)}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        style={[
+                          s.unitToggleText,
+                          active && s.unitToggleTextActive,
+                          { textAlign: 'center' },
+                        ]}
+                      >
+                        {labels[days]}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
         </View>
       </ScrollView>
     );
@@ -700,8 +960,13 @@ function OfferCard({
         <View style={{ alignItems: 'flex-end' }}>
           <Text style={oc.price}>€{offer.totalPrice.toFixed(2)}</Text>
           <Text style={oc.priceUnit}>
-            €{offer.basePrice.toFixed(2)} / {UNIT_SHORT[unit]}
+            €{offer.effectiveUnitPrice.toFixed(2)} / {UNIT_SHORT[unit]}
           </Text>
+          {offer.deliveryFee != null ? (
+            <Text style={[oc.priceUnit, { color: '#6b7280' }]}>
+              + €{offer.deliveryFee.toFixed(2)} piegāde
+            </Text>
+          ) : null}
         </View>
       </View>
 
@@ -722,6 +987,41 @@ function OfferCard({
             <Text style={[oc.metaText, { color: '#d97706', fontWeight: '600' }]}>Tūlītējs</Text>
           </View>
         ) : null}
+        {offer.completionRate !== null && offer.completionRate !== undefined ? (
+          <View
+            style={[
+              oc.metaItem,
+              {
+                backgroundColor:
+                  offer.completionRate >= 90
+                    ? '#f0fdf4'
+                    : offer.completionRate >= 75
+                      ? '#fefce8'
+                      : '#fef2f2',
+                borderRadius: 6,
+                paddingHorizontal: 6,
+                paddingVertical: 2,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                oc.metaText,
+                {
+                  color:
+                    offer.completionRate >= 90
+                      ? '#166534'
+                      : offer.completionRate >= 75
+                        ? '#854d0e'
+                        : '#991b1b',
+                  fontWeight: '600',
+                },
+              ]}
+            >
+              {offer.completionRate}% izpilde
+            </Text>
+          </View>
+        ) : null}
         {offer.minOrder ? (
           <View style={oc.metaItem}>
             <Text style={oc.metaText}>
@@ -730,6 +1030,40 @@ function OfferCard({
           </View>
         ) : null}
       </View>
+
+      {/* Volume price tiers */}
+      {offer.priceTiers && offer.priceTiers.length > 0 && (
+        <View style={{ marginTop: 8, marginBottom: 2 }}>
+          <Text
+            style={{
+              fontSize: 11,
+              color: '#9CA3AF',
+              fontFamily: 'Inter_600SemiBold',
+              marginBottom: 4,
+            }}
+          >
+            APJOMA ATLAIDES
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+            {offer.priceTiers.map((tier) => (
+              <View
+                key={tier.minQty}
+                style={{
+                  backgroundColor: '#F3F4F6',
+                  borderRadius: 6,
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                }}
+              >
+                <Text style={{ fontSize: 11, color: '#374151', fontFamily: 'Inter_500Medium' }}>
+                  ≥{tier.minQty} {UNIT_SHORT[unit] ?? unit} → €{tier.unitPrice.toFixed(2)}/
+                  {UNIT_SHORT[unit] ?? unit}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
 
       <TouchableOpacity
         style={[oc.btn, submitting && { opacity: 0.6 }]}
@@ -905,6 +1239,97 @@ const s = StyleSheet.create({
     marginTop: 8,
   },
   hintText: { fontSize: 13, color: '#4b5563', lineHeight: 18, fontFamily: 'Inter_500Medium' },
+
+  // ── Calculator ──
+  calcWrap: {
+    marginTop: 20,
+    borderRadius: 16,
+    backgroundColor: '#F4F5F7',
+    overflow: 'hidden',
+  },
+  calcHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  calcHeaderText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#6b7280',
+  },
+  calcBody: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 12,
+  },
+  calcHint: {
+    fontSize: 12,
+    color: '#9ca3af',
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 16,
+  },
+  calcRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  calcField: { flex: 1, gap: 4 },
+  calcFieldLabel: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  calcInput: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#111827',
+    textAlign: 'center',
+  },
+  calcResult: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 14,
+    gap: 12,
+  },
+  calcResultLabel: {
+    fontSize: 11,
+    color: '#9ca3af',
+    fontFamily: 'Inter_500Medium',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  calcResultValue: {
+    fontSize: 20,
+    fontFamily: 'Inter_700Bold',
+    color: '#111827',
+    marginTop: 2,
+  },
+  calcResultSub: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: '#6b7280',
+  },
+  calcApplyBtn: {
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+  },
+  calcApplyText: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+    color: '#ffffff',
+  },
 
   // ── Offers step ──
   offersTitle: {

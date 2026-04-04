@@ -9,6 +9,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { IsBoolean, IsNumber, IsOptional, Min } from 'class-validator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { RequestingUser } from '../common/types/requesting-user.interface';
 
 class UpdateCompanyDto {
   @IsOptional() @IsBoolean() verified?: boolean;
@@ -35,8 +37,12 @@ export class AdminController {
 
   /** PATCH /admin/users/:id — toggle flags / status */
   @Patch('users/:id')
-  updateUser(@Param('id') id: string, @Body() body: UpdateUserDto) {
-    return this.service.updateUser(id, body);
+  updateUser(
+    @Param('id') id: string,
+    @Body() body: UpdateUserDto,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.updateUser(id, body, admin.userId);
   }
 
   /** GET /admin/orders — all orders */
@@ -59,7 +65,17 @@ export class AdminController {
 
   /** PATCH /admin/companies/:id — update company flags */
   @Patch('companies/:id')
-  updateCompany(@Param('id') id: string, @Body() body: UpdateCompanyDto) {
-    return this.service.updateCompany(id, body);
+  updateCompany(
+    @Param('id') id: string,
+    @Body() body: UpdateCompanyDto,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.updateCompany(id, body, admin.userId);
+  }
+
+  /** GET /admin/audit-logs — recent admin mutations for compliance review */
+  @Get('audit-logs')
+  getAuditLogs() {
+    return this.service.getAuditLogs();
   }
 }

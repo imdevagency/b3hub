@@ -107,6 +107,7 @@ export class MaterialsService {
             state: true,
           },
         },
+        priceTiers: { orderBy: { minQty: 'asc' } },
       },
     });
 
@@ -245,9 +246,31 @@ export class MaterialsService {
             lng: true,
           },
         },
+        priceTiers: { orderBy: { minQty: 'asc' } },
       },
       orderBy: { basePrice: 'asc' },
     });
+
+    // ── Compute supplier performance in one query ──────────────────────────
+    const supplierIds = [...new Set(listings.map((m) => m.supplierId))];
+    let perfMap: Record<string, { total: number; completed: number }> = {};
+    if (supplierIds.length > 0) {
+      const orderItems = await this.prisma.orderItem.findMany({
+        where: { material: { supplierId: { in: supplierIds } } },
+        select: {
+          material: { select: { supplierId: true } },
+          order: { select: { status: true } },
+        },
+      });
+      for (const row of orderItems) {
+        const sid = row.material.supplierId;
+        if (!perfMap[sid]) perfMap[sid] = { total: 0, completed: 0 };
+        perfMap[sid].total++;
+        if (row.order.status === 'DELIVERED' || row.order.status === 'COMPLETED') {
+          perfMap[sid].completed++;
+        }
+      }
+    }
 
     // If coordinates provided, filter by delivery radius and add distance
     let results = listings.map((m) => {
@@ -270,13 +293,32 @@ export class MaterialsService {
       }
       // Strip internal lat/lng from the response payload
       const { lat: _lat, lng: _lng, ...supplierPublic } = m.supplier;
+      // Apply volume price tier if the material has any
+      const effectivePrice = this.resolvePrice(m.basePrice, m.priceTiers ?? [], params.quantity);
+      // Supplier performance score
+      const perf = perfMap[m.supplierId];
+      const completionRate =
+        perf && perf.total >= 3
+          ? Math.round((perf.completed / perf.total) * 100)
+          : null;
+      // Distance-based delivery fee: €1.20/km standard rate (null when distance unknown)
+      const DELIVERY_RATE_EUR_PER_KM = 1.20;
+      const deliveryFee =
+        distanceKm != null
+          ? Math.round(distanceKm * DELIVERY_RATE_EUR_PER_KM * 100) / 100
+          : null;
       return {
         ...m,
         supplier: supplierPublic,
         distanceKm,
-        totalPrice: Math.round(m.basePrice * params.quantity * 100) / 100,
+        effectiveUnitPrice: effectivePrice,
+        deliveryFee,
+        totalPrice:
+          Math.round((effectivePrice * params.quantity + (deliveryFee ?? 0)) * 100) / 100,
         etaDays: 1,
         isInstant: true,
+        completionRate,
+        totalOrders: perf?.total ?? 0,
       };
     });
 
@@ -292,5 +334,52 @@ export class MaterialsService {
     }
 
     return results;
+  }
+
+  // ─── Volume price tier helpers ──────────────────────────────────────────
+
+  /**
+   * Returns the unit price for a given quantity by picking the highest-minQty
+   * tier that the quantity qualifies for.  Falls back to basePrice.
+   */
+  resolvePrice(
+    basePrice: number,
+    tiers: { minQty: number; unitPrice: number }[],
+    quantity: number,
+  ): number {
+    const applicable = tiers
+      .filter((t) => quantity >= t.minQty)
+      .sort((a, b) => b.minQty - a.minQty);
+    return applicable.length > 0 ? applicable[0].unitPrice : basePrice;
+  }
+
+  async getTiers(materialId: string) {
+    return this.prisma.materialPriceTier.findMany({
+      where: { materialId },
+      orderBy: { minQty: 'asc' },
+    });
+  }
+
+  async setTiers(
+    materialId: string,
+    tiers: { minQty: number; unitPrice: number }[],
+    currentUser: { userType: string; companyId?: string },
+  ) {
+    const material = await this.findOne(materialId);
+    if (currentUser.userType !== 'ADMIN' && material.supplierId !== currentUser.companyId) {
+      throw new ForbiddenException('You do not own this material');
+    }
+    // Replace all existing tiers atomically
+    await this.prisma.$transaction([
+      this.prisma.materialPriceTier.deleteMany({ where: { materialId } }),
+      ...(tiers.length > 0
+        ? [
+            this.prisma.materialPriceTier.createMany({
+              data: tiers.map((t) => ({ materialId, minQty: t.minQty, unitPrice: t.unitPrice })),
+            }),
+          ]
+        : []),
+    ]);
+    return this.getTiers(materialId);
   }
 }

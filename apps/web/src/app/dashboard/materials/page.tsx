@@ -12,6 +12,9 @@ import {
   createMaterial,
   updateMaterial,
   deleteMaterial,
+  getMaterialTiers,
+  setMaterialTiers,
+  type PriceTier,
   type ApiMaterial,
   type MaterialCategory,
   type MaterialUnit,
@@ -426,6 +429,11 @@ function MaterialFormModal({
                 Reciklēts
               </button>
             </div>
+
+            {/* Price tiers — only shown when editing an existing material */}
+            {editing && (
+              <PriceTiersSection materialId={editing.id} unit={form.unit} token={token} />
+            )}
           </div>
         </div>
 
@@ -442,6 +450,146 @@ function MaterialFormModal({
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+// ── Price tiers section ───────────────────────────────────────────────────────
+
+function PriceTiersSection({
+  materialId,
+  unit,
+  token,
+}: {
+  materialId: string;
+  unit: MaterialUnit;
+  token: string;
+}) {
+  const [tiers, setTiers] = useState<PriceTier[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [newMinQty, setNewMinQty] = useState('');
+  const [newUnitPrice, setNewUnitPrice] = useState('');
+
+  useEffect(() => {
+    setLoading(true);
+    getMaterialTiers(materialId, token)
+      .then((t) => setTiers([...t].sort((a, b) => a.minQty - b.minQty)))
+      .catch(() => setTiers([]))
+      .finally(() => setLoading(false));
+  }, [materialId, token]);
+
+  const unitShort: Record<MaterialUnit, string> = {
+    TONNE: 't',
+    M3: 'm³',
+    PIECE: 'gb.',
+    LOAD: 'krāv.',
+  };
+
+  async function handleSave(updated: PriceTier[]) {
+    setSaving(true);
+    setSaveError('');
+    try {
+      const saved = await setMaterialTiers(
+        materialId,
+        updated.map(({ minQty, unitPrice }) => ({ minQty, unitPrice })),
+        token,
+      );
+      setTiers([...saved].sort((a, b) => a.minQty - b.minQty));
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : 'Kļūda saglabājot.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function addTier() {
+    const qty = parseFloat(newMinQty);
+    const price = parseFloat(newUnitPrice);
+    if (isNaN(qty) || qty <= 0 || isNaN(price) || price <= 0) return;
+    const updated = [
+      ...tiers.filter((t) => t.minQty !== qty),
+      { minQty: qty, unitPrice: price },
+    ].sort((a, b) => a.minQty - b.minQty);
+    handleSave(updated);
+    setNewMinQty('');
+    setNewUnitPrice('');
+  }
+
+  function removeTier(minQty: number) {
+    handleSave(tiers.filter((t) => t.minQty !== minQty));
+  }
+
+  return (
+    <div className="pt-4 border-t border-border/60">
+      <p className="text-sm font-semibold mb-3 text-foreground/80 uppercase tracking-wide">
+        Apjoma atlaides
+      </p>
+      {loading ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          Ielādē...
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {tiers.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nav pievienotu apjoma atlaižu.</p>
+          )}
+          {tiers.map((tier) => (
+            <div
+              key={tier.minQty}
+              className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2"
+            >
+              <span className="text-sm font-medium">
+                ≥ {tier.minQty} {unitShort[unit]} → €{tier.unitPrice.toFixed(2)} / {unitShort[unit]}
+              </span>
+              <button
+                type="button"
+                onClick={() => removeTier(tier.minQty)}
+                disabled={saving}
+                className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+          ))}
+
+          {saveError && <p className="text-xs text-destructive">{saveError}</p>}
+
+          {/* Add new tier row */}
+          <div className="flex gap-2 pt-1">
+            <Input
+              type="number"
+              min="0.01"
+              step="0.5"
+              placeholder={`No (${unitShort[unit]})`}
+              value={newMinQty}
+              onChange={(e) => setNewMinQty(e.target.value)}
+              className="h-9 text-sm bg-muted/40 border-0 shadow-none rounded-xl"
+            />
+            <Input
+              type="number"
+              min="0.01"
+              step="0.01"
+              placeholder="€ / vienībai"
+              value={newUnitPrice}
+              onChange={(e) => setNewUnitPrice(e.target.value)}
+              className="h-9 text-sm bg-muted/40 border-0 shadow-none rounded-xl"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={addTier}
+              disabled={saving || !newMinQty || !newUnitPrice}
+              className="h-9 px-3 rounded-xl shrink-0"
+            >
+              {saving ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

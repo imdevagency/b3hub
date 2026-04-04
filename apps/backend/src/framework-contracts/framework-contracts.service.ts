@@ -11,7 +11,10 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/dto/create-notification.dto';
 import {
   FrameworkContractStatus,
   TransportJobStatus,
@@ -67,7 +70,75 @@ import { CreateCallOffDto } from './dto/create-calloff.dto';
 export class FrameworkContractsService {
   private readonly logger = new Logger(FrameworkContractsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
+
+  /**
+   * Runs nightly. Finds ACTIVE contracts whose endDate has passed and marks
+   * them EXPIRED. Notifies the buyer and supplier so they know to renew.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async expireContracts(): Promise<void> {
+    const now = new Date();
+    const expired = await this.prisma.frameworkContract.findMany({
+      where: {
+        status: FrameworkContractStatus.ACTIVE,
+        endDate: { lt: now },
+      },
+      select: {
+        id: true,
+        contractNumber: true,
+        createdById: true,
+        buyerId: true,
+        supplierId: true,
+      },
+    });
+
+    if (expired.length === 0) return;
+
+    await this.prisma.frameworkContract.updateMany({
+      where: {
+        id: { in: expired.map((c) => c.id) },
+        status: FrameworkContractStatus.ACTIVE,
+      },
+      data: { status: FrameworkContractStatus.EXPIRED },
+    });
+
+    this.logger.log(`expireContracts: expired ${expired.length} contract(s)`);
+
+    // Notify owners and supplier company members
+    for (const contract of expired) {
+      const recipientIds = new Set<string>();
+      if (contract.createdById) recipientIds.add(contract.createdById);
+
+      // Also notify any managers/owners in the buyer and supplier companies
+      const companyIds = [
+        contract.buyerId,
+        contract.supplierId,
+      ].filter(Boolean) as string[];
+
+      if (companyIds.length > 0) {
+        const members = await this.prisma.user.findMany({
+          where: { companyId: { in: companyIds } },
+          select: { id: true },
+        });
+        members.forEach((m) => recipientIds.add(m.id));
+      }
+
+      if (recipientIds.size > 0) {
+        this.notifications
+          .createForMany(Array.from(recipientIds), {
+            type: NotificationType.SYSTEM_ALERT,
+            title: 'Ietvarlīgums ir beidzies',
+            message: `Ietvarlīgums ${contract.contractNumber} ir beidzies. Lūdzu, atjauniniet vai noslēdziet jaunu līgumu.`,
+            data: { contractId: contract.id },
+          })
+          .catch(() => null);
+      }
+    }
+  }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -348,14 +419,19 @@ export class FrameworkContractsService {
   ) {
     await this.assertOwner(contractId, userId, companyId);
 
-    // Ensure the contract is active before releasing a call-off
+    // Ensure the contract is active and not past its end date before releasing a call-off
     const parentContract = await this.prisma.frameworkContract.findUnique({
       where: { id: contractId },
-      select: { status: true },
+      select: { status: true, endDate: true },
     });
     if (parentContract?.status !== FrameworkContractStatus.ACTIVE) {
       throw new BadRequestException(
         'Call-offs can only be created on an ACTIVE contract',
+      );
+    }
+    if (parentContract.endDate && parentContract.endDate < new Date()) {
+      throw new BadRequestException(
+        'This framework contract has passed its end date. Renew the contract before releasing further call-offs.',
       );
     }
 
@@ -429,6 +505,76 @@ export class FrameworkContractsService {
         },
       });
     });
+
+    // After the call-off is created, check if the position is now fully consumed.
+    // If so, notify both parties so they know to set up a contract amendment.
+    (async () => {
+      try {
+        const pos = await this.prisma.frameworkPosition.findFirst({
+          where: { id: positionId },
+          include: { callOffs: { select: { cargoWeight: true, status: true } } },
+        });
+        if (!pos) return;
+
+        const newConsumed = pos.callOffs
+          .filter((j) => j.status !== 'CANCELLED')
+          .reduce((s, j) => s + (j.cargoWeight ?? 0), 0);
+        const remainingQty = pos.agreedQty - newConsumed;
+        const isExhausted = remainingQty <= 0;
+        const isNearlyExhausted = !isExhausted && remainingQty / pos.agreedQty <= 0.1; // < 10% left
+
+        if (!isExhausted && !isNearlyExhausted) return;
+
+        const contract = await this.prisma.frameworkContract.findUnique({
+          where: { id: contractId },
+          select: {
+            contractNumber: true,
+            buyer: { select: { id: true } },
+            supplier: { select: { id: true } },
+          },
+        });
+        if (!contract) return;
+
+        const notifyIds = new Set<string>();
+        const buyerUsers = await this.prisma.user.findMany({
+          where: { companyId: contract.buyer.id },
+          select: { id: true },
+        });
+        const supplierUsers = contract.supplier
+          ? await this.prisma.user.findMany({
+              where: { companyId: contract.supplier.id },
+              select: { id: true },
+            })
+          : [];
+        buyerUsers.forEach((u) => notifyIds.add(u.id));
+        supplierUsers.forEach((u) => notifyIds.add(u.id));
+
+        if (notifyIds.size > 0) {
+          const title = isExhausted
+            ? '📋 Līguma pozīcija pilnībā izlietota'
+            : '⚠️ Līguma pozīcija gandrīz izlietota (<10%)';
+          const message = isExhausted
+            ? `Ietvarlīguma #${contract.contractNumber} pozīcija "${pos.description}" ir pilnībā izlietota (${pos.agreedQty} ${pos.unit}). Nepieciešams līguma grozījums, lai turpinātu.`
+            : `Ietvarlīguma #${contract.contractNumber} pozīcijai "${pos.description}" atlikušas tikai ${remainingQty.toFixed(2)} ${pos.unit} (${((remainingQty / pos.agreedQty) * 100).toFixed(1)}%).`;
+          await this.notifications.createForMany(Array.from(notifyIds), {
+            type: NotificationType.SYSTEM_ALERT,
+            title,
+            message,
+            data: { contractId, positionId, isExhausted, remainingQty },
+          });
+        }
+
+        if (isExhausted) {
+          this.logger.log(
+            `createCallOff: position ${positionId} (${pos.description}) on contract ${contractId} fully exhausted`,
+          );
+        }
+      } catch (err) {
+        this.logger.warn(
+          `createCallOff: post-calloff position check failed: ${(err as Error).message}`,
+        );
+      }
+    })();
 
     return job;
   }

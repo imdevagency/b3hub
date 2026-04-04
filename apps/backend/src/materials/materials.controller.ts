@@ -14,6 +14,7 @@ import {
   Query,
   UseGuards,
   ForbiddenException,
+  Put,
 } from '@nestjs/common';
 import { MaterialsService } from './materials.service';
 import { CreateMaterialDto } from './dto/create-material.dto';
@@ -121,5 +122,26 @@ export class MaterialsController {
   remove(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     assertCanSell(user);
     return this.materialsService.remove(id, user);
+  }
+
+  /** GET /materials/:id/tiers — public, returns all volume price tiers */
+  @Get(':id/tiers')
+  getTiers(@Param('id') id: string) {
+    return this.materialsService.getTiers(id);
+  }
+
+  /**
+   * PUT /materials/:id/tiers — replace all price tiers for a material.
+   * Body: [{ minQty: number, unitPrice: number }, ...]
+   * Use an empty array to clear all tiers (revert to flat basePrice).
+   */
+  @Put(':id/tiers')
+  setTiers(
+    @Param('id') id: string,
+    @Body() tiers: { minQty: number; unitPrice: number }[],
+    @CurrentUser() user: RequestingUser,
+  ) {
+    assertCanSell(user);
+    return this.materialsService.setTiers(id, tiers, user);
   }
 }

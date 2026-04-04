@@ -40,12 +40,19 @@ export interface SupplierOffer {
   category: MaterialCategory;
   unit: MaterialUnit;
   basePrice: number;
+  effectiveUnitPrice: number;
+  deliveryFee: number | null;
   totalPrice: number;
   distanceKm: number | null;
   etaDays: number;
   isInstant: true;
   minOrder?: number | null;
   deliveryRadiusKm: number | null;
+  priceTiers?: { minQty: number; unitPrice: number }[];
+  /** Percentage of orders delivered/completed (null if fewer than 3 orders) */
+  completionRate: number | null;
+  /** Total historical orders for this supplier */
+  totalOrders: number;
   supplier: {
     id: string;
     name: string;
@@ -112,6 +119,7 @@ export const materialsApi = {
         deliveryCity: string;
         deliveryPostal?: string;
         deliveryDate: string;
+        deliveryWindow?: string;
         siteContactName?: string;
         siteContactPhone?: string;
         notes?: string;
@@ -137,6 +145,7 @@ export const materialsApi = {
           deliveryCity: input.deliveryCity,
           deliveryPostal: input.deliveryPostal,
           deliveryDate: input.deliveryDate,
+          deliveryWindow: input.deliveryWindow,
           siteContactName: input.siteContactName,
           siteContactPhone: input.siteContactPhone,
           notes: input.notes,

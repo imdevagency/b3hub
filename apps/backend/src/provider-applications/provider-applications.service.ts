@@ -11,6 +11,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/dto/create-notification.dto';
 import { CreateProviderApplicationDto } from './dto/create-provider-application.dto';
 import { ApplicationStatus } from '@prisma/client';
 
@@ -21,6 +23,7 @@ export class ProviderApplicationsService {
   constructor(
     private prisma: PrismaService,
     private email: EmailService,
+    private notifications: NotificationsService,
   ) {}
 
   /** Public — submit a provider application */
@@ -67,6 +70,33 @@ export class ProviderApplicationsService {
     this.email
       .sendApplicationReceived(application.email, application.firstName ?? '')
       .catch(() => null);
+
+    // Alert all admins so they can promptly review the new application
+    this.prisma.user
+      .findMany({ where: { userType: 'ADMIN' }, select: { id: true } })
+      .then((admins) => {
+        if (admins.length === 0) return;
+        const roleLabel = [
+          dto.appliesForSell ? 'piegādātājs' : null,
+          dto.appliesForTransport ? 'pārvadātājs' : null,
+        ]
+          .filter(Boolean)
+          .join(' / ');
+        return this.notifications.createForMany(
+          admins.map((a) => a.id),
+          {
+            type: NotificationType.SYSTEM_ALERT,
+            title: '📋 Jauns sniedzēja pieteikums',
+            message: `${application.firstName ?? ''} ${application.lastName ?? ''} (${application.email}) lūdz apstiprināšanu kā ${roleLabel}. Uzņēmums: ${application.companyName ?? 'nav norādīts'}.`,
+            data: { applicationId: application.id },
+          },
+        );
+      })
+      .catch((err) =>
+        this.logger.error(
+          `Failed to notify admins of new provider application ${application.id}: ${(err as Error).message}`,
+        ),
+      );
 
     this.logger.log(`Provider application submitted by ${application.email}`);
     return application;
@@ -152,6 +182,19 @@ export class ProviderApplicationsService {
       })
       .catch(() => null);
 
+    this.prisma.adminAuditLog
+      .create({
+        data: {
+          adminId: reviewedByUserId,
+          action: 'APPROVE_APPLICATION',
+          entityType: 'ProviderApplication',
+          entityId: id,
+          before: { status: 'PENDING' },
+          after: { status: 'APPROVED', reviewNote: reviewNote ?? null },
+        },
+      })
+      .catch(() => null);
+
     this.logger.log(
       `Provider application ${id} approved by admin ${reviewedByUserId}`,
     );
@@ -178,6 +221,19 @@ export class ProviderApplicationsService {
     // Notify applicant of rejection (non-blocking)
     this.email
       .sendApplicationRejected(app.email, app.firstName ?? '', reviewNote)
+      .catch(() => null);
+
+    this.prisma.adminAuditLog
+      .create({
+        data: {
+          adminId: reviewedByUserId,
+          action: 'REJECT_APPLICATION',
+          entityType: 'ProviderApplication',
+          entityId: id,
+          before: { status: 'PENDING' },
+          after: { status: 'REJECTED', reviewNote: reviewNote ?? null },
+        },
+      })
       .catch(() => null);
 
     this.logger.log(

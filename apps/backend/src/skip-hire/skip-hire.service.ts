@@ -11,6 +11,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
@@ -438,5 +439,64 @@ export class SkipHireService {
     const ms = (Date.now() % 100_000).toString().padStart(5, '0');
     const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
     return `SKP${year}${month}${ms}${rand}`;
+  }
+
+  /**
+   * Auto-cancel PENDING skip hire orders whose deliveryDate has passed
+   * without a carrier confirming the booking.
+   *
+   * A skip hire order starts PENDING when placed. A carrier must confirm it
+   * (→ CONFIRMED) before the delivery date. If nobody acts, the skip never
+   * arrives and the buyer is left waiting indefinitely. This cron runs daily
+   * and cancels any PENDING orders whose deliveryDate is in the past.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_8AM)
+  async autoCancelStalePendingSkipOrders(): Promise<void> {
+    const now = new Date();
+
+    const stale = await this.prisma.skipHireOrder.findMany({
+      where: {
+        status: SkipHireStatus.PENDING,
+        deliveryDate: { lt: now },
+      },
+      select: { id: true, orderNumber: true, userId: true },
+    });
+
+    if (stale.length === 0) return;
+
+    for (const order of stale) {
+      try {
+        const { count } = await this.prisma.skipHireOrder.updateMany({
+          where: { id: order.id, status: SkipHireStatus.PENDING },
+          data: { status: SkipHireStatus.CANCELLED },
+        });
+
+        if (count === 0) continue; // Already updated concurrently
+
+        this.logger.warn(
+          `Skip hire order ${order.orderNumber} auto-cancelled — deliveryDate passed with no carrier confirmation`,
+        );
+
+        if (order.userId) {
+          this.notifications
+            .create({
+              userId: order.userId,
+              type: NotificationType.ORDER_CANCELLED,
+              title: 'Konteinera pasūtījums atcelts',
+              message: `Pasūtījums #${order.orderNumber} tika automātiski atcelts, jo neviens pārvadātājs neapstiprināja rezervāciju līdz piegādes datumam.`,
+              data: { orderId: order.id },
+            })
+            .catch(() => null);
+        }
+      } catch (err) {
+        this.logger.error(
+          `autoCancelStalePendingSkipOrders: failed for order ${order.id}: ${(err as Error).message}`,
+        );
+      }
+    }
+
+    this.logger.log(
+      `autoCancelStalePendingSkipOrders: cancelled ${stale.length} stale PENDING skip hire order(s)`,
+    );
   }
 }

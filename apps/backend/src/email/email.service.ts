@@ -383,6 +383,76 @@ export class EmailService {
     });
   }
 
+  /** Invoice overdue notification — sent when dueDate has passed */
+  async sendInvoiceOverdue(
+    to: string,
+    buyerName: string,
+    invoice: { invoiceNumber: string; total: number; daysLate: number; orderId: string },
+  ) {
+    await this.send({
+      to,
+      subject: `Nokavēts rēķins #${invoice.invoiceNumber} — B3Hub`,
+      html: this.base({
+        title: `Rēķins #${invoice.invoiceNumber} ir nokavēts`,
+        body: `
+          <p>Labdien, ${buyerName}!</p>
+          <p>Rēķins <strong>#${invoice.invoiceNumber}</strong> par summu <strong>€${invoice.total.toFixed(2)}</strong> ir nokavēts par <strong>${invoice.daysLate} dienu(ām)</strong>.</p>
+          <p>Lūdzu, veiciet maksājumu pēc iespējas ātrāk, lai izvairītos no turpmākām sekām. Jautājumu gadījumā sazinieties ar mums: <a href="mailto:support@b3hub.lv">support@b3hub.lv</a>.</p>
+        `,
+        cta: { label: 'Apmaksāt rēķinu', url: `${this.webUrl}/dashboard/invoices` },
+      }),
+    });
+  }
+
+  /** Invoice due-soon reminder — sent 3 days before dueDate */
+  async sendInvoiceReminder(
+    to: string,
+    buyerName: string,
+    invoice: { invoiceNumber: string; total: number; dueDate: Date; daysUntilDue: number; orderId: string },
+  ) {
+    const dueDateStr = invoice.dueDate.toLocaleDateString('lv-LV');
+    await this.send({
+      to,
+      subject: `Atgādinājums: rēķins #${invoice.invoiceNumber} jāsamaksā ${dueDateStr} — B3Hub`,
+      html: this.base({
+        title: `Rēķins jāsamaksā ${invoice.daysUntilDue} dienu laikā`,
+        body: `
+          <p>Labdien, ${buyerName}!</p>
+          <p>Atgādinām, ka rēķins <strong>#${invoice.invoiceNumber}</strong> par summu <strong>€${invoice.total.toFixed(2)}</strong> jāsamaksā līdz <strong>${dueDateStr}</strong>.</p>
+          <p>Apmaksājiet savlaicīgi, lai izvairītos no nokavēšanas.</p>
+        `,
+        cta: { label: 'Apmaksāt rēķinu', url: `${this.webUrl}/dashboard/invoices` },
+      }),
+    });
+  }
+
+  /** Notify buyer when weigh-bridge reading differs >5% from ordered cargo weight */
+  async sendWeighDiscrepancy(
+    to: string,
+    buyerName: string,
+    data: { jobNumber: string; orderNumber: string; expectedTonnes: number; actualTonnes: number; diffPct: number },
+  ) {
+    const direction = data.actualTonnes > data.expectedTonnes ? 'vairāk' : 'mazāk';
+    await this.send({
+      to,
+      subject: `Svara neatbilstība — Darbs #${data.jobNumber} — B3Hub`,
+      html: this.base({
+        title: 'Uzmanību: svara neatbilstība',
+        body: `
+          <p>Labdien, ${buyerName}!</p>
+          <p>Piegādes brauciena <strong>#${data.jobNumber}</strong> (pasūtījums <strong>#${data.orderNumber}</strong>) svara mērījums atšķiras no pasūtītā apjoma par vairāk nekā 5%.</p>
+          <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:14px">
+            <tr><td style="padding:6px 0;color:#6b7280">Pasūtītais svars</td><td style="padding:6px 0;font-weight:600">${data.expectedTonnes.toFixed(3)} t</td></tr>
+            <tr><td style="padding:6px 0;color:#6b7280">Reālais svars (svari)</td><td style="padding:6px 0;font-weight:600">${data.actualTonnes.toFixed(3)} t</td></tr>
+            <tr><td style="padding:6px 0;color:#6b7280">Starpība</td><td style="padding:6px 0;font-weight:600;color:#dc2626">${data.diffPct.toFixed(1)}% ${direction}</td></tr>
+          </table>
+          <p>Ja ir pretenzijas, lūdzu sazinieties ar mums 48 stundu laikā.</p>
+        `,
+        cta: { label: 'Skatīt pasūtījumu', url: `${this.webUrl}/dashboard/orders` },
+      }),
+    });
+  }
+
   private async send(opts: { to: string; subject: string; html: string }) {
     if (!this.enabled || !this.resend) {
       // Dev mode: log the email to console so developers can see it

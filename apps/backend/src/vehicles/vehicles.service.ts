@@ -9,11 +9,12 @@ import {
   NotFoundException,
   ForbiddenException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
-import { VehicleStatus, Prisma } from '@prisma/client';
+import { VehicleStatus, TransportJobStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class VehiclesService {
@@ -118,6 +119,30 @@ export class VehiclesService {
 
   async remove(id: string, userId: string) {
     await this.findOne(id, userId); // ownership check
+
+    const activeJob = await this.prisma.transportJob.findFirst({
+      where: {
+        vehicleId: id,
+        status: {
+          in: [
+            TransportJobStatus.ASSIGNED,
+            TransportJobStatus.ACCEPTED,
+            TransportJobStatus.EN_ROUTE_PICKUP,
+            TransportJobStatus.AT_PICKUP,
+            TransportJobStatus.LOADED,
+            TransportJobStatus.EN_ROUTE_DELIVERY,
+            TransportJobStatus.AT_DELIVERY,
+          ],
+        },
+      },
+      select: { jobNumber: true },
+    });
+    if (activeJob) {
+      throw new BadRequestException(
+        `Vehicle is assigned to active job ${activeJob.jobNumber} — reassign or complete the job before deleting`,
+      );
+    }
+
     return this.prisma.vehicle.delete({ where: { id } });
   }
 

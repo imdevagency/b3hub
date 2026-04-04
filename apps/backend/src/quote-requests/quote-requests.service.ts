@@ -27,6 +27,7 @@ import {
   TransportJobStatus,
   TransportJobType,
 } from '@prisma/client';
+import { VAT_RATE } from '../common/constants/tax';
 
 const INCLUDE_REQUEST = {
   buyer: { select: { id: true, firstName: true, lastName: true, phone: true } },
@@ -228,7 +229,7 @@ export class QuoteRequestsService {
       const orderNumber = `ORD${_d.getFullYear().toString().slice(-2)}${(_d.getMonth() + 1).toString().padStart(2, '0')}${(Date.now() % 100_000).toString().padStart(5, '0')}${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
       const unitPrice = response.pricePerUnit;
       const subtotal = Math.round(unitPrice * req.quantity * 100) / 100;
-      const tax = Math.round(subtotal * 0.21 * 100) / 100;
+      const tax = Math.round(subtotal * VAT_RATE * 100) / 100;
       const total = subtotal + tax;
 
       // We need a buyer company — find the company the buyer belongs to

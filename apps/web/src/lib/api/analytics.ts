@@ -34,6 +34,16 @@ export interface BuyerAnalytics {
   monthlySpend: MonthlyValue[];
   orderBreakdown: OrderBreakdown[];
   arAging: ArAging;
+  /** Spend grouped by material category, sorted descending by totalSpent */
+  materialBreakdown: MaterialSpend[];
+  /** Estimated total CO2 in kg across all delivered transport jobs */
+  co2Kg: number;
+}
+
+export interface MaterialSpend {
+  category: string;
+  totalSpent: number;
+  orderCount: number;
 }
 
 export interface SellerPerformanceStats {

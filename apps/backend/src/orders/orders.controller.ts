@@ -16,7 +16,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
-import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateOrderDto, CreateOrderScheduleDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { CreateDisposalOrderDto } from './dto/create-disposal-order.dto';
 import { CreateFreightOrderDto } from './dto/create-freight-order.dto';
@@ -152,5 +152,49 @@ export class OrdersController {
     @CurrentUser() user: RequestingUser,
   ) {
     return this.ordersService.linkSkipOrder(id, skipHireOrderId ?? null, user);
+  }
+
+  // ─── Recurring order schedules ────────────────────────────────────────────
+
+  /** POST /orders/schedules — create a recurring order schedule */
+  @Post('schedules')
+  createSchedule(
+    @Body() dto: CreateOrderScheduleDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.ordersService.createSchedule(dto, user);
+  }
+
+  /** GET /orders/schedules — list caller's recurring schedules */
+  @Get('schedules')
+  getMySchedules(@CurrentUser() user: RequestingUser) {
+    return this.ordersService.getMySchedules(user);
+  }
+
+  /** POST /orders/schedules/:id/pause — pause a schedule */
+  @Post('schedules/:id/pause')
+  pauseSchedule(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.ordersService.pauseSchedule(id, user);
+  }
+
+  /** POST /orders/schedules/:id/resume — resume a paused schedule */
+  @Post('schedules/:id/resume')
+  resumeSchedule(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.ordersService.resumeSchedule(id, user);
+  }
+
+  /** DELETE /orders/schedules/:id — cancel and remove a schedule */
+  @Delete('schedules/:id')
+  deleteSchedule(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.ordersService.deleteSchedule(id, user);
   }
 }

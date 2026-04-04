@@ -153,6 +153,32 @@ export async function deleteMaterial(id: string, token: string): Promise<void> {
   });
 }
 
+// ─── Price tiers ────────────────────────────────────────────────────────────
+
+export interface PriceTier {
+  id?: string;
+  minQty: number;
+  unitPrice: number;
+}
+
+export async function getMaterialTiers(id: string, token: string): Promise<PriceTier[]> {
+  return apiFetch<PriceTier[]>(`/materials/${id}/tiers`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function setMaterialTiers(
+  id: string,
+  tiers: Omit<PriceTier, 'id'>[],
+  token: string,
+): Promise<PriceTier[]> {
+  return apiFetch<PriceTier[]>(`/materials/${id}/tiers`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(tiers),
+  });
+}
+
 // ─── Marketplace offers ─────────────────────────────────────────────────────
 
 export interface SupplierOffer {
@@ -161,6 +187,8 @@ export interface SupplierOffer {
   category: MaterialCategory;
   unit: MaterialUnit;
   basePrice: number;
+  effectiveUnitPrice: number;
+  deliveryFee: number | null;
   totalPrice: number;
   distanceKm: number | null;
   etaDays: number;

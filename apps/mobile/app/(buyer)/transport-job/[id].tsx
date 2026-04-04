@@ -25,6 +25,7 @@ import {
   XCircle,
   Navigation,
   RotateCcw,
+  Leaf,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -191,6 +192,7 @@ export default function TransportJobDetailScreen() {
   const [cancelling, setCancelling] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [etaMin, setEtaMin] = useState<number | null>(null);
 
   // Live driver GPS + job status via WebSocket — replaces the 10 s polling loop
   const { jobLocation: liveLocation, jobStatus: liveJobStatus } = useLiveUpdates({
@@ -202,6 +204,7 @@ export default function TransportJobDetailScreen() {
   React.useEffect(() => {
     if (liveLocation) {
       setDriverLocation({ lat: liveLocation.lat, lng: liveLocation.lng });
+      if (liveLocation.estimatedArrivalMin != null) setEtaMin(liveLocation.estimatedArrivalMin);
     }
   }, [liveLocation]);
 
@@ -350,14 +353,9 @@ export default function TransportJobDetailScreen() {
           <View style={s.driverBadge}>
             <View style={s.driverLiveDot} />
             <Text style={s.driverBadgeText}>
-              Šoferis ~
-              {haversineKm(
-                driverLocation.lat,
-                driverLocation.lng,
-                delivery.lat,
-                delivery.lng,
-              ).toFixed(0)}{' '}
-              km
+              {etaMin != null
+                ? `Pienāks ~${etaMin} min`
+                : `Šoferis ~${haversineKm(driverLocation.lat, driverLocation.lng, delivery.lat, delivery.lng).toFixed(0)} km`}
             </Text>
           </View>
         )}
@@ -439,6 +437,13 @@ export default function TransportJobDetailScreen() {
                 icon={Package}
                 label="Svars"
                 value={`${(job.cargoWeight / 1000).toFixed(1)} t`}
+              />
+            )}
+            {job.cargoWeight != null && job.distanceKm != null && (
+              <InfoRow
+                icon={Leaf}
+                label="CO\u2082 emisija"
+                value={`~${((job.cargoWeight / 1000) * job.distanceKm * 0.09).toFixed(1)} kg`}
               />
             )}
             <InfoRow

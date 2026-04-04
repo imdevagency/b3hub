@@ -15,7 +15,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDisposalOrderDto } from './dto/create-disposal-order.dto';
 import { CreateFreightOrderDto } from './dto/create-freight-order.dto';
-import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateOrderDto, CreateOrderScheduleDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { CreateSurchargeDto } from './dto/create-surcharge.dto';
 import {
@@ -33,6 +33,8 @@ import { NotificationType } from '../notifications/dto/create-notification.dto';
 import { PaymentsService } from '../payments/payments.service';
 import { InvoicesService } from '../invoices/invoices.service';
 import { UpdatesGateway } from '../updates/updates.gateway';
+import { VAT_RATE } from '../common/constants/tax';
+import { MaterialsService } from '../materials/materials.service';
 
 @Injectable()
 export class OrdersService {
@@ -64,6 +66,7 @@ export class OrdersService {
     private payments: PaymentsService,
     private invoices: InvoicesService,
     private updates: UpdatesGateway,
+    private materials: MaterialsService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, currentUser: RequestingUser) {
@@ -147,19 +150,25 @@ export class OrdersService {
           `Order quantity ${item.quantity} exceeds maximum order of ${material.maxOrder} for material ${item.materialId}`,
         );
       }
+      // Resolve volume-tier price: use the best qualifying tier, fall back to basePrice
+      const tiers = await this.prisma.materialPriceTier.findMany({
+        where: { materialId: item.materialId },
+        select: { minQty: true, unitPrice: true },
+      });
+      const resolvedPrice = this.materials.resolvePrice(material.basePrice, tiers, item.quantity);
       const enriched: EnrichedItem = {
         ...item,
-        resolvedUnitPrice: material.basePrice,
+        resolvedUnitPrice: resolvedPrice,
         supplierId: material.supplierId,
       };
-      grandSubtotal += material.basePrice * item.quantity;
+      grandSubtotal += resolvedPrice * item.quantity;
       if (!itemsBySupplier.has(material.supplierId)) {
         itemsBySupplier.set(material.supplierId, []);
       }
       itemsBySupplier.get(material.supplierId)!.push(enriched);
     }
 
-    const grandTax = grandSubtotal * 0.21; // 21% VAT (Latvia)
+    const grandTax = grandSubtotal * VAT_RATE;
     const grandTotal = grandSubtotal + grandTax + (orderData.deliveryFee || 0);
 
     // ── Credit limit check + atomic increment ────────────────────────────────
@@ -211,11 +220,27 @@ export class OrdersService {
           UPDATE buyer_profiles
           SET "creditUsed" = GREATEST(0, "creditUsed" - ${grandTotal})
           WHERE "userId" = ${userId}
-        `.catch((rollbackErr) =>
+        `.catch((rollbackErr) => {
           this.logger.error(
             `CRITICAL: credit rollback failed for buyer ${userId} after order creation error. Manual adjustment needed. Original error: ${(err as Error).message}. Rollback error: ${(rollbackErr as Error).message}`,
-          ),
-        );
+          );
+          // Alert admins — buyer's creditUsed may be permanently overstated
+          this.prisma.user
+            .findMany({ where: { userType: 'ADMIN' }, select: { id: true } })
+            .then((admins) => {
+              if (admins.length === 0) return;
+              return this.notifications.createForMany(
+                admins.map((a) => a.id),
+                {
+                  type: NotificationType.SYSTEM_ALERT,
+                  title: '🚨 Kredīta atgriešana neizdevās',
+                  message: `Pircēja ${userId} pasūtījuma izveidošana neizdevās, bet kredītu atiestatīt nevarēja. Pasūtījuma kļūda: ${(err as Error).message}. Rollback kļūda: ${(rollbackErr as Error).message}. Manuāla iejaukšanās nepieciešama.`,
+                  data: { userId },
+                },
+              );
+            })
+            .catch(() => null);
+        });
       }
       throw err;
     }
@@ -223,6 +248,7 @@ export class OrdersService {
     // Atomically decrement stockQty for each ordered item.
     // The pre-check above guards UX; this ensures stock is actually consumed,
     // and the WHERE guard prevents going below zero under concurrent load.
+    // After decrementing, flip inStock=false and notify the supplier if stockQty hits 0.
     for (const item of items) {
       this.prisma
         .$executeRaw`
@@ -232,6 +258,50 @@ export class OrdersService {
             AND "stockQty" IS NOT NULL
             AND "stockQty" >= ${item.quantity}
         `
+        .then(async () => {
+          const mat = await this.prisma.material.findUnique({
+            where: { id: item.materialId },
+            select: { stockQty: true, supplierId: true, name: true },
+          });
+          if (mat && mat.stockQty !== null && mat.stockQty <= 0) {
+            // Flip inStock flag so the catalog hides the listing
+            await this.prisma.material
+              .update({
+                where: { id: item.materialId },
+                data: { inStock: false },
+              })
+              .catch((err) =>
+                this.logger.warn(
+                  `Failed to set inStock=false for material ${item.materialId}: ${(err as Error).message}`,
+                ),
+              );
+
+            // Notify supplier users that this material is now out of stock
+            if (mat.supplierId) {
+              const suppliers = await this.prisma.user.findMany({
+                where: { companyId: mat.supplierId, canSell: true },
+                select: { id: true },
+              });
+              if (suppliers.length > 0) {
+                this.notifications
+                  .createForMany(
+                    suppliers.map((u) => u.id),
+                    {
+                      type: NotificationType.SYSTEM_ALERT,
+                      title: '⚠️ Materiāls izpārdots',
+                      message: `"${mat.name}" krājums ir izsmelts. Listing ir paslēpts no kataloga. Atjauniniet krājumu, lai atjaunotu redzamību.`,
+                      data: { materialId: item.materialId },
+                    },
+                  )
+                  .catch(() => null);
+              }
+            }
+
+            this.logger.log(
+              `Material ${item.materialId} reached 0 stock — marked inStock=false`,
+            );
+          }
+        })
         .catch((err) =>
           this.logger.warn(
             `Stock decrement failed for material ${item.materialId}: ${(err as Error).message}`,
@@ -270,7 +340,7 @@ export class OrdersService {
       (sum, i) => sum + i.resolvedUnitPrice * i.quantity,
       0,
     );
-    const tax = subtotal * 0.21; // 21% VAT (Latvia)
+    const tax = subtotal * VAT_RATE;
     const total = subtotal + tax + (orderData.deliveryFee || 0);
 
     const order = await this.prisma.order.create({
@@ -711,13 +781,39 @@ export class OrdersService {
 
     // Capture payment when seller confirms the order (fire-and-forget, non-fatal)
     if (status === OrderStatus.CONFIRMED) {
-      this.payments
-        .capturePayment(id)
-        .catch((err) =>
-          this.logger.error(
-            `capturePayment failed for order ${id}: ${err.message}`,
-          ),
-        );
+      this.payments.capturePayment(id).catch(async (err) => {
+        this.logger.error(`capturePayment failed for order ${id}: ${err.message}`);
+
+        // Notify the buyer so they can re-attempt payment
+        this.notifications
+          .create({
+            userId: order.createdById,
+            type: NotificationType.PAYMENT_RECEIVED, // closest available type
+            title: '⚠️ Maksājuma iekasēšana neizdevās',
+            message: `Pasūtījums #${order.orderNumber} apstiprināts, taču maksājuma iekasēšana neizdevās. Lūdzu, sazinieties ar atbalstu vai mēģiniet atkārtoti.`,
+            data: { orderId: id },
+          })
+          .catch(() => null);
+
+        // Alert admins for manual intervention
+        const admins = await this.prisma.user.findMany({
+          where: { userType: 'ADMIN' },
+          select: { id: true },
+        });
+        if (admins.length > 0) {
+          this.notifications
+            .createForMany(
+              admins.map((a) => a.id),
+              {
+                type: NotificationType.SYSTEM_ALERT,
+                title: '🚨 Maksājuma iekasēšana neizdevās',
+                message: `Pasūtījums #${order.orderNumber} (${id}): capturePayment kļūda — ${err.message}. Nepieciešama manuāla iejaukšanās.`,
+                data: { orderId: id },
+              },
+            )
+            .catch(() => null);
+        }
+      });
     }
 
     // Release funds to seller/driver when order is completed (fire-and-forget, non-fatal)
@@ -729,6 +825,19 @@ export class OrdersService {
             `releaseFunds failed for order ${id}: ${err.message}`,
           ),
         );
+      // Also release the buyer's credit exposure now that payment has been captured
+      if (order.total) {
+        this.prisma.$executeRaw`
+          UPDATE buyer_profiles
+          SET "creditUsed" = GREATEST(0, "creditUsed" - ${Number(order.total)})
+          WHERE "userId" = ${order.createdById}
+        `.catch((err) =>
+          this.logger.error(
+            `Failed to release credit for buyer ${order.createdById} on order completion ${id}`,
+            err,
+          ),
+        );
+      }
     }
 
     // Release credit and cascade-cancel transport jobs when order is cancelled.
@@ -1009,7 +1118,8 @@ export class OrdersService {
       if (!item.materialId || !(item as any).quantity) continue;
       this.prisma.$executeRaw`
         UPDATE materials
-        SET "stockQty" = "stockQty" + ${(item as any).quantity as number}
+        SET "stockQty" = "stockQty" + ${(item as any).quantity as number},
+            "inStock" = true
         WHERE id = ${item.materialId} AND "stockQty" IS NOT NULL
       `.catch(() => null);
     }
@@ -1024,6 +1134,33 @@ export class OrdersService {
         data: { orderId: id, reason },
       })
       .catch(() => null);
+
+    // If the order was already confirmed or in progress, alert admins — this is
+    // a supply-chain disruption the buyer cannot self-serve around.
+    if (
+      order.status === OrderStatus.CONFIRMED ||
+      order.status === OrderStatus.IN_PROGRESS
+    ) {
+      this.prisma.user
+        .findMany({ where: { userType: 'ADMIN' }, select: { id: true } })
+        .then((admins) => {
+          if (admins.length === 0) return;
+          return this.notifications.createForMany(
+            admins.map((a) => a.id),
+            {
+              type: NotificationType.SYSTEM_ALERT,
+              title: '⚠️ Piegādātājs atcēla apstiprinātu pasūtījumu',
+              message: `Pasūtījums #${order.orderNumber} (statuss bija ${order.status}) tika atcelts piegādātāja dēļ. Iemesls: "${reason}". Pircējs ir paziņots.`,
+              data: { orderId: id, previousStatus: order.status, reason },
+            },
+          );
+        })
+        .catch((err) =>
+          this.logger.error(
+            `sellerCancel: failed to notify admins for order ${id}: ${(err as Error).message}`,
+          ),
+        );
+    }
 
     return this.prisma.order.findUniqueOrThrow({ where: { id } });
   }
@@ -1145,7 +1282,8 @@ export class OrdersService {
         if (!item.materialId || !item.quantity) continue;
         this.prisma.$executeRaw`
           UPDATE materials
-          SET "stockQty" = "stockQty" + ${item.quantity}
+          SET "stockQty" = "stockQty" + ${item.quantity},
+              "inStock" = true
           WHERE id = ${item.materialId}
             AND "stockQty" IS NOT NULL
         `.catch((err) =>
@@ -1590,7 +1728,7 @@ export class OrdersService {
       );
     }
 
-    return this.prisma.orderSurcharge.create({
+    const surcharge = await this.prisma.orderSurcharge.create({
       data: {
         orderId: order.id,
         type: dto.type,
@@ -1599,6 +1737,18 @@ export class OrdersService {
         billable: dto.billable ?? true,
       },
     });
+
+    // Sync the Stripe PaymentIntent to the new order total (base + all billable surcharges)
+    if (surcharge.billable) {
+      const allBillable = await this.prisma.orderSurcharge.aggregate({
+        where: { orderId: order.id, billable: true },
+        _sum: { amount: true },
+      });
+      const newTotal = order.total + (allBillable._sum.amount ?? 0);
+      await this.payments.updatePaymentIntentAmount(order.id, newTotal);
+    }
+
+    return surcharge;
   }
 
   /** Remove a surcharge line item. Only the seller or ADMIN may do this. */
@@ -1607,7 +1757,7 @@ export class OrdersService {
     surchargeId: string,
     currentUser: RequestingUser,
   ) {
-    await this.findOne(orderId, currentUser);
+    const order = await this.findOne(orderId, currentUser);
 
     if (
       currentUser.userType !== 'ADMIN' &&
@@ -1625,7 +1775,19 @@ export class OrdersService {
       throw new NotFoundException(`Surcharge ${surchargeId} not found on order ${orderId}`);
     }
 
-    return this.prisma.orderSurcharge.delete({ where: { id: surchargeId } });
+    await this.prisma.orderSurcharge.delete({ where: { id: surchargeId } });
+
+    // If the removed surcharge was billable, recalculate the Stripe PaymentIntent amount
+    if (surcharge.billable) {
+      const allBillable = await this.prisma.orderSurcharge.aggregate({
+        where: { orderId, billable: true },
+        _sum: { amount: true },
+      });
+      const newTotal = order.total + (allBillable._sum.amount ?? 0);
+      await this.payments.updatePaymentIntentAmount(orderId, newTotal);
+    }
+
+    return { deleted: true };
   }
 
   /**
@@ -1697,17 +1859,19 @@ export class OrdersService {
         status: OrderStatus.DELIVERED,
         updatedAt: { lt: cutoff },
       },
-      select: { id: true, orderNumber: true },
+      select: { id: true, orderNumber: true, total: true, createdById: true },
     });
 
     if (stale.length === 0) return;
 
     for (const order of stale) {
       try {
-        await this.prisma.order.update({
-          where: { id: order.id },
+        const { count } = await this.prisma.order.updateMany({
+          where: { id: order.id, status: OrderStatus.DELIVERED },
           data: { status: OrderStatus.COMPLETED },
         });
+
+        if (count === 0) continue; // Concurrent update or dispute moved it away
         // Release funds — fire-and-forget, non-fatal
         this.payments
           .releaseFunds(order.id)
@@ -1716,6 +1880,18 @@ export class OrdersService {
               `autoComplete: releaseFunds failed for order ${order.id}: ${(err as Error).message}`,
             ),
           );
+        // Release buyer credit exposure
+        if (order.total) {
+          this.prisma.$executeRaw`
+            UPDATE buyer_profiles
+            SET "creditUsed" = GREATEST(0, "creditUsed" - ${Number(order.total)})
+            WHERE "userId" = ${order.createdById}
+          `.catch((err) =>
+            this.logger.error(
+              `autoComplete: credit release failed for order ${order.id}: ${(err as Error).message}`,
+            ),
+          );
+        }
         this.logger.log(
           `autoCompleteDeliveredOrders: order ${order.orderNumber} auto-completed`,
         );
@@ -1799,6 +1975,158 @@ export class OrdersService {
       } catch (err) {
         this.logger.error(
           `autoCancelStalePendingOrders: failed for order ${order.id}: ${(err as Error).message}`,
+        );
+      }
+    }
+  }
+
+  // ─── Recurring order schedules ─────────────────────────────────────────────
+
+  async createSchedule(dto: CreateOrderScheduleDto, currentUser: RequestingUser) {
+    const nextRunAt = dto.nextRunAt
+      ? new Date(dto.nextRunAt)
+      : new Date(Date.now() + 86_400_000); // default: tomorrow
+    return this.prisma.orderSchedule.create({
+      data: {
+        createdById: currentUser.id,
+        orderType: dto.orderType,
+        deliveryAddress: dto.deliveryAddress,
+        deliveryCity: dto.deliveryCity,
+        deliveryState: dto.deliveryState,
+        deliveryPostal: dto.deliveryPostal,
+        deliveryWindow: dto.deliveryWindow,
+        deliveryFee: dto.deliveryFee ?? 0,
+        notes: dto.notes,
+        siteContactName: dto.siteContactName,
+        siteContactPhone: dto.siteContactPhone,
+        projectId: dto.projectId,
+        itemsSnapshot: dto.items as object,
+        intervalDays: dto.intervalDays,
+        nextRunAt,
+        endsAt: dto.endsAt ? new Date(dto.endsAt) : null,
+        enabled: true,
+      },
+    });
+  }
+
+  async getMySchedules(currentUser: RequestingUser) {
+    return this.prisma.orderSchedule.findMany({
+      where: { createdById: currentUser.id },
+      orderBy: { nextRunAt: 'asc' },
+    });
+  }
+
+  async pauseSchedule(scheduleId: string, currentUser: RequestingUser) {
+    const schedule = await this.prisma.orderSchedule.findUnique({ where: { id: scheduleId } });
+    if (!schedule) throw new NotFoundException('Schedule not found');
+    if (schedule.createdById !== currentUser.id && currentUser.userType !== 'ADMIN') {
+      throw new ForbiddenException('Not your schedule');
+    }
+    return this.prisma.orderSchedule.update({
+      where: { id: scheduleId },
+      data: { enabled: false },
+    });
+  }
+
+  async resumeSchedule(scheduleId: string, currentUser: RequestingUser) {
+    const schedule = await this.prisma.orderSchedule.findUnique({ where: { id: scheduleId } });
+    if (!schedule) throw new NotFoundException('Schedule not found');
+    if (schedule.createdById !== currentUser.id && currentUser.userType !== 'ADMIN') {
+      throw new ForbiddenException('Not your schedule');
+    }
+    return this.prisma.orderSchedule.update({
+      where: { id: scheduleId },
+      data: { enabled: true },
+    });
+  }
+
+  async deleteSchedule(scheduleId: string, currentUser: RequestingUser) {
+    const schedule = await this.prisma.orderSchedule.findUnique({ where: { id: scheduleId } });
+    if (!schedule) throw new NotFoundException('Schedule not found');
+    if (schedule.createdById !== currentUser.id && currentUser.userType !== 'ADMIN') {
+      throw new ForbiddenException('Not your schedule');
+    }
+    return this.prisma.orderSchedule.delete({ where: { id: scheduleId } });
+  }
+
+  /**
+   * Runs every day at 06:00 to spawn orders from active schedules.
+   * For each due schedule, creates an MATERIAL order, advances nextRunAt,
+   * and disables the schedule if endsAt is passed.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_6AM)
+  async runScheduledOrders(): Promise<void> {
+    const now = new Date();
+    const due = await this.prisma.orderSchedule.findMany({
+      where: {
+        enabled: true,
+        nextRunAt: { lte: now },
+        OR: [{ endsAt: null }, { endsAt: { gte: now } }],
+      },
+      include: { createdBy: true },
+    });
+
+    for (const schedule of due) {
+      try {
+        const items = schedule.itemsSnapshot as { materialId: string; quantity: number; unit: string }[];
+        // Resolve delivery date = nextRunAt date
+        const deliveryDate = schedule.nextRunAt.toISOString().split('T')[0];
+        const requestingUser: RequestingUser = {
+          id: schedule.createdById,
+          userId: schedule.createdById,
+          userType: schedule.createdBy.userType as 'BUYER',
+          isCompany: schedule.createdBy.isCompany,
+          canSell: schedule.createdBy.canSell,
+          canTransport: schedule.createdBy.canTransport,
+          canSkipHire: schedule.createdBy.canSkipHire,
+          companyId: schedule.createdBy.companyId ?? undefined,
+          permCreateContracts: schedule.createdBy.permCreateContracts,
+          permReleaseCallOffs: schedule.createdBy.permReleaseCallOffs,
+          permManageOrders: schedule.createdBy.permManageOrders,
+          permViewFinancials: schedule.createdBy.permViewFinancials,
+          permManageTeam: schedule.createdBy.permManageTeam,
+        };
+
+        const dto: CreateOrderDto = {
+          orderType: schedule.orderType as OrderType,
+          deliveryAddress: schedule.deliveryAddress,
+          deliveryCity: schedule.deliveryCity,
+          deliveryState: schedule.deliveryState,
+          deliveryPostal: schedule.deliveryPostal,
+          deliveryDate,
+          deliveryWindow: schedule.deliveryWindow ?? undefined,
+          deliveryFee: schedule.deliveryFee,
+          notes: schedule.notes ? `[Atkārtots] ${schedule.notes}` : '[Atkārtots pasūtījums]',
+          siteContactName: schedule.siteContactName ?? undefined,
+          siteContactPhone: schedule.siteContactPhone ?? undefined,
+          projectId: schedule.projectId ?? undefined,
+          items: items.map((i) => ({
+            materialId: i.materialId,
+            quantity: i.quantity,
+            unit: i.unit as import('@prisma/client').MaterialUnit,
+            unitPrice: 0, // resolved during create()
+          })),
+        };
+
+        const order = await this.create(dto, requestingUser);
+        // Link order back to schedule
+        await this.prisma.order.update({
+          where: { id: (order as any).id },
+          data: { scheduleId: schedule.id },
+        });
+
+        // Advance nextRunAt
+        const nextRun = new Date(schedule.nextRunAt.getTime() + schedule.intervalDays * 86_400_000);
+        const shouldDisable = schedule.endsAt != null && nextRun > schedule.endsAt;
+        await this.prisma.orderSchedule.update({
+          where: { id: schedule.id },
+          data: { nextRunAt: nextRun, enabled: !shouldDisable },
+        });
+
+        this.logger.log(`runScheduledOrders: spawned order from schedule ${schedule.id}`);
+      } catch (err) {
+        this.logger.error(
+          `runScheduledOrders: failed for schedule ${schedule.id}: ${(err as Error).message}`,
         );
       }
     }
