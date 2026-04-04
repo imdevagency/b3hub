@@ -80,7 +80,7 @@ export default function OrdersScreen() {
   };
 
   return (
-    <ScreenContainer standalone bg="#ffffff">
+    <ScreenContainer bg="#ffffff">
       {/* ── Header ───────────────────────────────────────────── */}
       <ScreenHeader
         title="Pasūtījumi"

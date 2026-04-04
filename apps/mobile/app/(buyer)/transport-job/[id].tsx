@@ -42,8 +42,11 @@ import { TJB_STATUS } from '@/lib/materials';
 import { BaseMap, RouteLayer, useRoute } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
 let Marker: any = null;
+let AnimatedRegion: any = null;
 try {
-  Marker = require('react-native-maps').Marker;
+  const maps = require('react-native-maps');
+  Marker = maps.Marker;
+  AnimatedRegion = maps.AnimatedRegion;
 } catch {
   /* Expo Go */
 }
@@ -194,18 +197,43 @@ export default function TransportJobDetailScreen() {
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [etaMin, setEtaMin] = useState<number | null>(null);
 
+  // Animated coordinate for smooth driver marker movement
+  const animCoord = useRef<any>(null);
+  const driverMarkerRef = useRef<any>(null);
+
   // Live driver GPS + job status via WebSocket — replaces the 10 s polling loop
   const { jobLocation: liveLocation, jobStatus: liveJobStatus } = useLiveUpdates({
     jobId: typeof id === 'string' ? id : null,
     token,
   });
 
-  // Apply live GPS updates reactively
+  // Apply live GPS updates reactively with smooth animation
   React.useEffect(() => {
-    if (liveLocation) {
-      setDriverLocation({ lat: liveLocation.lat, lng: liveLocation.lng });
-      if (liveLocation.estimatedArrivalMin != null) setEtaMin(liveLocation.estimatedArrivalMin);
+    if (!liveLocation) return;
+    const { lat, lng } = liveLocation;
+
+    if (!animCoord.current && AnimatedRegion) {
+      // First fix — initialise AnimatedRegion so marker appears
+      animCoord.current = new AnimatedRegion({
+        latitude: lat,
+        longitude: lng,
+        latitudeDelta: 0,
+        longitudeDelta: 0,
+      });
+    } else if (driverMarkerRef.current) {
+      // Subsequent fixes — animate smoothly via native API (1 s interpolation)
+      driverMarkerRef.current.animateMarkerToCoordinate({ latitude: lat, longitude: lng }, 1000);
     }
+
+    setDriverLocation({ lat, lng });
+    if (liveLocation.estimatedArrivalMin != null) setEtaMin(liveLocation.estimatedArrivalMin);
+
+    // Auto-pan camera to keep driver visible
+    cameraRef.current?.setCamera({
+      centerCoordinate: [lng, lat],
+      zoomLevel: 13,
+      animationDuration: 800,
+    });
   }, [liveLocation]);
 
   // When the server pushes a job status change, reload to get full updated job object
@@ -278,7 +306,6 @@ export default function TransportJobDetailScreen() {
           style={{ flex: 1 }}
           rotateEnabled={false}
           pitchEnabled={false}
-          // @ts-ignore onMapReady not in props type but works
           onMapReady={() => setMapReady(true)}
         >
           {route && (
@@ -304,9 +331,10 @@ export default function TransportJobDetailScreen() {
               </View>
             </Marker>
           )}
-          {/* Live driver marker */}
-          {driverLocation && (
+          {/* Live driver marker — animates smoothly via animateMarkerToCoordinate */}
+          {driverLocation && Marker && (
             <Marker
+              ref={driverMarkerRef}
               coordinate={{ latitude: driverLocation.lat, longitude: driverLocation.lng }}
               anchor={{ x: 0.5, y: 0.5 }}
               tracksViewChanges={false}

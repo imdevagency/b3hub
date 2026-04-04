@@ -69,22 +69,12 @@ function TabItem({
   inactiveTint: string;
 }) {
   const scale = useRef(new Animated.Value(isFocused ? 1.08 : 0.96)).current;
-  const labelOpacity = useRef(new Animated.Value(isFocused ? 1 : 0.5)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.spring(scale, { toValue: isFocused ? 1.08 : 0.96, ...SPRING_BASE }),
-      Animated.spring(labelOpacity, { toValue: isFocused ? 1 : 0.5, ...SPRING_BASE }),
-    ]).start();
+    Animated.spring(scale, { toValue: isFocused ? 1.08 : 0.96, ...SPRING_BASE }).start();
   }, [isFocused]);
 
   const { options } = descriptor;
-  const label =
-    options.tabBarLabel !== undefined
-      ? (options.tabBarLabel as string)
-      : options.title !== undefined
-        ? options.title
-        : route.name;
 
   const color = isFocused ? activeTint : inactiveTint;
 
@@ -112,10 +102,6 @@ function TabItem({
           )}
         </View>
       </Animated.View>
-      <Animated.Text style={[styles.label, { color, opacity: labelOpacity }]} numberOfLines={1}>
-        {label}
-      </Animated.Text>
-      {/* Dot removed — activePill is the sole active indicator */}
     </TouchableOpacity>
   );
 }
@@ -243,15 +229,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
-    paddingTop: 8,
-    paddingBottom: 6,
-  },
-  label: {
-    fontSize: 10.5,
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 0.1,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
   badge: {
     position: 'absolute',

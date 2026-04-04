@@ -488,7 +488,7 @@ export default function TeamScreen() {
   // Guard: Not a company
   if (!user?.isCompany) {
     return (
-      <ScreenContainer standalone bg="white">
+      <ScreenContainer bg="white">
         <ScreenHeader title="Komanda" />
         <EmptyState
           icon={<Building2 size={42} color="#9ca3af" />}
@@ -500,7 +500,7 @@ export default function TeamScreen() {
   }
 
   return (
-    <ScreenContainer standalone bg="white">
+    <ScreenContainer bg="white">
       {/* Header */}
       <ScreenHeader
         title="Komanda"

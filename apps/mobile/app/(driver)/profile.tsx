@@ -34,6 +34,7 @@ import {
   Power,
   TrendingUp,
   Globe,
+  Trash2,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -405,6 +406,11 @@ export default function ProfileScreen() {
             icon={Truck}
             label="Mani transportlīdzekļi"
             onPress={() => router.push('/(driver)/vehicles')}
+          />
+          <MenuItem
+            icon={Trash2}
+            label="Skipu flote"
+            onPress={() => router.push('/(driver)/skips')}
           />
           <MenuItem
             icon={Bell}

@@ -106,8 +106,8 @@ export async function startLocationTracking(jobId: string): Promise<void> {
 
   await Location.startLocationUpdatesAsync(BG_LOCATION_TASK, {
     accuracy: Location.Accuracy.Balanced,
-    distanceInterval: 30,          // update every 30 m
-    timeInterval: 15_000,           // or every 15 s
+    distanceInterval: 10,          // update every 10 m
+    timeInterval: 5_000,           // or every 5 s
     showsBackgroundLocationIndicator: hasBgPermission, // iOS blue bar when bg active
     // Android foreground service (shown when app is backgrounded)
     foregroundService: {

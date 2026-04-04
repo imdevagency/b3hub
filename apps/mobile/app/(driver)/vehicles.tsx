@@ -376,7 +376,7 @@ export default function VehiclesScreen() {
   };
 
   return (
-    <ScreenContainer standalone bg="#ffffff">
+    <ScreenContainer bg="#ffffff">
       <ScreenHeader
         title="Mani transporti"
         rightAction={

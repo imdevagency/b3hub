@@ -294,7 +294,7 @@ export default function EarningsScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer standalone>
+      <ScreenContainer>
         <ScreenHeader title="Izpeļņa" />
         <View style={{ padding: 24, gap: 20 }}>
           <Skeleton style={{ height: 48, width: 128, alignSelf: 'center', borderRadius: 8 }} />
@@ -306,7 +306,7 @@ export default function EarningsScreen() {
   }
 
   return (
-    <ScreenContainer standalone bg="white">
+    <ScreenContainer bg="white">
       <ScreenHeader title="Izpeļņa" />
 
       <ScrollView

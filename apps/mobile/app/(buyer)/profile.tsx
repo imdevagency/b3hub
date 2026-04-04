@@ -35,6 +35,11 @@ import {
   ArrowUpDown,
   Building2,
   Globe,
+  FolderKanban,
+  FileText,
+  FileCheck,
+  Users,
+  Handshake,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -291,7 +296,7 @@ export default function ProfileScreen() {
   const set = (key: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [key]: v }));
 
   return (
-    <ScreenContainer standalone bg="white">
+    <ScreenContainer bg="white">
       <ScreenHeader title="Profils" onBack={null} />
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -350,7 +355,35 @@ export default function ProfileScreen() {
 
         {/* Menu Items */}
         <View style={s.menuConfig}>
-          <Text style={s.sectionHeader}>Konta informācija</Text>
+          <Text style={s.sectionHeader}>Darba rīki</Text>
+
+          <MenuItem
+            icon={FolderKanban}
+            label="Projekti"
+            onPress={() => router.push('/(buyer)/projects' as any)}
+          />
+          <MenuItem
+            icon={FileText}
+            label="Rēķini"
+            onPress={() => router.push('/(buyer)/invoices' as any)}
+          />
+          <MenuItem
+            icon={FileCheck}
+            label="Dokumenti"
+            onPress={() => router.push('/(buyer)/certificates' as any)}
+          />
+          <MenuItem
+            icon={Users}
+            label="Komanda"
+            onPress={() => router.push('/(buyer)/team' as any)}
+          />
+          <MenuItem
+            icon={Handshake}
+            label="Ietvarlīgumi"
+            onPress={() => router.push('/(buyer)/framework-contracts' as any)}
+          />
+
+          <Text style={[s.sectionHeader, { marginTop: 32 }]}>Konta informācija</Text>
 
           <MenuItem
             icon={Phone}

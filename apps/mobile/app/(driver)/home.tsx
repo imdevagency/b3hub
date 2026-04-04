@@ -125,7 +125,7 @@ export default function DriverHomeScreen() {
           showsMyLocationButton={false}
           style={StyleSheet.absoluteFill}
           mapPadding={{
-            top: insets.top + 60,
+            top: 60,
             bottom: BOTTOM_PANEL_H + 20,
             left: 0,
             right: 0,
@@ -147,7 +147,7 @@ export default function DriverHomeScreen() {
       </View>
 
       {/* 2. Floating Header (Top Bar) — Transparent, laid over map */}
-      <View style={[s.header, { paddingTop: insets.top + 12 }]} pointerEvents="box-none">
+      <View style={[s.header, { paddingTop: 12 }]} pointerEvents="box-none">
         {/* Avatar Button */}
         <TouchableOpacity
           style={s.roundBtn}

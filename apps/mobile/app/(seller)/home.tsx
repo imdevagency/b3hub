@@ -80,7 +80,7 @@ export default function SellerHomeScreen() {
   );
 
   return (
-    <ScreenContainer standalone noAnimation bg="#F3F4F6">
+    <ScreenContainer noAnimation bg="#F3F4F6">
       {/* MINIMAL TOP BAR */}
       <View
         style={{

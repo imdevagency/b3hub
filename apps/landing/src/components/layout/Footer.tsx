@@ -2,6 +2,14 @@ import Link from 'next/link';
 import { Container } from './Container';
 
 const navigation = {
+  features: [
+    { name: 'GPS izsekošana', href: '/features/gps-izsekosana' },
+    { name: 'Automātiskie dokumenti', href: '/features/dokumenti' },
+    { name: 'Materiālu katalogs', href: '/features/katalogs' },
+    { name: 'Projektu vadība', href: '/features/projekti' },
+    { name: 'Rēķini & maksājumi', href: '/features/maksajumi' },
+    { name: 'Šoferu dispečerizācija', href: '/features/dispets' },
+  ],
   platform: [
     { name: 'Būvniekiem', href: '/buvniekiem' },
     { name: 'Pārvadātājiem', href: '/parvadatajiem' },
@@ -73,7 +81,23 @@ export function Footer() {
           </div>
 
           {/* Navigation - right side */}
-          <div className="mt-16 grid grid-cols-2 md:grid-cols-3 gap-12 xl:col-span-1 xl:mt-0">
+          <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-10 xl:col-span-1 xl:mt-0">
+            <div>
+              <h3 className="text-lg font-medium text-white tracking-tight mb-6">
+                <a href="/features" className="hover:opacity-80 transition-opacity">
+                  Funkcijas
+                </a>
+              </h3>
+              <ul role="list" className="space-y-3">
+                {navigation.features.map((item) => (
+                  <li key={item.name}>
+                    <Link href={item.href} className="text-sm hover:text-white transition-colors">
+                      {item.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
             <div>
               <h3 className="text-lg font-medium text-white tracking-tight mb-6">Platforma</h3>
               <ul role="list" className="space-y-4">

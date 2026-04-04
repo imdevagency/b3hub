@@ -219,7 +219,7 @@ export default function OrderDetailScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer standalone bg="#f4f5f7">
+      <ScreenContainer bg="#f4f5f7">
         <ScreenHeader title="Pasūtījums" />
         <SkeletonDetail />
       </ScreenContainer>
@@ -228,7 +228,7 @@ export default function OrderDetailScreen() {
 
   if (!order) {
     return (
-      <ScreenContainer standalone bg="#f4f5f7">
+      <ScreenContainer bg="#f4f5f7">
         <ScreenHeader title="Pasūtījums" />
         <EmptyState icon={<Package size={32} color="#9ca3af" />} title="Pasūtījums nav atrasts" />
       </ScreenContainer>
@@ -255,7 +255,7 @@ export default function OrderDetailScreen() {
   const stepperIdx = ORDER_STEPS.findIndex((x) => x.key === order.status);
 
   return (
-    <ScreenContainer standalone bg="#f4f5f7">
+    <ScreenContainer bg="#f4f5f7">
       {/* Header */}
       <ScreenHeader
         title={order.orderNumber}

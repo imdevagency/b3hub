@@ -10,6 +10,7 @@ import { Container } from './Container';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001';
 
 const navItems = [
+  { label: 'Funkcijas', href: '/features' },
   { label: 'Būvniekiem', href: '/buvniekiem' },
   { label: 'Pārvadātājiem', href: '/parvadatajiem' },
   { label: 'Karjeriem', href: '/karjeriem' },

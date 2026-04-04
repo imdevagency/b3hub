@@ -138,7 +138,7 @@ export default function NewProjectScreen() {
   };
 
   return (
-    <ScreenContainer standalone bg="#ffffff">
+    <ScreenContainer bg="#ffffff">
       <ScreenHeader title="Jauns projekts" onBack={() => router.back()} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}

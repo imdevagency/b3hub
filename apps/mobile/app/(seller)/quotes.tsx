@@ -429,7 +429,7 @@ export default function SellerQuotesScreen() {
     : requests;
 
   return (
-    <ScreenContainer standalone bg="white">
+    <ScreenContainer bg="white">
       <ScreenHeader title={sq.title} />
 
       {/* Category filter chips */}

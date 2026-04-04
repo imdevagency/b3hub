@@ -55,7 +55,7 @@ export default function NewOrderScreen() {
   const router = useRouter();
 
   return (
-    <ScreenContainer standalone bg="#ffffff">
+    <ScreenContainer bg="#ffffff">
       <ScreenHeader title="Jauns pasūtījums" onBack={null} />
       <ScrollView
         className="flex-1"

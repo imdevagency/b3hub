@@ -220,7 +220,7 @@ export default function ProjectDetailScreen() {
 
   if (loading || !project) {
     return (
-      <ScreenContainer standalone bg="#f4f5f7">
+      <ScreenContainer bg="#f4f5f7">
         <ScreenHeader title="Projekts" />
         <SkeletonCard count={5} />
       </ScreenContainer>
@@ -228,7 +228,7 @@ export default function ProjectDetailScreen() {
   }
 
   return (
-    <ScreenContainer standalone bg="#f4f5f7">
+    <ScreenContainer bg="#f4f5f7">
       <ScreenHeader
         title="Projekts"
         rightAction={

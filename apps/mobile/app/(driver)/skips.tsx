@@ -483,7 +483,7 @@ export default function CarrierSkipsScreen() {
 
   if (!user?.canSkipHire) {
     return (
-      <ScreenContainer standalone bg="#f2f2f7">
+      <ScreenContainer bg="#f2f2f7">
         <ScreenHeader title={cs.title} />
         <EmptyState
           icon={<Trash2 size={42} color="#9ca3af" />}
@@ -495,7 +495,7 @@ export default function CarrierSkipsScreen() {
   }
 
   return (
-    <ScreenContainer standalone bg="#f2f2f7">
+    <ScreenContainer bg="#f2f2f7">
       <ScreenHeader
         title={cs.title}
         rightAction={

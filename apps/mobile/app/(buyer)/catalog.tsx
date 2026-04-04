@@ -188,7 +188,7 @@ export default function CatalogScreen() {
   const showSearch = query.trim().length >= 2;
 
   return (
-    <ScreenContainer standalone bg="#ffffff">
+    <ScreenContainer bg="#ffffff">
       <ScreenHeader title="Materiāli" />
 
       {/* Project context banner */}

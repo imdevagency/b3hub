@@ -191,7 +191,7 @@ export default function ScheduleScreen() {
   );
 
   return (
-    <ScreenContainer standalone bg="#F4F5F7">
+    <ScreenContainer bg="#F4F5F7">
       <ScreenHeader title="Darba grafiks" />
 
       <ScrollView

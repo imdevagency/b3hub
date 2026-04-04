@@ -134,7 +134,7 @@ export default function SellerOrderDetailScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer standalone>
+      <ScreenContainer>
         <ScreenHeader title="Pasūtījums" />
         <View style={s.center}>
           <ActivityIndicator size="large" color="#111827" />
@@ -145,7 +145,7 @@ export default function SellerOrderDetailScreen() {
 
   if (!order) {
     return (
-      <ScreenContainer standalone>
+      <ScreenContainer>
         <ScreenHeader title="Pasūtījums" />
         <EmptyState
           title="Pasūtījums nav atrasts"
@@ -158,7 +158,7 @@ export default function SellerOrderDetailScreen() {
   const statusColors = getStatusColors(order.status);
 
   return (
-    <ScreenContainer standalone>
+    <ScreenContainer>
       <ScreenHeader title={`#${order.orderNumber}`} />
 
       <ScrollView

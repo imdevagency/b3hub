@@ -318,7 +318,7 @@ export default function HomeScreen() {
           showsMyLocationButton={false}
           style={StyleSheet.absoluteFill}
           mapPadding={{
-            top: insets.top + 60,
+            top: 60,
             bottom: BOTTOM_PANEL_H + 20,
             left: 0,
             right: 0,
@@ -327,7 +327,7 @@ export default function HomeScreen() {
       </View>
 
       {/* ─── Header Buttons ──────────────────────────────── */}
-      <View style={[s.headerButtons, { top: insets.top + 10 }]}>
+      <View style={[s.headerButtons, { top: 10 }]}>
         <TouchableOpacity
           onPress={() => {
             haptics.light();

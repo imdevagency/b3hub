@@ -168,7 +168,7 @@ export default function CertificatesScreen() {
 
   if (!user?.canSkipHire) {
     return (
-      <ScreenContainer standalone bg="#f2f2f7">
+      <ScreenContainer bg="#f2f2f7">
         <ScreenHeader title="Sertifikāti" />
         <EmptyState
           icon={<ShieldCheck size={42} color="#9ca3af" />}
@@ -183,7 +183,7 @@ export default function CertificatesScreen() {
   const pending = records.filter((r) => !r.certificateUrl);
 
   return (
-    <ScreenContainer standalone bg="#f2f2f7">
+    <ScreenContainer bg="#f2f2f7">
       <ScreenHeader title="Sertifikāti" />
 
       {loading ? (

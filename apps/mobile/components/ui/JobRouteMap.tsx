@@ -48,6 +48,12 @@ export interface JobRouteMapProps {
   style?: ViewStyle;
   /** Show the dashed "to pickup" leg from current → pickup. Default true */
   showToPickupLeg?: boolean;
+  /**
+   * When true the camera smoothly pans to the driver's current position on
+   * every GPS update instead of re-fitting all bounds. Use on the driver's
+   * own active-job screen so the map follows them like a navigation app.
+   */
+  followCurrentPosition?: boolean;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -63,6 +69,39 @@ function bboxCenter(points: { lat: number; lng: number }[]): [number, number] {
 function isEuropeanCoord(lat: number, lng: number): boolean {
   return lat >= 34 && lat <= 72 && lng >= -25 && lng <= 50;
 }
+
+/**
+ * splitRouteAtProgress — splits a polyline at the point nearest to `pos`.
+ * Returns `{ passed, remaining }` where:
+ *   `passed`    = coords from start → snap point (rendered dim/grey)
+ *   `remaining` = coords from snap point → end (rendered full colour)
+ */
+function splitRouteAtProgress(
+  coords: Array<{ latitude: number; longitude: number }>,
+  pos: { lat: number; lng: number },
+): {
+  passed: Array<{ latitude: number; longitude: number }>;
+  remaining: Array<{ latitude: number; longitude: number }>;
+} {
+  if (coords.length < 2) return { passed: [], remaining: coords };
+
+  let bestIdx = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < coords.length; i++) {
+    const dlat = coords[i].latitude - pos.lat;
+    const dlng = coords[i].longitude - pos.lng;
+    const d = dlat * dlat + dlng * dlng; // squared distance — no need for sqrt
+    if (d < bestDist) {
+      bestDist = d;
+      bestIdx = i;
+    }
+  }
+
+  const snap = coords[bestIdx];
+  const passed = [...coords.slice(0, bestIdx + 1)];
+  const remaining = [snap, ...coords.slice(bestIdx + 1)];
+  return { passed, remaining };
+}
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function JobRouteMap({
@@ -74,6 +113,7 @@ export function JobRouteMap({
   borderRadius = 16,
   style,
   showToPickupLeg = true,
+  followCurrentPosition = false,
 }: JobRouteMapProps) {
   const cameraRef = useRef<CameraRefHandle | null>(null);
 
@@ -97,30 +137,39 @@ export function JobRouteMap({
   const allPoints = [...jobPoints, ...(validCurrent ? [validCurrent] : [])];
   const center = bboxCenter(jobPoints);
 
-  // Fit camera to show all pins once the map is ready
+  // Track whether initial bounds have been fitted (only do it once)
+  const initialFitDone = useRef(false);
+
+  // Fit camera to show all pins — runs once after the map is ready and we have job coords
   useEffect(() => {
+    if (initialFitDone.current) return;
     const timer = setTimeout(() => {
       if (!cameraRef.current) return;
-      const lats = allPoints.map((p) => p.lat);
-      const lngs = allPoints.map((p) => p.lng);
+      const points = followCurrentPosition ? jobPoints : allPoints;
+      const lats = points.map((p) => p.lat);
+      const lngs = points.map((p) => p.lng);
       cameraRef.current.fitBounds(
         [Math.max(...lngs), Math.max(...lats)],
         [Math.min(...lngs), Math.min(...lats)],
         [56, 56, 56, 56],
         400,
       );
+      initialFitDone.current = true;
     }, 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    pickup.lat,
-    pickup.lng,
-    delivery.lat,
-    delivery.lng,
-    current?.lat,
-    current?.lng,
-    extras.length,
-  ]);
+  }, [pickup.lat, pickup.lng, delivery.lat, delivery.lng]);
+
+  // When followCurrentPosition is on, smoothly pan camera to driver after every GPS fix
+  useEffect(() => {
+    if (!followCurrentPosition || !validCurrent || !cameraRef.current) return;
+    cameraRef.current.setCamera({
+      centerCoordinate: [validCurrent.lng, validCurrent.lat],
+      zoomLevel: 13,
+      animationDuration: 700,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [validCurrent?.lat, validCurrent?.lng]);
 
   // Fallback: straight line while the real route loads
   const mainCoords = mainRoute?.coords ?? [
@@ -133,6 +182,12 @@ export function JobRouteMap({
         { latitude: pickup.lat, longitude: pickup.lng },
       ])
     : [];
+
+  // Split main route into passed (grey) + remaining (dark) segments
+  const { passed: passedCoords, remaining: remainingCoords } =
+    validCurrent && mainCoords.length >= 2
+      ? splitRouteAtProgress(mainCoords, validCurrent)
+      : { passed: [] as typeof mainCoords, remaining: mainCoords };
 
   const containerStyle: any = [styles.container, { borderRadius }];
   // Only clip with overflow:hidden when there is an actual border radius to clip.
@@ -182,7 +237,12 @@ export function JobRouteMap({
         {validCurrent && showToPickupLeg && toPickupCoords.length >= 2 && (
           <RouteLayer id="toPickup" coordinates={toPickupCoords} color="#111827" dashed />
         )}
-        <RouteLayer id="main" coordinates={mainCoords} color="#111827" />
+        {/* Passed segment — light grey to show progress */}
+        {passedCoords.length >= 2 && (
+          <RouteLayer id="main-passed" coordinates={passedCoords} color="#d1d5db" width={4} />
+        )}
+        {/* Remaining segment — full dark colour */}
+        <RouteLayer id="main-remaining" coordinates={remainingCoords} color="#111827" width={4} />
       </BaseMap>
     </View>
   );

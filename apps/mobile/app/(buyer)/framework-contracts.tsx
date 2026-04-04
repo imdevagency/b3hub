@@ -355,7 +355,7 @@ export default function FrameworkContractsScreen() {
   };
 
   return (
-    <ScreenContainer standalone bg="white">
+    <ScreenContainer bg="white">
       <Stack.Screen options={{ headerShown: false }} />
       {/* Detail Screen Header */}
       <ScreenHeader

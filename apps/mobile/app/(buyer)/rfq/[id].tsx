@@ -120,7 +120,7 @@ export default function RfqDetailScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer standalone bg="#ffffff">
+      <ScreenContainer bg="#ffffff">
         <SkeletonDetail />
       </ScreenContainer>
     );
@@ -128,7 +128,7 @@ export default function RfqDetailScreen() {
 
   if (!rfq) {
     return (
-      <ScreenContainer standalone bg="#ffffff">
+      <ScreenContainer bg="#ffffff">
         <View style={ss.center}>
           <Text style={ss.emptyText}>Pieprasījums nav atrasts</Text>
           <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
@@ -146,7 +146,7 @@ export default function RfqDetailScreen() {
   const sortedResponses = [...rfq.responses].sort((a, b) => a.totalPrice - b.totalPrice);
 
   return (
-    <ScreenContainer standalone bg="#ffffff">
+    <ScreenContainer bg="#ffffff">
       <ScreenHeader
         title={`Pieprasījums #${rfq.requestNumber}`}
         rightAction={

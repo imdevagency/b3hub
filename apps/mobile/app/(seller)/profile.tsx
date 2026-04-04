@@ -33,6 +33,7 @@ import {
   Activity,
   TrendingUp,
   Globe,
+  FileText,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -42,6 +43,7 @@ import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 import { ACCOUNT_STATUS } from '@/lib/materials';
 import { getRoleName } from '@/lib/utils';
+import { useOpenQuoteCount } from '@/lib/use-open-quote-count';
 
 const s = StyleSheet.create({
   header: { alignItems: 'center', paddingVertical: 32 },
@@ -203,6 +205,7 @@ export default function ProfileScreen() {
     phone: user?.phone ?? '',
   });
   const toast = useToast();
+  const openQuoteCount = useOpenQuoteCount();
 
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`;
 
@@ -334,6 +337,12 @@ export default function ProfileScreen() {
             icon={TrendingUp}
             label="Ienākumi"
             onPress={() => router.push('/(seller)/earnings' as any)}
+          />
+          <MenuItem
+            icon={FileText}
+            label="Piedāvājumi"
+            value={openQuoteCount > 0 ? `${openQuoteCount} jauni` : undefined}
+            onPress={() => router.push('/(seller)/quotes' as any)}
           />
           <MenuItem
             icon={Phone}

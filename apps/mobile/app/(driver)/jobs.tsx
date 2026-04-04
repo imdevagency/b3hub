@@ -562,7 +562,7 @@ export default function JobsScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer standalone bg="#f2f2f7">
+      <ScreenContainer bg="#f2f2f7">
         <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 40, gap: 12 }}>
           <SkeletonJobRow count={5} />
         </ScrollView>
@@ -571,7 +571,7 @@ export default function JobsScreen() {
   }
 
   return (
-    <ScreenContainer standalone bg="#f2f2f7">
+    <ScreenContainer bg="#f2f2f7">
       {/* ── Header ────────────────────────────────────────── */}
       <ScreenHeader
         title="Darbi"

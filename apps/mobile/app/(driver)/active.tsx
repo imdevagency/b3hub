@@ -355,9 +355,9 @@ export default function ActiveJobScreen() {
 
       locationSub.current = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.Balanced,
-          distanceInterval: 30,
-          timeInterval: 10_000,
+          accuracy: Location.Accuracy.High,
+          distanceInterval: 5,
+          timeInterval: 2_000,
         },
         (loc) => {
           if (!active) return;
@@ -591,6 +591,7 @@ export default function ActiveJobScreen() {
               currentLat != null && currentLng != null ? { lat: currentLat, lng: currentLng } : null
             }
             showToPickupLeg={currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP'}
+            followCurrentPosition
             height={null}
             borderRadius={0}
             style={{ flex: 1 }}

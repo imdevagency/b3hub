@@ -171,7 +171,7 @@ export default function ProjectsScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer standalone bg="#ffffff">
+      <ScreenContainer bg="#ffffff">
         <ScreenHeader title="Projekti" />
         <SkeletonCard count={4} />
       </ScreenContainer>
@@ -179,7 +179,7 @@ export default function ProjectsScreen() {
   }
 
   return (
-    <ScreenContainer standalone bg="#ffffff">
+    <ScreenContainer bg="#ffffff">
       <ScreenHeader
         title="Projekti"
         rightAction={

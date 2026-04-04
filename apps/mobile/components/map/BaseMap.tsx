@@ -69,9 +69,9 @@ export interface BaseMapProps {
    * Mirrors react-native-maps MapView's mapPadding prop.
    */
   mapPadding?: EdgePadding;
+  /** Called once the map is ready to receive camera commands. */
+  onMapReady?: () => void;
 }
-
-/** Approximate lat/lng delta from a Mapbox-style zoom level. */
 function zoomToDelta(zoom: number): number {
   return 360 / Math.pow(2, zoom);
 }
@@ -90,6 +90,7 @@ export function BaseMap({
   showsMyLocationButton = false,
   mapType = 'standard',
   mapPadding,
+  onMapReady: onMapReadyProp,
 }: BaseMapProps) {
   const mapRef = useRef<MapView>(null);
   // Track whether Google Maps has fully initialised and is ready to receive commands.
@@ -104,7 +105,8 @@ export function BaseMap({
       pendingCamera.current();
       pendingCamera.current = null;
     }
-  }, []);
+    onMapReadyProp?.();
+  }, [onMapReadyProp]);
 
   // Populate cameraRef with a Mapbox-compat shim so all callers work unchanged
   useEffect(() => {

@@ -299,7 +299,7 @@ export default function FrameworkContractDetailScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer standalone bg="#ffffff">
+      <ScreenContainer bg="#ffffff">
         <SkeletonDetail />
       </ScreenContainer>
     );
@@ -307,7 +307,7 @@ export default function FrameworkContractDetailScreen() {
 
   if (!contract) {
     return (
-      <ScreenContainer standalone bg="#ffffff">
+      <ScreenContainer bg="#ffffff">
         <EmptyState
           icon={<TrendingUp size={28} color="#9ca3af" />}
           title="Līgums nav atrasts"
@@ -344,7 +344,7 @@ export default function FrameworkContractDetailScreen() {
   }`;
 
   return (
-    <ScreenContainer standalone bg="#ffffff">
+    <ScreenContainer bg="#ffffff">
       <ScreenHeader
         title={contract.title}
         rightAction={
