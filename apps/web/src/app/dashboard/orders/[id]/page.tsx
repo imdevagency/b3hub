@@ -23,8 +23,18 @@ import {
   type TransportJobLocation,
   type TransportJobStatus,
 } from '@/lib/api';
+import {
+  createDispute,
+  listDisputes,
+  DISPUTE_REASON_LABELS,
+  DISPUTE_STATUS_LABELS,
+  getDisputeStatusColor,
+  type DisputeReason,
+  type ApiDispute,
+} from '@/lib/api/disputes';
 import { fmtDate } from '@/lib/format';
 import {
+  AlertTriangle,
   ArrowLeft,
   CheckCircle2,
   Circle,
@@ -121,6 +131,14 @@ export default function OrderDetailPage() {
   const [paymentInitLoading, setPaymentInitLoading] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
+  // Dispute state
+  const [existingDispute, setExistingDispute] = useState<ApiDispute | null>(null);
+  const [showDisputeForm, setShowDisputeForm] = useState(false);
+  const [disputeReason, setDisputeReason] = useState<DisputeReason | ''>('');
+  const [disputeDetails, setDisputeDetails] = useState('');
+  const [disputeLoading, setDisputeLoading] = useState(false);
+  const [disputeError, setDisputeError] = useState<string | null>(null);
+
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Derived truck position from location poll
@@ -133,6 +151,15 @@ export default function OrderDetailPage() {
       setLoading(true);
       const data = await getTransportJob(id, token);
       setJob(data);
+      // Load any existing dispute for this order
+      if (data.order?.id) {
+        try {
+          const disputes = await listDisputes(token, data.order.id);
+          if (disputes.length > 0) setExistingDispute(disputes[0]);
+        } catch {
+          // ignore — dispute load failure is non-critical
+        }
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Kļūda ielādējot pasūtījumu');
     } finally {
@@ -446,6 +473,96 @@ export default function OrderDetailPage() {
           )}
         </div>
       </div>
+
+      {/* ── Dispute / Report issue ── */}
+      {job.status === 'DELIVERED' && job.order?.id && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <h2 className="text-sm font-semibold text-slate-700">Sūdzība / Problēma</h2>
+          </div>
+
+          {existingDispute ? (
+            <div className="space-y-2">
+              <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${getDisputeStatusColor(existingDispute.status)}`}>
+                {DISPUTE_STATUS_LABELS[existingDispute.status]}
+              </div>
+              <p className="text-sm text-slate-700 font-medium">{DISPUTE_REASON_LABELS[existingDispute.reason]}</p>
+              {existingDispute.description && (
+                <p className="text-sm text-slate-500">{existingDispute.description}</p>
+              )}
+              {existingDispute.resolution && (
+                <div className="rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-800">
+                  <span className="font-semibold">Lēmums: </span>{existingDispute.resolution}
+                </div>
+              )}
+            </div>
+          ) : showDisputeForm ? (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                {(Object.keys(DISPUTE_REASON_LABELS) as DisputeReason[]).map((key) => (
+                  <label key={key} className="flex items-center gap-2.5 cursor-pointer group">
+                    <input
+                      type="radio"
+                      name="dispute-reason"
+                      value={key}
+                      checked={disputeReason === key}
+                      onChange={() => setDisputeReason(key)}
+                      className="accent-slate-900"
+                    />
+                    <span className={`text-sm ${disputeReason === key ? 'text-slate-900 font-medium' : 'text-slate-600'}`}>
+                      {DISPUTE_REASON_LABELS[key]}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <textarea
+                className="w-full rounded-lg border border-slate-200 p-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 resize-none"
+                rows={3}
+                placeholder="Papildu informācija (neobligāts)..."
+                value={disputeDetails}
+                onChange={(e) => setDisputeDetails(e.target.value)}
+              />
+              {disputeError && <p className="text-sm text-red-600">{disputeError}</p>}
+              <div className="flex gap-2">
+                <Button
+                  disabled={!disputeReason || disputeLoading}
+                  onClick={async () => {
+                    if (!disputeReason || !token || !job.order?.id) return;
+                    setDisputeLoading(true);
+                    setDisputeError(null);
+                    try {
+                      const created = await createDispute(
+                        { orderId: job.order.id, reason: disputeReason, description: disputeDetails || DISPUTE_REASON_LABELS[disputeReason] },
+                        token,
+                      );
+                      setExistingDispute(created);
+                      setShowDisputeForm(false);
+                    } catch (err: unknown) {
+                      setDisputeError(err instanceof Error ? err.message : 'Neizdevās iesniegt sūdzību');
+                    } finally {
+                      setDisputeLoading(false);
+                    }
+                  }}
+                >
+                  {disputeLoading ? 'Iesniedz...' : 'Iesniegt sūdzību'}
+                </Button>
+                <Button variant="outline" onClick={() => { setShowDisputeForm(false); setDisputeError(null); }}>
+                  Atcelt
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm text-slate-500">Piegāde saņemta? Ja ir problēma ar kravas daudzumu, kvalitāti vai bojājumu — iesniedz sūdzību.</p>
+              <Button variant="outline" size="sm" onClick={() => setShowDisputeForm(true)}>
+                <AlertTriangle className="h-4 w-4 mr-1.5 text-amber-500" />
+                Ziņot par problēmu
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Payment ── */}
       {job.order?.id && (

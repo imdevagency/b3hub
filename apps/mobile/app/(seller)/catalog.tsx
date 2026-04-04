@@ -564,7 +564,7 @@ export default function SellerCatalog() {
         const companyId = user.company?.id;
         const params = companyId ? { supplierId: companyId } : undefined;
         const data = await api.materials.getAll(token, params);
-        setMaterials(data);
+        setMaterials(Array.isArray(data) ? data : (data as { items: ApiMaterial[] }).items ?? []);
       } catch (err) {
         Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās ielādēt materiālus');
       } finally {

@@ -17,6 +17,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Reviews')
 @Controller('reviews')
 @UseGuards(JwtAuthGuard)
 export class ReviewsController {

@@ -34,6 +34,9 @@ function assertIsCarrier(user: RequestingUser): void {
   }
 }
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Containers')
 @Controller('containers')
 @UseGuards(JwtAuthGuard)
 export class ContainersController {

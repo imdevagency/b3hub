@@ -155,7 +155,7 @@ export default function ActiveTrackingPage() {
         const active = all.filter((j) => ACTIVE_STATUSES.has(j.status));
         setJobs(active);
       } catch (err) {
-        console.error('Failed to load active jobs', err);
+        console.warn('Failed to load active jobs', err instanceof Error ? err.message : err);
       } finally {
         setLoading(false);
       }

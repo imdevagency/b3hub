@@ -213,7 +213,7 @@ export default function TransporterEarningsPage() {
       const { url } = await setupPayouts(token);
       window.location.href = url;
     } catch (err) {
-      console.error('Failed to setup payouts', err);
+      console.warn('Failed to setup payouts', err instanceof Error ? err.message : err);
     } finally {
       setSetupLoading(false);
     }

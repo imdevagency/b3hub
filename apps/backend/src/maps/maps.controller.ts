@@ -3,6 +3,9 @@ import { MapsService } from './maps.service';
 import { RoutePolylineDto } from './dto/route-polyline.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Maps')
 @Controller('maps')
 @UseGuards(JwtAuthGuard)
 export class MapsController {

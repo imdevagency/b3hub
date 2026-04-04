@@ -28,6 +28,9 @@ function isOwnerOrSolo(user: RequestingUser): boolean {
   return !user.companyId || user.companyRole === 'OWNER';
 }
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Framework Contracts')
 @Controller('framework-contracts')
 @UseGuards(JwtAuthGuard)
 export class FrameworkContractsController {

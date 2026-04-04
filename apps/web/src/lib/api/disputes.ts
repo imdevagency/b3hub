@@ -65,6 +65,17 @@ export function getDisputeStatusColor(status: DisputeStatus): string {
   }
 }
 
+export function createDispute(
+  data: { orderId: string; reason: DisputeReason; description: string },
+  token: string,
+): Promise<ApiDispute> {
+  return apiFetch<ApiDispute>('/disputes', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
 export function listDisputes(token: string, orderId?: string): Promise<ApiDispute[]> {
   const qs = orderId ? `?orderId=${encodeURIComponent(orderId)}` : '';
   return apiFetch<ApiDispute[]>(`/disputes${qs}`, {

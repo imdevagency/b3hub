@@ -17,6 +17,7 @@ import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { AssignOrdersDto } from './dto/assign-orders.dto';
+import { CreateProjectSiteDto } from './dto/create-project-site.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
@@ -38,6 +39,9 @@ function canViewFinancials(user: RequestingUser): boolean {
   return user.permViewFinancials === true;
 }
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Projects')
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
 export class ProjectsController {
@@ -123,5 +127,57 @@ export class ProjectsController {
       );
     }
     return this.service.unassignOrder(id, orderId, user.companyId);
+  }
+
+  /** GET /projects/:id/documents — project-linked documents */
+  @Get(':id/documents')
+  getDocuments(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+    return this.service.getDocuments(id, user.companyId);
+  }
+
+  /** GET /projects/:id/sites — list delivery / loading sites */
+  @Get(':id/sites')
+  getSites(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+    return this.service.getSites(id, user.companyId);
+  }
+
+  /** POST /projects/:id/sites — add a site */
+  @Post(':id/sites')
+  addSite(
+    @Param('id') id: string,
+    @Body() dto: CreateProjectSiteDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    if (!isOwnerOrManager(user)) {
+      throw new ForbiddenException('You do not have permission to manage project sites');
+    }
+    return this.service.addSite(id, dto, user.companyId);
+  }
+
+  /** PATCH /projects/:id/sites/:siteId — update a site */
+  @Patch(':id/sites/:siteId')
+  updateSite(
+    @Param('id') id: string,
+    @Param('siteId') siteId: string,
+    @Body() dto: CreateProjectSiteDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    if (!isOwnerOrManager(user)) {
+      throw new ForbiddenException('You do not have permission to manage project sites');
+    }
+    return this.service.updateSite(id, siteId, dto, user.companyId);
+  }
+
+  /** DELETE /projects/:id/sites/:siteId — remove a site */
+  @Delete(':id/sites/:siteId')
+  removeSite(
+    @Param('id') id: string,
+    @Param('siteId') siteId: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    if (!isOwnerOrManager(user)) {
+      throw new ForbiddenException('You do not have permission to manage project sites');
+    }
+    return this.service.removeSite(id, siteId, user.companyId);
   }
 }

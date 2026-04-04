@@ -11,10 +11,11 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { OrderStatus } from '@prisma/client';
+import { DocumentEntityType, OrderStatus } from '@prisma/client';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { AssignOrdersDto } from './dto/assign-orders.dto';
+import { CreateProjectSiteDto } from './dto/create-project-site.dto';
 
 /** Order statuses that count as committed material spend */
 const COMMITTED_STATUSES: OrderStatus[] = [
@@ -271,6 +272,107 @@ export class ProjectsService {
       project.orders,
       allJobs,
     );
+  }
+
+  // ── Documents ─────────────────────────────────────────────────────────────
+
+  async getDocuments(id: string, companyId?: string) {
+    await this.assertMember(id, companyId);
+
+    const links = await this.prisma.documentLink.findMany({
+      where: { entityType: DocumentEntityType.PROJECT, entityId: id },
+      include: {
+        document: {
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            status: true,
+            fileUrl: true,
+            mimeType: true,
+            fileSize: true,
+            isGenerated: true,
+            createdAt: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return links.map((l) => ({ ...l.document, role: l.role }));
+  }
+
+  // ── Delivery sites ────────────────────────────────────────────────────────
+
+  async getSites(id: string, companyId?: string) {
+    await this.assertMember(id, companyId);
+    return this.prisma.projectSite.findMany({
+      where: { projectId: id },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
+    });
+  }
+
+  async addSite(id: string, dto: CreateProjectSiteDto, companyId?: string) {
+    await this.assertMember(id, companyId);
+
+    // If this is the first site or marked as default, clear others
+    if (dto.isDefault) {
+      await this.prisma.projectSite.updateMany({
+        where: { projectId: id },
+        data: { isDefault: false },
+      });
+    }
+
+    return this.prisma.projectSite.create({
+      data: {
+        projectId: id,
+        label: dto.label,
+        address: dto.address,
+        lat: dto.lat,
+        lng: dto.lng,
+        type: dto.type,
+        isDefault: dto.isDefault ?? false,
+      },
+    });
+  }
+
+  async updateSite(
+    id: string,
+    siteId: string,
+    dto: Partial<CreateProjectSiteDto>,
+    companyId?: string,
+  ) {
+    await this.assertMember(id, companyId);
+
+    const site = await this.prisma.projectSite.findUnique({ where: { id: siteId } });
+    if (!site || site.projectId !== id) throw new NotFoundException('Site not found');
+
+    if (dto.isDefault) {
+      await this.prisma.projectSite.updateMany({
+        where: { projectId: id, id: { not: siteId } },
+        data: { isDefault: false },
+      });
+    }
+
+    return this.prisma.projectSite.update({
+      where: { id: siteId },
+      data: {
+        ...(dto.label !== undefined && { label: dto.label }),
+        ...(dto.address !== undefined && { address: dto.address }),
+        ...(dto.lat !== undefined && { lat: dto.lat }),
+        ...(dto.lng !== undefined && { lng: dto.lng }),
+        ...(dto.type !== undefined && { type: dto.type }),
+        ...(dto.isDefault !== undefined && { isDefault: dto.isDefault }),
+      },
+    });
+  }
+
+  async removeSite(id: string, siteId: string, companyId?: string) {
+    await this.assertMember(id, companyId);
+    const site = await this.prisma.projectSite.findUnique({ where: { id: siteId } });
+    if (!site || site.projectId !== id) throw new NotFoundException('Site not found');
+    await this.prisma.projectSite.delete({ where: { id: siteId } });
+    return { deleted: 1 };
   }
 
   // ── Internal formatters ──────────────────────────────────────────────────

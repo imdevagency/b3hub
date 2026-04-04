@@ -44,6 +44,9 @@ function canDispatch(user: RequestingUser): boolean {
   );
 }
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Transport Jobs')
 @Controller('transport-jobs')
 @UseGuards(JwtAuthGuard)
 export class TransportJobsController {

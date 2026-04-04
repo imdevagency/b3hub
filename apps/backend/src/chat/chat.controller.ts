@@ -10,6 +10,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface.js';
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Chat')
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
 export class ChatController {

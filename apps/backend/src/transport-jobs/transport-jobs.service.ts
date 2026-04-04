@@ -300,7 +300,7 @@ export class TransportJobsService {
     this.notifyAllDrivers(
       `🚚 Jauns darbs: ${dto.pickupCity} → ${dto.deliveryCity}`,
       `${dto.cargoType}${dto.cargoWeight ? ` • ${dto.cargoWeight}t` : ''} • ${dto.distanceKm ? `${Math.round(dto.distanceKm ?? 0)} km` : 'attālums nav norādīts'}`,
-    ).catch(() => {});
+    ).catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
 
     this.logger.log(
       `Transport job ${job.jobNumber} created (${dto.pickupCity} → ${dto.deliveryCity})`,
@@ -752,7 +752,7 @@ export class TransportJobsService {
           message: `${updatedJob.jobNumber} • ${updatedJob.pickupCity} → ${updatedJob.deliveryCity}`,
           data: { jobId: updatedJob.id },
         })
-        .catch(() => {});
+        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
     }
 
     return updatedJob;
@@ -859,7 +859,7 @@ export class TransportJobsService {
           message: `Darbs ${updated.jobNumber} tika pārdalīts citam šoferim`,
           data: { jobId: updated.id },
         })
-        .catch(() => {});
+        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
     }
 
     return updated;
@@ -935,7 +935,7 @@ export class TransportJobsService {
           message: `Darbs ${updated.jobNumber} tika pārsūtīts citam šoferim. Iemesls: ${note}`,
           data: { jobId: updated.id },
         })
-        .catch(() => {});
+        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
     }
 
     // Notify new driver
@@ -947,7 +947,7 @@ export class TransportJobsService {
         message: `${updated.jobNumber} • ${updated.pickupCity} → ${updated.deliveryCity} (pārcelts statusā: ${updated.status})`,
         data: { jobId: updated.id },
       })
-      .catch(() => {});
+      .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
 
     // Write audit trail
     if (adminId) {
@@ -1007,7 +1007,7 @@ export class TransportJobsService {
           message: `Darbs ${updated.jobNumber} ir noņemts no jūsu saraksta${reason ? `: ${reason}` : ''}`,
           data: { jobId: updated.id },
         })
-        .catch(() => {});
+        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
     }
 
     return updated;
@@ -1085,7 +1085,7 @@ export class TransportJobsService {
         message: `${updated.jobNumber} • ${updated.pickupCity} → ${updated.deliveryCity}`,
         data: { jobId: updated.id },
       })
-      .catch(() => {});
+      .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
 
     if (driver.email) {
       const driverName = `${driver.firstName ?? ''} ${driver.lastName ?? ''}`.trim();
@@ -1096,7 +1096,7 @@ export class TransportJobsService {
           deliveryCity: updated.deliveryCity,
           scheduledDate: updated.pickupDate,
         })
-        .catch(() => {});
+        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
     }
 
     return updated;
@@ -1165,7 +1165,7 @@ export class TransportJobsService {
         const weight = dto.weightKg ?? updatedJob.cargoWeight;
         this.documents
           .generateWeighingSlip(orderId, order.createdById, weight ?? 0, 't')
-          .catch(() => {});
+          .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
       }
 
       // Reconcile invoice if actual weight differs from the ordered quantity
@@ -1196,7 +1196,7 @@ export class TransportJobsService {
                 actualTonnes,
                 diffPct,
               })
-              .catch(() => {});
+              .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
             if (orderForAlert?.createdById) {
               this.notifications
                 .create({
@@ -1206,7 +1206,7 @@ export class TransportJobsService {
                   message: `Job #${updatedJob.jobNumber}: ${diffPct.toFixed(1)}% starpība starp pasūtīto (${expectedTonnes.toFixed(1)}t) un svētītāja (${actualTonnes.toFixed(1)}t) svaru`,
                   data: { jobId: updatedJob.id },
                 })
-                .catch(() => {});
+                .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
             }
           }
         }
@@ -1235,7 +1235,7 @@ export class TransportJobsService {
               message: `${driverName} dodas uz iekraušanas vietu • ${orderNum}`,
               data: { jobId: updatedJob.id },
             })
-            .catch(() => {});
+            .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
         } else if (dto.status === TransportJobStatus.LOADED) {
           this.notifications
             .create({
@@ -1245,7 +1245,7 @@ export class TransportJobsService {
               message: `Krava iekrauta, šoferis dodas uz Jums • ${orderNum}`,
               data: { jobId: updatedJob.id },
             })
-            .catch(() => {});
+            .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
         } else if (dto.status === TransportJobStatus.EN_ROUTE_DELIVERY) {
           this.notifications
             .create({
@@ -1255,7 +1255,7 @@ export class TransportJobsService {
               message: `${driverName} dodas uz piegādes vietu • ${orderNum}`,
               data: { jobId: updatedJob.id },
             })
-            .catch(() => {});
+            .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
         } else if (dto.status === TransportJobStatus.AT_DELIVERY) {
           this.notifications
             .create({
@@ -1265,7 +1265,7 @@ export class TransportJobsService {
               message: `${driverName} ir ieradies piegādes vietā • ${orderNum}`,
               data: { jobId: updatedJob.id },
             })
-            .catch(() => {});
+            .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
         } else if (dto.status === TransportJobStatus.DELIVERED) {
           this.notifications
             .create({
@@ -1275,7 +1275,7 @@ export class TransportJobsService {
               message: `Pasūtījums ${orderNum} ir veiksmīgi piegādāts.`,
               data: { jobId: updatedJob.id },
             })
-            .catch(() => {});
+            .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
         }
       }
     }
@@ -1583,7 +1583,7 @@ export class TransportJobsService {
             weight ?? 0,
             't',
           )
-          .catch(() => {});
+          .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
       }
     }
 
@@ -1596,7 +1596,7 @@ export class TransportJobsService {
           title: '✅ Iekraušana apstiprināta',
           message: `Darbs ${updatedJob.jobNumber} — varat doties uz piegādes vietu`,
         })
-        .catch(() => {});
+        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
     }
 
     return updatedJob;
@@ -1745,7 +1745,7 @@ export class TransportJobsService {
           message: `${msg} • Ziņoja: ${actorName}`,
           data: { jobId: id, exceptionId: ex.id },
         })
-        .catch(() => {});
+        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
     }
 
     // Send a separate, buyer-friendly notification to the order owner so they
@@ -1760,7 +1760,7 @@ export class TransportJobsService {
           message: `${exceptionLabel} — ${job.pickupCity} → ${job.deliveryCity}. Lūdzu, sekojiet līdzi pasūtījuma statusam vai sazinieties ar atbalstu.`,
           data: { jobId: id, exceptionId: ex.id, exceptionType: dto.type },
         })
-        .catch(() => {});
+        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
     }
 
     return ex;
@@ -1815,7 +1815,7 @@ export class TransportJobsService {
           message: `Darbs ${job.jobNumber} • ${dto.resolution}`,
           data: { jobId: id, exceptionId: resolved.id },
         })
-        .catch(() => {});
+        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
     }
 
     return resolved;
@@ -1890,7 +1890,7 @@ export class TransportJobsService {
             message: `Darbs #${job.jobNumber}: piešķirtais vadītājs nav sācis darbu. Darbs ir atkal pieejams citiem vadītājiem.`,
             data: { jobId: job.id },
           })
-          .catch(() => {});
+          .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
       }
 
       this.logger.warn(
@@ -1950,7 +1950,7 @@ export class TransportJobsService {
               : `Darbs #${job.jobNumber} jau ${hoursOpen} stundas gaida vadītāju. Mēs meklējam pieejamus vadītājus.`,
             data: { jobId: job.id },
           })
-          .catch(() => {});
+          .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
       }
 
       // Escalate critical cases to admin
@@ -1970,7 +1970,7 @@ export class TransportJobsService {
                 data: { jobId: job.id, orderId: job.orderId },
               },
             )
-            .catch(() => {});
+            .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
         }
         this.logger.error(
           `alertJobsWithNoDriver: job ${job.jobNumber} (${job.id}) — CRITICAL: ${hoursOpen}h AVAILABLE with no driver`,

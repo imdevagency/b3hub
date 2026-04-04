@@ -18,6 +18,10 @@ import {
   X,
   Building2,
   Leaf,
+  MapPin,
+  FileText,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { PageSpinner } from '@/components/ui/page-spinner';
@@ -43,8 +47,15 @@ import {
   assignOrders,
   unassignOrder,
   getMyOrders,
+  getProjectDocuments,
+  getProjectSites,
+  addProjectSite,
+  removeProjectSite,
   type ApiProjectDetail,
   type ApiProjectOrder,
+  type ApiProjectDocument,
+  type ApiProjectSite,
+  type CreateProjectSiteInput,
   type ProjectStatus,
   type ApiOrder,
 } from '@/lib/api';
@@ -499,17 +510,31 @@ export default function ProjectDetailPage() {
   const { token } = useAuth();
 
   const [project, setProject] = useState<ApiProjectDetail | null>(null);
+  const [documents, setDocuments] = useState<ApiProjectDocument[]>([]);
+  const [sites, setSites] = useState<ApiProjectSite[]>([]);
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [unassigningId, setUnassigningId] = useState<string | null>(null);
+  const [addSiteOpen, setAddSiteOpen] = useState(false);
+  const [newSiteLabel, setNewSiteLabel] = useState('');
+  const [newSiteAddress, setNewSiteAddress] = useState('');
+  const [newSiteType, setNewSiteType] = useState<'LOADING' | 'UNLOADING' | 'BOTH'>('BOTH');
+  const [addingSite, setAddingSite] = useState(false);
+  const [removingSiteId, setRemovingSiteId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!token || !id) return;
     setLoading(true);
     try {
-      const data = await getProject(id, token);
+      const [data, docs, sitesData] = await Promise.all([
+        getProject(id, token),
+        getProjectDocuments(id, token).catch(() => []),
+        getProjectSites(id, token).catch(() => []),
+      ]);
       setProject(data);
+      setDocuments(docs);
+      setSites(sitesData);
     } catch {
       router.push('/dashboard/projects');
     } finally {
@@ -535,6 +560,38 @@ export default function ProjectDetailPage() {
       await load();
     } finally {
       setUnassigningId(null);
+    }
+  };
+
+  const handleAddSite = async () => {
+    if (!token || !id || !newSiteLabel || !newSiteAddress) return;
+    setAddingSite(true);
+    try {
+      const input: CreateProjectSiteInput = {
+        label: newSiteLabel,
+        address: newSiteAddress,
+        type: newSiteType,
+      };
+      await addProjectSite(id, input, token);
+      setNewSiteLabel('');
+      setNewSiteAddress('');
+      setNewSiteType('BOTH');
+      setAddSiteOpen(false);
+      const updated = await getProjectSites(id, token);
+      setSites(updated);
+    } finally {
+      setAddingSite(false);
+    }
+  };
+
+  const handleRemoveSite = async (siteId: string) => {
+    if (!token || !id) return;
+    setRemovingSiteId(siteId);
+    try {
+      await removeProjectSite(id, siteId, token);
+      setSites((prev) => prev.filter((s) => s.id !== siteId));
+    } finally {
+      setRemovingSiteId(null);
     }
   };
 
@@ -653,6 +710,159 @@ export default function ProjectDetailPage() {
                   onUnassign={handleUnassign}
                   unassigning={unassigningId === order.id}
                 />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Delivery / loading sites */}
+      <Card className="rounded-2xl border-0 shadow-sm ring-1 ring-black/5">
+        <CardHeader className="pb-0">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              Darbavietas
+            </CardTitle>
+            <Button size="sm" variant="outline" onClick={() => setAddSiteOpen((v) => !v)}>
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Pievienot
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-3 space-y-3">
+          {addSiteOpen && (
+            <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs font-medium ml-1 text-muted-foreground">Nosaukums</Label>
+                  <Input
+                    className="mt-1 h-10 rounded-lg bg-white border text-sm"
+                    placeholder="Iekraušanas punkts A"
+                    value={newSiteLabel}
+                    onChange={(e) => setNewSiteLabel(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium ml-1 text-muted-foreground">Tips</Label>
+                  <Select
+                    value={newSiteType}
+                    onValueChange={(v) => setNewSiteType(v as typeof newSiteType)}
+                  >
+                    <SelectTrigger className="mt-1 h-10 rounded-lg bg-white border text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="LOADING">Iekraušana</SelectItem>
+                      <SelectItem value="UNLOADING">Izkraušana</SelectItem>
+                      <SelectItem value="BOTH">Abas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs font-medium ml-1 text-muted-foreground">Adrese</Label>
+                <Input
+                  className="mt-1 h-10 rounded-lg bg-white border text-sm"
+                  placeholder="Iela, pilsēta"
+                  value={newSiteAddress}
+                  onChange={(e) => setNewSiteAddress(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setAddSiteOpen(false);
+                    setNewSiteLabel('');
+                    setNewSiteAddress('');
+                  }}
+                >
+                  Atcelt
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={!newSiteLabel || !newSiteAddress || addingSite}
+                  onClick={handleAddSite}
+                >
+                  {addingSite ? 'Pievieno...' : 'Saglabāt'}
+                </Button>
+              </div>
+            </div>
+          )}
+          {sites.length === 0 && !addSiteOpen ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Nav pievienotu darbavietu
+            </p>
+          ) : (
+            sites.map((site) => (
+              <div
+                key={site.id}
+                className="flex items-start gap-3 py-2.5 px-3 rounded-xl hover:bg-muted/30 transition-colors group"
+              >
+                <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold leading-tight">{site.label}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{site.address}</p>
+                  <Badge variant="outline" className="text-[10px] h-4 px-1.5 rounded-full mt-1">
+                    {site.type === 'LOADING'
+                      ? 'Iekraušana'
+                      : site.type === 'UNLOADING'
+                        ? 'Izkraušana'
+                        : 'Abas'}
+                  </Badge>
+                </div>
+                <button
+                  onClick={() => handleRemoveSite(site.id)}
+                  disabled={removingSiteId === site.id}
+                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all disabled:opacity-50"
+                  title="Dzēst"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Documents */}
+      <Card className="rounded-2xl border-0 shadow-sm ring-1 ring-black/5">
+        <CardHeader className="pb-0">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            Dokumenti
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-3">
+          {documents.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Nav piesaistītu dokumentu
+            </p>
+          ) : (
+            <div className="divide-y divide-border/50">
+              {documents.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="flex items-center gap-3 py-3 hover:bg-muted/30 rounded-xl px-2 transition-colors"
+                >
+                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{doc.title}</p>
+                    <p className="text-xs text-muted-foreground">{fmtDate(doc.createdAt)}</p>
+                  </div>
+                  {doc.fileUrl && (
+                    <a
+                      href={doc.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-semibold text-primary hover:underline shrink-0"
+                    >
+                      Atvērt
+                    </a>
+                  )}
+                </div>
               ))}
             </div>
           )}

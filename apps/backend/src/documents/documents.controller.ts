@@ -23,6 +23,9 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { DocumentEntityType } from '@prisma/client';
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Documents')
 @Controller('documents')
 @UseGuards(JwtAuthGuard)
 export class DocumentsController {

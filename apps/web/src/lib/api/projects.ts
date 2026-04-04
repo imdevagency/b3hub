@@ -73,6 +73,43 @@ export interface UpdateProjectInput extends Partial<CreateProjectInput> {
   status?: ProjectStatus;
 }
 
+export type ProjectSiteType = 'LOADING' | 'UNLOADING' | 'BOTH';
+
+export interface ApiProjectSite {
+  id: string;
+  projectId: string;
+  label: string;
+  address: string;
+  lat: number | null;
+  lng: number | null;
+  type: ProjectSiteType;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateProjectSiteInput {
+  label: string;
+  address: string;
+  lat?: number;
+  lng?: number;
+  type?: ProjectSiteType;
+  isDefault?: boolean;
+}
+
+export interface ApiProjectDocument {
+  id: string;
+  title: string;
+  type: string;
+  status: string;
+  fileUrl: string | null;
+  mimeType: string | null;
+  fileSize: number | null;
+  isGenerated: boolean;
+  role: string;
+  createdAt: string;
+}
+
 // ─── API functions ─────────────────────────────────────────────────────────
 
 export function getProjects(token: string): Promise<ApiProject[]> {
@@ -138,6 +175,57 @@ export function getProjectFinancials(
   token: string,
 ): Promise<ApiProjectFinancials> {
   return apiFetch(`/projects/${projectId}/financials`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function getProjectDocuments(
+  projectId: string,
+  token: string,
+): Promise<ApiProjectDocument[]> {
+  return apiFetch(`/projects/${projectId}/documents`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function getProjectSites(projectId: string, token: string): Promise<ApiProjectSite[]> {
+  return apiFetch(`/projects/${projectId}/sites`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function addProjectSite(
+  projectId: string,
+  input: CreateProjectSiteInput,
+  token: string,
+): Promise<ApiProjectSite> {
+  return apiFetch(`/projects/${projectId}/sites`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateProjectSite(
+  projectId: string,
+  siteId: string,
+  input: Partial<CreateProjectSiteInput>,
+  token: string,
+): Promise<ApiProjectSite> {
+  return apiFetch(`/projects/${projectId}/sites/${siteId}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(input),
+  });
+}
+
+export function removeProjectSite(
+  projectId: string,
+  siteId: string,
+  token: string,
+): Promise<{ deleted: number }> {
+  return apiFetch(`/projects/${projectId}/sites/${siteId}`, {
+    method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },
   });
 }

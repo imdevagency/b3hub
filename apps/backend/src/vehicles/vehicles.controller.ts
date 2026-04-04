@@ -22,6 +22,9 @@ import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import type { RequestingUser } from '../common/types/requesting-user.interface.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Vehicles')
 @Controller('vehicles')
 @UseGuards(JwtAuthGuard)
 export class VehiclesController {

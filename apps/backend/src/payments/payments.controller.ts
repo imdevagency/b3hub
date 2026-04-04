@@ -42,6 +42,9 @@ class ResolveDisputeDto {
   adminNote?: string;
 }
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Payments')
 @Controller('payments')
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}

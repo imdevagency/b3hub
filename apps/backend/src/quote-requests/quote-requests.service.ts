@@ -77,7 +77,7 @@ export class QuoteRequestsService {
     );
 
     // Notify sellers who stock this material category
-    this.notifySellersOfNewRfq(request).catch(() => {});
+    this.notifySellersOfNewRfq(request).catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
 
     return request;
   }
@@ -113,7 +113,7 @@ export class QuoteRequestsService {
           unit: request.unit,
           city: request.deliveryCity,
         })
-        .catch(() => {});
+        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
     }
   }
 

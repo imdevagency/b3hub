@@ -29,6 +29,9 @@ function canViewFinancials(user: RequestingUser): boolean {
   return user.permViewFinancials === true;
 }
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Invoices')
 @Controller('invoices')
 @UseGuards(JwtAuthGuard)
 export class InvoicesController {

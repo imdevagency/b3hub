@@ -26,6 +26,9 @@ import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
 import { SkipHireStatus } from '@prisma/client';
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Skip Hire')
 @Controller('skip-hire')
 export class SkipHireController {
   constructor(private readonly skipHireService: SkipHireService) {}

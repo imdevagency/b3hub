@@ -14,6 +14,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { ChevronDown, MessageCircle, Mail } from 'lucide-react-native';
 import { Linking } from 'react-native';
+import { useRouter } from 'expo-router';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -130,6 +131,7 @@ function FaqItem({ q, a, isLast }: { q: string; a: string; isLast: boolean }) {
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function HelpScreen() {
+  const router = useRouter();
   return (
     <ScreenContainer standalone bg="#f2f2f7">
       <ScreenHeader title="Biežāk uzdotie jautājumi" />
@@ -163,19 +165,19 @@ export default function HelpScreen() {
           <View style={s.contactBtns}>
             <TouchableOpacity
               style={s.contactBtn}
-              onPress={() => Linking.openURL('mailto:info@b3hub.lv')}
+              onPress={() => router.push('/support-chat')}
               activeOpacity={0.8}
             >
-              <Mail size={15} color="#fff" />
-              <Text style={s.contactBtnText}>E-pasts</Text>
+              <MessageCircle size={15} color="#fff" />
+              <Text style={s.contactBtnText}>Tērzēt</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[s.contactBtn, s.contactBtnSecondary]}
-              onPress={() => Linking.openURL('https://b3hub.lv/kontakti')}
+              onPress={() => Linking.openURL('mailto:info@b3hub.lv')}
               activeOpacity={0.8}
             >
-              <MessageCircle size={15} color="#111827" />
-              <Text style={[s.contactBtnText, { color: '#111827' }]}>Rakstīt mums</Text>
+              <Mail size={15} color="#111827" />
+              <Text style={[s.contactBtnText, { color: '#111827' }]}>E-pasts</Text>
             </TouchableOpacity>
           </View>
         </View>

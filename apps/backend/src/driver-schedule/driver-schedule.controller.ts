@@ -22,6 +22,9 @@ import { UpdateScheduleDto } from './dto/update-schedule.dto';
 import { DriverScheduleService } from './driver-schedule.service';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Driver Schedule')
 @Controller('driver-schedule')
 @UseGuards(JwtAuthGuard)
 export class DriverScheduleController {

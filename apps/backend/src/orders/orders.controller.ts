@@ -26,6 +26,9 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { OrderStatus } from '@prisma/client';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Orders')
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
 export class OrdersController {

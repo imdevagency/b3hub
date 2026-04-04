@@ -405,7 +405,7 @@ export class FrameworkContractsService {
     if (!position) throw new NotFoundException('Position not found');
 
     await this.prisma.frameworkPosition.delete({ where: { id: positionId } });
-    return { success: true };
+    return { success: true, id: positionId };
   }
 
   // ── Call-offs ─────────────────────────────────────────────────────────────

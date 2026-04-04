@@ -18,6 +18,9 @@ class UpdateCompanyDto {
   @IsOptional() @IsNumber() @Min(0) commissionRate?: number;
 }
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Admin')
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminController {

@@ -13,12 +13,30 @@ import {
   StyleSheet,
   RefreshControl,
   Alert,
+  TextInput,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
-import { api, type ApiProjectDetail, type ProjectStatus, type ApiProjectOrder } from '@/lib/api';
+import {
+  api,
+  type ApiProjectDetail,
+  type ApiProjectSite,
+  type ApiProjectDocument,
+  type ProjectStatus,
+  type ApiProjectOrder,
+} from '@/lib/api';
 import { formatDate, formatDateShort } from '@/lib/format';
-import { Building2, MapPin, User, Calendar, ChevronRight, Plus } from 'lucide-react-native';
+import {
+  Building2,
+  MapPin,
+  User,
+  Calendar,
+  ChevronRight,
+  Plus,
+  FileText,
+  Trash2,
+  X,
+} from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -117,16 +135,28 @@ export default function ProjectDetailScreen() {
   const router = useRouter();
 
   const [project, setProject] = useState<ApiProjectDetail | null>(null);
+  const [sites, setSites] = useState<ApiProjectSite[]>([]);
+  const [documents, setDocuments] = useState<ApiProjectDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showAddSite, setShowAddSite] = useState(false);
+  const [newSiteLabel, setNewSiteLabel] = useState('');
+  const [newSiteAddress, setNewSiteAddress] = useState('');
+  const [addingSite, setAddingSite] = useState(false);
 
   const load = useCallback(
     async (silent = false) => {
       if (!token || !id) return;
       if (!silent) setLoading(true);
       try {
-        const data = await api.projects.getOne(id, token);
+        const [data, sitesData, docsData] = await Promise.all([
+          api.projects.getOne(id, token),
+          api.projects.getSites(id, token).catch(() => [] as ApiProjectSite[]),
+          api.projects.getDocuments(id, token).catch(() => [] as ApiProjectDocument[]),
+        ]);
         setProject(data);
+        setSites(sitesData);
+        setDocuments(docsData);
       } catch {
         Alert.alert('Kļūda', 'Neizdevās ielādēt projektu');
       } finally {
@@ -146,6 +176,42 @@ export default function ProjectDetailScreen() {
   const handleRefresh = () => {
     setRefreshing(true);
     load(true);
+  };
+
+  const handleAddSite = async () => {
+    if (!token || !id || !newSiteLabel.trim() || !newSiteAddress.trim()) return;
+    setAddingSite(true);
+    try {
+      await api.projects.addSite(id, { label: newSiteLabel.trim(), address: newSiteAddress.trim() }, token);
+      setNewSiteLabel('');
+      setNewSiteAddress('');
+      setShowAddSite(false);
+      const updated = await api.projects.getSites(id, token);
+      setSites(updated);
+    } catch {
+      Alert.alert('Kļūda', 'Neizdevās pievienot darbavietu');
+    } finally {
+      setAddingSite(false);
+    }
+  };
+
+  const handleRemoveSite = (siteId: string, label: string) => {
+    Alert.alert('Dzēst darbavietu', `Dzēst "${label}"?`, [
+      { text: 'Atcelt', style: 'cancel' },
+      {
+        text: 'Dzēst',
+        style: 'destructive',
+        onPress: async () => {
+          if (!token || !id) return;
+          try {
+            await api.projects.removeSite(id, siteId, token);
+            setSites((prev) => prev.filter((s) => s.id !== siteId));
+          } catch {
+            Alert.alert('Kļūda', 'Neizdevās dzēst darbavietu');
+          }
+        },
+      },
+    ]);
   };
 
   if (loading || !project) {
@@ -280,6 +346,105 @@ export default function ProjectDetailScreen() {
             )}
           </View>
         </View>
+
+        {/* Delivery / loading sites */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Darbavietas</Text>
+            <TouchableOpacity
+              onPress={() => setShowAddSite((v) => !v)}
+              style={styles.sectionAction}
+              activeOpacity={0.7}
+            >
+              {showAddSite ? (
+                <X size={16} color={colors.textMuted} />
+              ) : (
+                <Plus size={16} color={colors.textMuted} />
+              )}
+            </TouchableOpacity>
+          </View>
+          {showAddSite && (
+            <View style={styles.addSiteForm}>
+              <TextInput
+                style={styles.formInput}
+                placeholder="Nosaukums (piem. Iekraušanas punkts)"
+                placeholderTextColor={colors.textMuted}
+                value={newSiteLabel}
+                onChangeText={setNewSiteLabel}
+              />
+              <TextInput
+                style={styles.formInput}
+                placeholder="Adrese"
+                placeholderTextColor={colors.textMuted}
+                value={newSiteAddress}
+                onChangeText={setNewSiteAddress}
+              />
+              <View style={styles.formActions}>
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={() => { setShowAddSite(false); setNewSiteLabel(''); setNewSiteAddress(''); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.cancelBtnText}>Atcelt</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.saveBtn, (!newSiteLabel || !newSiteAddress || addingSite) && styles.saveBtnDisabled]}
+                  onPress={handleAddSite}
+                  disabled={!newSiteLabel || !newSiteAddress || addingSite}
+                  activeOpacity={0.75}
+                >
+                  <Text style={styles.saveBtnText}>{addingSite ? 'Pievieno...' : 'Saglabāt'}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          <View style={styles.sectionCard}>
+            {sites.length === 0 ? (
+              <Text style={styles.emptyOrders}>Nav pievienotu darbavietu</Text>
+            ) : (
+              sites.map((site, idx) => (
+                <React.Fragment key={site.id}>
+                  {idx > 0 ? <View style={styles.divider} /> : null}
+                  <View style={styles.siteRow}>
+                    <MapPin size={14} color={colors.textMuted} style={{ marginTop: 2 }} />
+                    <View style={styles.siteInfo}>
+                      <Text style={styles.siteLabel}>{site.label}</Text>
+                      <Text style={styles.siteAddress}>{site.address}</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => handleRemoveSite(site.id, site.label)}
+                      style={styles.removeBtn}
+                      activeOpacity={0.7}
+                    >
+                      <Trash2 size={14} color={colors.textMuted} />
+                    </TouchableOpacity>
+                  </View>
+                </React.Fragment>
+              ))
+            )}
+          </View>
+        </View>
+
+        {/* Documents */}
+        {documents.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Dokumenti ({documents.length})</Text>
+            <View style={styles.sectionCard}>
+              {documents.map((doc, idx) => (
+                <React.Fragment key={doc.id}>
+                  {idx > 0 ? <View style={styles.divider} /> : null}
+                  <View style={styles.docRow}>
+                    <FileText size={14} color={colors.textMuted} style={{ marginTop: 2 }} />
+                    <View style={styles.docInfo}>
+                      <Text style={styles.docTitle}>{doc.title}</Text>
+                      <Text style={styles.docDate}>{formatDate(doc.createdAt)}</Text>
+                    </View>
+                  </View>
+                </React.Fragment>
+              ))}
+            </View>
+          </View>
+        )}
       </ScrollView>
     </ScreenContainer>
   );
@@ -461,5 +626,103 @@ const styles = StyleSheet.create({
   pillText: {
     fontSize: fontSizes.xs,
     fontWeight: '600',
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sectionAction: {
+    padding: 4,
+  },
+  addSiteForm: {
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    padding: spacing.md,
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  formInput: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    fontSize: fontSizes.sm,
+    color: colors.textPrimary,
+  },
+  formActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+  },
+  cancelBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  cancelBtnText: {
+    fontSize: fontSizes.sm,
+    color: colors.textMuted,
+  },
+  saveBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: radius.md,
+    backgroundColor: colors.textPrimary,
+  },
+  saveBtnDisabled: {
+    opacity: 0.4,
+  },
+  saveBtnText: {
+    fontSize: fontSizes.sm,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  siteRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  siteInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  siteLabel: {
+    fontSize: fontSizes.sm,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  siteAddress: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+  },
+  removeBtn: {
+    padding: 4,
+    marginTop: -2,
+  },
+  docRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  docInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  docTitle: {
+    fontSize: fontSizes.sm,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  docDate: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
   },
 });

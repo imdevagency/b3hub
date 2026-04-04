@@ -31,10 +31,10 @@ Each row is a product feature domain.
 | **Auth — Password reset**        | ✅ Supabase                             | ✅ `/forgot-password`, `/reset-password`                                                                | ✅ `forgot-password`, `change-password`                                                |                                                                                                                                                                       |
 | **Auth — Provider application**  | ✅ `provider-applications/`             | ✅ `/apply`                                                                                             | ✅ `(auth)/apply-role`                                                                 | Admin reviews at `/admin/applications`                                                                                                                                |
 | **Materials / Catalog**          | ✅ `materials/`                         | ✅ `/dashboard/catalog`, `/dashboard/materials`                                                         | ✅ `(buyer)/catalog`, `(seller)/catalog`                                               | Supplier manages listings; buyer browses                                                                                                                              |
-| **Orders — Create**              | ✅ `orders/`                            | ✅ `/order`, `/order/transport`, `/order/disposal`                                                      | ✅ `order-request-new`                                                                 | Multi-step order form; web order pages now collect site contact info; mixed-supplier cart split dialog on checkout                                                    |
-| **Orders — List & Detail**       | ✅ `orders/`                            | ✅ `/dashboard/orders`, `/orders/[id]`                                                                  | ✅ `(buyer)/orders`, `order/[id]`                                                      | Full status timeline; list endpoints paginated (limit/skip); mobile orders page has quick-service links for discovery                                                 |
+| **Orders — Create**              | ✅ `orders/`                            |  ✅ `/order`, `/order/transport`, `/order/disposal`                                                      | ✅ `order-request-new`                                                                 | Multi-step order form; web order pages now collect site contact info; mixed-supplier cart split dialog on checkout. Mobile: delivery window AM/PM picker + ASAP mode ("Cik drīz iespējams") both implemented and wired to backend. |
+| **Orders — List & Detail**       | ✅ `orders/`                            |  ✅ `/dashboard/orders`, `/orders/[id]`, `/dashboard/orders/schedules`                                   | ✅ `(buyer)/orders`, `order/[id]`                                                      | Full status timeline; list endpoints paginated (limit/skip); mobile orders page has quick-service links for discovery. Recurring order schedules: web UI at `/dashboard/orders/schedules`. |
 | **Orders — Seller incoming**     | ✅ `orders/`                            | ✅ `/dashboard/supplier`                                                                                | ✅ `(seller)/incoming`                                                                 | Seller confirms / rejects                                                                                                                                             |
-| **Transport Jobs — Driver**      | ✅ `transport-jobs/`                    | ✅ `/dashboard/jobs` (job board + dispatch), `/dashboard/active` (fleet GPS map — dispatcher view)      | ✅ `(driver)/jobs`, `(driver)/active`                                                  | Web: dispatcher assigns jobs and monitors fleet. Mobile: driver self-accepts, advances status, submits delivery proof. Active-job field controls are **mobile-only**. |
+| **Transport Jobs — Driver**      | ✅ `transport-jobs/`                    |  ✅ `/dashboard/jobs` (job board + dispatch), `/dashboard/active` (fleet GPS map — dispatcher view)      | ✅ `(driver)/jobs`, `(driver)/active`                                                  | Web: dispatcher assigns jobs and monitors fleet. Mobile: driver self-accepts, advances status, submits delivery proof. Active-job field controls are **mobile-only**. Empty-run avoidance: `GET /transport-jobs/return-trips?lat=&lng=&radiusKm=` (Haversine); mobile return-trip suggestion strip shown at `EN_ROUTE_DELIVERY` / `AT_DELIVERY`. |
 | **Transport Jobs — Buyer view**  | ✅ `transport-jobs/`                    | 📵                                                                                                      | ✅ `(buyer)/transport-job/[id]`                                                        | Buyer tracks live job                                                                                                                                                 |
 | **Delivery Proof**               | ✅ `documents/`                         | ✅ `/dashboard/documents`                                                                               | ✅ `delivery-proof`                                                                    | Photo capture + signature                                                                                                                                             |
 | **Skip Hire — Ordering**         | ✅ `skip-hire/`                         | ✅ `/dashboard/skip-hire`, `/order/skip-hire`                                                           | ✅ `(buyer)/skip-order/[id]`                                                           | Precīza punkta izvēle kartē (tap/drag) + neobligāts izkraušanas punkta foto pasūtījumā                                                                                |
@@ -96,6 +96,12 @@ Each row is a product feature domain.
 | Driver job assignment emails: `sendDriverJobAssigned` wired in `applyAssignment`                                | ✅     | Backend/Email    |
 | Seller RFQ notification emails: `sendQuoteRequestReceived` wired on quote-request creation                      | ✅     | Backend/Email    |
 | Web JWT cookie: replaced JS-writable `document.cookie` with HttpOnly server-side cookie via `/api/auth/session` | ✅     | Web/Security     |
+| Dynamic distance pricing: `deliveryFee` calculated server-side (`€1.20/km × distanceKm`); web + mobile types updated; mobile `OfferCard` shows per-unit + delivery fee breakdown | ✅ | Backend/Pricing |
+| Weigh bridge discrepancy alert: `sendWeighDiscrepancy()` email triggered when actual weight deviates >5% from expected at `LOADED` status transition | ✅ | Backend/Email |
+| Recurring orders web UI: `/dashboard/orders/schedules` page + `getSchedules()` / `createSchedule()` API functions + sidebar link | ✅ | Web/Orders |
+| Delivery window AM/PM confirmed built: `order-request-new.tsx` has 3-option picker (ANY / AM / PM); sent in `CreateOrderDto`; displayed on `(buyer)/order/[id]` | ✅ | Mobile/Orders |
+| ASAP mode confirmed built: "Cik drīz iespējams" toggle sets `deliveryDate = ''`; shown in order form date step; back-compat with scheduled mode | ✅ | Mobile/Orders |
+| Empty-run avoidance confirmed built: backend `GET /transport-jobs/return-trips?lat=&lng=&radiusKm=` (Haversine filter); mobile `(driver)/active` fetches and renders return-trip strip at `EN_ROUTE_DELIVERY` / `AT_DELIVERY` | ✅ | Backend + Mobile |
 
 ### Outstanding Gaps
 
@@ -104,11 +110,15 @@ Each row is a product feature domain.
 | ~~Stripe payment integration missing~~                                                                    | ~~No payment flow~~                                                      | ~~Backend + all~~ |
 | Verify Stripe publishable keys + native dev build for mobile payment sheet                                | Runtime readiness                                                        | Web + mobile      |
 | ~~Mixed-supplier material carts are blocked until order-group splitting is implemented~~                  | ~~Marketplace scale~~                                                    | ~~Orders~~        |
-| Language switcher — app is Latvian-only; no Russian translations; no UI toggle                            | User comfort (Baltic market has significant Russian-speaking population) | Mobile            |
-| In-app support contact — no way to reach B3Hub from inside the app if something goes wrong                | User trust / support                                                     | Mobile + Web      |
+| ~~Delivery window / time slot selection — buyers can't specify preferred delivery time in order form~~    | ~~Order logistics~~                                                      | ~~Mobile + Backend~~ |
+| ~~Language switcher — app is Latvian-only; no Russian translations; no UI toggle~~                        | ~~User comfort~~ — **DONE**: full `ru` translations, `LanguageProvider`, toggle in all 3 profile screens | ~~Mobile~~ |
+| ~~In-app support contact — no way to reach B3Hub from inside the app if something goes wrong~~            | ~~User trust / support~~ — **DONE**: `SupportThread`/`SupportMessage` models + `/api/v1/support` endpoints + `support-chat.tsx` screen | ~~Mobile + Web~~ |
 | Onboarding flow after provider approval — new sellers/drivers land in full UI with no first-step guidance | Activation rate                                                          | Mobile            |
-| Delivery window / time slot selection — buyers can't specify preferred delivery time in order form        | Order logistics                                                          | Mobile + Backend  |
-| Offline proof capture queuing — if signal drops at delivery point, proof submission fails silently        | Field reliability                                                        | Mobile            |
+| ~~Offline proof capture queuing — if signal drops at delivery point, proof submission fails silently~~    | ~~Field reliability~~ — **DONE**: `proof-queue.ts`, offline queuing in `delivery-proof.tsx`, auto-flush on reconnect | ~~Mobile~~ |
+| Multi-truck staggered delivery for material orders — buyer can't request N trucks at timed intervals for a single material order (`truckCount` only exists on disposal jobs) | Buyer logistics (large sites) | Mobile + Backend |
+| Buyer-set transport pricing (reverse auction) — buyer can't name their own price for a transport job; higher offer = faster pickup | Carrier supply/demand balance | Backend + Mobile + Web |
+| RC / recycled materials in buyer catalog — no demolition aggregate / recycled product category visible to buyers | Material catalog completeness | Backend + Web + Mobile |
+| Driver saved search radius preference — drivers can't save a preferred job-board radius; `deliveryRadiusKm` exists on materials but no driver-level preference setting | Driver UX / job relevance | Mobile + Backend |
 
 ---
 
@@ -137,6 +147,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - company
 - company-members
 - containers
+- disputes
 - documents
 - driver-schedule
 - email
@@ -155,6 +166,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - reviews
 - saved-addresses
 - skip-hire
+- support
 - transport-jobs
 - updates
 - vehicles
@@ -172,6 +184,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/admin
 - dashboard/admin/applications
 - dashboard/admin/companies
+- dashboard/admin/disputes
 - dashboard/admin/jobs
 - dashboard/admin/orders
 - dashboard/admin/users
@@ -203,6 +216,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/order/transport
 - dashboard/orders
 - dashboard/orders/[id]
+- dashboard/orders/schedules
 - dashboard/projects
 - dashboard/projects/[id]
 - dashboard/quote-requests
@@ -277,6 +291,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - order/index
 - review/[orderId]
 - settings
+- support-chat
 - transport/confirmation
 - transport/index
 <!-- END GEN -->

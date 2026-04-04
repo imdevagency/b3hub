@@ -207,7 +207,7 @@ export class DocumentsService {
     if (!link) throw new NotFoundException('Document link not found');
 
     await this.prisma.documentLink.delete({ where: { id: linkId } });
-    return { success: true };
+    return { success: true, id: linkId };
   }
 
   /** Summary counts per type for the authenticated user */

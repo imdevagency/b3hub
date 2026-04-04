@@ -75,7 +75,7 @@ export const materialsApi = {
       const path = params?.search
         ? `/materials/search?q=${encodeURIComponent(params.search)}${params.category ? `&category=${params.category}` : ''}`
         : `/materials${qs}`;
-      return apiFetch<ApiMaterial[]>(path, {
+      return apiFetch<{ items: ApiMaterial[]; total: number; hasMore: boolean } | ApiMaterial[]>(path, {
         headers: { Authorization: `Bearer ${token}` },
       });
     },

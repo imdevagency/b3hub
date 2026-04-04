@@ -20,6 +20,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Provider Applications')
 @Controller('provider-applications')
 export class ProviderApplicationsController {
   constructor(private readonly service: ProviderApplicationsService) {}

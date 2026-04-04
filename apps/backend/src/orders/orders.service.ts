@@ -1622,7 +1622,7 @@ export class OrdersService {
     this.notifyActiveDrivers(
       `🗑️ Jauns atkritumu izvešanas darbs: ${dto.pickupCity}`,
       `${dto.wasteType} × ${dto.truckCount} transportlīdzekļi`,
-    ).catch(() => {});
+    ).catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
 
     return job;
   }
@@ -1685,7 +1685,7 @@ export class OrdersService {
     this.notifyActiveDrivers(
       `🚚 Jauns kravas pārvadājuma darbs: ${dto.pickupCity} → ${dto.dropoffCity}`,
       `${dto.loadDescription ?? vehicle.label}`,
-    ).catch(() => {});
+    ).catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
 
     return job;
   }

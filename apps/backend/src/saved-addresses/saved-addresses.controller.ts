@@ -14,7 +14,9 @@ import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { SavedAddressesService } from './saved-addresses.service';
 import { CreateSavedAddressDto } from './dto/create-saved-address.dto';
 import { UpdateSavedAddressDto } from './dto/update-saved-address.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Saved Addresses')
 @UseGuards(JwtAuthGuard)
 @Controller('saved-addresses')
 export class SavedAddressesController {

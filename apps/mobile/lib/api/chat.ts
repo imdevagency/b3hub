@@ -2,6 +2,28 @@ import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
+export interface ApiSupportMessage {
+  id: string;
+  threadId: string;
+  senderId: string;
+  senderName: string;
+  body: string;
+  fromAdmin: boolean;
+  createdAt: string;
+}
+
+export interface ApiSupportThread {
+  id: string;
+  status: string;
+  messages: ApiSupportMessage[];
+}
+
+export interface ApiSupportMessagesResult {
+  threadId: string | null;
+  status: string;
+  messages: ApiSupportMessage[];
+}
+
 export interface ApiChatMessage {
   id: string;
   senderId: string;
@@ -42,6 +64,28 @@ export const chatApi = {
       apiFetch<ApiChatMessage>(`/chat/${jobId}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ body }),
+      }),
+  },
+
+  support: {
+    /** Get (or auto-create) the user's support thread with messages. */
+    getOrCreate: (token: string) =>
+      apiFetch<ApiSupportThread>('/support/my-thread', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    /** Fetch messages for the user's support thread. */
+    getMessages: (token: string) =>
+      apiFetch<ApiSupportMessagesResult>('/support/my-messages', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    /** Send a message on the user's support thread. */
+    sendMessage: (body: string, token: string) =>
+      apiFetch<ApiSupportMessage>('/support/my-messages', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ body }),
       }),
   },

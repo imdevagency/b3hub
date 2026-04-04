@@ -31,6 +31,9 @@ function assertCanSell(user: RequestingUser) {
   }
 }
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Materials')
 @Controller('materials')
 @UseGuards(JwtAuthGuard)
 export class MaterialsController {

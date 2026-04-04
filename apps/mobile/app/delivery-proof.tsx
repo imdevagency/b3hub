@@ -25,6 +25,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { Camera, Trash2, CheckCircle2, PenLine } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { addToProofQueue } from '@/lib/proof-queue';
 
 const PAD_HEIGHT = 200;
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -142,10 +143,35 @@ export default function DeliveryProofScreen() {
         { text: 'OK', onPress: () => router.replace('/(driver)/jobs') },
       ]);
     } catch (err: unknown) {
-      Alert.alert(
-        t.deliveryProof.errorTitle,
-        err instanceof Error ? err.message : 'Kļūda nosūtot pierādījumu',
-      );
+      const msg = err instanceof Error ? err.message : '';
+      const isNetworkError =
+        msg.toLowerCase().includes('network') ||
+        msg.toLowerCase().includes('fetch') ||
+        msg.toLowerCase().includes('timeout') ||
+        msg === 'Network request failed';
+
+      if (isNetworkError) {
+        // Queue locally — will be retried when connectivity is restored
+        await addToProofQueue({
+          jobId,
+          token,
+          recipientName: recipientName.trim() || undefined,
+          notes: notes.trim() || undefined,
+          photos: photos.length > 0 ? photos : undefined,
+        });
+        haptics.success();
+        Alert.alert(
+          'Saglabāts!',
+          'Pierādījums saglabāts lokāli. Tiks automātiski nosūtīts, kad atjaunosies savienojums.',
+          [{ text: 'OK', onPress: () => router.replace('/(driver)/jobs') }],
+        );
+      } else {
+        haptics.error();
+        Alert.alert(
+          t.deliveryProof.errorTitle,
+          msg || 'Kļūda nosūtot pierādījumu',
+        );
+      }
     } finally {
       setSubmitting(false);
     }

@@ -53,7 +53,7 @@ export class SavedAddressesService {
     if (existing.userId !== user.id)
       throw new ForbiddenException('Nav atļauts dzēst šo adresi');
     await this.prisma.savedAddress.delete({ where: { id } });
-    return { success: true };
+    return { success: true, id };
   }
 
   async setDefault(id: string, user: RequestingUser) {

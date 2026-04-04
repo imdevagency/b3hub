@@ -34,9 +34,11 @@ import {
   Activity,
   ArrowUpDown,
   Building2,
+  Globe,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
+import { useLanguage } from '@/lib/language-context';
 import { useMode } from '@/lib/mode-context';
 import { RoleSheet } from '@/components/ui/TopBar';
 import { api } from '@/lib/api';
@@ -177,6 +179,11 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
   saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  langRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#fff' },
+  langCaps: { flexDirection: 'row', alignItems: 'center', marginLeft: 'auto' },
+  langOpt: { fontSize: 13, fontWeight: '600', color: '#9ca3af', paddingHorizontal: 4 },
+  langOptActive: { color: '#111827' },
+  langSep: { fontSize: 12, color: '#d1d5db' },
 });
 
 export default function ProfileScreen() {
@@ -204,6 +211,8 @@ export default function ProfileScreen() {
   const roleTheme = ROLE_THEME[mode] ?? ROLE_THEME.buyer;
 
   const accountTypeLabel = user?.userType === 'ADMIN' ? 'Administrators' : getRoleName(user);
+  const { language, setLanguage } = useLanguage();
+
   const handleLogout = () => {
     Alert.alert('Iziet', 'Vai tiešām vēlaties izrakstīties?', [
       { text: 'Atcelt', style: 'cancel' },
@@ -383,6 +392,21 @@ export default function ProfileScreen() {
             label="Palīdzība / BUJ"
             onPress={() => router.push('/help' as any)}
           />
+          <TouchableOpacity
+            style={s.langRow}
+            onPress={() => { haptics.light(); setLanguage(language === 'lv' ? 'ru' : 'lv'); }}
+            activeOpacity={0.7}
+          >
+            <View style={s.menuItemContent}>
+              <View style={s.menuIcon}><Globe size={20} color="#4b5563" /></View>
+              <Text style={s.menuLabel}>Valoda / Язык</Text>
+            </View>
+            <View style={s.langCaps}>
+              <Text style={[s.langOpt, language === 'lv' && s.langOptActive]}>LV</Text>
+              <Text style={s.langSep}> | </Text>
+              <Text style={[s.langOpt, language === 'ru' && s.langOptActive]}>RU</Text>
+            </View>
+          </TouchableOpacity>
 
           <View style={s.menuFooter}>
             <MenuItem icon={LogOut} label="Iziet" onPress={handleLogout} isDestructive />

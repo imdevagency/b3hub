@@ -255,7 +255,7 @@ export default function DisposalOrderPage() {
       );
       setCreatedRef(result.jobNumber ?? result.orderNumber ?? result.id.slice(0, 8).toUpperCase());
     } catch (err) {
-      console.error(err);
+      console.warn('Order submission error', err instanceof Error ? err.message : err);
       alert('Kļūda saglabājot pasūtījumu');
     } finally {
       setLoading(false);

@@ -10,6 +10,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '@/lib/auth-context';
 import { ModeProvider } from '@/lib/mode-context';
 import { ToastProvider } from '@/components/ui/Toast';
+import { LanguageProvider } from '@/lib/language-context';
+import { flushProofQueue } from '@/lib/proof-queue';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { SCREEN } from '@/lib/transitions';
@@ -39,6 +41,15 @@ let _Notifications: typeof import('expo-notifications') | null = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   _Notifications = require('expo-notifications');
+} catch {
+  /* Expo Go */
+}
+
+// ── NetInfo: guarded — used for offline proof-queue flush ────────────────────
+let _NetInfo: typeof import('@react-native-community/netinfo') | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  _NetInfo = require('@react-native-community/netinfo');
 } catch {
   /* Expo Go */
 }
@@ -110,6 +121,20 @@ export default function RootLayout() {
     return () => notifListener.current?.remove();
   }, []);
 
+  // Flush queued delivery proofs when connectivity is restored
+  useEffect(() => {
+    if (!_NetInfo) return;
+    let wasOffline = false;
+    const unsub = _NetInfo.default.addEventListener((state) => {
+      const online = state.isConnected === true && state.isInternetReachable !== false;
+      if (online && wasOffline) {
+        flushProofQueue().catch(() => {});
+      }
+      wasOffline = !online;
+    });
+    return () => unsub();
+  }, []);
+
   if (!fontsLoaded) return null;
 
   return (
@@ -117,7 +142,8 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
           <AuthProvider>
-            <ModeProvider>
+            <LanguageProvider>
+              <ModeProvider>
               <ToastProvider>
                 <StatusBar style="dark" />
                 <OfflineBanner />
@@ -156,7 +182,8 @@ export default function RootLayout() {
                 )}
               </ToastProvider>
             </ModeProvider>
-          </AuthProvider>
+          </LanguageProvider>
+        </AuthProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>

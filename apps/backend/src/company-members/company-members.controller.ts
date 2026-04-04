@@ -19,6 +19,9 @@ import { CompanyMembersService } from './company-members.service';
 import { InviteMemberDto } from './dto/invite-member.dto';
 import { UpdatePermissionsDto } from './dto/update-permissions.dto';
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Company Members')
 @Controller('company-members')
 @UseGuards(JwtAuthGuard)
 export class CompanyMembersController {

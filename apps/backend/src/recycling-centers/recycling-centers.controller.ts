@@ -33,6 +33,9 @@ function assertIsCarrierOp(user: RequestingUser): void {
   }
 }
 
+import { ApiTags } from '@nestjs/swagger';
+
+@ApiTags('Recycling Centers')
 @Controller('recycling-centers')
 @UseGuards(JwtAuthGuard)
 export class RecyclingCentersController {

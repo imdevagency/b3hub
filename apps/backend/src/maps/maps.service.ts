@@ -32,6 +32,7 @@ export class MapsService {
     const apiKey = this.getApiKey();
     if (!apiKey) return null;
 
+    try {
     const res = await fetch(
       'https://routes.googleapis.com/directions/v2:computeRoutes',
       {
@@ -73,6 +74,10 @@ export class MapsService {
       routes?: Array<{ polyline?: { encodedPolyline?: string } }>;
     };
     return data.routes?.[0]?.polyline?.encodedPolyline ?? null;
+    } catch (e) {
+      this.logger.warn(`getRouteEncodedPolyline failed: ${e instanceof Error ? e.message : String(e)}`);
+      return null;
+    }
   }
 
   /** Proxy Google Places Autocomplete — keeps API key server-side. */
