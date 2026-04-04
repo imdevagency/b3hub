@@ -70,7 +70,6 @@ export default function SellerLayout() {
           options={{
             title: t.tabs.earnings,
             tabBarIcon: ({ color }) => <Wallet size={22} color={color} />,
-            tabBarBadge: openQuoteCount > 0 ? openQuoteCount : undefined,
           }}
         />
         <Tabs.Screen
@@ -78,9 +77,13 @@ export default function SellerLayout() {
           options={{
             title: t.tabs.profile,
             tabBarIcon: ({ color }) => <User size={22} color={color} />,
+            tabBarBadge: openQuoteCount > 0 ? openQuoteCount : undefined,
           }}
         />
         <Tabs.Screen name="quotes" options={{ href: null }} />
+        <Tabs.Screen name="documents" options={{ href: null }} />
+        <Tabs.Screen name="framework-contracts" options={{ href: null }} />
+        <Tabs.Screen name="framework-contract/[id]" options={{ href: null }} />
         <Tabs.Screen name="order/[id]" options={{ href: null }} />
         <Tabs.Screen name="catalog.tsx.bak" options={{ href: null }} />
       </Tabs>

@@ -24,6 +24,8 @@ import {
   PackageSearch,
   ChevronDown,
   Check,
+  CheckSquare,
+  Square,
   X,
   Zap,
 } from 'lucide-react-native';
@@ -89,27 +91,43 @@ function ListingCard({
   material,
   onEdit,
   onQuickEdit,
+  bulkMode = false,
+  isSelected = false,
+  onToggleSelect,
 }: {
   material: ApiMaterial;
   onEdit: (m: ApiMaterial) => void;
   onQuickEdit: (m: ApiMaterial) => void;
+  bulkMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }) {
   const catTheme = CATEGORY_COLOR[material.category] ?? { bg: '#f3f4f6', color: '#6b7280' };
 
   return (
     <TouchableOpacity
-      style={s.card}
-      onPress={() => onEdit(material)}
+      style={[s.card, bulkMode && isSelected && s.cardSelected]}
+      onPress={() => (bulkMode ? onToggleSelect?.() : onEdit(material))}
       onLongPress={() => {
-        haptics.medium();
-        onQuickEdit(material);
+        if (!bulkMode) {
+          haptics.medium();
+          onQuickEdit(material);
+        }
       }}
       delayLongPress={400}
       activeOpacity={0.7}
     >
-      <View style={[s.iconBox, { backgroundColor: catTheme.bg }]}>
-        <PackageSearch size={22} color={catTheme.color} />
-      </View>
+      {bulkMode ? (
+        isSelected ? (
+          <CheckSquare size={24} color="#111827" />
+        ) : (
+          <Square size={24} color="#d1d5db" />
+        )
+      ) : (
+        <View style={[s.iconBox, { backgroundColor: catTheme.bg }]}>
+          <PackageSearch size={22} color={catTheme.color} />
+        </View>
+      )}
 
       <View style={s.cardBody}>
         <View style={s.cardRowTop}>
@@ -280,6 +298,183 @@ const qs = StyleSheet.create({
     marginTop: 4,
   },
   saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+});
+
+// ── Bulk Price Sheet ───────────────────────────────────────────
+
+function BulkPriceSheet({
+  visible,
+  onClose,
+  materials,
+  selectedIds,
+  token,
+  onDone,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  materials: ApiMaterial[];
+  selectedIds: Set<string>;
+  token: string;
+  onDone: (updated: ApiMaterial[]) => void;
+}) {
+  const toast = useToast();
+  const [mode, setMode] = useState<'flat' | 'percent'>('percent');
+  const [value, setValue] = useState('');
+  const [applying, setApplying] = useState(false);
+
+  const selected = materials.filter((m) => selectedIds.has(m.id));
+
+  const computeNew = (oldPrice: number): number => {
+    const num = parseFloat(value.replace(',', '.'));
+    if (isNaN(num)) return oldPrice;
+    const next = mode === 'flat' ? oldPrice + num : oldPrice * (1 + num / 100);
+    return Math.round(Math.max(0.01, next) * 100) / 100;
+  };
+
+  const preview = selected.slice(0, 3).map((m) => ({
+    name: m.name,
+    oldPrice: m.basePrice,
+    newPrice: computeNew(m.basePrice),
+    unit: m.unit,
+  }));
+
+  const handleApply = async () => {
+    const num = parseFloat(value.replace(',', '.'));
+    if (isNaN(num)) {
+      Alert.alert('Kļūda', 'Ievadiet derīgu vērtību.');
+      return;
+    }
+    setApplying(true);
+    const results: ApiMaterial[] = [];
+    try {
+      for (const m of selected) {
+        const updated = await api.materials.update(
+          m.id,
+          { basePrice: computeNew(m.basePrice) },
+          token,
+        );
+        results.push(updated);
+      }
+      haptics.success();
+      toast.success(`${selectedIds.size} materiāli atjaunināti!`);
+      onDone(results);
+      onClose();
+    } catch {
+      haptics.error();
+      toast.error('Neizdevās saglabāt.');
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const canApply = value.length > 0 && !isNaN(parseFloat(value.replace(',', '.'))) && !applying;
+
+  return (
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      title={`Mainīt cenas (${selectedIds.size})`}
+      scrollable={false}
+    >
+      <View style={{ gap: 16, paddingBottom: 8 }}>
+        {/* Mode toggle */}
+        <View style={bs.modeRow}>
+          <TouchableOpacity
+            style={[bs.modeBtn, mode === 'flat' && bs.modeBtnActive]}
+            onPress={() => setMode('flat')}
+            activeOpacity={0.7}
+          >
+            <Text style={[bs.modeBtnText, mode === 'flat' && bs.modeBtnTextActive]}>
+              Fiksētā (€)
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[bs.modeBtn, mode === 'percent' && bs.modeBtnActive]}
+            onPress={() => setMode('percent')}
+            activeOpacity={0.7}
+          >
+            <Text style={[bs.modeBtnText, mode === 'percent' && bs.modeBtnTextActive]}>
+              Procenti (%)
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Value input */}
+        <View style={qs.row}>
+          <Text style={qs.label}>{mode === 'flat' ? 'Summa (€)' : 'Izmaiņas (%)'}</Text>
+          <View style={qs.inputWrap}>
+            <Text style={qs.euro}>{mode === 'flat' ? '€' : '%'}</Text>
+            <TextInput
+              style={qs.input}
+              value={value}
+              onChangeText={setValue}
+              keyboardType="numbers-and-punctuation"
+              placeholder={mode === 'flat' ? '+1.50 vai -0.50' : '+10 vai -5'}
+              placeholderTextColor="#9ca3af"
+              selectTextOnFocus
+            />
+          </View>
+          <Text style={bs.hint}>Pozitīva vērtība palielina, negatīva — samazina cenu.</Text>
+        </View>
+
+        {/* Preview */}
+        {preview.length > 0 && value.length > 0 && (
+          <View style={bs.previewBox}>
+            <Text style={bs.previewTitle}>PRIEKŠSKATĪJUMS</Text>
+            {preview.map((p) => (
+              <View key={p.name} style={bs.previewRow}>
+                <Text style={bs.previewName} numberOfLines={1}>
+                  {p.name}
+                </Text>
+                <Text style={bs.previewPrice}>
+                  €{p.oldPrice.toFixed(2)} → €{p.newPrice.toFixed(2)}
+                </Text>
+              </View>
+            ))}
+            {selected.length > 3 && (
+              <Text style={bs.previewMore}>+{selected.length - 3} vairāk...</Text>
+            )}
+          </View>
+        )}
+
+        {/* Apply */}
+        <TouchableOpacity
+          style={[qs.saveBtn, !canApply && { opacity: 0.5 }]}
+          onPress={handleApply}
+          disabled={!canApply}
+          activeOpacity={0.85}
+        >
+          {applying ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={qs.saveBtnText}>Lietot visiem ({selectedIds.size})</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </BottomSheet>
+  );
+}
+
+const bs = StyleSheet.create({
+  modeRow: { flexDirection: 'row', gap: 8 },
+  modeBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    alignItems: 'center',
+  },
+  modeBtnActive: { borderColor: '#111827', backgroundColor: '#111827' },
+  modeBtnText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
+  modeBtnTextActive: { color: '#fff' },
+  hint: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
+  previewBox: { backgroundColor: '#f9fafb', borderRadius: 10, padding: 12, gap: 6 },
+  previewTitle: { fontSize: 11, fontWeight: '700', color: '#9ca3af', marginBottom: 2 },
+  previewRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  previewName: { fontSize: 13, color: '#374151', flex: 1, paddingRight: 8 },
+  previewPrice: { fontSize: 13, fontWeight: '700', color: '#111827' },
+  previewMore: { fontSize: 12, color: '#9ca3af', textAlign: 'center', marginTop: 4 },
 });
 
 // ── Listing Modal ──────────────────────────────────────────────
@@ -555,6 +750,22 @@ export default function SellerCatalog() {
   const [editing, setEditing] = useState<ApiMaterial | null>(null);
   const [saving, setSaving] = useState(false);
   const [quickTarget, setQuickTarget] = useState<ApiMaterial | null>(null);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkSheetOpen, setBulkSheetOpen] = useState(false);
+
+  const toggleSelect = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const toggleBulkMode = () => {
+    setBulkMode((b) => !b);
+    setSelectedIds(new Set());
+  };
 
   const load = useCallback(
     async (refresh = false) => {
@@ -641,8 +852,28 @@ export default function SellerCatalog() {
 
   return (
     <ScreenContainer bg="white">
-      {/* Add button */}
-      <View style={{ paddingHorizontal: 16, paddingVertical: 10, alignItems: 'flex-end' }}>
+      {/* Header actions */}
+      <View
+        style={{
+          paddingHorizontal: 16,
+          paddingVertical: 10,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        {materials.length > 0 ? (
+          <TouchableOpacity
+            style={[s.selectBtn, bulkMode && s.selectBtnActive]}
+            onPress={toggleBulkMode}
+            activeOpacity={0.8}
+          >
+            {bulkMode ? <X size={15} color="#6b7280" /> : <CheckSquare size={15} color="#374151" />}
+            <Text style={s.selectBtnText}>{bulkMode ? 'Atcelt' : 'Atlasīt'}</Text>
+          </TouchableOpacity>
+        ) : (
+          <View />
+        )}
         <TouchableOpacity style={s.addBtn} onPress={openNew} activeOpacity={0.8}>
           <Plus size={20} color="#fff" />
           <Text style={s.addBtnText}>Pievienot</Text>
@@ -690,10 +921,31 @@ export default function SellerCatalog() {
             </View>
           ) : (
             materials.map((m) => (
-              <ListingCard key={m.id} material={m} onEdit={openEdit} onQuickEdit={setQuickTarget} />
+              <ListingCard
+                key={m.id}
+                material={m}
+                onEdit={openEdit}
+                onQuickEdit={setQuickTarget}
+                bulkMode={bulkMode}
+                isSelected={selectedIds.has(m.id)}
+                onToggleSelect={() => toggleSelect(m.id)}
+              />
             ))
           )}
         </ScrollView>
+      )}
+
+      {bulkMode && selectedIds.size > 0 && (
+        <View style={s.bulkBar}>
+          <Text style={s.bulkBarText}>{selectedIds.size} atlasīti</Text>
+          <TouchableOpacity
+            style={s.bulkBarBtn}
+            onPress={() => setBulkSheetOpen(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={s.bulkBarBtnText}>Mainīt cenu</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       <ListingModal
@@ -713,6 +965,19 @@ export default function SellerCatalog() {
           setMaterials((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
         }}
         token={token ?? ''}
+      />
+
+      <BulkPriceSheet
+        visible={bulkSheetOpen}
+        onClose={() => setBulkSheetOpen(false)}
+        materials={materials}
+        selectedIds={selectedIds}
+        token={token ?? ''}
+        onDone={(updated) => {
+          setMaterials((prev) => prev.map((m) => updated.find((u) => u.id === m.id) ?? m));
+          setBulkMode(false);
+          setSelectedIds(new Set());
+        }}
       />
     </ScreenContainer>
   );
@@ -748,6 +1013,22 @@ const s = StyleSheet.create({
   },
   addBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 14 },
 
+  selectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+  },
+  selectBtnActive: {
+    borderColor: '#9ca3af',
+    backgroundColor: '#f3f4f6',
+  },
+  selectBtnText: { fontSize: 14, fontWeight: '600', color: '#374151' },
+
   countChip: {
     backgroundColor: '#f3f4f6',
     borderRadius: 20,
@@ -770,6 +1051,7 @@ const s = StyleSheet.create({
     backgroundColor: '#ffffff',
     gap: 16,
   },
+  cardSelected: { backgroundColor: '#f0fdf4' },
   iconBox: {
     width: 48,
     height: 48,
@@ -984,4 +1266,27 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+  // Bulk toolbar
+  bulkBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#111827',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 28,
+  },
+  bulkBarText: { color: '#f9fafb', fontSize: 15, fontWeight: '600' },
+  bulkBarBtn: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  bulkBarBtnText: { color: '#111827', fontWeight: '700', fontSize: 14 },
 });

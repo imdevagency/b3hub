@@ -23,7 +23,7 @@ import { api } from '@/lib/api';
 import type { QuoteRequest, QuoteResponse } from '@/lib/api';
 import { CATEGORY_LABELS, UNIT_SHORT } from '@/lib/materials';
 import { formatDateShort } from '@/lib/format';
-import { MapPin, Package, Clock, CheckCircle, Star } from 'lucide-react-native';
+import { MapPin, Package, Clock, CheckCircle, Star, XCircle } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -60,6 +60,7 @@ export default function RfqDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [accepting, setAccepting] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
   const load = useCallback(
     async (skeleton = true) => {
@@ -83,6 +84,36 @@ export default function RfqDetailScreen() {
       load();
     }, [load]),
   );
+
+  const handleCancel = () => {
+    if (!token || !rfq) return;
+    Alert.alert(
+      'Atcelt pieprasījumu?',
+      'Visi saņemtie piedāvājumi tiks dzēsti un piegādātāji tiks informēti.',
+      [
+        { text: 'Nē', style: 'cancel' },
+        {
+          text: 'Atcelt pieprasījumu',
+          style: 'destructive',
+          onPress: async () => {
+            setCancelling(true);
+            try {
+              await api.quoteRequests.cancel(rfq.id, token);
+              haptics.success();
+              router.back();
+            } catch (e) {
+              Alert.alert(
+                'Kļūda',
+                e instanceof Error ? e.message : 'Neizdevās atcelt pieprasījumu',
+              );
+            } finally {
+              setCancelling(false);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   const handleAccept = (response: QuoteResponse) => {
     if (!token || !rfq) return;
@@ -220,6 +251,28 @@ export default function RfqDetailScreen() {
               Saņemsi paziņojumu, kad piegādātāji nosūtīs savus piedāvājumus.
             </Text>
           </View>
+        )}
+
+        {/* Cancel button — only while request is still open */}
+        {(rfq.status === 'PENDING' || rfq.status === 'QUOTED') && (
+          <TouchableOpacity
+            style={ss.cancelBtn}
+            onPress={() => {
+              haptics.medium();
+              handleCancel();
+            }}
+            disabled={cancelling}
+            activeOpacity={0.8}
+          >
+            {cancelling ? (
+              <ActivityIndicator color="#ef4444" size="small" />
+            ) : (
+              <>
+                <XCircle size={15} color="#ef4444" />
+                <Text style={ss.cancelBtnText}>Atcelt pieprasījumu</Text>
+              </>
+            )}
+          </TouchableOpacity>
         )}
 
         {sortedResponses.map((resp, idx) => (
@@ -410,4 +463,17 @@ const ss = StyleSheet.create({
     marginTop: 8,
   },
   acceptBtnText: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
+  cancelBtn: {
+    borderWidth: 1.5,
+    borderColor: '#fecaca',
+    backgroundColor: '#fff5f5',
+    borderRadius: 16,
+    paddingVertical: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  cancelBtnText: { color: '#ef4444', fontSize: 15, fontWeight: '700' },
 });

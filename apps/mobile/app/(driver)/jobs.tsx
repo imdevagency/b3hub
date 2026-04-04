@@ -9,6 +9,8 @@ import {
   StyleSheet,
   RefreshControl,
   Alert,
+  Linking,
+  Platform,
   TextInput,
   ActivityIndicator,
 } from 'react-native';
@@ -359,14 +361,33 @@ function JobCard({
         style={{
           flexDirection: 'row',
           alignItems: 'center',
+          justifyContent: 'space-between',
           borderTopWidth: 1,
           borderTopColor: '#f3f4f6',
           paddingTop: 16,
         }}
       >
-        <Text style={{ fontSize: 13, color: '#4b5563', fontWeight: '600' }} numberOfLines={1}>
+        <Text
+          style={{ fontSize: 13, color: '#4b5563', fontWeight: '600', flex: 1 }}
+          numberOfLines={1}
+        >
           {job.vehicleType} · {job.weightTonnes}t · {job.payload} · {job.date}
         </Text>
+        {job.pricePerTonne > 0 && (
+          <View
+            style={{
+              backgroundColor: '#f0fdf4',
+              paddingHorizontal: 8,
+              paddingVertical: 3,
+              borderRadius: 6,
+              marginLeft: 8,
+            }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#166534' }}>
+              €{job.pricePerTonne.toFixed(2)}/t
+            </Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -544,14 +565,75 @@ export default function JobsScreen() {
 
   const handleConfirmAccept = async () => {
     if (!acceptSheetJob || !token || accepting) return;
-    const jobId = acceptSheetJob.id;
+    const job = acceptSheetJob;
     setAccepting(true);
     try {
-      await api.transportJobs.accept(jobId, token);
-      setAllJobs((prev) => prev.filter((j) => j.id !== jobId));
+      await api.transportJobs.accept(job.id, token);
+      setAllJobs((prev) => prev.filter((j) => j.id !== job.id));
       haptics.success();
       setAcceptSheetJob(null);
-      router.replace('/(driver)/active');
+
+      // Post-accept: offer immediate navigation to pickup
+      const lat = job.pickupLat;
+      const lng = job.pickupLng;
+      const label = `${job.fromCity ?? job.pickupAddress ?? ''}`.trim();
+      const openUrl = (url: string, fallback: string) =>
+        Linking.canOpenURL(url)
+          .then((ok) => Linking.openURL(ok ? url : fallback))
+          .catch(() => {});
+      const googleFallback =
+        lat != null && lng != null
+          ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`
+          : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(label)}&travelmode=driving`;
+      const navOptions =
+        lat != null && lng != null
+          ? [
+              {
+                text: 'Waze',
+                onPress: () => openUrl(`waze://?ll=${lat},${lng}&navigate=yes`, googleFallback),
+              },
+              {
+                text: 'Google Maps',
+                onPress: () =>
+                  openUrl(
+                    Platform.OS === 'ios'
+                      ? `comgooglemaps://?daddr=${lat},${lng}&directionsmode=driving`
+                      : `google.navigation:q=${lat},${lng}&mode=d`,
+                    googleFallback,
+                  ),
+              },
+              ...(Platform.OS === 'ios'
+                ? [
+                    {
+                      text: 'Apple Maps',
+                      onPress: () =>
+                        openUrl(`maps://?daddr=${lat},${lng}&dirflg=d`, googleFallback),
+                    },
+                  ]
+                : []),
+            ]
+          : [
+              {
+                text: 'Google Maps',
+                onPress: () => Linking.openURL(googleFallback).catch(() => {}),
+              },
+            ];
+
+      Alert.alert(
+        'Darbs pieņemts!',
+        label ? `Doties uz iekraušanu — ${label}?` : 'Vai atvērt navigāciju uz iekraušanas vietu?',
+        [
+          ...navOptions,
+          {
+            text: 'Vēlāk',
+            style: 'cancel',
+            onPress: () => router.replace('/(driver)/active'),
+          },
+        ],
+        {
+          onDismiss: () => router.replace('/(driver)/active'),
+        },
+      );
     } catch (err: unknown) {
       haptics.error();
       Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās pieņemt darbu');

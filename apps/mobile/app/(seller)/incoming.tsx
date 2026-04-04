@@ -228,6 +228,9 @@ function OrderCard({
   onStartLoading,
   actioning,
   onPress,
+  batchMode = false,
+  isSelected = false,
+  onToggleSelect,
 }: {
   order: IncomingOrder;
   onConfirm: (id: string) => void;
@@ -235,13 +238,20 @@ function OrderCard({
   onStartLoading: (id: string) => void;
   actioning: string | null;
   onPress: () => void;
+  batchMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }) {
   const isBusy = actioning === order.id;
   const statusInfo = getMinimalStatus(order.status);
+  const isBatchSelectable = batchMode && order.status === 'PENDING';
 
   return (
-    <View style={styles.card}>
-      <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+    <View style={[styles.card, isBatchSelectable && isSelected && styles.cardSelected]}>
+      <TouchableOpacity
+        onPress={isBatchSelectable ? () => onToggleSelect?.() : onPress}
+        activeOpacity={0.8}
+      >
         <View style={styles.cardTop}>
           <View style={styles.cardTopLeft}>
             <Text style={styles.materialText}>
@@ -252,13 +262,23 @@ function OrderCard({
             </Text>
           </View>
           <View style={styles.cardTopRight}>
-            <Text style={styles.priceText}>€{order.price.toFixed(0)}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
-              <Text style={[styles.statusText, { color: statusInfo.color }]}>
-                {statusInfo.text}
-              </Text>
-            </View>
+            {isBatchSelectable ? (
+              isSelected ? (
+                <CheckSquare2 size={22} color="#111827" />
+              ) : (
+                <Square size={22} color="#d1d5db" />
+              )
+            ) : (
+              <>
+                <Text style={styles.priceText}>€{order.price.toFixed(0)}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
+                  <Text style={[styles.statusText, { color: statusInfo.color }]}>
+                    {statusInfo.text}
+                  </Text>
+                </View>
+              </>
+            )}
           </View>
         </View>
 
@@ -305,8 +325,8 @@ function OrderCard({
         )}
       </TouchableOpacity>
 
-      {/* Actions */}
-      {order.status === 'PENDING' && (
+      {/* Actions — hidden in batch mode */}
+      {!batchMode && order.status === 'PENDING' && (
         <View style={styles.actionsRow}>
           <TouchableOpacity
             style={[styles.btnOutline, isBusy && styles.btnDisabled]}
@@ -335,7 +355,7 @@ function OrderCard({
         </View>
       )}
 
-      {order.status === 'CONFIRMED' && (
+      {!batchMode && order.status === 'CONFIRMED' && (
         <View style={styles.actionsRow}>
           <TouchableOpacity
             style={[styles.btnPrimaryFlex, isBusy && styles.btnDisabled]}
@@ -366,6 +386,52 @@ export default function IncomingScreen() {
   const [loadingOrder, setLoadingOrder] = useState<IncomingOrder | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
   const [confirmingLoad, setConfirmingLoad] = useState(false);
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchSelectedIds, setBatchSelectedIds] = useState<Set<string>>(new Set());
+  const [batchConfirming, setBatchConfirming] = useState(false);
+
+  const toggleBatchSelect = (id: string) =>
+    setBatchSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const toggleBatchMode = () => {
+    setBatchMode((b) => !b);
+    setBatchSelectedIds(new Set());
+  };
+
+  const handleBatchConfirm = () => {
+    const count = batchSelectedIds.size;
+    if (count === 0) return;
+    Alert.alert('Apstiprināt visus?', `Vai apstiprināt ${count} atlasītos pasūtījumus?`, [
+      { text: 'Atcelt', style: 'cancel' },
+      {
+        text: `Apstiprināt (${count})`,
+        onPress: async () => {
+          if (!token) return;
+          setBatchConfirming(true);
+          let succeeded = 0;
+          for (const id of batchSelectedIds) {
+            try {
+              const updated = await api.orders.confirm(id, token);
+              setOrders((prev) => prev.map((o) => (o.id === id ? mapApiOrder(updated) : o)));
+              succeeded++;
+            } catch {
+              // continue
+            }
+          }
+          haptics.success();
+          toast.success(`${succeeded} pasūtījumi apstiprināti!`);
+          setBatchMode(false);
+          setBatchSelectedIds(new Set());
+          setBatchConfirming(false);
+        },
+      },
+    ]);
+  };
 
   const fetchOrders = useCallback(
     async (isRefresh = false) => {
@@ -490,6 +556,26 @@ export default function IncomingScreen() {
 
   return (
     <ScreenContainer bg="white">
+      {/* Batch select toggle — shown when there are PENDING orders */}
+      {orders.some((o) => o.status === 'PENDING') && (
+        <View
+          style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, alignItems: 'flex-end' }}
+        >
+          <TouchableOpacity
+            style={[styles.batchToggleBtn, batchMode && styles.batchToggleBtnActive]}
+            onPress={toggleBatchMode}
+            activeOpacity={0.8}
+          >
+            {batchMode ? (
+              <X size={15} color="#6b7280" />
+            ) : (
+              <CheckSquare2 size={15} color="#374151" />
+            )}
+            <Text style={styles.batchToggleText}>{batchMode ? 'Atcelt' : 'Atlasīt'}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Filter Tabs */}
       {orders.length > 0 && (
         <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
@@ -580,10 +666,31 @@ export default function IncomingScreen() {
               onStartLoading={handleStartLoading}
               actioning={actioning}
               onPress={() => router.push(`/(seller)/order/${order.id}` as any)}
+              batchMode={batchMode}
+              isSelected={batchSelectedIds.has(order.id)}
+              onToggleSelect={() => toggleBatchSelect(order.id)}
             />
           ))
         )}
       </ScrollView>
+
+      {batchMode && batchSelectedIds.size > 0 && (
+        <View style={styles.batchBar}>
+          <Text style={styles.batchBarText}>{batchSelectedIds.size} atlasīti</Text>
+          <TouchableOpacity
+            style={[styles.batchBarBtn, batchConfirming && { opacity: 0.6 }]}
+            onPress={handleBatchConfirm}
+            disabled={batchConfirming}
+            activeOpacity={0.8}
+          >
+            {batchConfirming ? (
+              <ActivityIndicator color="#111827" size="small" />
+            ) : (
+              <Text style={styles.batchBarBtnText}>Apstiprināt visus</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
 
       {loadingOrder && (
         <LoadingModal
@@ -719,6 +826,42 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   emptyCtaText: { fontSize: 15, fontWeight: '600', color: '#ffffff' },
+
+  // Batch mode
+  cardSelected: { backgroundColor: '#f0fdf4' },
+  batchToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+  },
+  batchToggleBtnActive: { borderColor: '#9ca3af', backgroundColor: '#f3f4f6' },
+  batchToggleText: { fontSize: 14, fontWeight: '600', color: '#374151' },
+  batchBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#111827',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 28,
+  },
+  batchBarText: { color: '#f9fafb', fontSize: 15, fontWeight: '600' },
+  batchBarBtn: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  batchBarBtnText: { color: '#111827', fontWeight: '700', fontSize: 14 },
 });
 
 const modalStyles = StyleSheet.create({

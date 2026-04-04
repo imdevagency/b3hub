@@ -55,6 +55,30 @@ export interface QuoteRequest {
   createdAt: string;
 }
 
+export interface MyQuoteResponse {
+  id: string;
+  pricePerUnit: number;
+  totalPrice: number;
+  unit: MaterialUnit;
+  etaDays: number;
+  notes: string | null;
+  validUntil: string | null;
+  status: QuoteResponseStatus;
+  createdAt: string;
+  request: {
+    id: string;
+    requestNumber: string;
+    materialCategory: string;
+    materialName: string;
+    quantity: number;
+    unit: MaterialUnit;
+    deliveryCity: string;
+    status: QuoteRequestStatus;
+    createdAt: string;
+    buyer: { firstName: string; lastName: string };
+  };
+}
+
 type Paginated<T> = {
   data?: T[];
   pagination?: {
@@ -116,6 +140,20 @@ export const quoteRequestsApi = {
       apiFetch<OpenQuoteRequest[] | Paginated<OpenQuoteRequest>>('/quote-requests/open', {
         headers: { Authorization: `Bearer ${token}` },
       }).then(normalizeList),
+
+    /** Buyer: cancel a pending or quoted request. */
+    cancel: (id: string, token: string) =>
+      apiFetch<QuoteRequest>(`/quote-requests/${id}/cancel`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    /** Supplier: list their submitted price proposals. */
+    myResponses: (token: string, limit = 20, skip = 0) =>
+      apiFetch<{ data: MyQuoteResponse[]; pagination: { total: number; hasMore: boolean } }>(
+        `/quote-requests/my-responses?limit=${limit}&skip=${skip}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      ).then((r) => r.data ?? []),
 
     /** Supplier: submit a price proposal for a quote request. */
     respond: (

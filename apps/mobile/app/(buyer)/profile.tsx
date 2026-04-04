@@ -38,8 +38,10 @@ import {
   FolderKanban,
   FileText,
   FileCheck,
+  ShieldCheck,
   Users,
   Handshake,
+  MapPin,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -97,6 +99,30 @@ const s = StyleSheet.create({
   },
   nudgeTitle: { fontWeight: '700', color: '#78350f', fontSize: 14 },
   nudgeSubtitle: { color: '#b45309', fontSize: 12, marginTop: 2 },
+
+  completenessCard: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+    padding: 16,
+    backgroundColor: '#fffbeb',
+    borderRadius: 12,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#fef3c7',
+  },
+  completenessRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  completenessIconWrap: {
+    width: 36,
+    height: 36,
+    backgroundColor: '#fef3c7',
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  completenessTitle: { fontWeight: '700', color: '#78350f', fontSize: 14 },
+  completenessSub: { color: '#b45309', fontSize: 12, marginTop: 2 },
+  progressTrack: { height: 4, backgroundColor: '#fde68a', borderRadius: 2, overflow: 'hidden' },
+  progressFill: { height: 4, backgroundColor: '#d97706', borderRadius: 2 },
 
   menuConfig: { paddingHorizontal: 20 },
   sectionHeader: {
@@ -339,19 +365,36 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Missing Phone Nudge */}
-        {!user?.phone && (
-          <TouchableOpacity style={s.nudge} onPress={openEdit} activeOpacity={0.8}>
-            <View style={s.nudgeIcon}>
-              <AlertCircle size={20} color="#d97706" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.nudgeTitle}>Pievienot tālruni</Text>
-              <Text style={s.nudgeSubtitle}>Nepieciešams saziņai</Text>
-            </View>
-            <ChevronRight size={16} color="#d97706" />
-          </TouchableOpacity>
-        )}
+        {/* Profile Completeness */}
+        {(() => {
+          const steps = [
+            { done: !!(user?.firstName && user?.lastName), label: 'Vārds un uzvārds' },
+            { done: !!user?.phone, label: 'Telefona numurs' },
+            { done: !!user?.email, label: 'E-pasts' },
+            { done: !!user?.companyId, label: 'Uzņēmums pievienots' },
+          ];
+          const doneCount = steps.filter((step) => step.done).length;
+          const pct = Math.round((doneCount / steps.length) * 100);
+          if (pct >= 100) return null;
+          const missing = steps.filter((step) => !step.done);
+          return (
+            <TouchableOpacity style={s.completenessCard} onPress={openEdit} activeOpacity={0.85}>
+              <View style={s.completenessRow}>
+                <View style={s.completenessIconWrap}>
+                  <AlertCircle size={18} color="#d97706" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.completenessTitle}>Profils {pct}% aizpildīts</Text>
+                  <Text style={s.completenessSub}>{missing.map((m) => m.label).join(' · ')}</Text>
+                </View>
+                <ChevronRight size={16} color="#d97706" />
+              </View>
+              <View style={s.progressTrack}>
+                <View style={[s.progressFill, { width: `${pct}%` as any }]} />
+              </View>
+            </TouchableOpacity>
+          );
+        })()}
 
         {/* Menu Items */}
         <View style={s.menuConfig}>
@@ -371,6 +414,16 @@ export default function ProfileScreen() {
             icon={FileCheck}
             label="Dokumenti"
             onPress={() => router.push('/(buyer)/documents' as any)}
+          />
+          <MenuItem
+            icon={ShieldCheck}
+            label="Atkritumu sertifikāti"
+            onPress={() => router.push('/(buyer)/certificates' as any)}
+          />
+          <MenuItem
+            icon={AlertCircle}
+            label="Strīdi"
+            onPress={() => router.push('/(buyer)/disputes' as any)}
           />
           <MenuItem
             icon={Users}
@@ -395,6 +448,11 @@ export default function ProfileScreen() {
             <MenuItem icon={Building2} label="Uzņēmums" value={user.company.name} />
           )}
           <MenuItem icon={Shield} label="Konta veids" value={accountTypeLabel} />
+          <MenuItem
+            icon={MapPin}
+            label="Saglabātās adreses"
+            onPress={() => router.push('/(buyer)/saved-addresses' as any)}
+          />
           <MenuItem
             icon={Activity}
             label="Statuss"

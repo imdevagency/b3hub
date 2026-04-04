@@ -210,6 +210,30 @@ const s = StyleSheet.create({
   langOpt: { fontSize: 13, fontWeight: '600', color: '#9ca3af', paddingHorizontal: 4 },
   langOptActive: { color: '#111827' },
   langSep: { fontSize: 12, color: '#d1d5db' },
+
+  completenessCard: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: '#fffbeb',
+    borderRadius: 12,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#fef3c7',
+  },
+  completenessRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  completenessIconWrap: {
+    width: 36,
+    height: 36,
+    backgroundColor: '#fef3c7',
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  completenessTitle: { fontWeight: '700', color: '#78350f', fontSize: 14 },
+  completenessSub: { color: '#b45309', fontSize: 12, marginTop: 2 },
+  progressTrack: { height: 4, backgroundColor: '#fde68a', borderRadius: 2, overflow: 'hidden' },
+  progressFill: { height: 4, backgroundColor: '#d97706', borderRadius: 2 },
 });
 
 export default function ProfileScreen() {
@@ -394,6 +418,38 @@ export default function ProfileScreen() {
         {isMultiRole && (
           <RoleSheet visible={roleSheetOpen} onClose={() => setRoleSheetOpen(false)} />
         )}
+
+        {/* Profile Completeness */}
+        {(() => {
+          const steps = [
+            { done: !!(user?.firstName && user?.lastName), label: 'Vārds un uzvārds' },
+            { done: !!user?.phone, label: 'Telefona numurs' },
+            { done: !!user?.email, label: 'E-pasts' },
+            { done: !!user?.canTransport, label: 'Transporta apstiprinājums' },
+          ];
+          const doneCount = steps.filter((step) => step.done).length;
+          const pct = Math.round((doneCount / steps.length) * 100);
+          if (pct >= 100) return null;
+          const missing = steps.filter((step) => !step.done);
+          return (
+            <TouchableOpacity style={s.completenessCard} onPress={openEdit} activeOpacity={0.85}>
+              <View style={s.completenessRow}>
+                <View style={s.completenessIconWrap}>
+                  <AlertCircle size={18} color="#d97706" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.completenessTitle}>Profils {pct}% aizpildīts</Text>
+                  <Text style={s.completenessSub}>{missing.map((m) => m.label).join(' · ')}</Text>
+                </View>
+                <ChevronRight size={16} color="#d97706" />
+              </View>
+              <View style={s.progressTrack}>
+                <View style={[s.progressFill, { width: `${pct}%` as any }]} />
+              </View>
+            </TouchableOpacity>
+          );
+        })()}
+
         {/* Menu Items */}
         <View style={s.menuConfig}>
           <Text style={s.sectionHeader}>Darba instrumenti</Text>

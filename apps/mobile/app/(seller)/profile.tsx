@@ -34,6 +34,8 @@ import {
   TrendingUp,
   Globe,
   FileText,
+  FileCheck,
+  Handshake,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -343,6 +345,16 @@ export default function ProfileScreen() {
             label="Piedāvājumi"
             value={openQuoteCount > 0 ? `${openQuoteCount} jauni` : undefined}
             onPress={() => router.push('/(seller)/quotes' as any)}
+          />
+          <MenuItem
+            icon={FileCheck}
+            label="Dokumenti"
+            onPress={() => router.push('/(seller)/documents' as any)}
+          />
+          <MenuItem
+            icon={Handshake}
+            label="Ietvarlīgumi"
+            onPress={() => router.push('/(seller)/framework-contracts' as any)}
           />
           <MenuItem
             icon={Phone}

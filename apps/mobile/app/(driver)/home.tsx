@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  Platform,
+  ActivityIndicator,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -44,6 +52,8 @@ export default function DriverHomeScreen() {
   const [todayEarnings, setTodayEarnings] = useState<number | null>(null);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [fetchError, setFetchError] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+  const [togglingOnline, setTogglingOnline] = useState(false);
 
   // Fly camera to driver's current location once on mount
   useEffect(() => {
@@ -75,6 +85,11 @@ export default function DriverHomeScreen() {
           setFetchError(false);
         })
         .catch(() => setFetchError(true));
+      // Fetch driver online status
+      api.driverSchedule
+        .getStatus(token)
+        .then((s) => setIsOnline(s.isOnline ?? true))
+        .catch(() => {});
       api.transportJobs
         .available(token)
         .then((jobs: ApiTransportJob[]) => {
@@ -109,6 +124,21 @@ export default function DriverHomeScreen() {
   );
 
   const availableCount = Array.isArray(availableJobs) ? availableJobs.length : 0;
+
+  const handleToggleOnline = useCallback(async () => {
+    if (!token || togglingOnline || hasActiveJob) return;
+    const next = !isOnline;
+    setTogglingOnline(true);
+    try {
+      const res = await api.driverSchedule.toggleOnline(next, token);
+      setIsOnline(res.isOnline);
+      haptics.medium();
+    } catch {
+      // revert optimistic update not needed — just ignore
+    } finally {
+      setTogglingOnline(false);
+    }
+  }, [token, togglingOnline, hasActiveJob, isOnline]);
 
   // Ensure safe bottom padding for iPhone X/11/etc home indicator
   const bottomInset = insets.bottom > 0 ? insets.bottom : 20;
@@ -164,11 +194,30 @@ export default function DriverHomeScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* Status Pill in Center */}
-        <View style={[s.statusPill, hasActiveJob ? s.statusActive : s.statusOnline]}>
-          <View style={[s.statusDot, { backgroundColor: hasActiveJob ? '#10b981' : '#111827' }]} />
-          <Text style={s.statusText}>{hasActiveJob ? 'Strādā' : 'Tiešsaistē'}</Text>
-        </View>
+        {/* Status Pill in Center — tappable to toggle online/offline */}
+        <TouchableOpacity
+          style={[
+            s.statusPill,
+            hasActiveJob ? s.statusActive : isOnline ? s.statusOnline : s.statusOffline,
+          ]}
+          onPress={handleToggleOnline}
+          activeOpacity={0.8}
+          disabled={hasActiveJob || togglingOnline}
+        >
+          {togglingOnline ? (
+            <ActivityIndicator size="small" color="#6b7280" style={{ marginRight: 4 }} />
+          ) : (
+            <View
+              style={[
+                s.statusDot,
+                { backgroundColor: hasActiveJob ? '#10b981' : isOnline ? '#111827' : '#9ca3af' },
+              ]}
+            />
+          )}
+          <Text style={[s.statusText, !isOnline && !hasActiveJob && { color: '#9ca3af' }]}>
+            {hasActiveJob ? 'Strādā' : isOnline ? 'Tiešsaistē' : 'Bezsaistē'}
+          </Text>
+        </TouchableOpacity>
 
         {/* Notification Bell */}
         <TouchableOpacity
@@ -334,6 +383,7 @@ const s = StyleSheet.create({
     elevation: 3,
   },
   statusOnline: {},
+  statusOffline: { backgroundColor: '#f3f4f6', borderColor: '#d1d5db' },
   statusActive: {},
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   statusText: { fontSize: 13, fontWeight: '700', color: '#111827', textTransform: 'uppercase' },

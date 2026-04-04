@@ -8,6 +8,7 @@ import {
   ForbiddenException,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -63,6 +64,19 @@ export class QuoteRequestsController {
   // NOTE: static routes MUST come before parameterised ones (@Get(':id'))
   // otherwise NestJS/Express will greedily match "open" as an :id value.
 
+  /** GET /quote-requests/my-responses — supplier lists their submitted proposals */
+  @Get('my-responses')
+  myResponses(
+    @CurrentUser() user: RequestingUser,
+    @Query('limit') limit: string = '20',
+    @Query('skip') skip: string = '0',
+  ) {
+    this.assertCanRespondAsSupplier(user);
+    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+    const skipNum = Math.max(parseInt(skip, 10) || 0, 0);
+    return this.service.myResponses(user.companyId!, limitNum, skipNum);
+  }
+
   /** GET /quote-requests/open — supplier sees all open requests with pagination */
   @Get('open')
   openRequests(
@@ -82,6 +96,12 @@ export class QuoteRequestsController {
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.service.findOne(id, user.userId);
+  }
+
+  /** PATCH /quote-requests/:id/cancel — buyer cancels a pending/quoted request */
+  @Patch(':id/cancel')
+  cancel(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+    return this.service.cancel(id, user.userId);
   }
 
   /** POST /quote-requests/:id/accept/:responseId — buyer accepts a quote */

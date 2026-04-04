@@ -1,5 +1,30 @@
 import { apiFetch } from './common';
 
+export type DisputeReason =
+  | 'SHORT_DELIVERY'
+  | 'WRONG_MATERIAL'
+  | 'DAMAGE'
+  | 'LATE_DELIVERY'
+  | 'NO_DELIVERY'
+  | 'QUALITY_ISSUE'
+  | 'OTHER';
+
+export type DisputeStatus = 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'REJECTED';
+
+export interface ApiDispute {
+  id: string;
+  reason: DisputeReason;
+  status: DisputeStatus;
+  description: string;
+  resolution: string | null;
+  resolvedAt: string | null;
+  orderId: string;
+  order: { id: string; orderNumber: string; status: string; deliveryAddress: string } | null;
+  raisedBy: { id: string; firstName: string; lastName: string; email: string } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface PaymentOnboardResponse {
   url: string;
 }
@@ -46,6 +71,24 @@ export const paymentsApi = {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ orderId, reason, description: description || reason }),
+    });
+  },
+
+  /**
+   * List the current buyer's disputes.
+   */
+  listDisputes: async (token: string): Promise<ApiDispute[]> => {
+    return apiFetch('disputes', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /**
+   * Fetch a single dispute by id.
+   */
+  getDispute: async (id: string, token: string): Promise<ApiDispute> => {
+    return apiFetch(`disputes/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
   },
 };

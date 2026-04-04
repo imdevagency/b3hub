@@ -129,6 +129,24 @@ export class QuoteRequestsService {
     return req;
   }
 
+  // ── Buyer: cancel a pending/quoted request ─────────────────
+  async cancel(id: string, userId: string) {
+    const req = await this.prisma.quoteRequest.findUnique({ where: { id } });
+    if (!req) throw new NotFoundException('Quote request not found');
+    if (req.buyerId !== userId) throw new ForbiddenException('Not your request');
+    if (
+      req.status !== QuoteRequestStatus.PENDING &&
+      req.status !== QuoteRequestStatus.QUOTED
+    ) {
+      throw new BadRequestException('Only PENDING or QUOTED requests can be cancelled');
+    }
+    return this.prisma.quoteRequest.update({
+      where: { id },
+      data: { status: QuoteRequestStatus.CANCELLED },
+      include: INCLUDE_REQUEST,
+    });
+  }
+
   // ── Buyer: list their own requests ───────────────────────────
   async findAll(userId: string, limit: number = 20, skip: number = 0) {
     const [data, total] = await Promise.all([
@@ -516,6 +534,36 @@ export class QuoteRequestsService {
         hasMore: skip + limit < total,
       },
     };
+  }
+
+  // ── Supplier: list their own submitted responses ─────────────
+  async myResponses(companyId: string, limit = 20, skip = 0) {
+    const [data, total] = await Promise.all([
+      this.prisma.quoteResponse.findMany({
+        where: { supplierId: companyId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip,
+        include: {
+          request: {
+            select: {
+              id: true,
+              requestNumber: true,
+              materialCategory: true,
+              materialName: true,
+              quantity: true,
+              unit: true,
+              deliveryCity: true,
+              status: true,
+              createdAt: true,
+              buyer: { select: { firstName: true, lastName: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.quoteResponse.count({ where: { supplierId: companyId } }),
+    ]);
+    return { data, pagination: { total, limit, skip, hasMore: skip + limit < total } };
   }
 
   // ─── Scheduled tasks ──────────────────────────────────────────

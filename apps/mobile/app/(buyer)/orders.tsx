@@ -33,6 +33,36 @@ import { lv } from 'date-fns/locale';
 import { useOrders, type FilterKey } from '@/lib/use-orders';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+
+const PAYMENT_BADGE: Record<string, { label: string; bg: string; color: string } | undefined> = {
+  PENDING: { label: 'Gaida maksājumu', bg: '#fef3c7', color: '#92400e' },
+  AUTHORIZED: { label: 'Autorizēts', bg: '#eff6ff', color: '#1d4ed8' },
+  CAPTURED: { label: 'Iekasēts', bg: '#dcfce7', color: '#166534' },
+  PARTIALLY_PAID: { label: 'Daļēji apmaksāts', bg: '#fef9c3', color: '#713f12' },
+  REFUNDED: { label: 'Atmaksāts', bg: '#f3f4f6', color: '#6b7280' },
+  FAILED: { label: 'Maksājums neizdevās', bg: '#fee2e2', color: '#991b1b' },
+  // PAID and RELEASED intentionally omitted — no badge needed
+};
+
+function PaymentBadge({ status }: { status?: string }) {
+  if (!status) return null;
+  const meta = PAYMENT_BADGE[status];
+  if (!meta) return null;
+  return (
+    <View
+      style={{
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+        backgroundColor: meta.bg,
+      }}
+    >
+      <Text style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: meta.color }}>
+        {meta.label}
+      </Text>
+    </View>
+  );
+}
 import { haptics } from '@/lib/haptics';
 
 export default function OrdersScreen() {
@@ -383,7 +413,10 @@ function MaterialOrderCard({ order }: { order: any }) {
       </View>
 
       <View style={s.cardFooter}>
-        <Text style={s.price}>{order.totalAmount != null ? `€${order.totalAmount}` : '—'}</Text>
+        <View style={{ gap: 4 }}>
+          <Text style={s.price}>{order.totalAmount != null ? `€${order.totalAmount}` : '—'}</Text>
+          <PaymentBadge status={order.paymentStatus} />
+        </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           {order.linkedSkipOrder && (
             <TouchableOpacity

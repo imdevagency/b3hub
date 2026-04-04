@@ -1,16 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-  TextInput,
-} from 'react-native';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, FlatList, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { Text } from '@/components/ui/text';
 import {
   Layers,
   Leaf,
@@ -24,18 +18,33 @@ import {
   X,
   Package,
   FolderOpen,
+  ChevronRight,
 } from 'lucide-react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { MaterialCategory, ApiMaterial } from '@/lib/api';
 import {
   CATEGORY_LABELS,
+  CATEGORY_DESCRIPTIONS,
   MATERIAL_CATEGORIES,
-  DEFAULT_MATERIAL_NAMES,
   UNIT_SHORT,
 } from '@/lib/materials';
+
+// ── Display order — most common construction materials first ──────────────
+
+const DISPLAY_ORDER: MaterialCategory[] = [
+  'GRAVEL',
+  'SAND',
+  'STONE',
+  'CONCRETE',
+  'ASPHALT',
+  'SOIL',
+  'CLAY',
+  'RECYCLED_CONCRETE',
+  'RECYCLED_SOIL',
+  'OTHER',
+];
 
 // ── Category metadata ──────────────────────────────────────────────────────
 
@@ -54,72 +63,59 @@ const CATEGORY_META: Record<MaterialCategory, CatMeta> = {
   OTHER: { bg: '#f3f4f6', accent: '#6b7280', icon: MoreHorizontal },
 };
 
-const { width } = Dimensions.get('window');
-// Screen width minus padding (16*2=32) minus gap (16) divided by 2 items per row
-const cardWidth = (width - 48) / 2;
+// ── Category card ─────────────────────────────────────────────────────────
 
-// ── Category Card ──────────────────────────────────────────────────────────
-
-function CategoryCard({ category, onPress }: { category: MaterialCategory; onPress: () => void }) {
-  const meta = CATEGORY_META[category];
+function CategoryCard({
+  category,
+  hasRecycled,
+  onPress,
+}: {
+  category: MaterialCategory;
+  hasRecycled: boolean;
+  onPress: () => void;
+}) {
+  const meta = CATEGORY_META[category] ?? { bg: '#f3f4f6', accent: '#6b7280', icon: Package };
   const Icon = meta.icon;
-  const isRecycled = category.startsWith('RECYCLED');
+  const description = CATEGORY_DESCRIPTIONS[category];
 
   return (
     <TouchableOpacity
-      style={s.card}
+      style={s.catCard}
       onPress={() => {
         haptics.light();
         onPress();
       }}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
     >
-      {/* Icon square */}
-      <View style={[s.iconWrap, { backgroundColor: meta.bg }]}>
+      {/* Left accent strip */}
+      <View style={[s.catStrip, { backgroundColor: meta.accent }]} />
+
+      {/* Icon */}
+      <View style={[s.catIconWrap, { backgroundColor: meta.bg }]}>
         <Icon size={24} color={meta.accent} strokeWidth={1.8} />
       </View>
 
-      {/* Recycled indicator - Green leaf top right */}
-      {isRecycled && (
-        <View style={s.recycleBadge}>
-          <Leaf size={14} color="#16a34a" fill="#16a34a" />
+      {/* Info */}
+      <View style={s.catBody}>
+        <View style={s.catNameRow}>
+          <Text style={s.catName}>{CATEGORY_LABELS[category]}</Text>
+          {hasRecycled && (
+            <View style={s.recycledBadge}>
+              <Leaf size={11} color="#16a34a" fill="#16a34a" />
+              <Text style={s.recycledText}>Pārstrādāts</Text>
+            </View>
+          )}
         </View>
-      )}
-
-      {/* Text */}
-      <View style={s.cardText}>
-        <Text style={s.cardName} numberOfLines={2}>
-          {CATEGORY_LABELS[category]}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-// ── Search result card ─────────────────────────────────────────────────────
-
-function MaterialSearchCard({ material, onPress }: { material: ApiMaterial; onPress: () => void }) {
-  const catTheme = CATEGORY_META[material.category] ?? { bg: '#f3f4f6', accent: '#6b7280' };
-  return (
-    <TouchableOpacity style={sr.card} onPress={onPress} activeOpacity={0.7}>
-      <View style={[sr.iconBox, { backgroundColor: catTheme.bg }]}>
-        <Package size={18} color={catTheme.accent} />
-      </View>
-      <View style={sr.body}>
-        <View style={sr.nameRow}>
-          <Text style={sr.name} numberOfLines={1}>
-            {material.name}
+        {description ? (
+          <Text style={s.catDesc} numberOfLines={2}>
+            {description}
           </Text>
-          {material.isRecycled && <Leaf size={12} color="#16a34a" fill="#16a34a" />}
-        </View>
-        <Text style={sr.meta}>
-          {material.supplier.name}
-          {material.supplier.city ? ` · ${material.supplier.city}` : ''}
-        </Text>
+        ) : null}
       </View>
-      <View style={sr.priceCol}>
-        <Text style={sr.price}>€{material.basePrice.toFixed(2)}</Text>
-        <Text style={sr.unit}>/{UNIT_SHORT[material.unit] ?? material.unit}</Text>
+
+      {/* Arrow */}
+      <View style={s.catRight}>
+        <ChevronRight size={16} color="#d1d5db" />
       </View>
     </TouchableOpacity>
   );
@@ -132,66 +128,122 @@ export default function CatalogScreen() {
   const { token } = useAuth();
   const params = useLocalSearchParams<{ projectId?: string }>();
   const projectId = params.projectId;
+
+  const [allMaterials, setAllMaterials] = useState<ApiMaterial[]>([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<ApiMaterial[]>([]);
-  const [searching, setSearching] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [resumeDraft, setResumeDraft] = useState<{
+    materialName: string;
+    quantity: number;
+    unit: string;
+  } | null>(null);
 
+  const DRAFT_KEY = '@b3hub_wizard_draft';
+  const DRAFT_MAX_AGE_MS = 48 * 60 * 60 * 1000;
+
+  // Check for a saved draft on every focus
+  useFocusEffect(
+    useCallback(() => {
+      AsyncStorage.getItem(DRAFT_KEY)
+        .then((raw) => {
+          if (!raw) {
+            setResumeDraft(null);
+            return;
+          }
+          try {
+            const d = JSON.parse(raw);
+            if (Date.now() - (d.savedAt ?? 0) > DRAFT_MAX_AGE_MS) {
+              AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
+              setResumeDraft(null);
+              return;
+            }
+            setResumeDraft({ materialName: d.materialName, quantity: d.quantity, unit: d.unit });
+          } catch {
+            setResumeDraft(null);
+          }
+        })
+        .catch(() => {});
+    }, []),
+  );
+
+  // Fetch all materials once — used only for per-category stats on the cards
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    const q = query.trim();
-    if (q.length < 2) {
-      setResults([]);
-      setSearching(false);
-      return;
+    if (!token) return;
+    setLoading(true);
+    api.materials
+      .getAll(token, {})
+      .then((data) => {
+        setAllMaterials(Array.isArray(data) ? data : ((data as any).items ?? []));
+      })
+      .catch(() => setAllMaterials([]))
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  // Per-category: supplier count + recycled flag
+  const categoryData = useMemo(() => {
+    const map: Record<string, { supplierCount: number; hasRecycled: boolean }> = {};
+    for (const m of allMaterials) {
+      if (!map[m.category]) map[m.category] = { supplierCount: 0, hasRecycled: false };
+      if (m.isRecycled) map[m.category].hasRecycled = true;
+      map[m.category].supplierCount++;
     }
-    setSearching(true);
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const data = await api.materials.getAll(token ?? '', { search: q });
-        setResults(Array.isArray(data) ? data : []);
-      } catch {
-        setResults([]);
-      } finally {
-        setSearching(false);
-      }
-    }, 350);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [query, token]);
+    return map;
+  }, [allMaterials]);
 
-  const handleCategory = (category: MaterialCategory) => {
+  // Filter categories by search query, preserving DISPLAY_ORDER
+  const visibleCategories = useMemo(() => {
+    const ordered = [
+      ...DISPLAY_ORDER,
+      ...MATERIAL_CATEGORIES.filter((c) => !DISPLAY_ORDER.includes(c)),
+    ];
+    if (!query.trim()) return ordered;
+    const q = query.trim().toLowerCase();
+    return ordered.filter(
+      (cat) =>
+        CATEGORY_LABELS[cat].toLowerCase().includes(q) ||
+        (CATEGORY_DESCRIPTIONS[cat] ?? '').toLowerCase().includes(q) ||
+        allMaterials.some((m) => m.category === cat && m.name.toLowerCase().includes(q)),
+    );
+  }, [query, allMaterials]);
+
+  const handleCategoryPress = (cat: MaterialCategory) => {
     router.push({
       pathname: '/order-request-new',
-      params: {
-        initialCategory: category,
-        prefillMaterial: DEFAULT_MATERIAL_NAMES[category] || undefined,
-        projectId: projectId || undefined,
-      },
+      params: { initialCategory: cat, projectId: projectId || undefined },
     });
   };
-
-  const handleMaterial = (material: ApiMaterial) => {
-    haptics.light();
-    router.push({
-      pathname: '/order-request-new',
-      params: {
-        initialCategory: material.category,
-        prefillMaterial: material.name,
-        materialId: material.id,
-        projectId: projectId || undefined,
-      },
-    });
-  };
-
-  const showSearch = query.trim().length >= 2;
 
   return (
-    <ScreenContainer bg="#ffffff">
-      <ScreenHeader title="Materiāli" />
+    <ScreenContainer bg="#f9fafb">
+      {/* ── Search bar ── */}
+      <View style={s.topBar}>
+        <View style={s.searchBox}>
+          <Search size={16} color="#9ca3af" />
+          <TextInput
+            style={s.searchInput}
+            placeholder="Meklēt kategoriju..."
+            placeholderTextColor="#9ca3af"
+            value={query}
+            onChangeText={setQuery}
+            returnKeyType="search"
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+          {query.length > 0 && (
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                setQuery('');
+              }}
+              hitSlop={8}
+            >
+              <X size={16} color="#9ca3af" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
 
-      {/* Project context banner */}
+      {/* ── Project context banner ── */}
       {projectId ? (
         <View style={s.projectBanner}>
           <FolderOpen size={14} color="#1d4ed8" />
@@ -199,70 +251,104 @@ export default function CatalogScreen() {
         </View>
       ) : null}
 
-      {/* Search bar */}
-      <View style={s.searchRow}>
-        <Search size={16} color="#9ca3af" />
-        <TextInput
-          style={s.searchInput}
-          placeholder="Meklēt materiālu..."
-          placeholderTextColor="#9ca3af"
-          value={query}
-          onChangeText={setQuery}
-          returnKeyType="search"
-          autoCorrect={false}
-          autoCapitalize="none"
-          clearButtonMode="never"
-        />
-        {query.length > 0 && (
-          <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
-            <X size={16} color="#9ca3af" />
+      {/* ── Draft resume banner ── */}
+      {resumeDraft && !query && (
+        <View style={s.draftBanner}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.draftTitle}>Nepabeigts pasūtījums</Text>
+            <Text style={s.draftSub} numberOfLines={1}>
+              {resumeDraft.materialName} — {resumeDraft.quantity}{' '}
+              {UNIT_SHORT[resumeDraft.unit as keyof typeof UNIT_SHORT] ?? resumeDraft.unit}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={s.draftBtn}
+            onPress={() =>
+              router.push({
+                pathname: '/order-request-new',
+                params: { resumeDraft: 'true' },
+              } as any)
+            }
+            activeOpacity={0.8}
+          >
+            <Text style={s.draftBtnText}>Turpināt</Text>
           </TouchableOpacity>
-        )}
-      </View>
+          <TouchableOpacity
+            hitSlop={8}
+            onPress={() => {
+              AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
+              setResumeDraft(null);
+            }}
+          >
+            <X size={16} color="#6b7280" />
+          </TouchableOpacity>
+        </View>
+      )}
 
-      {showSearch ? (
-        /* ── Search results ── */
-        <ScrollView
-          contentContainerStyle={s.resultsList}
+      {/* ── Category list ── */}
+      {loading ? (
+        <View style={s.skeletonWrap}>
+          <SkeletonCard count={6} />
+        </View>
+      ) : visibleCategories.length === 0 ? (
+        <View style={s.empty}>
+          <Package size={36} color="#d1d5db" />
+          <Text style={s.emptyTitle}>Nav rezultātu</Text>
+          <Text style={s.emptySub}>Izmēģiniet citu nosaukumu</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={visibleCategories}
+          keyExtractor={(cat) => cat}
+          renderItem={({ item: cat }) => {
+            const data = categoryData[cat] ?? { supplierCount: 0, hasRecycled: false };
+            return (
+              <CategoryCard
+                category={cat}
+                hasRecycled={data.hasRecycled}
+                onPress={() => handleCategoryPress(cat)}
+              />
+            );
+          }}
+          contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
-        >
-          {searching ? (
-            <View style={{ padding: 16 }}>
-              <SkeletonCard count={4} />
-            </View>
-          ) : results.length === 0 ? (
-            <View style={s.noResults}>
-              <Package size={32} color="#d1d5db" />
-              <Text style={s.noResultsText}>Nav rezultātu</Text>
-              <Text style={s.noResultsSub}>Mēģiniet citu nosaukumu vai izvēlieties kategoriju</Text>
-            </View>
-          ) : (
-            results.map((m) => (
-              <MaterialSearchCard key={m.id} material={m} onPress={() => handleMaterial(m)} />
-            ))
-          )}
-        </ScrollView>
-      ) : (
-        /* ── Category grid ── */
-        <ScrollView
-          contentContainerStyle={s.grid}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {MATERIAL_CATEGORIES.map((cat) => (
-            <CategoryCard key={cat} category={cat} onPress={() => handleCategory(cat)} />
-          ))}
-        </ScrollView>
+        />
       )}
     </ScreenContainer>
   );
 }
 
-// ── Styles ─────────────────────────────────────────────────────────────────
+// ── Styles ────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
+  topBar: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+    backgroundColor: '#f9fafb',
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#111827',
+    paddingVertical: 0,
+  },
   projectBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -281,153 +367,134 @@ const s = StyleSheet.create({
     color: '#1d4ed8',
     fontWeight: '500',
   },
-  searchRow: {
+  draftBanner: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
     marginHorizontal: 16,
     marginTop: 8,
-    marginBottom: 4,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
-    gap: 8,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: '#111827',
-    paddingVertical: 0,
+  draftTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#166534',
   },
-  resultsList: {
+  draftSub: {
+    fontSize: 12,
+    color: '#4b5563',
+    marginTop: 1,
+  },
+  draftBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#16a34a',
+    borderRadius: 8,
+  },
+  draftBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  list: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 40,
-    gap: 4,
+    paddingTop: 10,
+    paddingBottom: 108,
+    gap: 10,
   },
-  noResults: {
+  skeletonWrap: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  empty: {
+    flex: 1,
     alignItems: 'center',
-    paddingTop: 60,
+    justifyContent: 'center',
     gap: 8,
+    paddingHorizontal: 32,
   },
-  noResultsText: {
+  emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#374151',
   },
-  noResultsSub: {
+  emptySub: {
     fontSize: 13,
     color: '#9ca3af',
     textAlign: 'center',
-    paddingHorizontal: 32,
   },
-  grid: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 40,
+  // Category card
+  catCard: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-
-  card: {
-    width: cardWidth,
-    aspectRatio: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: '#F9FAFB',
-    padding: 16,
-    position: 'relative',
-    justifyContent: 'space-between',
-  },
-
-  iconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  recycleBadge: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 4,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 2,
+    minHeight: 88,
   },
-
-  cardText: {
-    marginTop: 8,
+  catStrip: {
+    width: 4,
+    alignSelf: 'stretch',
   },
-  cardName: {
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#111827',
-    letterSpacing: -0.3,
-  },
-});
-
-// ── Search result card styles ───────────────────────────────────────────────
-
-const sr = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 4,
-    gap: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f3f4f6',
-  },
-  iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+  catIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: 12,
+    marginRight: 12,
   },
-  body: {
+  catBody: {
     flex: 1,
-    gap: 3,
+    paddingVertical: 12,
+    gap: 2,
   },
-  nameRow: {
+  catNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexWrap: 'wrap',
   },
-  name: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-    flex: 1,
-  },
-  meta: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  priceCol: {
-    alignItems: 'flex-end',
-  },
-  price: {
-    fontSize: 14,
+  catName: {
+    fontSize: 15,
     fontWeight: '700',
     color: '#111827',
+    letterSpacing: -0.2,
   },
-  unit: {
-    fontSize: 11,
-    color: '#9ca3af',
+  catDesc: {
+    fontSize: 12,
+    color: '#6b7280',
+    lineHeight: 17,
+    marginTop: 1,
+  },
+
+  catRight: {
+    paddingRight: 14,
+    paddingLeft: 8,
+  },
+  recycledBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#dcfce7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  recycledText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#16a34a',
   },
 });

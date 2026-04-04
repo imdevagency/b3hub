@@ -43,7 +43,9 @@ npm run dev:mobile        # Expo dev server
 ### API prefix
 
 <!-- GEN:api-prefix -->
+
 All routes prefixed with `/api/v1` (e.g. `POST /api/v1/orders`).
+
 <!-- END GEN -->
 
 ### Module anatomy
@@ -71,6 +73,7 @@ src/<feature>/
 ### RequestingUser shape (JWT payload)
 
 <!-- GEN:requesting-user -->
+
 ```ts
 export interface RequestingUser {
   /** Primary ID (alias: same as userId) */
@@ -94,6 +97,7 @@ export interface RequestingUser {
   tokenVersion?: number; // incremented on capability/role changes; stale JWTs are rejected
 }
 ```
+
 <!-- END GEN -->
 
 ### User roles
@@ -152,6 +156,7 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 ### Route groups (Expo Router file-based routing)
 
 <!-- GEN:mobile-routes -->
+
 - `(auth)` — apply-role, forgot-password, login, onboarding, register, welcome
 - `(buyer)` — catalog, certificates, framework-contract/, framework-contracts, home, invoices, new-order, order/, orders, profile, project/, projects, rfq/, skip-order/, team, transport-job/
 - `(driver)` — active, earnings, home, jobs, profile, schedule, skips, vehicles
@@ -188,6 +193,16 @@ Prefer hooks over inline `useEffect` + `fetch` in components.
 - **App Router** (Next.js 14+). All pages under `src/app/`.
 - UI components in `src/components/` — built on **shadcn/ui** (config: `components.json`).
 - Shared hooks: `src/hooks/`, utilities: `src/lib/`, types: `src/types/`.
+
+---
+
+## Improving existing flows — rules to prevent duplication
+
+- **Grep before you build.** Before creating any new component, sheet, state machine, or screen for a flow, search for existing implementations first. `order-request-new.tsx`, wizard components, and context files often already handle what you're about to build.
+- **"Improve X" means edit X, not build a parallel X.** Patch the gap in the existing file — do not design a new flow from scratch alongside it.
+- **Read the destination screen before touching the entry point.** If the task is "improve the catalog → order flow," read `order-request-new.tsx` (or whatever the destination is) before writing a single line in `catalog.tsx`.
+- **Ask one scoped question before implementing anything net-new.** If unsure whether a flow already exists, ask: _"Does [screen] already handle [feature]?"_ — one grep answers it in seconds.
+- **No new BottomSheet/modal for a flow that has a dedicated screen.** If a full wizard screen exists (`order-request-new`, `rfq/[id]`, etc.), navigate to it — don't replicate steps inside a sheet.
 
 ---
 

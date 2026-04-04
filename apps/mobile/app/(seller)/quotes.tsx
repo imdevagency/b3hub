@@ -39,10 +39,10 @@ import {
   Zap,
   Droplets,
   Trash2,
-  Truck,
+  ClipboardList,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
-import { api, type OpenQuoteRequest, type MaterialUnit } from '@/lib/api';
+import { api, type OpenQuoteRequest, type MyQuoteResponse, type MaterialUnit } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { t } from '@/lib/translations';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -65,14 +65,14 @@ interface MaterialIcon {
 }
 
 const CATEGORY_ICONS: Record<string, MaterialIcon> = {
-  SAND: { Icon: Truck },
+  SAND: { Icon: Package },
   GRAVEL: { Icon: Box },
   STONE: { Icon: Box },
   CONCRETE: { Icon: Zap },
   SOIL: { Icon: Leaf },
   RECYCLED_CONCRETE: { Icon: Zap },
   RECYCLED_SOIL: { Icon: Leaf },
-  ASPHALT: { Icon: Truck },
+  ASPHALT: { Icon: Box },
   CLAY: { Icon: Droplets },
   OTHER: { Icon: Package },
 };
@@ -359,6 +359,49 @@ function RequestCard({ request, myCompanyId, onRespond }: RequestCardProps) {
   );
 }
 
+// ── My Response Row ───────────────────────────────────────────────────────────
+
+const RESP_STATUS: Record<string, { label: string; bg: string; color: string }> = {
+  PENDING: { label: 'Gaida', bg: '#f3f4f6', color: '#6b7280' },
+  ACCEPTED: { label: 'Pieņemts', bg: '#dcfce7', color: '#16a34a' },
+  REJECTED: { label: 'Noraidīts', bg: '#fee2e2', color: '#dc2626' },
+  EXPIRED: { label: 'Beidzies', bg: '#f9fafb', color: '#9ca3af' },
+};
+
+function MyResponseRow({ item }: { item: MyQuoteResponse }) {
+  const st = RESP_STATUS[item.status] ?? RESP_STATUS.PENDING;
+  const unitLabel = sq.units[item.request.unit] ?? item.request.unit;
+  const catLabel = sq.categories[item.request.materialCategory] ?? item.request.materialCategory;
+  return (
+    <View style={styles.myrRow}>
+      <View style={styles.myrTop}>
+        <View style={styles.myrTitleRow}>
+          <Text style={styles.myrTitle} numberOfLines={1}>
+            #{item.request.requestNumber} · {catLabel}
+          </Text>
+          <View style={[styles.myrBadge, { backgroundColor: st.bg }]}>
+            <Text style={[styles.myrBadgeText, { color: st.color }]}>{st.label}</Text>
+          </View>
+        </View>
+        <Text style={styles.myrSub}>
+          {item.request.materialName} · {item.request.quantity} {unitLabel} · {item.request.deliveryCity}
+        </Text>
+      </View>
+      <View style={styles.myrPriceRow}>
+        <View>
+          <Text style={styles.myrPrice}>€{item.totalPrice.toFixed(2)}</Text>
+          <Text style={styles.myrPriceSub}>€{item.pricePerUnit.toFixed(2)} / {unitLabel}</Text>
+        </View>
+        <Text style={styles.myrEta}>{item.etaDays} d.</Text>
+      </View>
+      {item.notes ? <Text style={styles.myrNotes} numberOfLines={2}>{item.notes}</Text> : null}
+      <Text style={styles.myrDate}>
+        Iesniegts {new Date(item.createdAt).toLocaleDateString('lv-LV', { day: '2-digit', month: 'short', year: 'numeric' })}
+      </Text>
+    </View>
+  );
+}
+
 // ── Main Screen ────────────────────────────────────────────────────────────────
 
 export default function SellerQuotesScreen() {
@@ -370,6 +413,12 @@ export default function SellerQuotesScreen() {
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   // Track which request IDs we've responded to this session (for instant UI feedback)
   const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set());
+
+  // ── My responses tab ──────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState<'open' | 'mine'>('open');
+  const [myResponses, setMyResponses] = useState<MyQuoteResponse[]>([]);
+  const [myLoading, setMyLoading] = useState(false);
+  const [myRefreshing, setMyRefreshing] = useState(false);
 
   const myCompanyId = user?.company?.id;
 
@@ -390,16 +439,36 @@ export default function SellerQuotesScreen() {
     [token],
   );
 
+  const loadMine = useCallback(
+    async (silent = false) => {
+      if (!token) return;
+      if (!silent) setMyLoading(true);
+      try {
+        const data = await api.quoteRequests.myResponses(token);
+        setMyResponses(data);
+      } catch {
+        // silent
+      } finally {
+        setMyLoading(false);
+        setMyRefreshing(false);
+      }
+    },
+    [token],
+  );
+
   useFocusEffect(
     useCallback(() => {
       load();
-    }, [load]),
+      loadMine();
+    }, [load, loadMine]),
   );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     load(true);
-  }, [load]);
+    setMyRefreshing(true);
+    loadMine(true);
+  }, [load, loadMine]);
 
   const handleRespond = useCallback((req: OpenQuoteRequest) => {
     setModalRequest(req);
@@ -432,7 +501,56 @@ export default function SellerQuotesScreen() {
     <ScreenContainer bg="white">
       <ScreenHeader title={sq.title} />
 
-      {/* Category filter chips */}
+      {/* Tab switcher */}
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'open' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('open')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.tabBtnText, activeTab === 'open' && styles.tabBtnTextActive]}>
+            Pieprasījumi{requests.length > 0 ? ` (${requests.length})` : ''}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'mine' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('mine')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.tabBtnText, activeTab === 'mine' && styles.tabBtnTextActive]}>
+            Mani piedāvājumi{myResponses.length > 0 ? ` (${myResponses.length})` : ''}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {activeTab === 'mine' ? (
+        myLoading ? (
+          <View style={{ padding: 24, gap: 16 }}><SkeletonCard count={4} /></View>
+        ) : (
+          <ScrollView
+            style={styles.list}
+            contentContainerStyle={[
+              styles.listContent,
+              myResponses.length === 0 && { flexGrow: 1, justifyContent: 'center' },
+            ]}
+            refreshControl={
+              <RefreshControl refreshing={myRefreshing} onRefresh={onRefresh} tintColor="#111827" />
+            }
+          >
+            {myResponses.length === 0 ? (
+              <View style={styles.emptyWrap}>
+                <View style={styles.emptyIconWrap}>
+                  <ClipboardList size={32} color="#9ca3af" />
+                </View>
+                <Text style={styles.emptyTitle}>Nav iesniegtu piedāvājumu</Text>
+                <Text style={styles.emptyDesc}>Piedāvājumi par atvērtiem pieprasījumiem rādīsās šeit.</Text>
+              </View>
+            ) : (
+              myResponses.map((item) => <MyResponseRow key={item.id} item={item} />)
+            )}
+          </ScrollView>
+        )
+      ) : (<>}
       {!loading && activeCategories.length > 1 && (
         <ScrollView
           horizontal
@@ -539,6 +657,7 @@ export default function SellerQuotesScreen() {
           )}
         </ScrollView>
       )}
+      </>)}
 
       {/* Proposal Modal */}
       {modalRequest && token && (
@@ -560,6 +679,49 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#ffffff' },
   header: {
     paddingHorizontal: 20,
+
+  // Tab bar
+  tabBar: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 10,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+  },
+  tabBtnActive: { backgroundColor: '#111827' },
+  tabBtnText: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
+  tabBtnTextActive: { color: '#ffffff' },
+
+  // My response row
+  myrRow: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+    padding: 16,
+    marginBottom: 12,
+    gap: 8,
+  },
+  myrTop: { gap: 4 },
+  myrTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  myrTitle: { fontSize: 14, fontWeight: '700', color: '#111827', flex: 1 },
+  myrBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  myrBadgeText: { fontSize: 11, fontWeight: '700' },
+  myrSub: { fontSize: 13, color: '#6b7280' },
+  myrPriceRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  myrPrice: { fontSize: 18, fontWeight: '800', color: '#111827' },
+  myrPriceSub: { fontSize: 12, color: '#9ca3af' },
+  myrEta: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
+  myrNotes: { fontSize: 13, color: '#374151' },
+  myrDate: { fontSize: 11, color: '#9ca3af' },
     paddingTop: 12,
     paddingBottom: 4,
     backgroundColor: '#ffffff',

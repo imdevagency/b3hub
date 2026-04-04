@@ -11,7 +11,7 @@
  *                     OR no offers → send RFQ (quote request)
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -48,6 +48,24 @@ import { Calendar as RNCalendar } from 'react-native-calendars';
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const DRAFT_KEY = '@b3hub_wizard_draft';
+
+type WizardDraft = {
+  category: string;
+  materialName: string;
+  unit: MaterialUnit;
+  quantity: number;
+  notes: string;
+  step: Step;
+  pickedAddress: PickedAddress | null;
+  deliveryDate: string;
+  deliveryWindow: 'ANY' | 'AM' | 'PM';
+  truckCount: number;
+  truckIntervalMinutes: number;
+  savedAt: number;
+};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -104,6 +122,7 @@ export default function OrderRequestWizard() {
     prefillAddress?: string;
     prefillCity?: string;
     projectId?: string;
+    resumeDraft?: string;
   }>();
 
   const category = (params.initialCategory ?? '') as MaterialCategory;
@@ -153,6 +172,76 @@ export default function OrderRequestWizard() {
   // ── Contact — pre-filled from user profile ──
   const [contactName] = useState(() => `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim());
   const [contactPhone] = useState(() => user?.phone ?? '');
+
+  // ── Draft: restore from AsyncStorage when 'resumeDraft' param is set ──
+  const draftLoadedRef = useRef(false);
+  useEffect(() => {
+    if (params.resumeDraft !== 'true') {
+      draftLoadedRef.current = true;
+      return;
+    }
+    AsyncStorage.getItem(DRAFT_KEY)
+      .then((raw) => {
+        if (!raw) {
+          draftLoadedRef.current = true;
+          return;
+        }
+        try {
+          const d: WizardDraft = JSON.parse(raw);
+          setMaterialName(d.materialName || materialName);
+          setUnit(d.unit || unit);
+          setQuantity(d.quantity || quantity);
+          setNotes(d.notes || '');
+          setStep(d.step || 'specs');
+          if (d.pickedAddress) setPickedAddress(d.pickedAddress);
+          if (d.deliveryDate) setDeliveryDate(d.deliveryDate);
+          setDeliveryWindow(d.deliveryWindow || 'ANY');
+          setTruckCount(d.truckCount || 1);
+          setTruckIntervalMinutes(d.truckIntervalMinutes || 60);
+        } catch {
+          /* ignore corrupt draft */
+        }
+        draftLoadedRef.current = true;
+      })
+      .catch(() => {
+        draftLoadedRef.current = true;
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Draft: save progressively to AsyncStorage ──
+  useEffect(() => {
+    if (!draftLoadedRef.current) return;
+    if (submitted) return; // don't overwrite cleared draft after submission
+    const draft: WizardDraft = {
+      category,
+      materialName,
+      unit,
+      quantity,
+      notes,
+      step,
+      pickedAddress,
+      deliveryDate,
+      deliveryWindow,
+      truckCount,
+      truckIntervalMinutes,
+      savedAt: Date.now(),
+    };
+    AsyncStorage.setItem(DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
+  }, [
+    category,
+    materialName,
+    unit,
+    quantity,
+    notes,
+    step,
+    pickedAddress,
+    deliveryDate,
+    deliveryWindow,
+    truckCount,
+    truckIntervalMinutes,
+    submitted,
+  ]);
 
   // ── Quantity quick-values ──
   const stepAmt = unit === 'M3' ? 1 : 5;
@@ -264,6 +353,7 @@ export default function OrderRequestWizard() {
       setOrderNumber(order.orderNumber);
       setOrderId(order.id);
       setSubmitted('order');
+      AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Kaut kas nogāja greizi.');
     } finally {
@@ -294,6 +384,7 @@ export default function OrderRequestWizard() {
       setRfqNumber(result.requestNumber);
       setRfqId(result.id);
       setSubmitted('rfq');
+      AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Kaut kas nogāja greizi.');
     } finally {

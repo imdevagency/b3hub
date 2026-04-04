@@ -92,6 +92,8 @@ export default function BuyerLayout() {
         <Tabs.Screen name="projects" options={{ href: null }} />
         <Tabs.Screen name="project/[id]" options={{ href: null }} />
         <Tabs.Screen name="project/new" options={{ href: null }} />
+        <Tabs.Screen name="saved-addresses" options={{ href: null }} />
+        <Tabs.Screen name="disputes" options={{ href: null }} />
       </Tabs>
     </View>
   );
