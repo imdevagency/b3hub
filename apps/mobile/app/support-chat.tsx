@@ -30,9 +30,7 @@ function Bubble({ msg, myId }: { msg: ApiSupportMessage; myId: string }) {
   return (
     <View style={[s.bubbleRow, isMe && s.bubbleRowMe]}>
       <View style={[s.bubble, isMe ? s.bubbleMe : s.bubbleOther]}>
-        {!isMe && (
-          <Text style={s.bubbleSender}>{msg.senderName}</Text>
-        )}
+        {!isMe && <Text style={s.bubbleSender}>{msg.senderName}</Text>}
         <Text style={[s.bubbleText, isMe && s.bubbleTextMe]}>{msg.body}</Text>
         <Text style={[s.bubbleTime, isMe && s.bubbleTimeMe]}>{time}</Text>
       </View>
@@ -130,9 +128,7 @@ export default function SupportChatScreen() {
           ref={flatRef}
           data={messages}
           keyExtractor={(m) => m.id}
-          renderItem={({ item }) => (
-            <Bubble msg={item} myId={user?.id ?? ''} />
-          )}
+          renderItem={({ item }) => <Bubble msg={item} myId={user?.id ?? ''} />}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={

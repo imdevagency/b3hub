@@ -179,7 +179,13 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
   saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  langRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#fff' },
+  langRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+  },
   langCaps: { flexDirection: 'row', alignItems: 'center', marginLeft: 'auto' },
   langOpt: { fontSize: 13, fontWeight: '600', color: '#9ca3af', paddingHorizontal: 4 },
   langOptActive: { color: '#111827' },
@@ -394,11 +400,16 @@ export default function ProfileScreen() {
           />
           <TouchableOpacity
             style={s.langRow}
-            onPress={() => { haptics.light(); setLanguage(language === 'lv' ? 'ru' : 'lv'); }}
+            onPress={() => {
+              haptics.light();
+              setLanguage(language === 'lv' ? 'ru' : 'lv');
+            }}
             activeOpacity={0.7}
           >
             <View style={s.menuItemContent}>
-              <View style={s.menuIcon}><Globe size={20} color="#4b5563" /></View>
+              <View style={s.menuIcon}>
+                <Globe size={20} color="#4b5563" />
+              </View>
               <Text style={s.menuLabel}>Valoda / Язык</Text>
             </View>
             <View style={s.langCaps}>

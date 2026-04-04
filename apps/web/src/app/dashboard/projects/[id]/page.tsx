@@ -735,7 +735,9 @@ export default function ProjectDetailPage() {
             <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs font-medium ml-1 text-muted-foreground">Nosaukums</Label>
+                  <Label className="text-xs font-medium ml-1 text-muted-foreground">
+                    Nosaukums
+                  </Label>
                   <Input
                     className="mt-1 h-10 rounded-lg bg-white border text-sm"
                     placeholder="Iekraušanas punkts A"

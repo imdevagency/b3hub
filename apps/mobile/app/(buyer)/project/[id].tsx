@@ -182,7 +182,11 @@ export default function ProjectDetailScreen() {
     if (!token || !id || !newSiteLabel.trim() || !newSiteAddress.trim()) return;
     setAddingSite(true);
     try {
-      await api.projects.addSite(id, { label: newSiteLabel.trim(), address: newSiteAddress.trim() }, token);
+      await api.projects.addSite(
+        id,
+        { label: newSiteLabel.trim(), address: newSiteAddress.trim() },
+        token,
+      );
       setNewSiteLabel('');
       setNewSiteAddress('');
       setShowAddSite(false);
@@ -382,13 +386,20 @@ export default function ProjectDetailScreen() {
               <View style={styles.formActions}>
                 <TouchableOpacity
                   style={styles.cancelBtn}
-                  onPress={() => { setShowAddSite(false); setNewSiteLabel(''); setNewSiteAddress(''); }}
+                  onPress={() => {
+                    setShowAddSite(false);
+                    setNewSiteLabel('');
+                    setNewSiteAddress('');
+                  }}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.cancelBtnText}>Atcelt</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.saveBtn, (!newSiteLabel || !newSiteAddress || addingSite) && styles.saveBtnDisabled]}
+                  style={[
+                    styles.saveBtn,
+                    (!newSiteLabel || !newSiteAddress || addingSite) && styles.saveBtnDisabled,
+                  ]}
                   onPress={handleAddSite}
                   disabled={!newSiteLabel || !newSiteAddress || addingSite}
                   activeOpacity={0.75}

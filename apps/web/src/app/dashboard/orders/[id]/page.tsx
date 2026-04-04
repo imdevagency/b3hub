@@ -484,16 +484,21 @@ export default function OrderDetailPage() {
 
           {existingDispute ? (
             <div className="space-y-2">
-              <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${getDisputeStatusColor(existingDispute.status)}`}>
+              <div
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${getDisputeStatusColor(existingDispute.status)}`}
+              >
                 {DISPUTE_STATUS_LABELS[existingDispute.status]}
               </div>
-              <p className="text-sm text-slate-700 font-medium">{DISPUTE_REASON_LABELS[existingDispute.reason]}</p>
+              <p className="text-sm text-slate-700 font-medium">
+                {DISPUTE_REASON_LABELS[existingDispute.reason]}
+              </p>
               {existingDispute.description && (
                 <p className="text-sm text-slate-500">{existingDispute.description}</p>
               )}
               {existingDispute.resolution && (
                 <div className="rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-800">
-                  <span className="font-semibold">Lēmums: </span>{existingDispute.resolution}
+                  <span className="font-semibold">Lēmums: </span>
+                  {existingDispute.resolution}
                 </div>
               )}
             </div>
@@ -510,7 +515,9 @@ export default function OrderDetailPage() {
                       onChange={() => setDisputeReason(key)}
                       className="accent-slate-900"
                     />
-                    <span className={`text-sm ${disputeReason === key ? 'text-slate-900 font-medium' : 'text-slate-600'}`}>
+                    <span
+                      className={`text-sm ${disputeReason === key ? 'text-slate-900 font-medium' : 'text-slate-600'}`}
+                    >
                       {DISPUTE_REASON_LABELS[key]}
                     </span>
                   </label>
@@ -533,13 +540,19 @@ export default function OrderDetailPage() {
                     setDisputeError(null);
                     try {
                       const created = await createDispute(
-                        { orderId: job.order.id, reason: disputeReason, description: disputeDetails || DISPUTE_REASON_LABELS[disputeReason] },
+                        {
+                          orderId: job.order.id,
+                          reason: disputeReason,
+                          description: disputeDetails || DISPUTE_REASON_LABELS[disputeReason],
+                        },
                         token,
                       );
                       setExistingDispute(created);
                       setShowDisputeForm(false);
                     } catch (err: unknown) {
-                      setDisputeError(err instanceof Error ? err.message : 'Neizdevās iesniegt sūdzību');
+                      setDisputeError(
+                        err instanceof Error ? err.message : 'Neizdevās iesniegt sūdzību',
+                      );
                     } finally {
                       setDisputeLoading(false);
                     }
@@ -547,14 +560,23 @@ export default function OrderDetailPage() {
                 >
                   {disputeLoading ? 'Iesniedz...' : 'Iesniegt sūdzību'}
                 </Button>
-                <Button variant="outline" onClick={() => { setShowDisputeForm(false); setDisputeError(null); }}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowDisputeForm(false);
+                    setDisputeError(null);
+                  }}
+                >
                   Atcelt
                 </Button>
               </div>
             </div>
           ) : (
             <div className="space-y-2">
-              <p className="text-sm text-slate-500">Piegāde saņemta? Ja ir problēma ar kravas daudzumu, kvalitāti vai bojājumu — iesniedz sūdzību.</p>
+              <p className="text-sm text-slate-500">
+                Piegāde saņemta? Ja ir problēma ar kravas daudzumu, kvalitāti vai bojājumu —
+                iesniedz sūdzību.
+              </p>
               <Button variant="outline" size="sm" onClick={() => setShowDisputeForm(true)}>
                 <AlertTriangle className="h-4 w-4 mr-1.5 text-amber-500" />
                 Ziņot par problēmu

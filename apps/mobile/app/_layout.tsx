@@ -144,11 +144,27 @@ export default function RootLayout() {
           <AuthProvider>
             <LanguageProvider>
               <ModeProvider>
-              <ToastProvider>
-                <StatusBar style="dark" />
-                <OfflineBanner />
-                {StripeProvider && STRIPE_PK ? (
-                  <StripeProvider publishableKey={STRIPE_PK}>
+                <ToastProvider>
+                  <StatusBar style="dark" />
+                  <OfflineBanner />
+                  {StripeProvider && STRIPE_PK ? (
+                    <StripeProvider publishableKey={STRIPE_PK}>
+                      <Stack
+                        screenOptions={{
+                          headerShown: false,
+                          ...SCREEN.push,
+                        }}
+                      >
+                        {/* Booking wizard flows enter from the bottom — Uber-style */}
+                        <Stack.Screen name="order-request-new" options={SCREEN.modal} />
+                        <Stack.Screen name="order" options={SCREEN.modal} />
+                        <Stack.Screen name="disposal" options={SCREEN.modal} />
+                        <Stack.Screen name="transport" options={SCREEN.modal} />
+                        {/* Auth redirect — instant, no animation */}
+                        <Stack.Screen name="(auth)" options={SCREEN.fade} />
+                      </Stack>
+                    </StripeProvider>
+                  ) : (
                     <Stack
                       screenOptions={{
                         headerShown: false,
@@ -163,27 +179,11 @@ export default function RootLayout() {
                       {/* Auth redirect — instant, no animation */}
                       <Stack.Screen name="(auth)" options={SCREEN.fade} />
                     </Stack>
-                  </StripeProvider>
-                ) : (
-                  <Stack
-                    screenOptions={{
-                      headerShown: false,
-                      ...SCREEN.push,
-                    }}
-                  >
-                    {/* Booking wizard flows enter from the bottom — Uber-style */}
-                    <Stack.Screen name="order-request-new" options={SCREEN.modal} />
-                    <Stack.Screen name="order" options={SCREEN.modal} />
-                    <Stack.Screen name="disposal" options={SCREEN.modal} />
-                    <Stack.Screen name="transport" options={SCREEN.modal} />
-                    {/* Auth redirect — instant, no animation */}
-                    <Stack.Screen name="(auth)" options={SCREEN.fade} />
-                  </Stack>
-                )}
-              </ToastProvider>
-            </ModeProvider>
-          </LanguageProvider>
-        </AuthProvider>
+                  )}
+                </ToastProvider>
+              </ModeProvider>
+            </LanguageProvider>
+          </AuthProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>

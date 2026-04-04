@@ -167,10 +167,7 @@ export default function DeliveryProofScreen() {
         );
       } else {
         haptics.error();
-        Alert.alert(
-          t.deliveryProof.errorTitle,
-          msg || 'Kļūda nosūtot pierādījumu',
-        );
+        Alert.alert(t.deliveryProof.errorTitle, msg || 'Kļūda nosūtot pierādījumu');
       }
     } finally {
       setSubmitting(false);
