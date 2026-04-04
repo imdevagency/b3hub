@@ -573,6 +573,10 @@ model Order {
   linkedSkipOrder   SkipHireOrder? @relation("LinkedMaterialOrder", fields: [linkedSkipOrderId], references: [id])
   linkedSkipOrderId String?        @unique
 
+  // Multi-truck staggered delivery
+  truckCount           Int @default(1) // number of separate truck runs
+  truckIntervalMinutes Int? // minutes between consecutive trucks; null = all at once
+
   // Recurring order schedule — if this order spawned from a schedule
   scheduleId String?
   schedule   OrderSchedule? @relation(fields: [scheduleId], references: [id])
@@ -692,6 +696,9 @@ model TransportJob {
   // Required vehicle
   requiredVehicleType String? // human-readable e.g. "Sattelkipper"
   requiredVehicleEnum VehicleType?
+
+  // Staggered delivery — which run this job represents (1-based)
+  truckIndex Int?
 
   // Geo coords for radius filtering
   pickupLat   Float?

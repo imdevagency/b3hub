@@ -35,6 +35,7 @@ import {
   TrendingUp,
   Globe,
   Trash2,
+  FolderOpen,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -406,6 +407,11 @@ export default function ProfileScreen() {
             icon={Truck}
             label="Mani transportlīdzekļi"
             onPress={() => router.push('/(driver)/vehicles')}
+          />
+          <MenuItem
+            icon={FolderOpen}
+            label="Mans darba vēsture"
+            onPress={() => router.push('/(driver)/documents' as any)}
           />
           <MenuItem
             icon={Trash2}

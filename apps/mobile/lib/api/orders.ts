@@ -74,6 +74,10 @@ export interface CreateMaterialOrderInput {
   siteContactPhone?: string;
   notes?: string;
   projectId?: string;
+  /** Number of trucks to dispatch (each becomes a separate transport job). */
+  truckCount?: number;
+  /** Minutes between consecutive trucks when truckCount > 1. */
+  truckIntervalMinutes?: number;
 }
 
 // ─── Recurring order schedule ─────────────────────────────────────────────

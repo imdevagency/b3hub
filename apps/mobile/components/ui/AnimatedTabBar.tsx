@@ -140,7 +140,10 @@ export function AnimatedTabBar({
   if (!state || !navigation || !descriptors) return null;
 
   const visibleRoutes = state.routes.filter((r: Route<string>) => {
-    const opts = descriptors[r.key]?.options;
+    const descriptor = descriptors[r.key];
+    // Descriptor not yet hydrated — skip to avoid "stale" crash during cold start
+    if (!descriptor) return false;
+    const opts = descriptor.options;
     // expo-router converts href:null → tabBarButton: () => null in descriptor options
     if (typeof opts?.tabBarButton === 'function') return false;
     return true;

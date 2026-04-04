@@ -370,7 +370,7 @@ export default function ProfileScreen() {
           <MenuItem
             icon={FileCheck}
             label="Dokumenti"
-            onPress={() => router.push('/(buyer)/certificates' as any)}
+            onPress={() => router.push('/(buyer)/documents' as any)}
           />
           <MenuItem
             icon={Users}

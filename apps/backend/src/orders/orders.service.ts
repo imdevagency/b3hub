@@ -362,6 +362,8 @@ export class OrdersService {
         siteContactName: orderData.siteContactName,
         siteContactPhone: orderData.siteContactPhone,
         projectId: orderData.projectId ?? null,
+        truckCount: orderData.truckCount ?? 1,
+        truckIntervalMinutes: orderData.truckIntervalMinutes ?? null,
         subtotal,
         tax,
         total,
@@ -1464,9 +1466,11 @@ export class OrdersService {
   }
 
   /**
-   * Auto-create a MATERIAL_DELIVERY transport job linked to the order.
+   * Auto-create MATERIAL_DELIVERY transport jobs linked to the order.
+   * When truckCount > 1, creates one job per truck, each staggered by
+   * truckIntervalMinutes (default 60) from the base delivery date.
    * Pickup address = first item's supplier company address.
-   * The job is immediately AVAILABLE on the driver job board.
+   * All jobs are immediately AVAILABLE on the driver job board.
    */
   private async spawnTransportJob(
     orderId: string,
@@ -1498,39 +1502,49 @@ export class OrdersService {
 
     const totalWeight = items.reduce((sum, item) => sum + item.quantity, 0);
     const cargoType = firstMaterial.name;
-    const pickupDate = orderData.deliveryDate
-      ? new Date(orderData.deliveryDate)
-      : new Date();
-    const jobNumber = this.generateTransportJobNumber();
+    const baseDate = orderData.deliveryDate ? new Date(orderData.deliveryDate) : new Date();
 
-    await this.prisma.transportJob.create({
-      data: {
-        jobNumber,
-        jobType: TransportJobType.MATERIAL_DELIVERY,
-        orderId,
-        pickupAddress: firstMaterial.supplier.street,
-        pickupCity: firstMaterial.supplier.city,
-        pickupState: firstMaterial.supplier.state ?? '',
-        pickupPostal: firstMaterial.supplier.postalCode ?? '',
-        pickupDate,
-        deliveryAddress: orderData.deliveryAddress,
-        deliveryCity: orderData.deliveryCity,
-        deliveryState: orderData.deliveryState ?? '',
-        deliveryPostal: orderData.deliveryPostal ?? '',
-        deliveryDate: pickupDate,
-        cargoType,
-        cargoWeight: totalWeight,
-        // Use the explicit delivery fee as the driver rate; fall back to 0 so
-        // the dispatcher can set the correct rate before dispatching.
-        rate: orderData.deliveryFee ?? 0,
-        currency: 'EUR',
-        status: TransportJobStatus.AVAILABLE,
-      },
-    });
+    const truckCount = Math.max(1, orderData.truckCount ?? 1);
+    const intervalMs = (orderData.truckIntervalMinutes ?? 60) * 60 * 1000;
+    // Distribute weight equally across trucks
+    const weightPerTruck = totalWeight / truckCount;
 
-    this.logger.log(
-      `Transport job ${jobNumber} created for order ${orderId} (pickup: ${firstMaterial.supplier.city} → delivery: ${orderData.deliveryCity})`,
-    );
+    for (let i = 0; i < truckCount; i++) {
+      const jobNumber = this.generateTransportJobNumber();
+      const pickupDate = new Date(baseDate.getTime() + i * intervalMs);
+
+      await this.prisma.transportJob.create({
+        data: {
+          jobNumber,
+          jobType: TransportJobType.MATERIAL_DELIVERY,
+          orderId,
+          pickupAddress: firstMaterial.supplier.street,
+          pickupCity: firstMaterial.supplier.city,
+          pickupState: firstMaterial.supplier.state ?? '',
+          pickupPostal: firstMaterial.supplier.postalCode ?? '',
+          pickupDate,
+          deliveryAddress: orderData.deliveryAddress,
+          deliveryCity: orderData.deliveryCity,
+          deliveryState: orderData.deliveryState ?? '',
+          deliveryPostal: orderData.deliveryPostal ?? '',
+          deliveryDate: pickupDate,
+          cargoType,
+          cargoWeight: weightPerTruck,
+          // Distribute fee equally; dispatcher can adjust later
+          rate: (orderData.deliveryFee ?? 0) / truckCount,
+          currency: 'EUR',
+          status: TransportJobStatus.AVAILABLE,
+          ...(truckCount > 1 ? { truckIndex: i + 1 } : {}),
+        },
+      });
+
+      this.logger.log(
+        `Transport job ${jobNumber} created for order ${orderId} — truck ${i + 1}/${truckCount}` +
+          ` (pickup: ${firstMaterial.supplier.city} → delivery: ${orderData.deliveryCity}` +
+          (truckCount > 1 ? `, departure: ${pickupDate.toISOString()}` : '') +
+          `)`,
+      );
+    }
   }
 
   private generateTransportJobNumber(): string {

@@ -81,6 +81,21 @@ export class CreateOrderDto {
   @IsString()
   projectId?: string;
 
+  /** Number of trucks to dispatch (default 1). Each truck becomes a separate transport job. */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  truckCount?: number;
+
+  /**
+   * Minutes between consecutive truck departures when truckCount > 1.
+   * Null / omitted means all trucks depart at the same time.
+   */
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  truckIntervalMinutes?: number;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => OrderItemDto)

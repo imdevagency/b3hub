@@ -124,6 +124,8 @@ export const materialsApi = {
         siteContactPhone?: string;
         notes?: string;
         projectId?: string;
+        truckCount?: number;
+        truckIntervalMinutes?: number;
       },
       token: string,
     ) =>
@@ -150,6 +152,8 @@ export const materialsApi = {
           siteContactPhone: input.siteContactPhone,
           notes: input.notes,
           projectId: input.projectId ?? undefined,
+          truckCount: input.truckCount ?? 1,
+          truckIntervalMinutes: input.truckIntervalMinutes ?? undefined,
         }),
       }),
 

@@ -132,6 +132,8 @@ export default function OrderRequestWizard() {
   // ── When step ──
   const [deliveryDate, setDeliveryDate] = useState('');
   const [deliveryWindow, setDeliveryWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
+  const [truckCount, setTruckCount] = useState(1);
+  const [truckIntervalMinutes, setTruckIntervalMinutes] = useState(60);
   // Repeat / schedule
   const [repeatEnabled, setRepeatEnabled] = useState(false);
   const [repeatInterval, setRepeatInterval] = useState<7 | 14 | 30>(7);
@@ -230,6 +232,8 @@ export default function OrderRequestWizard() {
           siteContactPhone: contactPhone || undefined,
           notes: notes || undefined,
           projectId: params.projectId || undefined,
+          truckCount,
+          truckIntervalMinutes: truckCount > 1 ? truckIntervalMinutes : undefined,
         },
         token,
       );
@@ -655,6 +659,90 @@ export default function OrderRequestWizard() {
 
         {/* Repeat / recurring order toggle */}
         <View style={{ marginTop: 8 }}>
+          {/* Multi-truck staggered delivery */}
+          <View style={{ marginTop: 8 }}>
+            <Text style={[s.fieldLabel, { marginBottom: 10 }]}>Kravas automašīnu skaits</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <TouchableOpacity
+                style={s.stepBtn}
+                onPress={() => setTruckCount((n) => Math.max(1, n - 1))}
+                activeOpacity={0.8}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Minus size={20} color="#111827" />
+              </TouchableOpacity>
+              <View
+                style={{
+                  minWidth: 48,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingVertical: 8,
+                  paddingHorizontal: 16,
+                  backgroundColor: '#F9FAFB',
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: '#E5E7EB',
+                }}
+              >
+                <Text style={{ fontSize: 20, fontFamily: 'Inter_700Bold', color: '#111827' }}>
+                  {truckCount}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={s.stepBtn}
+                onPress={() => setTruckCount((n) => n + 1)}
+                activeOpacity={0.8}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Plus size={20} color="#111827" />
+              </TouchableOpacity>
+              <Text style={{ fontSize: 13, color: '#6B7280', flex: 1 }}>
+                {truckCount === 1 ? 'Viena piegāde' : `${truckCount} atsevišķas piegādes`}
+              </Text>
+            </View>
+
+            {truckCount > 1 && (
+              <View style={{ marginTop: 12 }}>
+                <Text style={[s.fieldLabel, { marginBottom: 8 }]}>Intervāls starp automašīnām</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {([30, 60, 90, 120] as const).map((mins) => {
+                    const labels = { 30: '30 min', 60: '1 h', 90: '1.5 h', 120: '2 h' };
+                    const active = truckIntervalMinutes === mins;
+                    return (
+                      <TouchableOpacity
+                        key={mins}
+                        style={[
+                          s.unitToggleBtn,
+                          active && s.unitToggleBtnActive,
+                          { flex: 1, paddingVertical: 10 },
+                        ]}
+                        onPress={() => setTruckIntervalMinutes(mins)}
+                        activeOpacity={0.8}
+                      >
+                        <Text
+                          style={[
+                            s.unitToggleText,
+                            active && s.unitToggleTextActive,
+                            { textAlign: 'center' },
+                          ]}
+                        >
+                          {labels[mins]}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 8 }}>
+                  1. automašīna: {deliveryDate || 'jebkurā laikā'}, 2. automašīna: +
+                  {truckIntervalMinutes} min, utt.
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Repeat / recurring order toggle */}
+        <View style={{ marginTop: 8 }}>
           <TouchableOpacity
             style={{
               flexDirection: 'row',
@@ -768,6 +856,7 @@ export default function OrderRequestWizard() {
               <Truck size={16} color="#111827" />
               <Text style={s.summaryText}>
                 {quantity} {UNIT_SHORT[unit]} · {materialName}
+                {truckCount > 1 ? ` · ${truckCount} auto (ik ${truckIntervalMinutes} min)` : ''}
               </Text>
             </View>
             {deliveryDate ? (

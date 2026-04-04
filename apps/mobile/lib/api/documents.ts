@@ -5,6 +5,8 @@ import { apiFetch } from './common';
 export type DocumentType =
   | 'INVOICE'
   | 'WEIGHING_SLIP'
+  | 'DELIVERY_PROOF'
+  | 'WASTE_CERTIFICATE'
   | 'DELIVERY_NOTE'
   | 'CMR_NOTE'
   | 'CONTRACT';

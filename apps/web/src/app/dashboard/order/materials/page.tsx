@@ -401,6 +401,8 @@ function MaterialsOrderWizard() {
 
   // Step 3 — When
   const [deliveryDate, setDeliveryDate] = useState('');
+  const [truckCount, setTruckCount] = useState(1);
+  const [truckIntervalMinutes, setTruckIntervalMinutes] = useState(60);
 
   // Step 4 — Who
   const [contactName, setContactName] = useState('');
@@ -562,6 +564,8 @@ function MaterialsOrderWizard() {
           notes: notes || undefined,
           siteContactName: contactName,
           siteContactPhone: contactPhone,
+          truckCount,
+          truckIntervalMinutes: truckCount > 1 ? truckIntervalMinutes : undefined,
           items: items.map((i) => ({
             materialId: i.material.id,
             quantity: i.qty,
@@ -591,6 +595,8 @@ function MaterialsOrderWizard() {
     setCity('');
     setPostal('');
     setDeliveryDate('');
+    setTruckCount(1);
+    setTruckIntervalMinutes(60);
     setContactName('');
     setContactEmail('');
     setContactPhone('');
@@ -732,6 +738,10 @@ function MaterialsOrderWizard() {
                 <MatStep3When
                   deliveryDate={deliveryDate}
                   onDateChange={setDeliveryDate}
+                  truckCount={truckCount}
+                  onTruckCountChange={setTruckCount}
+                  truckIntervalMinutes={truckIntervalMinutes}
+                  onTruckIntervalChange={setTruckIntervalMinutes}
                   onNext={() => setStep(4)}
                   onBack={() => setStep(2)}
                 />

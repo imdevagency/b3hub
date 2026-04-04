@@ -1,8 +1,19 @@
 /**
- * Certificates page — /dashboard/certificates
- * Waste disposal compliance records and recycling certificates.
+ * Certificates page — redirects to /dashboard/documents filtered to WASTE_CERTIFICATE.
+ * The certificates view is now part of the unified Documents hub.
  */
 'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+export default function CertificatesPage() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/dashboard/documents');
+  }, [router]);
+  return null;
+}
 
 import { useEffect, useState, useCallback } from 'react';
 import { Award, ExternalLink, RefreshCw, ShieldCheck, Clock, Recycle } from 'lucide-react';

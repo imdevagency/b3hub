@@ -9,7 +9,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   FolderOpen,
-  FileText,
   Weight,
   ClipboardCheck,
   Recycle,
@@ -32,21 +31,6 @@ import {
 
 // ── Demo seed (shown when API returns empty) ──────────────────
 const DEMO_DOCS: Document[] = [
-  {
-    id: 'd1',
-    title: 'Invoice #INV-2025-0042',
-    type: 'INVOICE',
-    status: 'ISSUED',
-    mimeType: 'application/pdf',
-    fileSize: 82400,
-    orderId: 'ord-01',
-    ownerId: 'demo',
-    issuedBy: 'B3Hub Platform',
-    isGenerated: true,
-    notes: 'Order #ORD-2025-0042 — Sand delivery, 20 t',
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
   {
     id: 'd2',
     title: 'Weighing Slip — 18.4 t',
@@ -108,16 +92,17 @@ const DEMO_DOCS: Document[] = [
   },
   {
     id: 'd6',
-    title: 'Skip Hire Invoice #SH-2025-0009',
-    type: 'INVOICE',
-    status: 'ISSUED',
+    title: 'Ietvarlīgums — Smilts un grants 2025',
+    type: 'CONTRACT',
+    status: 'SIGNED',
     mimeType: 'application/pdf',
     fileSize: 71000,
-    skipHireId: 'sh-01',
     ownerId: 'demo',
     issuedBy: 'B3Hub Platform',
     isGenerated: true,
-    notes: 'Builders skip (6 m³) — 3-day hire',
+    notes: 'Ietvarlīgums #FR-2025-0007 — Rīga Būve SIA',
+    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
     createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
   },
@@ -129,7 +114,6 @@ type FilterTab = 'ALL' | DocumentType;
 
 const TABS: { id: FilterTab; label: string; icon: React.ElementType }[] = [
   { id: 'ALL', label: 'Visi', icon: FolderOpen },
-  { id: 'INVOICE', label: 'Rēķini', icon: FileText },
   { id: 'WEIGHING_SLIP', label: 'Svēršanas Lapas', icon: Weight },
   { id: 'DELIVERY_PROOF', label: 'Piegādes Apstiprinājumi', icon: ClipboardCheck },
   { id: 'WASTE_CERTIFICATE', label: 'Sertifikāti', icon: Recycle },
@@ -259,7 +243,11 @@ export default function DocumentsPage() {
         {[
           { label: 'Kopā dokumenti', value: summary?.total ?? 0, color: 'text-foreground' },
           { label: 'Šajā mēnesī', value: thisMonth, color: 'text-foreground' },
-          { label: 'Rēķini', value: summary?.byType?.INVOICE ?? 0, color: 'text-foreground' },
+          {
+            label: 'Piegādes apstiprinājumi',
+            value: summary?.byType?.DELIVERY_PROOF ?? 0,
+            color: 'text-foreground',
+          },
           {
             label: 'Svēršanas lapas',
             value: summary?.byType?.WEIGHING_SLIP ?? 0,

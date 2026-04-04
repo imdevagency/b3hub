@@ -1,10 +1,9 @@
 /**
- * MatStep3When — Materials order wizard step 3 (When: delivery date).
- * Simple single-day date picker.
+ * MatStep3When — Materials order wizard step 3 (When: delivery date + staggered trucks).
  */
 'use client';
 
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, Minus, Plus, Truck } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -31,16 +30,36 @@ function addDays(base: Date, n: number) {
   return d;
 }
 
+const INTERVAL_OPTIONS = [
+  { value: 30, label: '30 min' },
+  { value: 60, label: '1 h' },
+  { value: 90, label: '1.5 h' },
+  { value: 120, label: '2 h' },
+];
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface Props {
   deliveryDate: string;
   onDateChange: (date: string) => void;
+  truckCount: number;
+  onTruckCountChange: (n: number) => void;
+  truckIntervalMinutes: number;
+  onTruckIntervalChange: (mins: number) => void;
   onNext: () => void;
   onBack: () => void;
 }
 
-export function MatStep3When({ deliveryDate, onDateChange, onNext, onBack }: Props) {
+export function MatStep3When({
+  deliveryDate,
+  onDateChange,
+  truckCount,
+  onTruckCountChange,
+  truckIntervalMinutes,
+  onTruckIntervalChange,
+  onNext,
+  onBack,
+}: Props) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = addDays(today, 1);
@@ -77,6 +96,62 @@ export function MatStep3When({ deliveryDate, onDateChange, onNext, onBack }: Pro
           <span className="text-sm font-semibold text-primary">Piegāde: {fmtFull(selected)}</span>
         </div>
       )}
+
+      {/* Multi-truck staggered delivery */}
+      <div className="rounded-2xl border p-4 space-y-4">
+        <div className="flex items-center gap-2">
+          <Truck className="size-4 text-muted-foreground" />
+          <span className="text-sm font-semibold">Kravas automašīnu skaits</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => onTruckCountChange(Math.max(1, truckCount - 1))}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border bg-muted hover:bg-muted/80 transition-colors"
+          >
+            <Minus className="size-4" />
+          </button>
+          <span className="min-w-10 text-center text-lg font-bold">{truckCount}</span>
+          <button
+            type="button"
+            onClick={() => onTruckCountChange(truckCount + 1)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border bg-muted hover:bg-muted/80 transition-colors"
+          >
+            <Plus className="size-4" />
+          </button>
+          <span className="text-sm text-muted-foreground">
+            {truckCount === 1 ? 'Viena piegāde' : `${truckCount} atsevišķas piegādes`}
+          </span>
+        </div>
+
+        {truckCount > 1 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Intervāls starp automašīnām
+            </p>
+            <div className="flex gap-2">
+              {INTERVAL_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => onTruckIntervalChange(opt.value)}
+                  className={`flex-1 rounded-xl border py-2 text-sm font-medium transition-colors ${
+                    truckIntervalMinutes === opt.value
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-background text-foreground hover:bg-muted'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              1. auto: bāzes laiks · 2. auto: +{truckIntervalMinutes} min · utt.
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Navigation */}
       <div className="flex gap-3 pt-1">

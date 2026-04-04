@@ -72,6 +72,10 @@ export interface CreateCartOrderInput {
   notes?: string;
   siteContactName?: string;
   siteContactPhone?: string;
+  /** Number of trucks to dispatch (each becomes a separate transport job). */
+  truckCount?: number;
+  /** Minutes between consecutive trucks when truckCount > 1. */
+  truckIntervalMinutes?: number;
   items: CartOrderItem[];
 }
 
@@ -177,6 +181,8 @@ export async function createCartOrder(
       notes: input.notes,
       siteContactName: input.siteContactName,
       siteContactPhone: input.siteContactPhone,
+      truckCount: input.truckCount ?? 1,
+      truckIntervalMinutes: input.truckIntervalMinutes ?? undefined,
       items: input.items,
     }),
   });

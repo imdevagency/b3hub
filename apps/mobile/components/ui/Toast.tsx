@@ -29,12 +29,19 @@ export function useToast() {
 }
 
 // ── Provider ─────────────────────────────────────────────────────────────────
+// Suppress repeat error toasts with the same message for 2 minutes.
+// This prevents polling failures from spamming the user during server outages
+// while still surfacing the first occurrence and any new/different errors.
+const ERROR_REPEAT_SUPPRESS_MS = 120_000;
+
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [config, setConfig] = useState<ToastConfig | null>(null);
   const slideY = useRef(new Animated.Value(-90)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.9)).current;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Maps error message → timestamp when it was last shown
+  const shownErrorsRef = useRef<Map<string, number>>(new Map());
 
   const dismiss = useCallback(() => {
     Animated.parallel([
@@ -58,6 +65,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const showToast = useCallback(
     (message: string, variant: ToastVariant = 'info', duration = 3000) => {
+      // Suppress repeat error toasts — same message shown within the last 2 minutes
+      // is silently dropped. This prevents polling failures from spamming during outages.
+      if (variant === 'error') {
+        const now = Date.now();
+        const lastShownAt = shownErrorsRef.current.get(message) ?? 0;
+        if (now - lastShownAt < ERROR_REPEAT_SUPPRESS_MS) return;
+        shownErrorsRef.current.set(message, now);
+        // Evict stale entries so the map doesn't grow unbounded
+        for (const [msg, ts] of shownErrorsRef.current) {
+          if (now - ts > ERROR_REPEAT_SUPPRESS_MS) shownErrorsRef.current.delete(msg);
+        }
+      }
+
       if (timerRef.current) clearTimeout(timerRef.current);
 
       // Reset before re-animating (handles rapid re-triggers)
