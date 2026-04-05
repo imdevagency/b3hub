@@ -425,7 +425,7 @@ Multi-step form wizard primitives used by order creation and skip-hire flows.
 | Prop | Type | |
 |------|------|---|
 | `label` | `string` | **required** |
-| `value` | `string | null` | optional |
+| `value` | `React.ReactNode` | optional |
 | `last` | `boolean` | optional |
 
 **Exports:** `DetailRow`

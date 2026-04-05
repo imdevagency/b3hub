@@ -10,9 +10,12 @@ import {
   Platform,
   ActivityIndicator,
   SafeAreaView,
+  Image,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Send, ArrowLeft, MessageCircle } from 'lucide-react-native';
+import { Send, ArrowLeft, MessageCircle, ImageIcon } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/lib/auth-context';
 import { ApiChatMessage } from '@/lib/api';
 import { useChat } from '@/lib/use-chat';
@@ -26,8 +29,9 @@ export default function ChatScreen() {
   const router = useRouter();
 
   const [input, setInput] = useState('');
+  const [sendingImage, setSendingImage] = useState(false);
 
-  const { messages, loading, sending, sendMessage } = useChat({
+  const { messages, loading, sending, sendMessage, sendImageMessage } = useChat({
     jobId: String(jobId),
     token,
     currentUser: user ? { id: user.id, firstName: user.firstName, lastName: user.lastName } : null,
@@ -54,6 +58,64 @@ export default function ChatScreen() {
     }
   };
 
+  const handlePickImage = async () => {
+    if (sending || sendingImage) return;
+    Alert.alert('Pievienot foto', '', [
+      {
+        text: 'Uzņemt foto',
+        onPress: async () => {
+          const { granted } = await ImagePicker.requestCameraPermissionsAsync();
+          if (!granted) {
+            Alert.alert('', 'Nepieciešama piekļuve kamerai.');
+            return;
+          }
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: 'images',
+            quality: 0.5,
+            base64: true,
+            allowsEditing: true,
+            aspect: [4, 3],
+          });
+          if (!result.canceled && result.assets?.[0]?.base64) {
+            setSendingImage(true);
+            haptics.light();
+            try {
+              await sendImageMessage(result.assets[0].base64, 'image/jpeg');
+            } catch {
+              Alert.alert('', 'Neizdevās nosūtīt attēlu.');
+            } finally {
+              setSendingImage(false);
+            }
+          }
+        },
+      },
+      {
+        text: 'Izvēlēties no galerijas',
+        onPress: async () => {
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: 'images',
+            quality: 0.5,
+            base64: true,
+            allowsEditing: true,
+            aspect: [4, 3],
+          });
+          if (!result.canceled && result.assets?.[0]?.base64) {
+            setSendingImage(true);
+            haptics.light();
+            try {
+              await sendImageMessage(result.assets[0].base64, 'image/jpeg');
+            } catch {
+              Alert.alert('', 'Neizdevās nosūtīt attēlu.');
+            } finally {
+              setSendingImage(false);
+            }
+          }
+        },
+      },
+      { text: 'Atcelt', style: 'cancel' },
+    ]);
+  };
+
   const renderMessage = ({ item }: { item: ApiChatMessage }) => {
     const isOwn = item.senderId === user?.id;
     return (
@@ -63,9 +125,18 @@ export default function ChatScreen() {
             <Text style={styles.avatarText}>{(item.senderName?.[0] ?? '?').toUpperCase()}</Text>
           </View>
         )}
-        <View style={[styles.bubble, isOwn ? styles.bubbleOwn : styles.bubbleOther]}>
+        <View style={[styles.bubble, isOwn ? styles.bubbleOwn : styles.bubbleOther, item.imageUrl ? styles.bubbleImage : null]}>
           {!isOwn && <Text style={styles.senderName}>{item.senderName}</Text>}
-          <Text style={[styles.bodyText, isOwn && styles.bodyTextOwn]}>{item.body}</Text>
+          {item.imageUrl ? (
+            <Image
+              source={{ uri: item.imageUrl }}
+              style={styles.chatImage}
+              resizeMode="cover"
+            />
+          ) : null}
+          {item.body ? (
+            <Text style={[styles.bodyText, isOwn && styles.bodyTextOwn]}>{item.body}</Text>
+          ) : null}
           <Text style={[styles.timeText, isOwn && styles.timeTextOwn]}>
             {new Date(item.createdAt).toLocaleTimeString('lv-LV', {
               hour: '2-digit',
@@ -125,6 +196,18 @@ export default function ChatScreen() {
 
         {/* Input bar */}
         <View style={styles.inputBar}>
+          <TouchableOpacity
+            style={styles.attachBtn}
+            onPress={handlePickImage}
+            disabled={sending || sendingImage}
+            activeOpacity={0.7}
+          >
+            {sendingImage ? (
+              <ActivityIndicator size="small" color="#6b7280" />
+            ) : (
+              <ImageIcon size={22} color="#6b7280" />
+            )}
+          </TouchableOpacity>
           <TextInput
             style={styles.textInput}
             value={input}
@@ -297,6 +380,13 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#e5e7eb',
   },
+  attachBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
   textInput: {
     flex: 1,
     minHeight: 40,
@@ -320,5 +410,14 @@ const styles = StyleSheet.create({
   },
   sendBtnDisabled: {
     backgroundColor: '#d1d5db',
+  },
+  // Image bubble
+  bubbleImage: {
+    padding: 4,
+  },
+  chatImage: {
+    width: 220,
+    height: 165,
+    borderRadius: 12,
   },
 });

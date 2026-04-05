@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { getMyOrders, type ApiOrder, setupPayouts } from '@/lib/api';
+import { getMyOrders, type ApiOrder, setupPayouts, getEarnings, type EarningsResponse } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -233,6 +233,7 @@ export default function SupplierEarningsPage() {
   const { user, token } = useAuth();
   const router = useRouter();
   const [orders, setOrders] = useState<ApiOrder[]>([]);
+  const [earnings, setEarnings] = useState<EarningsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<Period>('week');
@@ -260,8 +261,12 @@ export default function SupplierEarningsPage() {
     if (!token) return;
     if (showRefresh) setRefreshing(true);
     try {
-      const data = await getMyOrders(token);
+      const [data, earningsData] = await Promise.all([
+        getMyOrders(token),
+        getEarnings(token).catch(() => null),
+      ]);
       setOrders(data);
+      if (earningsData) setEarnings(earningsData);
     } catch {
       /* ignore */
     } finally {
@@ -298,25 +303,35 @@ export default function SupplierEarningsPage() {
         }
       />
 
-      {user?.isCompany && user.payoutEnabled === false && (
+      {/* Stripe Connect status banner */}
+      {earnings && earnings.stripeStatus !== 'ACTIVE' && (
         <div className="flex items-start gap-3 p-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/50">
           <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
           <div className="flex-1">
             <h3 className="text-sm font-medium text-amber-800 dark:text-amber-400">
-              Pievienojiet izmaksu kontu
+              {earnings.stripeStatus === 'PENDING' ? 'Stripe reģistrācija nepilnīga' : 'Pievienojiet izmaksu kontu'}
             </h3>
             <p className="text-sm text-amber-700/80 dark:text-amber-500/80 mt-1 mb-3">
-              Pievienojiet savu bankas kontu (caur Stripe), lai varētu saņemt maksājumus par
-              pasūtījumiem.
+              {earnings.stripeStatus === 'PENDING'
+                ? 'Pabeidz Stripe reģistrāciju, lai saņemtu izmaksas.'
+                : 'Pievienojiet savu bankas kontu (caur Stripe), lai varētu saņemt maksājumus par pasūtījumiem.'}
             </p>
             <Button
               onClick={handleSetupPayouts}
               disabled={setupLoading}
               className="bg-amber-600 hover:bg-amber-700 text-white h-9 px-4 text-xs"
             >
-              {setupLoading ? 'Notiek apstrāde...' : 'Pievienot bankas kontu'}
+              {setupLoading ? 'Notiek apstrāde...' : earnings.stripeStatus === 'PENDING' ? 'Pabeigt reģistrāciju' : 'Pievienot bankas kontu'}
             </Button>
           </div>
+        </div>
+      )}
+      {earnings?.stripeStatus === 'ACTIVE' && (
+        <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900/50 px-4 py-3">
+          <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+          <p className="text-sm text-green-800 dark:text-green-300">
+            Stripe Connect aktīvs — izmaksas tiek veiktas automātiski 2–7 darba dienu laikā.
+          </p>
         </div>
       )}
 
@@ -373,6 +388,29 @@ export default function SupplierEarningsPage() {
                 Gaida apmaksu
               </span>
             </div>
+            {earnings && (
+              <>
+                <div className="w-px h-8 bg-border/60" />
+                <div className="flex flex-col gap-1">
+                  <span className="text-2xl font-medium text-green-700 dark:text-green-400 tabular-nums">
+                    {euro(earnings.totalEarned)}
+                  </span>
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+                    Faktiskā izmaksa (90d)
+                  </span>
+                </div>
+                {earnings.pendingAmount > 0 && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-2xl font-medium text-amber-600 dark:text-amber-400 tabular-nums">
+                      {euro(earnings.pendingAmount)}
+                    </span>
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+                      Gaidāmā izmaksa
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

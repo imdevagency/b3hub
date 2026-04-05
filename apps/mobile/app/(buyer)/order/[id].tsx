@@ -606,13 +606,35 @@ export default function OrderDetailScreen() {
                 </Text>
               </View>
               <View style={[s.totalRow, { paddingVertical: 6 }]}>
-                <Text style={[s.totalLabel, { fontWeight: '500', color: '#6b7280', fontSize: 13 }]}>
-                  Piegāde
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.totalLabel, { fontWeight: '500', color: '#6b7280', fontSize: 13 }]}>
+                    Piegāde
+                  </Text>
+                  {(() => {
+                    const job = order.transportJobs?.[0];
+                    const parts: string[] = [];
+                    if (job?.distanceKm) parts.push(`${job.distanceKm.toFixed(1)} km`);
+                    if (job?.pricePerTonne) parts.push(`€${job.pricePerTonne.toFixed(2)}/t`);
+                    else if (job?.rate && job?.distanceKm) parts.push(`€${job.rate.toFixed(2)}/brauciens`);
+                    return parts.length > 0 ? (
+                      <Text style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>{parts.join(' · ')}</Text>
+                    ) : null;
+                  })()}
+                </View>
                 <Text style={[s.totalValue, { fontSize: 14, color: '#374151' }]}>
                   €{order.deliveryFee.toFixed(2)}
                 </Text>
               </View>
+              {(order.surcharges ?? []).filter(sc => sc.billable).map((sc) => (
+                <View key={sc.id} style={[s.totalRow, { paddingVertical: 6 }]}>
+                  <Text style={[s.totalLabel, { fontWeight: '500', color: '#6b7280', fontSize: 13 }]}>
+                    {sc.label}
+                  </Text>
+                  <Text style={[s.totalValue, { fontSize: 14, color: '#374151' }]}>
+                    +€{sc.amount.toFixed(2)}
+                  </Text>
+                </View>
+              ))}
               {order.tax > 0 && (
                 <View style={[s.totalRow, { paddingVertical: 6 }]}>
                   <Text

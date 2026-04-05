@@ -81,42 +81,42 @@ describe('PaymentsService', () => {
 
   // Stripe mock returned from stripe() constructor
   const stripeIntentsMock = {
-    create: jest.fn(),
-    retrieve: jest.fn(),
-    capture: jest.fn(),
+    create: jest.fn<any>(),
+    retrieve: jest.fn<any>(),
+    capture: jest.fn<any>(),
   };
-  const stripeTransfersMock = { create: jest.fn() };
-  const stripeAccountsMock = { create: jest.fn() };
-  const stripeAccountLinksMock = { create: jest.fn() };
-  const stripeWebhooksMock = { constructEvent: jest.fn() };
+  const stripeTransfersMock = { create: jest.fn<any>() };
+  const stripeAccountsMock = { create: jest.fn<any>() };
+  const stripeAccountLinksMock = { create: jest.fn<any>() };
+  const stripeWebhooksMock = { constructEvent: jest.fn<any>() };
 
   // We intercept the Stripe class constructor via ConfigService returning a key
   beforeEach(async () => {
-    const mockPrisma = {
+    const mockPrisma: any = {
       order: {
-        findUnique: jest.fn(),
-        update: jest.fn(),
+        findUnique: jest.fn<any>(),
+        update: jest.fn<any>(),
       },
       payment: {
-        findUnique: jest.fn(),
-        findFirst: jest.fn(),
-        upsert: jest.fn(),
-        update: jest.fn(),
+        findUnique: jest.fn<any>(),
+        findFirst: jest.fn<any>(),
+        upsert: jest.fn<any>(),
+        update: jest.fn<any>(),
       },
       company: {
-        findUnique: jest.fn(),
-        update: jest.fn(),
+        findUnique: jest.fn<any>(),
+        update: jest.fn<any>(),
       },
       user: {
-        findUnique: jest.fn(),
-        findMany: jest.fn().mockResolvedValue([]),
+        findUnique: jest.fn<any>(),
+        findMany: (jest.fn() as any).mockResolvedValue([]),
       },
       $transaction: jest.fn((ops: unknown[]) => Promise.all(ops)),
     };
 
     const mockNotifications = {
-      create: jest.fn().mockResolvedValue(undefined),
-      createForMany: jest.fn().mockResolvedValue(undefined),
+      create: (jest.fn() as any).mockResolvedValue(undefined),
+      createForMany: (jest.fn() as any).mockResolvedValue(undefined),
     };
 
     const module = await Test.createTestingModule({
@@ -160,14 +160,14 @@ describe('PaymentsService', () => {
 
   describe('createPaymentIntent', () => {
     it('throws BadRequestException when order not found', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(null);
       await expect(
         service.createPaymentIntent('nonexistent', makeUser()),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('throws BadRequestException when caller is not the order buyer and not ADMIN', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
         makeOrder({ createdById: 'other-user' }),
       );
       await expect(
@@ -176,14 +176,14 @@ describe('PaymentsService', () => {
     });
 
     it('allows ADMIN to create payment intent for any order', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
         makeOrder({ createdById: 'other-user' }),
       );
       stripeIntentsMock.create.mockResolvedValue({
         id: 'pi_123',
         client_secret: 'secret_abc',
       });
-      (prisma.payment.upsert as jest.Mock).mockResolvedValue({});
+      (prisma.payment.upsert as jest.Mock<any>).mockResolvedValue({});
 
       const result = await service.createPaymentIntent(
         'order-1',
@@ -193,12 +193,12 @@ describe('PaymentsService', () => {
     });
 
     it('creates a PaymentIntent with capture_method = manual', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue(makeOrder());
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(makeOrder());
       stripeIntentsMock.create.mockResolvedValue({
         id: 'pi_123',
         client_secret: 'secret_abc',
       });
-      (prisma.payment.upsert as jest.Mock).mockResolvedValue({});
+      (prisma.payment.upsert as jest.Mock<any>).mockResolvedValue({});
 
       await service.createPaymentIntent('order-1', makeUser());
 
@@ -208,12 +208,12 @@ describe('PaymentsService', () => {
     });
 
     it('returns clientSecret and publishableKey', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue(makeOrder());
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(makeOrder());
       stripeIntentsMock.create.mockResolvedValue({
         id: 'pi_123',
         client_secret: 'cs_test',
       });
-      (prisma.payment.upsert as jest.Mock).mockResolvedValue({});
+      (prisma.payment.upsert as jest.Mock<any>).mockResolvedValue({});
 
       const result = await service.createPaymentIntent('order-1', makeUser());
       expect(result).toHaveProperty('clientSecret', 'cs_test');
@@ -221,14 +221,14 @@ describe('PaymentsService', () => {
     });
 
     it('converts total to cents when creating the intent', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
         makeOrder({ total: 99.99 }),
       );
       stripeIntentsMock.create.mockResolvedValue({
         id: 'pi_123',
         client_secret: 'cs_test',
       });
-      (prisma.payment.upsert as jest.Mock).mockResolvedValue({});
+      (prisma.payment.upsert as jest.Mock<any>).mockResolvedValue({});
 
       await service.createPaymentIntent('order-1', makeUser());
       // 99.99 * 100 rounded = 9999 cents
@@ -242,14 +242,14 @@ describe('PaymentsService', () => {
 
   describe('capturePayment', () => {
     it('throws BadRequestException when no payment record exists', async () => {
-      (prisma.payment.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue(null);
       await expect(service.capturePayment('order-1')).rejects.toThrow(
         BadRequestException,
       );
     });
 
     it('is idempotent — skips capture when status is already CAPTURED', async () => {
-      (prisma.payment.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue({
         orderId: 'order-1',
         stripePaymentId: 'pi_123',
         status: 'CAPTURED',
@@ -260,7 +260,7 @@ describe('PaymentsService', () => {
     });
 
     it('is idempotent — skips capture when status is already RELEASED', async () => {
-      (prisma.payment.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue({
         orderId: 'order-1',
         stripePaymentId: 'pi_123',
         status: 'RELEASED',
@@ -271,13 +271,13 @@ describe('PaymentsService', () => {
     });
 
     it('captures and updates DB when PaymentIntent succeeds', async () => {
-      (prisma.payment.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue({
         orderId: 'order-1',
         stripePaymentId: 'pi_123',
         status: 'AUTHORIZED',
       });
       stripeIntentsMock.capture.mockResolvedValue({ status: 'succeeded' });
-      (prisma.$transaction as jest.Mock).mockResolvedValue([{}, {}]);
+      (prisma.$transaction as jest.Mock<any>).mockResolvedValue([{}, {}]);
 
       await service.capturePayment('order-1');
       expect(stripeIntentsMock.capture).toHaveBeenCalledWith('pi_123');
@@ -296,7 +296,7 @@ describe('PaymentsService', () => {
     };
 
     it('is idempotent — skips release when payment already RELEASED', async () => {
-      (prisma.payment.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue({
         ...basePayment,
         status: 'RELEASED',
       });
@@ -306,31 +306,31 @@ describe('PaymentsService', () => {
     });
 
     it('skips without error when no payment record at all', async () => {
-      (prisma.payment.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue(null);
       await expect(service.releaseFunds('order-1')).resolves.toBeUndefined();
     });
 
     it('calculates 5 % platform fee from total', async () => {
-      (prisma.payment.findUnique as jest.Mock).mockResolvedValue(basePayment);
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue(basePayment);
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
         makeOrder({ total: 100, currency: 'EUR', transportJobs: [] }),
       );
       stripeTransfersMock.create.mockResolvedValue({ id: 't_1' });
-      (prisma.payment.update as jest.Mock).mockResolvedValue({});
-      (prisma.order.update as jest.Mock).mockResolvedValue({});
+      (prisma.payment.update as jest.Mock<any>).mockResolvedValue({});
+      (prisma.order.update as jest.Mock<any>).mockResolvedValue({});
 
       await service.releaseFunds('order-1');
 
       // platformFee = 5 % of 100 = 5 → sellerCents = 9500
-      const call = (stripeTransfersMock.create as jest.Mock).mock.calls[0][0] as {
+      const call = (stripeTransfersMock.create as jest.Mock<any>).mock.calls[0][0] as {
         amount: number;
       };
       expect(call.amount).toBe(9500);
     });
 
     it('allocates 20 % of net to driver when a DELIVERED transport job exists', async () => {
-      (prisma.payment.findUnique as jest.Mock).mockResolvedValue(basePayment);
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue(basePayment);
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
         makeOrder({
           total: 100,
           currency: 'EUR',
@@ -347,12 +347,12 @@ describe('PaymentsService', () => {
         }),
       );
       stripeTransfersMock.create.mockResolvedValue({ id: 't_1' });
-      (prisma.payment.update as jest.Mock).mockResolvedValue({});
-      (prisma.order.update as jest.Mock).mockResolvedValue({});
+      (prisma.payment.update as jest.Mock<any>).mockResolvedValue({});
+      (prisma.order.update as jest.Mock<any>).mockResolvedValue({});
 
       await service.releaseFunds('order-1');
 
-      const calls = (stripeTransfersMock.create as jest.Mock).mock.calls as
+      const calls = (stripeTransfersMock.create as jest.Mock<any>).mock.calls as
         Array<[{ amount: number; destination: string }]>;
       const driverCall = calls.find(([c]) => c.destination === 'acct_driver');
       expect(driverCall).toBeDefined();
@@ -361,31 +361,30 @@ describe('PaymentsService', () => {
     });
 
     it('sends 100 % of net to seller when there is no driver', async () => {
-      (prisma.payment.findUnique as jest.Mock).mockResolvedValue(basePayment);
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue(basePayment);
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
         makeOrder({ total: 100, currency: 'EUR', transportJobs: [] }),
       );
       stripeTransfersMock.create.mockResolvedValue({ id: 't_1' });
-      (prisma.payment.update as jest.Mock).mockResolvedValue({});
-      (prisma.order.update as jest.Mock).mockResolvedValue({});
+      (prisma.payment.update as jest.Mock<any>).mockResolvedValue({});
+      (prisma.order.update as jest.Mock<any>).mockResolvedValue({});
 
       await service.releaseFunds('order-1');
 
       // Only one transfer (to supplier), no driver transfer
       expect(stripeTransfersMock.create).toHaveBeenCalledTimes(1);
-      const [{ amount }] = (stripeTransfersMock.create as jest.Mock)
-        .mock.calls[0] as [{ amount: number }][];
-      expect(amount).toBe(9500);
+      const call = (stripeTransfersMock.create as jest.Mock<any>).mock.calls[0][0] as { amount: number };
+      expect(call.amount).toBe(9500);
     });
 
     it('marks payment as RELEASED in DB after successful transfers', async () => {
-      (prisma.payment.findUnique as jest.Mock).mockResolvedValue(basePayment);
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue(basePayment);
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
         makeOrder({ total: 50, currency: 'EUR', transportJobs: [] }),
       );
       stripeTransfersMock.create.mockResolvedValue({ id: 't_1' });
-      (prisma.payment.update as jest.Mock).mockResolvedValue({});
-      (prisma.order.update as jest.Mock).mockResolvedValue({});
+      (prisma.payment.update as jest.Mock<any>).mockResolvedValue({});
+      (prisma.order.update as jest.Mock<any>).mockResolvedValue({});
 
       await service.releaseFunds('order-1');
 
@@ -401,14 +400,14 @@ describe('PaymentsService', () => {
 
   describe('reportDispute', () => {
     it('throws NotFoundException when order does not exist', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(null);
       await expect(
         service.reportDispute('nope', 'wrong qty', undefined, makeUser()),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('throws ForbiddenException when caller is not the buyer', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
         makeOrder({
           status: 'DELIVERED',
           buyerId: 'other-company',
@@ -421,7 +420,7 @@ describe('PaymentsService', () => {
     });
 
     it('throws BadRequestException when order is not DELIVERED', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
         makeOrder({ status: 'CONFIRMED', buyerId: 'company-1' }),
       );
       await expect(
@@ -430,11 +429,11 @@ describe('PaymentsService', () => {
     });
 
     it('allows dispute when caller belongs to buyer company', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
         makeOrder({ status: 'DELIVERED', buyerId: 'company-1', createdById: 'other-user' }),
       );
-      (prisma.order.update as jest.Mock).mockResolvedValue({});
-      (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.order.update as jest.Mock<any>).mockResolvedValue({});
+      (prisma.user.findMany as jest.Mock<any>).mockResolvedValue([]);
 
       const result = await service.reportDispute(
         'order-1',
@@ -446,11 +445,11 @@ describe('PaymentsService', () => {
     });
 
     it('allows dispute when caller is the order creator (solo user)', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
         makeOrder({ status: 'DELIVERED', buyerId: 'other-company', createdById: 'u1' }),
       );
-      (prisma.order.update as jest.Mock).mockResolvedValue({});
-      (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.order.update as jest.Mock<any>).mockResolvedValue({});
+      (prisma.user.findMany as jest.Mock<any>).mockResolvedValue([]);
 
       const result = await service.reportDispute(
         'order-1',
@@ -462,11 +461,11 @@ describe('PaymentsService', () => {
     });
 
     it('notifies all admin users when a dispute is filed', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
         makeOrder({ status: 'DELIVERED', buyerId: 'company-1' }),
       );
-      (prisma.order.update as jest.Mock).mockResolvedValue({});
-      (prisma.user.findMany as jest.Mock).mockResolvedValue([
+      (prisma.order.update as jest.Mock<any>).mockResolvedValue({});
+      (prisma.user.findMany as jest.Mock<any>).mockResolvedValue([
         { id: 'admin-1' },
         { id: 'admin-2' },
       ]);
@@ -497,8 +496,8 @@ describe('PaymentsService', () => {
         data: { object: { metadata: { orderId: 'order-1' } } },
       };
       stripeWebhooksMock.constructEvent.mockReturnValue(event);
-      (prisma.payment.update as jest.Mock).mockResolvedValue({});
-      (prisma.order.update as jest.Mock).mockResolvedValue({});
+      (prisma.payment.update as jest.Mock<any>).mockResolvedValue({});
+      (prisma.order.update as jest.Mock<any>).mockResolvedValue({});
 
       await service.handleWebhookEvent(Buffer.from('{}'), 'sig');
       expect(prisma.payment.update).toHaveBeenCalledWith(
@@ -512,8 +511,8 @@ describe('PaymentsService', () => {
         data: { object: { metadata: { orderId: 'order-1' } } },
       };
       stripeWebhooksMock.constructEvent.mockReturnValue(event);
-      (prisma.payment.update as jest.Mock).mockResolvedValue({});
-      (prisma.order.update as jest.Mock).mockResolvedValue({});
+      (prisma.payment.update as jest.Mock<any>).mockResolvedValue({});
+      (prisma.order.update as jest.Mock<any>).mockResolvedValue({});
 
       await service.handleWebhookEvent(Buffer.from('{}'), 'sig');
       expect(prisma.payment.update).toHaveBeenCalledWith(
@@ -527,8 +526,8 @@ describe('PaymentsService', () => {
         data: { object: { metadata: { orderId: 'order-1' } } },
       };
       stripeWebhooksMock.constructEvent.mockReturnValue(event);
-      (prisma.payment.update as jest.Mock).mockResolvedValue({});
-      (prisma.order.update as jest.Mock).mockResolvedValue({});
+      (prisma.payment.update as jest.Mock<any>).mockResolvedValue({});
+      (prisma.order.update as jest.Mock<any>).mockResolvedValue({});
 
       await service.handleWebhookEvent(Buffer.from('{}'), 'sig');
       expect(prisma.payment.update).toHaveBeenCalledWith(

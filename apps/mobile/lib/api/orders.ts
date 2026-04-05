@@ -62,6 +62,8 @@ export interface CreateTransportOrderInput {
   siteContactName?: string;
   siteContactPhone?: string;
   notes?: string;
+  /** Buyer's suggested budget shown to drivers (optional) */
+  buyerOfferedRate?: number;
 }
 
 export interface CreateMaterialOrderInput {
@@ -159,6 +161,10 @@ export interface ApiOrder {
   transportJobs?: {
     id: string;
     status: string;
+    rate: number | null;
+    pricePerTonne: number | null;
+    distanceKm: number | null;
+    cargoWeight: number | null;
     actualWeightKg: number | null;
     pickupPhotoUrl: string | null;
     driver: {
@@ -183,6 +189,13 @@ export interface ApiOrder {
       notes: string;
       createdAt: string;
     }[];
+  }[];
+  surcharges?: {
+    id: string;
+    type: string;
+    label: string;
+    amount: number;
+    billable: boolean;
   }[];
   linkedSkipOrder?: {
     id: string;

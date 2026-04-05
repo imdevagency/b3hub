@@ -306,7 +306,7 @@ export default function InvoicesScreen() {
     haptics.light();
     try {
       const url = `${API_URL}/invoices/${selected.id}/pdf`;
-      const fileUri = `${FileSystem.documentDirectory}invoice-${selected.invoiceNumber}.pdf`;
+      const fileUri = `${(FileSystem as any).documentDirectory ?? ''}invoice-${selected.invoiceNumber}.pdf`;
 
       const downloadRes = await FileSystem.downloadAsync(url, fileUri, {
         headers: {

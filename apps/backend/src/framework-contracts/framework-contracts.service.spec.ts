@@ -23,6 +23,7 @@ import {
 import { Test } from '@nestjs/testing';
 import { FrameworkContractsService } from './framework-contracts.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { InvoicesService } from '../invoices/invoices.service';
 import { FrameworkContractStatus, TransportJobStatus } from '@prisma/client';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -73,22 +74,22 @@ describe('FrameworkContractsService', () => {
   let prisma: jest.Mocked<PrismaService>;
 
   beforeEach(async () => {
-    const mockPrisma = {
+    const mockPrisma: any = {
       frameworkContract: {
-        findUnique: jest.fn(),
-        findMany: jest.fn().mockResolvedValue([]),
-        create: jest.fn(),
-        update: jest.fn(),
-        count: jest.fn().mockResolvedValue(0),
+        findUnique: jest.fn<any>(),
+        findMany: (jest.fn() as any).mockResolvedValue([]),
+        create: jest.fn<any>(),
+        update: jest.fn<any>(),
+        count: (jest.fn() as any).mockResolvedValue(0),
       },
       frameworkPosition: {
-        create: jest.fn(),
-        findFirst: jest.fn(),
-        delete: jest.fn(),
+        create: jest.fn<any>(),
+        findFirst: jest.fn<any>(),
+        delete: jest.fn<any>(),
       },
       transportJob: {
-        create: jest.fn(),
-        count: jest.fn().mockResolvedValue(0),
+        create: jest.fn<any>(),
+        count: (jest.fn() as any).mockResolvedValue(0),
       },
     };
 
@@ -96,6 +97,7 @@ describe('FrameworkContractsService', () => {
       providers: [
         FrameworkContractsService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: InvoicesService, useValue: { createForCallOff: jest.fn<any>() } },
       ],
     }).compile();
 
@@ -109,18 +111,18 @@ describe('FrameworkContractsService', () => {
 
   describe('access control (assertOwner)', () => {
     it('throws NotFoundException when contract does not exist', async () => {
-      (prisma.frameworkContract.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.frameworkContract.findUnique as jest.Mock<any>).mockResolvedValue(null);
       await expect(
         service.findOne('missing', 'u1', 'company-1'),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('throws ForbiddenException when caller is unrelated to the contract', async () => {
-      (prisma.frameworkContract.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.frameworkContract.findUnique as jest.Mock<any>).mockResolvedValue(
         stubContract({ buyerId: 'other-buyer', supplierId: 'other-supplier', createdById: 'other-user' }),
       );
       // Second call (inside findOne) also needs to be stubbed
-      (prisma.frameworkContract.findUnique as jest.Mock)
+      (prisma.frameworkContract.findUnique as jest.Mock<any>)
         .mockResolvedValueOnce(stubContract({ buyerId: 'other-buyer', supplierId: 'other-supplier', createdById: 'other-user' }));
 
       await expect(
@@ -130,7 +132,7 @@ describe('FrameworkContractsService', () => {
 
     it('grants access to the buyer who created the contract', async () => {
       const c = stubContract();
-      (prisma.frameworkContract.findUnique as jest.Mock).mockResolvedValue(c);
+      (prisma.frameworkContract.findUnique as jest.Mock<any>).mockResolvedValue(c);
       await expect(
         service.findOne('fc-1', 'user-buyer', 'company-buyer'),
       ).resolves.toBeDefined();
@@ -138,7 +140,7 @@ describe('FrameworkContractsService', () => {
 
     it('grants access to the supplier company', async () => {
       const c = stubContract();
-      (prisma.frameworkContract.findUnique as jest.Mock).mockResolvedValue(c);
+      (prisma.frameworkContract.findUnique as jest.Mock<any>).mockResolvedValue(c);
       await expect(
         service.findOne('fc-1', 'supplier-user', 'company-supplier'),
       ).resolves.toBeDefined();
@@ -160,7 +162,7 @@ describe('FrameworkContractsService', () => {
 
     it('creates contract with DRAFT status', async () => {
       const created = stubContract();
-      (prisma.frameworkContract.create as jest.Mock).mockResolvedValue(created);
+      (prisma.frameworkContract.create as jest.Mock<any>).mockResolvedValue(created);
 
       await service.create(
         { title: 'Test', startDate: '2026-01-01', positions: [] },
@@ -182,9 +184,9 @@ describe('FrameworkContractsService', () => {
   describe('activate', () => {
     it('updates status to ACTIVE', async () => {
       const c = stubContract();
-      (prisma.frameworkContract.findUnique as jest.Mock).mockResolvedValue(c);
+      (prisma.frameworkContract.findUnique as jest.Mock<any>).mockResolvedValue(c);
       const activated = stubContract({ status: FrameworkContractStatus.ACTIVE });
-      (prisma.frameworkContract.update as jest.Mock).mockResolvedValue(activated);
+      (prisma.frameworkContract.update as jest.Mock<any>).mockResolvedValue(activated);
 
       const result = await service.activate('fc-1', 'user-buyer', 'company-buyer');
       expect(result.status).toBe(FrameworkContractStatus.ACTIVE);
@@ -192,7 +194,7 @@ describe('FrameworkContractsService', () => {
 
     it('throws ForbiddenException when supplier tries to activate', async () => {
       // supplier matches supplierId but not buyerId/createdById
-      (prisma.frameworkContract.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.frameworkContract.findUnique as jest.Mock<any>).mockResolvedValue(
         stubContract(), // buyerId = 'company-buyer', supplierId = 'company-supplier'
       );
       await expect(
@@ -211,8 +213,8 @@ describe('FrameworkContractsService', () => {
     };
 
     it('throws NotFoundException when position does not belong to the contract', async () => {
-      (prisma.frameworkContract.findUnique as jest.Mock).mockResolvedValue(stubContract());
-      (prisma.frameworkPosition.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.frameworkContract.findUnique as jest.Mock<any>).mockResolvedValue(stubContract());
+      (prisma.frameworkPosition.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
         service.createCallOff('fc-1', 'pos-missing', callOffDto, 'user-buyer', 'company-buyer'),
@@ -220,8 +222,8 @@ describe('FrameworkContractsService', () => {
     });
 
     it('throws BadRequestException when call-off quantity exceeds remaining agreedQty', async () => {
-      (prisma.frameworkContract.findUnique as jest.Mock).mockResolvedValue(stubContract());
-      (prisma.frameworkPosition.findFirst as jest.Mock).mockResolvedValue(
+      (prisma.frameworkContract.findUnique as jest.Mock<any>).mockResolvedValue(stubContract());
+      (prisma.frameworkPosition.findFirst as jest.Mock<any>).mockResolvedValue(
         stubPosition({
           agreedQty: 100,
           callOffs: [
@@ -236,15 +238,15 @@ describe('FrameworkContractsService', () => {
     });
 
     it('allows call-off when quantity exactly matches remaining', async () => {
-      (prisma.frameworkContract.findUnique as jest.Mock).mockResolvedValue(stubContract());
-      (prisma.frameworkPosition.findFirst as jest.Mock).mockResolvedValue(
+      (prisma.frameworkContract.findUnique as jest.Mock<any>).mockResolvedValue(stubContract());
+      (prisma.frameworkPosition.findFirst as jest.Mock<any>).mockResolvedValue(
         stubPosition({
           agreedQty: 100,
           callOffs: [{ status: 'DELIVERED', cargoWeight: 80 }],
         }),
       );
-      (prisma.transportJob.count as jest.Mock).mockResolvedValue(5);
-      (prisma.transportJob.create as jest.Mock).mockResolvedValue({
+      (prisma.transportJob.count as jest.Mock<any>).mockResolvedValue(5);
+      (prisma.transportJob.create as jest.Mock<any>).mockResolvedValue({
         id: 'tj-1',
         jobNumber: 'TJ-000006',
         cargoWeight: 20,
@@ -261,9 +263,9 @@ describe('FrameworkContractsService', () => {
     });
 
     it('excludes CANCELLED call-offs from consumed quantity', async () => {
-      (prisma.frameworkContract.findUnique as jest.Mock).mockResolvedValue(stubContract());
+      (prisma.frameworkContract.findUnique as jest.Mock<any>).mockResolvedValue(stubContract());
       // 50 delivered + 50 cancelled → only 50 consumed → 50 remaining
-      (prisma.frameworkPosition.findFirst as jest.Mock).mockResolvedValue(
+      (prisma.frameworkPosition.findFirst as jest.Mock<any>).mockResolvedValue(
         stubPosition({
           agreedQty: 100,
           callOffs: [
@@ -272,8 +274,8 @@ describe('FrameworkContractsService', () => {
           ],
         }),
       );
-      (prisma.transportJob.count as jest.Mock).mockResolvedValue(2);
-      (prisma.transportJob.create as jest.Mock).mockResolvedValue({
+      (prisma.transportJob.count as jest.Mock<any>).mockResolvedValue(2);
+      (prisma.transportJob.create as jest.Mock<any>).mockResolvedValue({
         id: 'tj-2',
         jobNumber: 'TJ-000003',
         cargoWeight: 50,
@@ -290,12 +292,12 @@ describe('FrameworkContractsService', () => {
     });
 
     it('creates the call-off as a TransportJob with AVAILABLE status', async () => {
-      (prisma.frameworkContract.findUnique as jest.Mock).mockResolvedValue(stubContract());
-      (prisma.frameworkPosition.findFirst as jest.Mock).mockResolvedValue(
+      (prisma.frameworkContract.findUnique as jest.Mock<any>).mockResolvedValue(stubContract());
+      (prisma.frameworkPosition.findFirst as jest.Mock<any>).mockResolvedValue(
         stubPosition({ callOffs: [] }),
       );
-      (prisma.transportJob.count as jest.Mock).mockResolvedValue(0);
-      (prisma.transportJob.create as jest.Mock).mockResolvedValue({
+      (prisma.transportJob.count as jest.Mock<any>).mockResolvedValue(0);
+      (prisma.transportJob.create as jest.Mock<any>).mockResolvedValue({
         id: 'tj-1',
         jobNumber: 'TJ-000001',
         cargoWeight: 30,
@@ -322,7 +324,7 @@ describe('FrameworkContractsService', () => {
 
   describe('formatContract (via findAll)', () => {
     it('sets progressPct to 0 when no call-offs exist', async () => {
-      (prisma.frameworkContract.findMany as jest.Mock).mockResolvedValue([
+      (prisma.frameworkContract.findMany as jest.Mock<any>).mockResolvedValue([
         stubContract({
           positions: [stubPosition({ callOffs: [] })],
         }),
@@ -333,7 +335,7 @@ describe('FrameworkContractsService', () => {
     });
 
     it('caps progressPct at 100 even when call-offs exceed agreedQty', async () => {
-      (prisma.frameworkContract.findMany as jest.Mock).mockResolvedValue([
+      (prisma.frameworkContract.findMany as jest.Mock<any>).mockResolvedValue([
         stubContract({
           positions: [
             stubPosition({
@@ -351,7 +353,7 @@ describe('FrameworkContractsService', () => {
     });
 
     it('computes correct progressPct for partial consumption', async () => {
-      (prisma.frameworkContract.findMany as jest.Mock).mockResolvedValue([
+      (prisma.frameworkContract.findMany as jest.Mock<any>).mockResolvedValue([
         stubContract({
           positions: [
             stubPosition({
@@ -367,7 +369,7 @@ describe('FrameworkContractsService', () => {
     });
 
     it('calculates totalProgressPct across all positions', async () => {
-      (prisma.frameworkContract.findMany as jest.Mock).mockResolvedValue([
+      (prisma.frameworkContract.findMany as jest.Mock<any>).mockResolvedValue([
         stubContract({
           positions: [
             stubPosition({ id: 'p1', agreedQty: 100, callOffs: [{ status: 'DELIVERED', cargoWeight: 50 }] }),

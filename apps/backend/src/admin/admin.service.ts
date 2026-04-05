@@ -4,7 +4,7 @@
  * review provider applications, and retrieve aggregated statistics.
  * All methods are restricted to ADMIN userType.
  */
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -286,5 +286,49 @@ export class AdminService {
           `Failed to write audit log for ${action} on ${entityType}:${entityId} by admin ${adminId}: ${(err as Error).message}`,
         ),
       );
+  }
+
+  /**
+   * Override the rate (and optionally pricePerTonne) on a transport job.
+   * Audit-logged. Only applicable to jobs that have not yet completed payout
+   * (status != COMPLETED / CANCELLED).
+   */
+  async updateJobRate(
+    jobId: string,
+    data: { rate?: number; pricePerTonne?: number; note?: string },
+    adminId: string,
+  ) {
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id: jobId },
+      select: { id: true, jobNumber: true, status: true, rate: true, pricePerTonne: true },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+    if (['COMPLETED', 'CANCELLED'].includes(job.status)) {
+      throw new BadRequestException(
+        `Cannot override rate on a ${job.status} job — payout may have already occurred`,
+      );
+    }
+
+    const updateData: { rate?: number; pricePerTonne?: number } = {};
+    if (data.rate !== undefined) updateData.rate = data.rate;
+    if (data.pricePerTonne !== undefined) updateData.pricePerTonne = data.pricePerTonne;
+
+    const updated = await this.prisma.transportJob.update({
+      where: { id: jobId },
+      data: updateData,
+      select: { id: true, jobNumber: true, rate: true, pricePerTonne: true, status: true },
+    });
+
+    await this.logAdminAction(
+      adminId,
+      'UPDATE_JOB_RATE',
+      'TransportJob',
+      jobId,
+      { rate: job.rate, pricePerTonne: job.pricePerTonne },
+      { rate: updated.rate, pricePerTonne: updated.pricePerTonne },
+      data.note,
+    );
+
+    return updated;
   }
 }

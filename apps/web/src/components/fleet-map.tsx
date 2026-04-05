@@ -1,6 +1,8 @@
 /**
  * FleetMap component.
  * Leaflet map showing all active carrier vehicle positions for the fleet manager.
+ * When liveLocations is provided, active trucks are shown at their real GPS position
+ * instead of the static pickup/delivery coords.
  */
 'use client';
 
@@ -60,9 +62,11 @@ function jobCoord(job: ApiTransportJob): { lat: number; lng: number } | null {
 
 interface FleetMapProps {
   jobs: ApiTransportJob[];
+  /** Live GPS positions keyed by job ID, polled from /transport-jobs/:id/location */
+  liveLocations?: Record<string, { lat: number; lng: number }>;
 }
 
-export function FleetMap({ jobs }: FleetMapProps) {
+export function FleetMap({ jobs, liveLocations = {} }: FleetMapProps) {
   const router = useRouter();
   const [selected, setSelected] = useState<ApiTransportJob | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -73,11 +77,18 @@ export function FleetMap({ jobs }: FleetMapProps) {
 
   const mappable = useMemo(
     () =>
-      jobs.map((j) => ({ job: j, coord: jobCoord(j) })).filter((x) => x.coord !== null) as {
+      jobs
+        .map((j) => {
+          const live = liveLocations[j.id];
+          const coord = live ?? jobCoord(j);
+          return { job: j, coord, isLive: !!live };
+        })
+        .filter((x) => x.coord !== null) as {
         job: ApiTransportJob;
         coord: { lat: number; lng: number };
+        isLive: boolean;
       }[],
-    [jobs],
+    [jobs, liveLocations],
   );
 
   // Auto-fit bounds when jobs change
@@ -136,7 +147,7 @@ export function FleetMap({ jobs }: FleetMapProps) {
           fullscreenControl: false,
         }}
       >
-        {mappable.map(({ job, coord }) => (
+        {mappable.map(({ job, coord, isLive }) => (
           <MarkerF
             key={job.id}
             position={coord}
@@ -148,11 +159,11 @@ export function FleetMap({ jobs }: FleetMapProps) {
               path: window.google.maps.SymbolPath.CIRCLE,
               fillColor: STATUS_PIN[job.status] ?? '#64748b',
               fillOpacity: 1,
-              strokeColor: '#ffffff',
-              strokeWeight: 2.5,
-              scale: 8,
+              strokeColor: isLive ? '#ffffff' : '#94a3b8',
+              strokeWeight: isLive ? 3 : 2,
+              scale: isLive ? 10 : 8,
             }}
-            title={`${job.jobNumber} · ${STATUS_LV[job.status] ?? job.status}`}
+            title={`${job.jobNumber} · ${STATUS_LV[job.status] ?? job.status}${isLive ? ' · 🟢 Live' : ''}`}
           >
             <span />
           </MarkerF>
@@ -224,9 +235,22 @@ export function FleetMap({ jobs }: FleetMapProps) {
         </div>
       </div>
 
-      {/* Job count badge */}
-      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full border border-slate-200 px-3 py-1 shadow-sm">
-        <p className="text-xs font-semibold text-slate-700">{mappable.length} darbi kartē</p>
+      {/* Job count badge + live indicator */}
+      <div className="absolute top-3 right-3 flex items-center gap-2">
+        {Object.keys(liveLocations).length > 0 && (
+          <div className="bg-white/90 backdrop-blur-sm rounded-full border border-emerald-200 px-3 py-1 shadow-sm flex items-center gap-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <p className="text-xs font-semibold text-emerald-700">
+              {Object.keys(liveLocations).length} live
+            </p>
+          </div>
+        )}
+        <div className="bg-white/90 backdrop-blur-sm rounded-full border border-slate-200 px-3 py-1 shadow-sm">
+          <p className="text-xs font-semibold text-slate-700">{mappable.length} darbi kartē</p>
+        </div>
       </div>
     </div>
   );

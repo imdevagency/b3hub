@@ -27,6 +27,10 @@ export interface ApiMaterial {
   minOrder?: number | null;
   inStock: boolean;
   isRecycled: boolean;
+  /** Quantity currently in stock (null = unlimited / not tracked) */
+  stockQty?: number | null;
+  /** Supabase Storage URLs for product photos */
+  images?: string[];
   supplier: {
     id: string;
     name: string;
@@ -53,6 +57,10 @@ export interface SupplierOffer {
   completionRate: number | null;
   /** Total historical orders for this supplier */
   totalOrders: number;
+  /** Quantity currently in stock (null = unlimited / not tracked) */
+  stockQty?: number | null;
+  /** Product photos from Supabase Storage */
+  images?: string[];
   supplier: {
     id: string;
     name: string;
@@ -120,6 +128,9 @@ export const materialsApi = {
         deliveryPostal?: string;
         deliveryDate: string;
         deliveryWindow?: string;
+        deliveryFee?: number;
+        deliveryLat?: number;
+        deliveryLng?: number;
         siteContactName?: string;
         siteContactPhone?: string;
         notes?: string;
@@ -148,6 +159,9 @@ export const materialsApi = {
           deliveryPostal: input.deliveryPostal,
           deliveryDate: input.deliveryDate,
           deliveryWindow: input.deliveryWindow,
+          deliveryFee: input.deliveryFee,
+          deliveryLat: input.deliveryLat,
+          deliveryLng: input.deliveryLng,
           siteContactName: input.siteContactName,
           siteContactPhone: input.siteContactPhone,
           notes: input.notes,

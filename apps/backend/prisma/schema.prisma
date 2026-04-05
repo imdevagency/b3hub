@@ -120,6 +120,12 @@ enum PaymentStatus {
   FAILED
 }
 
+enum PaymentMethod {
+  CARD    // Stripe card — immediate authorization, captured on confirmation
+  INVOICE // NET terms — buyer pays via bank transfer or Stripe Payment Link
+  SEPA    // SEPA Direct Debit via Stripe (for approved B2B buyers)
+}
+
 enum WastePurpose {
   CONSTRUCTION_WASTE
   DEMOLITION_WASTE
@@ -245,6 +251,8 @@ enum NotificationType {
   QUOTE_ACCEPTED
   SYSTEM_ALERT
   DOCUMENT_EXPIRING_SOON
+  DRIVER_NEARBY
+  WEIGHING_SLIP
 }
 
 enum QuoteRequestStatus {
@@ -554,8 +562,9 @@ model Order {
   currency    String @default("EUR")
 
   // Status
-  status        OrderStatus
-  paymentStatus PaymentStatus
+  status         OrderStatus
+  paymentStatus  PaymentStatus
+  paymentMethod  PaymentMethod @default(CARD) // CARD = pay now; INVOICE = NET terms
 
   // Site contact (foreman / on-site contact the driver can call)
   siteContactName  String?
@@ -708,9 +717,10 @@ model TransportJob {
   distanceKm  Float?
 
   // Pricing
-  rate          Float
-  pricePerTonne Float?
-  currency      String @default("EUR")
+  rate              Float
+  pricePerTonne     Float?
+  buyerOfferedRate  Float?   // buyer's suggested budget; shown to drivers
+  currency          String @default("EUR")
 
   // Assignment
   carrier   Company? @relation(fields: [carrierId], references: [id])
@@ -756,6 +766,7 @@ model TransportJob {
   containerPickups    ContainerOrder[]        @relation("ContainerPickup")
   chatMessages        ChatMessage[]
   exceptions          TransportJobException[]
+  invoices            Invoice[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1004,8 +1015,12 @@ model Invoice {
   id            String @id @default(cuid())
   invoiceNumber String @unique
 
-  order   Order  @relation(fields: [orderId], references: [id])
-  orderId String
+  order   Order?  @relation(fields: [orderId], references: [id])
+  orderId String?
+
+  // Framework contract call-off billing: invoice linked to a transport job (no Order record)
+  transportJob   TransportJob? @relation(fields: [transportJobId], references: [id])
+  transportJobId String?
 
   // Amounts
   subtotal Float
@@ -1020,6 +1035,10 @@ model Invoice {
 
   // Documents
   pdfUrl String?
+
+  // Stripe Payment Link — populated for INVOICE-method orders so buyer can pay online
+  stripePaymentLinkId  String?
+  stripePaymentLinkUrl String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1370,8 +1389,12 @@ model Review {
   companyId String
 
   // Exactly one of these is set per review
-  orderId     String? @unique // material order
-  skipOrderId String? @unique // skip-hire order
+  orderId          String? @unique // material order
+  skipOrderId      String? @unique // skip-hire order
+  transportJobId   String? @unique // driver rating (buyer rates driver post-delivery)
+
+  // Set for driver ratings — the individual driver being rated
+  driverId String?
 
   createdAt DateTime @default(now())
 
@@ -1389,8 +1412,9 @@ model ChatMessage {
   sender   User   @relation(fields: [senderId], references: [id])
   senderId String
 
-  senderName String // denormalized for quick display
+  senderName String  // denormalized for quick display
   body       String
+  imageUrl   String? // optional photo attachment (Supabase Storage URL)
 
   createdAt DateTime @default(now())
 

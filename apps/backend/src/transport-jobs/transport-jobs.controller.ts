@@ -27,9 +27,17 @@ import {
   ReportTransportExceptionDto,
   ResolveTransportExceptionDto,
 } from './dto/report-exception.dto';
+import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
+import { ReviewsService } from '../reviews/reviews.service';
+
+class CreateDriverReviewDto {
+  @IsInt() @Min(1) @Max(5) @Type(() => Number) rating: number;
+  @IsString() @IsOptional() comment?: string;
+}
 
 function canDispatch(user: RequestingUser): boolean {
   return (
@@ -50,7 +58,10 @@ import { ApiTags } from '@nestjs/swagger';
 @Controller('transport-jobs')
 @UseGuards(JwtAuthGuard)
 export class TransportJobsController {
-  constructor(private readonly service: TransportJobsService) {}
+  constructor(
+    private readonly service: TransportJobsService,
+    private readonly reviewsService: ReviewsService,
+  ) {}
 
   /**
    * POST /transport-jobs
@@ -403,5 +414,19 @@ export class TransportJobsController {
       );
     }
     return this.service.resolveException(id, exceptionId, user.userId, dto);
+  }
+
+  /**
+   * POST /transport-jobs/:id/review
+   * Buyer rates the driver after a job is DELIVERED (1-5 stars + optional comment).
+   * One review per transport job — 409 if already rated.
+   */
+  @Post(':id/review')
+  reviewDriver(
+    @Param('id') id: string,
+    @Body() dto: CreateDriverReviewDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.reviewsService.createDriverReview(id, dto, user.userId);
   }
 }

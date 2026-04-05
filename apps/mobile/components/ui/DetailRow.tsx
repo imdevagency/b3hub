@@ -21,17 +21,21 @@ import { View, Text, StyleSheet } from 'react-native';
 
 interface DetailRowProps {
   label: string;
-  value?: string | null;
+  value?: React.ReactNode;
   /** Removes the bottom border — use on the last row inside an InfoSection. */
   last?: boolean;
 }
 
 export function DetailRow({ label, value, last = false }: DetailRowProps) {
-  if (!value) return null;
+  if (value === null || value === undefined || value === '') return null;
   return (
     <View style={[styles.row, last && styles.rowLast]}>
       <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
+      {typeof value === 'string' ? (
+        <Text style={styles.value}>{value}</Text>
+      ) : (
+        <View style={styles.valueNode}>{value}</View>
+      )}
     </View>
   );
 }
@@ -49,4 +53,5 @@ const styles = StyleSheet.create({
   rowLast: { borderBottomWidth: 0 },
   label: { fontSize: 13, color: '#6b7280', flex: 1 },
   value: { fontSize: 13, fontWeight: '600', color: '#111827', flex: 2, textAlign: 'right' },
+  valueNode: { flex: 2, alignItems: 'flex-end' },
 });

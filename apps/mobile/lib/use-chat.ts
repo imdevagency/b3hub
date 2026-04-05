@@ -21,6 +21,7 @@ interface UseChatReturn {
   connected: boolean;
   sending: boolean;
   sendMessage: (text: string) => Promise<void>;
+  sendImageMessage: (base64: string, mimeType: string) => Promise<void>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -119,5 +120,36 @@ export function useChat({ jobId, token, currentUser }: UseChatOptions): UseChatR
     }
   }, [jobId, token, sending, currentUser]);
 
-  return { messages, loading, connected, sending, sendMessage };
+  // ── Send image ────────────────────────────────────────────────────────────
+  const sendImageMessage = useCallback(async (base64: string, mimeType: string) => {
+    if (!token || !jobId || sending) return;
+    setSending(true);
+
+    // Optimistic placeholder
+    const optimisticId = `optimistic-img-${Date.now()}`;
+    const optimistic: ApiChatMessage = {
+      id: optimisticId,
+      senderId: currentUser?.id ?? '',
+      senderName: currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : '',
+      body: '',
+      imageUrl: `data:${mimeType};base64,${base64.replace(/^data:[^,]+,/, '')}`,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimistic]);
+
+    try {
+      const { imageUrl } = await api.chat.uploadImage(jobId, base64, mimeType, token);
+      const saved = await api.chat.sendMessage(jobId, '', token, imageUrl);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === optimisticId ? saved : m)),
+      );
+    } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      throw new Error('Failed to send image');
+    } finally {
+      setSending(false);
+    }
+  }, [jobId, token, sending, currentUser]);
+
+  return { messages, loading, connected, sending, sendMessage, sendImageMessage };
 }

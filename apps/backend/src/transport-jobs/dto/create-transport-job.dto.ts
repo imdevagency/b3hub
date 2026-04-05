@@ -115,6 +115,11 @@ export class CreateTransportJobDto {
   @Min(0)
   pricePerTonne?: number;
 
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  buyerOfferedRate?: number;
+
   // Optional link to an existing order
   @IsOptional()
   @IsString()

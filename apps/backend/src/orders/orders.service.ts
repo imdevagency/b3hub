@@ -10,6 +10,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
@@ -21,6 +22,7 @@ import { CreateSurchargeDto } from './dto/create-surcharge.dto';
 import {
   OrderStatus,
   OrderType,
+  PaymentMethod,
   PaymentStatus,
   TransportJobStatus,
   TransportJobType,
@@ -185,11 +187,18 @@ export class OrdersService {
     const grandTax = grandSubtotal * VAT_RATE;
     const grandTotal = grandSubtotal + grandTax + (orderData.deliveryFee || 0);
 
-    // ── Credit limit check + atomic increment ────────────────────────────────
+    // ── Resolve payment method from buyer's payment terms ───────────────────
+    // CARD = pay by card now (default for individuals and COD companies)
+    // INVOICE = company has NET30/NET60 credit terms — pay via link/transfer later
     const buyerProfile = await this.prisma.buyerProfile.findUnique({
       where: { userId },
-      select: { creditLimit: true, creditUsed: true },
+      select: { creditLimit: true, creditUsed: true, paymentTerms: true },
     });
+    const paymentTerms = buyerProfile?.paymentTerms ?? null;
+    const paymentMethod: PaymentMethod =
+      paymentTerms && /^NET\d+$/i.test(paymentTerms)
+        ? PaymentMethod.INVOICE
+        : PaymentMethod.CARD;
     if (buyerProfile?.creditLimit != null) {
       // Use a raw UPDATE with a WHERE guard to atomically check + increment.
       // This prevents TOCTOU races when two orders are placed simultaneously.
@@ -229,6 +238,7 @@ export class OrdersService {
           orderData,
           buyerCompanyId,
           userId,
+          paymentMethod,
         );
         createdOrders.push(order);
       }
@@ -362,7 +372,13 @@ export class OrdersService {
     orderData: Omit<CreateOrderDto, 'items'>,
     buyerCompanyId: string,
     userId: string,
+    paymentMethod: PaymentMethod = PaymentMethod.CARD,
   ) {
+    // Retry once on unique constraint violation (P2002) — the millisecond+random
+    // number generator has ~10^7 combos per month, so collisions are rare but
+    // possible under concurrent load.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
     const orderNumber = this.generateOrderNumber();
     const subtotal = items.reduce(
       (sum, i) => sum + i.resolvedUnitPrice * i.quantity,
@@ -379,13 +395,13 @@ export class OrdersService {
         createdById: userId,
         deliveryAddress: orderData.deliveryAddress,
         deliveryCity: orderData.deliveryCity,
-        deliveryState: orderData.deliveryState,
-        deliveryPostal: orderData.deliveryPostal,
+        deliveryState: orderData.deliveryState ?? '',
+        deliveryPostal: orderData.deliveryPostal ?? '',
         deliveryDate: orderData.deliveryDate
           ? new Date(orderData.deliveryDate)
           : undefined,
         deliveryWindow: orderData.deliveryWindow,
-        deliveryFee: orderData.deliveryFee,
+        deliveryFee: orderData.deliveryFee ?? 0,
         notes: orderData.notes,
         siteContactName: orderData.siteContactName,
         siteContactPhone: orderData.siteContactPhone,
@@ -398,6 +414,7 @@ export class OrdersService {
         currency: 'EUR',
         status: OrderStatus.PENDING,
         paymentStatus: orderData.paymentStatus || 'PENDING',
+        paymentMethod,
         items: {
           create: items.map((item) => ({
             materialId: item.materialId,
@@ -462,6 +479,19 @@ export class OrdersService {
     this.notifyOrderSellers(order.id, order.orderNumber).catch(() => null);
 
     return order;
+      } catch (err: any) {
+        if (err?.code === 'P2002' && attempt === 0) {
+          this.logger.warn(
+            `Order number collision on attempt ${attempt + 1}, retrying...`,
+          );
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw new InternalServerErrorException(
+      'Failed to generate a unique order number after retries',
+    );
   }
 
   /** Push ORDER_CREATED to every user belonging to supplier companies in this order. */
@@ -828,8 +858,9 @@ export class OrdersService {
       }
     }
 
-    // Capture payment when seller confirms the order (fire-and-forget, non-fatal)
-    if (status === OrderStatus.CONFIRMED) {
+    // Capture payment when seller confirms the order (fire-and-forget, non-fatal).
+    // INVOICE-method orders skip card capture — buyer pays via Payment Link / bank transfer.
+    if (status === OrderStatus.CONFIRMED && order.paymentMethod !== PaymentMethod.INVOICE) {
       this.payments.capturePayment(id).catch(async (err) => {
         this.logger.error(
           `capturePayment failed for order ${id}: ${err.message}`,
@@ -1563,6 +1594,7 @@ export class OrdersService {
     total: number;
     currency: string;
     createdById: string;
+    paymentMethod?: PaymentMethod;
   }): Promise<void> {
     // Delegate to InvoicesService so any order-creation path (direct, RFQ, etc.)
     // produces identical invoice output without duplicating the logic here.
@@ -1575,6 +1607,7 @@ export class OrdersService {
         currency: order.currency,
       },
       order.createdById,
+      order.paymentMethod,
     );
   }
 
@@ -1601,6 +1634,8 @@ export class OrdersService {
             city: true,
             state: true,
             postalCode: true,
+            lat: true,
+            lng: true,
           },
         },
       },
@@ -1624,6 +1659,44 @@ export class OrdersService {
     // Distribute weight equally across trucks
     const weightPerTruck = totalWeight / truckCount;
 
+    // Calculate distance and driver rate from coordinates when available.
+    // Fallback to the buyer-provided deliveryFee divided by trucks.
+    const DELIVERY_RATE_EUR_PER_KM = 1.2;
+    let distanceKm: number | null = null;
+    const suppLat = firstMaterial.supplier.lat;
+    const suppLng = firstMaterial.supplier.lng;
+    if (
+      suppLat != null &&
+      suppLng != null &&
+      orderData.deliveryLat != null &&
+      orderData.deliveryLng != null
+    ) {
+      const R = 6371;
+      const dLat =
+        ((orderData.deliveryLat - suppLat) * Math.PI) / 180;
+      const dLng =
+        ((orderData.deliveryLng - suppLng) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos((suppLat * Math.PI) / 180) *
+          Math.cos((orderData.deliveryLat * Math.PI) / 180) *
+          Math.sin(dLng / 2) ** 2;
+      distanceKm = Math.round(
+        R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)),
+      );
+    }
+    const calculatedFee =
+      distanceKm != null
+        ? Math.round(distanceKm * DELIVERY_RATE_EUR_PER_KM * 100) / 100
+        : 0;
+    // Use buyer-supplied fee when it's non-zero; otherwise fall back to
+    // the haversine estimate so drivers never see €0 on the job board.
+    const effectiveFee =
+      (orderData.deliveryFee ?? 0) > 0
+        ? orderData.deliveryFee!
+        : calculatedFee;
+    const driverRate = effectiveFee / truckCount;
+
     for (let i = 0; i < truckCount; i++) {
       const jobNumber = this.generateTransportJobNumber();
       const pickupDate = new Date(baseDate.getTime() + i * intervalMs);
@@ -1645,11 +1718,21 @@ export class OrdersService {
           deliveryDate: pickupDate,
           cargoType,
           cargoWeight: weightPerTruck,
-          // Distribute fee equally; dispatcher can adjust later
-          rate: (orderData.deliveryFee ?? 0) / truckCount,
+          rate: driverRate,
           currency: 'EUR',
           status: TransportJobStatus.AVAILABLE,
           ...(truckCount > 1 ? { truckIndex: i + 1 } : {}),
+          // Geo coordinates for map display and radius filtering
+          ...(suppLat != null && suppLng != null
+            ? { pickupLat: suppLat, pickupLng: suppLng }
+            : {}),
+          ...(orderData.deliveryLat != null && orderData.deliveryLng != null
+            ? {
+                deliveryLat: orderData.deliveryLat,
+                deliveryLng: orderData.deliveryLng,
+              }
+            : {}),
+          ...(distanceKm != null ? { distanceKm } : {}),
         },
       });
 
@@ -1741,7 +1824,7 @@ export class OrdersService {
         cargoVolume: truck.volume * dto.truckCount,
         requiredVehicleType: truck.label,
         specialRequirements: dto.description ?? null,
-        rate: 0,
+        rate: dto.quotedRate,
         currency: 'EUR',
         status: TransportJobStatus.AVAILABLE,
       },
@@ -1750,6 +1833,21 @@ export class OrdersService {
     this.logger.log(
       `Disposal job ${jobNumber} created (${dto.wasteType} × ${dto.truckCount} trucks from ${dto.pickupCity})`,
     );
+
+    // Generate invoice + Stripe Payment Link for the quoted rate (fire-and-forget)
+    this.invoices
+      .createForCallOff({
+        id: job.id,
+        jobNumber: job.jobNumber,
+        rate: dto.quotedRate,
+        currency: 'EUR',
+        requestedById: userId,
+      })
+      .catch((err) =>
+        this.logger.error(
+          `Invoice creation failed for disposal job ${job.id}: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      );
 
     // Notify all active drivers about the new job (fire-and-forget)
     this.notifyActiveDrivers(
@@ -1807,7 +1905,8 @@ export class OrdersService {
         cargoVolume: vehicle.volume,
         requiredVehicleType: vehicle.label,
         specialRequirements: null,
-        rate: 0,
+        rate: dto.quotedRate,
+        buyerOfferedRate: dto.buyerOfferedRate ?? null,
         currency: 'EUR',
         status: TransportJobStatus.AVAILABLE,
       },
@@ -1817,6 +1916,21 @@ export class OrdersService {
       `Freight job ${jobNumber} created ` +
         `(${dto.pickupCity} → ${dto.dropoffCity}, ${vehicle.label})`,
     );
+
+    // Generate invoice + Stripe Payment Link for the quoted rate (fire-and-forget)
+    this.invoices
+      .createForCallOff({
+        id: job.id,
+        jobNumber: job.jobNumber,
+        rate: dto.quotedRate,
+        currency: 'EUR',
+        requestedById: userId,
+      })
+      .catch((err) =>
+        this.logger.error(
+          `Invoice creation failed for freight job ${job.id}: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      );
 
     // Notify all active drivers about the new job (fire-and-forget)
     this.notifyActiveDrivers(

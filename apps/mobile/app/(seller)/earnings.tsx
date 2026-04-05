@@ -15,6 +15,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiOrder, paymentsApi } from '@/lib/api';
+import { CATEGORY_LABELS } from '@/lib/materials';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { haptics } from '@/lib/haptics';
@@ -29,6 +30,9 @@ interface EarningsStats {
   completedJobs: number;
   pendingPayout: number;
   avgOrderValue: number;
+  fulfillmentRate: number;  // 0–100 %
+  repeatBuyerRate: number; // 0–100 %
+  topMaterials: { label: string; amount: number }[]; // top 3
 }
 
 interface DayBar {
@@ -109,6 +113,39 @@ function computeStats(orders: ApiOrder[]): {
       ? confirmedOrders.reduce((s, o) => s + (o.total ?? 0), 0) / confirmedOrders.length
       : 0;
 
+  // Fulfillment rate: delivered / (delivered + cancelled)
+  const deliveredCount = orders.filter((o) => o.status === 'DELIVERED' || o.status === 'COMPLETED').length;
+  const cancelledCount = orders.filter((o) => o.status === 'CANCELLED').length;
+  const fulfillmentRate =
+    deliveredCount + cancelledCount > 0
+      ? Math.round((deliveredCount / (deliveredCount + cancelledCount)) * 100)
+      : 100;
+
+  // Repeat buyer rate: buyers with ≥2 orders
+  const buyerOrderCount = new Map<string, number>();
+  for (const o of orders) {
+    if (o.buyer?.id) buyerOrderCount.set(o.buyer.id, (buyerOrderCount.get(o.buyer.id) ?? 0) + 1);
+  }
+  const uniqueBuyers = buyerOrderCount.size;
+  const repeatBuyers = [...buyerOrderCount.values()].filter((c) => c >= 2).length;
+  const repeatBuyerRate = uniqueBuyers > 0 ? Math.round((repeatBuyers / uniqueBuyers) * 100) : 0;
+
+  // Top materials by revenue (all-time)
+  const materialRevenue = new Map<string, number>();
+  for (const o of confirmedOrders) {
+    for (const item of o.items) {
+      const key = item.material.category;
+      materialRevenue.set(key, (materialRevenue.get(key) ?? 0) + (item.total ?? 0));
+    }
+  }
+  const topMaterials = [...materialRevenue.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([cat, amt]) => ({
+      label: CATEGORY_LABELS[cat as keyof typeof CATEGORY_LABELS] ?? cat,
+      amount: amt,
+    }));
+
   for (const order of orders) {
     const d = new Date(order.createdAt);
     const amount = order.total ?? 0;
@@ -152,6 +189,9 @@ function computeStats(orders: ApiOrder[]): {
       completedJobs,
       pendingPayout,
       avgOrderValue,
+      fulfillmentRate,
+      repeatBuyerRate,
+      topMaterials,
     },
     history,
     dailyChart: buildDailyChart(orders),
@@ -225,6 +265,9 @@ export default function SellerEarningsScreen() {
     completedJobs: 0,
     pendingPayout: 0,
     avgOrderValue: 0,
+    fulfillmentRate: 100,
+    repeatBuyerRate: 0,
+    topMaterials: [],
   });
 
   const handleSetupPayouts = async () => {
@@ -399,6 +442,58 @@ export default function SellerEarningsScreen() {
           </View>
         </View>
 
+        {/* ── Analytics Section ──────────────────────── */}
+        <View style={s.analyticsSection}>
+          <Text style={s.sectionTitle}>Analītika</Text>
+
+          {/* Fulfillment rate + Repeat buyers side by side */}
+          <View style={s.anRowCards}>
+            <View style={s.anCard}>
+              <Text style={s.anCardValue}>{stats.fulfillmentRate}%</Text>
+              <Text style={s.anCardLabel}>Izpildes līmenis</Text>
+              <View style={s.anBar}>
+                <View style={[s.anBarFill, { width: `${stats.fulfillmentRate}%` as any }]} />
+              </View>
+            </View>
+            <View style={s.anCard}>
+              <Text style={s.anCardValue}>{stats.repeatBuyerRate}%</Text>
+              <Text style={s.anCardLabel}>Atkārtoti klienti</Text>
+              <View style={s.anBar}>
+                <View style={[s.anBarFill, { width: `${stats.repeatBuyerRate}%` as any, backgroundColor: '#16a34a' }]} />
+              </View>
+            </View>
+          </View>
+
+          {/* Top materials */}
+          {stats.topMaterials.length > 0 && (
+            <View style={s.anTopMats}>
+              <Text style={s.anTopMatsTitle}>Top materiāli</Text>
+              {stats.topMaterials.map((m, i) => {
+                const maxAmt = stats.topMaterials[0].amount;
+                return (
+                  <View key={m.label} style={s.anMatRow}>
+                    <Text style={s.anMatRank}>{i + 1}</Text>
+                    <View style={{ flex: 1 }}>
+                      <View style={s.anMatLabelRow}>
+                        <Text style={s.anMatLabel} numberOfLines={1}>{m.label}</Text>
+                        <Text style={s.anMatAmt}>€{m.amount.toFixed(0)}</Text>
+                      </View>
+                      <View style={s.anBar}>
+                        <View
+                          style={[
+                            s.anBarFill,
+                            { width: `${(m.amount / maxAmt) * 100}%` as any, backgroundColor: '#374151' },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
         {/* ── Recent Activity List ──────────────────────── */}
         <View style={s.listSection}>
           <Text style={s.sectionTitle}>Nesenā aktivitāte</Text>
@@ -533,6 +628,49 @@ const s = StyleSheet.create({
     color: '#111827',
     marginBottom: 16,
   },
+
+  // Analytics
+  analyticsSection: {
+    paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  anRowCards: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  anCard: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
+    borderRadius: 14,
+    padding: 16,
+    gap: 4,
+  },
+  anCardValue: { fontSize: 22, fontWeight: '800', color: '#111827' },
+  anCardLabel: { fontSize: 11, color: '#9ca3af', fontWeight: '500', marginBottom: 6 },
+  anBar: {
+    height: 4,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  anBarFill: {
+    height: 4,
+    backgroundColor: '#111827',
+    borderRadius: 2,
+  },
+  anTopMats: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 14,
+    padding: 16,
+    gap: 12,
+  },
+  anTopMatsTitle: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 4 },
+  anMatRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  anMatRank: { fontSize: 13, fontWeight: '700', color: '#9ca3af', width: 16, textAlign: 'center' },
+  anMatLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  anMatLabel: { fontSize: 13, fontWeight: '500', color: '#374151', flex: 1 },
+  anMatAmt: { fontSize: 13, fontWeight: '700', color: '#111827' },
   listItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',

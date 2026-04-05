@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
-import { getAllTransportJobs, type ApiTransportJob } from '@/lib/api';
+import { getAllTransportJobs, getTransportJobLocation, type ApiTransportJob } from '@/lib/api';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageContainer } from '@/components/ui/page-container';
 
@@ -166,6 +166,7 @@ export default function FleetPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [liveLocations, setLiveLocations] = useState<Record<string, { lat: number; lng: number }>>({});
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
@@ -198,6 +199,39 @@ export default function FleetPage() {
   useEffect(() => {
     if (!isLoading && user && token) fetchJobs();
   }, [isLoading, user, token, fetchJobs]);
+
+  // ── Live GPS polling — only when map view is open ─────────────────────────
+  useEffect(() => {
+    if (viewMode !== 'map' || !token) return;
+
+    const ACTIVE = new Set([
+      'EN_ROUTE_PICKUP', 'AT_PICKUP', 'LOADED', 'EN_ROUTE_DELIVERY', 'AT_DELIVERY',
+    ]);
+
+    const pollLocations = async () => {
+      const activeJobs = jobs.filter((j) => ACTIVE.has(j.status));
+      if (activeJobs.length === 0) return;
+      const results = await Promise.allSettled(
+        activeJobs.map((j) => getTransportJobLocation(j.id, token)),
+      );
+      const updates: Record<string, { lat: number; lng: number }> = {};
+      results.forEach((r, i) => {
+        if (r.status === 'fulfilled' && r.value.currentLocation) {
+          updates[activeJobs[i].id] = {
+            lat: r.value.currentLocation.lat,
+            lng: r.value.currentLocation.lng,
+          };
+        }
+      });
+      if (Object.keys(updates).length > 0) {
+        setLiveLocations((prev) => ({ ...prev, ...updates }));
+      }
+    };
+
+    pollLocations(); // immediate first fetch
+    const interval = setInterval(pollLocations, 10_000); // then every 10 s
+    return () => clearInterval(interval);
+  }, [viewMode, token, jobs]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -332,7 +366,7 @@ export default function FleetPage() {
       </div>
 
       {/* Map view */}
-      {viewMode === 'map' && <FleetMap jobs={jobs} />}
+      {viewMode === 'map' && <FleetMap jobs={jobs} liveLocations={liveLocations} />}
 
       {/* Filter + search — list mode only */}
       {viewMode === 'list' && (

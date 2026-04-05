@@ -137,6 +137,7 @@ export class TransportJobsService {
     distanceKm: true,
     rate: true,
     pricePerTonne: true,
+    buyerOfferedRate: true,
     currency: true,
     status: true,
     actualWeightKg: true,
@@ -289,6 +290,7 @@ export class TransportJobsService {
         distanceKm: dto.distanceKm,
         rate: dto.rate,
         pricePerTonne: dto.pricePerTonne,
+        buyerOfferedRate: dto.buyerOfferedRate ?? null,
         currency: 'EUR',
         status: TransportJobStatus.AVAILABLE,
         ...(dto.orderId ? { order: { connect: { id: dto.orderId } } } : {}),
@@ -296,10 +298,13 @@ export class TransportJobsService {
       select: this.jobSelect,
     });
 
-    // Notify all active drivers about the new job (fire-and-forget)
-    this.notifyAllDrivers(
+    // Notify eligible nearby drivers about the new job (fire-and-forget)
+    this.notifyDriversNearPickup(
       `🚚 Jauns darbs: ${dto.pickupCity} → ${dto.deliveryCity}`,
       `${dto.cargoType}${dto.cargoWeight ? ` • ${dto.cargoWeight}t` : ''} • ${dto.distanceKm ? `${Math.round(dto.distanceKm ?? 0)} km` : 'attālums nav norādīts'}`,
+      dto.pickupLat,
+      dto.pickupLng,
+      job.id,
     ).catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
 
     this.logger.log(
@@ -308,15 +313,68 @@ export class TransportJobsService {
     return job;
   }
 
-  private async notifyAllDrivers(title: string, message: string) {
+  /**
+   * Notify eligible drivers about a new job. Filters by:
+   * 1. notifJobAlerts = true preference
+   * 2. If driver's company has coordinates, only notify drivers within
+   *    their company's serviceRadiusKm (default 200 km) of the pickup.
+   */
+  private async notifyDriversNearPickup(
+    title: string,
+    message: string,
+    pickupLat: number | null | undefined,
+    pickupLng: number | null | undefined,
+    jobId: string,
+  ) {
     const drivers = await this.prisma.user.findMany({
-      where: { canTransport: true, status: 'ACTIVE' },
-      select: { id: true },
+      where: { canTransport: true, status: 'ACTIVE', notifJobAlerts: true },
+      select: {
+        id: true,
+        company: { select: { lat: true, lng: true, serviceRadiusKm: true } },
+        driverProfile: { select: { currentLocation: true } },
+      },
     });
-    await this.notifications.createForMany(
-      drivers.map((d) => d.id),
-      { type: NotificationType.SYSTEM_ALERT, title, message },
-    );
+
+    const eligible: string[] = [];
+    for (const driver of drivers) {
+      if (!pickupLat || !pickupLng) {
+        // No pickup coordinates — notify everyone who opted in
+        eligible.push(driver.id);
+        continue;
+      }
+
+      // Prefer live driver location, fall back to company base
+      let driverLat: number | null = null;
+      let driverLng: number | null = null;
+      const loc = driver.driverProfile?.currentLocation as { lat?: number; lng?: number } | null;
+      if (loc?.lat && loc?.lng) {
+        driverLat = loc.lat;
+        driverLng = loc.lng;
+      } else if (driver.company?.lat && driver.company?.lng) {
+        driverLat = driver.company.lat;
+        driverLng = driver.company.lng;
+      }
+
+      if (driverLat === null || driverLng === null) {
+        // No location on file — notify to avoid missing opportunities
+        eligible.push(driver.id);
+        continue;
+      }
+
+      const maxKm = driver.company?.serviceRadiusKm ?? 200;
+      const distKm = this.haversineKm(driverLat, driverLng, pickupLat, pickupLng);
+      if (distKm <= maxKm) {
+        eligible.push(driver.id);
+      }
+    }
+
+    if (eligible.length === 0) return;
+    await this.notifications.createForMany(eligible, {
+      type: NotificationType.SYSTEM_ALERT,
+      title,
+      message,
+      data: { jobId },
+    });
   }
 
   private generateJobNumber(): string {
@@ -663,15 +721,25 @@ export class TransportJobsService {
         where: { transportJobId: id },
         select: { id: true },
       }),
-      job.orderId
-        ? this.prisma.document.findFirst({
-            where: {
-              orderId: job.orderId,
-              type: DocumentType.WEIGHING_SLIP,
-              status: { not: 'ARCHIVED' },
-            },
-            select: { id: true },
-          })
+      requiresWeighingSlip
+        ? job.orderId
+          ? this.prisma.document.findFirst({
+              where: {
+                orderId: job.orderId,
+                type: DocumentType.WEIGHING_SLIP,
+                status: { not: 'ARCHIVED' },
+              },
+              select: { id: true },
+            })
+          : // Standalone disposal/freight job — weighing slip is linked to the job directly
+            this.prisma.document.findFirst({
+              where: {
+                transportJobId: id,
+                type: DocumentType.WEIGHING_SLIP,
+                status: { not: 'ARCHIVED' },
+              },
+              select: { id: true },
+            })
         : Promise.resolve(null),
       this.prisma.document.findFirst({
         where: {
@@ -1240,10 +1308,13 @@ export class TransportJobsService {
           this.notifications
             .create({
               userId: buyerId,
-              type: NotificationType.SYSTEM_ALERT,
-              title: '📦 Krava iekrauta',
-              message: `Krava iekrauta, šoferis dodas uz Jums • ${orderNum}`,
-              data: { jobId: updatedJob.id },
+              type: NotificationType.WEIGHING_SLIP,
+              title: '📋 Svēršanas zīme pievienota',
+              message: `Krava iekrauta${updatedJob.actualWeightKg != null ? ` • ${(updatedJob.actualWeightKg / 1000).toFixed(2)} t` : ''} • ${orderNum}`,
+              data: {
+                jobId: updatedJob.id,
+                ...(updatedJob.pickupPhotoUrl ? { pickupPhotoUrl: updatedJob.pickupPhotoUrl } : {}),
+              },
             })
             .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
         } else if (dto.status === TransportJobStatus.EN_ROUTE_DELIVERY) {
@@ -1318,6 +1389,9 @@ export class TransportJobsService {
   }
 
   // ── Driver: update GPS location ─────────────────────────
+  // Track jobs where "driver nearby" push has already been sent (in-memory, per-server)
+  private readonly nearbyNotifiedJobs = new Set<string>();
+
   async updateLocation(id: string, driverId: string, dto: UpdateLocationDto) {
     const job = await this.prisma.transportJob.findUnique({ where: { id } });
     if (!job) throw new NotFoundException('Transport job not found');
@@ -1342,15 +1416,52 @@ export class TransportJobsService {
       data: { currentLocation: location },
     });
 
+    // ── Driver nearby notification ────────────────────────────────────────────
+    // Fire once when driver is within 5 km of delivery site while heading there.
+    const headingToDelivery =
+      job.status === 'EN_ROUTE_DELIVERY' ||
+      job.status === 'LOADED';
+    if (
+      headingToDelivery &&
+      job.deliveryLat != null &&
+      job.deliveryLng != null &&
+      !this.nearbyNotifiedJobs.has(id)
+    ) {
+      const distToDelivery = this.haversineKm(
+        dto.lat,
+        dto.lng,
+        job.deliveryLat,
+        job.deliveryLng,
+      );
+      if (distToDelivery <= 5) {
+        this.nearbyNotifiedJobs.add(id);
+        const recipientId = job.requestedById;
+        if (recipientId) {
+          this.notifications
+            .create({
+              userId: recipientId,
+              type: NotificationType.SYSTEM_ALERT,
+              title: 'Šoferis tuvojas',
+              message: `Šoferis atrodas ${Math.round(distToDelivery * 10) / 10} km attālumā no piegādes vietas.`,
+              data: { jobId: id },
+            })
+            .catch((err) =>
+              this.logger.warn(`Driver nearby notification failed for job ${id}: ${err instanceof Error ? err.message : String(err)}`),
+            );
+        }
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Broadcast real-time location to subscribed clients (fire-and-forget)
     // Compute a lightweight ETA: haversine to destination ÷ 50 km/h average speed.
     // Use delivery coords when en-route to delivery, pickup coords otherwise.
-    const headingToDelivery =
+    const headingToDeliveryForEta =
       job.status === 'EN_ROUTE_DELIVERY' ||
       job.status === 'AT_DELIVERY' ||
       job.status === 'LOADED';
-    const destLat = headingToDelivery ? job.deliveryLat : (job.pickupLat ?? job.deliveryLat);
-    const destLng = headingToDelivery ? job.deliveryLng : (job.pickupLng ?? job.deliveryLng);
+    const destLat = headingToDeliveryForEta ? job.deliveryLat : (job.pickupLat ?? job.deliveryLat);
+    const destLng = headingToDeliveryForEta ? job.deliveryLng : (job.pickupLng ?? job.deliveryLng);
     let estimatedArrivalMin: number | null = null;
     if (destLat != null && destLng != null) {
       const distKm = this.haversineKm(dto.lat, dto.lng, destLat, destLng);
@@ -1503,6 +1614,19 @@ export class TransportJobsService {
           }
         }
       }
+    } else if (job.requestedById) {
+      // Standalone disposal / freight job (no linked Order): notify the requester
+      this.notifications
+        .create({
+          userId: job.requestedById,
+          type: NotificationType.ORDER_DELIVERED,
+          title: '✅ Darbs pabeigts',
+          message: `Darbs ${delivered.jobNumber} ir veiksmīgi pabeigts. Lūdzu, apmaksājiet rēķinu.`,
+          data: { jobId: id },
+        })
+        .catch((err) =>
+          this.logger.error(err instanceof Error ? err.message : String(err)),
+        );
     }
 
     return delivered;

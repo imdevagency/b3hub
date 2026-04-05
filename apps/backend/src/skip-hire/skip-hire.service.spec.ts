@@ -51,26 +51,26 @@ describe('SkipHireService', () => {
   let prisma: jest.Mocked<PrismaService>;
 
   beforeEach(async () => {
-    const mockPrisma = {
+    const mockPrisma: any = {
       skipHireOrder: {
-        findUnique: jest.fn(),
-        findMany: jest.fn().mockResolvedValue([]),
-        findFirst: jest.fn(),
-        create: jest.fn(),
-        update: jest.fn(),
-        count: jest.fn().mockResolvedValue(0),
+        findUnique: jest.fn<any>(),
+        findMany: (jest.fn() as any).mockResolvedValue([]),
+        findFirst: jest.fn<any>(),
+        create: jest.fn<any>(),
+        update: jest.fn<any>(),
+        count: (jest.fn() as any).mockResolvedValue(0),
       },
       carrierPricing: {
-        findUnique: jest.fn(),
-        findMany: jest.fn().mockResolvedValue([]),
+        findUnique: jest.fn<any>(),
+        findMany: (jest.fn() as any).mockResolvedValue([]),
       },
       user: {
-        findUnique: jest.fn(),
+        findUnique: jest.fn<any>(),
       },
     };
 
     const mockNotifications = {
-      create: jest.fn().mockResolvedValue(undefined),
+      create: (jest.fn() as any).mockResolvedValue(undefined),
     };
 
     const module = await Test.createTestingModule({
@@ -101,7 +101,7 @@ describe('SkipHireService', () => {
     };
 
     it('throws BadRequestException when selected carrier has no pricing for the skip size', async () => {
-      (prisma.carrierPricing.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.carrierPricing.findUnique as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
         service.create({ ...baseDto, carrierId: 'carrier-1' }),
@@ -109,8 +109,8 @@ describe('SkipHireService', () => {
     });
 
     it('uses platform default MIDI price (129) when no carrier is selected', async () => {
-      (prisma.skipHireOrder.count as jest.Mock).mockResolvedValue(0);
-      (prisma.skipHireOrder.create as jest.Mock).mockResolvedValue(stubOrder());
+      (prisma.skipHireOrder.count as jest.Mock<any>).mockResolvedValue(0);
+      (prisma.skipHireOrder.create as jest.Mock<any>).mockResolvedValue(stubOrder());
 
       await service.create(baseDto);
 
@@ -122,15 +122,15 @@ describe('SkipHireService', () => {
     });
 
     it('applies carrier price + zone surcharge server-side', async () => {
-      (prisma.carrierPricing.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.carrierPricing.findUnique as jest.Mock<any>).mockResolvedValue({
         price: 110,
         skipSize: SkipSize.MIDI,
         carrier: {
           serviceZones: [{ city: 'Riga', postcode: null, surcharge: 15 }],
         },
       });
-      (prisma.skipHireOrder.count as jest.Mock).mockResolvedValue(0);
-      (prisma.skipHireOrder.create as jest.Mock).mockResolvedValue(
+      (prisma.skipHireOrder.count as jest.Mock<any>).mockResolvedValue(0);
+      (prisma.skipHireOrder.create as jest.Mock<any>).mockResolvedValue(
         stubOrder({ price: 125 }),
       );
 
@@ -148,13 +148,13 @@ describe('SkipHireService', () => {
 
   describe('getQuotes', () => {
     it('returns empty array when no carrier pricing exists', async () => {
-      (prisma.carrierPricing.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.carrierPricing.findMany as jest.Mock<any>).mockResolvedValue([]);
       const result = await service.getQuotes(SkipSize.MIDI, 'Riga', '2026-06-01');
       expect(result).toEqual([]);
     });
 
     it('filters out unverified carriers', async () => {
-      (prisma.carrierPricing.findMany as jest.Mock).mockResolvedValue([
+      (prisma.carrierPricing.findMany as jest.Mock<any>).mockResolvedValue([
         {
           price: 129,
           currency: 'EUR',
@@ -176,7 +176,7 @@ describe('SkipHireService', () => {
     });
 
     it('filters out carriers with no matching service zone', async () => {
-      (prisma.carrierPricing.findMany as jest.Mock).mockResolvedValue([
+      (prisma.carrierPricing.findMany as jest.Mock<any>).mockResolvedValue([
         {
           price: 129,
           currency: 'EUR',
@@ -198,7 +198,7 @@ describe('SkipHireService', () => {
     });
 
     it('filters out carriers blocked on the requested date', async () => {
-      (prisma.carrierPricing.findMany as jest.Mock).mockResolvedValue([
+      (prisma.carrierPricing.findMany as jest.Mock<any>).mockResolvedValue([
         {
           price: 129,
           currency: 'EUR',
@@ -220,7 +220,7 @@ describe('SkipHireService', () => {
     });
 
     it('returns and sorts verified available carriers by price ascending', async () => {
-      (prisma.carrierPricing.findMany as jest.Mock).mockResolvedValue([
+      (prisma.carrierPricing.findMany as jest.Mock<any>).mockResolvedValue([
         {
           price: 149,
           currency: 'EUR',
@@ -262,12 +262,12 @@ describe('SkipHireService', () => {
 
   describe('findOne', () => {
     it('throws NotFoundException when order does not exist', async () => {
-      (prisma.skipHireOrder.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(null);
       await expect(service.findOne('missing')).rejects.toThrow(NotFoundException);
     });
 
     it('throws ForbiddenException when non-admin accesses another user\'s order', async () => {
-      (prisma.skipHireOrder.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
         stubOrder({ userId: 'owner-user' }),
       );
       await expect(
@@ -276,7 +276,7 @@ describe('SkipHireService', () => {
     });
 
     it('allows admin to access any order', async () => {
-      (prisma.skipHireOrder.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
         stubOrder({ userId: 'owner-user' }),
       );
       await expect(
@@ -285,7 +285,7 @@ describe('SkipHireService', () => {
     });
 
     it('allows the order owner to access their own order', async () => {
-      (prisma.skipHireOrder.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
         stubOrder({ userId: 'user-1' }),
       );
       await expect(
@@ -298,7 +298,7 @@ describe('SkipHireService', () => {
 
   describe('cancel', () => {
     it('throws BadRequestException when cancelling a COMPLETED order', async () => {
-      (prisma.skipHireOrder.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
         stubOrder({ status: SkipHireStatus.COMPLETED, userId: 'user-1' }),
       );
       await expect(
@@ -307,7 +307,7 @@ describe('SkipHireService', () => {
     });
 
     it('throws BadRequestException when cancelling a COLLECTED order', async () => {
-      (prisma.skipHireOrder.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
         stubOrder({ status: SkipHireStatus.COLLECTED, userId: 'user-1' }),
       );
       await expect(
@@ -316,10 +316,10 @@ describe('SkipHireService', () => {
     });
 
     it('allows cancellation of PENDING orders', async () => {
-      (prisma.skipHireOrder.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
         stubOrder({ status: SkipHireStatus.PENDING, userId: 'user-1' }),
       );
-      (prisma.skipHireOrder.update as jest.Mock).mockResolvedValue(
+      (prisma.skipHireOrder.update as jest.Mock<any>).mockResolvedValue(
         stubOrder({ status: SkipHireStatus.CANCELLED }),
       );
 
@@ -328,10 +328,10 @@ describe('SkipHireService', () => {
     });
 
     it('allows cancellation of CONFIRMED orders', async () => {
-      (prisma.skipHireOrder.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
         stubOrder({ status: SkipHireStatus.CONFIRMED, userId: 'user-1' }),
       );
-      (prisma.skipHireOrder.update as jest.Mock).mockResolvedValue(
+      (prisma.skipHireOrder.update as jest.Mock<any>).mockResolvedValue(
         stubOrder({ status: SkipHireStatus.CANCELLED }),
       );
 
@@ -345,7 +345,7 @@ describe('SkipHireService', () => {
 
   describe('getCarrierMapSkips', () => {
     it('throws ForbiddenException when user does not have canSkipHire flag', async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as jest.Mock<any>).mockResolvedValue({
         companyId: 'carrier-1',
         canSkipHire: false,
       });
@@ -355,7 +355,7 @@ describe('SkipHireService', () => {
     });
 
     it('throws ForbiddenException when user has no companyId', async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as jest.Mock<any>).mockResolvedValue({
         companyId: null,
         canSkipHire: true,
       });
@@ -365,11 +365,11 @@ describe('SkipHireService', () => {
     });
 
     it('returns only CONFIRMED and DELIVERED orders for the carrier', async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as jest.Mock<any>).mockResolvedValue({
         companyId: 'carrier-1',
         canSkipHire: true,
       });
-      (prisma.skipHireOrder.findMany as jest.Mock).mockResolvedValue([
+      (prisma.skipHireOrder.findMany as jest.Mock<any>).mockResolvedValue([
         stubOrder({ status: SkipHireStatus.CONFIRMED, carrierId: 'carrier-1' }),
         stubOrder({ status: SkipHireStatus.DELIVERED, carrierId: 'carrier-1' }),
       ]);
@@ -383,7 +383,7 @@ describe('SkipHireService', () => {
 
   describe('updateCarrierStatus', () => {
     it('throws ForbiddenException when user lacks canSkipHire', async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as jest.Mock<any>).mockResolvedValue({
         companyId: 'carrier-1',
         canSkipHire: false,
       });
@@ -393,11 +393,11 @@ describe('SkipHireService', () => {
     });
 
     it('throws ForbiddenException when order belongs to a different carrier', async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as jest.Mock<any>).mockResolvedValue({
         companyId: 'carrier-1',
         canSkipHire: true,
       });
-      (prisma.skipHireOrder.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
         stubOrder({ carrierId: 'other-carrier', status: SkipHireStatus.CONFIRMED }),
       );
       await expect(
@@ -406,12 +406,12 @@ describe('SkipHireService', () => {
     });
 
     it('throws BadRequestException for an invalid state transition', async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as jest.Mock<any>).mockResolvedValue({
         companyId: 'carrier-1',
         canSkipHire: true,
       });
       // PENDING → COLLECTED is not in the allowed map
-      (prisma.skipHireOrder.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
         stubOrder({ carrierId: 'carrier-1', status: SkipHireStatus.PENDING }),
       );
       await expect(
@@ -420,12 +420,12 @@ describe('SkipHireService', () => {
     });
 
     it('throws BadRequestException when target status does not match the expected next step', async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as jest.Mock<any>).mockResolvedValue({
         companyId: 'carrier-1',
         canSkipHire: true,
       });
       // CONFIRMED → next should be DELIVERED, not COLLECTED
-      (prisma.skipHireOrder.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
         stubOrder({ carrierId: 'carrier-1', status: SkipHireStatus.CONFIRMED }),
       );
       await expect(
@@ -434,14 +434,14 @@ describe('SkipHireService', () => {
     });
 
     it('allows CONFIRMED → DELIVERED transition', async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as jest.Mock<any>).mockResolvedValue({
         companyId: 'carrier-1',
         canSkipHire: true,
       });
-      (prisma.skipHireOrder.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
         stubOrder({ carrierId: 'carrier-1', status: SkipHireStatus.CONFIRMED, userId: 'user-1' }),
       );
-      (prisma.skipHireOrder.update as jest.Mock).mockResolvedValue(
+      (prisma.skipHireOrder.update as jest.Mock<any>).mockResolvedValue(
         stubOrder({ status: SkipHireStatus.DELIVERED }),
       );
 
@@ -454,14 +454,14 @@ describe('SkipHireService', () => {
     });
 
     it('allows DELIVERED → COLLECTED transition', async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as jest.Mock<any>).mockResolvedValue({
         companyId: 'carrier-1',
         canSkipHire: true,
       });
-      (prisma.skipHireOrder.findUnique as jest.Mock).mockResolvedValue(
+      (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
         stubOrder({ carrierId: 'carrier-1', status: SkipHireStatus.DELIVERED, userId: 'user-1' }),
       );
-      (prisma.skipHireOrder.update as jest.Mock).mockResolvedValue(
+      (prisma.skipHireOrder.update as jest.Mock<any>).mockResolvedValue(
         stubOrder({ status: SkipHireStatus.COLLECTED }),
       );
 

@@ -30,6 +30,7 @@ import { startLocationTracking, stopLocationTracking } from '@/lib/location-task
 import { useLiveUpdates } from '@/lib/use-live-updates';
 import { JobRouteMap } from '@/components/ui/JobRouteMap';
 import { haptics } from '@/lib/haptics';
+import { estimateCo2Kg, formatCo2 } from '@/lib/co2';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 
@@ -846,6 +847,16 @@ export default function ActiveJobScreen() {
             <Text style={styles.detailLabel}>Cena</Text>
             <Text style={styles.detailValue}>€{job.rate?.toFixed(2) ?? '-'}</Text>
           </View>
+          {(() => {
+            const co2 = estimateCo2Kg(job.distanceKm, job.cargoWeight);
+            if (!co2) return null;
+            return (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>CO₂ ietekme</Text>
+                <Text style={[styles.detailValue, { color: '#16a34a' }]}>~{formatCo2(co2)}</Text>
+              </View>
+            );
+          })()}
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Iekraušana</Text>
             <Text style={styles.detailValue}>

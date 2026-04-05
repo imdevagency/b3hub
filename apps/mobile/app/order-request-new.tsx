@@ -20,6 +20,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   TextInput,
+  Image,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
@@ -43,12 +44,14 @@ import {
   Calculator,
   ChevronDown,
   ChevronUp,
+  Package,
 } from 'lucide-react-native';
 import { Calendar as RNCalendar } from 'react-native-calendars';
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { haptics } from '@/lib/haptics';
 
 const DRAFT_KEY = '@b3hub_wizard_draft';
 
@@ -161,6 +164,7 @@ export default function OrderRequestWizard() {
   const [offers, setOffers] = useState<SupplierOffer[]>([]);
   const [offersLoading, setOffersLoading] = useState(false);
   const [offersError, setOffersError] = useState('');
+  const [offersSort, setOffersSort] = useState<'price' | 'distance' | 'eta' | 'rating'>('price');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [submitted, setSubmitted] = useState<SubmitResult | null>(null);
@@ -317,6 +321,9 @@ export default function OrderRequestWizard() {
           deliveryCity: pickedAddress.city,
           deliveryDate: deliveryDate || new Date(Date.now() + 86400000).toISOString().split('T')[0],
           deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
+          deliveryFee: offer.deliveryFee ?? undefined,
+          deliveryLat: pickedAddress.lat,
+          deliveryLng: pickedAddress.lng,
           siteContactName: contactName || undefined,
           siteContactPhone: contactPhone || undefined,
           notes: notes || undefined,
@@ -1036,13 +1043,57 @@ export default function OrderRequestWizard() {
     }
 
     // ── Offers list ──
-    const sorted = [...offers].sort((a, b) => a.totalPrice - b.totalPrice);
+    const sorted = [...offers].sort((a, b) => {
+      if (offersSort === 'distance') {
+        const da = a.distanceKm ?? Infinity;
+        const db = b.distanceKm ?? Infinity;
+        return da - db;
+      }
+      if (offersSort === 'eta') return a.etaDays - b.etaDays;
+      if (offersSort === 'rating') {
+        const ra = a.supplier.rating ?? 0;
+        const rb = b.supplier.rating ?? 0;
+        return rb - ra;
+      }
+      return a.totalPrice - b.totalPrice; // default: price
+    });
+
+    const SORT_OPTIONS: { key: typeof offersSort; label: string }[] = [
+      { key: 'price', label: 'Cena' },
+      { key: 'distance', label: 'Attālums' },
+      { key: 'eta', label: 'Piegādes laiks' },
+      { key: 'rating', label: 'Vērtējums' },
+    ];
+
     return (
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 12 }}>
         <Text style={s.offersTitle}>
           {offers.length} piedāvājum{offers.length === 1 ? 's' : 'i'}
         </Text>
-        <Text style={s.offersSub}>Sakārtoti pēc cenas — lētākais pirmais</Text>
+
+        {/* Sort pills */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {SORT_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.key}
+                onPress={() => {
+                  haptics.light();
+                  setOffersSort(opt.key);
+                }}
+                style={[
+                  s.sortPill,
+                  offersSort === opt.key && s.sortPillActive,
+                ]}
+              >
+                <Text style={[s.sortPillText, offersSort === opt.key && s.sortPillTextActive]}>
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+
         {submitError ? (
           <Text style={{ fontSize: 14, color: '#dc2626', fontWeight: '500' }}>{submitError}</Text>
         ) : null}
@@ -1051,7 +1102,7 @@ export default function OrderRequestWizard() {
             key={offer.id}
             offer={offer}
             unit={unit}
-            isCheapest={idx === 0}
+            isCheapest={offersSort === 'price' && idx === 0}
             submitting={submitting}
             onSelect={() => handleSelectOffer(offer)}
           />
@@ -1122,6 +1173,20 @@ function OfferCard({
 }) {
   return (
     <View style={[oc.card, isCheapest && oc.cardBest]}>
+      {/* Product image strip */}
+      {offer.images && offer.images.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginBottom: 10 }}
+          contentContainerStyle={{ gap: 6 }}
+        >
+          {offer.images.slice(0, 5).map((uri, i) => (
+            <Image key={i} source={{ uri }} style={oc.productImage} resizeMode="cover" />
+          ))}
+        </ScrollView>
+      )}
+
       <View style={oc.top}>
         <View style={{ flex: 1, minWidth: 0 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -1225,6 +1290,18 @@ function OfferCard({
           </View>
         ) : null}
       </View>
+
+      {/* Stock availability pill */}
+      {offer.stockQty != null && (
+        <View style={oc.stockRow}>
+          <Package size={12} color={offer.stockQty > 0 ? '#16a34a' : '#dc2626'} />
+          <Text style={[oc.stockText, { color: offer.stockQty > 0 ? '#16a34a' : '#dc2626' }]}>
+            {offer.stockQty > 0
+              ? `${offer.stockQty} ${UNIT_SHORT[unit] ?? unit} noliktavā`
+              : 'Nav noliktavā'}
+          </Text>
+        </View>
+      )}
 
       {/* Volume price tiers */}
       {offer.priceTiers && offer.priceTiers.length > 0 && (
@@ -1539,6 +1616,27 @@ const s = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
     marginTop: -8,
   },
+  sortPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#fff',
+  },
+  sortPillActive: {
+    backgroundColor: '#111827',
+    borderColor: '#111827',
+  },
+  sortPillText: {
+    fontSize: 13,
+    fontFamily: 'Inter_500Medium',
+    color: '#6b7280',
+  },
+  sortPillTextActive: {
+    color: '#fff',
+    fontFamily: 'Inter_600SemiBold',
+  },
   rfqBox: {
     borderRadius: 16,
     borderWidth: 1,
@@ -1701,4 +1799,21 @@ const oc = StyleSheet.create({
     justifyContent: 'center',
   },
   btnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: '#111827' },
+  productImage: {
+    width: 80,
+    height: 64,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+  },
+  stockRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  stockText: {
+    fontSize: 12,
+    fontFamily: 'Inter_600SemiBold',
+  },
 });

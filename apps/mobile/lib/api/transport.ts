@@ -36,6 +36,7 @@ export interface ApiTransportJob {
   distanceKm: number | null;
   rate: number;
   pricePerTonne: number | null;
+  buyerOfferedRate: number | null;
   currency: string;
   status: TransportJobStatus;
   acceptedAt?: string | null;
@@ -326,6 +327,21 @@ export const transportApi = {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}` },
           body: JSON.stringify({ resolution }),
+        },
+      ),
+
+    /** Buyer: rate the driver after a DELIVERED transport job (1-5 stars). */
+    rateDriver: (
+      id: string,
+      dto: { rating: number; comment?: string },
+      token: string,
+    ) =>
+      apiFetch<{ id: string; rating: number; createdAt: string }>(
+        `/transport-jobs/${id}/review`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: JSON.stringify(dto),
         },
       ),
   },

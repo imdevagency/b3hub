@@ -6,6 +6,7 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { SendMessageDto } from './dto/send-message.dto';
+import { UploadImageDto } from './dto/upload-image.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface.js';
@@ -41,5 +42,15 @@ export class ChatController {
     @CurrentUser() user: RequestingUser,
   ) {
     return this.service.sendMessage(jobId, user.userId, dto);
+  }
+
+  /** POST /chat/:jobId/upload-image — upload a photo and get back a Supabase URL */
+  @Post(':jobId/upload-image')
+  uploadImage(
+    @Param('jobId') jobId: string,
+    @Body() dto: UploadImageDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.service.uploadChatImage(jobId, user.userId, dto.base64, dto.mimeType);
   }
 }

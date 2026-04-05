@@ -116,4 +116,26 @@ export class PaymentsController {
     }
     return this.paymentsService.resolveDispute(orderId, dto.resolution, dto.adminNote, user);
   }
+
+  /**
+   * GET /payments/earnings
+   * Returns payout history for the requesting seller company or individual driver.
+   * Used by the web earnings dashboard page.
+   */
+  @Get('earnings')
+  @UseGuards(JwtAuthGuard)
+  getEarnings(@CurrentUser() user: RequestingUser) {
+    return this.paymentsService.getEarnings(user);
+  }
+
+  /**
+   * GET /payments/balance
+   * Returns the Stripe Connect account available + pending balance for the
+   * current user. Safe to call even if not yet onboarded — returns zeros.
+   */
+  @Get('balance')
+  @UseGuards(JwtAuthGuard)
+  getBalance(@CurrentUser() user: RequestingUser) {
+    return this.paymentsService.getConnectBalance(user);
+  }
 }

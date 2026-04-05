@@ -39,67 +39,71 @@ function makeDispatcher(overrides: Partial<RequestingUser> = {}): RequestingUser
 describe('TransportJobsService', () => {
   const prisma = {
     transportJob: {
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      findMany: jest.fn().mockResolvedValue([]),
-      create: jest.fn(),
-      update: jest.fn(),
-      count: jest.fn().mockResolvedValue(0),
+      findUnique: jest.fn<any>(),
+      findFirst: jest.fn<any>(),
+      findMany: (jest.fn() as any).mockResolvedValue([]),
+      create: jest.fn<any>(),
+      update: jest.fn<any>(),
+      count: (jest.fn() as any).mockResolvedValue(0),
     },
     deliveryProof: {
-      create: jest.fn(),
-      findUnique: jest.fn().mockResolvedValue(null),
+      create: jest.fn<any>(),
+      findUnique: (jest.fn() as any).mockResolvedValue(null),
     },
     order: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
+      findUnique: jest.fn<any>(),
+      update: jest.fn<any>(),
     },
     orderItem: {
-      count: jest.fn().mockResolvedValue(0),
+      count: (jest.fn() as any).mockResolvedValue(0),
     },
     driverProfile: {
-      updateMany: jest.fn(),
+      updateMany: jest.fn<any>(),
     },
     document: {
-      findFirst: jest.fn(),
+      findFirst: jest.fn<any>(),
     },
     user: {
-      findMany: jest.fn().mockResolvedValue([]),
-      findUnique: jest.fn(),
+      findMany: (jest.fn() as any).mockResolvedValue([]),
+      findUnique: jest.fn<any>(),
     },
     vehicle: {
-      findUnique: jest.fn(),
+      findUnique: jest.fn<any>(),
     },
     invoice: {
-      update: jest.fn(),
+      update: jest.fn<any>(),
     },
     transportJobException: {
-      create: jest.fn(),
-      findMany: jest.fn().mockResolvedValue([]),
+      create: jest.fn<any>(),
+      findMany: (jest.fn() as any).mockResolvedValue([]),
     },
-    $transaction: jest.fn().mockResolvedValue([]),
+    $transaction: (jest.fn() as any).mockResolvedValue([]),
   } as any;
 
   const notifications = {
-    create: jest.fn().mockResolvedValue(undefined),
-    createForMany: jest.fn().mockResolvedValue(undefined),
+    create: (jest.fn() as any).mockResolvedValue(undefined),
+    createForMany: (jest.fn() as any).mockResolvedValue(undefined),
   } as any;
 
   const documents = {
-    generateDeliveryNote: jest.fn().mockResolvedValue(undefined),
-    generateWeighingSlip: jest.fn().mockResolvedValue(undefined),
+    generateDeliveryNote: (jest.fn() as any).mockResolvedValue(undefined),
+    generateWeighingSlip: (jest.fn() as any).mockResolvedValue(undefined),
   } as any;
 
   const updates = {
-    broadcastJobStatus: jest.fn(),
-    broadcastJobLocation: jest.fn(),
+    broadcastJobStatus: jest.fn<any>(),
+    broadcastJobLocation: jest.fn<any>(),
   } as any;
 
   const email = {
-    sendDriverJobAssigned: jest.fn().mockResolvedValue(undefined),
+    sendDriverJobAssigned: (jest.fn() as any).mockResolvedValue(undefined),
   } as any;
 
-  const service = new TransportJobsService(prisma, notifications, documents, updates, email);
+  const payments = {
+    releaseFunds: (jest.fn() as any).mockResolvedValue(undefined),
+  } as any;
+
+  const service = new TransportJobsService(prisma, notifications, documents, updates, email, payments);
 
   beforeEach(() => {
     jest.clearAllMocks();

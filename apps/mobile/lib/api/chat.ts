@@ -29,6 +29,7 @@ export interface ApiChatMessage {
   senderId: string;
   senderName: string;
   body: string;
+  imageUrl?: string | null;
   createdAt: string;
 }
 
@@ -60,11 +61,19 @@ export const chatApi = {
       }),
 
     /** Send a message in a transport job chat. */
-    sendMessage: (jobId: string, body: string, token: string) =>
+    sendMessage: (jobId: string, body: string, token: string, imageUrl?: string) =>
       apiFetch<ApiChatMessage>(`/chat/${jobId}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ body }),
+        body: JSON.stringify({ body, ...(imageUrl ? { imageUrl } : {}) }),
+      }),
+
+    /** Upload a photo and get back a Supabase Storage URL. */
+    uploadImage: (jobId: string, base64: string, mimeType: string, token: string) =>
+      apiFetch<{ imageUrl: string }>(`/chat/${jobId}/upload-image`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ base64, mimeType }),
       }),
   },
 

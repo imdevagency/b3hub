@@ -65,6 +65,7 @@ import {
 } from './dto/create-contract.dto';
 import { UpdateFrameworkContractDto } from './dto/update-contract.dto';
 import { CreateCallOffDto } from './dto/create-calloff.dto';
+import { InvoicesService } from '../invoices/invoices.service';
 
 @Injectable()
 export class FrameworkContractsService {
@@ -73,6 +74,7 @@ export class FrameworkContractsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly invoices: InvoicesService,
   ) {}
 
   /**
@@ -505,6 +507,30 @@ export class FrameworkContractsService {
         },
       });
     });
+
+    // Create an invoice for this call-off if the position has a unitPrice.
+    // Framework buyers are billed per call-off via Stripe Payment Link / NET terms.
+    if (job.id) {
+      const pos = await this.prisma.frameworkPosition.findFirst({
+        where: { id: positionId, contractId },
+        select: { unitPrice: true },
+      });
+      if (pos?.unitPrice) {
+        this.invoices
+          .createForCallOff({
+            id: job.id,
+            jobNumber: job.jobNumber,
+            rate: pos.unitPrice * (dto.quantity ?? 1),
+            currency: 'EUR',
+            requestedById: userId,
+          })
+          .catch((err) =>
+            this.logger.warn(
+              `Failed to create invoice for call-off job ${job.id}: ${(err as Error).message}`,
+            ),
+          );
+      }
+    }
 
     // After the call-off is created, check if the position is now fully consumed.
     // If so, notify both parties so they know to set up a contract amendment.

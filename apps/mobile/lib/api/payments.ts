@@ -29,6 +29,13 @@ export interface PaymentOnboardResponse {
   url: string;
 }
 
+export interface ConnectBalanceResponse {
+  available: number;
+  pending: number;
+  currency: string;
+  onboarded: boolean;
+}
+
 export interface PaymentIntentResponse {
   clientSecret: string;
   publishableKey: string;
@@ -42,6 +49,16 @@ export const paymentsApi = {
   setupPayouts: async (token: string): Promise<PaymentOnboardResponse> => {
     return apiFetch('payments/onboard', {
       method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /**
+   * Returns the Stripe Connect account's available + pending balance.
+   * Returns { available: 0, pending: 0, onboarded: false } if not yet set up.
+   */
+  getBalance: async (token: string): Promise<ConnectBalanceResponse> => {
+    return apiFetch('payments/balance', {
       headers: { Authorization: `Bearer ${token}` },
     });
   },

@@ -57,4 +57,8 @@ export class CreateDisposalOrderDto {
 
   @IsString()
   requestedDate!: string; // ISO date string
+
+  @IsNumber()
+  @Min(0)
+  quotedRate!: number; // EUR, incl. platform fee, excl. VAT
 }

@@ -27,12 +27,16 @@ function makeUser(overrides: Partial<RequestingUser> = {}): RequestingUser {
 
 describe('TransportJobsController', () => {
   const service = {
-    findSlaOverdue: jest.fn(),
-    findOpenExceptions: jest.fn(),
-    resolveException: jest.fn(),
+    findSlaOverdue: jest.fn<any>(),
+    findOpenExceptions: jest.fn<any>(),
+    resolveException: jest.fn<any>(),
   } as unknown as TransportJobsService;
 
-  const controller = new TransportJobsController(service);
+  const reviewsService = {
+    createDriverReview: jest.fn<any>(),
+  } as unknown as import('../reviews/reviews.service').ReviewsService;
+
+  const controller = new TransportJobsController(service, reviewsService);
 
   beforeEach(() => {
     jest.clearAllMocks();

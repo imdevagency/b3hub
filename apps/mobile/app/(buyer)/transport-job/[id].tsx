@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
+  TextInput,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -10,6 +11,7 @@ import {
   Linking,
   Dimensions,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -26,6 +28,8 @@ import {
   Navigation,
   RotateCcw,
   Leaf,
+  FileText,
+  Star,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -194,6 +198,10 @@ export default function TransportJobDetailScreen() {
   }, [loadJob]);
   const [cancelling, setCancelling] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+  const [driverRating, setDriverRating] = useState(0);
+  const [ratingComment, setRatingComment] = useState('');
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [ratingLoading, setRatingLoading] = useState(false);
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [etaMin, setEtaMin] = useState<number | null>(null);
 
@@ -267,6 +275,29 @@ export default function TransportJobDetailScreen() {
   const typeLabel = isDisposal ? 'Atkritumu izvešana' : 'Kravas pārvadāšana';
   const st = job ? (TJB_STATUS[job.status] ?? TJB_STATUS.AVAILABLE) : null;
   const canCancel = job?.status === 'AVAILABLE';
+
+  const handleRateDriver = async () => {
+    if (!job || !token || driverRating === 0) return;
+    haptics.medium();
+    setRatingLoading(true);
+    try {
+      await api.transportJobs.rateDriver(
+        job.id,
+        { rating: driverRating, comment: ratingComment.trim() || undefined },
+        token,
+      );
+      setRatingSubmitted(true);
+      haptics.success();
+    } catch (err) {
+      haptics.error();
+      Alert.alert(
+        'Kļūda',
+        err instanceof Error ? err.message : 'Neizdevās nosūtīt vērtējumu',
+      );
+    } finally {
+      setRatingLoading(false);
+    }
+  };
 
   const handleCancel = () => {
     if (!job || !token) return;
@@ -591,6 +622,39 @@ export default function TransportJobDetailScreen() {
             )}
           </View>
 
+          {/* Weighing slip card — shown once driver marks job as LOADED */}
+          {job.pickupPhotoUrl && (
+            <View style={s.card}>
+              <View style={s.slipHeader}>
+                <FileText size={16} color="#6b7280" />
+                <Text style={s.cardTitle}>Svēršanas zīme</Text>
+              </View>
+              <Image
+                source={{ uri: job.pickupPhotoUrl }}
+                style={s.slipThumb}
+                resizeMode="cover"
+              />
+              {job.actualWeightKg != null && (
+                <View style={s.priceRow}>
+                  <Text style={s.priceLabel}>Izmērītais svars</Text>
+                  <Text style={[s.priceValue, { color: '#059669' }]}>
+                    {(job.actualWeightKg / 1000).toFixed(3)} t
+                  </Text>
+                </View>
+              )}
+              <TouchableOpacity
+                style={s.slipOpenBtn}
+                onPress={() => {
+                  haptics.light();
+                  Linking.openURL(job.pickupPhotoUrl!);
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={s.slipOpenText}>Atvērt pilnā izmērā</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {canCancel && (
             <TouchableOpacity
               style={s.cancelBtn}
@@ -602,6 +666,70 @@ export default function TransportJobDetailScreen() {
               <Text style={s.cancelBtnText}>{cancelling ? 'Atceļ...' : 'Atcelt pasūtījumu'}</Text>
             </TouchableOpacity>
           )}
+
+          {/* Driver rating card — shown after delivery while driver is known */}
+          {job.status === 'DELIVERED' && job.driver && (
+            <View style={s.card}>
+              <Text style={s.cardTitle}>Novērtēt šoferi</Text>
+              {ratingSubmitted ? (
+                <View style={s.ratingThanks}>
+                  <Star size={20} color="#f59e0b" fill="#f59e0b" />
+                  <Text style={s.ratingThanksText}>Paldies par vērtējumu!</Text>
+                </View>
+              ) : (
+                <>
+                  <Text style={s.ratingDriverName}>
+                    {job.driver.firstName} {job.driver.lastName}
+                  </Text>
+                  <View style={s.starsRow}>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <TouchableOpacity
+                        key={n}
+                        onPress={() => {
+                          haptics.light();
+                          setDriverRating(n);
+                        }}
+                        hitSlop={8}
+                        activeOpacity={0.7}
+                      >
+                        <Star
+                          size={32}
+                          color="#f59e0b"
+                          fill={n <= driverRating ? '#f59e0b' : 'transparent'}
+                          strokeWidth={1.5}
+                        />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <TextInput
+                    style={s.ratingInput}
+                    placeholder="Komentārs (nav obligāts)"
+                    placeholderTextColor="#9ca3af"
+                    value={ratingComment}
+                    onChangeText={setRatingComment}
+                    multiline
+                    maxLength={300}
+                  />
+                  <TouchableOpacity
+                    style={[
+                      s.ratingSubmitBtn,
+                      (driverRating === 0 || ratingLoading) && s.ratingSubmitDisabled,
+                    ]}
+                    onPress={handleRateDriver}
+                    disabled={driverRating === 0 || ratingLoading}
+                    activeOpacity={0.85}
+                  >
+                    {ratingLoading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={s.ratingSubmitText}>Iesniegt vērtējumu</Text>
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          )}
+
           {(job.status === 'DELIVERED' || job.status === 'CANCELLED') && (
             <TouchableOpacity
               style={s.reorderBtn}
@@ -884,6 +1012,24 @@ const s = StyleSheet.create({
   priceLabel: { fontSize: 14, color: '#6b7280' },
   priceValue: { fontSize: 15, fontWeight: '700', color: '#111827' },
 
+  // ── Weighing slip
+  slipHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  slipThumb: {
+    width: '100%',
+    height: 180,
+    borderRadius: 10,
+    backgroundColor: '#f3f4f6',
+  },
+  slipOpenBtn: {
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  slipOpenText: { fontSize: 13, fontWeight: '600', color: '#374151' },
+
   // ── Cancel
   cancelBtn: {
     flexDirection: 'row',
@@ -908,4 +1054,30 @@ const s = StyleSheet.create({
     paddingVertical: 14,
   },
   reorderBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  // Driver rating
+  ratingDriverName: { fontSize: 14, color: '#374151', marginBottom: 12 },
+  starsRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
+  ratingInput: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#111827',
+    minHeight: 70,
+    textAlignVertical: 'top',
+    marginBottom: 14,
+  },
+  ratingSubmitBtn: {
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ratingSubmitDisabled: { opacity: 0.4 },
+  ratingSubmitText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  ratingThanks: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 },
+  ratingThanksText: { fontSize: 15, fontWeight: '600', color: '#374151' },
 });

@@ -25,6 +25,7 @@ export interface TransportJob {
   time: string;
   priceTotal: number;
   pricePerTonne: number;
+  buyerOfferedRate: number | null;
   currency: string;
   status: 'AVAILABLE';
 }
@@ -40,6 +41,12 @@ export interface SearchFilter {
   /** Resolved lat/lng from geocoding — populated at apply time */
   toLat?: number;
   toLng?: number;
+  /** Optional vehicle type filter — empty string means any */
+  vehicleType?: string;
+  /** Minimum total price filter (EUR), 0 = no minimum */
+  priceMin?: number;
+  /** Maximum total price filter (EUR), 0 = no maximum */
+  priceMax?: number;
 }
 
 export interface SavedSearch extends SearchFilter {
@@ -163,6 +170,7 @@ export function mapJob(j: ApiTransportJob): TransportJob {
     time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
     priceTotal: j.rate,
     pricePerTonne: j.pricePerTonne ?? 0,
+    buyerOfferedRate: j.buyerOfferedRate ?? null,
     currency: j.currency,
     status: 'AVAILABLE',
   };
@@ -188,7 +196,7 @@ function normalise(s: string): string {
 
 export function filterJobs(jobs: TransportJob[], filter: SearchFilter | null): TransportJob[] {
   if (!filter) return jobs;
-  const { fromLocation, fromRadius, fromLat, fromLng, toLocation, toRadius, toLat, toLng } = filter;
+  const { fromLocation, fromRadius, fromLat, fromLng, toLocation, toRadius, toLat, toLng, vehicleType, priceMin, priceMax } = filter;
   return jobs.filter((job) => {
     if (fromLocation.trim()) {
       // Prefer geocoded coords, fall back to hardcoded city table
@@ -215,6 +223,15 @@ export function filterJobs(jobs: TransportJob[], filter: SearchFilter | null): T
         const haystack = normalise(job.toCity + ' ' + job.toAddress);
         if (!haystack.includes(needle)) return false;
       }
+    }
+    if (vehicleType && vehicleType !== '') {
+      if (job.vehicleType !== vehicleType) return false;
+    }
+    if (priceMin && priceMin > 0) {
+      if (job.priceTotal < priceMin) return false;
+    }
+    if (priceMax && priceMax > 0) {
+      if (job.priceTotal > priceMax) return false;
     }
     return true;
   });

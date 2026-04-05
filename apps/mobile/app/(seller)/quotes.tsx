@@ -550,7 +550,7 @@ export default function SellerQuotesScreen() {
             )}
           </ScrollView>
         )
-      ) : (<>}
+      ) : (<>
       {!loading && activeCategories.length > 1 && (
         <ScrollView
           horizontal
@@ -679,6 +679,10 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#ffffff' },
   header: {
     paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 4,
+    backgroundColor: '#ffffff',
+  },
 
   // Tab bar
   tabBar: {
@@ -722,10 +726,6 @@ const styles = StyleSheet.create({
   myrEta: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
   myrNotes: { fontSize: 13, color: '#374151' },
   myrDate: { fontSize: 11, color: '#9ca3af' },
-    paddingTop: 12,
-    paddingBottom: 4,
-    backgroundColor: '#ffffff',
-  },
   heroTitle: {
     fontSize: 28,
     fontWeight: '800',

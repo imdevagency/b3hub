@@ -13,6 +13,7 @@ export enum NotificationType {
   QUOTE_ACCEPTED = 'QUOTE_ACCEPTED',
   SYSTEM_ALERT = 'SYSTEM_ALERT',
   DOCUMENT_EXPIRING_SOON = 'DOCUMENT_EXPIRING_SOON',
+  WEIGHING_SLIP = 'WEIGHING_SLIP',
 }
 
 export class CreateNotificationDto {

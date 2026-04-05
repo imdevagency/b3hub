@@ -10,7 +10,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
-import { OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
+import { OrderStatus, PaymentMethod, PaymentStatus, Prisma } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
+import Stripe from 'stripe';
 import PDFDocument from 'pdfkit';
 
 type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PAID' | 'OVERDUE' | 'CANCELLED';
@@ -67,12 +69,19 @@ function mapInvoice(inv: InvoiceWithRelations) {
 @Injectable()
 export class InvoicesService {
   private readonly logger = new Logger(InvoicesService.name);
+  private stripe?: Stripe;
 
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
     private notifications: NotificationsService,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    const key = this.configService.get<string>('STRIPE_SECRET_KEY');
+    if (key) {
+      this.stripe = new Stripe(key, { apiVersion: '2026-02-25.clover' });
+    }
+  }
 
   private buyerAccess(
     userId: string,
@@ -177,30 +186,32 @@ export class InvoicesService {
       return this.prisma.invoice.findUnique({ where: { id: invoiceId } });
     }
     this.logger.log(`Invoice ${invoiceId} marked as paid by user ${userId}`);
-    const [updatedInvoice] = await this.prisma.$transaction([
-      this.prisma.invoice.update({
-        where: { id: invoiceId },
-        data: {
-          paymentStatus: PaymentStatus.PAID,
-          paidDate: new Date(),
-        },
-      }),
-      this.prisma.order.update({
+    const updatedInvoice = await this.prisma.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        paymentStatus: PaymentStatus.PAID,
+        paidDate: new Date(),
+      },
+    });
+    if (invoice.orderId) {
+      await this.prisma.order.update({
         where: { id: invoice.orderId },
         data: { paymentStatus: PaymentStatus.PAID },
-      }),
-    ]);
+      });
+    }
 
     // Release the credit that was reserved when the order was placed.
     // Symmetric to the increment in orders.service.ts create() — without this
     // a buyer who pays all their invoices will permanently exhaust their credit line.
+    // Use GREATEST(0, ...) to guard against going negative on concurrent calls
+    // (matches the same pattern used in orders.service.ts cancel/complete paths).
     const buyerUserId = invoice.order?.createdById;
     if (invoice.total && buyerUserId) {
-      this.prisma.buyerProfile
-        .update({
-          where: { userId: buyerUserId },
-          data: { creditUsed: { decrement: Number(invoice.total) } },
-        })
+      this.prisma.$executeRaw`
+          UPDATE buyer_profiles
+          SET "creditUsed" = GREATEST(0, "creditUsed" - ${Number(invoice.total)})
+          WHERE "userId" = ${buyerUserId}
+        `
         .catch((err) =>
           this.logger.error(
             `Failed to release credit for buyer ${buyerUserId} on invoice payment ${invoiceId}`,
@@ -465,6 +476,7 @@ export class InvoicesService {
       currency: string;
     },
     buyerUserId: string,
+    paymentMethod?: PaymentMethod,
   ): Promise<void> {
     const invoiceNumber = this.generateInvoiceNumber();
 
@@ -490,6 +502,16 @@ export class InvoicesService {
 
     this.logger.log(`Invoice ${invoiceNumber} created for order ${order.id}`);
 
+    // For INVOICE-method orders: generate a Stripe Payment Link so the buyer
+    // can pay online by card or bank transfer without a stored card.
+    if (paymentMethod === PaymentMethod.INVOICE && this.stripe) {
+      this.generateStripePaymentLink(inv.id, order).catch((err) =>
+        this.logger.warn(
+          `Payment Link generation failed for invoice ${inv.id}: ${(err as Error).message}`,
+        ),
+      );
+    }
+
     // Auto-email the invoice PDF to the buyer (fire-and-forget, non-fatal)
     const buyer = await this.prisma.user.findUnique({
       where: { id: buyerUserId },
@@ -504,6 +526,138 @@ export class InvoicesService {
         this.logger.warn(`Auto-email invoice ${inv.id} failed: ${(err as Error).message}`),
       );
     }
+  }
+
+  /**
+   * Create an invoice for a framework contract call-off (TransportJob).
+   * Call-offs don't have an Order record; the invoice is linked directly to the job.
+   * Payment Link is always generated since framework buyers typically have NET terms.
+   */
+  async createForCallOff(job: {
+    id: string;
+    jobNumber: string;
+    rate: number;
+    currency: string;
+    requestedById: string;
+  }): Promise<void> {
+    const invoiceNumber = this.generateInvoiceNumber();
+
+    const buyerProfile = job.requestedById
+      ? await this.prisma.buyerProfile.findUnique({
+          where: { userId: job.requestedById },
+          select: { paymentTerms: true },
+        })
+      : null;
+    const dueDate = this.parseDueDateFromTerms(buyerProfile?.paymentTerms);
+
+    const subtotal = job.rate;
+    const VAT_RATE = 0.21;
+    const tax = subtotal * VAT_RATE;
+    const total = subtotal + tax;
+
+    const inv = await this.prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        transportJobId: job.id,
+        subtotal,
+        tax,
+        total,
+        currency: job.currency ?? 'EUR',
+        dueDate,
+        paymentStatus: PaymentStatus.PENDING,
+      },
+      select: { id: true },
+    });
+
+    this.logger.log(
+      `Invoice ${invoiceNumber} created for call-off job ${job.id}`,
+    );
+
+    // Generate a Stripe Payment Link for online payment
+    if (this.stripe) {
+      this.generateStripePaymentLink(inv.id, {
+        id: job.id,
+        total,
+        currency: job.currency ?? 'EUR',
+        transportJobId: job.id,
+      }).catch((err) =>
+        this.logger.warn(
+          `Payment Link generation failed for call-off invoice ${inv.id}: ${(err as Error).message}`,
+        ),
+      );
+    }
+
+    // Email the invoice to the buyer
+    if (job.requestedById) {
+      const buyer = await this.prisma.user.findUnique({
+        where: { id: job.requestedById },
+        select: { email: true, firstName: true, lastName: true },
+      });
+      if (buyer?.email) {
+        this.emailInvoice(
+          inv.id,
+          buyer.email,
+          [buyer.firstName, buyer.lastName].filter(Boolean).join(' ') ||
+            buyer.email,
+        ).catch((err) =>
+          this.logger.warn(
+            `Auto-email call-off invoice ${inv.id} failed: ${(err as Error).message}`,
+          ),
+        );
+      }
+    }
+  }
+
+  /**
+   * Generate a Stripe Payment Link for an invoice and store the URL.
+   * Buyers with NET terms can click this link to pay by card or bank transfer
+   * without being prompted at original checkout.
+   */
+  private async generateStripePaymentLink(
+    invoiceId: string,
+    order: { id: string; total: number; currency: string; transportJobId?: string },
+  ): Promise<void> {
+    if (!this.stripe) return;
+
+    const amountCents = Math.round(order.total * 100);
+    const currency = order.currency.toLowerCase();
+
+    // Create a one-time stripe.Price then attach it to a PaymentLink
+    const price = await this.stripe.prices.create({
+      currency,
+      unit_amount: amountCents,
+      product_data: {
+        name: order.transportJobId
+          ? `B3Hub Invoice — Job ${order.id.slice(-8).toUpperCase()}`
+          : `B3Hub Invoice — Order ${order.id.slice(-8).toUpperCase()}`,
+        metadata: order.transportJobId
+          ? { transportJobId: order.transportJobId, invoiceId }
+          : { orderId: order.id, invoiceId },
+      },
+    });
+
+    const link = await this.stripe.paymentLinks.create({
+      line_items: [{ price: price.id, quantity: 1 }],
+      metadata: order.transportJobId
+        ? { invoiceId, transportJobId: order.transportJobId }
+        : { invoiceId, orderId: order.id },
+      after_completion: {
+        type: 'redirect',
+        redirect: {
+          url: `${this.configService.get<string>('WEB_URL') ?? 'https://b3hub.lv'}/dashboard/invoices?paid=1&invoiceId=${invoiceId}`,
+        },
+      },
+    });
+
+    await this.prisma.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        stripePaymentLinkId: link.id,
+        stripePaymentLinkUrl: link.url,
+      },
+    });
+
+    this.logger.log(`Payment Link created for invoice ${invoiceId}: ${link.url}`);
   }
 
   /**

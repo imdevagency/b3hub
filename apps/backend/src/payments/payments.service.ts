@@ -135,8 +135,8 @@ export class PaymentsService {
 
       const accountLink = await this.stripe.accountLinks.create({
         account: accountId,
-        refresh_url: `${this.configService.get('WEB_BASE_URL')}/dashboard/supplier/earnings?refresh=true`,
-        return_url: `${this.configService.get('WEB_BASE_URL')}/dashboard/supplier/earnings?success=true`,
+        refresh_url: `${this.configService.get('WEB_URL')}/dashboard/supplier/earnings?refresh=true`,
+        return_url: `${this.configService.get('WEB_URL')}/dashboard/supplier/earnings?success=true`,
         type: 'account_onboarding',
       });
       return { url: accountLink.url };
@@ -653,6 +653,151 @@ export class PaymentsService {
   }
 
   /**
+   * Pay the driver for a standalone disposal or freight transport job.
+   * Called when the buyer pays the invoice via Stripe Payment Link
+   * (checkout.session.completed webhook with transportJobId in metadata).
+   *
+   * Unlike releaseFunds() for material orders, this does NOT need a PaymentIntent
+   * charge ID — the buyer's payment went straight into the platform Stripe balance
+   * via a Payment Link, so the transfer draws from the balance directly.
+   */
+  async releaseFundsForJob(jobId: string): Promise<void> {
+    if (!this.stripe) {
+      this.logger.error(
+        `releaseFundsForJob called for job ${jobId} but Stripe is not configured`,
+      );
+      return;
+    }
+
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id: jobId },
+      include: {
+        driver: {
+          select: {
+            id: true,
+            companyId: true,
+            company: { select: { stripeConnectId: true, commissionRate: true } },
+            driverProfile: { select: { stripeConnectId: true } },
+          },
+        },
+        invoices: {
+          where: { paymentStatus: PaymentStatus.PAID },
+          orderBy: { paidDate: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!job) {
+      this.logger.warn(`releaseFundsForJob: job ${jobId} not found`);
+      return;
+    }
+
+    if (!job.driverId) {
+      this.logger.warn(
+        `releaseFundsForJob: job ${jobId} has no assigned driver — skipping payout`,
+      );
+      return;
+    }
+
+    const invoice = job.invoices[0];
+    if (!invoice) {
+      this.logger.warn(
+        `releaseFundsForJob: no paid invoice found for job ${jobId} — skipping payout`,
+      );
+      return;
+    }
+
+    const totalCents = Math.round(invoice.total * 100);
+    const commissionPct = ((job.driver?.company?.commissionRate ?? 10) as number) / 100;
+    const platformFeeCents = Math.round(totalCents * commissionPct);
+    const driverCents = totalCents - platformFeeCents;
+
+    const driverConnectId =
+      (job.driver as any)?.company?.stripeConnectId ??
+      (job.driver as any)?.driverProfile?.stripeConnectId ??
+      null;
+
+    if (!driverConnectId) {
+      this.logger.error(
+        `releaseFundsForJob: driver ${job.driverId} has no Stripe Connect account — skipping payout for job ${jobId}. Manual payout required.`,
+      );
+      const admins = await this.prisma.user.findMany({
+        where: { userType: 'ADMIN' },
+        select: { id: true },
+      });
+      if (admins.length > 0) {
+        await this.notifications
+          .createForMany(
+            admins.map((a) => a.id),
+            {
+              type: NotificationType.SYSTEM_ALERT,
+              title: '🚨 Vadītāja izmaksa izlaista',
+              message: `Darbs ${jobId}: vadītājam ${job.driverId} nav Stripe Connect konta. Izmaksa netika veikta — nepieciešama manuāla iejaukšanās.`,
+              data: { jobId, driverId: job.driverId },
+            },
+          )
+          .catch((e) =>
+            this.logger.error(
+              `Failed to notify admins of skipped driver payout: ${(e as Error).message}`,
+            ),
+          );
+      }
+      return;
+    }
+
+    try {
+      await this.stripe.transfers.create({
+        amount: driverCents,
+        currency: invoice.currency.toLowerCase(),
+        destination: driverConnectId,
+        metadata: { jobId, invoiceId: invoice.id, driverId: job.driverId },
+      });
+    } catch (err) {
+      this.logger.error(
+        `releaseFundsForJob: driver transfer failed for job ${jobId}: ${(err as Error).message}`,
+      );
+      const admins = await this.prisma.user.findMany({
+        where: { userType: 'ADMIN' },
+        select: { id: true },
+      });
+      if (admins.length > 0) {
+        await this.notifications
+          .createForMany(
+            admins.map((a) => a.id),
+            {
+              type: NotificationType.SYSTEM_ALERT,
+              title: '🚨 Vadītāja izmaksa neizdevās',
+              message: `Darbs ${jobId}: vadītāja Stripe izmaksa neizdevās — ${(err as Error).message}. Nepieciešama manuāla izmaksa vadītājam ${job.driverId}.`,
+              data: { jobId, driverId: job.driverId },
+            },
+          )
+          .catch((notifErr) =>
+            this.logger.error(
+              `Failed to notify admins of driver transfer failure: ${(notifErr as Error).message}`,
+            ),
+          );
+      }
+      return;
+    }
+
+    this.logger.log(
+      `releaseFundsForJob: driver payout €${(driverCents / 100).toFixed(2)} sent to ${driverConnectId} for job ${jobId}`,
+    );
+
+    // Notify the driver
+    this.notifications
+      .create({
+        userId: job.driverId,
+        type: NotificationType.TRANSPORT_COMPLETED,
+        title: 'Darbs pabeigts — izmaksa ceļā',
+        message: `Pasūtītājs ir apmaksājis darbu ${job.jobNumber}. Jūsu atalgojums tiek pārskaitīts uz jūsu Stripe kontu.`,
+        data: { jobId },
+      })
+      .catch(() => null);
+  }
+
+  /**
    * Handle Stripe webhook events.
    * Verifies signature and processes relevant event types.
    */
@@ -856,6 +1001,54 @@ export class PaymentsService {
                 this.logger.error(`account.updated: failed to notify admins`, err),
               );
           }
+        }
+        break;
+      }
+
+      // Stripe Payment Link completed — buyer paid their NET-terms invoice online
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const invoiceId = session.metadata?.invoiceId;
+        const orderId = session.metadata?.orderId;
+        const transportJobId = session.metadata?.transportJobId;
+        if (invoiceId) {
+          await this.prisma.invoice
+            .update({
+              where: { id: invoiceId },
+              data: {
+                paymentStatus: PaymentStatus.PAID,
+                paidDate: new Date(),
+              },
+            })
+            .catch((err) =>
+              this.logger.error(
+                `checkout.session.completed: failed to mark invoice ${invoiceId} PAID`,
+                err,
+              ),
+            );
+          if (orderId) {
+            await this.prisma.order
+              .update({
+                where: { id: orderId },
+                data: { paymentStatus: PaymentStatus.PAID },
+              })
+              .catch((err) =>
+                this.logger.error(
+                  `checkout.session.completed: failed to update order ${orderId} paymentStatus`,
+                  err,
+                ),
+              );
+          } else if (transportJobId) {
+            // Standalone disposal / freight job paid — trigger driver payout
+            this.releaseFundsForJob(transportJobId).catch((err) =>
+              this.logger.error(
+                `releaseFundsForJob failed for job ${transportJobId}: ${(err as Error).message}`,
+              ),
+            );
+          }
+          this.logger.log(
+            `Payment Link completed: invoice ${invoiceId} marked PAID`,
+          );
         }
         break;
       }
@@ -1158,6 +1351,219 @@ export class PaymentsService {
         `updatePaymentIntentAmount: failed to update PI ${payment.stripePaymentId} for order ${orderId}: ${(error as Error).message}`,
       );
       throw error;
+    }
+  }
+
+  /**
+   * GET /payments/earnings
+   * Returns payout history for the requesting user's company (seller) or
+   * individual driver profile. Used by the web earnings dashboard.
+   *
+   * Returns the last 90 days of RELEASED payments and a running total.
+   */
+  async getEarnings(user: RequestingUser) {
+    const companyId = user.companyId;
+
+    if (companyId) {
+      // Seller / carrier company: find all payments for orders where their
+      // materials were purchased and the payment is RELEASED.
+      const payments = await this.prisma.payment.findMany({
+        where: {
+          status: { in: ['RELEASED', 'PAID'] },
+          order: {
+            items: {
+              some: { material: { supplierId: companyId } },
+            },
+          },
+          createdAt: {
+            gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+          },
+        },
+        include: {
+          order: {
+            select: {
+              orderNumber: true,
+              total: true,
+              createdAt: true,
+              buyer: { select: { name: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const totalEarned = payments.reduce(
+        (sum, p) => sum + (p.sellerPayout ?? 0),
+        0,
+      );
+      const pendingPayments = await this.prisma.payment.findMany({
+        where: {
+          status: { in: ['CAPTURED', 'AUTHORIZED'] },
+          order: { items: { some: { material: { supplierId: companyId } } } },
+        },
+        select: { sellerPayout: true },
+      });
+      const pendingAmount = pendingPayments.reduce(
+        (sum, p) => sum + (p.sellerPayout ?? 0),
+        0,
+      );
+
+      // Get Stripe Connect account status
+      let stripeStatus: 'NOT_CONNECTED' | 'PENDING' | 'ACTIVE' = 'NOT_CONNECTED';
+      const company = await this.prisma.company.findUnique({
+        where: { id: companyId },
+        select: { stripeConnectId: true },
+      });
+      if (company?.stripeConnectId && this.stripe) {
+        try {
+          const acct = await this.stripe.accounts.retrieve(
+            company.stripeConnectId,
+          );
+          stripeStatus =
+            acct.charges_enabled && acct.payouts_enabled
+              ? 'ACTIVE'
+              : 'PENDING';
+        } catch {
+          stripeStatus = 'PENDING';
+        }
+      }
+
+      return {
+        type: 'COMPANY',
+        totalEarned,
+        pendingAmount,
+        stripeStatus,
+        payments: payments.map((p) => ({
+          id: p.id,
+          orderNumber: p.order?.orderNumber,
+          buyerName: p.order?.buyer?.name,
+          grossAmount: p.amount,
+          sellerPayout: p.sellerPayout,
+          platformFee: p.platformFee,
+          currency: p.currency,
+          status: p.status,
+          date: p.order?.createdAt ?? p.createdAt,
+        })),
+      };
+    }
+
+    // Individual driver (no company): find transport jobs they delivered
+    if (user.canTransport) {
+      const jobs = await this.prisma.transportJob.findMany({
+        where: {
+          driverId: user.userId,
+          status: 'DELIVERED',
+          createdAt: { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+        },
+        include: {
+          order: {
+            include: {
+              payment: { select: { driverPayout: true, status: true, currency: true } },
+              buyer: { select: { name: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const totalEarned = jobs.reduce(
+        (sum, j) => sum + (j.order?.payment?.driverPayout ?? 0),
+        0,
+      );
+
+      let stripeStatus: 'NOT_CONNECTED' | 'PENDING' | 'ACTIVE' = 'NOT_CONNECTED';
+      const driverProfile = await this.prisma.driverProfile.findUnique({
+        where: { userId: user.userId },
+        select: { stripeConnectId: true, payoutEnabled: true },
+      });
+      if (driverProfile?.stripeConnectId && this.stripe) {
+        try {
+          const acct = await this.stripe.accounts.retrieve(
+            driverProfile.stripeConnectId,
+          );
+          stripeStatus =
+            acct.charges_enabled && acct.payouts_enabled ? 'ACTIVE' : 'PENDING';
+        } catch {
+          stripeStatus = 'PENDING';
+        }
+      }
+
+      return {
+        type: 'DRIVER',
+        totalEarned,
+        pendingAmount: 0, // driver payouts happen at order completion
+        stripeStatus,
+        payments: jobs.map((j) => ({
+          id: j.id,
+          jobNumber: j.jobNumber,
+          buyerName: j.order?.buyer?.name,
+          grossAmount: j.rate,
+          sellerPayout: null,
+          driverPayout: j.order?.payment?.driverPayout ?? null,
+          currency: j.order?.payment?.currency ?? j.currency,
+          status: j.order?.payment?.status ?? 'PENDING',
+          date: j.updatedAt,
+        })),
+      };
+    }
+
+    throw new BadRequestException(
+      'You must be a seller (company) or approved driver to view earnings',
+    );
+  }
+
+  /**
+   * GET /payments/balance
+   * Returns the Stripe Connect account's available and pending balance for the
+   * current user (driver or company). Returns zeros if not yet onboarded.
+   */
+  async getConnectBalance(user: RequestingUser): Promise<{
+    available: number;
+    pending: number;
+    currency: string;
+    onboarded: boolean;
+  }> {
+    if (!this.stripe) {
+      return { available: 0, pending: 0, currency: 'EUR', onboarded: false };
+    }
+
+    let accountId: string | null = null;
+
+    if (user.companyId) {
+      const company = await this.prisma.company.findUnique({
+        where: { id: user.companyId },
+        select: { stripeConnectId: true },
+      });
+      accountId = company?.stripeConnectId ?? null;
+    }
+
+    if (!accountId && user.canTransport) {
+      const driverProfile = await this.prisma.driverProfile.findUnique({
+        where: { userId: user.userId },
+        select: { stripeConnectId: true },
+      });
+      accountId = driverProfile?.stripeConnectId ?? null;
+    }
+
+    if (!accountId) {
+      return { available: 0, pending: 0, currency: 'EUR', onboarded: false };
+    }
+
+    try {
+      const balance = await this.stripe.balance.retrieve(
+        {},
+        { stripeAccount: accountId },
+      );
+      const eur = (list: Stripe.Balance.Available[]) =>
+        (list.find((b) => b.currency === 'eur')?.amount ?? 0) / 100;
+      return {
+        available: eur(balance.available),
+        pending: eur(balance.pending),
+        currency: 'EUR',
+        onboarded: true,
+      };
+    } catch {
+      return { available: 0, pending: 0, currency: 'EUR', onboarded: false };
     }
   }
 }

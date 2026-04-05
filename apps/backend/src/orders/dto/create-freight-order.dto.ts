@@ -70,4 +70,13 @@ export class CreateFreightOrderDto {
   // ── Timing ───────────────────────────────────────────────────────────────
   @IsString()
   requestedDate!: string; // ISO date string
+
+  @IsNumber()
+  @Min(0)
+  quotedRate!: number; // EUR, incl. platform fee, excl. VAT
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  buyerOfferedRate?: number; // buyer's suggested budget, shown to drivers
 }

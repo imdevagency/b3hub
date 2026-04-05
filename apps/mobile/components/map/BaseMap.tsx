@@ -92,7 +92,7 @@ export function BaseMap({
   mapPadding,
   onMapReady: onMapReadyProp,
 }: BaseMapProps) {
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<typeof MapView | null>(null);
   // Track whether Google Maps has fully initialised and is ready to receive commands.
   const mapReady = useRef(false);
   // Queue of camera actions that arrived before the map was ready.

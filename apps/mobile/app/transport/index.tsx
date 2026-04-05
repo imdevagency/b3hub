@@ -135,6 +135,7 @@ export default function TransportWizard() {
   );
   const [siteContactPhone, setSiteContactPhone] = useState(() => user?.phone ?? '');
   const [notes, setNotes] = useState('');
+  const [offeredRateText, setOfferedRateText] = useState('');
 
   // ── Route (for step 4 summary) ────────────────────────────────
   const { route } = useRoute(
@@ -194,6 +195,7 @@ export default function TransportWizard() {
           siteContactName: siteContactName || undefined,
           siteContactPhone: siteContactPhone || undefined,
           notes: notes || undefined,
+          buyerOfferedRate: offeredRateText ? parseFloat(offeredRateText) : undefined,
         },
         token,
       );
@@ -634,6 +636,14 @@ export default function TransportWizard() {
                 multiline
                 value={notes}
                 onChangeText={setNotes}
+              />
+              <TextInput
+                style={s.input}
+                placeholder="Jūsu piedāvātā cena (€) — pēc izvēles"
+                placeholderTextColor="#9ca3af"
+                keyboardType="numeric"
+                value={offeredRateText}
+                onChangeText={setOfferedRateText}
               />
             </View>
             <View style={{ height: 16 }} />

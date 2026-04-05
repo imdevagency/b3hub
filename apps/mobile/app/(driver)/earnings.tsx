@@ -210,6 +210,9 @@ export default function EarningsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<Period>('week');
   const [setupLoading, setSetupLoading] = useState(false);
+  const [stripeAvailable, setStripeAvailable] = useState<number | null>(null);
+  const [stripePending, setStripePending] = useState<number | null>(null);
+  const [stripeOnboarded, setStripeOnboarded] = useState(false);
   const [stats, setStats] = useState<EarningsStats>({
     todayEarnings: 0,
     weekEarnings: 0,
@@ -242,11 +245,19 @@ export default function EarningsScreen() {
       if (!token) return;
       if (isRefresh) setRefreshing(true);
       try {
-        const jobs = await api.transportJobs.myJobs(token);
+        const [jobs, balance] = await Promise.all([
+          api.transportJobs.myJobs(token),
+          api.getBalance(token).catch(() => null),
+        ]);
         const { stats: s, history: h, dailyChart: dc } = computeStats(jobs);
         setStats(s);
         setHistory(h);
         setDailyChart(dc);
+        if (balance) {
+          setStripeAvailable(balance.available);
+          setStripePending(balance.pending);
+          setStripeOnboarded(balance.onboarded);
+        }
       } catch (e) {
         showToast('Kļūda ielādējot datus', 'error');
       } finally {
@@ -386,6 +397,37 @@ export default function EarningsScreen() {
             <Text style={s.metricLabel}>Tiešsaistē</Text>
           </View>
         </View>
+
+        {/* ── Stripe Balance Card ───────────────────────── */}
+        {stripeOnboarded && (
+          <View style={{
+            marginHorizontal: 16,
+            marginBottom: 16,
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: '#d1fae5',
+            backgroundColor: '#f0fdf4',
+            padding: 16,
+          }}>
+            <Text style={{ fontSize: 12, color: '#15803d', fontFamily: 'Inter_600SemiBold', marginBottom: 10 }}>
+              STRIPE · KONTA ATLIKUMS
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 24 }}>
+              <View>
+                <Text style={{ fontSize: 22, fontFamily: 'Inter_700Bold', color: '#111827' }}>
+                  €{(stripeAvailable ?? 0).toFixed(2)}
+                </Text>
+                <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Pieejams</Text>
+              </View>
+              <View>
+                <Text style={{ fontSize: 22, fontFamily: 'Inter_700Bold', color: '#6b7280' }}>
+                  €{(stripePending ?? 0).toFixed(2)}
+                </Text>
+                <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>Gaida</Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* ── Recent Activity List ──────────────────────── */}
         <View style={s.listSection}>

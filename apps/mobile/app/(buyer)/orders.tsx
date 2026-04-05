@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -27,12 +27,16 @@ import {
   Link2,
   Search,
   X,
+  Leaf,
 } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { lv } from 'date-fns/locale';
 import { useOrders, type FilterKey } from '@/lib/use-orders';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
+import { type ApiOrderSchedule } from '@/lib/api/orders';
 
 const PAYMENT_BADGE: Record<string, { label: string; bg: string; color: string } | undefined> = {
   PENDING: { label: 'Gaida maksājumu', bg: '#fef3c7', color: '#92400e' },
@@ -64,11 +68,14 @@ function PaymentBadge({ status }: { status?: string }) {
   );
 }
 import { haptics } from '@/lib/haptics';
+import { estimateCo2Kg, formatCo2 } from '@/lib/co2';
+import type { ApiTransportJob } from '@/lib/api';
 
 export default function OrdersScreen() {
   const router = useRouter();
   const {
     filtered,
+    unified,
     loading,
     refreshing,
     onRefresh: refresh,
@@ -79,7 +86,67 @@ export default function OrdersScreen() {
     error,
   } = useOrders();
 
+  const { token } = useAuth();
   const [showTypePicker, setShowTypePicker] = useState(false);
+  const [showSchedulesSheet, setShowSchedulesSheet] = useState(false);
+  const [schedules, setSchedules] = useState<ApiOrderSchedule[]>([]);
+  const [schedulesLoading, setSchedulesLoading] = useState(false);
+
+  const loadSchedules = useCallback(async () => {
+    if (!token) return;
+    setSchedulesLoading(true);
+    try {
+      const data = await api.schedules.list(token);
+      setSchedules(data);
+    } catch {
+      // ignore
+    } finally {
+      setSchedulesLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (showSchedulesSheet) loadSchedules();
+  }, [showSchedulesSheet, loadSchedules]);
+
+  const handleSchedulePause = async (id: string) => {
+    if (!token) return;
+    haptics.light();
+    await api.schedules.pause(id, token);
+    await loadSchedules();
+  };
+
+  const handleScheduleResume = async (id: string) => {
+    if (!token) return;
+    haptics.light();
+    await api.schedules.resume(id, token);
+    await loadSchedules();
+  };
+
+  const handleScheduleDelete = async (id: string) => {
+    if (!token) return;
+    haptics.medium();
+    await api.schedules.delete(id, token);
+    await loadSchedules();
+  };
+
+  // Sustainability: aggregate CO2 from all delivered transport/disposal jobs
+  const { totalCo2Kg, totalTonnes, deliveredJobCount } = React.useMemo(() => {
+    let co2Sum = 0;
+    let tonnes = 0;
+    let count = 0;
+    for (const item of unified) {
+      if (item.kind !== 'transport' && item.kind !== 'disposal') continue;
+      const job = item.data as ApiTransportJob;
+      if (job.status !== 'DELIVERED') continue;
+      const weightTonnes = (job.actualWeightKg != null ? job.actualWeightKg : (job.cargoWeight ?? 0)) / 1000;
+      const co2 = estimateCo2Kg(job.distanceKm, weightTonnes);
+      if (co2 != null) { co2Sum += co2; tonnes += weightTonnes; count++; }
+    }
+    return { totalCo2Kg: co2Sum, totalTonnes: tonnes, deliveredJobCount: count };
+  }, [unified]);
+
+  const showCo2Banner = !loading && deliveredJobCount > 0;
 
   const handleFilterChange = (key: FilterKey) => {
     haptics.light();
@@ -116,27 +183,50 @@ export default function OrdersScreen() {
         title="Pasūtījumi"
         onBack={null}
         rightAction={
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleNewOrder}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: '#ffffff',
-              alignItems: 'center',
-              justifyContent: 'center',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.08,
-              shadowRadius: 8,
-              elevation: 2,
-              borderWidth: 1,
-              borderColor: '#F9FAFB',
-            }}
-          >
-            <Plus size={24} color="#111827" />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => { haptics.light(); setShowSchedulesSheet(true); }}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: '#ffffff',
+                alignItems: 'center',
+                justifyContent: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 8,
+                elevation: 2,
+                borderWidth: 1,
+                borderColor: '#F9FAFB',
+              }}
+            >
+              <Calendar size={22} color="#111827" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleNewOrder}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: '#ffffff',
+                alignItems: 'center',
+                justifyContent: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 8,
+                elevation: 2,
+                borderWidth: 1,
+                borderColor: '#F9FAFB',
+              }}
+            >
+              <Plus size={24} color="#111827" />
+            </TouchableOpacity>
+          </View>
         }
       />
 
@@ -202,6 +292,21 @@ export default function OrdersScreen() {
         keyboardDismissMode="on-drag"
         contentInsetAdjustmentBehavior="never"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+        ListHeaderComponent={
+          showCo2Banner ? (
+            <View style={s.co2Banner}>
+              <View style={s.co2Left}>
+                <Leaf size={18} color="#16a34a" fill="#16a34a" />
+                <View>
+                  <Text style={s.co2Value}>{formatCo2(totalCo2Kg)}</Text>
+                  <Text style={s.co2Label}>
+                    Kopējais CO₂ · {totalTonnes.toFixed(1)} t piegādāts ({deliveredJobCount} reises)
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           loading && !refreshing ? (
             <View style={{ gap: 16 }}>
@@ -229,6 +334,62 @@ export default function OrdersScreen() {
           )
         }
       />
+
+      {/* ── Schedules Sheet ──────────────────────────────────── */}
+      <BottomSheet visible={showSchedulesSheet} onClose={() => setShowSchedulesSheet(false)}>
+        <View style={s.sheetContent}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <Text style={s.sheetTitle}>Atkārtoti pasūtījumi</Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                haptics.light();
+                setShowSchedulesSheet(false);
+                router.push('/(buyer)/catalog?schedule=1' as any);
+              }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 8,
+                backgroundColor: '#111827',
+              }}
+            >
+              <Plus size={14} color="#fff" />
+              <Text style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#fff' }}>Jauns</Text>
+            </TouchableOpacity>
+          </View>
+          {schedulesLoading ? (
+            <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+              <Text style={{ fontSize: 14, color: '#9ca3af' }}>Ielādē...</Text>
+            </View>
+          ) : schedules.length === 0 ? (
+            <View style={{ paddingVertical: 24, alignItems: 'center', gap: 8 }}>
+              <Calendar size={32} color="#d1d5db" />
+              <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center' }}>
+                Nav atkārtotu pasūtījumu
+              </Text>
+              <Text style={{ fontSize: 12, color: '#9ca3af', textAlign: 'center' }}>
+                Izveidojiet pasūtījumu un izvēlieties atkārtošanas biežumu
+              </Text>
+            </View>
+          ) : (
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
+              {schedules.map((sched) => (
+                <ScheduleRow
+                  key={sched.id}
+                  schedule={sched}
+                  onPause={() => handleSchedulePause(sched.id)}
+                  onResume={() => handleScheduleResume(sched.id)}
+                  onDelete={() => handleScheduleDelete(sched.id)}
+                />
+              ))}
+            </ScrollView>
+          )}
+        </View>
+      </BottomSheet>
 
       {/* ── New Order Sheet ──────────────────────────────────── */}
       <BottomSheet visible={showTypePicker} onClose={() => setShowTypePicker(false)}>
@@ -330,6 +491,103 @@ export default function OrdersScreen() {
 }
 
 // ── Components ────────────────────────────────────────────────
+
+const INTERVAL_LABELS: Record<number, string> = {
+  1: 'Katru dienu',
+  7: 'Katru nedēļu',
+  14: 'Katru 2 nedēļas',
+  30: 'Katru mēnesi',
+};
+
+function ScheduleRow({
+  schedule,
+  onPause,
+  onResume,
+  onDelete,
+}: {
+  schedule: ApiOrderSchedule;
+  onPause: () => void;
+  onResume: () => void;
+  onDelete: () => void;
+}) {
+  const intervalLabel = INTERVAL_LABELS[schedule.intervalDays] ?? `Ik ${schedule.intervalDays} dienas`;
+  const nextDate = schedule.nextRunAt
+    ? format(new Date(schedule.nextRunAt), 'd. MMM yyyy', { locale: lv })
+    : '—';
+
+  return (
+    <View
+      style={{
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 10,
+        backgroundColor: schedule.enabled ? '#ffffff' : '#f9fafb',
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+        <Text style={{ fontSize: 14, fontFamily: 'Inter_600SemiBold', color: '#111827', flex: 1 }} numberOfLines={1}>
+          {schedule.deliveryCity || schedule.deliveryAddress}
+        </Text>
+        <View
+          style={{
+            paddingHorizontal: 8,
+            paddingVertical: 2,
+            borderRadius: 6,
+            backgroundColor: schedule.enabled ? '#dcfce7' : '#f3f4f6',
+          }}
+        >
+          <Text style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: schedule.enabled ? '#166534' : '#6b7280' }}>
+            {schedule.enabled ? 'Aktīvs' : 'Pauzēts'}
+          </Text>
+        </View>
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Calendar size={12} color="#9ca3af" />
+          <Text style={{ fontSize: 12, color: '#6b7280' }}>{intervalLabel}</Text>
+        </View>
+        <Text style={{ fontSize: 12, color: '#9ca3af' }}>·</Text>
+        <Text style={{ fontSize: 12, color: '#6b7280' }}>Nākamais: {nextDate}</Text>
+      </View>
+
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={schedule.enabled ? onPause : onResume}
+          style={{
+            flex: 1,
+            paddingVertical: 8,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: '#d1d5db',
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#374151' }}>
+            {schedule.enabled ? 'Pauzēt' : 'Atsākt'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={onDelete}
+          style={{
+            paddingVertical: 8,
+            paddingHorizontal: 16,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: '#fca5a5',
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#dc2626' }}>Dzēst</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
 
 function FilterChip({
   label,
@@ -766,6 +1024,22 @@ const s = StyleSheet.create({
   chipTextActive: {
     color: '#ffffff',
   },
+
+  co2Banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0fdf4',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  co2Left: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  co2Value: { fontSize: 16, fontWeight: '700', color: '#15803d' },
+  co2Label: { fontSize: 12, color: '#16a34a', marginTop: 2 },
 
   list: {
     padding: 16,

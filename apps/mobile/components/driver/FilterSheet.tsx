@@ -11,10 +11,20 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { MapPin, Navigation2, X } from 'lucide-react-native';
+import { MapPin, Navigation2, X, Truck } from 'lucide-react-native';
 import { t } from '@/lib/translations';
 import type { SearchFilter, SavedSearch } from './job-types';
 import { RADIUS_OPTIONS } from './job-types';
+
+const VEHICLE_TYPE_LABELS: { value: string; label: string }[] = [
+  { value: 'DUMP_TRUCK', label: 'Pašizgāzējs' },
+  { value: 'FLATBED_TRUCK', label: 'Platforma' },
+  { value: 'SEMI_TRAILER', label: 'Puspiekabe' },
+  { value: 'HOOK_LIFT', label: 'Hāks' },
+  { value: 'SKIP_LOADER', label: 'Konteiners' },
+  { value: 'TANKER', label: 'Cisterna' },
+  { value: 'VAN', label: 'Furgons' },
+];
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -151,6 +161,66 @@ export function FilterSheet({
             </ScrollView>
           </View>
 
+          {/* Vehicle type section */}
+          <View style={fs.divider} />
+          <View style={fs.sectionBlock}>
+            <Text style={fs.sectionLabel}>Transporta veids</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={fs.radiusRow}>
+                <TouchableOpacity
+                  style={[fs.radChip, (!draft.vehicleType || draft.vehicleType === '') && fs.radChipActive]}
+                  onPress={() => onChange({ ...draft, vehicleType: '' })}
+                >
+                  <Text style={[fs.radChipText, (!draft.vehicleType || draft.vehicleType === '') && fs.radChipTextActive]}>
+                    Visi
+                  </Text>
+                </TouchableOpacity>
+                {VEHICLE_TYPE_LABELS.map((vt) => (
+                  <TouchableOpacity
+                    key={vt.value}
+                    style={[fs.radChip, draft.vehicleType === vt.value && fs.radChipActive]}
+                    onPress={() => onChange({ ...draft, vehicleType: draft.vehicleType === vt.value ? '' : vt.value })}
+                  >
+                    <Text style={[fs.radChipText, draft.vehicleType === vt.value && fs.radChipTextActive]}>
+                      {vt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* Price range section */}
+          <View style={fs.divider} />
+          <View style={fs.sectionBlock}>
+            <Text style={fs.sectionLabel}>Cena (€)</Text>
+            <View style={fs.priceRow}>
+              <View style={[fs.inputWrap, fs.priceInput]}>
+                <TextInput
+                  style={fs.input}
+                  value={draft.priceMin ? String(draft.priceMin) : ''}
+                  onChangeText={(v) => onChange({ ...draft, priceMin: v ? Number(v.replace(/[^0-9]/g, '')) : 0 })}
+                  placeholder="No"
+                  placeholderTextColor="#9ca3af"
+                  keyboardType="numeric"
+                  returnKeyType="done"
+                />
+              </View>
+              <Text style={fs.priceSep}>—</Text>
+              <View style={[fs.inputWrap, fs.priceInput]}>
+                <TextInput
+                  style={fs.input}
+                  value={draft.priceMax ? String(draft.priceMax) : ''}
+                  onChangeText={(v) => onChange({ ...draft, priceMax: v ? Number(v.replace(/[^0-9]/g, '')) : 0 })}
+                  placeholder="Līdz"
+                  placeholderTextColor="#9ca3af"
+                  keyboardType="numeric"
+                  returnKeyType="done"
+                />
+              </View>
+            </View>
+          </View>
+
           {/* Saved searches */}
           {savedSearches.length > 0 && (
             <>
@@ -273,6 +343,9 @@ const fs = StyleSheet.create({
   radChipActive: { backgroundColor: '#111827' },
   radChipText: { fontSize: 15, fontWeight: '600', color: '#111827' },
   radChipTextActive: { color: '#ffffff' },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  priceInput: { flex: 1, marginBottom: 0 },
+  priceSep: { fontSize: 18, color: '#9ca3af', fontWeight: '600' },
 
   savedTitle: {
     fontSize: 14,

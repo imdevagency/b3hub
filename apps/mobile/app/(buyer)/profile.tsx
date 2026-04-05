@@ -371,7 +371,7 @@ export default function ProfileScreen() {
             { done: !!(user?.firstName && user?.lastName), label: 'Vārds un uzvārds' },
             { done: !!user?.phone, label: 'Telefona numurs' },
             { done: !!user?.email, label: 'E-pasts' },
-            { done: !!user?.companyId, label: 'Uzņēmums pievienots' },
+            { done: !!user?.company, label: 'Uzņēmums pievienots' },
           ];
           const doneCount = steps.filter((step) => step.done).length;
           const pct = Math.round((doneCount / steps.length) * 100);

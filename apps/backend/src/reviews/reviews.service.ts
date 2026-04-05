@@ -118,6 +118,61 @@ export class ReviewsService {
     return review;
   }
 
+  // ── Buyer: rate a driver after a delivered transport job ─────
+  async createDriverReview(
+    transportJobId: string,
+    dto: { rating: number; comment?: string },
+    userId: string,
+  ) {
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id: transportJobId },
+      include: {
+        driver: { select: { id: true, companyId: true } },
+      },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+    if (job.status !== 'DELIVERED') {
+      throw new BadRequestException('Can only rate a delivered transport job');
+    }
+    // Verify the reviewer is the original requester / order buyer
+    if (job.requestedById && job.requestedById !== userId) {
+      throw new ForbiddenException('Not your transport job');
+    }
+    if (!job.driverId) {
+      throw new BadRequestException('No driver assigned to this job');
+    }
+
+    // Guard: one review per transport job
+    const existing = await this.prisma.review.findUnique({
+      where: { transportJobId },
+    });
+    if (existing) throw new ConflictException('You already rated this driver');
+
+    // Resolve the company to attribute the rating to
+    const companyId = job.carrierId ?? job.driver?.companyId;
+    if (!companyId) {
+      throw new BadRequestException('Cannot resolve carrier company for this job');
+    }
+
+    const review = await this.prisma.review.create({
+      data: {
+        rating: dto.rating,
+        comment: dto.comment,
+        reviewerId: userId,
+        companyId,
+        transportJobId,
+        driverId: job.driverId,
+      },
+    });
+
+    this.logger.log(
+      `Driver review ${review.id} created by user ${userId} for driver ${job.driverId}`,
+    );
+
+    await this.recomputeRating(companyId);
+    return review;
+  }
+
   // ── Get reviews for a company ────────────────────────────────
   async findByCompany(companyId: string) {
     return this.prisma.review.findMany({

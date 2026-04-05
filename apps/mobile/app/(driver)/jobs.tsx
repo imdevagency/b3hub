@@ -22,6 +22,7 @@ import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
+import { estimateCo2Kg, formatCo2 } from '@/lib/co2';
 import { SkeletonJobRow } from '@/components/ui/Skeleton';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -388,6 +389,38 @@ function JobCard({
             </Text>
           </View>
         )}
+        {(() => {
+          const co2 = estimateCo2Kg(job.distanceKm, job.weightTonnes);
+          if (!co2) return null;
+          return (
+            <View
+              style={{
+                backgroundColor: '#f0fdf4',
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                borderRadius: 6,
+                marginLeft: 8,
+              }}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#15803d' }}>~{formatCo2(co2)}</Text>
+            </View>
+          );
+        })()}
+        {job.buyerOfferedRate != null && job.buyerOfferedRate > 0 && (
+          <View
+            style={{
+              backgroundColor: '#eff6ff',
+              paddingHorizontal: 8,
+              paddingVertical: 3,
+              borderRadius: 6,
+              marginLeft: 8,
+            }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#1d4ed8' }}>
+              Piedāvā €{job.buyerOfferedRate.toFixed(2)}
+            </Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -592,9 +625,9 @@ export default function JobsScreen() {
       setAcceptSheetJob(null);
 
       // Post-accept: offer immediate navigation to pickup
-      const lat = job.pickupLat;
-      const lng = job.pickupLng;
-      const label = `${job.fromCity ?? job.pickupAddress ?? ''}`.trim();
+      const lat = job.fromLat || null;
+      const lng = job.fromLng || null;
+      const label = `${job.fromCity ?? job.fromAddress ?? ''}`.trim();
       const openUrl = (url: string, fallback: string) =>
         Linking.canOpenURL(url)
           .then((ok) => Linking.openURL(ok ? url : fallback))

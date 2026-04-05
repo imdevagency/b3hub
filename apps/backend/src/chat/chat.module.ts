@@ -3,9 +3,10 @@ import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 import { ChatGateway } from './chat.gateway';
 import { PrismaModule } from '../prisma/prisma.module';
+import { SupabaseModule } from '../supabase/supabase.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, SupabaseModule],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway],
 })

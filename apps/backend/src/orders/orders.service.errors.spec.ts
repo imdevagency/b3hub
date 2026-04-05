@@ -22,66 +22,66 @@ describe('OrdersService — Error Handling', () => {
   beforeEach(async () => {
     const mockPrisma = {
       order: {
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn().mockResolvedValue(null),
-        count: jest.fn().mockResolvedValue(0),
-        create: jest.fn(),
-        update: jest.fn(),
+        findMany: (jest.fn() as any).mockResolvedValue([]),
+        findUnique: (jest.fn() as any).mockResolvedValue(null),
+        count: (jest.fn() as any).mockResolvedValue(0),
+        create: jest.fn() as any,
+        update: jest.fn() as any,
       },
       user: {
-        findUnique: jest.fn().mockResolvedValue(null),
+        findUnique: (jest.fn() as any).mockResolvedValue(null),
       },
       transportJob: {
-        create: jest.fn(),
-        count: jest.fn().mockResolvedValue(0),
-        findMany: jest.fn().mockResolvedValue([]),
-        updateMany: jest.fn().mockResolvedValue({}),
+        create: jest.fn() as any,
+        count: (jest.fn() as any).mockResolvedValue(0),
+        findMany: (jest.fn() as any).mockResolvedValue([]),
+        updateMany: (jest.fn() as any).mockResolvedValue({}),
       },
       skipHireOrder: {
-        count: jest.fn().mockResolvedValue(0),
+        count: (jest.fn() as any).mockResolvedValue(0),
       },
       document: {
-        count: jest.fn().mockResolvedValue(0),
+        count: (jest.fn() as any).mockResolvedValue(0),
       },
       material: {
-        findUnique: jest.fn().mockResolvedValue(null),
-        count: jest.fn().mockResolvedValue(0),
+        findUnique: (jest.fn() as any).mockResolvedValue(null),
+        count: (jest.fn() as any).mockResolvedValue(0),
       },
       orderItem: {
-        count: jest.fn().mockResolvedValue(0),
-        aggregate: jest.fn().mockResolvedValue({ _sum: { total: 0 } }),
+        count: (jest.fn() as any).mockResolvedValue(0),
+        aggregate: (jest.fn() as any).mockResolvedValue({ _sum: { total: 0 } }),
       },
       buyerProfile: {
-        findUnique: jest.fn().mockResolvedValue(null),
-        update: jest.fn().mockResolvedValue({}),
+        findUnique: (jest.fn() as any).mockResolvedValue(null),
+        update: (jest.fn() as any).mockResolvedValue({}),
       },
       invoice: {
-        create: jest.fn().mockResolvedValue({ id: 'inv-1' }),
-        count: jest.fn().mockResolvedValue(0),
+        create: (jest.fn() as any).mockResolvedValue({ id: 'inv-1' }),
+        count: (jest.fn() as any).mockResolvedValue(0),
       },
     };
 
     const mockEmail = {
-      sendOrderConfirmation: jest.fn().mockResolvedValue(null),
+      sendOrderConfirmation: (jest.fn() as any).mockResolvedValue(null),
     };
     const mockNotifications = {
-      notify: jest.fn().mockResolvedValue(null),
-      create: jest.fn().mockResolvedValue(null),
+      notify: (jest.fn() as any).mockResolvedValue(null),
+      create: (jest.fn() as any).mockResolvedValue(null),
     };
-    const mockTransportJobs = { create: jest.fn() };
+    const mockTransportJobs = { create: jest.fn() as any };
     const mockPayments = {
-      createPaymentIntent: jest.fn().mockResolvedValue({}),
-      capturePayment: jest.fn().mockResolvedValue({}),
-      releaseFunds: jest.fn().mockResolvedValue({}),
+      createPaymentIntent: (jest.fn() as any).mockResolvedValue({}),
+      capturePayment: (jest.fn() as any).mockResolvedValue({}),
+      releaseFunds: (jest.fn() as any).mockResolvedValue({}),
     };
     const mockInvoices = {
-      createForOrder: jest.fn().mockResolvedValue({}),
-      generateForOrder: jest.fn().mockResolvedValue({}),
-      emailInvoice: jest.fn().mockResolvedValue({}),
+      createForOrder: (jest.fn() as any).mockResolvedValue({}),
+      generateForOrder: (jest.fn() as any).mockResolvedValue({}),
+      emailInvoice: (jest.fn() as any).mockResolvedValue({}),
     };
     const mockUpdates = {
-      broadcastOrderStatus: jest.fn(),
-      broadcastJobStatus: jest.fn(),
+      broadcastOrderStatus: jest.fn() as any,
+      broadcastJobStatus: jest.fn() as any,
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -127,8 +127,8 @@ describe('OrdersService — Error Handling', () => {
     });
 
     it('returns empty pagination when no orders exist', async () => {
-      (prisma.order.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.order.count as jest.Mock).mockResolvedValue(0);
+      (prisma.order.findMany as jest.Mock<any>).mockResolvedValue([]);
+      (prisma.order.count as jest.Mock<any>).mockResolvedValue(0);
 
       const user = {
         id: 'u1',
@@ -144,11 +144,11 @@ describe('OrdersService — Error Handling', () => {
     });
 
     it('correctly calculates hasMore flag', async () => {
-      (prisma.order.findMany as jest.Mock).mockResolvedValue([
+      (prisma.order.findMany as jest.Mock<any>).mockResolvedValue([
         { id: '1' },
         { id: '2' },
       ]);
-      (prisma.order.count as jest.Mock).mockResolvedValue(50);
+      (prisma.order.count as jest.Mock<any>).mockResolvedValue(50);
 
       const user = {
         id: 'u1',
@@ -165,8 +165,8 @@ describe('OrdersService — Error Handling', () => {
     });
 
     it('returns hasMore=false when past last page', async () => {
-      (prisma.order.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.order.count as jest.Mock).mockResolvedValue(25);
+      (prisma.order.findMany as jest.Mock<any>).mockResolvedValue([]);
+      (prisma.order.count as jest.Mock<any>).mockResolvedValue(25);
 
       const user = {
         id: 'u1',
@@ -182,7 +182,7 @@ describe('OrdersService — Error Handling', () => {
 
   describe('findOne — not found handling', () => {
     it('throws NotFoundException when order does not exist', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(null);
 
       const user = {
         id: 'u1',
@@ -196,7 +196,7 @@ describe('OrdersService — Error Handling', () => {
     });
 
     it('throws ForbiddenException when buyer accesses someone elses order', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'order1',
         buyerId: 'u2', // Different buyer
         items: [],
@@ -215,7 +215,7 @@ describe('OrdersService — Error Handling', () => {
     });
 
     it('allows admin to access any order', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'order1',
         buyerId: 'u2',
         items: [],
@@ -235,7 +235,7 @@ describe('OrdersService — Error Handling', () => {
 
   describe('updateStatus — state transition validation', () => {
     it('blocks invalid status transitions', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'order1',
         status: OrderStatus.CONFIRMED,
         invoices: [],
@@ -249,7 +249,7 @@ describe('OrdersService — Error Handling', () => {
     });
 
     it('blocks update on cancelled order', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'order1',
         status: OrderStatus.CANCELLED,
         invoices: [],
@@ -265,7 +265,7 @@ describe('OrdersService — Error Handling', () => {
 
   describe('create — supplier isolation', () => {
     it('splits multi-supplier carts into separate orders', async () => {
-      (prisma.material.findUnique as jest.Mock)
+      (prisma.material.findUnique as jest.Mock<any>)
         .mockResolvedValueOnce({
           id: 'm1',
           basePrice: 10,
@@ -277,7 +277,7 @@ describe('OrdersService — Error Handling', () => {
           supplierId: 'supplier-b',
         });
 
-      (prisma.order.create as jest.Mock).mockResolvedValue({
+      (prisma.order.create as jest.Mock<any>).mockResolvedValue({
         id: 'order-1',
         orderNumber: 'ORD-001',
         buyer: { email: null, name: 'Test', phone: null },
@@ -319,7 +319,7 @@ describe('OrdersService — Error Handling', () => {
 
   describe('update — write permissions', () => {
     it('blocks supplier from editing buyer-owned order details', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'order1',
         createdById: 'buyer1',
         items: [],
@@ -327,7 +327,7 @@ describe('OrdersService — Error Handling', () => {
         transportJobs: [],
         invoices: [],
       });
-      (prisma.orderItem.count as jest.Mock).mockResolvedValue(1);
+      (prisma.orderItem.count as jest.Mock<any>).mockResolvedValue(1);
 
       const supplier = {
         id: 'supplier-user',
@@ -346,7 +346,7 @@ describe('OrdersService — Error Handling', () => {
 
   describe('cancel — access control', () => {
     it('blocks non-buyer from cancelling order', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'order1',
         buyerId: 'u2',
         status: OrderStatus.PENDING,
@@ -364,7 +364,7 @@ describe('OrdersService — Error Handling', () => {
     });
 
     it('blocks cancellation of already completed order', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'order1',
         createdById: 'u1',
         status: OrderStatus.DELIVERED,
@@ -382,12 +382,12 @@ describe('OrdersService — Error Handling', () => {
     });
 
     it('allows buyer to cancel pending order', async () => {
-      (prisma.order.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'order1',
         createdById: 'u1',
         status: OrderStatus.PENDING,
       });
-      (prisma.order.update as jest.Mock).mockResolvedValue({
+      (prisma.order.update as jest.Mock<any>).mockResolvedValue({
         id: 'order1',
         status: OrderStatus.CANCELLED,
       });
@@ -412,7 +412,7 @@ describe('OrdersService — Error Handling', () => {
         isCompany: false,
         canSell: false,
       } as Partial<RequestingUser> as RequestingUser;
-      (prisma.order.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.order.findMany as jest.Mock<any>).mockResolvedValue([]);
 
       // Supplier stats should only be visible to suppliers or admins
       await expect(service.getDashboardStats(buyer)).resolves.toBeDefined();
@@ -427,7 +427,7 @@ describe('OrdersService — Error Handling', () => {
         isCompany: false,
         canTransport: false,
       } as Partial<RequestingUser> as RequestingUser;
-      (prisma.order.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.order.findMany as jest.Mock<any>).mockResolvedValue([]);
 
       await expect(service.getDashboardStats(buyer)).resolves.toBeDefined();
     });
@@ -494,7 +494,7 @@ describe('OrdersService — Error Handling', () => {
 
   describe('create — credit limit guard', () => {
     it('throws BadRequestException when order total exceeds remaining credit', async () => {
-      (prisma.material.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.material.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'm1',
         basePrice: 1000,
         supplierId: 'supplier-a',
@@ -502,11 +502,11 @@ describe('OrdersService — Error Handling', () => {
 
       // Mock buyerProfile with 500 credit remaining
       (prisma as any).buyerProfile = {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: (jest.fn() as any).mockResolvedValue({
           creditLimit: 500,
           creditUsed: 200,
         }),
-        update: jest.fn().mockResolvedValue({}),
+        update: (jest.fn() as any).mockResolvedValue({}),
       };
 
       const buyer = {
@@ -554,7 +554,7 @@ describe('OrdersService — Error Handling', () => {
 
     cases.forEach(({ from, to, allowed }) => {
       it(`${allowed ? 'allows' : 'blocks'} ${from} → ${to}`, async () => {
-        (prisma.order.findUnique as jest.Mock).mockResolvedValue({
+        (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue({
           id: 'order-1',
           status: from,
           invoices: [],
@@ -562,7 +562,7 @@ describe('OrdersService — Error Handling', () => {
           createdById: 'buyer1',
         });
         if (allowed) {
-          (prisma.order.update as jest.Mock).mockResolvedValue({
+          (prisma.order.update as jest.Mock<any>).mockResolvedValue({
             id: 'order-1',
             status: to,
           });

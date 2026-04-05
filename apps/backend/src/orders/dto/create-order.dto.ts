@@ -43,11 +43,13 @@ export class CreateOrderDto {
   @IsString()
   deliveryCity: string;
 
+  @IsOptional()
   @IsString()
-  deliveryState: string;
+  deliveryState?: string;
 
+  @IsOptional()
   @IsString()
-  deliveryPostal: string;
+  deliveryPostal?: string;
 
   @IsOptional()
   @IsDateString()
@@ -57,9 +59,18 @@ export class CreateOrderDto {
   @IsString()
   deliveryWindow?: string;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  deliveryFee: number;
+  deliveryFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  deliveryLat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  deliveryLng?: number;
 
   @IsOptional()
   @IsEnum(PaymentStatus)

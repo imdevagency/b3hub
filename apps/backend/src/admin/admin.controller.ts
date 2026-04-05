@@ -18,6 +18,12 @@ class UpdateCompanyDto {
   @IsOptional() @IsNumber() @Min(0) commissionRate?: number;
 }
 
+class UpdateJobRateDto {
+  @IsOptional() @IsNumber() @Min(0) rate?: number;
+  @IsOptional() @IsNumber() @Min(0) pricePerTonne?: number;
+  @IsOptional() note?: string;
+}
+
 import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Admin')
@@ -80,5 +86,19 @@ export class AdminController {
   @Get('audit-logs')
   getAuditLogs() {
     return this.service.getAuditLogs();
+  }
+
+  /**
+   * PATCH /admin/jobs/:id/rate
+   * Override the rate on an in-flight transport job.
+   * Audit-logged. Blocked for COMPLETED / CANCELLED jobs.
+   */
+  @Patch('jobs/:id/rate')
+  updateJobRate(
+    @Param('id') id: string,
+    @Body() body: UpdateJobRateDto,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.updateJobRate(id, body, admin.userId);
   }
 }

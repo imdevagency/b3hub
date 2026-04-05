@@ -76,11 +76,13 @@ function CategoryCard({
   category,
   hasRecycled,
   supplierCount,
+  minPrice,
   onPress,
 }: {
   category: MaterialCategory;
   hasRecycled: boolean;
   supplierCount: number;
+  minPrice: number | null;
   onPress: () => void;
 }) {
   const meta = CATEGORY_META[category] ?? { bg: '#f3f4f6', accent: '#6b7280', icon: Package };
@@ -120,11 +122,16 @@ function CategoryCard({
             {description}
           </Text>
         ) : null}
-        {supplierCount > 0 && (
-          <Text style={s.catSupplierCount}>
-            {supplierCount} piegādātāj{supplierCount === 1 ? 's' : 'i'}
-          </Text>
-        )}
+        <View style={s.catMeta}>
+          {supplierCount > 0 && (
+            <Text style={s.catSupplierCount}>
+              {supplierCount} piegādātāj{supplierCount === 1 ? 's' : 'i'}
+            </Text>
+          )}
+          {minPrice != null && (
+            <Text style={s.catMinPrice}>no €{minPrice.toFixed(2)}/t</Text>
+          )}
+        </View>
       </View>
 
       {/* Arrow */}
@@ -147,6 +154,7 @@ export default function CatalogScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState('');
+  const [filterMode, setFilterMode] = useState<'ALL' | 'RECYCLED'>('ALL');
   const [resumeDraft, setResumeDraft] = useState<{
     materialName: string;
     quantity: number;
@@ -208,40 +216,49 @@ export default function CatalogScreen() {
       .finally(() => setRefreshing(false));
   }, [token]);
 
-  // Per-category: unique supplier count + recycled flag
+  // Per-category: unique supplier count + recycled flag + lowest base price
   const categoryData = useMemo(() => {
     const map: Record<
       string,
-      { supplierCount: number; hasRecycled: boolean; supplierIds: Set<string> }
+      { supplierCount: number; hasRecycled: boolean; supplierIds: Set<string>; minPrice: number | null }
     > = {};
     for (const m of allMaterials) {
       if (!map[m.category])
-        map[m.category] = { supplierCount: 0, hasRecycled: false, supplierIds: new Set() };
+        map[m.category] = { supplierCount: 0, hasRecycled: false, supplierIds: new Set(), minPrice: null };
       if (m.isRecycled) map[m.category].hasRecycled = true;
       map[m.category].supplierIds.add(m.supplier.id);
+      if (m.basePrice > 0) {
+        if (map[m.category].minPrice === null || m.basePrice < map[m.category].minPrice!) {
+          map[m.category].minPrice = m.basePrice;
+        }
+      }
     }
-    const result: Record<string, { supplierCount: number; hasRecycled: boolean }> = {};
+    const result: Record<string, { supplierCount: number; hasRecycled: boolean; minPrice: number | null }> = {};
     for (const [cat, d] of Object.entries(map)) {
-      result[cat] = { supplierCount: d.supplierIds.size, hasRecycled: d.hasRecycled };
+      result[cat] = { supplierCount: d.supplierIds.size, hasRecycled: d.hasRecycled, minPrice: d.minPrice };
     }
     return result;
   }, [allMaterials]);
 
-  // Filter categories by search query, preserving DISPLAY_ORDER
+  // Filter categories by search query and recycled tab, preserving DISPLAY_ORDER
   const visibleCategories = useMemo(() => {
     const ordered = [
       ...DISPLAY_ORDER,
       ...MATERIAL_CATEGORIES.filter((c) => !DISPLAY_ORDER.includes(c)),
     ];
-    if (!query.trim()) return ordered;
+    const modeFiltered =
+      filterMode === 'RECYCLED'
+        ? ordered.filter((c) => c === 'RECYCLED_CONCRETE' || c === 'RECYCLED_SOIL')
+        : ordered;
+    if (!query.trim()) return modeFiltered;
     const q = query.trim().toLowerCase();
-    return ordered.filter(
+    return modeFiltered.filter(
       (cat) =>
         CATEGORY_LABELS[cat].toLowerCase().includes(q) ||
         (CATEGORY_DESCRIPTIONS[cat] ?? '').toLowerCase().includes(q) ||
         allMaterials.some((m) => m.category === cat && m.name.toLowerCase().includes(q)),
     );
-  }, [query, allMaterials]);
+  }, [query, filterMode, allMaterials]);
 
   const handleCategoryPress = (cat: MaterialCategory) => {
     router.push({
@@ -278,6 +295,25 @@ export default function CatalogScreen() {
             </TouchableOpacity>
           )}
         </View>
+      </View>
+
+      {/* ── Filter chips ── */}
+      <View style={s.chipRow}>
+        <TouchableOpacity
+          style={[s.chip, filterMode === 'ALL' && s.chipActive]}
+          onPress={() => { haptics.light(); setFilterMode('ALL'); }}
+          activeOpacity={0.8}
+        >
+          <Text style={[s.chipText, filterMode === 'ALL' && s.chipTextActive]}>Visi</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[s.chip, filterMode === 'RECYCLED' && s.chipActiveGreen]}
+          onPress={() => { haptics.light(); setFilterMode('RECYCLED'); }}
+          activeOpacity={0.8}
+        >
+          <Recycle size={13} color={filterMode === 'RECYCLED' ? '#fff' : '#16a34a'} />
+          <Text style={[s.chipText, filterMode === 'RECYCLED' ? s.chipTextActive : s.chipTextGreen]}>Reciklēti</Text>
+        </TouchableOpacity>
       </View>
 
       {/* ── Project context banner ── */}
@@ -338,12 +374,13 @@ export default function CatalogScreen() {
           data={visibleCategories}
           keyExtractor={(cat) => cat}
           renderItem={({ item: cat }) => {
-            const data = categoryData[cat] ?? { supplierCount: 0, hasRecycled: false };
+            const data = categoryData[cat] ?? { supplierCount: 0, hasRecycled: false, minPrice: null };
             return (
               <CategoryCard
                 category={cat}
                 hasRecycled={data.hasRecycled}
                 supplierCount={data.supplierCount}
+                minPrice={data.minPrice}
                 onPress={() => handleCategoryPress(cat)}
               />
             );
@@ -369,6 +406,43 @@ const s = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 4,
     backgroundColor: '#f9fafb',
+  },
+  chipRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 2,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  chipActive: {
+    backgroundColor: '#111827',
+    borderColor: '#111827',
+  },
+  chipActiveGreen: {
+    backgroundColor: '#16a34a',
+    borderColor: '#16a34a',
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  chipTextActive: {
+    color: '#fff',
+  },
+  chipTextGreen: {
+    color: '#16a34a',
   },
   searchBox: {
     flexDirection: 'row',
@@ -519,11 +593,21 @@ const s = StyleSheet.create({
     lineHeight: 17,
     marginTop: 1,
   },
+  catMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 3,
+  },
   catSupplierCount: {
     fontSize: 11,
     color: '#9ca3af',
-    marginTop: 3,
     fontWeight: '500',
+  },
+  catMinPrice: {
+    fontSize: 11,
+    color: '#00A878',
+    fontWeight: '600',
   },
 
   catRight: {
