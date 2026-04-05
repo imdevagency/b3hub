@@ -1081,10 +1081,7 @@ export default function OrderRequestWizard() {
                   haptics.light();
                   setOffersSort(opt.key);
                 }}
-                style={[
-                  s.sortPill,
-                  offersSort === opt.key && s.sortPillActive,
-                ]}
+                style={[s.sortPill, offersSort === opt.key && s.sortPillActive]}
               >
                 <Text style={[s.sortPillText, offersSort === opt.key && s.sortPillTextActive]}>
                   {opt.label}

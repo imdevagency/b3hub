@@ -290,10 +290,7 @@ export default function TransportJobDetailScreen() {
       haptics.success();
     } catch (err) {
       haptics.error();
-      Alert.alert(
-        'Kļūda',
-        err instanceof Error ? err.message : 'Neizdevās nosūtīt vērtējumu',
-      );
+      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās nosūtīt vērtējumu');
     } finally {
       setRatingLoading(false);
     }
@@ -629,11 +626,7 @@ export default function TransportJobDetailScreen() {
                 <FileText size={16} color="#6b7280" />
                 <Text style={s.cardTitle}>Svēršanas zīme</Text>
               </View>
-              <Image
-                source={{ uri: job.pickupPhotoUrl }}
-                style={s.slipThumb}
-                resizeMode="cover"
-              />
+              <Image source={{ uri: job.pickupPhotoUrl }} style={s.slipThumb} resizeMode="cover" />
               {job.actualWeightKg != null && (
                 <View style={s.priceRow}>
                   <Text style={s.priceLabel}>Izmērītais svars</Text>

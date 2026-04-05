@@ -193,7 +193,10 @@ function ProposalModal({ request, visible, onClose, onSuccess, token }: Proposal
           <View style={styles.stepper}>
             <TouchableOpacity
               style={styles.stepBtn}
-              onPress={() => { haptics.light(); setEtaDays((d) => Math.max(1, d - 1)); }}
+              onPress={() => {
+                haptics.light();
+                setEtaDays((d) => Math.max(1, d - 1));
+              }}
               hitSlop={8}
             >
               <Minus size={18} color={ACCENT} />
@@ -201,7 +204,10 @@ function ProposalModal({ request, visible, onClose, onSuccess, token }: Proposal
             <Text style={styles.stepValue}>{etaDays}</Text>
             <TouchableOpacity
               style={styles.stepBtn}
-              onPress={() => { haptics.light(); setEtaDays((d) => Math.min(30, d + 1)); }}
+              onPress={() => {
+                haptics.light();
+                setEtaDays((d) => Math.min(30, d + 1));
+              }}
               hitSlop={8}
             >
               <Plus size={18} color={ACCENT} />
@@ -384,19 +390,31 @@ function MyResponseRow({ item }: { item: MyQuoteResponse }) {
           </View>
         </View>
         <Text style={styles.myrSub}>
-          {item.request.materialName} · {item.request.quantity} {unitLabel} · {item.request.deliveryCity}
+          {item.request.materialName} · {item.request.quantity} {unitLabel} ·{' '}
+          {item.request.deliveryCity}
         </Text>
       </View>
       <View style={styles.myrPriceRow}>
         <View>
           <Text style={styles.myrPrice}>€{item.totalPrice.toFixed(2)}</Text>
-          <Text style={styles.myrPriceSub}>€{item.pricePerUnit.toFixed(2)} / {unitLabel}</Text>
+          <Text style={styles.myrPriceSub}>
+            €{item.pricePerUnit.toFixed(2)} / {unitLabel}
+          </Text>
         </View>
         <Text style={styles.myrEta}>{item.etaDays} d.</Text>
       </View>
-      {item.notes ? <Text style={styles.myrNotes} numberOfLines={2}>{item.notes}</Text> : null}
+      {item.notes ? (
+        <Text style={styles.myrNotes} numberOfLines={2}>
+          {item.notes}
+        </Text>
+      ) : null}
       <Text style={styles.myrDate}>
-        Iesniegts {new Date(item.createdAt).toLocaleDateString('lv-LV', { day: '2-digit', month: 'short', year: 'numeric' })}
+        Iesniegts{' '}
+        {new Date(item.createdAt).toLocaleDateString('lv-LV', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        })}
       </Text>
     </View>
   );
@@ -525,7 +543,9 @@ export default function SellerQuotesScreen() {
 
       {activeTab === 'mine' ? (
         myLoading ? (
-          <View style={{ padding: 24, gap: 16 }}><SkeletonCard count={4} /></View>
+          <View style={{ padding: 24, gap: 16 }}>
+            <SkeletonCard count={4} />
+          </View>
         ) : (
           <ScrollView
             style={styles.list}
@@ -543,121 +563,129 @@ export default function SellerQuotesScreen() {
                   <ClipboardList size={32} color="#9ca3af" />
                 </View>
                 <Text style={styles.emptyTitle}>Nav iesniegtu piedāvājumu</Text>
-                <Text style={styles.emptyDesc}>Piedāvājumi par atvērtiem pieprasījumiem rādīsās šeit.</Text>
+                <Text style={styles.emptyDesc}>
+                  Piedāvājumi par atvērtiem pieprasījumiem rādīsās šeit.
+                </Text>
               </View>
             ) : (
               myResponses.map((item) => <MyResponseRow key={item.id} item={item} />)
             )}
           </ScrollView>
         )
-      ) : (<>
-      {!loading && activeCategories.length > 1 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterBar}
-          contentContainerStyle={styles.filterBarContent}
-        >
-          <TouchableOpacity
-            style={[styles.filterChip, categoryFilter === null && styles.filterChipActive]}
-            onPress={() => setCategoryFilter(null)}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                styles.filterChipText,
-                categoryFilter === null && styles.filterChipTextActive,
-              ]}
+      ) : (
+        <>
+          {!loading && activeCategories.length > 1 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.filterBar}
+              contentContainerStyle={styles.filterBarContent}
             >
-              Visi ({requests.length})
-            </Text>
-          </TouchableOpacity>
-          {activeCategories.map((cat) => {
-            const count = requests.filter((r) => r.materialCategory === cat).length;
-            const label = sq.categories[cat] ?? cat;
-            const isActive = categoryFilter === cat;
-            return (
               <TouchableOpacity
-                key={cat}
-                style={[styles.filterChip, isActive && styles.filterChipActive]}
-                onPress={() => setCategoryFilter((prev) => (prev === cat ? null : cat))}
+                style={[styles.filterChip, categoryFilter === null && styles.filterChipActive]}
+                onPress={() => setCategoryFilter(null)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
-                  {label} · {count}
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    categoryFilter === null && styles.filterChipTextActive,
+                  ]}
+                >
+                  Visi ({requests.length})
                 </Text>
               </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      )}
+              {activeCategories.map((cat) => {
+                const count = requests.filter((r) => r.materialCategory === cat).length;
+                const label = sq.categories[cat] ?? cat;
+                const isActive = categoryFilter === cat;
+                return (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[styles.filterChip, isActive && styles.filterChipActive]}
+                    onPress={() => setCategoryFilter((prev) => (prev === cat ? null : cat))}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
+                      {label} · {count}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
 
-      {!loading && filteredRequests.length > 0 && (
-        <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
-          <View style={styles.countChip}>
-            <Text style={styles.countChipText}>
-              {filteredRequests.length} aktīv{filteredRequests.length === 1 ? 's' : 'i'}
-              {categoryFilter ? ` · ${sq.categories[categoryFilter] ?? categoryFilter}` : ''}
-            </Text>
-          </View>
-        </View>
-      )}
-
-      {loading ? (
-        <View style={{ padding: 24, gap: 16 }}>
-          <SkeletonCard count={4} />
-        </View>
-      ) : (
-        <ScrollView
-          style={styles.list}
-          contentContainerStyle={[
-            styles.listContent,
-            requests.length === 0 && { flexGrow: 1, justifyContent: 'center' },
-          ]}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
-          }
-          keyboardShouldPersistTaps="handled"
-        >
-          {requests.length === 0 ? (
-            <View style={styles.emptyWrap}>
-              <View style={styles.emptyIconWrap}>
-                <FileText size={32} color="#9ca3af" />
+          {!loading && filteredRequests.length > 0 && (
+            <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
+              <View style={styles.countChip}>
+                <Text style={styles.countChipText}>
+                  {filteredRequests.length} aktīv{filteredRequests.length === 1 ? 's' : 'i'}
+                  {categoryFilter ? ` · ${sq.categories[categoryFilter] ?? categoryFilter}` : ''}
+                </Text>
               </View>
-              <Text style={styles.emptyTitle}>Nav pieprasījumu</Text>
-              <Text style={styles.emptyDesc}>Šobrīd nav neviena aktīva cenas pieprasījuma.</Text>
-              <TouchableOpacity style={styles.emptyBtn} onPress={onRefresh} activeOpacity={0.8}>
-                <Text style={styles.emptyBtnText}>Atjaunot sarakstu</Text>
-              </TouchableOpacity>
             </View>
-          ) : filteredRequests.length === 0 ? (
-            <View style={styles.emptyWrap}>
-              <View style={styles.emptyIconWrap}>
-                <FileText size={32} color="#9ca3af" />
-              </View>
-              <Text style={styles.emptyTitle}>Nav rezultātu</Text>
-              <Text style={styles.emptyDesc}>Šajā kategorijā pašlaik nav aktīvu pieprasījumu.</Text>
-              <TouchableOpacity
-                style={styles.emptyBtn}
-                onPress={() => setCategoryFilter(null)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.emptyBtnText}>Rādīt visus</Text>
-              </TouchableOpacity>
+          )}
+
+          {loading ? (
+            <View style={{ padding: 24, gap: 16 }}>
+              <SkeletonCard count={4} />
             </View>
           ) : (
-            filteredRequests.map((req) => (
-              <RequestCard
-                key={req.id}
-                request={req}
-                myCompanyId={myCompanyId}
-                onRespond={handleRespond}
-              />
-            ))
+            <ScrollView
+              style={styles.list}
+              contentContainerStyle={[
+                styles.listContent,
+                requests.length === 0 && { flexGrow: 1, justifyContent: 'center' },
+              ]}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
+              }
+              keyboardShouldPersistTaps="handled"
+            >
+              {requests.length === 0 ? (
+                <View style={styles.emptyWrap}>
+                  <View style={styles.emptyIconWrap}>
+                    <FileText size={32} color="#9ca3af" />
+                  </View>
+                  <Text style={styles.emptyTitle}>Nav pieprasījumu</Text>
+                  <Text style={styles.emptyDesc}>
+                    Šobrīd nav neviena aktīva cenas pieprasījuma.
+                  </Text>
+                  <TouchableOpacity style={styles.emptyBtn} onPress={onRefresh} activeOpacity={0.8}>
+                    <Text style={styles.emptyBtnText}>Atjaunot sarakstu</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : filteredRequests.length === 0 ? (
+                <View style={styles.emptyWrap}>
+                  <View style={styles.emptyIconWrap}>
+                    <FileText size={32} color="#9ca3af" />
+                  </View>
+                  <Text style={styles.emptyTitle}>Nav rezultātu</Text>
+                  <Text style={styles.emptyDesc}>
+                    Šajā kategorijā pašlaik nav aktīvu pieprasījumu.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.emptyBtn}
+                    onPress={() => setCategoryFilter(null)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.emptyBtnText}>Rādīt visus</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                filteredRequests.map((req) => (
+                  <RequestCard
+                    key={req.id}
+                    request={req}
+                    myCompanyId={myCompanyId}
+                    onRespond={handleRespond}
+                  />
+                ))
+              )}
+            </ScrollView>
           )}
-        </ScrollView>
+        </>
       )}
-      </>)}
 
       {/* Proposal Modal */}
       {modalRequest && token && (
@@ -715,7 +743,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   myrTop: { gap: 4 },
-  myrTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  myrTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   myrTitle: { fontSize: 14, fontWeight: '700', color: '#111827', flex: 1 },
   myrBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   myrBadgeText: { fontSize: 11, fontWeight: '700' },

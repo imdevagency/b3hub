@@ -139,9 +139,14 @@ export default function OrdersScreen() {
       if (item.kind !== 'transport' && item.kind !== 'disposal') continue;
       const job = item.data as ApiTransportJob;
       if (job.status !== 'DELIVERED') continue;
-      const weightTonnes = (job.actualWeightKg != null ? job.actualWeightKg : (job.cargoWeight ?? 0)) / 1000;
+      const weightTonnes =
+        (job.actualWeightKg != null ? job.actualWeightKg : (job.cargoWeight ?? 0)) / 1000;
       const co2 = estimateCo2Kg(job.distanceKm, weightTonnes);
-      if (co2 != null) { co2Sum += co2; tonnes += weightTonnes; count++; }
+      if (co2 != null) {
+        co2Sum += co2;
+        tonnes += weightTonnes;
+        count++;
+      }
     }
     return { totalCo2Kg: co2Sum, totalTonnes: tonnes, deliveredJobCount: count };
   }, [unified]);
@@ -186,7 +191,10 @@ export default function OrdersScreen() {
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <TouchableOpacity
               activeOpacity={0.8}
-              onPress={() => { haptics.light(); setShowSchedulesSheet(true); }}
+              onPress={() => {
+                haptics.light();
+                setShowSchedulesSheet(true);
+              }}
               style={{
                 width: 40,
                 height: 40,
@@ -338,7 +346,14 @@ export default function OrdersScreen() {
       {/* ── Schedules Sheet ──────────────────────────────────── */}
       <BottomSheet visible={showSchedulesSheet} onClose={() => setShowSchedulesSheet(false)}>
         <View style={s.sheetContent}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 16,
+            }}
+          >
             <Text style={s.sheetTitle}>Atkārtoti pasūtījumi</Text>
             <TouchableOpacity
               activeOpacity={0.8}
@@ -358,7 +373,9 @@ export default function OrdersScreen() {
               }}
             >
               <Plus size={14} color="#fff" />
-              <Text style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#fff' }}>Jauns</Text>
+              <Text style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#fff' }}>
+                Jauns
+              </Text>
             </TouchableOpacity>
           </View>
           {schedulesLoading ? (
@@ -510,7 +527,8 @@ function ScheduleRow({
   onResume: () => void;
   onDelete: () => void;
 }) {
-  const intervalLabel = INTERVAL_LABELS[schedule.intervalDays] ?? `Ik ${schedule.intervalDays} dienas`;
+  const intervalLabel =
+    INTERVAL_LABELS[schedule.intervalDays] ?? `Ik ${schedule.intervalDays} dienas`;
   const nextDate = schedule.nextRunAt
     ? format(new Date(schedule.nextRunAt), 'd. MMM yyyy', { locale: lv })
     : '—';
@@ -526,8 +544,18 @@ function ScheduleRow({
         backgroundColor: schedule.enabled ? '#ffffff' : '#f9fafb',
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-        <Text style={{ fontSize: 14, fontFamily: 'Inter_600SemiBold', color: '#111827', flex: 1 }} numberOfLines={1}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 4,
+        }}
+      >
+        <Text
+          style={{ fontSize: 14, fontFamily: 'Inter_600SemiBold', color: '#111827', flex: 1 }}
+          numberOfLines={1}
+        >
           {schedule.deliveryCity || schedule.deliveryAddress}
         </Text>
         <View
@@ -538,7 +566,13 @@ function ScheduleRow({
             backgroundColor: schedule.enabled ? '#dcfce7' : '#f3f4f6',
           }}
         >
-          <Text style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: schedule.enabled ? '#166534' : '#6b7280' }}>
+          <Text
+            style={{
+              fontSize: 11,
+              fontFamily: 'Inter_600SemiBold',
+              color: schedule.enabled ? '#166534' : '#6b7280',
+            }}
+          >
             {schedule.enabled ? 'Aktīvs' : 'Pauzēts'}
           </Text>
         </View>
@@ -582,7 +616,9 @@ function ScheduleRow({
             alignItems: 'center',
           }}
         >
-          <Text style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#dc2626' }}>Dzēst</Text>
+          <Text style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#dc2626' }}>
+            Dzēst
+          </Text>
         </TouchableOpacity>
       </View>
     </View>

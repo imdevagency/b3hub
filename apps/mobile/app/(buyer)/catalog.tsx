@@ -128,9 +128,7 @@ function CategoryCard({
               {supplierCount} piegādātāj{supplierCount === 1 ? 's' : 'i'}
             </Text>
           )}
-          {minPrice != null && (
-            <Text style={s.catMinPrice}>no €{minPrice.toFixed(2)}/t</Text>
-          )}
+          {minPrice != null && <Text style={s.catMinPrice}>no €{minPrice.toFixed(2)}/t</Text>}
         </View>
       </View>
 
@@ -220,11 +218,21 @@ export default function CatalogScreen() {
   const categoryData = useMemo(() => {
     const map: Record<
       string,
-      { supplierCount: number; hasRecycled: boolean; supplierIds: Set<string>; minPrice: number | null }
+      {
+        supplierCount: number;
+        hasRecycled: boolean;
+        supplierIds: Set<string>;
+        minPrice: number | null;
+      }
     > = {};
     for (const m of allMaterials) {
       if (!map[m.category])
-        map[m.category] = { supplierCount: 0, hasRecycled: false, supplierIds: new Set(), minPrice: null };
+        map[m.category] = {
+          supplierCount: 0,
+          hasRecycled: false,
+          supplierIds: new Set(),
+          minPrice: null,
+        };
       if (m.isRecycled) map[m.category].hasRecycled = true;
       map[m.category].supplierIds.add(m.supplier.id);
       if (m.basePrice > 0) {
@@ -233,9 +241,16 @@ export default function CatalogScreen() {
         }
       }
     }
-    const result: Record<string, { supplierCount: number; hasRecycled: boolean; minPrice: number | null }> = {};
+    const result: Record<
+      string,
+      { supplierCount: number; hasRecycled: boolean; minPrice: number | null }
+    > = {};
     for (const [cat, d] of Object.entries(map)) {
-      result[cat] = { supplierCount: d.supplierIds.size, hasRecycled: d.hasRecycled, minPrice: d.minPrice };
+      result[cat] = {
+        supplierCount: d.supplierIds.size,
+        hasRecycled: d.hasRecycled,
+        minPrice: d.minPrice,
+      };
     }
     return result;
   }, [allMaterials]);
@@ -301,18 +316,28 @@ export default function CatalogScreen() {
       <View style={s.chipRow}>
         <TouchableOpacity
           style={[s.chip, filterMode === 'ALL' && s.chipActive]}
-          onPress={() => { haptics.light(); setFilterMode('ALL'); }}
+          onPress={() => {
+            haptics.light();
+            setFilterMode('ALL');
+          }}
           activeOpacity={0.8}
         >
           <Text style={[s.chipText, filterMode === 'ALL' && s.chipTextActive]}>Visi</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[s.chip, filterMode === 'RECYCLED' && s.chipActiveGreen]}
-          onPress={() => { haptics.light(); setFilterMode('RECYCLED'); }}
+          onPress={() => {
+            haptics.light();
+            setFilterMode('RECYCLED');
+          }}
           activeOpacity={0.8}
         >
           <Recycle size={13} color={filterMode === 'RECYCLED' ? '#fff' : '#16a34a'} />
-          <Text style={[s.chipText, filterMode === 'RECYCLED' ? s.chipTextActive : s.chipTextGreen]}>Reciklēti</Text>
+          <Text
+            style={[s.chipText, filterMode === 'RECYCLED' ? s.chipTextActive : s.chipTextGreen]}
+          >
+            Reciklēti
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -374,7 +399,11 @@ export default function CatalogScreen() {
           data={visibleCategories}
           keyExtractor={(cat) => cat}
           renderItem={({ item: cat }) => {
-            const data = categoryData[cat] ?? { supplierCount: 0, hasRecycled: false, minPrice: null };
+            const data = categoryData[cat] ?? {
+              supplierCount: 0,
+              hasRecycled: false,
+              minPrice: null,
+            };
             return (
               <CategoryCard
                 category={cat}

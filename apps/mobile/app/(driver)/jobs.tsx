@@ -402,7 +402,9 @@ function JobCard({
                 marginLeft: 8,
               }}
             >
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#15803d' }}>~{formatCo2(co2)}</Text>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#15803d' }}>
+                ~{formatCo2(co2)}
+              </Text>
             </View>
           );
         })()}

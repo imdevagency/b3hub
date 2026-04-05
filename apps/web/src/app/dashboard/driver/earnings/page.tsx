@@ -7,12 +7,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { setupPayouts, getEarnings, type EarningsResponse, type EarningEntry } from '@/lib/api';
-import {
-  AlertCircle,
-  CheckCircle,
-  RefreshCw,
-  Truck,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle, RefreshCw, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/ui/page-header';
@@ -146,7 +141,9 @@ export default function DriverEarningsPage() {
           <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
           <div className="flex-1">
             <h3 className="text-sm font-medium text-amber-800 dark:text-amber-400">
-              {data.stripeStatus === 'PENDING' ? 'Stripe reģistrācija nepilnīga' : 'Pievienojiet izmaksu kontu'}
+              {data.stripeStatus === 'PENDING'
+                ? 'Stripe reģistrācija nepilnīga'
+                : 'Pievienojiet izmaksu kontu'}
             </h3>
             <p className="text-sm text-amber-700/80 dark:text-amber-500/80 mt-1 mb-3">
               {data.stripeStatus === 'PENDING'
@@ -184,7 +181,9 @@ export default function DriverEarningsPage() {
         ) : (
           <>
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-2">Kopā nopelnīts (90 dienas)</p>
+              <p className="text-sm font-medium text-muted-foreground mb-2">
+                Kopā nopelnīts (90 dienas)
+              </p>
               <h1 className="text-6xl md:text-7xl font-semibold tracking-tight text-foreground tabular-nums">
                 {euro(totalEarned)}
               </h1>
@@ -228,7 +227,9 @@ export default function DriverEarningsPage() {
                   <div className="w-full flex items-end justify-center" style={{ height: 100 }}>
                     <div
                       className={`w-full max-w-10 rounded-sm transition-all duration-300 ${
-                        bar.isToday ? 'bg-foreground' : 'bg-muted group-hover:bg-muted-foreground/30'
+                        bar.isToday
+                          ? 'bg-foreground'
+                          : 'bg-muted group-hover:bg-muted-foreground/30'
                       }`}
                       style={{ height: `${Math.max(heightPct, bar.amount > 0 ? 4 : 1)}%` }}
                       title={euro(bar.amount)}
@@ -272,7 +273,11 @@ export default function DriverEarningsPage() {
           <div className="space-y-2">
             {recentPayments.map((p) => {
               const payout = p.driverPayout ?? p.grossAmount;
-              const label = p.jobNumber ? `Darbs #${p.jobNumber}` : p.orderNumber ? `Pasūtījums #${p.orderNumber}` : p.id.slice(0, 8);
+              const label = p.jobNumber
+                ? `Darbs #${p.jobNumber}`
+                : p.orderNumber
+                  ? `Pasūtījums #${p.orderNumber}`
+                  : p.id.slice(0, 8);
               return (
                 <div
                   key={p.id}
