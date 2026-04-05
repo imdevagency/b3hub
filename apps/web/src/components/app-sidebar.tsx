@@ -459,39 +459,48 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   React.useEffect(() => {
     if (!token) {
-      setBadgeCounts({ notifications: 0, openRfqs: 0, activeJobs: 0, openDisputes: 0, pendingApplications: 0 });
+      setBadgeCounts({
+        notifications: 0,
+        openRfqs: 0,
+        activeJobs: 0,
+        openDisputes: 0,
+        pendingApplications: 0,
+      });
       return;
     }
 
     let cancelled = false;
 
     const loadBadgeCounts = async () => {
-      const [notificationsResult, rfqResult, activeJobsResult, disputesResult, applicationsResult] = await Promise.allSettled([
-        getUnreadNotificationCount(token),
-        activeMode === 'SUPPLIER' ? getOpenQuoteRequests(token) : Promise.resolve([]),
-        activeMode === 'CARRIER'
-          ? (async () => {
-              const canDispatchCarrierJobs =
-                user?.userType === 'ADMIN' ||
-                user?.companyRole === 'OWNER' ||
-                user?.companyRole === 'MANAGER' ||
-                !!user?.permManageOrders ||
-                (!!user?.canTransport && !!user?.isCompany);
+      const [notificationsResult, rfqResult, activeJobsResult, disputesResult, applicationsResult] =
+        await Promise.allSettled([
+          getUnreadNotificationCount(token),
+          activeMode === 'SUPPLIER' ? getOpenQuoteRequests(token) : Promise.resolve([]),
+          activeMode === 'CARRIER'
+            ? (async () => {
+                const canDispatchCarrierJobs =
+                  user?.userType === 'ADMIN' ||
+                  user?.companyRole === 'OWNER' ||
+                  user?.companyRole === 'MANAGER' ||
+                  !!user?.permManageOrders ||
+                  (!!user?.canTransport && !!user?.isCompany);
 
-              const jobs = canDispatchCarrierJobs
-                ? await getAllTransportJobs(token)
-                : await getMyTransportJobs(token);
+                const jobs = canDispatchCarrierJobs
+                  ? await getAllTransportJobs(token)
+                  : await getMyTransportJobs(token);
 
-              return jobs.filter((job) => ACTIVE_JOB_STATUSES.has(job.status)).length;
-            })()
-          : Promise.resolve(0),
-        user?.userType === 'ADMIN'
-          ? listDisputes(token).then((ds) => ds.filter((d) => d.status === 'OPEN' || d.status === 'UNDER_REVIEW').length)
-          : Promise.resolve(0),
-        user?.userType === 'ADMIN'
-          ? getProviderApplications(token, 'PENDING').then((apps) => apps.length)
-          : Promise.resolve(0),
-      ]);
+                return jobs.filter((job) => ACTIVE_JOB_STATUSES.has(job.status)).length;
+              })()
+            : Promise.resolve(0),
+          user?.userType === 'ADMIN'
+            ? listDisputes(token).then(
+                (ds) => ds.filter((d) => d.status === 'OPEN' || d.status === 'UNDER_REVIEW').length,
+              )
+            : Promise.resolve(0),
+          user?.userType === 'ADMIN'
+            ? getProviderApplications(token, 'PENDING').then((apps) => apps.length)
+            : Promise.resolve(0),
+        ]);
 
       if (cancelled) return;
 
@@ -503,8 +512,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         openRfqs: rfqResult.status === 'fulfilled' ? Math.max(0, rfqResult.value.length) : 0,
         activeJobs:
           activeJobsResult.status === 'fulfilled' ? Math.max(0, activeJobsResult.value) : 0,
-        openDisputes:
-          disputesResult.status === 'fulfilled' ? Math.max(0, disputesResult.value) : 0,
+        openDisputes: disputesResult.status === 'fulfilled' ? Math.max(0, disputesResult.value) : 0,
         pendingApplications:
           applicationsResult.status === 'fulfilled' ? Math.max(0, applicationsResult.value) : 0,
       });
@@ -534,7 +542,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
 
     return map;
-  }, [activeMode, badgeCounts.activeJobs, badgeCounts.notifications, badgeCounts.openRfqs, badgeCounts.openDisputes]);
+  }, [
+    activeMode,
+    badgeCounts.activeJobs,
+    badgeCounts.notifications,
+    badgeCounts.openRfqs,
+    badgeCounts.openDisputes,
+  ]);
 
   const renderBadge = React.useCallback((count: number) => {
     if (count <= 0) return null;

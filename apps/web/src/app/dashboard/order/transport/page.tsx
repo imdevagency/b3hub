@@ -385,13 +385,13 @@ export default function TransportOrderPage() {
                     </p>
                   </div>
                   <AddressMapPicker
-                      value={pickupAddress}
-                      lat={pickupLat}
-                      lng={pickupLng}
-                      onChange={(v) => setPickupAddress(v)}
-                      onSelect={handlePickupSelect}
-                      placeholder="Iekraušanas adrese..."
-                    />
+                    value={pickupAddress}
+                    lat={pickupLat}
+                    lng={pickupLng}
+                    onChange={(v) => setPickupAddress(v)}
+                    onSelect={handlePickupSelect}
+                    placeholder="Iekraušanas adrese..."
+                  />
                   {pickupAddress && (
                     <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-black/5">
                       <MapPin className="h-5 w-5 text-black mt-0.5 shrink-0" />
@@ -415,13 +415,13 @@ export default function TransportOrderPage() {
                     </p>
                   </div>
                   <AddressMapPicker
-                      value={dropoffAddress}
-                      lat={dropoffLat}
-                      lng={dropoffLng}
-                      onChange={(v) => setDropoffAddress(v)}
-                      onSelect={handleDropoffSelect}
-                      placeholder="Izkraušanas adrese..."
-                    />
+                    value={dropoffAddress}
+                    lat={dropoffLat}
+                    lng={dropoffLng}
+                    onChange={(v) => setDropoffAddress(v)}
+                    onSelect={handleDropoffSelect}
+                    placeholder="Izkraušanas adrese..."
+                  />
                   {dropoffAddress && (
                     <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-black/5">
                       <MapPin className="h-5 w-5 text-black mt-0.5 shrink-0" />

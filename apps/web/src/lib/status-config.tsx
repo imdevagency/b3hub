@@ -29,50 +29,50 @@ export interface TwBadgeCfg {
 // ── Order statuses ─────────────────────────────────────────────────────────────
 
 export const ORDER_STATUS: Record<string, HexBadgeCfg> = {
-  PENDING:     { label: 'Gaidā',        bg: '#f1f5f9', text: '#475569' },
-  CONFIRMED:   { label: 'Apstiprināts', bg: '#ffffff', text: '#020617' },
-  IN_PROGRESS: { label: 'Procesā',      bg: '#f0fdf4', text: '#15803d' },
-  PROCESSING:  { label: 'Apstrādē',     bg: '#ffffff', text: '#020617' },
-  LOADING:     { label: 'Iekraušana',   bg: '#ffffff', text: '#020617' },
-  DISPATCHED:  { label: 'Nosūtīts',     bg: '#ffffff', text: '#020617' },
-  DELIVERING:  { label: 'Piegāde',      bg: '#ffffff', text: '#020617' },
-  DELIVERED:   { label: 'Piegādāts',    bg: '#ffffff', text: '#020617' },
-  COMPLETED:   { label: 'Pabeigts',     bg: '#f0fdf4', text: '#15803d' },
-  CANCELLED:   { label: 'Atcelts',      bg: '#fee2e2', text: '#b91c1c' },
+  PENDING: { label: 'Gaidā', bg: '#f1f5f9', text: '#475569' },
+  CONFIRMED: { label: 'Apstiprināts', bg: '#ffffff', text: '#020617' },
+  IN_PROGRESS: { label: 'Procesā', bg: '#f0fdf4', text: '#15803d' },
+  PROCESSING: { label: 'Apstrādē', bg: '#ffffff', text: '#020617' },
+  LOADING: { label: 'Iekraušana', bg: '#ffffff', text: '#020617' },
+  DISPATCHED: { label: 'Nosūtīts', bg: '#ffffff', text: '#020617' },
+  DELIVERING: { label: 'Piegāde', bg: '#ffffff', text: '#020617' },
+  DELIVERED: { label: 'Piegādāts', bg: '#ffffff', text: '#020617' },
+  COMPLETED: { label: 'Pabeigts', bg: '#f0fdf4', text: '#15803d' },
+  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', text: '#b91c1c' },
 };
 
 // ── Transport-job statuses ─────────────────────────────────────────────────────
 
 export const JOB_STATUS: Record<string, HexBadgeCfg> = {
-  AVAILABLE:         { label: 'Pieejams',      bg: '#f1f5f9', text: '#475569' },
-  ASSIGNED:          { label: 'Piešķirts',     bg: '#f8fafc', text: '#334155' },
-  ACCEPTED:          { label: 'Pieņemts',      bg: '#ffffff', text: '#020617' },
-  EN_ROUTE_PICKUP:   { label: 'Brauc uz Iek.', bg: '#ffffff', text: '#020617' },
-  AT_PICKUP:         { label: 'Uz vietas',     bg: '#ffffff', text: '#020617' },
-  LOADED:            { label: 'Iekrauts',      bg: '#ffffff', text: '#020617' },
-  EN_ROUTE_DELIVERY: { label: 'Piegādē',       bg: '#ffffff', text: '#020617' },
-  AT_DELIVERY:       { label: 'Atvedis',       bg: '#ffffff', text: '#020617' },
-  DELIVERED:         { label: 'Piegādāts',     bg: '#ffffff', text: '#020617' },
-  CANCELLED:         { label: 'Atcelts',       bg: '#fee2e2', text: '#b91c1c' },
+  AVAILABLE: { label: 'Pieejams', bg: '#f1f5f9', text: '#475569' },
+  ASSIGNED: { label: 'Piešķirts', bg: '#f8fafc', text: '#334155' },
+  ACCEPTED: { label: 'Pieņemts', bg: '#ffffff', text: '#020617' },
+  EN_ROUTE_PICKUP: { label: 'Brauc uz Iek.', bg: '#ffffff', text: '#020617' },
+  AT_PICKUP: { label: 'Uz vietas', bg: '#ffffff', text: '#020617' },
+  LOADED: { label: 'Iekrauts', bg: '#ffffff', text: '#020617' },
+  EN_ROUTE_DELIVERY: { label: 'Piegādē', bg: '#ffffff', text: '#020617' },
+  AT_DELIVERY: { label: 'Atvedis', bg: '#ffffff', text: '#020617' },
+  DELIVERED: { label: 'Piegādāts', bg: '#ffffff', text: '#020617' },
+  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', text: '#b91c1c' },
 };
 
 // ── Skip-hire statuses ─────────────────────────────────────────────────────────
 
 export const SKIP_STATUS: Record<string, HexBadgeCfg> = {
-  PENDING:   { label: 'Gaidā',     bg: '#f1f5f9', text: '#475569' },
-  CONFIRMED: { label: 'Apst.',     bg: '#ffffff', text: '#020617' },
+  PENDING: { label: 'Gaidā', bg: '#f1f5f9', text: '#475569' },
+  CONFIRMED: { label: 'Apst.', bg: '#ffffff', text: '#020617' },
   DELIVERED: { label: 'Piegādāts', bg: '#ffffff', text: '#020617' },
-  COLLECTED: { label: 'Savākts',   bg: '#ffffff', text: '#020617' },
-  CANCELLED: { label: 'Atcelts',   bg: '#fee2e2', text: '#b91c1c' },
+  COLLECTED: { label: 'Savākts', bg: '#ffffff', text: '#020617' },
+  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', text: '#b91c1c' },
 };
 
 // ── Skip size labels ──────────────────────────────────────────────────────────
 
 export const SKIP_SIZE_LABEL: Record<string, string> = {
-  MINI:     'Mini 2 m³',
-  MIDI:     'Midi 4 m³',
+  MINI: 'Mini 2 m³',
+  MIDI: 'Midi 4 m³',
   BUILDERS: 'Celtn. 6 m³',
-  LARGE:    'Liels 8 m³',
+  LARGE: 'Liels 8 m³',
 };
 
 // ── Invoice / payment statuses ────────────────────────────────────────────────

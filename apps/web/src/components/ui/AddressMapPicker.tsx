@@ -84,8 +84,7 @@ export function AddressMapPicker({
   const [reversing, setReversing] = useState(false);
   const [locating, setLocating] = useState(false);
 
-  const pinPos: google.maps.LatLngLiteral | null =
-    lat != null && lng != null ? { lat, lng } : null;
+  const pinPos: google.maps.LatLngLiteral | null = lat != null && lng != null ? { lat, lng } : null;
 
   // Initialise geocoder once Maps API is loaded
   useEffect(() => {
@@ -111,7 +110,13 @@ export function AddressMapPicker({
   const handleSelect = useCallback(
     (place: PlaceAddress) => {
       if (place.lat == null || place.lng == null) return;
-      onSelect({ address: place.address, city: place.city, postal: place.postal ?? '', lat: place.lat, lng: place.lng });
+      onSelect({
+        address: place.address,
+        city: place.city,
+        postal: place.postal ?? '',
+        lat: place.lat,
+        lng: place.lng,
+      });
     },
     [onSelect],
   );
@@ -124,24 +129,27 @@ export function AddressMapPicker({
       const newLat = e.latLng.lat();
       const newLng = e.latLng.lng();
       setReversing(true);
-      geocoderRef.current.geocode({ location: { lat: newLat, lng: newLng }, language: 'lv' }, (results, status) => {
-        setReversing(false);
-        if (status !== 'OK' || !results?.[0]) {
-          onSelect({ address: value, city: '', postal: '', lat: newLat, lng: newLng });
-          return;
-        }
-        const result = results[0];
-        const comps = result.address_components ?? [];
-        const route = comps.find((c) => c.types.includes('route'))?.long_name ?? '';
-        const streetNo = comps.find((c) => c.types.includes('street_number'))?.long_name ?? '';
-        const city = comps.find((c) => c.types.includes('locality'))?.long_name ?? '';
-        const postal = comps.find((c) => c.types.includes('postal_code'))?.long_name ?? '';
-        const address = route
-          ? `${route}${streetNo ? ' ' + streetNo : ''}`
-          : (result.formatted_address ?? '');
-        onChange(address);
-        onSelect({ address, city, postal, lat: newLat, lng: newLng });
-      });
+      geocoderRef.current.geocode(
+        { location: { lat: newLat, lng: newLng }, language: 'lv' },
+        (results, status) => {
+          setReversing(false);
+          if (status !== 'OK' || !results?.[0]) {
+            onSelect({ address: value, city: '', postal: '', lat: newLat, lng: newLng });
+            return;
+          }
+          const result = results[0];
+          const comps = result.address_components ?? [];
+          const route = comps.find((c) => c.types.includes('route'))?.long_name ?? '';
+          const streetNo = comps.find((c) => c.types.includes('street_number'))?.long_name ?? '';
+          const city = comps.find((c) => c.types.includes('locality'))?.long_name ?? '';
+          const postal = comps.find((c) => c.types.includes('postal_code'))?.long_name ?? '';
+          const address = route
+            ? `${route}${streetNo ? ' ' + streetNo : ''}`
+            : (result.formatted_address ?? '');
+          onChange(address);
+          onSelect({ address, city, postal, lat: newLat, lng: newLng });
+        },
+      );
     },
     [value, onChange, onSelect],
   );
@@ -155,21 +163,24 @@ export function AddressMapPicker({
       (pos) => {
         const newLat = pos.coords.latitude;
         const newLng = pos.coords.longitude;
-        geocoderRef.current!.geocode({ location: { lat: newLat, lng: newLng }, language: 'lv' }, (results, status) => {
-          setLocating(false);
-          if (status !== 'OK' || !results?.[0]) return;
-          const result = results[0];
-          const comps = result.address_components ?? [];
-          const route = comps.find((c) => c.types.includes('route'))?.long_name ?? '';
-          const streetNo = comps.find((c) => c.types.includes('street_number'))?.long_name ?? '';
-          const city = comps.find((c) => c.types.includes('locality'))?.long_name ?? '';
-          const postal = comps.find((c) => c.types.includes('postal_code'))?.long_name ?? '';
-          const address = route
-            ? `${route}${streetNo ? ' ' + streetNo : ''}`
-            : (result.formatted_address ?? '');
-          onChange(address);
-          onSelect({ address, city, postal, lat: newLat, lng: newLng });
-        });
+        geocoderRef.current!.geocode(
+          { location: { lat: newLat, lng: newLng }, language: 'lv' },
+          (results, status) => {
+            setLocating(false);
+            if (status !== 'OK' || !results?.[0]) return;
+            const result = results[0];
+            const comps = result.address_components ?? [];
+            const route = comps.find((c) => c.types.includes('route'))?.long_name ?? '';
+            const streetNo = comps.find((c) => c.types.includes('street_number'))?.long_name ?? '';
+            const city = comps.find((c) => c.types.includes('locality'))?.long_name ?? '';
+            const postal = comps.find((c) => c.types.includes('postal_code'))?.long_name ?? '';
+            const address = route
+              ? `${route}${streetNo ? ' ' + streetNo : ''}`
+              : (result.formatted_address ?? '');
+            onChange(address);
+            onSelect({ address, city, postal, lat: newLat, lng: newLng });
+          },
+        );
       },
       () => setLocating(false),
       { enableHighAccuracy: true, timeout: 8000 },
@@ -201,13 +212,7 @@ export function AddressMapPicker({
             options={MAP_OPTIONS}
             onLoad={onMapLoad}
           >
-            {pinPos && (
-              <MarkerF
-                position={pinPos}
-                draggable
-                onDragEnd={handleDragEnd}
-              />
-            )}
+            {pinPos && <MarkerF position={pinPos} draggable onDragEnd={handleDragEnd} />}
           </GoogleMap>
 
           {/* Drag hint */}

@@ -181,7 +181,11 @@ export default function OrderDetailPage() {
   }
 
   const isJobLive = job?.status === 'EN_ROUTE_PICKUP' || job?.status === 'EN_ROUTE_DELIVERY';
-  const orderStatusCfg = ORDER_STATUS[order.status] ?? { label: order.status, bg: '#f1f5f9', text: '#475569' };
+  const orderStatusCfg = ORDER_STATUS[order.status] ?? {
+    label: order.status,
+    bg: '#f1f5f9',
+    text: '#475569',
+  };
 
   const handleStartPayment = async () => {
     if (!token) return;
@@ -345,7 +349,11 @@ export default function OrderDetailPage() {
               </div>
             </div>
             {(() => {
-              const cfg = JOB_STATUS_CFG[job.status] ?? { label: job.status, bg: '#f1f5f9', text: '#475569' };
+              const cfg = JOB_STATUS_CFG[job.status] ?? {
+                label: job.status,
+                bg: '#f1f5f9',
+                text: '#475569',
+              };
               return (
                 <span
                   style={{ backgroundColor: cfg.bg, color: cfg.text }}
@@ -371,7 +379,10 @@ export default function OrderDetailPage() {
                       {job.driver.firstName} {job.driver.lastName}
                     </p>
                     {job.driver.phone && (
-                      <a href={`tel:${job.driver.phone}`} className="text-xs text-blue-600 hover:underline">
+                      <a
+                        href={`tel:${job.driver.phone}`}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
                         {job.driver.phone}
                       </a>
                     )}

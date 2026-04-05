@@ -712,7 +712,11 @@ function MaterialsOrderWizard() {
                   lat={lat}
                   lng={lng}
                   onAddressChange={(v) => setAddress(v)}
-                  onAddressSelect={(p) => { setAddress(p.address + (p.city ? `, ${p.city}` : '')); setLat(p.lat); setLng(p.lng); }}
+                  onAddressSelect={(p) => {
+                    setAddress(p.address + (p.city ? `, ${p.city}` : ''));
+                    setLat(p.lat);
+                    setLng(p.lng);
+                  }}
                   deliveryDate={deliveryDate}
                   onDeliveryDateChange={setDeliveryDate}
                   contactName={contactName}

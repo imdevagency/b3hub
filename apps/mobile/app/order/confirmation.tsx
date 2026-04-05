@@ -1,5 +1,13 @@
 import { useRef, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Animated,
+  Alert,
+} from 'react-native';
 // Guard: expo-clipboard requires a native build (not available in Expo Go)
 let Clipboard: { setStringAsync: (text: string) => Promise<void> } | null = null;
 try {
@@ -183,7 +191,10 @@ export default function OrderConfirmation() {
                     merchantDisplayName: 'B3Hub',
                     returnURL: 'b3hub://order/confirmation',
                   });
-                  if (initError) { Alert.alert('Kļūda', initError.message); return; }
+                  if (initError) {
+                    Alert.alert('Kļūda', initError.message);
+                    return;
+                  }
                   const { error: presentError } = await stripe.presentPaymentSheet();
                   if (presentError) {
                     if (presentError.code !== 'Canceled') {
@@ -192,7 +203,13 @@ export default function OrderConfirmation() {
                   } else {
                     haptics.success();
                     Alert.alert('✓ Apmaksāts', 'Jūsu rezervācija ir apstiprināta.', [
-                      { text: 'Labi', onPress: () => { reset(); router.replace('/(buyer)/orders'); } },
+                      {
+                        text: 'Labi',
+                        onPress: () => {
+                          reset();
+                          router.replace('/(buyer)/orders');
+                        },
+                      },
                     ]);
                   }
                 } finally {
@@ -201,7 +218,9 @@ export default function OrderConfirmation() {
               }}
               activeOpacity={0.8}
             >
-              <Text style={s.primaryBtnText}>{paying ? 'Apstrādā…' : '💳 Apmaksāt pasūtījumu'}</Text>
+              <Text style={s.primaryBtnText}>
+                {paying ? 'Apstrādā…' : '💳 Apmaksāt pasūtījumu'}
+              </Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity

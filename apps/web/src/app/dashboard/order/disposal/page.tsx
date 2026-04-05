@@ -414,13 +414,13 @@ export default function DisposalOrderPage() {
                   </div>
 
                   <AddressMapPicker
-                      value={address}
-                      lat={lat}
-                      lng={lng}
-                      onChange={(v) => setAddress(v)}
-                      onSelect={handleAddressSelect}
-                      placeholder="Iela, mājas numurs, pilsēta..."
-                    />
+                    value={address}
+                    lat={lat}
+                    lng={lng}
+                    onChange={(v) => setAddress(v)}
+                    onSelect={handleAddressSelect}
+                    placeholder="Iela, mājas numurs, pilsēta..."
+                  />
 
                   {address && (
                     <div className="flex items-start gap-2.5 p-3 rounded-xl bg-green-50 ring-1 ring-green-200">

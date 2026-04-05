@@ -320,13 +320,7 @@ export function AddressPickerModal({
             showsUserLocation
             showsMyLocationButton={false}
           >
-            {pin && (
-              <Marker
-                coordinate={pin}
-                draggable
-                onDragEnd={handleMarkerDragEnd}
-              />
-            )}
+            {pin && <Marker coordinate={pin} draggable onDragEnd={handleMarkerDragEnd} />}
           </MapView>
 
           {/* Drag-hint overlay — fades in once a pin exists */}

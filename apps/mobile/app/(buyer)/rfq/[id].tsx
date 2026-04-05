@@ -129,16 +129,20 @@ export default function RfqDetailScreen() {
             try {
               const result = await api.quoteRequests.accept(rfq.id, response.id, token);
               haptics.success();
-              Alert.alert('✓ Pasūtījums izveidots', 'Apmaksājiet pasūtījumu, lai pārdevējs to apstiprinātu.', [
-                {
-                  text: 'Apmaksāt tagad',
-                  onPress: () => router.replace(`/(buyer)/order/${result.id}`),
-                },
-                {
-                  text: 'Vēlāk',
-                  onPress: () => router.replace('/(buyer)/orders'),
-                },
-              ]);
+              Alert.alert(
+                '✓ Pasūtījums izveidots',
+                'Apmaksājiet pasūtījumu, lai pārdevējs to apstiprinātu.',
+                [
+                  {
+                    text: 'Apmaksāt tagad',
+                    onPress: () => router.replace(`/(buyer)/order/${result.id}`),
+                  },
+                  {
+                    text: 'Vēlāk',
+                    onPress: () => router.replace('/(buyer)/orders'),
+                  },
+                ],
+              );
             } catch (e) {
               Alert.alert(
                 'Kļūda',

@@ -248,10 +248,9 @@ export default function TransportJobDetailPage() {
                   </div>
                   {i < STATUS_STEPS.length - 1 && (
                     <div
-                      className={[
-                        'w-0.5 flex-1 my-1',
-                        done ? 'bg-green-300' : 'bg-slate-200',
-                      ].join(' ')}
+                      className={['w-0.5 flex-1 my-1', done ? 'bg-green-300' : 'bg-slate-200'].join(
+                        ' ',
+                      )}
                       style={{ minHeight: 20 }}
                     />
                   )}

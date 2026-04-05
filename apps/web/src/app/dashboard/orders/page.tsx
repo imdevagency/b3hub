@@ -1069,8 +1069,9 @@ function BuyerView({ token }: { token: string }) {
         </div>
       )}
       {/* Transport requests tab */}
-      {!loading && tab === 'transport' && (
-        transportRequests.length === 0 ? (
+      {!loading &&
+        tab === 'transport' &&
+        (transportRequests.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-muted/20 rounded-3xl">
             <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
               <Truck className="h-10 w-10 text-muted-foreground/60" />
@@ -1095,7 +1096,11 @@ function BuyerView({ token }: { token: string }) {
               <span>{transportRequests.length} pieprasījumi</span>
             </div>
             {transportRequests.map((j) => {
-              const st = JOB_STATUS[j.status] ?? { label: j.status, bg: '#f3f4f6', text: '#374151' };
+              const st = JOB_STATUS[j.status] ?? {
+                label: j.status,
+                bg: '#f3f4f6',
+                text: '#374151',
+              };
               return (
                 <div
                   key={j.id}
@@ -1107,7 +1112,9 @@ function BuyerView({ token }: { token: string }) {
                       <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
                         #{j.jobNumber}
                       </span>
-                      <span className="text-xs text-muted-foreground capitalize">{j.jobType?.replace(/_/g, ' ').toLowerCase()}</span>
+                      <span className="text-xs text-muted-foreground capitalize">
+                        {j.jobType?.replace(/_/g, ' ').toLowerCase()}
+                      </span>
                     </div>
                     <StatusBadgeHex cfg={st} />
                   </div>
@@ -1118,13 +1125,21 @@ function BuyerView({ token }: { token: string }) {
                       <div className="absolute left-2.5 top-2 bottom-2 w-px bg-black/10" />
                       <div className="relative mb-3">
                         <div className="absolute -left-6 top-1.5 size-3 rounded-full bg-amber-500 ring-4 ring-background shadow-sm" />
-                        <p className="text-xs font-medium text-muted-foreground mb-0.5">Paņemšana · {fmtDate(j.pickupDate)}</p>
-                        <p className="text-sm font-medium text-foreground">{j.pickupAddress || j.pickupCity || '—'}</p>
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">
+                          Paņemšana · {fmtDate(j.pickupDate)}
+                        </p>
+                        <p className="text-sm font-medium text-foreground">
+                          {j.pickupAddress || j.pickupCity || '—'}
+                        </p>
                       </div>
                       <div className="relative">
                         <div className="absolute -left-6 top-1.5 size-3 rounded-full bg-emerald-500 ring-4 ring-background shadow-sm" />
-                        <p className="text-xs font-medium text-muted-foreground mb-0.5">Piegāde · {fmtDate(j.deliveryDate)}</p>
-                        <p className="text-sm font-medium text-foreground">{j.deliveryAddress || j.deliveryCity || '—'}</p>
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">
+                          Piegāde · {fmtDate(j.deliveryDate)}
+                        </p>
+                        <p className="text-sm font-medium text-foreground">
+                          {j.deliveryAddress || j.deliveryCity || '—'}
+                        </p>
                       </div>
                     </div>
 
@@ -1162,8 +1177,7 @@ function BuyerView({ token }: { token: string }) {
               );
             })}
           </div>
-        )
-      )}
+        ))}
     </div>
   );
 }

@@ -65,7 +65,12 @@ export function Step2Address({
     setSavedOpen(false);
   }
 
-  function handleMapPickerSelect(place: { address: string; city: string; lat: number; lng: number }) {
+  function handleMapPickerSelect(place: {
+    address: string;
+    city: string;
+    lat: number;
+    lng: number;
+  }) {
     const addr = [place.address, place.city].filter(Boolean).join(', ');
     setInput(addr);
     setLocalLat(place.lat);
