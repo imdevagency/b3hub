@@ -1,10 +1,18 @@
-import { useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated } from 'react-native';
+import { useRef, useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated, Alert } from 'react-native';
 // Guard: expo-clipboard requires a native build (not available in Expo Go)
 let Clipboard: { setStringAsync: (text: string) => Promise<void> } | null = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
   Clipboard = require('expo-clipboard');
+} catch {
+  /* Expo Go fallback */
+}
+// Guard: @stripe/stripe-react-native requires a native build (not available in Expo Go)
+let useStripe: (() => { initPaymentSheet: Function; presentPaymentSheet: Function }) | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  useStripe = require('@stripe/stripe-react-native').useStripe;
 } catch {
   /* Expo Go fallback */
 }
@@ -24,6 +32,9 @@ export default function OrderConfirmation() {
   const router = useRouter();
   const { state, reset } = useOrder();
   const order = state.confirmedOrder;
+  const clientSecret = state.skipPaymentClientSecret;
+  const stripe = useStripe?.();
+  const [paying, setPaying] = useState(false);
 
   // ── Entrance animations ──────────────────────────────────────────────
   const iconScale = useRef(new Animated.Value(0)).current;
@@ -159,6 +170,40 @@ export default function OrderConfirmation() {
 
         {/* CTA buttons */}
         <Animated.View style={{ opacity: btnsOpacity, transform: [{ translateY: btnsY }] }}>
+          {/* Pay Now — shown when booking still awaiting payment */}
+          {!!clientSecret && stripe && (
+            <TouchableOpacity
+              style={[s.primaryBtn, { backgroundColor: '#10b981', marginBottom: 10 }]}
+              disabled={paying}
+              onPress={async () => {
+                setPaying(true);
+                try {
+                  const { error: initError } = await stripe.initPaymentSheet({
+                    paymentIntentClientSecret: clientSecret,
+                    merchantDisplayName: 'B3Hub',
+                    returnURL: 'b3hub://order/confirmation',
+                  });
+                  if (initError) { Alert.alert('Kļūda', initError.message); return; }
+                  const { error: presentError } = await stripe.presentPaymentSheet();
+                  if (presentError) {
+                    if (presentError.code !== 'Canceled') {
+                      Alert.alert('Maksājuma kļūda', presentError.message);
+                    }
+                  } else {
+                    haptics.success();
+                    Alert.alert('✓ Apmaksāts', 'Jūsu rezervācija ir apstiprināta.', [
+                      { text: 'Labi', onPress: () => { reset(); router.replace('/(buyer)/orders'); } },
+                    ]);
+                  }
+                } finally {
+                  setPaying(false);
+                }
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={s.primaryBtnText}>{paying ? 'Apstrādā…' : '💳 Apmaksāt pasūtījumu'}</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={s.primaryBtn}
             onPress={() => {

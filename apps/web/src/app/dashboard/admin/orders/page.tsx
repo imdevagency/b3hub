@@ -201,7 +201,11 @@ export default function AdminOrdersPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filtered.map((o) => (
-                  <tr key={o.id} className="hover:bg-gray-50 transition-colors">
+                  <tr
+                    key={o.id}
+                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => router.push(`/dashboard/orders/${o.id}`)}
+                  >
                     <td className="px-4 py-3 font-mono text-xs text-gray-500">{o.orderNumber}</td>
                     <td className="px-4 py-3">
                       <div>

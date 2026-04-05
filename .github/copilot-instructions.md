@@ -43,9 +43,7 @@ npm run dev:mobile        # Expo dev server
 ### API prefix
 
 <!-- GEN:api-prefix -->
-
 All routes prefixed with `/api/v1` (e.g. `POST /api/v1/orders`).
-
 <!-- END GEN -->
 
 ### Module anatomy
@@ -73,7 +71,6 @@ src/<feature>/
 ### RequestingUser shape (JWT payload)
 
 <!-- GEN:requesting-user -->
-
 ```ts
 export interface RequestingUser {
   /** Primary ID (alias: same as userId) */
@@ -97,7 +94,6 @@ export interface RequestingUser {
   tokenVersion?: number; // incremented on capability/role changes; stale JWTs are rejected
 }
 ```
-
 <!-- END GEN -->
 
 ### User roles
@@ -156,11 +152,10 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 ### Route groups (Expo Router file-based routing)
 
 <!-- GEN:mobile-routes -->
-
 - `(auth)` — apply-role, forgot-password, login, onboarding, register, welcome
-- `(buyer)` — catalog, certificates, framework-contract/, framework-contracts, home, invoices, new-order, order/, orders, profile, project/, projects, rfq/, skip-order/, team, transport-job/
-- `(driver)` — active, earnings, home, jobs, profile, schedule, skips, vehicles
-- `(seller)` — catalog, earnings, home, incoming, order/, profile, quotes
+- `(buyer)` — catalog, certificates, disputes, documents, framework-contract/, framework-contracts, home, invoices, new-order, order/, orders, profile, project/, projects, rfq/, saved-addresses, skip-order/, team, transport-job/
+- `(driver)` — active, documents, earnings, home, jobs, profile, schedule, skips, vehicles
+- `(seller)` — catalog, documents, earnings, framework-contract/, framework-contracts, home, incoming, order/, profile, quotes
 <!-- END GEN -->
 
 ### Styling

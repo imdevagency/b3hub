@@ -1,11 +1,12 @@
 /**
  * Order detail page — /dashboard/orders/[id]
- * Full detail view for a single material order: items, status timeline, invoice link.
+ * Full detail view for a single material order: items, status, transport tracking, payment, disputes.
  */
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { loadStripe } from '@stripe/stripe-js';
@@ -15,6 +16,7 @@ const TrackingMap = dynamic(() => import('@/components/tracking/TrackingMap'), {
   ssr: false,
   loading: () => <div className="rounded-2xl bg-slate-100 animate-pulse" style={{ height: 360 }} />,
 });
+import { getOrder, type ApiOrder } from '@/lib/api/orders';
 import {
   getTransportJob,
   getTransportJobLocation,
@@ -33,61 +35,19 @@ import {
   type ApiDispute,
 } from '@/lib/api/disputes';
 import { fmtDate } from '@/lib/format';
+import { ORDER_STATUS } from '@/lib/status-config';
 import {
   AlertTriangle,
   ArrowLeft,
-  CheckCircle2,
-  Circle,
   Clock,
   CreditCard,
+  Package,
   Phone,
   Truck,
   User,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageSpinner } from '@/components/ui/page-spinner';
-
-// ── Status timeline config ─────────────────────────────────────────────────────
-
-interface StatusStep {
-  status: TransportJobStatus;
-  label: string;
-  description: string;
-}
-
-const STATUS_STEPS: StatusStep[] = [
-  { status: 'ACCEPTED', label: 'Pieņemts', description: 'Vadītājs pieņēmis pasūtījumu' },
-  {
-    status: 'EN_ROUTE_PICKUP',
-    label: 'Brauc uz iekraušanu',
-    description: 'Transportlīdzeklis dodas uz iekraušanas vietu',
-  },
-  { status: 'AT_PICKUP', label: 'Iekraušanas vietā', description: 'Transportlīdzeklis ieradies' },
-  { status: 'LOADED', label: 'Iekrauts', description: 'Krava iekrauta, gatavs piegādei' },
-  {
-    status: 'EN_ROUTE_DELIVERY',
-    label: 'Piegādē',
-    description: 'Transportlīdzeklis dodas uz piegādes vietu',
-  },
-  { status: 'AT_DELIVERY', label: 'Piegādes vietā', description: 'Transportlīdzeklis ieradies' },
-  { status: 'DELIVERED', label: 'Piegādāts', description: 'Krava piegādāta. Pasūtījums pabeigts!' },
-];
-
-const STATUS_ORDER: TransportJobStatus[] = [
-  'AVAILABLE',
-  'ASSIGNED',
-  'ACCEPTED',
-  'EN_ROUTE_PICKUP',
-  'AT_PICKUP',
-  'LOADED',
-  'EN_ROUTE_DELIVERY',
-  'AT_DELIVERY',
-  'DELIVERED',
-];
-
-function statusIndex(s: TransportJobStatus) {
-  return STATUS_ORDER.indexOf(s);
-}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -96,22 +56,27 @@ function fmtTime(iso: string | null | undefined) {
   return new Date(iso).toLocaleTimeString('lv-LV', { hour: '2-digit', minute: '2-digit' });
 }
 
-const CARGO_LABELS: Record<string, string> = {
-  BULK_MATERIAL: 'Birstošais materiāls',
-  CONSTRUCTION_WASTE: 'Celtniecības atkritumi',
-  SKIP_HIRE: 'Konteinera piegāde',
-  EQUIPMENT: 'Tehnika',
-  GENERAL: 'Vispārīga krava',
+const UNIT_LABELS: Record<string, string> = {
+  TONNE: 't',
+  KG: 'kg',
+  M3: 'm³',
+  M2: 'm²',
+  M: 'm',
+  PIECE: 'gab.',
+  PALLET: 'pal.',
 };
 
-const VEHICLE_LABELS: Record<string, string> = {
-  DUMP_TRUCK: 'Pašizgāzējs',
-  FLATBED_TRUCK: 'Platforma',
-  HOOK_LIFT: 'Hāku pacēlājs',
-  SKIP_LOADER: 'Konteinera auto',
-  SEMI_TRAILER: 'Puspiekabe',
-  TANKER: 'Cisterna',
-  VAN: 'Furgons',
+const JOB_STATUS_CFG: Record<TransportJobStatus, { label: string; bg: string; text: string }> = {
+  AVAILABLE: { label: 'Pieejams', bg: '#f0fdf4', text: '#166534' },
+  ASSIGNED: { label: 'Piešķirts', bg: '#e0e7ff', text: '#4338ca' },
+  ACCEPTED: { label: 'Pieņemts', bg: '#dbeafe', text: '#1d4ed8' },
+  EN_ROUTE_PICKUP: { label: 'Brauc uz iek.', bg: '#fef3c7', text: '#b45309' },
+  AT_PICKUP: { label: 'Uz iekr. vietu', bg: '#fce7f3', text: '#be185d' },
+  LOADED: { label: 'Iekrauts', bg: '#e0e7ff', text: '#4338ca' },
+  EN_ROUTE_DELIVERY: { label: 'Piegādē', bg: '#fef3c7', text: '#b45309' },
+  AT_DELIVERY: { label: 'Atvedis', bg: '#dbeafe', text: '#1d4ed8' },
+  DELIVERED: { label: 'Piegādāts', bg: '#f0fdf4', text: '#166534' },
+  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', text: '#b91c1c' },
 };
 
 // ── Main page ─────────────────────────────────────────────────────────────────
@@ -121,6 +86,7 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const { token } = useAuth();
 
+  const [order, setOrder] = useState<ApiOrder | null>(null);
   const [job, setJob] = useState<ApiTransportJob | null>(null);
   const [location, setLocation] = useState<TransportJobLocation | null>(null);
   const [loading, setLoading] = useState(true);
@@ -144,20 +110,27 @@ export default function OrderDetailPage() {
   // Derived truck position from location poll
   const truckPos = location?.currentLocation ?? null;
 
-  // Fetch full job details once
-  const loadJob = useCallback(async () => {
+  // Fetch order then optionally the transport job
+  const loadData = useCallback(async () => {
     if (!token || !id) return;
     try {
       setLoading(true);
-      const data = await getTransportJob(id, token);
-      setJob(data);
+      const ord = await getOrder(id, token);
+      setOrder(ord);
       // Load any existing dispute for this order
-      if (data.order?.id) {
+      try {
+        const disputes = await listDisputes(token, id);
+        if (disputes.length > 0) setExistingDispute(disputes[0]);
+      } catch {
+        // non-critical
+      }
+      // Load the first transport job if one exists
+      if (ord.transportJobs && ord.transportJobs.length > 0) {
         try {
-          const disputes = await listDisputes(token, data.order.id);
-          if (disputes.length > 0) setExistingDispute(disputes[0]);
+          const j = await getTransportJob(ord.transportJobs[0].id, token);
+          setJob(j);
         } catch {
-          // ignore — dispute load failure is non-critical
+          // non-critical — order can exist without a finalized job
         }
       }
     } catch (e: unknown) {
@@ -167,33 +140,36 @@ export default function OrderDetailPage() {
     }
   }, [id, token]);
 
-  // Poll location endpoint
+  // Poll location only once we know the job id
   const pollLocation = useCallback(async () => {
-    if (!token || !id) return;
+    if (!token || !job?.id) return;
     try {
-      const data = await getTransportJobLocation(id, token);
+      const data = await getTransportJobLocation(job.id, token);
       setLocation(data);
       setLastPoll(new Date());
     } catch {
       // silently ignore poll errors
     }
-  }, [id, token]);
+  }, [token, job?.id]);
 
   useEffect(() => {
-    loadJob();
-    pollLocation();
+    loadData();
+  }, [loadData]);
 
+  useEffect(() => {
+    if (!job) return;
+    pollLocation();
     pollTimer.current = setInterval(pollLocation, 10_000);
     return () => {
       if (pollTimer.current) clearInterval(pollTimer.current);
     };
-  }, [loadJob, pollLocation]);
+  }, [job, pollLocation]);
 
   if (loading) {
     return <PageSpinner className="min-h-[60vh]" />;
   }
 
-  if (error || !job) {
+  if (error || !order) {
     return (
       <div className="p-8 text-center text-slate-500">
         <p className="mb-4">{error ?? 'Pasūtījums nav atrasts'}</p>
@@ -204,16 +180,15 @@ export default function OrderDetailPage() {
     );
   }
 
-  const currentIdx = statusIndex(job.status);
-
-  const isLive = job.status === 'EN_ROUTE_PICKUP' || job.status === 'EN_ROUTE_DELIVERY';
+  const isJobLive = job?.status === 'EN_ROUTE_PICKUP' || job?.status === 'EN_ROUTE_DELIVERY';
+  const orderStatusCfg = ORDER_STATUS[order.status] ?? { label: order.status, bg: '#f1f5f9', text: '#475569' };
 
   const handleStartPayment = async () => {
-    if (!token || !job.order?.id) return;
+    if (!token) return;
     setPaymentInitLoading(true);
     setPaymentError(null);
     try {
-      const payment = await createPaymentIntent(job.order.id, token);
+      const payment = await createPaymentIntent(order.id, token);
       setStripePromise(loadStripe(payment.publishableKey));
       setPaymentClientSecret(payment.clientSecret);
     } catch (err: unknown) {
@@ -231,251 +206,223 @@ export default function OrderDetailPage() {
           <ArrowLeft className="h-5 w-5 text-slate-600" />
         </Button>
         <div>
-          <h1 className="text-xl font-bold text-slate-900">{job.jobNumber}</h1>
+          <h1 className="text-xl font-bold text-slate-900">{order.orderNumber}</h1>
           <p className="text-sm text-slate-500">
-            {CARGO_LABELS[job.cargoType] ?? job.cargoType}
-            {job.cargoWeight ? ` · ${job.cargoWeight} t` : ''}
+            {fmtDate(order.createdAt)}
+            {order.deliveryCity ? ` · ${order.deliveryCity}` : ''}
           </p>
         </div>
         <div className="ml-auto">
-          <StatusBadge status={job.status} />
+          <span
+            style={{ backgroundColor: orderStatusCfg.bg, color: orderStatusCfg.text }}
+            className="inline-block rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap border border-black/5"
+          >
+            {orderStatusCfg.label}
+          </span>
         </div>
       </div>
 
-      {/* ── Live Map ── */}
-      <div>
-        <TrackingMap
-          token={token ?? undefined}
-          pickupLat={location?.pickupLat ?? job.pickupLat}
-          pickupLng={location?.pickupLng ?? job.pickupLng}
-          pickupAddress={job.pickupAddress}
-          deliveryLat={location?.deliveryLat ?? job.deliveryLat}
-          deliveryLng={location?.deliveryLng ?? job.deliveryLng}
-          deliveryAddress={job.deliveryAddress}
-          truckPos={truckPos}
-          isLive={isLive}
-        />
-        {lastPoll && (
-          <p className="text-xs text-slate-400 mt-1.5 text-right pr-1">
-            GPS atjaunots {fmtTime(lastPoll.toISOString())} · atsvaidzina ik 10s
-          </p>
-        )}
-      </div>
-
-      {/* ── Status Timeline ── */}
+      {/* ── Order items ── */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5">
-        <h2 className="text-sm font-semibold text-slate-700 mb-4">Statusa hronoloģija</h2>
-        <div className="space-y-0">
-          {STATUS_STEPS.map((step, i) => {
-            const stepIdx = statusIndex(step.status);
-            const done = stepIdx < currentIdx;
-            const active = stepIdx === currentIdx;
-            const upcoming = stepIdx > currentIdx;
-
-            return (
-              <div key={step.status} className="flex gap-3">
-                {/* icon column */}
-                <div className="flex flex-col items-center">
-                  <div
-                    className={[
-                      'flex items-center justify-center w-7 h-7 rounded-full shrink-0',
-                      done ? 'bg-green-100 text-green-600' : '',
-                      active ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-300' : '',
-                      upcoming ? 'bg-slate-100 text-slate-400' : '',
-                    ].join(' ')}
-                  >
-                    {done ? (
-                      <CheckCircle2 className="h-4 w-4" />
-                    ) : active ? (
-                      <Truck className="h-3.5 w-3.5" />
-                    ) : (
-                      <Circle className="h-3.5 w-3.5" />
-                    )}
-                  </div>
-                  {i < STATUS_STEPS.length - 1 && (
-                    <div
-                      className={['w-0.5 flex-1 my-1', done ? 'bg-green-300' : 'bg-slate-200'].join(
-                        ' ',
-                      )}
-                      style={{ minHeight: 20 }}
-                    />
-                  )}
-                </div>
-
-                {/* content column */}
-                <div className="pb-4 pt-0.5">
-                  <p
-                    className={[
-                      'text-sm font-medium leading-tight',
-                      done ? 'text-green-700' : '',
-                      active ? 'text-blue-700' : '',
-                      upcoming ? 'text-slate-400' : '',
-                    ].join(' ')}
-                  >
-                    {step.label}
-                  </p>
-                  {(done || active) && (
-                    <p className="text-xs text-slate-500 mt-0.5">{step.description}</p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="flex items-center gap-2 mb-4">
+          <Package className="h-4 w-4 text-slate-500" />
+          <h2 className="text-sm font-semibold text-slate-700">Pasūtītās preces</h2>
         </div>
-      </div>
-
-      {/* ── Route Details ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-slate-700">Maršruts</h2>
-
-        <div className="space-y-3">
-          <div className="flex gap-3">
-            <div className="flex flex-col items-center gap-0.5 pt-1">
-              <div className="w-3 h-3 rounded-full bg-green-500 shrink-0" />
-              <div className="w-0.5 flex-1 bg-slate-200" style={{ minHeight: 24 }} />
-            </div>
-            <div className="flex-1 pb-3">
-              <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">
-                Iekraušana
-              </p>
-              <p className="text-sm text-slate-900">{job.pickupAddress}</p>
-              <p className="text-xs text-slate-500">{job.pickupCity}</p>
-              <div className="flex items-center gap-1 mt-1 text-xs text-slate-400">
-                <Clock className="h-3 w-3" />
-                {fmtDate(job.pickupDate)}
-                {job.pickupWindow && ` · ${job.pickupWindow}`}
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-slate-100">
+              <th className="text-left pb-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                Materiāls
+              </th>
+              <th className="text-right pb-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                Daudzums
+              </th>
+              <th className="text-right pb-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                Cena/vienība
+              </th>
+              <th className="text-right pb-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                Kopā
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-50">
+            {order.items.map((item, i) => (
+              <tr key={i}>
+                <td className="py-2.5">
+                  <p className="font-medium text-slate-900">{item.material.name}</p>
+                  <p className="text-xs text-slate-400">{item.material.category}</p>
+                </td>
+                <td className="py-2.5 text-right text-slate-700">
+                  {item.quantity} {UNIT_LABELS[item.unit] ?? item.unit}
+                </td>
+                <td className="py-2.5 text-right text-slate-500">
+                  {item.unitPrice.toFixed(2)} {order.currency}
+                </td>
+                <td className="py-2.5 text-right font-semibold text-slate-900">
+                  {item.total.toFixed(2)} {order.currency}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="border-t border-slate-200">
+              <td colSpan={3} className="pt-3 text-sm font-semibold text-slate-700 text-right pr-4">
+                Kopā
+              </td>
+              <td className="pt-3 text-right font-bold text-slate-900">
+                {order.total.toFixed(2)} {order.currency}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+        {order.surcharges && order.surcharges.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-slate-100 space-y-1.5">
+            {order.surcharges.map((s) => (
+              <div key={s.id} className="flex justify-between text-xs text-slate-500">
+                <span>{s.label}</span>
+                <span className="font-medium">
+                  {s.amount.toFixed(2)} {order.currency}
+                </span>
               </div>
-            </div>
+            ))}
           </div>
-
-          <div className="flex gap-3">
-            <div className="pt-1">
-              <div className="w-3 h-3 rounded-full bg-red-500 shrink-0" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Piegāde</p>
-              <p className="text-sm text-slate-900">{job.deliveryAddress}</p>
-              <p className="text-xs text-slate-500">{job.deliveryCity}</p>
-              <div className="flex items-center gap-1 mt-1 text-xs text-slate-400">
-                <Clock className="h-3 w-3" />
-                {fmtDate(job.deliveryDate)}
-                {job.deliveryWindow && ` · ${job.deliveryWindow}`}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {job.distanceKm && (
-          <p className="text-xs text-slate-400 pt-1 border-t border-slate-100">
-            Attālums: <span className="font-medium text-slate-600">{job.distanceKm} km</span>
-          </p>
         )}
       </div>
 
-      {/* ── Driver & Vehicle ── */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Driver */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-start gap-3">
-          <div className="p-2 bg-slate-100 rounded-xl">
-            <User className="h-4 w-4 text-slate-600" />
+      {/* ── Delivery info ── */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-slate-700">Piegādes informācija</h2>
+        <div className="flex gap-3">
+          <div className="pt-1">
+            <div className="w-3 h-3 rounded-full bg-red-500 shrink-0" />
           </div>
           <div>
-            <p className="text-xs text-slate-500 mb-0.5">Vadītājs</p>
-            {job.driver ? (
-              <>
-                <p className="text-sm font-medium text-slate-900">
-                  {job.driver.firstName} {job.driver.lastName}
-                </p>
-                {job.driver.phone && (
-                  <a
-                    href={`tel:${job.driver.phone}`}
-                    className="text-xs text-blue-600 hover:underline"
-                  >
-                    {job.driver.phone}
-                  </a>
-                )}
-              </>
-            ) : (
-              <p className="text-sm text-slate-400">Nav piešķirts</p>
+            <p className="text-sm text-slate-900 font-medium">{order.deliveryAddress}</p>
+            <p className="text-xs text-slate-500">{order.deliveryCity}</p>
+            {order.deliveryDate && (
+              <div className="flex items-center gap-1 mt-1 text-xs text-slate-400">
+                <Clock className="h-3 w-3" />
+                {fmtDate(order.deliveryDate)}
+              </div>
             )}
           </div>
         </div>
-
-        {/* Vehicle */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-start gap-3">
-          <div className="p-2 bg-slate-100 rounded-xl">
-            <Truck className="h-4 w-4 text-slate-600" />
+        {(order.siteContactName || order.siteContactPhone) && (
+          <div className="flex items-start gap-3 pt-2 border-t border-slate-100">
+            <div className="p-2 bg-green-50 rounded-xl">
+              <Phone className="h-4 w-4 text-green-600" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 mb-0.5">Objekta kontaktpersona</p>
+              {order.siteContactName && (
+                <p className="text-sm font-medium text-slate-900">{order.siteContactName}</p>
+              )}
+              {order.siteContactPhone && (
+                <a
+                  href={`tel:${order.siteContactPhone}`}
+                  className="text-xs text-green-600 hover:underline font-medium"
+                >
+                  {order.siteContactPhone}
+                </a>
+              )}
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-slate-500 mb-0.5">Transportlīdzeklis</p>
-            {job.vehicle ? (
-              <>
-                <p className="text-sm font-medium text-slate-900">
-                  {VEHICLE_LABELS[job.vehicle.vehicleType] ?? job.vehicle.vehicleType}
-                </p>
-                <p className="text-xs text-slate-500">{job.vehicle.licensePlate}</p>
-              </>
-            ) : (
-              <p className="text-sm text-slate-400">Nav piešķirts</p>
-            )}
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* ── Site Contact ── */}
-      {(job.order?.siteContactName || job.order?.siteContactPhone) && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-start gap-3">
-          <div className="p-2 bg-green-50 rounded-xl">
-            <Phone className="h-4 w-4 text-green-600" />
+      {/* ── Transport / Live tracking ── */}
+      {job && (
+        <div className="space-y-4">
+          {/* Job status row */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-slate-100 rounded-xl">
+                <Truck className="h-4 w-4 text-slate-600" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Pārvadājums</p>
+                <p className="text-sm font-medium text-slate-900">{job.jobNumber}</p>
+              </div>
+            </div>
+            {(() => {
+              const cfg = JOB_STATUS_CFG[job.status] ?? { label: job.status, bg: '#f1f5f9', text: '#475569' };
+              return (
+                <span
+                  style={{ backgroundColor: cfg.bg, color: cfg.text }}
+                  className="inline-block rounded-full px-3 py-1 text-xs font-semibold"
+                >
+                  {cfg.label}
+                </span>
+              );
+            })()}
           </div>
+
+          {/* Driver & vehicle */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-start gap-3">
+              <div className="p-2 bg-slate-100 rounded-xl">
+                <User className="h-4 w-4 text-slate-600" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-0.5">Vadītājs</p>
+                {job.driver ? (
+                  <>
+                    <p className="text-sm font-medium text-slate-900">
+                      {job.driver.firstName} {job.driver.lastName}
+                    </p>
+                    {job.driver.phone && (
+                      <a href={`tel:${job.driver.phone}`} className="text-xs text-blue-600 hover:underline">
+                        {job.driver.phone}
+                      </a>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-400">Nav piešķirts</p>
+                )}
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-start gap-3">
+              <div className="p-2 bg-slate-100 rounded-xl">
+                <Truck className="h-4 w-4 text-slate-600" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-0.5">Transportlīdzeklis</p>
+                {job.vehicle ? (
+                  <>
+                    <p className="text-sm font-medium text-slate-900">{job.vehicle.vehicleType}</p>
+                    <p className="text-xs text-slate-500">{job.vehicle.licensePlate}</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-400">Nav piešķirts</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Live map */}
           <div>
-            <p className="text-xs text-slate-500 mb-0.5">Objekta kontaktpersona</p>
-            {job.order.siteContactName && (
-              <p className="text-sm font-medium text-slate-900">{job.order.siteContactName}</p>
-            )}
-            {job.order.siteContactPhone && (
-              <a
-                href={`tel:${job.order.siteContactPhone}`}
-                className="text-xs text-green-600 hover:underline font-medium"
-              >
-                {job.order.siteContactPhone}
-              </a>
+            <TrackingMap
+              token={token ?? undefined}
+              pickupLat={location?.pickupLat ?? job.pickupLat}
+              pickupLng={location?.pickupLng ?? job.pickupLng}
+              pickupAddress={job.pickupAddress}
+              deliveryLat={location?.deliveryLat ?? job.deliveryLat}
+              deliveryLng={location?.deliveryLng ?? job.deliveryLng}
+              deliveryAddress={job.deliveryAddress}
+              truckPos={truckPos}
+              isLive={isJobLive}
+            />
+            {lastPoll && (
+              <p className="text-xs text-slate-400 mt-1.5 text-right pr-1">
+                GPS atjaunots {fmtTime(lastPoll.toISOString())} · atsvaidzina ik 10s
+              </p>
             )}
           </div>
         </div>
       )}
 
-      {/* ── Cargo summary ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5">
-        <h2 className="text-sm font-semibold text-slate-700 mb-3">Krava</h2>
-        <div className="grid grid-cols-2 gap-y-3 text-sm">
-          <div>
-            <p className="text-xs text-slate-400">Veids</p>
-            <p className="font-medium text-slate-800">
-              {CARGO_LABELS[job.cargoType] ?? job.cargoType}
-            </p>
-          </div>
-          {job.cargoWeight && (
-            <div>
-              <p className="text-xs text-slate-400">Svars</p>
-              <p className="font-medium text-slate-800">{job.cargoWeight} t</p>
-            </div>
-          )}
-          <div>
-            <p className="text-xs text-slate-400">Darba nr.</p>
-            <p className="font-medium text-slate-800">{job.jobNumber}</p>
-          </div>
-          {job.order && (
-            <div>
-              <p className="text-xs text-slate-400">Pasūtījuma nr.</p>
-              <p className="font-medium text-slate-800">{job.order.orderNumber}</p>
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* ── Dispute / Report issue ── */}
-      {job.status === 'DELIVERED' && job.order?.id && (
+      {(order.status === 'DELIVERED' || order.status === 'COMPLETED') && (
         <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-500" />
@@ -535,13 +482,13 @@ export default function OrderDetailPage() {
                 <Button
                   disabled={!disputeReason || disputeLoading}
                   onClick={async () => {
-                    if (!disputeReason || !token || !job.order?.id) return;
+                    if (!disputeReason || !token) return;
                     setDisputeLoading(true);
                     setDisputeError(null);
                     try {
                       const created = await createDispute(
                         {
-                          orderId: job.order.id,
+                          orderId: order.id,
                           reason: disputeReason,
                           description: disputeDetails || DISPUTE_REASON_LABELS[disputeReason],
                         },
@@ -587,31 +534,31 @@ export default function OrderDetailPage() {
       )}
 
       {/* ── Payment ── */}
-      {job.order?.id && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
-          <h2 className="text-sm font-semibold text-slate-700">Maksājums</h2>
-          {!paymentClientSecret || !stripePromise ? (
-            <Button onClick={handleStartPayment} disabled={paymentInitLoading} className="w-full">
-              <CreditCard className="h-4 w-4 mr-2" />
-              {paymentInitLoading ? 'Sagatavo maksājumu...' : 'Apmaksāt pasūtījumu'}
-            </Button>
-          ) : (
-            <Elements stripe={stripePromise} options={{ clientSecret: paymentClientSecret }}>
-              <InlinePaymentForm
-                onError={setPaymentError}
-                onSuccess={async () => {
-                  setPaymentError(null);
-                  await loadJob();
-                }}
-              />
-            </Elements>
-          )}
-          {paymentError && <p className="text-sm text-red-600">{paymentError}</p>}
-        </div>
-      )}
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-slate-700">Maksājums</h2>
+        {!paymentClientSecret || !stripePromise ? (
+          <Button onClick={handleStartPayment} disabled={paymentInitLoading} className="w-full">
+            <CreditCard className="h-4 w-4 mr-2" />
+            {paymentInitLoading ? 'Sagatavo maksājumu...' : 'Apmaksāt pasūtījumu'}
+          </Button>
+        ) : (
+          <Elements stripe={stripePromise} options={{ clientSecret: paymentClientSecret }}>
+            <InlinePaymentForm
+              onError={setPaymentError}
+              onSuccess={async () => {
+                setPaymentError(null);
+                await loadData();
+              }}
+            />
+          </Elements>
+        )}
+        {paymentError && <p className="text-sm text-red-600">{paymentError}</p>}
+      </div>
     </div>
   );
 }
+
+// ── Inline payment form ───────────────────────────────────────────────────────
 
 function InlinePaymentForm({
   onError,
@@ -660,32 +607,5 @@ function InlinePaymentForm({
         {submitting ? 'Apstrādā...' : 'Apstiprināt maksājumu'}
       </Button>
     </div>
-  );
-}
-
-// ── Status Badge component ─────────────────────────────────────────────────────
-
-const STATUS_CFG: Record<TransportJobStatus, { label: string; bg: string; text: string }> = {
-  AVAILABLE: { label: 'Pieejams', bg: '#f0fdf4', text: '#166534' },
-  ASSIGNED: { label: 'Piešķirts', bg: '#e0e7ff', text: '#4338ca' },
-  ACCEPTED: { label: 'Pieņemts', bg: '#dbeafe', text: '#1d4ed8' },
-  EN_ROUTE_PICKUP: { label: 'Brauc uz iek.', bg: '#fef3c7', text: '#b45309' },
-  AT_PICKUP: { label: 'Uz iekr. vietu', bg: '#fce7f3', text: '#be185d' },
-  LOADED: { label: 'Iekrauts', bg: '#e0e7ff', text: '#4338ca' },
-  EN_ROUTE_DELIVERY: { label: 'Piegādē', bg: '#fef3c7', text: '#b45309' },
-  AT_DELIVERY: { label: 'Atvedis', bg: '#dbeafe', text: '#1d4ed8' },
-  DELIVERED: { label: 'Piegādāts', bg: '#f0fdf4', text: '#166534' },
-  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', text: '#b91c1c' },
-};
-
-function StatusBadge({ status }: { status: TransportJobStatus }) {
-  const cfg = STATUS_CFG[status] ?? { label: status, bg: '#f1f5f9', text: '#475569' };
-  return (
-    <span
-      style={{ backgroundColor: cfg.bg, color: cfg.text }}
-      className="inline-block rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap"
-    >
-      {cfg.label}
-    </span>
   );
 }

@@ -17,6 +17,7 @@ import {
   AddressAutocomplete,
   type PlaceAddress,
 } from '@/components/ui/AddressAutocomplete';
+import { AddressMapPicker, type PickedAddress } from '@/components/ui/AddressMapPicker';
 import { createCartOrder, type ApiOrder } from '@/lib/api';
 
 import {
@@ -152,7 +153,10 @@ interface QuickCheckoutProps {
   items: SelectedItem[];
   onItemsChange: (items: SelectedItem[]) => void;
   address: string;
+  lat?: number;
+  lng?: number;
   onAddressChange: (v: string) => void;
+  onAddressSelect?: (p: PickedAddress) => void;
   deliveryDate: string;
   onDeliveryDateChange: (v: string) => void;
   contactName: string;
@@ -171,7 +175,10 @@ function MaterialsQuickCheckout({
   items,
   onItemsChange,
   address,
+  lat,
+  lng,
   onAddressChange,
+  onAddressSelect,
   deliveryDate,
   onDeliveryDateChange,
   contactName,
@@ -258,10 +265,15 @@ function MaterialsQuickCheckout({
         <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 mb-1.5">
           <MapPin className="size-3.5 text-gray-400" /> Piegādes adrese *
         </label>
-        <AddressAutocomplete
+        <AddressMapPicker
           value={address}
+          lat={lat}
+          lng={lng}
           onChange={onAddressChange}
-          onSelect={(p: PlaceAddress) => onAddressChange(p.address + (p.city ? `, ${p.city}` : ''))}
+          onSelect={(p) => {
+            onAddressChange(p.address + (p.city ? `, ${p.city}` : ''));
+            onAddressSelect?.(p);
+          }}
           placeholder="Ielas nosaukums, mājas nr., pilsēta"
           required
         />
@@ -697,7 +709,10 @@ function MaterialsOrderWizard() {
                   items={items}
                   onItemsChange={setItems}
                   address={address}
+                  lat={lat}
+                  lng={lng}
                   onAddressChange={(v) => setAddress(v)}
+                  onAddressSelect={(p) => { setAddress(p.address + (p.city ? `, ${p.city}` : '')); setLat(p.lat); setLng(p.lng); }}
                   deliveryDate={deliveryDate}
                   onDeliveryDateChange={setDeliveryDate}
                   contactName={contactName}
@@ -723,6 +738,8 @@ function MaterialsOrderWizard() {
               <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
                 <Step2Address
                   value={address}
+                  lat={lat}
+                  lng={lng}
                   onAddressChange={handleAddressChange}
                   title="Kur piegādāt materiālus?"
                   subtitle="Ievadiet precīzu būvlaukuma adresi vai izmantojiet GPS"

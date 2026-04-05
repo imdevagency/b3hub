@@ -75,7 +75,7 @@ export interface SkipHireQuote {
 export const skipHireApi = {
   skipHire: {
     create: (data: CreateSkipHireInput, token?: string) =>
-      apiFetch<SkipHireOrder>('/skip-hire', {
+      apiFetch<SkipHireOrder & { clientSecret: string | null }>('/skip-hire', {
         method: 'POST',
         ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
         body: JSON.stringify(data),

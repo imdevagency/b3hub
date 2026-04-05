@@ -6,6 +6,9 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/dto/create-notification.dto';
+import { PaymentsService } from '../payments/payments.service';
 import { CreateDisputeDto } from './dto/create-dispute.dto';
 import { UpdateDisputeDto } from './dto/update-dispute.dto';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
@@ -14,7 +17,11 @@ import type { RequestingUser } from '../common/types/requesting-user.interface';
 export class DisputesService {
   private readonly logger = new Logger(DisputesService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+    private payments: PaymentsService,
+  ) {}
 
   async create(dto: CreateDisputeDto, currentUser: RequestingUser) {
     // Verify the order exists and belongs to the current user's company
@@ -69,6 +76,29 @@ export class DisputesService {
     });
 
     this.logger.log(`Dispute ${dispute.id} raised for order ${dto.orderId} by user ${currentUser.userId}`);
+
+    // Alert all admins so they can review promptly
+    this.prisma.user
+      .findMany({ where: { userType: 'ADMIN' }, select: { id: true } })
+      .then((admins) =>
+        Promise.all(
+          admins.map((admin) =>
+            this.notifications
+              .create({
+                userId: admin.id,
+                type: NotificationType.SYSTEM_ALERT,
+                title: '⚠️ Jauns strīds',
+                message: `Pircējs iesniedza strīdu par pasūtījumu #${dispute.order.orderNumber}. Iemesls: ${dto.reason}.`,
+                data: { orderId: dto.orderId, disputeId: dispute.id },
+              })
+              .catch(() => null),
+          ),
+        ),
+      )
+      .catch((err) =>
+        this.logger.error(`Failed to notify admins of dispute ${dispute.id}: ${(err as Error).message}`),
+      );
+
     return dispute;
   }
 
@@ -158,6 +188,35 @@ export class DisputesService {
     });
 
     this.logger.log(`Dispute ${id} updated to status ${dto.status} by admin ${currentUser.userId}`);
+
+    // When admin resolves in buyer's favour → trigger a Stripe refund
+    if (dto.status === 'RESOLVED') {
+      this.payments
+        .voidOrRefund(updated.order.id)
+        .catch((err) =>
+          this.logger.error(
+            `voidOrRefund failed after dispute RESOLVED for order ${updated.order.id}: ${(err as Error).message}`,
+          ),
+        );
+    }
+
+    // Notify the buyer of the outcome
+    if (dto.status === 'RESOLVED' || dto.status === 'REJECTED') {
+      const resolutionText = dto.resolution ? ` Rezolūcija: ${dto.resolution}.` : '';
+      this.notifications
+        .create({
+          userId: updated.raisedBy.id,
+          type: NotificationType.SYSTEM_ALERT,
+          title: dto.status === 'RESOLVED' ? '✅ Strīds atrisināts' : 'ℹ️ Strīds noraidīts',
+          message:
+            dto.status === 'RESOLVED'
+              ? `Jūsu strīds par pasūtījumu #${updated.order.orderNumber} ir atrisināts jūsu labā. Atlīdzība tiek apstrādāta.${resolutionText}`
+              : `Jūsu strīds par pasūtījumu #${updated.order.orderNumber} tika noraidīts.${resolutionText}`,
+          data: { orderId: updated.order.id, disputeId: id },
+        })
+        .catch(() => null);
+    }
+
     return updated;
   }
 }

@@ -16,6 +16,7 @@ import {
   loadGoogleMapsScript,
   type PlaceAddress,
 } from '@/components/ui/AddressAutocomplete';
+import { AddressMapPicker } from '@/components/ui/AddressMapPicker';
 import { createDisposalOrder } from '@/lib/api/orders';
 import { type WasteType } from '@/lib/api/containers';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
@@ -412,16 +413,14 @@ export default function DisposalOrderPage() {
                     </p>
                   </div>
 
-                  <div className="relative">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
-                    <AddressAutocomplete
+                  <AddressMapPicker
                       value={address}
+                      lat={lat}
+                      lng={lng}
                       onChange={(v) => setAddress(v)}
                       onSelect={handleAddressSelect}
                       placeholder="Iela, mājas numurs, pilsēta..."
-                      className="w-full rounded-xl border bg-muted/30 pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
                     />
-                  </div>
 
                   {address && (
                     <div className="flex items-start gap-2.5 p-3 rounded-xl bg-green-50 ring-1 ring-green-200">

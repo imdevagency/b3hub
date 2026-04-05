@@ -123,6 +123,17 @@ Each row is a product feature domain.
 | Buyer-set transport pricing (reverse auction) — buyer can't name their own price for a transport job; higher offer = faster pickup                                               | Carrier supply/demand balance                                                                                                                                                                                                                       | Backend + Mobile + Web |
 | RC / recycled materials in buyer catalog — no demolition aggregate / recycled product category visible to buyers                                                                 | Material catalog completeness                                                                                                                                                                                                                       | Backend + Web + Mobile |
 | ~~Driver saved search radius preference — drivers can't save a preferred job-board radius; `deliveryRadiusKm` exists on materials but no driver-level preference setting~~       | ~~Driver UX / job relevance~~ — **DONE**: `(driver)/jobs.tsx` persists filter (radius + job types) to `AsyncStorage` key `@b3hub_driver_last_filter`; restored on mount, cleared on reset                                                           | ~~Mobile~~             |
+| ~~Disputes don't block auto-complete cron — open disputes on DELIVERED orders didn't prevent 24h auto-complete from releasing funds~~                                            | ~~Money at risk~~ — **DONE**: `autoCompleteDeliveredOrders` now filters `dispute: { none: { status: in ['OPEN','UNDER_REVIEW'] } }`                                                                                                                  | ~~Backend~~            |
+| ~~Admin cancel via `updateStatus` missing `voidOrRefund` + stock restore — buyer's Stripe authorization stayed open; material stock permanently decremented~~                    | ~~Money at risk~~ — **DONE**: `updateStatus` CANCELLED branch now calls `payments.voidOrRefund()` and iterates items to restore `stockQty`                                                                                                           | ~~Backend~~            |
+| ~~48h auto-cancel stale pending orders didn't restore stock~~                                                                                                                    | ~~Data integrity~~ — **DONE**: `autoCancelStalePendingOrders` now restores `stockQty` for each item                                                                                                                                                 | ~~Backend~~            |
+| ~~Dispute creation didn't alert admins — only a logger.log; admins had to manually poll `/admin/disputes`~~                                                                      | ~~Ops gap~~ — **DONE**: `disputes.service.ts` now sends `SYSTEM_ALERT` notification to all `userType: ADMIN` users on dispute creation                                                                                                               | ~~Backend~~            |
+| ~~Dispute resolution triggered nothing — no buyer notification, no Stripe refund~~                                                                                               | ~~Broken refund flow~~ — **DONE**: `disputes.service.ts update()` now calls `payments.voidOrRefund()` on RESOLVED and notifies buyer on RESOLVED/REJECTED                                                                                            | ~~Backend~~            |
+| ~~Multi-truck orders marked DELIVERED after first truck only — 24h auto-complete fired before all N trucks delivered~~                                                           | ~~Payment integrity~~ — **DONE**: `submitDeliveryProof` now counts remaining non-DELIVERED/non-CANCELLED jobs; advances order only when count === 0                                                                                                  | ~~Backend~~            |
+| ~~`payment_intent.canceled` Stripe webhook — no buyer notification~~                                                                                                             | ~~Silent failure~~ — **DONE**: webhook handler now creates `ORDER_CANCELLED` notification for the buyer with explanation                                                                                                                             | ~~Backend~~            |
+| ~~Recurring order cron failed silently — `runScheduledOrders` catch block only logged errors; buyer never notified when auto-order failed to spawn~~                             | ~~Silent failure~~ — **DONE**: catch block now sends `SYSTEM_ALERT` to buyer + pauses the schedule (`enabled: false`) to prevent repeated failures                                                                                                  | ~~Backend~~            |
+| ~~RFQ-accepted orders had no payment step — `acceptResponse` created order as `CONFIRMED` with `paymentStatus: PENDING` but no PaymentIntent; transport job spawned for unpaid order~~ | ~~Revenue gap~~ — **DONE**: order now created as `PENDING`; buyer notified to complete payment; `updateStatus(CONFIRMED)` + `capturePayment` fires when seller confirms; mobile RFQ accept navigates to order detail to pay         | ~~Backend + Mobile~~   |
+| ~~Individual drivers couldn't set up Stripe Connect — `createConnectAccountLink` required `companyId`; individual owner-operators had no path to receive payouts~~               | ~~Payout gap~~ — **DONE**: `DriverProfile` now has `stripeConnectId + payoutEnabled` fields (schema pushed); `createConnectAccountLink` has two paths: company (existing) and individual driver with `business_type: 'individual'`; `releaseFunds` falls back to `driverProfile.stripeConnectId` | ~~Backend~~            |
+| ~~Skip-hire orders had no Stripe payment — order created but no PaymentIntent; customers could book without paying~~                                                             | ~~Revenue gap~~ — **DONE**: `SkipHireOrder` schema now has `stripePaymentId + paymentStatus`; `create()` calls `payments.createSkipHirePaymentIntent()` (automatic capture); webhook auto-confirms order on `payment_intent.succeeded`; confirmation screen shows "Pay Now" button with Stripe payment sheet | ~~Backend + Mobile~~   |
 
 ---
 
@@ -143,7 +154,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Backend Modules
 
 <!-- GEN:status-backend-modules -->
-
 - admin
 - analytics
 - auth
@@ -180,7 +190,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Web Pages
 
 <!-- GEN:status-web-pages -->
-
 - (auth)/login
 - (auth)/register
 - (root)
@@ -234,6 +243,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/skip-hire
 - dashboard/supplier
 - dashboard/supplier/earnings
+- dashboard/transport-jobs/[id]
 - dashboard/transporter
 - dashboard/transporter/earnings
 - dashboard/transporter/settings
@@ -245,7 +255,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Mobile Screens
 
 <!-- GEN:status-mobile-screens -->
-
 - (auth)/apply-role
 - (auth)/forgot-password
 - (auth)/login
@@ -254,6 +263,8 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (auth)/welcome
 - (buyer)/catalog
 - (buyer)/certificates
+- (buyer)/disputes
+- (buyer)/documents
 - (buyer)/framework-contract/[id]
 - (buyer)/framework-contracts
 - (buyer)/home
@@ -266,10 +277,12 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (buyer)/project/new
 - (buyer)/projects
 - (buyer)/rfq/[id]
+- (buyer)/saved-addresses
 - (buyer)/skip-order/[id]
 - (buyer)/team
 - (buyer)/transport-job/[id]
 - (driver)/active
+- (driver)/documents
 - (driver)/earnings
 - (driver)/home
 - (driver)/jobs
@@ -278,7 +291,10 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (driver)/skips
 - (driver)/vehicles
 - (seller)/catalog
+- (seller)/documents
 - (seller)/earnings
+- (seller)/framework-contract/[id]
+- (seller)/framework-contracts
 - (seller)/home
 - (seller)/incoming
 - (seller)/order/[id]

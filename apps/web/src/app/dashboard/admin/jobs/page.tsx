@@ -229,7 +229,8 @@ export default function AdminJobsPage() {
                 {filtered.map((j) => (
                   <tr
                     key={j.id}
-                    className={`hover:bg-gray-50 transition-colors ${j.exceptions.length > 0 ? 'bg-red-50/30' : ''}`}
+                    className={`hover:bg-gray-50 transition-colors cursor-pointer ${j.exceptions.length > 0 ? 'bg-red-50/30' : ''}`}
+                    onClick={() => router.push(`/dashboard/transport-jobs/${j.id}`)}
                   >
                     <td className="px-4 py-3 font-mono text-xs text-gray-500">{j.jobNumber}</td>
                     <td className="px-4 py-3 text-xs font-medium text-gray-600">

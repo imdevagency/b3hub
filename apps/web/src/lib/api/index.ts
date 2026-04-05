@@ -23,6 +23,7 @@ export * from './reviews';
 export * from './recycling-centers';
 export * from './framework-contracts';
 export * from './containers';
+export * from './disputes';
 export * from './payments';
 export * from './projects';
 export * from './saved-addresses';

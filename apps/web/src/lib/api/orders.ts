@@ -113,6 +113,21 @@ export async function cancelOrder(id: string, token: string): Promise<ApiOrder> 
   });
 }
 
+export async function startLoadingOrder(id: string, token: string): Promise<ApiOrder> {
+  return apiFetch<ApiOrder>(`/orders/${id}/start-loading`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function sellerCancelOrder(id: string, token: string, reason = 'Pārdevējs atcēlis pasūtījumu'): Promise<ApiOrder> {
+  return apiFetch<ApiOrder>(`/orders/${id}/seller-cancel`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  });
+}
+
 export async function linkSkipOrder(
   orderId: string,
   skipHireOrderId: string | null,

@@ -1,18 +1,18 @@
 /**
  * Step2Address — Order wizard step 2 (delivery address).
- * Uses the shared AddressAutocomplete component for consistent UI across flows.
+ * Uses AddressMapPicker: search bar + draggable map marker + GPS button.
  */
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bookmark, ChevronDown, ChevronUp, Loader2, LocateFixed, MapPin, Star } from 'lucide-react';
-import { useAuth } from '@/lib/auth-context';
-import { API_URL } from '@/lib/api/common';
-import { AddressAutocomplete, type PlaceAddress } from '@/components/ui/AddressAutocomplete';
+import { Bookmark, ChevronDown, ChevronUp, Loader2, MapPin, Star } from 'lucide-react';
+import { AddressMapPicker } from '@/components/ui/AddressMapPicker';
 import { getSavedAddresses, type SavedAddress } from '@/lib/api/saved-addresses';
 
 interface Props {
   value: string;
+  lat?: number;
+  lng?: number;
   onAddressChange: (
     address: string,
     lat?: number,
@@ -32,6 +32,8 @@ interface Props {
 
 export function Step2Address({
   value,
+  lat,
+  lng,
   onAddressChange,
   onNext,
   onBack,
@@ -40,8 +42,8 @@ export function Step2Address({
   nextLabel,
 }: Props) {
   const [input, setInput] = useState(value);
-  const [gpsLoading, setGpsLoading] = useState(false);
-  const [gpsError, setGpsError] = useState('');
+  const [localLat, setLocalLat] = useState<number | undefined>(lat);
+  const [localLng, setLocalLng] = useState<number | undefined>(lng);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [savedOpen, setSavedOpen] = useState(false);
   const [savedLoading, setSavedLoading] = useState(false);
@@ -57,55 +59,18 @@ export function Step2Address({
   function handleSavedSelect(saved: SavedAddress) {
     const addr = `${saved.address}, ${saved.city}`;
     setInput(addr);
-    onAddressChange(addr, saved.lat, saved.lng, saved.city);
+    setLocalLat(saved.lat ?? undefined);
+    setLocalLng(saved.lng ?? undefined);
+    onAddressChange(addr, saved.lat ?? undefined, saved.lng ?? undefined, saved.city);
     setSavedOpen(false);
   }
 
-  const { token } = useAuth();
-
-  function handleSelect(place: PlaceAddress) {
+  function handleMapPickerSelect(place: { address: string; city: string; lat: number; lng: number }) {
     const addr = [place.address, place.city].filter(Boolean).join(', ');
     setInput(addr);
-    onAddressChange(addr, place.lat, place.lng, place.city, place.postal);
-  }
-
-  // ── GPS geolocation ──────────────────────────────────────────────────────────
-  async function handleGPS() {
-    if (!navigator.geolocation) {
-      setGpsError('Jūsu pārlūkprogramma neatbalsta atrašanās vietu.');
-      return;
-    }
-    setGpsLoading(true);
-    setGpsError('');
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        try {
-          const url = `${API_URL}/maps/reverse-geocode?lat=${lat}&lng=${lng}`;
-          const res = await fetch(url, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          });
-          const data = res.ok ? ((await res.json()) as { address?: string }) : {};
-          const addr = data.address ?? `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-          setInput(addr);
-          onAddressChange(addr, lat, lng);
-        } catch {
-          const addr = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-          setInput(addr);
-          onAddressChange(addr, lat, lng);
-        }
-        setGpsLoading(false);
-      },
-      (err) => {
-        setGpsError(
-          err.code === 1
-            ? 'Piekļuve atrašanās vietai liegta. Ļaujiet pārlūkam piekļūt GPS.'
-            : 'Neizdevās noteikt atrašanās vietu.',
-        );
-        setGpsLoading(false);
-      },
-      { timeout: 10000 },
-    );
+    setLocalLat(place.lat);
+    setLocalLng(place.lng);
+    onAddressChange(addr, place.lat, place.lng, place.city);
   }
 
   const isValid = input.trim().length >= 4;
@@ -168,41 +133,18 @@ export function Step2Address({
           </div>
         )}
 
-        <div className="relative">
-          <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
-          <AddressAutocomplete
-            id="skip-hire-address"
-            value={input}
-            onChange={(v) => {
-              setInput(v);
-              onAddressChange(v);
-            }}
-            onSelect={handleSelect}
-            placeholder="Iela, mājas numurs, pilsēta..."
-            className="w-full rounded-xl border bg-muted/30 pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
-          />
-        </div>
-
-        {/* GPS button */}
-        <button
-          type="button"
-          onClick={handleGPS}
-          disabled={gpsLoading}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border py-3 text-sm font-medium text-muted-foreground transition-all hover:border-primary/40 hover:text-primary hover:bg-primary/5 disabled:opacity-60"
-        >
-          {gpsLoading ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <LocateFixed className="size-4" />
-          )}
-          {gpsLoading ? 'Nosaka atrašanās vietu...' : 'Izmantot manu atrašanās vietu'}
-        </button>
-
-        {gpsError && (
-          <p className="text-sm text-destructive bg-destructive/5 border border-destructive/20 rounded-xl px-4 py-2.5">
-            {gpsError}
-          </p>
-        )}
+        <AddressMapPicker
+          value={input}
+          lat={localLat}
+          lng={localLng}
+          onChange={(v) => {
+            setInput(v);
+            onAddressChange(v);
+          }}
+          onSelect={handleMapPickerSelect}
+          placeholder="Iela, mājas numurs, pilsēta..."
+          className="w-full rounded-xl border bg-muted/30 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
+        />
       </div>
 
       {/* Confirmed address pill */}

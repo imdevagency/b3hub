@@ -29,15 +29,16 @@ export interface TwBadgeCfg {
 // ── Order statuses ─────────────────────────────────────────────────────────────
 
 export const ORDER_STATUS: Record<string, HexBadgeCfg> = {
-  PENDING:    { label: 'Gaidā',       bg: '#f1f5f9', text: '#475569' },
-  CONFIRMED:  { label: 'Apstiprināts', bg: '#ffffff', text: '#020617' },
-  PROCESSING: { label: 'Apstrādē',    bg: '#ffffff', text: '#020617' },
-  LOADING:    { label: 'Iekraušana',   bg: '#ffffff', text: '#020617' },
-  DISPATCHED: { label: 'Nosūtīts',    bg: '#ffffff', text: '#020617' },
-  DELIVERING: { label: 'Piegāde',     bg: '#ffffff', text: '#020617' },
-  DELIVERED:  { label: 'Piegādāts',   bg: '#ffffff', text: '#020617' },
-  COMPLETED:  { label: 'Pabeigts',    bg: '#ffffff', text: '#020617' },
-  CANCELLED:  { label: 'Atcelts',     bg: '#fee2e2', text: '#b91c1c' },
+  PENDING:     { label: 'Gaidā',        bg: '#f1f5f9', text: '#475569' },
+  CONFIRMED:   { label: 'Apstiprināts', bg: '#ffffff', text: '#020617' },
+  IN_PROGRESS: { label: 'Procesā',      bg: '#f0fdf4', text: '#15803d' },
+  PROCESSING:  { label: 'Apstrādē',     bg: '#ffffff', text: '#020617' },
+  LOADING:     { label: 'Iekraušana',   bg: '#ffffff', text: '#020617' },
+  DISPATCHED:  { label: 'Nosūtīts',     bg: '#ffffff', text: '#020617' },
+  DELIVERING:  { label: 'Piegāde',      bg: '#ffffff', text: '#020617' },
+  DELIVERED:   { label: 'Piegādāts',    bg: '#ffffff', text: '#020617' },
+  COMPLETED:   { label: 'Pabeigts',     bg: '#f0fdf4', text: '#15803d' },
+  CANCELLED:   { label: 'Atcelts',      bg: '#fee2e2', text: '#b91c1c' },
 };
 
 // ── Transport-job statuses ─────────────────────────────────────────────────────

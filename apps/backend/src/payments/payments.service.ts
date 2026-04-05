@@ -9,7 +9,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import { PaymentStatus } from '@prisma/client';
+import { PaymentStatus, SkipHireStatus } from '@prisma/client';
 import { RequestingUser } from '../common/types/requesting-user.interface';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
@@ -108,51 +108,125 @@ export class PaymentsService {
       throw new BadRequestException('Stripe is not configured');
     }
 
-    // Ensure user has a company
     const companyId = user.companyId;
-    if (!companyId) {
+
+    // ── Path A: company-linked seller / carrier ──────────────────────────────
+    if (companyId) {
+      const company = await this.prisma.company.findUnique({
+        where: { id: companyId },
+      });
+      if (!company) throw new BadRequestException('Company not found');
+
+      let accountId = company.stripeConnectId;
+      if (!accountId) {
+        const account = await this.stripe.accounts.create({
+          type: 'express',
+          country: company.country || 'LV',
+          email: company.email,
+          business_type: 'company',
+          capabilities: { transfers: { requested: true } },
+        });
+        accountId = account.id;
+        await this.prisma.company.update({
+          where: { id: companyId },
+          data: { stripeConnectId: accountId },
+        });
+      }
+
+      const accountLink = await this.stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: `${this.configService.get('WEB_BASE_URL')}/dashboard/supplier/earnings?refresh=true`,
+        return_url: `${this.configService.get('WEB_BASE_URL')}/dashboard/supplier/earnings?success=true`,
+        type: 'account_onboarding',
+      });
+      return { url: accountLink.url };
+    }
+
+    // ── Path B: individual owner-operator driver (no company) ────────────────
+    if (!user.canTransport) {
       throw new BadRequestException(
-        'User must belong to a company to receive payouts',
+        'User must belong to a company or be an approved driver to receive payouts',
       );
     }
 
-    const company = await this.prisma.company.findUnique({
-      where: { id: companyId },
+    const driverProfile = await this.prisma.driverProfile.findUnique({
+      where: { userId: user.userId },
+    });
+    if (!driverProfile) {
+      throw new BadRequestException(
+        'Driver profile not found. Complete driver onboarding first.',
+      );
+    }
+
+    const dbUser = await this.prisma.user.findUnique({
+      where: { id: user.userId },
+      select: { email: true, firstName: true, lastName: true },
     });
 
-    if (!company) throw new BadRequestException('Company not found');
-
-    let accountId = company.stripeConnectId;
-
+    let accountId = driverProfile.stripeConnectId;
     if (!accountId) {
-      // Create a new Express account
       const account = await this.stripe.accounts.create({
         type: 'express',
-        country: company.country || 'LV', // Default to Latvia or use company country
-        email: company.email,
-        business_type: 'company',
-        capabilities: {
-          transfers: { requested: true },
-        },
+        country: 'LV',
+        email: dbUser?.email ?? undefined,
+        business_type: 'individual',
+        individual: dbUser
+          ? { first_name: dbUser.firstName, last_name: dbUser.lastName }
+          : undefined,
+        capabilities: { transfers: { requested: true } },
       });
       accountId = account.id;
-
-      // Save to DB
-      await this.prisma.company.update({
-        where: { id: companyId },
+      await this.prisma.driverProfile.update({
+        where: { userId: user.userId },
         data: { stripeConnectId: accountId },
       });
     }
 
-    // Create an account link for onboarding
+    const mobileDeepLink = `${this.configService.get('APP_BASE_URL') ?? 'https://b3hub.app'}/driver/earnings`;
     const accountLink = await this.stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${this.configService.get('WEB_BASE_URL')}/dashboard/supplier/earnings?refresh=true`,
-      return_url: `${this.configService.get('WEB_BASE_URL')}/dashboard/supplier/earnings?success=true`,
+      refresh_url: `${mobileDeepLink}?refresh=true`,
+      return_url: `${mobileDeepLink}?success=true`,
       type: 'account_onboarding',
     });
-
     return { url: accountLink.url };
+  }
+
+  /**
+   * Create a Stripe PaymentIntent for a skip-hire order.
+   * Uses immediate capture (capture_method: 'automatic') since no seller
+   * confirmation step is needed — the carrier is pre-selected at booking time.
+   */
+  async createSkipHirePaymentIntent(skipOrderId: string) {
+    if (!this.stripe) {
+      throw new BadRequestException('Stripe is not configured');
+    }
+
+    const order = await this.prisma.skipHireOrder.findUnique({
+      where: { id: skipOrderId },
+    });
+    if (!order) throw new BadRequestException('Skip-hire order not found');
+
+    const amountCents = Math.round(order.price * 100);
+
+    const paymentIntent = await this.stripe.paymentIntents.create({
+      amount: amountCents,
+      currency: order.currency.toLowerCase(),
+      metadata: { skipHireOrderId: order.id, orderNumber: order.orderNumber },
+      automatic_payment_methods: { enabled: true },
+      capture_method: 'automatic',
+    });
+
+    await this.prisma.skipHireOrder.update({
+      where: { id: skipOrderId },
+      data: { stripePaymentId: paymentIntent.id, paymentStatus: 'PENDING' },
+    });
+
+    return {
+      clientSecret: paymentIntent.client_secret,
+      publishableKey: this.configService.get('STRIPE_PUBLISHABLE_KEY'),
+      paymentIntentId: paymentIntent.id,
+    };
   }
 
   /**
@@ -355,6 +429,7 @@ export class PaymentsService {
                 id: true,
                 companyId: true,
                 company: { select: { stripeConnectId: true } },
+                driverProfile: { select: { stripeConnectId: true } },
               },
             },
           },
@@ -373,10 +448,13 @@ export class PaymentsService {
     const platformFeeCents = Math.round(totalCents * commissionPct);
     const payoutCents = totalCents - platformFeeCents;
 
-    // Determine if a driver is involved
+    // Determine if a driver is involved; prefer company Connect ID, fall back to
+    // individual driver profile Connect ID (owner-operators without a company).
     const deliveredJob = order.transportJobs?.[0];
     const driverConnectId =
-      deliveredJob?.driver?.company?.stripeConnectId ?? null;
+      deliveredJob?.driver?.company?.stripeConnectId ??
+      (deliveredJob?.driver as any)?.driverProfile?.stripeConnectId ??
+      null;
 
     const DRIVER_SHARE_PERCENT = driverConnectId ? 0.2 : 0;
     const driverCents = Math.round(payoutCents * DRIVER_SHARE_PERCENT);
@@ -625,6 +703,7 @@ export class PaymentsService {
       case 'payment_intent.succeeded': {
         const pi = event.data.object;
         const orderId = pi.metadata?.orderId;
+        const skipHireOrderId = pi.metadata?.skipHireOrderId;
         if (orderId) {
           await this.prisma.payment
             .update({
@@ -638,6 +717,19 @@ export class PaymentsService {
               data: { paymentStatus: 'CAPTURED' },
             })
             .catch((err) => this.logger.error(`Webhook DB sync failed for order ${orderId} paymentStatus CAPTURED`, err));
+        }
+        if (skipHireOrderId) {
+          await this.prisma.skipHireOrder
+            .update({
+              where: { id: skipHireOrderId },
+              data: {
+                paymentStatus: 'CAPTURED',
+                status: SkipHireStatus.CONFIRMED,
+              },
+            })
+            .catch((err) =>
+              this.logger.error(`Webhook: failed to confirm skip-hire order ${skipHireOrderId}`, err),
+            );
         }
         break;
       }
@@ -695,7 +787,7 @@ export class PaymentsService {
           // Only update if the order is still in a pre-capture state — don't clobber COMPLETED/CANCELLED by other paths
           const order = await this.prisma.order.findUnique({
             where: { id: orderId },
-            select: { status: true, paymentStatus: true },
+            select: { status: true, paymentStatus: true, createdById: true, orderNumber: true },
           });
           if (order && !['COMPLETED', 'CANCELLED'].includes(order.status)) {
             await this.prisma.$transaction([
@@ -711,6 +803,19 @@ export class PaymentsService {
               this.logger.error(`payment_intent.canceled: failed to cancel order ${orderId}`, err),
             );
             this.logger.warn(`payment_intent.canceled: order ${orderId} cancelled by Stripe`);
+
+            // Notify the buyer so they know the order was not placed
+            if (order.createdById) {
+              this.notifications
+                .create({
+                  userId: order.createdById,
+                  type: NotificationType.ORDER_CANCELLED,
+                  title: 'Pasūtījums atcelts — maksājuma kļūda',
+                  message: `Pasūtījums #${order.orderNumber} tika atcelts, jo banka vai Stripe atcēla maksājuma autorizāciju. Lūdzu, mēģiniet no jauna.`,
+                  data: { orderId },
+                })
+                .catch(() => null);
+            }
           }
         }
         break;

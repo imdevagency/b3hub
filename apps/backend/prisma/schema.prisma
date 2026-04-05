@@ -946,6 +946,10 @@ model DriverProfile {
   maxJobsPerDay   Int? // cap on daily job accepts; null = unlimited
   currentLocation Json?
 
+  // Stripe Connect for individual owner-operators (no company)
+  stripeConnectId String? // Stripe Express account ID when driver is not company-linked
+  payoutEnabled   Boolean @default(false) // true once Stripe onboarding complete
+
   // Schedule relations
   weeklySchedule DriverSchedule[]
   dateBlocks     DriverDateBlock[]
@@ -1133,6 +1137,10 @@ model SkipHireOrder {
   // Pricing (stored at time of order)
   price    Float
   currency String @default("EUR")
+
+  // Payment tracking
+  stripePaymentId String?       // Stripe PaymentIntent ID
+  paymentStatus   PaymentStatus @default(PENDING)
 
   // Status lifecycle
   status SkipHireStatus @default(PENDING)

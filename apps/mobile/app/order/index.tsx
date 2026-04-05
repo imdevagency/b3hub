@@ -61,6 +61,7 @@ export default function OrderWizard() {
     setSkipSize,
     setDeliveryDate,
     setConfirmedOrder,
+    setSkipPaymentClientSecret,
   } = useOrder();
   const { user, token } = useAuth();
 
@@ -240,6 +241,7 @@ export default function OrderWizard() {
           .catch(() => {});
       }
       haptics.success();
+      setSkipPaymentClientSecret(order.clientSecret ?? null);
       setConfirmedOrder(order);
       router.push('/order/confirmation');
     } catch (err) {
@@ -262,6 +264,7 @@ export default function OrderWizard() {
     linkedMaterialOrderId,
     setDeliveryDate,
     setConfirmedOrder,
+    setSkipPaymentClientSecret,
     router,
   ]);
 

@@ -792,6 +792,7 @@ export class OrdersService {
       include: {
         invoices: { select: { id: true } },
         createdBy: { select: { email: true, firstName: true, lastName: true } },
+        items: { select: { materialId: true, quantity: true } },
       },
     });
     if (!order) throw new NotFoundException(`Order ${id} not found`);
@@ -894,6 +895,15 @@ export class OrdersService {
     // Use raw SQL with GREATEST(0,...) so a credit balance can never go negative
     // even if two admin/user requests race on the same order.
     if (status === OrderStatus.CANCELLED) {
+      // Void / refund the Stripe PaymentIntent (fire-and-forget, non-fatal)
+      this.payments
+        .voidOrRefund(id)
+        .catch((err) =>
+          this.logger.error(
+            `voidOrRefund failed on admin cancel for order ${id}: ${(err as Error).message}`,
+          ),
+        );
+
       if (order.total) {
         this.prisma.$executeRaw`
           UPDATE buyer_profiles
@@ -903,6 +913,22 @@ export class OrdersService {
           this.logger.error(
             `Failed to release credit for buyer ${order.createdById} on order cancellation ${id}`,
             err,
+          ),
+        );
+      }
+
+      // Restore stockQty for each ordered item
+      for (const item of order.items) {
+        if (!item.materialId || !item.quantity) continue;
+        this.prisma.$executeRaw`
+          UPDATE materials
+          SET "stockQty" = "stockQty" + ${item.quantity},
+              "inStock" = true
+          WHERE id = ${item.materialId}
+            AND "stockQty" IS NOT NULL
+        `.catch((err) =>
+          this.logger.warn(
+            `Stock restore failed for material ${item.materialId} on cancel ${id}: ${(err as Error).message}`,
           ),
         );
       }
@@ -1975,6 +2001,11 @@ export class OrdersService {
       where: {
         status: OrderStatus.DELIVERED,
         updatedAt: { lt: cutoff },
+        // Do not auto-complete orders with an open or under-review dispute.
+        // Funds must not be released until the dispute is resolved by admin.
+        NOT: {
+          dispute: { status: { in: ['OPEN', 'UNDER_REVIEW'] } },
+        },
       },
       select: { id: true, orderNumber: true, total: true, createdById: true },
     });
@@ -2049,7 +2080,13 @@ export class OrdersService {
         status: OrderStatus.PENDING,
         createdAt: { lt: cutoff },
       },
-      select: { id: true, orderNumber: true, createdById: true, total: true },
+      select: {
+        id: true,
+        orderNumber: true,
+        createdById: true,
+        total: true,
+        items: { select: { materialId: true, quantity: true } },
+      },
     });
 
     if (stale.length === 0) return;
@@ -2089,6 +2126,18 @@ export class OrdersService {
               }`,
             ),
           );
+        }
+
+        // Restore stockQty for each ordered item
+        for (const item of order.items) {
+          if (!item.materialId || !item.quantity) continue;
+          this.prisma.$executeRaw`
+            UPDATE materials
+            SET "stockQty" = "stockQty" + ${item.quantity},
+                "inStock" = true
+            WHERE id = ${item.materialId}
+              AND "stockQty" IS NOT NULL
+          `.catch(() => null);
         }
 
         // Notify buyer
@@ -2294,6 +2343,23 @@ export class OrdersService {
             (err as Error).message
           }`,
         );
+        // Notify buyer so they can investigate
+        this.notifications
+          .create({
+            userId: schedule.createdById,
+            type: NotificationType.SYSTEM_ALERT,
+            title: 'Atkārtots pasūtījums neizdevās',
+            message: `Automātiskais pasūtījums neizdevās: ${(err as Error).message}. Grafiks tika apturēts — pārbaudiet savus pasūtījumu iestatījumus.`,
+            data: { scheduleId: schedule.id },
+          })
+          .catch(() => null);
+        // Pause the schedule to prevent repeated failures
+        this.prisma.orderSchedule
+          .update({
+            where: { id: schedule.id },
+            data: { enabled: false },
+          })
+          .catch(() => null);
       }
     }
   }

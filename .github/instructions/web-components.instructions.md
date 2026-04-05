@@ -354,6 +354,12 @@ Wrap page sections that may throw.
 
 ---
 
+#### `AddressMapPicker` — `@/components/ui/AddressMapPicker`
+
+**Exports:** `AddressMapPicker`
+
+---
+
 #### `avatar` — `@/components/ui/avatar`
 
 ---

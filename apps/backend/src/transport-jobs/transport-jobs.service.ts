@@ -1469,27 +1469,38 @@ export class TransportJobsService {
             ),
           );
 
-        // Advance the linked order to DELIVERED.
-        // Buyer has a 24-hour window to dispute (wrong quantity, damage, etc.).
+        // Advance the linked order to DELIVERED only when ALL transport jobs
+        // for this order have been delivered (handles multi-truck orders where
+        // truckCount > 1 — do not flip the order DELIVERED after the first truck).
         // A scheduled cron in OrdersService auto-advances DELIVERED → COMPLETED
-        // after that window expires and fires releaseFunds(). This protects the
-        // buyer without requiring manual confirmation for every delivery.
+        // after that window expires and fires releaseFunds().
         if (
           order.status !== OrderStatus.DELIVERED &&
           order.status !== OrderStatus.COMPLETED &&
           order.status !== OrderStatus.CANCELLED
         ) {
-          await this.prisma.order
-            .update({
-              where: { id: job.orderId },
-              data: { status: OrderStatus.DELIVERED },
-            })
-            .catch((err) =>
-              this.logger.error(
-                `Failed to auto-advance order ${job.orderId} to DELIVERED after delivery proof`,
-                err,
-              ),
-            );
+          const remainingJobs = await this.prisma.transportJob.count({
+            where: {
+              orderId: job.orderId,
+              status: {
+                notIn: [TransportJobStatus.DELIVERED, TransportJobStatus.CANCELLED],
+              },
+            },
+          });
+
+          if (remainingJobs === 0) {
+            await this.prisma.order
+              .update({
+                where: { id: job.orderId },
+                data: { status: OrderStatus.DELIVERED },
+              })
+              .catch((err) =>
+                this.logger.error(
+                  `Failed to auto-advance order ${job.orderId} to DELIVERED after delivery proof`,
+                  err,
+                ),
+              );
+          }
         }
       }
     }

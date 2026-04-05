@@ -384,6 +384,8 @@ function SkipHireOrderPageInner() {
               <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
                 <Step2Address
                   value={address}
+                  lat={lat}
+                  lng={lng}
                   onAddressChange={handleAddressChange}
                   onNext={() => setStep(3)}
                   onBack={() => setStep(1)}

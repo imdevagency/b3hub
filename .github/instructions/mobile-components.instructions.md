@@ -502,6 +502,7 @@ _No props interface — check source file._
 | `borderRadius` | `number` | optional |
 | `style` | `ViewStyle` | optional |
 | `showToPickupLeg` | `boolean` | optional |
+| `followCurrentPosition` | `boolean` | optional |
 
 **Exports:** `JobRouteMap`
 

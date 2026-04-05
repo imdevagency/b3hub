@@ -19,6 +19,8 @@ import {
 import {
   confirmOrder,
   cancelOrder,
+  startLoadingOrder,
+  sellerCancelOrder,
   getOrder,
   addOrderSurcharge,
   removeOrderSurcharge,
@@ -191,7 +193,7 @@ function CarrierHistoryView({ token }: { token: string }) {
             return (
               <Link
                 key={job.id}
-                href={`/dashboard/orders/${job.id}`}
+                href={`/dashboard/transport-jobs/${job.id}`}
                 className="group block relative bg-background border border-border/50 rounded-2xl p-5 mb-3 hover:bg-muted/30 transition-all duration-300"
               >
                 {/* Meta Top Row */}
@@ -484,6 +486,38 @@ function SupplierView({ token }: { token: string }) {
     }
   };
 
+  const handleStartLoading = async (id: string) => {
+    if (!confirm('Atzīmēt kā iekraušanā?')) return;
+    setActioning(id);
+    setActionError(null);
+    try {
+      const updated = await startLoadingOrder(id, token);
+      setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: updated.status } : o)));
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : 'Neizdevās mainīt statusu. Mēģiniet vēlreiz.',
+      );
+    } finally {
+      setActioning(null);
+    }
+  };
+
+  const handleSellerCancel = async (id: string) => {
+    if (!confirm('Atcelt apstiprinātu pasūtījumu? Administrators tiks informēts.')) return;
+    setActioning(id);
+    setActionError(null);
+    try {
+      const updated = await sellerCancelOrder(id, token);
+      setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: updated.status } : o)));
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : 'Neizdevās atcelt pasūtījumu. Mēģiniet vēlreiz.',
+      );
+    } finally {
+      setActioning(null);
+    }
+  };
+
   const pending = orders.filter((o) => o.status === 'PENDING').length;
   const revenue = orders
     .filter((o) => !['PENDING', 'CANCELLED'].includes(o.status))
@@ -691,6 +725,32 @@ function SupplierView({ token }: { token: string }) {
                         </button>
                       </div>
                     )}
+                    {order.status === 'CONFIRMED' && (
+                      <div className="flex flex-col gap-2 mt-auto">
+                        <button
+                          disabled={busy}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleStartLoading(order.id);
+                          }}
+                          className="flex items-center justify-center w-full gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                        >
+                          <Zap className="size-4" />
+                          Sākt iekraušanu
+                        </button>
+                        <button
+                          disabled={busy}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleSellerCancel(order.id);
+                          }}
+                          className="flex items-center justify-center w-full gap-2 rounded-xl border border-red-200 bg-red-50 text-red-700 px-4 py-2.5 text-sm font-semibold hover:bg-red-100 disabled:opacity-50 transition-colors"
+                        >
+                          <X className="size-4" />
+                          Atcelt
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -710,8 +770,8 @@ function SupplierView({ token }: { token: string }) {
 // ── BUYER view ─────────────────────────────────────────────────────────────────
 
 function BuyerView({ token }: { token: string }) {
-  const [tab, setTab] = useState<'skip' | 'material'>('skip');
-  const { skipOrders, matOrders, loading, reload } = useBuyerOrders(token);
+  const [tab, setTab] = useState<'skip' | 'material' | 'transport'>('skip');
+  const { skipOrders, matOrders, transportRequests, loading, reload } = useBuyerOrders(token);
 
   const totalSpent =
     skipOrders.reduce((s, o) => s + o.price, 0) + matOrders.reduce((s, o) => s + o.total, 0);
@@ -722,6 +782,7 @@ function BuyerView({ token }: { token: string }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 py-2 mt-4">
         <QuickStat value={String(skipOrders.length)} label="Konteineri" />
         <QuickStat value={String(matOrders.length)} label="Materiāli" />
+        <QuickStat value={String(transportRequests.length)} label="Transports" />
         <QuickStat value={fmtMoney(totalSpent)} label="Kopā iztērēts" />
       </div>
 
@@ -731,10 +792,11 @@ function BuyerView({ token }: { token: string }) {
           {[
             { key: 'skip', label: `Konteineri (${skipOrders.length})` },
             { key: 'material', label: `Materiāli (${matOrders.length})` },
+            { key: 'transport', label: `Transports (${transportRequests.length})` },
           ].map(({ key, label }) => (
             <button
               key={key}
-              onClick={() => setTab(key as 'skip' | 'material')}
+              onClick={() => setTab(key as 'skip' | 'material' | 'transport')}
               className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
                 tab === key
                   ? 'bg-background shadow-xs text-foreground'
@@ -900,7 +962,8 @@ function BuyerView({ token }: { token: string }) {
             };
             const item = o.items?.[0];
             return (
-              <div
+              <Link
+                href={`/dashboard/orders/${o.id}`}
                 key={o.id}
                 className="group block relative bg-muted/30 rounded-3xl p-6 mb-4 hover:bg-muted/50 transition-all duration-300"
               >
@@ -1000,10 +1063,106 @@ function BuyerView({ token }: { token: string }) {
                     </Link>
                   </div>
                 )}
-              </div>
+              </Link>
             );
           })}
         </div>
+      )}
+      {/* Transport requests tab */}
+      {!loading && tab === 'transport' && (
+        transportRequests.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-muted/20 rounded-3xl">
+            <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
+              <Truck className="h-10 w-10 text-muted-foreground/60" />
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-base font-bold text-foreground">Nav transporta pieprasījumu</p>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                Jums vēl nav neviena transporta pieprasījuma. Pasūtiet pārvadājumu.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/order/transport"
+              className="mt-2 inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full px-6 py-3 text-sm transition-all"
+            >
+              <Truck className="h-4 w-4" />
+              Pasūtīt pārvadājumu
+            </Link>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
+              <span>{transportRequests.length} pieprasījumi</span>
+            </div>
+            {transportRequests.map((j) => {
+              const st = JOB_STATUS[j.status] ?? { label: j.status, bg: '#f3f4f6', text: '#374151' };
+              return (
+                <div
+                  key={j.id}
+                  className="block relative bg-muted/30 rounded-3xl p-6 mb-2 hover:bg-muted/50 transition-all duration-300"
+                >
+                  {/* Header row */}
+                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/50">
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
+                        #{j.jobNumber}
+                      </span>
+                      <span className="text-xs text-muted-foreground capitalize">{j.jobType?.replace(/_/g, ' ').toLowerCase()}</span>
+                    </div>
+                    <StatusBadgeHex cfg={st} />
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-2">
+                    {/* Route */}
+                    <div className="flex-2 relative pl-6">
+                      <div className="absolute left-2.5 top-2 bottom-2 w-px bg-black/10" />
+                      <div className="relative mb-3">
+                        <div className="absolute -left-6 top-1.5 size-3 rounded-full bg-amber-500 ring-4 ring-background shadow-sm" />
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">Paņemšana · {fmtDate(j.pickupDate)}</p>
+                        <p className="text-sm font-medium text-foreground">{j.pickupAddress || j.pickupCity || '—'}</p>
+                      </div>
+                      <div className="relative">
+                        <div className="absolute -left-6 top-1.5 size-3 rounded-full bg-emerald-500 ring-4 ring-background shadow-sm" />
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">Piegāde · {fmtDate(j.deliveryDate)}</p>
+                        <p className="text-sm font-medium text-foreground">{j.deliveryAddress || j.deliveryCity || '—'}</p>
+                      </div>
+                    </div>
+
+                    {/* Driver + Rate */}
+                    <div className="flex-1 flex flex-col justify-between pt-2 sm:pt-0 gap-3">
+                      {j.driver ? (
+                        <div className="flex items-center gap-2">
+                          <User className="size-4 text-blue-500 shrink-0" />
+                          <span className="text-sm font-medium text-blue-700">
+                            {j.driver.firstName} {j.driver.lastName}
+                          </span>
+                          {j.driver.phone && (
+                            <a
+                              href={`tel:${j.driver.phone}`}
+                              className="flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-100 transition-colors ml-auto"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Phone className="size-3" />
+                              Zvanīt
+                            </a>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Šoferis nav piešķirts</span>
+                      )}
+                      {j.rate != null && (
+                        <div className="text-right">
+                          <span className="text-sm text-muted-foreground">Tarifs</span>
+                          <div className="text-lg font-bold tabular-nums">{fmtMoney(j.rate)}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
       )}
     </div>
   );

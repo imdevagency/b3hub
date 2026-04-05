@@ -181,7 +181,7 @@ export default function AdminDisputesPage() {
       {/* Detail panel (slide-over style modal) */}
       {selected && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-end bg-black/30 backdrop-blur-sm">
-          <div className="w-full sm:w-[480px] h-full sm:h-auto sm:max-h-[90vh] bg-white shadow-2xl flex flex-col overflow-hidden sm:rounded-2xl sm:mr-4 sm:my-4">
+          <div className="w-full sm:w-120 h-full sm:h-auto sm:max-h-[90vh] bg-white shadow-2xl flex flex-col overflow-hidden sm:rounded-2xl sm:mr-4 sm:my-4">
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
               <div>

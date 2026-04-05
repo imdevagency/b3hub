@@ -15,6 +15,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
+import { PaymentsService } from '../payments/payments.service';
 import { CreateSkipHireDto } from './dto/create-skip-hire.dto';
 import { UpdateSkipHireStatusDto } from './dto/update-skip-hire-status.dto';
 import { CompanyType, SkipHireStatus, SkipSize, Prisma } from '@prisma/client';
@@ -53,6 +54,7 @@ export class SkipHireService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly payments: PaymentsService,
   ) {}
 
   // ── Create (public — no auth needed) ──────────────────────────
@@ -114,18 +116,31 @@ export class SkipHireService {
     this.logger.log(
       `Skip hire order ${order.orderNumber} created (${dto.skipSize}, ${dto.location})`,
     );
+
+    // Create a Stripe PaymentIntent so the buyer can pay immediately.
+    // Uses automatic capture — funds are taken once the buyer confirms.
+    let clientSecret: string | null = null;
+    try {
+      const pi = await this.payments.createSkipHirePaymentIntent(order.id);
+      clientSecret = pi.clientSecret ?? null;
+    } catch (err) {
+      this.logger.error(
+        `Failed to create PaymentIntent for skip-hire order ${order.id}: ${(err as Error).message}`,
+      );
+    }
+
     if (userId) {
       this.notifications
         .create({
           userId,
           type: NotificationType.ORDER_CREATED,
           title: 'Konteinera pasūtījums saņemts',
-          message: `Pasūtījums #${orderNumber} reģistrēts. Apstiprinājums sekos drīzumā.`,
+          message: `Pasūtījums #${orderNumber} reģistrēts. Lūdzu, apmaksājiet pasūtījumu, lai apstiprinātu rezervāciju.`,
           data: { orderId: order.id },
         })
         .catch(() => null);
     }
-    return order;
+    return { ...order, clientSecret };
   }
 
   // ── Market prices (public) ───────────────────────────────────────────

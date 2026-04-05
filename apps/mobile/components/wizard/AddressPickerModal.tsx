@@ -232,6 +232,16 @@ export function AddressPickerModal({
     }
   }, [applyCoords]);
 
+  const handleMarkerDragEnd = useCallback(
+    async (e: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
+      const { latitude, longitude } = e.nativeEvent.coordinate;
+      const newPin = { latitude, longitude };
+      setPin(newPin);
+      await applyCoords(latitude, longitude);
+    },
+    [applyCoords],
+  );
+
   const handleConfirm = useCallback(() => {
     if (!pin || !address) return;
     onConfirm({ address, lat: pin.latitude, lng: pin.longitude, city });
@@ -303,16 +313,34 @@ export function AddressPickerModal({
             initialRegion={
               pin ? { ...pin, latitudeDelta: 0.01, longitudeDelta: 0.01 } : RIGA_REGION
             }
-            scrollEnabled={false}
-            zoomEnabled={false}
+            scrollEnabled
+            zoomEnabled
             rotateEnabled={false}
             pitchEnabled={false}
             showsUserLocation
             showsMyLocationButton={false}
-            pointerEvents="none"
           >
-            {pin && <Marker coordinate={pin} />}
+            {pin && (
+              <Marker
+                coordinate={pin}
+                draggable
+                onDragEnd={handleMarkerDragEnd}
+              />
+            )}
           </MapView>
+
+          {/* Drag-hint overlay — fades in once a pin exists */}
+          {pin && !resolving && (
+            <View style={apm.dragHint} pointerEvents="none">
+              <Text style={apm.dragHintText}>Velc marķieri, lai precizētu vietu</Text>
+            </View>
+          )}
+          {resolving && (
+            <View style={apm.dragHint} pointerEvents="none">
+              <ActivityIndicator size="small" color="#fff" style={{ marginRight: 6 }} />
+              <Text style={apm.dragHintText}>Nosaka adresi...</Text>
+            </View>
+          )}
 
           {/* GPS overlay button */}
           <TouchableOpacity
@@ -492,6 +520,24 @@ const apm = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#111827',
+  },
+
+  // drag hint banner at bottom of map
+  dragHint: {
+    position: 'absolute',
+    bottom: 64,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(17,24,39,0.72)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  dragHintText: {
+    fontSize: 11,
+    color: '#fff',
+    fontWeight: '500',
   },
 
   // map overlay buttons

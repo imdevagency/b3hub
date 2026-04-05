@@ -16,6 +16,7 @@ import {
   loadGoogleMapsScript,
   type PlaceAddress,
 } from '@/components/ui/AddressAutocomplete';
+import { AddressMapPicker } from '@/components/ui/AddressMapPicker';
 import { createTransportOrder, type TransportVehicleType } from '@/lib/api/orders';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 import {
@@ -383,18 +384,14 @@ export default function TransportOrderPage() {
                       Ievadiet iekraušanas adresi
                     </p>
                   </div>
-                  <div className="relative">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 rounded-full bg-black flex items-center justify-center z-10 pointer-events-none">
-                      <div className="h-1.5 w-1.5 bg-white rounded-full" />
-                    </div>
-                    <AddressAutocomplete
+                  <AddressMapPicker
                       value={pickupAddress}
+                      lat={pickupLat}
+                      lng={pickupLng}
                       onChange={(v) => setPickupAddress(v)}
                       onSelect={handlePickupSelect}
                       placeholder="Iekraušanas adrese..."
-                      className="w-full rounded-xl border-2 bg-muted/20 pl-11 pr-4 py-3.5 text-[15px] focus:outline-none focus:border-black focus:ring-0 transition-colors shadow-sm"
                     />
-                  </div>
                   {pickupAddress && (
                     <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-black/5">
                       <MapPin className="h-5 w-5 text-black mt-0.5 shrink-0" />
@@ -417,18 +414,14 @@ export default function TransportOrderPage() {
                       Ievadiet izkraušanas adresi
                     </p>
                   </div>
-                  <div className="relative">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 bg-black flex items-center justify-center z-10 pointer-events-none">
-                      <div className="h-1.5 w-1.5 bg-white" />
-                    </div>
-                    <AddressAutocomplete
+                  <AddressMapPicker
                       value={dropoffAddress}
+                      lat={dropoffLat}
+                      lng={dropoffLng}
                       onChange={(v) => setDropoffAddress(v)}
                       onSelect={handleDropoffSelect}
                       placeholder="Izkraušanas adrese..."
-                      className="w-full rounded-xl border-2 bg-muted/20 pl-11 pr-4 py-3.5 text-[15px] focus:outline-none focus:border-black focus:ring-0 transition-colors shadow-sm"
                     />
-                  </div>
                   {dropoffAddress && (
                     <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-black/5">
                       <MapPin className="h-5 w-5 text-black mt-0.5 shrink-0" />

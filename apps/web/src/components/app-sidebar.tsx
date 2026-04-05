@@ -48,7 +48,9 @@ import {
   getAllTransportJobs,
   getMyTransportJobs,
   getOpenQuoteRequests,
+  getProviderApplications,
   getUnreadNotificationCount,
+  listDisputes,
 } from '@/lib/api';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -202,6 +204,8 @@ type SidebarBadgeCounts = {
   notifications: number;
   openRfqs: number;
   activeJobs: number;
+  openDisputes: number;
+  pendingApplications: number;
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -213,6 +217,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     notifications: 0,
     openRfqs: 0,
     activeJobs: 0,
+    openDisputes: 0,
+    pendingApplications: 0,
   });
 
   const isRouteActive = React.useCallback(
@@ -453,14 +459,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   React.useEffect(() => {
     if (!token) {
-      setBadgeCounts({ notifications: 0, openRfqs: 0, activeJobs: 0 });
+      setBadgeCounts({ notifications: 0, openRfqs: 0, activeJobs: 0, openDisputes: 0, pendingApplications: 0 });
       return;
     }
 
     let cancelled = false;
 
     const loadBadgeCounts = async () => {
-      const [notificationsResult, rfqResult, activeJobsResult] = await Promise.allSettled([
+      const [notificationsResult, rfqResult, activeJobsResult, disputesResult, applicationsResult] = await Promise.allSettled([
         getUnreadNotificationCount(token),
         activeMode === 'SUPPLIER' ? getOpenQuoteRequests(token) : Promise.resolve([]),
         activeMode === 'CARRIER'
@@ -479,6 +485,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               return jobs.filter((job) => ACTIVE_JOB_STATUSES.has(job.status)).length;
             })()
           : Promise.resolve(0),
+        user?.userType === 'ADMIN'
+          ? listDisputes(token).then((ds) => ds.filter((d) => d.status === 'OPEN' || d.status === 'UNDER_REVIEW').length)
+          : Promise.resolve(0),
+        user?.userType === 'ADMIN'
+          ? getProviderApplications(token, 'PENDING').then((apps) => apps.length)
+          : Promise.resolve(0),
       ]);
 
       if (cancelled) return;
@@ -491,6 +503,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         openRfqs: rfqResult.status === 'fulfilled' ? Math.max(0, rfqResult.value.length) : 0,
         activeJobs:
           activeJobsResult.status === 'fulfilled' ? Math.max(0, activeJobsResult.value) : 0,
+        openDisputes:
+          disputesResult.status === 'fulfilled' ? Math.max(0, disputesResult.value) : 0,
+        pendingApplications:
+          applicationsResult.status === 'fulfilled' ? Math.max(0, applicationsResult.value) : 0,
       });
     };
 
@@ -513,8 +529,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       map['/dashboard/orders'] = badgeCounts.activeJobs;
     }
 
+    if (badgeCounts.openDisputes > 0) {
+      map['/dashboard/admin/disputes'] = badgeCounts.openDisputes;
+    }
+
     return map;
-  }, [activeMode, badgeCounts.activeJobs, badgeCounts.notifications, badgeCounts.openRfqs]);
+  }, [activeMode, badgeCounts.activeJobs, badgeCounts.notifications, badgeCounts.openRfqs, badgeCounts.openDisputes]);
 
   const renderBadge = React.useCallback((count: number) => {
     if (count <= 0) return null;
@@ -760,6 +780,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Link href="/dashboard/admin/applications">
                     <ShieldCheck className="size-4 shrink-0" />
                     <span>Pieteikumi</span>
+                    {renderBadge(badgeCounts.pendingApplications)}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -772,6 +793,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Link href="/dashboard/admin/disputes">
                     <AlertTriangle className="size-4 shrink-0" />
                     <span>Sūdzības</span>
+                    {renderBadge(badgeCounts.openDisputes)}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
