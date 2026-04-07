@@ -17,6 +17,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiTransportJob, ApiVehicle } from '@/lib/api';
 import { BaseMap, PinLayer } from '@/components/map';
+import { TopBar } from '@/components/ui/TopBar';
 import type { CameraRefHandle } from '@/components/map';
 import * as Location from 'expo-location';
 import {
@@ -198,61 +199,51 @@ export default function DriverHomeScreen() {
       </View>
 
       {/* 2. Floating Header (Top Bar) — Transparent, laid over map */}
-      <View style={[s.header, { paddingTop: 12 }]} pointerEvents="box-none">
-        {/* Avatar Button */}
-        <TouchableOpacity
-          style={s.roundBtn}
-          activeOpacity={0.9}
-          onPress={() => {
-            haptics.light();
-            router.push('/(driver)/profile');
-          }}
-        >
-          <View style={s.avatarFill}>
-            <Text style={s.avatarText}>
-              {(user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')}
+      <TopBar 
+        transparent
+        unreadCount={unreadCount}
+        leftElement={
+          <TouchableOpacity
+            style={s.roundBtn}
+            activeOpacity={0.9}
+            onPress={() => {
+              haptics.light();
+              router.push('/(driver)/profile');
+            }}
+          >
+            <View style={s.avatarFill}>
+              <Text style={s.avatarText}>
+                {(user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        }
+        centerElement={
+          <TouchableOpacity
+            style={[
+              s.statusPill,
+              hasActiveJob ? s.statusActive : isOnline ? s.statusOnline : s.statusOffline,
+            ]}
+            onPress={handleToggleOnline}
+            activeOpacity={0.8}
+            disabled={hasActiveJob || togglingOnline}
+          >
+            {togglingOnline ? (
+              <ActivityIndicator size="small" color="#6b7280" style={{ marginRight: 4 }} />
+            ) : (
+              <View
+                style={[
+                  s.statusDot,
+                  { backgroundColor: hasActiveJob ? '#10b981' : isOnline ? '#111827' : '#9ca3af' },
+                ]}
+              />
+            )}
+            <Text style={[s.statusText, !isOnline && !hasActiveJob && { color: '#9ca3af' }]}>
+              {hasActiveJob ? 'Strādā' : isOnline ? 'Tiešsaistē' : 'Bezsaistē'}
             </Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Status Pill in Center — tappable to toggle online/offline */}
-        <TouchableOpacity
-          style={[
-            s.statusPill,
-            hasActiveJob ? s.statusActive : isOnline ? s.statusOnline : s.statusOffline,
-          ]}
-          onPress={handleToggleOnline}
-          activeOpacity={0.8}
-          disabled={hasActiveJob || togglingOnline}
-        >
-          {togglingOnline ? (
-            <ActivityIndicator size="small" color="#6b7280" style={{ marginRight: 4 }} />
-          ) : (
-            <View
-              style={[
-                s.statusDot,
-                { backgroundColor: hasActiveJob ? '#10b981' : isOnline ? '#111827' : '#9ca3af' },
-              ]}
-            />
-          )}
-          <Text style={[s.statusText, !isOnline && !hasActiveJob && { color: '#9ca3af' }]}>
-            {hasActiveJob ? 'Strādā' : isOnline ? 'Tiešsaistē' : 'Bezsaistē'}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Notification Bell */}
-        <TouchableOpacity
-          style={s.roundBtn}
-          activeOpacity={0.9}
-          onPress={() => {
-            haptics.light();
-            router.push('/notifications');
-          }}
-        >
-          <Bell size={20} color="#111827" />
-          {unreadCount > 0 && <View style={s.badge} />}
-        </TouchableOpacity>
-      </View>
+          </TouchableOpacity>
+        }
+      />
 
       {/* 3. Bottom Sheet Card — Slide-up panel styling */}
       <View style={[s.bottomSheet, { height: BOTTOM_PANEL_H }]}>

@@ -29,6 +29,7 @@ import {
 import { haptics } from '@/lib/haptics';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { TopBar } from '@/components/ui/TopBar';
 // Guard: expo-linear-gradient requires a native build (not available in Expo Go)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let LinearGradient: React.ComponentType<any>;
@@ -40,7 +41,6 @@ try {
     React.createElement(View, { style }, children);
 }
 import { useToast } from '@/components/ui/Toast';
-import { BaseMap } from '@/components/map/BaseMap';
 
 // ── Status maps ───────────────────────────────────────────────────────────
 
@@ -120,9 +120,6 @@ const SERVICES = [
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BOTTOM_PANEL_H = SCREEN_HEIGHT * 0.58;
 
 // ── Screen ────────────────────────────────────────────────────────────────
 
@@ -320,69 +317,26 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScreenContainer topInset={0} bg="transparent">
-      {/* ─── Map Background ──────────────────────────────── */}
-      {/* Absolute fill map with padding so interactions work and Google logo is visible */}
-      <View style={StyleSheet.absoluteFill}>
-        <BaseMap
-          showsUserLocation
-          showsMyLocationButton={false}
-          style={StyleSheet.absoluteFill}
-          mapPadding={{
-            top: 60,
-            bottom: BOTTOM_PANEL_H + 20,
-            left: 0,
-            right: 0,
-          }}
-        />
-      </View>
+    <ScreenContainer topInset={insets.top} bg="#ffffff">
+      <TopBar
+        title=""
+        onMenuPress={() => setSidebarOpen(true)}
+        unreadCount={unreadCount}
+        transparent={true}
+      />
 
-      {/* ─── Header Buttons ──────────────────────────────── */}
-      <View style={[s.headerButtons, { top: 10 }]}>
-        <TouchableOpacity
-          onPress={() => {
-            haptics.light();
-            setSidebarOpen(true);
-          }}
-          style={s.headerBtn}
-        >
-          <Menu size={24} color="#111827" />
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => router.push('/notifications' as any)} style={s.headerBtn}>
-          <Bell size={24} color="#111827" />
-          {unreadCount > 0 && <View style={s.badge} />}
-        </TouchableOpacity>
-      </View>
-
-      {/* ─── Active Order Float ──────────────────────────── */}
-      {activeItem && (
-        <View style={[s.activeFloatWrapper, { bottom: BOTTOM_PANEL_H + 16 }]}>
-          <TouchableOpacity style={s.activePill} onPress={navToActive} activeOpacity={0.9}>
-            <View style={s.activeIconBox}>
-              <Animated.View
-                style={[
-                  s.pulseRing,
-                  { transform: [{ scale: pulseAnim }], backgroundColor: activeItem.dotColor },
-                ]}
-              />
-              <View style={[s.activeDot, { backgroundColor: activeItem.dotColor }]} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.activeStatus}>
-                {activeCount > 1 ? `${activeCount} aktīvi pasūtījumi` : activeItem.status}
-              </Text>
-              <Text style={s.activeSub} numberOfLines={1}>
-                {activeItem.sub}
-              </Text>
-            </View>
-            <ChevronRight size={20} color="#9ca3af" />
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* ─── Fixed Bottom Panel ──────────────────────────── */}
-      <View style={[s.panel, { height: BOTTOM_PANEL_H, paddingBottom: insets.bottom }]}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 100, paddingTop: 8 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadData(true)}
+            tintColor="#111827"
+          />
+        }
+      >
         {/* Profile completion nudge */}
         {user && (!user.phone || (user.isCompany && !user.company?.id)) && (
           <TouchableOpacity
@@ -397,15 +351,41 @@ export default function HomeScreen() {
             <Text style={s.profileNudgeText}>
               {!user.phone
                 ? 'Pievienojiet tālruni, lai veiktu pasūtījumus'
-                : 'Pievienojiet uzņēmuma profilu, lai aktivizētu pasūtījumus'}
+                : 'Pievienojiet uzņēmuma profilu, lai pilnvērtīgi lietotu platformu'}
             </Text>
             <ChevronRight size={14} color="#b45309" />
           </TouchableOpacity>
         )}
 
+        {/* ─── Active Order Float ──────────────────────────── */}
+        {activeItem && (
+          <View style={s.activeFloatWrapper}>
+            <TouchableOpacity style={s.activePill} onPress={navToActive} activeOpacity={0.9}>
+              <View style={s.activeIconBox}>
+                <Animated.View
+                  style={[
+                    s.pulseRing,
+                    { transform: [{ scale: pulseAnim }], backgroundColor: activeItem.dotColor },
+                  ]}
+                />
+                <View style={[s.activeDot, { backgroundColor: activeItem.dotColor }]} />
+              </View>
+              <View style={{ flex: 1, marginRight: 16 }}>
+                <Text style={s.activeStatus}>
+                  {activeCount > 1 ? `${activeCount} aktīvi pasūtījumi` : activeItem.status}
+                </Text>
+                <Text style={s.activeSub} numberOfLines={1}>
+                  {activeItem.sub}
+                </Text>
+              </View>
+              <ChevronRight size={20} color="#9ca3af" />
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Services Row */}
         <Text style={s.sectionTitle}>Pakalpojumi</Text>
-        <View style={{ position: 'relative' }}>
+        <View style={{ position: 'relative', marginBottom: 24 }}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -435,7 +415,7 @@ export default function HomeScreen() {
             })}
           </ScrollView>
           <LinearGradient
-            colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.95)']}
+            colors={['rgba(242,242,247,0)', 'rgba(242,242,247,0.95)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             pointerEvents="none"
@@ -444,7 +424,6 @@ export default function HomeScreen() {
         </View>
 
         {/* Recent Activity */}
-        <View style={s.divider} />
         <View style={s.recentHeader}>
           <Text style={s.sectionTitle}>Pēdējie pasūtījumi</Text>
           <TouchableOpacity onPress={() => router.push('/(buyer)/orders' as any)}>
@@ -452,18 +431,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => loadData(true)}
-              tintColor="#111827"
-            />
-          }
-        >
+        <View style={s.recentList}>
           {recentOrders.length > 0 ? (
             recentOrders.map((item) => (
               <TouchableOpacity
@@ -487,31 +455,62 @@ export default function HomeScreen() {
                     <Package size={16} color="#6b7280" />
                   )}
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.recentRowTitle}>{item.sub}</Text>
-                  <Text style={s.recentRowSub}>
-                    {item.status} • {item.num}
-                    {item.date
-                      ? ' • ' +
-                        new Date(item.date).toLocaleDateString('lv', {
-                          day: 'numeric',
-                          month: 'short',
-                        })
-                      : ''}
-                  </Text>
+                <View style={{ flex: 1, marginRight: 16 }}>
+                  <View style={{ flex: 1, marginRight: 16 }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={s.recentRowTitle}>
+                        {item.kind === 'mat'
+                          ? 'Materiāli'
+                          : item.kind === 'skip'
+                            ? 'Konteiners'
+                            : 'Transports'}
+                      </Text>
+                      <Text
+                        style={[
+                          s.recentStatusText,
+                          item.status.includes('CANCEL') || item.status.includes('Atcelts')
+                            ? { color: '#ef4444' }
+                            : item.status.includes('Piegādāts')
+                              ? { color: '#10b981' }
+                              : {},
+                        ]}
+                      >
+                        {item.status}
+                      </Text>
+                    </View>
+                    <Text style={s.recentRowSub} numberOfLines={1}>
+                      {item.sub}
+                    </Text>
+                    <Text style={s.recentRowDate}>
+                      {item.num}
+                      {item.date
+                        ? ' • ' +
+                          new Date(item.date).toLocaleDateString('lv', {
+                            day: 'numeric',
+                            month: 'short',
+                          })
+                        : ''}
+                    </Text>
+                  </View>
                 </View>
                 <ChevronRight size={16} color="#d1d5db" />
               </TouchableOpacity>
             ))
           ) : loading ? (
-            <View style={{ gap: 10, padding: 4 }}>
+            <View style={{ gap: 10, paddingHorizontal: 20 }}>
               {[1, 2, 3].map((i) => (
                 <View
                   key={i}
                   style={{
                     height: 52,
-                    backgroundColor: '#f3f4f6',
-                    borderRadius: 10,
+                    backgroundColor: '#e5e7eb',
+                    borderRadius: 12,
                     opacity: 1 - i * 0.15,
                   }}
                 />
@@ -532,8 +531,8 @@ export default function HomeScreen() {
           ) : (
             <Text style={s.emptyRecent}>Pabeigti pasūtījumi parādīsies šeit</Text>
           )}
-        </ScrollView>
-      </View>
+        </View>
+      </ScrollView>
 
       <Sidebar
         visible={sidebarOpen}
@@ -546,65 +545,30 @@ export default function HomeScreen() {
 }
 
 const s = StyleSheet.create({
-  headerButtons: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    zIndex: 50,
-    pointerEvents: 'box-none', // Allow touches to pass through the empty space
-  },
-  headerBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  badge: {
-    position: 'absolute',
-    top: 10,
-    right: 12,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#ef4444',
-  },
-
-  // Floating Active Order
   activeFloatWrapper: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    zIndex: 60,
+    paddingHorizontal: 20,
+    marginBottom: 24,
   },
   activePill: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#111827',
-    borderRadius: 24,
+    borderRadius: 20,
     padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
     gap: 12,
   },
   activeIconBox: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#374151',
+    borderRadius: 22,
   },
   activeDot: { width: 10, height: 10, borderRadius: 5 },
   pulseRing: {
@@ -614,32 +578,17 @@ const s = StyleSheet.create({
     borderRadius: 10,
     opacity: 0.3,
   },
-  activeStatus: { color: '#ffffff', fontWeight: '700', fontSize: 15 },
-  activeSub: { color: '#9ca3af', fontSize: 13 },
+  activeStatus: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
+  activeSub: { color: '#9ca3af', fontSize: 13, marginTop: 2 },
 
-  // Fixed Bottom Panel
-  panel: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingTop: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 10,
-    zIndex: 40,
-  },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     color: '#111827',
     marginLeft: 20,
-    marginBottom: 12,
+    marginBottom: 16,
+    letterSpacing: -0.4,
   },
   servicesScroll: {
     marginBottom: 4,
@@ -654,123 +603,140 @@ const s = StyleSheet.create({
   servicesRow: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    gap: 10,
-    paddingBottom: 8,
+    gap: 12,
+    paddingBottom: 12,
   },
   serviceChip: {
-    width: 88,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    gap: 8,
+    width: 104,
+    height: 104,
+    backgroundColor: '#F4F4F5',
+    borderRadius: 20,
+    padding: 14,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
   },
   serviceChipIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   serviceLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: '#111827',
-    textAlign: 'center',
+    textAlign: 'left',
+    letterSpacing: -0.2,
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#f3f4f6',
-    marginVertical: 12,
-    marginHorizontal: 20,
-  },
+
   recentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingRight: 20,
     marginBottom: 8,
+    marginTop: 12,
   },
   seeAllLink: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: '700',
+    color: '#6b7280',
+  },
+  recentList: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 0,
+    paddingVertical: 0,
   },
   recentRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
+    alignItems: 'flex-start',
+    paddingVertical: 16,
     paddingHorizontal: 20,
-    gap: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f3f4f6',
+    gap: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F4F4F5',
   },
   recentIconSmall: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#f3f4f6',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F4F4F5',
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 2,
   },
   recentRowTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#111827',
+    letterSpacing: -0.3,
+  },
+  recentStatusText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#9ca3af',
+    textTransform: 'capitalize',
   },
   recentRowSub: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#6b7280',
-    marginTop: 2,
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  recentRowDate: {
+    fontSize: 13,
+    color: '#9ca3af',
+    marginTop: 4,
   },
   emptyRecent: {
     textAlign: 'center',
     color: '#9ca3af',
-    marginTop: 20,
+    paddingVertical: 32,
     fontSize: 14,
+    fontWeight: '500',
   },
 
-  // Onboarding card
   emptyHint: {
     paddingHorizontal: 20,
-    paddingTop: 12,
-    flexDirection: 'row',
+    paddingVertical: 32,
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'center',
+    backgroundColor: '#F4F4F5',
+    marginHorizontal: 20,
+    borderRadius: 20,
   },
   emptyHintText: {
-    fontSize: 14,
-    color: '#9ca3af',
+    fontSize: 15,
+    color: '#6b7280',
+    marginBottom: 8,
   },
   emptyHintLink: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#111827',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   profileNudge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginHorizontal: 16,
-    marginBottom: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#fef3c7',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#fcd34d',
+    gap: 10,
+    marginHorizontal: 20,
+    marginBottom: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#FFFBEB',
+    borderRadius: 16,
   },
   profileNudgeText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 14,
     color: '#92400e',
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });

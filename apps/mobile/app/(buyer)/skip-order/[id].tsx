@@ -90,7 +90,7 @@ function Row({
   if (!value) return null;
   return (
     <View style={s.row}>
-      {Icon && <Icon size={15} color="#6b7280" style={{ marginTop: 1 }} />}
+      {Icon && <Icon size={18} color="#9ca3af" style={{ marginTop: 1 }} />}
       <View style={{ flex: 1 }}>
         <Text style={s.rowLabel}>{label}</Text>
         <Text style={s.rowValue}>{value}</Text>
@@ -170,7 +170,7 @@ export default function SkipOrderDetailScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer bg="#f4f5f7">
+      <ScreenContainer bg="#ffffff">
         <ScreenHeader title="Skip noma" />
         <SkeletonDetail />
       </ScreenContainer>
@@ -216,7 +216,7 @@ export default function SkipOrderDetailScreen() {
   };
 
   return (
-    <ScreenContainer bg="#f4f5f7">
+    <ScreenContainer bg="#ffffff">
       {/* ── Header ── */}
       <ScreenHeader
         title={`#${order.orderNumber}`}
@@ -244,13 +244,13 @@ export default function SkipOrderDetailScreen() {
       >
         {/* ── Status timeline ── */}
         <View style={s.section}>
-          <SectionLabel label="Statuss" style={{ marginBottom: 8, marginTop: 0 }} />
+          <Text style={ [s.sectionTitle, { marginBottom: 12 }] }>Statuss</Text>
           <StatusTimeline status={order.status} />
         </View>
 
         {/* ── Order details ── */}
         <View style={s.section}>
-          <SectionLabel label="Pasūtījuma informācija" style={{ marginBottom: 8, marginTop: 0 }} />
+          <Text style={ [s.sectionTitle, { marginBottom: 12 }] }>Pasūtījuma informācija</Text>
           <View style={s.card}>
             <Row label="Piegādes vieta" value={order.location} icon={MapPin} />
             <Row
@@ -292,7 +292,7 @@ export default function SkipOrderDetailScreen() {
         {/* ── Contact ── */}
         {(order.contactName || order.contactEmail || order.contactPhone) && (
           <View style={s.section}>
-            <SectionLabel label="Kontaktpersona" style={{ marginBottom: 8, marginTop: 0 }} />
+            <Text style={ [s.sectionTitle, { marginBottom: 12 }] }>Kontaktpersona</Text>
             <View style={s.card}>
               <Row label="Vārds" value={order.contactName} icon={User} />
               <Row label="E-pasts" value={order.contactEmail} icon={Mail} />
@@ -306,7 +306,7 @@ export default function SkipOrderDetailScreen() {
                   }
                   activeOpacity={0.7}
                 >
-                  <Phone size={15} color="#6b7280" style={{ marginTop: 1 }} />
+                  <Phone size={18} color="#9ca3af" style={{ marginTop: 1 }} />
                   <View style={{ flex: 1 }}>
                     <Text style={s.rowLabel}>Telefons</Text>
                     <Text style={[s.rowValue, { color: '#2563eb' }]}>{order.contactPhone}</Text>
@@ -320,7 +320,7 @@ export default function SkipOrderDetailScreen() {
         {/* ── Support contact (fallback when no operator contact set) ── */}
         {!order.contactName && !order.contactEmail && !order.contactPhone && (
           <View style={s.section}>
-            <SectionLabel label="Palīdzība" style={{ marginBottom: 8, marginTop: 0 }} />
+            <Text style={ [s.sectionTitle, { marginBottom: 12 }] }>Palīdzība</Text>
             <View style={s.card}>
               <TouchableOpacity
                 style={s.row}
@@ -331,7 +331,7 @@ export default function SkipOrderDetailScreen() {
                 }
                 activeOpacity={0.7}
               >
-                <Mail size={15} color="#6b7280" style={{ marginTop: 1 }} />
+                <Mail size={18} color="#9ca3af" style={{ marginTop: 1 }} />
                 <View style={{ flex: 1 }}>
                   <Text style={s.rowLabel}>Sazinies ar mums</Text>
                   <Text style={[s.rowValue, { color: '#2563eb' }]}>info@b3hub.lv</Text>
@@ -411,6 +411,15 @@ export default function SkipOrderDetailScreen() {
 // ── Styles ─────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
+    color: '#111827',
+    letterSpacing: -0.4,
+    marginTop: 24,
+    paddingHorizontal: 4,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -420,7 +429,7 @@ const s = StyleSheet.create({
     paddingBottom: 14,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#e5e7eb',
   },
   backBtn: {
     width: 40,
@@ -438,43 +447,33 @@ const s = StyleSheet.create({
   section: { marginBottom: 16 },
 
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    backgroundColor: '#F4F4F5',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
     paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f3f4f6',
+    
   },
-  rowLabel: { fontSize: 12, color: '#9ca3af', marginBottom: 2 },
-  rowValue: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  rowLabel: { fontSize: 13, color: '#9ca3af', marginBottom: 4 },
+  rowValue: { fontSize: 15, fontWeight: '600', color: '#111827' },
 
   priceCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    backgroundColor: '#111827',
+    borderRadius: 20,
     paddingHorizontal: 20,
     paddingVertical: 18,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    marginTop: 8,
   },
-  priceLabel: { fontSize: 15, fontWeight: '600', color: '#374151' },
-  priceValue: { fontSize: 22, fontWeight: '800', color: '#111827' },
+  priceLabel: { fontSize: 15, fontWeight: '600', color: '#9ca3af' },
+  priceValue: { fontSize: 22, fontWeight: '800', color: '#ffffff' },
 
   rateBtn: {
     flexDirection: 'row',
@@ -496,7 +495,7 @@ const s = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#fca5a5',
     borderRadius: 100,
-    paddingVertical: 14,
+    paddingVertical: 12,
     marginTop: 8,
     backgroundColor: '#fff7f7',
   },

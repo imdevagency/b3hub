@@ -41,6 +41,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { TJB_STATUS } from '@/lib/materials';
 import { BaseMap, RouteLayer, useRoute } from '@/components/map';
@@ -323,9 +324,13 @@ export default function TransportJobDetailScreen() {
     ]);
   };
 
+  const isActive = job ? ACTIVE_STATUSES.has(job.status) : false;
+
   return (
     <ScreenContainer topInset={0} bg="#f9fafb">
-      {/* ── MAP SECTION ── */}
+      {isActive ? (
+        <View>
+    {/* ── MAP SECTION ── */}
       <View style={{ height: MAP_H, backgroundColor: '#e5e7eb' }}>
         <BaseMap
           cameraRef={cameraRef}
@@ -416,6 +421,15 @@ export default function TransportJobDetailScreen() {
           </View>
         )}
       </View>
+
+
+        </View>
+      ) : (
+        <ScreenHeader 
+          title={job?.jobNumber || 'Pasūtījums'}
+          rightAction={st && <StatusPill label={st.label} bg={st.bg} color={st.color} />}
+        />
+      )}
 
       {/* ── CONTENT SECTION ── */}
       {loading ? (

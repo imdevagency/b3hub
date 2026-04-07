@@ -263,7 +263,7 @@ export default function OrderDetailScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer bg="#f4f5f7">
+      <ScreenContainer bg="#ffffff">
         <ScreenHeader title="Pasūtījums" />
         <SkeletonDetail />
       </ScreenContainer>
@@ -272,7 +272,7 @@ export default function OrderDetailScreen() {
 
   if (!order) {
     return (
-      <ScreenContainer bg="#f4f5f7">
+      <ScreenContainer bg="#ffffff">
         <ScreenHeader title="Pasūtījums" />
         <EmptyState icon={<Package size={32} color="#9ca3af" />} title="Pasūtījums nav atrasts" />
       </ScreenContainer>
@@ -318,7 +318,7 @@ export default function OrderDetailScreen() {
   };
 
   return (
-    <ScreenContainer bg="#f4f5f7">
+    <ScreenContainer bg="#ffffff">
       {/* Header */}
       <ScreenHeader
         title={order.orderNumber}
@@ -1200,13 +1200,22 @@ export default function OrderDetailScreen() {
 }
 
 const s = StyleSheet.create({
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
+    color: '#111827',
+    letterSpacing: -0.4,
+    marginTop: 24,
+    paddingHorizontal: 4,
+  },
   container: { flex: 1, backgroundColor: '#f2f2f7' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
@@ -1231,7 +1240,6 @@ const s = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
   },
   stepperWrap: { position: 'relative', paddingBottom: 4 },
   stepperTrack: {
@@ -1269,7 +1277,6 @@ const s = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
   },
   stepDotPulse: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#fff' },
   stepLabel: {
@@ -1381,7 +1388,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
-  itemBorder: { borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
+  itemBorder: { borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
   itemName: { fontSize: 14, fontWeight: '600', color: '#111827' },
   itemMeta: { fontSize: 12, color: '#6b7280', marginTop: 2 },
   itemTotal: { fontSize: 15, fontWeight: '700', color: '#374151' },
@@ -1506,7 +1513,6 @@ const s = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
   },
   etaLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   etaEmoji: { fontSize: 28 },
@@ -1542,7 +1548,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#e5e7eb',
     gap: 12,
   },
   docInfo: { flex: 1 },
@@ -1719,7 +1725,7 @@ const s = StyleSheet.create({
   amendSubmitBtn: {
     backgroundColor: '#111827',
     borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: 12,
     alignItems: 'center',
     marginTop: 4,
   },
@@ -1817,7 +1823,7 @@ const s = StyleSheet.create({
   disputeSubmitBtn: {
     backgroundColor: '#111827',
     borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },

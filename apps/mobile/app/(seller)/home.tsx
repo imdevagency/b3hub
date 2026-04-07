@@ -46,6 +46,8 @@ const QUICK_ACTIONS = [
   },
 ];
 
+import { TopBar } from '@/components/ui/TopBar';
+
 const TAB_H = 52;
 
 export default function SellerHomeScreen() {
@@ -107,66 +109,7 @@ export default function SellerHomeScreen() {
   return (
     <ScreenContainer noAnimation bg="#F3F4F6">
       {/* MINIMAL TOP BAR */}
-      <View
-        style={{
-          paddingTop: 16,
-          paddingBottom: 16,
-          paddingHorizontal: 24,
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <View>
-          <Text
-            style={{
-              fontSize: 28,
-              fontFamily: 'Inter_800ExtraBold',
-              fontWeight: '800',
-              color: '#111827',
-              letterSpacing: -0.7,
-            }}
-          >
-            Sveiki, {user?.firstName || 'Pārdevēj'}!
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => {
-            haptics.light();
-            router.push('/notifications' as any);
-          }}
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 22,
-            backgroundColor: '#ffffff',
-            alignItems: 'center',
-            justifyContent: 'center',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.06,
-            shadowRadius: 4,
-            elevation: 2,
-          }}
-        >
-          <Bell size={22} color="#111827" />
-          {unreadCount > 0 && (
-            <View
-              style={{
-                position: 'absolute',
-                top: 8,
-                right: 8,
-                width: 9,
-                height: 9,
-                borderRadius: 5,
-                backgroundColor: '#ef4444',
-                borderWidth: 2,
-                borderColor: '#ffffff',
-              }}
-            />
-          )}
-        </TouchableOpacity>
-      </View>
+      <TopBar title="Pārdevējs" transparent={false} unreadCount={unreadCount} />
 
       <ScrollView
         style={{ flex: 1 }}
