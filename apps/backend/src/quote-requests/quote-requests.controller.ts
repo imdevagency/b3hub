@@ -19,6 +19,7 @@ import { CreateQuoteResponseDto } from './dto/create-quote-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 import { ApiTags } from '@nestjs/swagger';
 
@@ -52,12 +53,9 @@ export class QuoteRequestsController {
   @Get()
   findAll(
     @CurrentUser() user: RequestingUser,
-    @Query('limit') limit: string = '20',
-    @Query('skip') skip: string = '0',
+    @Query() pagination: PaginationDto,
   ) {
-    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
-    const skipNum = Math.max(parseInt(skip, 10) || 0, 0);
-    return this.service.findAll(user.userId, limitNum, skipNum);
+    return this.service.findAll(user.userId, pagination.limit ?? 20, pagination.skip ?? 0);
   }
 
   // ── Supplier endpoints ──────────────────────────────────────
@@ -68,26 +66,20 @@ export class QuoteRequestsController {
   @Get('my-responses')
   myResponses(
     @CurrentUser() user: RequestingUser,
-    @Query('limit') limit: string = '20',
-    @Query('skip') skip: string = '0',
+    @Query() pagination: PaginationDto,
   ) {
     this.assertCanRespondAsSupplier(user);
-    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
-    const skipNum = Math.max(parseInt(skip, 10) || 0, 0);
-    return this.service.myResponses(user.companyId!, limitNum, skipNum);
+    return this.service.myResponses(user.companyId!, pagination.limit ?? 20, pagination.skip ?? 0);
   }
 
   /** GET /quote-requests/open — supplier sees all open requests with pagination */
   @Get('open')
   openRequests(
     @CurrentUser() user: RequestingUser,
-    @Query('limit') limit: string = '20',
-    @Query('skip') skip: string = '0',
+    @Query() pagination: PaginationDto,
   ) {
     this.assertCanRespondAsSupplier(user);
-    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
-    const skipNum = Math.max(parseInt(skip, 10) || 0, 0);
-    return this.service.findOpenRequests(limitNum, skipNum);
+    return this.service.findOpenRequests(pagination.limit ?? 20, pagination.skip ?? 0);
   }
 
   // ── Buyer endpoints (parameterised) ────────────────────────

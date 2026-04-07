@@ -14,7 +14,7 @@ import { Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
-import { MaterialCategory } from '@prisma/client';
+import { MaterialCategory, Prisma } from '@prisma/client';
 import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
@@ -28,7 +28,10 @@ export class MaterialsService {
 
   async create(createMaterialDto: CreateMaterialDto) {
     const material = await this.prisma.material.create({
-      data: createMaterialDto,
+      data: {
+        ...createMaterialDto,
+        specifications: createMaterialDto.specifications as Prisma.InputJsonValue ?? Prisma.JsonNull,
+      },
       include: {
         supplier: {
           select: {
@@ -177,7 +180,12 @@ export class MaterialsService {
 
     return this.prisma.material.update({
       where: { id },
-      data: updateMaterialDto,
+      data: {
+        ...updateMaterialDto,
+        ...(updateMaterialDto.specifications !== undefined
+          ? { specifications: updateMaterialDto.specifications as Prisma.InputJsonValue }
+          : {}),
+      } as Parameters<typeof this.prisma.material.update>[0]['data'],
       include: {
         supplier: {
           select: {

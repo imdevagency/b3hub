@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsIn, IsNotEmpty, IsString } from 'class-validator';
+
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+] as const;
 
 export class UploadImageDto {
   /** Base64-encoded image (data URI or raw base64). */
@@ -6,8 +13,7 @@ export class UploadImageDto {
   @IsNotEmpty()
   base64: string;
 
-  /** Optional MIME type, e.g. 'image/jpeg'. Defaults to 'image/jpeg'. */
-  @IsString()
-  @IsNotEmpty()
+  /** MIME type of the image. Must be one of the allowed image types. */
+  @IsIn(ALLOWED_IMAGE_TYPES)
   mimeType: string;
 }

@@ -18,6 +18,7 @@ import { NotificationType } from './dto/create-notification.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
+import { PagePaginationDto } from '../common/dto/pagination.dto';
 
 import { ApiTags } from '@nestjs/swagger';
 
@@ -31,13 +32,12 @@ export class NotificationsController {
   @Get()
   getMyNotifications(
     @CurrentUser() user: RequestingUser,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @Query() pagination: PagePaginationDto,
   ) {
     return this.notificationsService.getForUser(
       user.userId,
-      page ? parseInt(page, 10) : 1,
-      limit ? parseInt(limit, 10) : 20,
+      pagination.page ?? 1,
+      pagination.limit ?? 20,
     );
   }
 

@@ -68,13 +68,16 @@ export class OrdersController {
   @Get()
   findAll(
     @CurrentUser() user: RequestingUser,
-    @Query('status') status?: OrderStatus,
+    @Query('status') status?: string,
     @Query('limit') limit: string = '20',
     @Query('skip') skip: string = '0',
   ) {
-    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100); // Clamp 1-100
+    if (status !== undefined && !Object.values(OrderStatus).includes(status as OrderStatus)) {
+      throw new BadRequestException(`status must be one of: ${Object.values(OrderStatus).join(', ')}`);
+    }
+    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
     const skipNum = Math.max(parseInt(skip, 10) || 0, 0);
-    return this.ordersService.findAll(user, status, limitNum, skipNum);
+    return this.ordersService.findAll(user, status as OrderStatus | undefined, limitNum, skipNum);
   }
 
   @Get(':id')

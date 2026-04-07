@@ -346,10 +346,12 @@ model User {
   emailVerified      Boolean      @default(false)
   phoneVerified      Boolean      @default(false)
   pushToken          String? // Expo push token for native notifications
-  resetToken         String? // password-reset token (hashed)
+  resetToken         String? // password-reset token (hashed SHA-256)
   resetTokenExpiry   DateTime? // token expiry (1h window)
   refreshToken       String? // hashed refresh token (30-day sliding window)
   refreshTokenExpiry DateTime? // refresh token expiry
+  emailVerifyToken   String?   // email verification token (hashed SHA-256)
+  emailVerifyExpiry  DateTime? // verification token expiry (24h window)
   failedLoginAttempts Int       @default(0) // consecutive failed login attempts
   lockedUntil        DateTime? // account locked until this timestamp
   termsAcceptedAt    DateTime? // timestamp when user accepted T&C / Privacy Policy

@@ -168,7 +168,7 @@ export class ChatService {
     const path = `chat-images/${jobId}/${Date.now()}.${ext}`;
 
     await this.supabase.uploadFile('chat-images', path, buffer);
-    const imageUrl = this.supabase.getPublicUrl('chat-images', path);
+    const imageUrl = await this.supabase.createSignedUrl('chat-images', path);
 
     return { imageUrl };
   }

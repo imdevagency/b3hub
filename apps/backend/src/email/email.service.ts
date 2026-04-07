@@ -35,13 +35,35 @@ export class EmailService {
 
   // ── Public helpers ─────────────────────────────────────────────────────────
 
+  /** Email address verification — sent after registration */
+  async sendEmailVerification(to: string, firstName: string, rawToken: string) {
+    const verifyUrl = `${this.webUrl}/verify-email?token=${rawToken}`;
+    const safeName = this.escape(firstName);
+    await this.send({
+      to,
+      subject: 'Apstipriniet savu e-pasta adresi — B3Hub',
+      html: this.base({
+        title: 'Apstipriniet savu e-pasta adresi',
+        body: `
+          <p>Labdien, ${safeName}!</p>
+          <p>Paldies, ka reģistrējāties <strong>B3Hub</strong>. Lai pabeigtu reģistrāciju, lūdzu apstipriniet savu e-pasta adresi, noklikšķinot zemāk.</p>
+          <p>Saite ir derīga <strong>24 stundas</strong>.</p>
+          <p>Ja šo kontu neveidojāt jūs, varat ignorēt šo e-pastu.</p>
+        `,
+        cta: { label: 'Apstiprināt e-pastu', url: verifyUrl },
+        footer: 'Šī saite ir derīga 24 stundas.',
+      }),
+    });
+  }
+
   /** Welcome email sent immediately after registration */
   async sendWelcome(to: string, firstName: string) {
+    const safeName = this.escape(firstName);
     await this.send({
       to,
       subject: 'Laipni lūdzam B3Hub!',
       html: this.base({
-        title: `Labdien, ${firstName}!`,
+        title: `Labdien, ${safeName}!`,
         body: `
           <p>Paldies, ka reģistrējāties <strong>B3Hub</strong> — Latvijas būvmateriālu un transporta platformā.</p>
           <p>Jūs varat pieteikties tūlīt un pārlūkot pieejamos materiālus un pakalpojumus.</p>
@@ -53,6 +75,7 @@ export class EmailService {
 
   /** Password reset email */
   async sendPasswordReset(to: string, firstName: string, rawToken: string) {
+    const safeName = this.escape(firstName);
     const resetUrl = `${this.webUrl}/reset-password?token=${rawToken}`;
     await this.send({
       to,
@@ -60,7 +83,7 @@ export class EmailService {
       html: this.base({
         title: 'Atjaunojiet savu paroli',
         body: `
-          <p>Labdien, ${firstName}!</p>
+          <p>Labdien, ${safeName}!</p>
           <p>Saņēmām pieprasījumu atjaunot jūsu konta paroli. Noklikšķiniet zemāk esošo pogu — saite ir derīga <strong>1 stundu</strong>.</p>
           <p>Ja šo pieprasījumu neveicāt jūs, varat ignorēt šo e-pastu.</p>
         `,
@@ -73,13 +96,14 @@ export class EmailService {
 
   /** Confirmation that the provider application was received */
   async sendApplicationReceived(to: string, firstName: string) {
+    const safeName = this.escape(firstName);
     await this.send({
       to,
       subject: 'Pieteikums saņemts — B3Hub',
       html: this.base({
         title: 'Jūsu pieteikums ir saņemts!',
         body: `
-          <p>Labdien, ${firstName}!</p>
+          <p>Labdien, ${safeName}!</p>
           <p>Paldies par jūsu pieteikumu kļūt par B3Hub piegādātāju vai pārvadātāju. Mūsu komanda to izskatīs tuvākajā laikā.</p>
           <p>Mēs jūs informēsim pa e-pastu, tiklīdz lēmums būs pieņemts.</p>
         `,
@@ -97,6 +121,7 @@ export class EmailService {
     firstName: string,
     capabilities: { canSell: boolean; canTransport: boolean },
   ) {
+    const safeName = this.escape(firstName);
     const granted: string[] = [];
     if (capabilities.canSell) granted.push('Pārdevēja piekļuve');
     if (capabilities.canTransport) granted.push('Pārvadātāja piekļuve');
@@ -107,7 +132,7 @@ export class EmailService {
       html: this.base({
         title: 'Apsveicam — pieteikums apstiprināts!',
         body: `
-          <p>Labdien, ${firstName}!</p>
+          <p>Labdien, ${safeName}!</p>
           <p>Priecājamies informēt, ka jūsu pieteikums ir <strong>apstiprināts</strong>. Jums tika piešķirts:</p>
           <ul style="padding-left:20px;line-height:1.8">
             ${granted.map((g) => `<li>${g}</li>`).join('')}
@@ -125,15 +150,17 @@ export class EmailService {
     firstName: string,
     reviewNote?: string,
   ) {
+    const safeName = this.escape(firstName);
+    const safeNote = this.escape(reviewNote);
     await this.send({
       to,
       subject: 'Pieteikuma statuss — B3Hub',
       html: this.base({
         title: 'Izskatījām jūsu pieteikumu',
         body: `
-          <p>Labdien, ${firstName}!</p>
+          <p>Labdien, ${safeName}!</p>
           <p>Diemžēl pēc izskatīšanas nevaram šobrīd apstiprināt jūsu pieteikumu.</p>
-          ${reviewNote ? `<p><strong>Komentārs:</strong> ${reviewNote}</p>` : ''}
+          ${safeNote ? `<p><strong>Komentārs:</strong> ${safeNote}</p>` : ''}
           <p>Ja jums ir jautājumi, lūdzu sazinieties ar mums rakstot uz <a href="mailto:support@b3hub.lv">support@b3hub.lv</a>.</p>
         `,
       }),
@@ -157,18 +184,20 @@ export class EmailService {
       }>;
     },
   ) {
+    const safeBuyerName = this.escape(buyerName);
     const itemRows = order.items
       .map(
         (i) =>
           `<tr>
-            <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6">${i.material.name}</td>
-            <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;text-align:right">${i.quantity} ${i.unit}</td>
+            <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6">${this.escape(i.material.name)}</td>
+            <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;text-align:right">${i.quantity} ${this.escape(i.unit)}</td>
           </tr>`,
       )
       .join('');
 
     const address = [order.deliveryAddress, order.deliveryCity]
       .filter(Boolean)
+      .map((s) => this.escape(s!))
       .join(', ');
 
     await this.send({
@@ -177,7 +206,7 @@ export class EmailService {
       html: this.base({
         title: `Pasūtījums #${order.orderNumber} saņemts!`,
         body: `
-          <p>Labdien, ${buyerName}!</p>
+          <p>Labdien, ${safeBuyerName}!</p>
           <p>Paldies par pasūtījumu. To esam saņēmuši un sāksim apstrādi tuvākajā laikā.</p>
 
           <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px">
@@ -216,11 +245,12 @@ export class EmailService {
     },
     pdfBuffer: Buffer,
   ) {
+    const safeBuyerName = this.escape(buyerName);
     const dueDateStr = invoice.dueDate.toLocaleDateString('lv-LV');
     const html = this.base({
       title: `Rēķins #${invoice.invoiceNumber}`,
       body: `
-        <p>Labdien, ${buyerName}!</p>
+        <p>Labdien, ${safeBuyerName}!</p>
         <p>Pielikumā atradīsiet rēķinu par pasūtījumu <strong>#${invoice.orderNumber}</strong>.</p>
         <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px">
           <tr>
@@ -286,21 +316,22 @@ export class EmailService {
     buyerName: string,
     order: { orderNumber: string; status: string },
   ) {
+    const safeBuyerName = this.escape(buyerName);
     const STATUS_COPY: Record<string, { subject: string; title: string; body: string }> = {
       CONFIRMED: {
         subject: `Pasūtījums #${order.orderNumber} apstiprināts — B3Hub`,
         title: 'Pasūtījums apstiprināts!',
-        body: `<p>Labdien, ${buyerName}!</p><p>Jūsu pasūtījums <strong>#${order.orderNumber}</strong> ir <strong>apstiprināts</strong> no piegādātāja puses. Piegāde tiks veikta saskaņā ar norādīto grafiku.</p>`,
+        body: `<p>Labdien, ${safeBuyerName}!</p><p>Jūsu pasūtījums <strong>#${order.orderNumber}</strong> ir <strong>apstiprināts</strong> no piegādātāja puses. Piegāde tiks veikta saskaņā ar norādīto grafiku.</p>`,
       },
       DELIVERED: {
         subject: `Pasūtījums #${order.orderNumber} piegādāts — B3Hub`,
         title: 'Pasūtījums piegādāts!',
-        body: `<p>Labdien, ${buyerName}!</p><p>Pasūtījums <strong>#${order.orderNumber}</strong> ir <strong>piegādāts</strong>. Ja ir jebkādas neatbilstības, lūdzu vērsieties pie mums 48 stundu laikā.</p>`,
+        body: `<p>Labdien, ${safeBuyerName}!</p><p>Pasūtījums <strong>#${order.orderNumber}</strong> ir <strong>piegādāts</strong>. Ja ir jebkādas neatbilstības, lūdzu vērsieties pie mums 48 stundu laikā.</p>`,
       },
       CANCELLED: {
         subject: `Pasūtījums #${order.orderNumber} atcelts — B3Hub`,
         title: 'Pasūtījums atcelts',
-        body: `<p>Labdien, ${buyerName}!</p><p>Pasūtījums <strong>#${order.orderNumber}</strong> ir <strong>atcelts</strong>. Ja maksājums tika iekasēts, atmaksa tiks apstrādāta 3–5 darba dienu laikā.</p>`,
+        body: `<p>Labdien, ${safeBuyerName}!</p><p>Pasūtījums <strong>#${order.orderNumber}</strong> ir <strong>atcelts</strong>. Ja maksājums tika iekasēts, atmaksa tiks apstrādāta 3–5 darba dienu laikā.</p>`,
       },
     };
 
@@ -327,18 +358,19 @@ export class EmailService {
     sellerName: string,
     rfq: { requestNumber: string; category: string; quantity: number; unit: string; city: string },
   ) {
+    const safeSellerName = this.escape(sellerName);
     await this.send({
       to,
       subject: `Jauns cenu pieprasījums — B3Hub`,
       html: this.base({
         title: 'Saņemts jauns cenu pieprasījums',
         body: `
-          <p>Labdien, ${sellerName}!</p>
+          <p>Labdien, ${safeSellerName}!</p>
           <p>Jūs saņēmāt jaunu cenu pieprasījumu <strong>#${rfq.requestNumber}</strong>:</p>
           <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:14px">
-            <tr><td style="padding:6px 0;color:#6b7280">Kategorija</td><td style="padding:6px 0;font-weight:600">${rfq.category}</td></tr>
-            <tr><td style="padding:6px 0;color:#6b7280">Daudzums</td><td style="padding:6px 0;font-weight:600">${rfq.quantity} ${rfq.unit}</td></tr>
-            <tr><td style="padding:6px 0;color:#6b7280">Piegādes pilsēta</td><td style="padding:6px 0;font-weight:600">${rfq.city}</td></tr>
+            <tr><td style="padding:6px 0;color:#6b7280">Kategorija</td><td style="padding:6px 0;font-weight:600">${this.escape(rfq.category)}</td></tr>
+            <tr><td style="padding:6px 0;color:#6b7280">Daudzums</td><td style="padding:6px 0;font-weight:600">${rfq.quantity} ${this.escape(rfq.unit)}</td></tr>
+            <tr><td style="padding:6px 0;color:#6b7280">Piegādes pilsēta</td><td style="padding:6px 0;font-weight:600">${this.escape(rfq.city)}</td></tr>
           </table>
           <p>Atbildiet uz pieprasījumu pēc iespējas ātrāk, lai palielinātu iespēju iegūt darījumu.</p>
         `,
@@ -356,6 +388,7 @@ export class EmailService {
     driverName: string,
     job: { jobNumber: string; pickupCity: string; deliveryCity: string; scheduledDate?: Date },
   ) {
+    const safeDriverName = this.escape(driverName);
     const dateStr = job.scheduledDate
       ? job.scheduledDate.toLocaleDateString('lv-LV')
       : 'pēc vienošanās';
@@ -366,11 +399,11 @@ export class EmailService {
       html: this.base({
         title: `Jauns darbs #${job.jobNumber}`,
         body: `
-          <p>Labdien, ${driverName}!</p>
+          <p>Labdien, ${safeDriverName}!</p>
           <p>Jums ir piešķirts jauns transporta darbs:</p>
           <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:14px">
-            <tr><td style="padding:6px 0;color:#6b7280">Iekraušanas vieta</td><td style="padding:6px 0;font-weight:600">${job.pickupCity}</td></tr>
-            <tr><td style="padding:6px 0;color:#6b7280">Piegādes vieta</td><td style="padding:6px 0;font-weight:600">${job.deliveryCity}</td></tr>
+            <tr><td style="padding:6px 0;color:#6b7280">Iekraušanas vieta</td><td style="padding:6px 0;font-weight:600">${this.escape(job.pickupCity)}</td></tr>
+            <tr><td style="padding:6px 0;color:#6b7280">Piegādes vieta</td><td style="padding:6px 0;font-weight:600">${this.escape(job.deliveryCity)}</td></tr>
             <tr><td style="padding:6px 0;color:#6b7280">Datums</td><td style="padding:6px 0;font-weight:600">${dateStr}</td></tr>
           </table>
           <p>Pieņemiet vai noraidiet darbu B3Hub lietotnē.</p>
@@ -389,13 +422,14 @@ export class EmailService {
     buyerName: string,
     invoice: { invoiceNumber: string; total: number; daysLate: number; orderId: string },
   ) {
+    const safeBuyerName = this.escape(buyerName);
     await this.send({
       to,
       subject: `Nokavēts rēķins #${invoice.invoiceNumber} — B3Hub`,
       html: this.base({
         title: `Rēķins #${invoice.invoiceNumber} ir nokavēts`,
         body: `
-          <p>Labdien, ${buyerName}!</p>
+          <p>Labdien, ${safeBuyerName}!</p>
           <p>Rēķins <strong>#${invoice.invoiceNumber}</strong> par summu <strong>€${invoice.total.toFixed(2)}</strong> ir nokavēts par <strong>${invoice.daysLate} dienu(ām)</strong>.</p>
           <p>Lūdzu, veiciet maksājumu pēc iespējas ātrāk, lai izvairītos no turpmākām sekām. Jautājumu gadījumā sazinieties ar mums: <a href="mailto:support@b3hub.lv">support@b3hub.lv</a>.</p>
         `,
@@ -410,6 +444,7 @@ export class EmailService {
     buyerName: string,
     invoice: { invoiceNumber: string; total: number; dueDate: Date; daysUntilDue: number; orderId: string },
   ) {
+    const safeBuyerName = this.escape(buyerName);
     const dueDateStr = invoice.dueDate.toLocaleDateString('lv-LV');
     await this.send({
       to,
@@ -417,7 +452,7 @@ export class EmailService {
       html: this.base({
         title: `Rēķins jāsamaksā ${invoice.daysUntilDue} dienu laikā`,
         body: `
-          <p>Labdien, ${buyerName}!</p>
+          <p>Labdien, ${safeBuyerName}!</p>
           <p>Atgādinām, ka rēķins <strong>#${invoice.invoiceNumber}</strong> par summu <strong>€${invoice.total.toFixed(2)}</strong> jāsamaksā līdz <strong>${dueDateStr}</strong>.</p>
           <p>Apmaksājiet savlaicīgi, lai izvairītos no nokavēšanas.</p>
         `,
@@ -432,6 +467,7 @@ export class EmailService {
     buyerName: string,
     data: { jobNumber: string; orderNumber: string; expectedTonnes: number; actualTonnes: number; diffPct: number },
   ) {
+    const safeBuyerName = this.escape(buyerName);
     const direction = data.actualTonnes > data.expectedTonnes ? 'vairāk' : 'mazāk';
     await this.send({
       to,
@@ -439,7 +475,7 @@ export class EmailService {
       html: this.base({
         title: 'Uzmanību: svara neatbilstība',
         body: `
-          <p>Labdien, ${buyerName}!</p>
+          <p>Labdien, ${safeBuyerName}!</p>
           <p>Piegādes brauciena <strong>#${data.jobNumber}</strong> (pasūtījums <strong>#${data.orderNumber}</strong>) svara mērījums atšķiras no pasūtītā apjoma par vairāk nekā 5%.</p>
           <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:14px">
             <tr><td style="padding:6px 0;color:#6b7280">Pasūtītais svars</td><td style="padding:6px 0;font-weight:600">${data.expectedTonnes.toFixed(3)} t</td></tr>
@@ -451,6 +487,17 @@ export class EmailService {
         cta: { label: 'Skatīt pasūtījumu', url: `${this.webUrl}/dashboard/orders` },
       }),
     });
+  }
+
+  /** Escapes HTML special chars so user-supplied strings cannot inject HTML */
+  private escape(str: string | undefined | null): string {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;');
   }
 
   private async send(opts: { to: string; subject: string; html: string }) {

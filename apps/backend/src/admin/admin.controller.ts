@@ -11,6 +11,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { IsBoolean, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
+import { PagePaginationDto } from '../common/dto/pagination.dto';
 
 class UpdateCompanyDto {
   @IsOptional() @IsBoolean() verified?: boolean;
@@ -56,26 +57,14 @@ export class AdminController {
 
   /** GET /admin/orders — all orders (paginated) */
   @Get('orders')
-  getOrders(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
-    return this.service.getOrders(
-      page ? Math.max(1, parseInt(page, 10)) : 1,
-      limit ? Math.min(200, Math.max(1, parseInt(limit, 10))) : 50,
-    );
+  getOrders(@Query() pagination: PagePaginationDto) {
+    return this.service.getOrders(pagination.page ?? 1, pagination.limit ?? 50);
   }
 
   /** GET /admin/jobs — all transport jobs (paginated) */
   @Get('jobs')
-  getTransportJobs(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
-    return this.service.getTransportJobs(
-      page ? Math.max(1, parseInt(page, 10)) : 1,
-      limit ? Math.min(200, Math.max(1, parseInt(limit, 10))) : 50,
-    );
+  getTransportJobs(@Query() pagination: PagePaginationDto) {
+    return this.service.getTransportJobs(pagination.page ?? 1, pagination.limit ?? 50);
   }
 
   /** GET /admin/companies — all companies */

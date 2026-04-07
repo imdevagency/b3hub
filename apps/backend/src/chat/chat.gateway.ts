@@ -59,7 +59,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
   ) {
-    this.jwtSecret = this.config.get<string>('JWT_SECRET') ?? 'your-secret-key';
+    const secret = this.config.get<string>('JWT_SECRET');
+    if (!secret) throw new Error('JWT_SECRET environment variable is required');
+    this.jwtSecret = secret;
   }
 
   // ── Connection lifecycle ──────────────────────────────────────────────────
@@ -98,7 +100,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { jobId: string },
   ) {
-    if (!data?.jobId) throw new WsException('jobId is required');
+    if (!data?.jobId || typeof data.jobId !== 'string' || !/^[0-9a-f-]{36}$/i.test(data.jobId)) {
+      throw new WsException('jobId must be a valid UUID');
+    }
 
     const userId = (client.data as Record<string, string>).userId;
     if (!userId) throw new WsException('Not authenticated');
@@ -135,7 +139,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { jobId: string },
   ) {
-    if (!data?.jobId) return;
+    if (!data?.jobId || typeof data.jobId !== 'string' || !/^[0-9a-f-]{36}$/i.test(data.jobId)) return;
     void client.leave(`job:${data.jobId}`);
   }
 

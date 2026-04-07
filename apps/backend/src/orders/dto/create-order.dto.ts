@@ -6,12 +6,14 @@ import {
   IsArray,
   ValidateNested,
   IsDateString,
+  Max,
+  MaxLength,
   Min,
   IsBoolean,
   IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { OrderType, MaterialUnit } from '@prisma/client';
+import { OrderType, MaterialUnit, PaymentStatus } from '@prisma/client';
 
 class OrderItemDto {
   @IsString()
@@ -38,17 +40,21 @@ export class CreateOrderDto {
   buyerId?: string;
 
   @IsString()
+  @MaxLength(300)
   deliveryAddress: string;
 
   @IsString()
+  @MaxLength(100)
   deliveryCity: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   deliveryState?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(20)
   deliveryPostal?: string;
 
   @IsOptional()
@@ -57,6 +63,7 @@ export class CreateOrderDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   deliveryWindow?: string;
 
   @IsOptional()
@@ -66,10 +73,14 @@ export class CreateOrderDto {
 
   @IsOptional()
   @IsNumber()
+  @Min(-90)
+  @Max(90)
   deliveryLat?: number;
 
   @IsOptional()
   @IsNumber()
+  @Min(-180)
+  @Max(180)
   deliveryLng?: number;
 
   @IsOptional()
@@ -78,14 +89,17 @@ export class CreateOrderDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   notes?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   siteContactName?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(30)
   siteContactPhone?: string;
 
   @IsOptional()
@@ -119,19 +133,24 @@ export class CreateOrderScheduleDto {
   orderType: OrderType;
 
   @IsString()
+  @MaxLength(300)
   deliveryAddress: string;
 
   @IsString()
+  @MaxLength(100)
   deliveryCity: string;
 
   @IsString()
+  @MaxLength(100)
   deliveryState: string;
 
   @IsString()
+  @MaxLength(20)
   deliveryPostal: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   deliveryWindow?: string;
 
   @IsOptional()
@@ -141,14 +160,17 @@ export class CreateOrderScheduleDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   notes?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   siteContactName?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(30)
   siteContactPhone?: string;
 
   @IsOptional()

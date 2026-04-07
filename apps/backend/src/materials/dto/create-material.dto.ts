@@ -5,16 +5,23 @@ import {
   IsBoolean,
   IsOptional,
   IsArray,
+  IsObject,
+  Max,
+  MaxLength,
   Min,
+  MinLength,
 } from 'class-validator';
 import { MaterialCategory, MaterialUnit } from '@prisma/client';
 
 export class CreateMaterialDto {
   @IsString()
+  @MinLength(2)
+  @MaxLength(200)
   name: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   description?: string;
 
   @IsEnum(MaterialCategory)
@@ -22,10 +29,12 @@ export class CreateMaterialDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   subCategory?: string;
 
   @IsNumber()
   @Min(0)
+  @Max(10_000_000)
   basePrice: number;
 
   @IsEnum(MaterialUnit)
@@ -33,6 +42,7 @@ export class CreateMaterialDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(10)
   currency?: string;
 
   @IsOptional()
@@ -46,10 +56,12 @@ export class CreateMaterialDto {
 
   @IsOptional()
   @IsNumber()
+  @Min(0)
   minOrder?: number;
 
   @IsOptional()
   @IsNumber()
+  @Min(0)
   maxOrder?: number;
 
   @IsOptional()
@@ -58,20 +70,24 @@ export class CreateMaterialDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   quality?: string;
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
+  @MaxLength(200, { each: true })
   certificates?: string[];
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
+  @MaxLength(2048, { each: true })
   images?: string[];
 
   @IsOptional()
-  specifications?: any;
+  @IsObject()
+  specifications?: Record<string, unknown>;
 
   @IsString()
   supplierId: string;

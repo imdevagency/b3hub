@@ -523,8 +523,25 @@ export class TransportJobsService {
       }),
     ]);
 
+    // Strip buyer contact details from the public job board.
+    // Drivers only receive siteContactName/Phone after being assigned.
+    const safeJobs = jobs.map((j) => {
+      const { order, ...rest } = j;
+      return {
+        ...rest,
+        order: order
+          ? {
+              id: order.id,
+              orderNumber: order.orderNumber,
+              buyerId: order.buyerId,
+              createdById: order.createdById,
+            }
+          : null,
+      };
+    });
+
     return {
-      data: jobs.map((j) => this.mapWithSla(j)),
+      data: safeJobs.map((j) => this.mapWithSla(j)),
       pagination: {
         total,
         limit,

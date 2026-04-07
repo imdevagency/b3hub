@@ -6,7 +6,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { validateEnv } from './config/env.validation';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { LoggingThrottlerGuard } from './common/guards/logging-throttler.guard';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { SentryModule, SentryGlobalFilter } from '@sentry/nestjs/setup';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -102,8 +103,8 @@ import { SupportModule } from './support/support.module';
     AppService,
     // Sentry global filter — must be first so it captures all unhandled errors
     { provide: APP_FILTER, useClass: SentryGlobalFilter },
-    // Apply throttle guard globally — individual endpoints can override with @Throttle()
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Apply throttle guard globally — logs violations, individual endpoints can override with @Throttle()
+    { provide: APP_GUARD, useClass: LoggingThrottlerGuard },
   ],
 })
 export class AppModule {}

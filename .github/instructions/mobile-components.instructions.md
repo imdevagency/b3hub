@@ -372,6 +372,24 @@ Multi-step form wizard primitives used by order creation and skip-hire flows.
 - Translations: use `t.xxx` from `@/lib/translations` for all user-visible strings.
 
 <!-- GEN:component-api -->
+#### `ActionResultSheet` — `@/components/ui/ActionResultSheet`
+
+| Prop | Type | |
+|------|------|---|
+| `visible` | `boolean` | **required** |
+| `onClose` | `() => void` | **required** |
+| `variant` | `ActionResultVariant` | **required** |
+| `title` | `string` | **required** |
+| `subtitle` | `string` | optional |
+| `primaryLabel` | `string` | **required** |
+| `onPrimary` | `() => void` | **required** |
+| `secondaryLabel` | `string` | optional |
+| `onSecondary` | `() => void` | optional |
+
+**Exports:** `ActionResultSheet`
+
+---
+
 #### `AddressPicker` — `@/components/ui/AddressPicker`
 
 | Prop | Type | |
@@ -637,6 +655,19 @@ _No props interface — check source file._
 | `unreadCount` | `number` | optional |
 
 **Exports:** `RoleSheet`, `TopBar`
+
+---
+
+#### `TruckIllustration` — `@/components/ui/TruckIllustration`
+
+| Prop | Type | |
+|------|------|---|
+| `type` | `TruckType` | **required** |
+| `height` | `number` | optional |
+| `width` | `number` | optional |
+| `onDark` | `boolean` | optional |
+
+**Exports:** `TruckIllustration`
 
 ---
 

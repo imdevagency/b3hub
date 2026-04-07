@@ -89,7 +89,9 @@ export class UpdatesGateway implements OnGatewayConnection, OnGatewayDisconnect 
   private readonly jwtSecret: string;
 
   constructor(private readonly config: ConfigService) {
-    this.jwtSecret = this.config.get<string>('JWT_SECRET') ?? 'your-secret-key';
+    const secret = this.config.get<string>('JWT_SECRET');
+    if (!secret) throw new Error('JWT_SECRET environment variable is required');
+    this.jwtSecret = secret;
   }
 
   // ── Connection lifecycle ────────────────────────────────────────────────────
@@ -115,13 +117,21 @@ export class UpdatesGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
   // ── Client subscriptions ───────────────────────────────────────────────────
 
+  private static readonly UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  private assertUUID(value: unknown, name: string): asserts value is string {
+    if (typeof value !== 'string' || !UpdatesGateway.UUID_RE.test(value)) {
+      throw new WsException(`${name} must be a valid UUID`);
+    }
+  }
+
   /** Subscribe to status and location changes for a specific order. */
   @SubscribeMessage('watchOrder')
   handleWatchOrder(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { orderId: string },
   ) {
-    if (!data?.orderId) throw new WsException('orderId is required');
+    this.assertUUID(data?.orderId, 'orderId');
     void client.join(`order:${data.orderId}`);
     return { ok: true };
   }
@@ -131,7 +141,7 @@ export class UpdatesGateway implements OnGatewayConnection, OnGatewayDisconnect 
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { orderId: string },
   ) {
-    if (!data?.orderId) return;
+    if (!data?.orderId || !UpdatesGateway.UUID_RE.test(data.orderId)) return;
     void client.leave(`order:${data.orderId}`);
   }
 
@@ -141,7 +151,7 @@ export class UpdatesGateway implements OnGatewayConnection, OnGatewayDisconnect 
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { jobId: string },
   ) {
-    if (!data?.jobId) throw new WsException('jobId is required');
+    this.assertUUID(data?.jobId, 'jobId');
     void client.join(`job:${data.jobId}`);
     return { ok: true };
   }
@@ -151,7 +161,7 @@ export class UpdatesGateway implements OnGatewayConnection, OnGatewayDisconnect 
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { jobId: string },
   ) {
-    if (!data?.jobId) return;
+    if (!data?.jobId || !UpdatesGateway.UUID_RE.test(data.jobId)) return;
     void client.leave(`job:${data.jobId}`);
   }
 
@@ -161,7 +171,7 @@ export class UpdatesGateway implements OnGatewayConnection, OnGatewayDisconnect 
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { companyId: string },
   ) {
-    if (!data?.companyId) throw new WsException('companyId is required');
+    this.assertUUID(data?.companyId, 'companyId');
     void client.join(`seller:${data.companyId}`);
     return { ok: true };
   }
@@ -171,7 +181,7 @@ export class UpdatesGateway implements OnGatewayConnection, OnGatewayDisconnect 
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { companyId: string },
   ) {
-    if (!data?.companyId) return;
+    if (!data?.companyId || !UpdatesGateway.UUID_RE.test(data.companyId)) return;
     void client.leave(`seller:${data.companyId}`);
   }
 

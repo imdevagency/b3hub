@@ -6,6 +6,7 @@ import {
   IsString,
   IsUrl,
   Min,
+  MinLength,
   validateSync,
 } from 'class-validator';
 
@@ -19,6 +20,8 @@ enum Environment {
  * Declares every environment variable the backend reads.
  * Required vars throw at startup if missing; optional vars carry sensible
  * defaults so the app still works in development without a full .env file.
+ *
+ * Additional production-only validation is done in validateEnv() below.
  */
 class EnvironmentVariables {
   // ── App ──────────────────────────────────────────────────────────────────
@@ -44,7 +47,9 @@ class EnvironmentVariables {
 
   // ── Auth ─────────────────────────────────────────────────────────────────
 
+  /** Minimum 32 characters to ensure sufficient entropy for JWT signing. */
   @IsString()
+  @MinLength(32)
   JWT_SECRET!: string;
 
   // ── Database ─────────────────────────────────────────────────────────────
@@ -109,6 +114,17 @@ class EnvironmentVariables {
   SENTRY_DSN?: string;
 }
 
+/** Secrets that must be present when NODE_ENV=production. */
+const REQUIRED_IN_PRODUCTION: Array<keyof EnvironmentVariables> = [
+  'STRIPE_SECRET_KEY',
+  'STRIPE_WEBHOOK_SECRET',
+  'SUPABASE_URL',
+  'SUPABASE_KEY',
+  'SENTRY_DSN',
+  'ALLOWED_ORIGIN',
+  'RESEND_API_KEY',
+];
+
 /**
  * Called by ConfigModule at bootstrap.
  * Throws a descriptive error if any required variable is missing or invalid,
@@ -134,5 +150,17 @@ export function validateEnv(config: Record<string, unknown>) {
     );
   }
 
+  // Production-only: fail hard if any critical secret is absent.
+  if (validatedConfig.NODE_ENV === Environment.Production) {
+    const missing = REQUIRED_IN_PRODUCTION.filter((key) => !validatedConfig[key]);
+    if (missing.length > 0) {
+      throw new Error(
+        `Production startup blocked — missing required secrets:\n${missing.map((k) => `  • ${k}`).join('\n')}\n` +
+          'Set these environment variables before deploying.',
+      );
+    }
+  }
+
   return validatedConfig;
 }
+

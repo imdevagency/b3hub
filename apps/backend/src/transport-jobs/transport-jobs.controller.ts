@@ -28,7 +28,7 @@ import {
   ReportTransportExceptionDto,
   ResolveTransportExceptionDto,
 } from './dto/report-exception.dto';
-import { IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -36,6 +36,7 @@ import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { ReviewsService } from '../reviews/reviews.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { SurchargeType } from '@prisma/client';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 class CreateDriverReviewDto {
   @IsInt() @Min(1) @Max(5) @Type(() => Number) rating: number;
@@ -49,9 +50,16 @@ class CreateTransportSurchargeDto {
   @IsBoolean() @IsOptional() billable?: boolean;
 }
 
+const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+
 class UploadPickupPhotoDto {
-  @IsString() base64: string;
-  @IsString() @IsOptional() mimeType?: string;
+  @IsString()
+  @IsNotEmpty()
+  base64: string;
+
+  @IsOptional()
+  @IsIn(ALLOWED_PHOTO_TYPES)
+  mimeType?: string;
 }
 
 function canDispatch(user: RequestingUser): boolean {
@@ -101,13 +109,8 @@ export class TransportJobsController {
    * Returns all AVAILABLE jobs for the job board with pagination.
    */
   @Get()
-  findAvailable(
-    @Query('limit') limit: string = '20',
-    @Query('skip') skip: string = '0',
-  ) {
-    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
-    const skipNum = Math.max(parseInt(skip, 10) || 0, 0);
-    return this.service.findAvailable(limitNum, skipNum);
+  findAvailable(@Query() pagination: PaginationDto) {
+    return this.service.findAvailable(pagination.limit ?? 20, pagination.skip ?? 0);
   }
 
   /**
@@ -126,12 +129,9 @@ export class TransportJobsController {
   @Get('my-jobs')
   findMyJobs(
     @CurrentUser() user: RequestingUser,
-    @Query('limit') limit: string = '20',
-    @Query('skip') skip: string = '0',
+    @Query() pagination: PaginationDto,
   ) {
-    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
-    const skipNum = Math.max(parseInt(skip, 10) || 0, 0);
-    return this.service.findMyJobs(user.userId, limitNum, skipNum);
+    return this.service.findMyJobs(user.userId, pagination.limit ?? 20, pagination.skip ?? 0);
   }
 
   /**
@@ -141,12 +141,9 @@ export class TransportJobsController {
   @Get('my-requests')
   findMyRequests(
     @CurrentUser() user: RequestingUser,
-    @Query('limit') limit: string = '20',
-    @Query('skip') skip: string = '0',
+    @Query() pagination: PaginationDto,
   ) {
-    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
-    const skipNum = Math.max(parseInt(skip, 10) || 0, 0);
-    return this.service.findMyRequests(user.userId, limitNum, skipNum);
+    return this.service.findMyRequests(user.userId, pagination.limit ?? 20, pagination.skip ?? 0);
   }
 
   /**
@@ -156,19 +153,25 @@ export class TransportJobsController {
    */
   @Get('return-trips')
   findReturnTrips(
+    @CurrentUser() user: RequestingUser,
     @Query('lat') lat: string,
     @Query('lng') lng: string,
     @Query('radiusKm') radiusKm?: string,
-    @CurrentUser() user: RequestingUser,
   ) {
     if (!user.canTransport) {
       throw new ForbiddenException('Only approved drivers can query return trips');
     }
-    return this.service.findReturnTrips(
-      parseFloat(lat),
-      parseFloat(lng),
-      radiusKm ? parseFloat(radiusKm) : 50,
-    );
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    if (!Number.isFinite(latNum) || latNum < -90 || latNum > 90) {
+      throw new BadRequestException('lat must be a number between -90 and 90');
+    }
+    if (!Number.isFinite(lngNum) || lngNum < -180 || lngNum > 180) {
+      throw new BadRequestException('lng must be a number between -180 and 180');
+    }
+    const radiusNum = radiusKm ? parseFloat(radiusKm) : 50;
+    const clampedRadius = Math.min(Math.max(Number.isFinite(radiusNum) ? radiusNum : 50, 1), 500);
+    return this.service.findReturnTrips(latNum, lngNum, clampedRadius);
   }
 
   /**
@@ -423,7 +426,7 @@ export class TransportJobsController {
     const ext = mimeType === 'image/png' ? 'png' : 'jpg';
     const path = `pickup-photos/${id}/${Date.now()}.${ext}`;
     await this.supabase.uploadFile('pickup-photos', path, buffer);
-    const url = this.supabase.getPublicUrl('pickup-photos', path);
+    const url = await this.supabase.createSignedUrl('pickup-photos', path);
     return { url };
   }
 

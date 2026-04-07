@@ -19,6 +19,7 @@ import { InvoicesService } from './invoices.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
+import { PagePaginationDto } from '../common/dto/pagination.dto';
 
 function canViewFinancials(user: RequestingUser): boolean {
   // Company OWNERs and MANAGERs always have financial access.
@@ -41,8 +42,7 @@ export class InvoicesController {
   @Get()
   getMyInvoices(
     @CurrentUser() user: RequestingUser,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @Query() pagination: PagePaginationDto,
   ) {
     if (!canViewFinancials(user)) {
       throw new ForbiddenException(
@@ -53,8 +53,8 @@ export class InvoicesController {
     return this.invoicesService.getMyInvoices(
       user.userId,
       user.companyId,
-      page ? parseInt(page, 10) : 1,
-      limit ? parseInt(limit, 10) : 20,
+      pagination.page ?? 1,
+      pagination.limit ?? 20,
     );
   }
 

@@ -5,7 +5,9 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUrl,
   Max,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -31,6 +33,7 @@ export class CreateDocumentLinkDto {
 
 export class CreateDocumentDto {
   @IsString()
+  @MaxLength(300)
   title: string;
 
   @IsEnum(DocumentType)
@@ -41,7 +44,8 @@ export class CreateDocumentDto {
   status?: DocumentStatus;
 
   @IsOptional()
-  @IsString()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(2048)
   fileUrl?: string;
 
   @IsOptional()
@@ -88,6 +92,7 @@ export class CreateDocumentDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   notes?: string;
 
   @IsOptional()

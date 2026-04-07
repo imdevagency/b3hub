@@ -40,7 +40,7 @@ export class RecyclingCentersService {
         city: dto.city,
         state: dto.state,
         postalCode: dto.postalCode,
-        coordinates: dto.coordinates ?? undefined,
+        coordinates: dto.coordinates ? { lat: dto.coordinates.lat, lng: dto.coordinates.lng } as Prisma.InputJsonValue : undefined,
         acceptedWasteTypes: dto.acceptedWasteTypes,
         capacity: dto.capacity,
         certifications: dto.certifications ?? [],

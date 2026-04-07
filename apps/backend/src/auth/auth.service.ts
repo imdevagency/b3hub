@@ -2,7 +2,7 @@
  * Core authentication service.
  * User registration (bcrypt hashing), login (JWT + 30-day refresh token),
  * token refresh, server-side logout, password reset flow (email via Resend),
- * profile updates, and notification preference management.
+ * email verification, profile updates, and notification preference management.
  */
 import {
   Injectable,
@@ -21,8 +21,10 @@ import * as crypto from 'crypto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
+const BCRYPT_ROUNDS = 12; // OWASP recommended minimum for 2024 hardware
 const REFRESH_TOKEN_BYTES = 48; // 384 bits — opaque, URL-safe
 const REFRESH_TOKEN_TTL_DAYS = 30;
+const EMAIL_VERIFY_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const MAX_FAILED_ATTEMPTS = 5; // lock after 5 consecutive failures
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -47,7 +49,14 @@ export class AuthService {
       phone,
       companyName,
       regNumber,
+      termsAccepted,
     } = registerDto;
+
+    // Terms must be explicitly accepted — guard at service layer too
+    if (!termsAccepted) {
+      throw new BadRequestException('You must accept the Terms of Service and Privacy Policy to register.');
+    }
+
     // Check if user already exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
@@ -57,8 +66,12 @@ export class AuthService {
       throw new ConflictException('User with this email already exists');
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password with OWASP-recommended cost factor
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
+    // Generate email verification token
+    const { rawToken: rawVerifyToken, hashed: hashedVerifyToken, expiry: verifyExpiry } =
+      this.generateSecureToken(EMAIL_VERIFY_TTL_MS);
 
     // Create user — always BUYER type; extra roles become provider applications
     const user = await this.prisma.user.create({
@@ -71,6 +84,8 @@ export class AuthService {
         userType: 'BUYER',
         isCompany: isCompany ?? roles.some((r) => r !== 'BUYER'),
         termsAcceptedAt: new Date(),
+        emailVerifyToken: hashedVerifyToken,
+        emailVerifyExpiry: verifyExpiry,
       },
       select: {
         id: true,
@@ -141,7 +156,8 @@ export class AuthService {
       user.tokenVersion ?? 0,
     );
 
-    // Send welcome email (non-blocking)
+    // Send welcome + verification emails (non-blocking)
+    this.email.sendEmailVerification(email, firstName ?? email, rawVerifyToken).catch(() => null);
     this.email.sendWelcome(email, firstName ?? email).catch(() => null);
 
     const { rawToken: refreshToken } = await this.issueRefreshToken(user.id);
@@ -154,7 +170,7 @@ export class AuthService {
     };
   }
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, ip?: string) {
     const { email, password } = loginDto;
 
     // Find user
@@ -179,6 +195,7 @@ export class AuthService {
     // Check account lockout
     if (user.lockedUntil && user.lockedUntil > new Date()) {
       const secondsLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 1000);
+      this.logger.warn(`AUTH_LOCKED userId=${user.id} email=${email} ip=${ip ?? 'unknown'} remainingSecs=${secondsLeft}`);
       throw new ForbiddenException(
         `Account temporarily locked. Try again in ${secondsLeft} seconds.`,
       );
@@ -196,6 +213,11 @@ export class AuthService {
           lockedUntil: shouldLock ? new Date(Date.now() + LOCKOUT_DURATION_MS) : null,
         },
       });
+      if (shouldLock) {
+        this.logger.warn(`AUTH_LOCKOUT userId=${user.id} email=${email} ip=${ip ?? 'unknown'} attempts=${attempts}`);
+      } else {
+        this.logger.warn(`AUTH_FAIL email=${email} ip=${ip ?? 'unknown'} attempts=${attempts}`);
+      }
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -209,6 +231,7 @@ export class AuthService {
 
     // Check if user is active
     if (user.status !== 'ACTIVE' && user.status !== 'PENDING') {
+      this.logger.warn(`AUTH_SUSPENDED userId=${user.id} email=${email} ip=${ip ?? 'unknown'} status=${user.status}`);
       throw new UnauthorizedException('Account is not active');
     }
 
@@ -239,25 +262,12 @@ export class AuthService {
 
     const { rawToken: refreshToken } = await this.issueRefreshToken(user.id);
 
-    this.logger.log(`User ${user.id} logged in (${email})`);
+    this.logger.log(`AUTH_SUCCESS userId=${user.id} email=${email} ip=${ip ?? 'unknown'}`);
     return {
       user: userWithoutPassword,
       token,
       refreshToken,
     };
-  }
-
-  async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (user && (await bcrypt.compare(password, user.password))) {
-      const { password: _, ...result } = user;
-      return result;
-    }
-
-    return null;
   }
 
   async getUserById(userId: string) {
@@ -324,6 +334,60 @@ export class AuthService {
     return { ...user, availableModes: modes.length > 0 ? modes : ['BUYER'] };
   }
 
+  /** Verify email address using the token sent during registration. */
+  async verifyEmail(rawToken: string): Promise<{ ok: boolean }> {
+    const hashed = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        emailVerifyToken: hashed,
+        emailVerifyExpiry: { gt: new Date() },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired verification token');
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerified: true,
+        emailVerifyToken: null,
+        emailVerifyExpiry: null,
+      },
+    });
+
+    this.logger.log(`Email verified for user ${user.id}`);
+    return { ok: true };
+  }
+
+  /** Re-send the verification email to the authenticated user. */
+  async resendVerification(userId: string): Promise<{ ok: boolean }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, firstName: true, emailVerified: true },
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+    if (user.emailVerified) {
+      throw new BadRequestException('Email is already verified');
+    }
+
+    const { rawToken, hashed, expiry } = this.generateSecureToken(EMAIL_VERIFY_TTL_MS);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { emailVerifyToken: hashed, emailVerifyExpiry: expiry },
+    });
+
+    this.email
+      .sendEmailVerification(user.email ?? '', user.firstName ?? '', rawToken)
+      .catch(() => null);
+
+    return { ok: true };
+  }
+
   async updatePushToken(userId: string, pushToken: string | null) {
     await this.prisma.$executeRaw`
       UPDATE users SET "pushToken" = ${pushToken} WHERE id = ${userId}
@@ -364,9 +428,7 @@ export class AuthService {
     // Always return ok to prevent user enumeration
     if (!user) return { ok: true };
 
-    const rawToken = crypto.randomBytes(32).toString('hex');
-    const hashed = crypto.createHash('sha256').update(rawToken).digest('hex');
-    const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const { rawToken, hashed, expiry } = this.generateSecureToken(60 * 60 * 1000); // 1 hour
 
     await this.prisma.user.update({
       where: { id: user.id },
@@ -378,11 +440,13 @@ export class AuthService {
       .sendPasswordReset(user.email ?? '', user.firstName ?? '', rawToken)
       .catch(() => null);
 
-    // Surface raw token in dev for testing without a real email
-    const isDev = process.env.NODE_ENV !== 'production';
+    // Surface raw token only when explicitly enabled — never in production
+    const exposeDevToken =
+      process.env.NODE_ENV !== 'production' &&
+      process.env.EXPOSE_DEV_RESET_URL === 'true';
     return {
       ok: true,
-      ...(isDev && {
+      ...(exposeDevToken && {
         _devResetUrl: `/reset-password?token=${rawToken}`,
       }),
     };
@@ -405,15 +469,20 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired reset token');
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        password: hashedPassword,
-        resetToken: null,
-        resetTokenExpiry: null,
+    const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    await this.prisma.user.update(
+      {
+        where: { id: user.id },
+        data: {
+          password: hashedPassword,
+          resetToken: null,
+          resetTokenExpiry: null,
+          // Revoke all sessions so stolen-then-reset tokens can't still log in
+          refreshToken: null,
+          refreshTokenExpiry: null,
+        },
       },
-    });
+    );
 
     return { ok: true };
   }
@@ -426,13 +495,41 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    const valid = await bcrypt.compare(currentPassword, user.password);
-    if (!valid) throw new BadRequestException('Esošā parole nav pareiza');
+    // Check lockout (same mechanism as login)
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const secondsLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 1000);
+      throw new ForbiddenException(
+        `Account temporarily locked. Try again in ${secondsLeft} seconds.`,
+      );
+    }
 
-    const hashed = await bcrypt.hash(newPassword, 10);
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) {
+      // Increment failed attempts so brute-forcing via change-password is throttled
+      const attempts = (user.failedLoginAttempts ?? 0) + 1;
+      const shouldLock = attempts >= MAX_FAILED_ATTEMPTS;
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          failedLoginAttempts: attempts,
+          lockedUntil: shouldLock ? new Date(Date.now() + LOCKOUT_DURATION_MS) : null,
+        },
+      });
+      throw new BadRequestException('Esošā parole nav pareiza');
+    }
+
+    // Reset counters on success
+    const hashed = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
     await this.prisma.user.update({
       where: { id: userId },
-      data: { password: hashed },
+      data: {
+        password: hashed,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        // Revoke all other sessions so old tokens can't be replayed
+        refreshToken: null,
+        refreshTokenExpiry: null,
+      },
     });
     return { ok: true };
   }
@@ -467,6 +564,23 @@ export class AuthService {
         notifMarketing: true,
       },
     });
+  }
+
+  // ── Token helpers ───────────────────────────────────────────────────────────
+
+  /**
+   * Generate a cryptographically secure random token (hex), hash it for
+   * storage, and compute an expiry timestamp.
+   */
+  private generateSecureToken(ttlMs: number): {
+    rawToken: string;
+    hashed: string;
+    expiry: Date;
+  } {
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const hashed = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiry = new Date(Date.now() + ttlMs);
+    return { rawToken, hashed, expiry };
   }
 
   // ── Refresh token helpers ───────────────────────────────────────────────────
@@ -586,7 +700,7 @@ export class AuthService {
         firstName: 'Deleted',
         lastName: 'User',
         avatar: null,
-        password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10),
+        password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), BCRYPT_ROUNDS),
         // Revoke all tokens
         refreshToken: null,
         refreshTokenExpiry: null,

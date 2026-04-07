@@ -3,6 +3,7 @@
  * Endpoints for users to submit applications and for admins to list, approve, or reject them.
  */
 import {
+  BadRequestException,
   Controller,
   Post,
   Get,
@@ -50,6 +51,10 @@ export class ProviderApplicationsController {
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Get()
   findAll(@Query('status') status?: string) {
+    const valid = ['PENDING', 'APPROVED', 'REJECTED'];
+    if (status !== undefined && !valid.includes(status)) {
+      throw new BadRequestException(`status must be one of: ${valid.join(', ')}`);
+    }
     return this.service.findAll(status);
   }
 
