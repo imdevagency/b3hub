@@ -4,7 +4,13 @@
  */
 import { apiFetch } from './common';
 import type { MaterialUnit } from './materials';
-import type { WasteType } from './containers';
+import type {
+  WasteType,
+  DisposalTruckType,
+  TransportVehicleType,
+} from '@b3hub/shared';
+
+export type { WasteType, DisposalTruckType, TransportVehicleType };
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -206,8 +212,7 @@ export async function createCartOrder(
   });
 }
 
-export type DisposalTruckType = 'TIPPER_SMALL' | 'TIPPER_LARGE' | 'ARTICULATED_TIPPER';
-export type TransportVehicleType = 'TIPPER_SMALL' | 'TIPPER_LARGE' | 'ARTICULATED_TIPPER';
+// DisposalTruckType and TransportVehicleType are imported from @b3hub/shared above.
 
 export type SurchargeType =
   | 'FUEL'

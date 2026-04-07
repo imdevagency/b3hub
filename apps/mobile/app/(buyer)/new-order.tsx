@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
-import { HardHat, Package, Trash2, Truck, FileText } from 'lucide-react-native';
+import { HardHat, Package, Trash2, Truck } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { haptics } from '@/lib/haptics';
@@ -17,7 +17,7 @@ const SERVICES = [
     icon: HardHat,
     label: 'Materiāli',
     sub: 'Smiltis, grants, šķembas, betona izstrādājumi',
-    route: '/(buyer)/catalog',
+    route: '/order-request-new',
   },
   {
     id: 'container',
@@ -39,13 +39,6 @@ const SERVICES = [
     label: 'Transports',
     sub: 'Kravu pārvadāšana no A uz B',
     route: '/transport',
-  },
-  {
-    id: 'rfq',
-    icon: FileText,
-    label: 'Cenu aptauja',
-    sub: 'Aprakstiet vajadzību — piegādātāji piedāvā cenu',
-    route: '/order-request-new',
   },
 ] as const;
 

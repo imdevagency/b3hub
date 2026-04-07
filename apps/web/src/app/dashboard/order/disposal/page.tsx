@@ -47,6 +47,7 @@ const VOLUME_PRESETS: {
   truckType: 'TIPPER_SMALL' | 'TIPPER_LARGE' | 'ARTICULATED_TIPPER';
   truckCount: number;
   fromPrice: number;
+  typicalWeightT: number;
 }[] = [
   {
     key: 'sm',
@@ -55,6 +56,7 @@ const VOLUME_PRESETS: {
     truckType: 'TIPPER_SMALL',
     truckCount: 1,
     fromPrice: 89,
+    typicalWeightT: 5,
   },
   {
     key: 'md',
@@ -63,6 +65,7 @@ const VOLUME_PRESETS: {
     truckType: 'TIPPER_LARGE',
     truckCount: 1,
     fromPrice: 149,
+    typicalWeightT: 10,
   },
   {
     key: 'lg',
@@ -71,6 +74,7 @@ const VOLUME_PRESETS: {
     truckType: 'ARTICULATED_TIPPER',
     truckCount: 1,
     fromPrice: 219,
+    typicalWeightT: 15,
   },
   {
     key: 'xl',
@@ -79,6 +83,7 @@ const VOLUME_PRESETS: {
     truckType: 'ARTICULATED_TIPPER',
     truckCount: 2,
     fromPrice: 399,
+    typicalWeightT: 26,
   },
 ];
 
@@ -246,7 +251,7 @@ export default function DisposalOrderPage() {
           wasteType,
           truckType: selectedPreset.truckType,
           truckCount: selectedPreset.truckCount,
-          estimatedWeight: 1000 * selectedPreset.truckCount,
+          estimatedWeight: selectedPreset.typicalWeightT,
           requestedDate: new Date(date).toISOString(),
           notes,
           siteContactName: siteContactName || undefined,

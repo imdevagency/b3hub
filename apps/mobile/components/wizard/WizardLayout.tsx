@@ -45,6 +45,8 @@ export type WizardLayoutProps = {
   onCTA: () => void;
   ctaDisabled?: boolean;
   ctaLoading?: boolean;
+  /** Optional custom content to left of CTA in footer */
+  footerLeft?: React.ReactNode;
 };
 
 export function WizardLayout({
@@ -58,6 +60,7 @@ export function WizardLayout({
   onCTA,
   ctaDisabled,
   ctaLoading,
+  footerLeft,
 }: WizardLayoutProps) {
   const insets = useSafeAreaInsets();
   const progressPct = `${Math.round((step / totalSteps) * 100)}%`;
@@ -103,18 +106,32 @@ export function WizardLayout({
 
       {/* ── Footer CTA ── */}
       <View style={[wl.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-        <TouchableOpacity
-          style={[wl.cta, ctaDisabled && wl.ctaDisabled]}
-          disabled={!!(ctaDisabled || ctaLoading)}
-          onPress={onCTA}
-          activeOpacity={0.88}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+          }}
         >
-          {ctaLoading ? (
-            <ActivityIndicator color={ctaDisabled ? '#9ca3af' : '#fff'} />
-          ) : (
-            <Text style={[wl.ctaText, ctaDisabled && wl.ctaTextDisabled]}>{ctaLabel}</Text>
-          )}
-        </TouchableOpacity>
+          {footerLeft && <View style={{ flexShrink: 1 }}>{footerLeft}</View>}
+          <TouchableOpacity
+            style={[
+              wl.cta,
+              { flex: footerLeft ? 1 : undefined, width: footerLeft ? undefined : '100%' },
+              ctaDisabled && wl.ctaDisabled,
+            ]}
+            disabled={!!(ctaDisabled || ctaLoading)}
+            onPress={onCTA}
+            activeOpacity={0.88}
+          >
+            {ctaLoading ? (
+              <ActivityIndicator color={ctaDisabled ? '#9ca3af' : '#fff'} />
+            ) : (
+              <Text style={[wl.ctaText, ctaDisabled && wl.ctaTextDisabled]}>{ctaLabel}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );

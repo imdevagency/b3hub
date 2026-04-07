@@ -4,6 +4,7 @@
  * upload delivery proof, complete job.
  */
 import {
+  BadRequestException,
   Controller,
   ForbiddenException,
   Get,
@@ -33,6 +34,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { ReviewsService } from '../reviews/reviews.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { SurchargeType } from '@prisma/client';
 
 class CreateDriverReviewDto {
@@ -45,6 +47,11 @@ class CreateTransportSurchargeDto {
   @IsNumber() @Min(0) @Type(() => Number) amount: number;
   @IsString() @IsOptional() label?: string;
   @IsBoolean() @IsOptional() billable?: boolean;
+}
+
+class UploadPickupPhotoDto {
+  @IsString() base64: string;
+  @IsString() @IsOptional() mimeType?: string;
 }
 
 function canDispatch(user: RequestingUser): boolean {
@@ -69,6 +76,7 @@ export class TransportJobsController {
   constructor(
     private readonly service: TransportJobsService,
     private readonly reviewsService: ReviewsService,
+    private readonly supabase: SupabaseService,
   ) {}
 
   /**
@@ -151,7 +159,11 @@ export class TransportJobsController {
     @Query('lat') lat: string,
     @Query('lng') lng: string,
     @Query('radiusKm') radiusKm?: string,
+    @CurrentUser() user: RequestingUser,
   ) {
+    if (!user.canTransport) {
+      throw new ForbiddenException('Only approved drivers can query return trips');
+    }
     return this.service.findReturnTrips(
       parseFloat(lat),
       parseFloat(lng),
@@ -219,9 +231,15 @@ export class TransportJobsController {
   /**
    * GET /transport-jobs/:id/document-readiness
    * Returns required document gate state before completion.
+   * Ownership enforced via findOneAsUser.
    */
   @Get(':id/document-readiness')
-  getDocumentReadiness(@Param('id') id: string) {
+  async getDocumentReadiness(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    // Validates ownership/access — throws 403/404 if caller has no access to this job.
+    await this.service.findOneAsUser(id, user);
     return this.service.getDocumentReadiness(id);
   }
 
@@ -244,6 +262,20 @@ export class TransportJobsController {
       throw new ForbiddenException('Only approved drivers can accept transport jobs');
     }
     return this.service.accept(id, user.userId);
+  }
+
+  /**
+   * POST /transport-jobs/:id/decline-offer
+   * Driver declines the exclusive job offer and adds themselves to the declined list.
+   * The auto-dispatch cron will immediately offer the job to the next eligible driver.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/decline-offer')
+  declineOffer(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+    if (!user.canTransport) {
+      throw new ForbiddenException('Only approved drivers can decline job offers');
+    }
+    return this.service.declineOffer(id, user.userId);
   }
 
   /**
@@ -366,6 +398,33 @@ export class TransportJobsController {
     @Body() dto: SubmitDeliveryProofDto,
   ) {
     return this.service.submitDeliveryProof(id, user.userId, dto);
+  }
+
+  /**
+   * POST /transport-jobs/:id/pickup-photo
+   * Driver uploads a pickup/loading photo as base64.
+   * Returns a Supabase Storage URL to be passed into the LOADED status update.
+   */
+  @Post(':id/pickup-photo')
+  async uploadPickupPhoto(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+    @Body() dto: UploadPickupPhotoDto,
+  ) {
+    if (!user.canTransport) {
+      throw new ForbiddenException('Only drivers can upload pickup photos');
+    }
+    if (!this.supabase) {
+      throw new BadRequestException('File storage is not configured');
+    }
+    const mimeType = dto.mimeType ?? 'image/jpeg';
+    const raw = dto.base64.includes(',') ? dto.base64.split(',')[1] : dto.base64;
+    const buffer = Buffer.from(raw, 'base64');
+    const ext = mimeType === 'image/png' ? 'png' : 'jpg';
+    const path = `pickup-photos/${id}/${Date.now()}.${ext}`;
+    await this.supabase.uploadFile('pickup-photos', path, buffer);
+    const url = this.supabase.getPublicUrl('pickup-photos', path);
+    return { url };
   }
 
   /**

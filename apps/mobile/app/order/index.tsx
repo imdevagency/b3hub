@@ -330,6 +330,18 @@ export default function OrderWizard() {
     4: 'Apstiprini pasūtījumu',
   };
 
+  if (step === 3) {
+    return (
+      <InlineAddressStep
+        picked={picked}
+        onPick={setPicked}
+        onConfirm={onCTA}
+        onCancel={goBack}
+        contextLabel="Izkraušanas vieta"
+      />
+    );
+  }
+
   return (
     <>
       <WizardLayout
@@ -361,16 +373,6 @@ export default function OrderWizard() {
               onSelect={handleSizeSelect}
               prices={marketPrices}
             />
-          </View>
-        )}
-
-        {/* ── Step 3: Delivery address (matches web step 2 "Adrese") ── */}
-        {step === 3 && (
-          <View style={{ flex: 1 }}>
-            <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
-              <SavedAddressPicker onPick={handlePickConfirm} currentAddress={picked} />
-            </View>
-            <InlineAddressStep picked={picked} onPick={handlePickConfirm} />
           </View>
         )}
 

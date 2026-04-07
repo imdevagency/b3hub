@@ -369,6 +369,8 @@ export class QuoteRequestsService {
         const jobNumber = `TRJ${_jd.getFullYear().toString().slice(-2)}${(_jd.getMonth() + 1).toString().padStart(2, '0')}${(Date.now() % 100_000).toString().padStart(5, '0')}${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
         const pickupDate = new Date();
         pickupDate.setDate(pickupDate.getDate() + (response.etaDays ?? 1));
+        const deliveryDate = new Date(pickupDate);
+        deliveryDate.setDate(deliveryDate.getDate() + 1);
 
         await this.prisma.transportJob.create({
           data: {
@@ -384,7 +386,7 @@ export class QuoteRequestsService {
             deliveryCity: req.deliveryCity,
             deliveryState: '',
             deliveryPostal: '',
-            deliveryDate: pickupDate,
+            deliveryDate,
             cargoType: req.materialName,
             cargoWeight: req.quantity,
             rate: order.total,
@@ -573,13 +575,13 @@ export class QuoteRequestsService {
         status: QuoteResponseStatus.PENDING,
         validUntil: { not: null, lt: new Date() },
       },
-      data: { status: QuoteResponseStatus.REJECTED },
+      data: { status: QuoteResponseStatus.EXPIRED },
     });
 
     if (expiredRequests.count > 0 || expiredResponses.count > 0) {
       this.logger.log(
         `Expiry cron: ${expiredRequests.count} quote requests → EXPIRED, ` +
-          `${expiredResponses.count} quote responses → REJECTED`,
+          `${expiredResponses.count} quote responses → EXPIRED`,
       );
     }
   }

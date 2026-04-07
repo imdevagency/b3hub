@@ -109,9 +109,17 @@ export class DisputesService {
       where.orderId = orderId;
     }
 
-    // Non-admins see only their own disputes
+    // Non-admins see disputes they raised themselves OR any dispute raised for
+    // their company's orders (so managers can audit teammate-raised disputes).
     if (currentUser.userType !== 'ADMIN') {
-      where.raisedById = currentUser.userId;
+      if (currentUser.companyId) {
+        where.OR = [
+          { raisedById: currentUser.userId },
+          { order: { buyerId: currentUser.companyId } },
+        ];
+      } else {
+        where.raisedById = currentUser.userId;
+      }
     }
 
     return this.prisma.dispute.findMany({

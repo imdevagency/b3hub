@@ -1,24 +1,11 @@
 import { apiFetch } from './common';
+import type {
+  WasteType,
+  DisposalTruckType,
+  TransportVehicleType,
+} from '@b3hub/shared';
 
-// ─── Shared waste / freight creation types ────────────────────────────────
-
-export type WasteType =
-  | 'CONCRETE'
-  | 'BRICK'
-  | 'WOOD'
-  | 'METAL'
-  | 'PLASTIC'
-  | 'SOIL'
-  | 'MIXED'
-  | 'HAZARDOUS';
-
-export type DisposalTruckType = 'TIPPER_SMALL' | 'TIPPER_LARGE' | 'ARTICULATED_TIPPER';
-export type TransportVehicleType =
-  | 'TIPPER_SMALL'
-  | 'TIPPER_LARGE'
-  | 'ARTICULATED_TIPPER'
-  | 'FLATBED'
-  | 'BOX_TRUCK';
+export type { WasteType, DisposalTruckType, TransportVehicleType };
 
 export interface CreateDisposalOrderInput {
   pickupAddress: string;
@@ -162,6 +149,7 @@ export interface ApiOrder {
     email?: string;
     phone?: string;
   } | null;
+  createdBy?: { id: string } | null;
   transportJobs?: {
     id: string;
     status: string;
@@ -286,10 +274,18 @@ export const ordersApi = {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
-    startLoading: (id: string, token: string) =>
+    sellerCancel: (id: string, reason: string, token: string) =>
+      apiFetch<ApiOrder>(`/orders/${id}/seller-cancel`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+      }),
+
+    startLoading: (id: string, token: string, weightKg?: number) =>
       apiFetch<ApiOrder>(`/orders/${id}/start-loading`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weightKg }),
       }),
 
     linkSkipOrder: (orderId: string, skipHireOrderId: string | null, token: string) =>

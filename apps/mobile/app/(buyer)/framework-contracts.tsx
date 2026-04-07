@@ -35,6 +35,7 @@ import { Package, Plus, X, Calendar as CalendarIcon, FileText } from 'lucide-rea
 import { Button } from '@/components/ui/button';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/text';
 import { Calendar, LocaleConfig, DateData } from 'react-native-calendars';
@@ -121,10 +122,7 @@ export default function FrameworkContractsScreen() {
   const router = useRouter();
 
   const canManageContracts =
-    user?.companyRole === 'OWNER' ||
-    user?.companyRole === 'MANAGER' ||
-    !!user?.permCreateContracts ||
-    !!user?.permReleaseCallOffs;
+    user?.companyRole === 'OWNER' || user?.companyRole === 'MANAGER' || !!user?.permCreateContracts;
 
   const [contracts, setContracts] = useState<ApiFrameworkContract[]>([]);
   const [loading, setLoading] = useState(true);
@@ -332,10 +330,8 @@ export default function FrameworkContractsScreen() {
             <Text style={s.itemTitle} numberOfLines={1}>
               {contract.title}
             </Text>
-            {/* Status Dot */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <View style={[s.statusDot, { backgroundColor: status.color }]} />
-            </View>
+            {/* Status Pill */}
+            <StatusPill label={status.label} bg={status.bg} color={status.color} size="sm" />
           </View>
 
           <View style={s.itemMetaRow}>

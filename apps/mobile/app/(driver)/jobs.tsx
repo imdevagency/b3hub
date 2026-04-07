@@ -26,7 +26,9 @@ import { estimateCo2Kg, formatCo2 } from '@/lib/co2';
 import { SkeletonJobRow } from '@/components/ui/Skeleton';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { FilterSheet } from '@/components/driver/FilterSheet';
+import { JobRouteMap } from '@/components/ui/JobRouteMap';
 import {
   type TransportJob,
   type SearchFilter,
@@ -74,6 +76,7 @@ function AcceptBottomSheet({
   onConfirm,
   loading = false,
   onClose,
+  onDecline,
 }: {
   visible: boolean;
   job: TransportJob | null;
@@ -81,6 +84,7 @@ function AcceptBottomSheet({
   onConfirm: () => void;
   loading?: boolean;
   onClose: () => void;
+  onDecline?: () => void;
 }) {
   // Preserve last job so exit animation shows content
   const lastJobRef = useRef<TransportJob | null>(job);
@@ -114,6 +118,17 @@ function AcceptBottomSheet({
             <Text style={styles.sheetMetaText}>{j.weightTonnes} t</Text>
           </View>
         </View>
+
+        {/* Route preview map */}
+        {j.fromLat !== 0 && j.fromLng !== 0 && j.toLat !== 0 && j.toLng !== 0 && (
+          <JobRouteMap
+            pickup={{ lat: j.fromLat, lng: j.fromLng, label: j.fromCity }}
+            delivery={{ lat: j.toLat, lng: j.toLng, label: j.toCity }}
+            height={160}
+            borderRadius={12}
+            showToPickupLeg={false}
+          />
+        )}
 
         {/* Return suggestions */}
         {nearby.length > 0 && (
@@ -156,6 +171,11 @@ function AcceptBottomSheet({
             <Text style={styles.sheetAcceptBtnText}>{t.jobs.acceptAndGo}</Text>
           )}
         </TouchableOpacity>
+        {onDecline && (
+          <TouchableOpacity style={styles.sheetDeclineBtn} onPress={onDecline} disabled={loading}>
+            <Text style={styles.sheetDeclineBtnText}>Atteikt darbu</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </BottomSheet>
   );
@@ -375,52 +395,32 @@ function JobCard({
           {job.vehicleType} · {job.weightTonnes}t · {job.payload} · {job.date}
         </Text>
         {job.pricePerTonne > 0 && (
-          <View
-            style={{
-              backgroundColor: '#f0fdf4',
-              paddingHorizontal: 8,
-              paddingVertical: 3,
-              borderRadius: 6,
-              marginLeft: 8,
-            }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '700', color: '#166534' }}>
-              €{job.pricePerTonne.toFixed(2)}/t
-            </Text>
+          <View style={{ marginLeft: 8 }}>
+            <StatusPill
+              label={`€${job.pricePerTonne.toFixed(2)}/t`}
+              bg="#f0fdf4"
+              color="#166534"
+              size="sm"
+            />
           </View>
         )}
         {(() => {
           const co2 = estimateCo2Kg(job.distanceKm, job.weightTonnes);
           if (!co2) return null;
           return (
-            <View
-              style={{
-                backgroundColor: '#f0fdf4',
-                paddingHorizontal: 8,
-                paddingVertical: 3,
-                borderRadius: 6,
-                marginLeft: 8,
-              }}
-            >
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#15803d' }}>
-                ~{formatCo2(co2)}
-              </Text>
+            <View style={{ marginLeft: 8 }}>
+              <StatusPill label={`~${formatCo2(co2)}`} bg="#f0fdf4" color="#15803d" size="sm" />
             </View>
           );
         })()}
         {job.buyerOfferedRate != null && job.buyerOfferedRate > 0 && (
-          <View
-            style={{
-              backgroundColor: '#eff6ff',
-              paddingHorizontal: 8,
-              paddingVertical: 3,
-              borderRadius: 6,
-              marginLeft: 8,
-            }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '700', color: '#1d4ed8' }}>
-              Piedāvā €{job.buyerOfferedRate.toFixed(2)}
-            </Text>
+          <View style={{ marginLeft: 8 }}>
+            <StatusPill
+              label={`Piedāvā €${job.buyerOfferedRate.toFixed(2)}`}
+              bg="#eff6ff"
+              color="#1d4ed8"
+              size="sm"
+            />
           </View>
         )}
       </View>
@@ -695,6 +695,18 @@ export default function JobsScreen() {
     }
   };
 
+  const handleDeclineOffer = async () => {
+    if (!acceptSheetJob || !token) return;
+    try {
+      await api.transportJobs.declineOffer(acceptSheetJob.id, token);
+      haptics.light();
+    } catch {
+      // silently ignore — offer still expires naturally
+    } finally {
+      setAcceptSheetJob(null);
+    }
+  };
+
   if (loading) {
     return (
       <ScreenContainer bg="#f2f2f7">
@@ -796,6 +808,7 @@ export default function JobsScreen() {
         }
         onConfirm={handleConfirmAccept}
         loading={accepting}
+        onDecline={handleDeclineOffer}
         onClose={() => {
           if (!accepting) setAcceptSheetJob(null);
         }}
@@ -1058,6 +1071,12 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   sheetAcceptBtnText: { color: '#fff', fontWeight: '800', fontSize: 18 },
+  sheetDeclineBtn: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  sheetDeclineBtnText: { color: '#ef4444', fontSize: 14, fontWeight: '600' },
 });
 
 // ── Map styles ────────────────────────────────────────────────────────────────

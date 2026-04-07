@@ -341,7 +341,7 @@ export default function EarningsScreen() {
               {setupLoading ? (
                 <ActivityIndicator color="white" size="small" />
               ) : (
-                <Text className="text-white font-medium">Iestaītīt ar Stripe</Text>
+                <Text className="text-white font-medium">Iestatīt ar Stripe</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -400,16 +400,25 @@ export default function EarningsScreen() {
 
         {/* ── Stripe Balance Card ───────────────────────── */}
         {stripeOnboarded && (
-          <View style={{
-            marginHorizontal: 16,
-            marginBottom: 16,
-            borderRadius: 14,
-            borderWidth: 1,
-            borderColor: '#d1fae5',
-            backgroundColor: '#f0fdf4',
-            padding: 16,
-          }}>
-            <Text style={{ fontSize: 12, color: '#15803d', fontFamily: 'Inter_600SemiBold', marginBottom: 10 }}>
+          <View
+            style={{
+              marginHorizontal: 16,
+              marginBottom: 16,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: '#d1fae5',
+              backgroundColor: '#f0fdf4',
+              padding: 16,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 12,
+                color: '#15803d',
+                fontFamily: 'Inter_600SemiBold',
+                marginBottom: 10,
+              }}
+            >
               STRIPE · KONTA ATLIKUMS
             </Text>
             <View style={{ flexDirection: 'row', gap: 24 }}>
@@ -442,7 +451,14 @@ export default function EarningsScreen() {
                   key={item.id}
                   style={[s.listItem, i < filteredHistory.length - 1 && s.listBorder]}
                   activeOpacity={0.7}
-                  onPress={() => router.push(`/(buyer)/transport-job/${item.id}` as any)}
+                  onPress={() => {
+                    haptics.light();
+                    if (ACTIVE_STATUSES.includes(item.status)) {
+                      router.push('/(driver)/active' as any);
+                    } else {
+                      router.push('/(driver)/jobs' as any);
+                    }
+                  }}
                 >
                   <View style={s.listLeft}>
                     {/* Time or Date only if not strictly visible in header context, but here we show date */}

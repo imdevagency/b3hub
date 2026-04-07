@@ -4,6 +4,7 @@
  */
 import {
   Controller,
+  ForbiddenException,
   Get,
   Patch,
   Post,
@@ -68,7 +69,7 @@ export class NotificationsController {
     @Body() body: { userId: string; title?: string; message?: string },
   ) {
     if (process.env.NODE_ENV !== 'development') {
-      return { error: 'Only available in development' };
+      throw new ForbiddenException('Only available in development');
     }
     return this.notificationsService.create({
       userId: body.userId,

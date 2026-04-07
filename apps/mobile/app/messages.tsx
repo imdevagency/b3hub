@@ -126,10 +126,14 @@ function RoomCard({ item, onPress }: { item: ApiChatRoom; onPress: () => void })
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function MessagesScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
-  const handleBack = () =>
-    router.canGoBack() ? router.back() : router.replace('/(buyer)/home' as any);
+  const homeRoute = user?.canTransport
+    ? '/(driver)/home'
+    : user?.canSell
+      ? '/(seller)/home'
+      : '/(buyer)/home';
+  const handleBack = () => (router.canGoBack() ? router.back() : router.replace(homeRoute as any));
   const [rooms, setRooms] = useState<ApiChatRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

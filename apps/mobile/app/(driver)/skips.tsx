@@ -45,6 +45,7 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { api, SkipHireOrder, SkipHireStatus } from '@/lib/api';
 import { BaseMap } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
@@ -167,9 +168,12 @@ function OrderCard({ order, onStatusUpdate, updating, flat = false }: OrderCardP
         <View style={{ flex: 1, marginLeft: 12 }}>
           <View style={s.titleRow}>
             <Text style={s.orderNumber}>{order.orderNumber}</Text>
-            <View style={[s.badge, { backgroundColor: statusInfo.bg }]}>
-              <Text style={[s.badgeText, { color: statusInfo.color }]}>{statusInfo.label}</Text>
-            </View>
+            <StatusPill
+              label={statusInfo.label}
+              bg={statusInfo.bg}
+              color={statusInfo.color}
+              size="sm"
+            />
           </View>
           <View style={s.metaRow}>
             <MapPin size={13} color="#6b7280" />

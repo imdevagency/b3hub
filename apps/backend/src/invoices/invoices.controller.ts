@@ -87,15 +87,15 @@ export class InvoicesController {
     return this.invoicesService.getById(id, user.userId, user.companyId);
   }
 
-  /** PATCH /invoices/:id/pay */
+  /** PATCH /invoices/:id/pay — admin-only: confirms offline/bank-transfer payment */
   @Patch(':id/pay')
   markAsPaid(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
-    if (!canViewFinancials(user)) {
+    if (user.userType !== 'ADMIN') {
       throw new ForbiddenException(
-        'You do not have permission to pay invoices',
+        'Only admins can manually mark invoices as paid',
       );
     }
-    return this.invoicesService.markAsPaid(id, user.userId, user.companyId);
+    return this.invoicesService.markAsPaid(id, user.userId, user.companyId, true);
   }
 
   /** GET /invoices/:id/pdf — stream PDF to client */

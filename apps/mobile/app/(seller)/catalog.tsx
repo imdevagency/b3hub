@@ -37,6 +37,7 @@ import { CATEGORY_LABELS, DEFAULT_MATERIAL_NAMES, UNIT_SHORT } from '@/lib/mater
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { useToast } from '@/components/ui/Toast';
 import { haptics } from '@/lib/haptics';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -155,12 +156,12 @@ function ListingCard({
                 <Text style={s.tagRecycledText}>Rec.</Text>
               </View>
             )}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <View style={[s.statusDot, !material.inStock && { backgroundColor: '#ef4444' }]} />
-              <Text style={[s.statusText, !material.inStock && { color: '#ef4444' }]}>
-                {material.inStock ? 'Noliktavā' : 'Tukšs'}
-              </Text>
-            </View>
+            <StatusPill
+              label={material.inStock ? 'Noliktavā' : 'Tukšs'}
+              bg={material.inStock ? '#f0fdf4' : '#fef2f2'}
+              color={material.inStock ? '#16a34a' : '#ef4444'}
+              size="sm"
+            />
           </View>
         </View>
       </View>
@@ -545,7 +546,12 @@ function ListingModal({
     }
     setUploadingImage(true);
     try {
-      const { images } = await api.materials.uploadImage(initial.id, asset.base64!, 'image/jpeg', token);
+      const { images } = await api.materials.uploadImage(
+        initial.id,
+        asset.base64!,
+        'image/jpeg',
+        token,
+      );
       setLocalImages(images);
     } catch {
       Alert.alert('Kļūda', 'Neizdevās augšupielādēt attēlu.');

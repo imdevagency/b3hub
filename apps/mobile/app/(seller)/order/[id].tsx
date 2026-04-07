@@ -109,7 +109,7 @@ export default function SellerOrderDetailScreen() {
         onPress: async () => {
           setActioning('reject');
           try {
-            await api.orders.cancel(order.id, token!);
+            await api.orders.sellerCancel(order.id, 'Piegādātājs noraidīja pasūtījumu', token!);
             haptics.success();
             toast.success('Pasūtījums noraidīts.');
             router.back();
@@ -194,7 +194,9 @@ export default function SellerOrderDetailScreen() {
               last={i === (order.items?.length ?? 0) - 1}
             />
           ))}
-          {order.total != null && <DetailRow label="Summa" value={`€${order.total}`} last />}
+          {order.total != null && (
+            <DetailRow label="Summa" value={`€${Number(order.total).toFixed(2)}`} last />
+          )}
         </InfoSection>
 
         {/* Delivery */}

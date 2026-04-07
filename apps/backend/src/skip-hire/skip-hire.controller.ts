@@ -100,10 +100,15 @@ export class SkipHireController {
   /**
    * GET /api/v1/skip-hire/number/:orderNumber
    * Lookup by the human-readable order number (e.g. SKP2602000001).
+   * Requires authentication — order data contains PII (contact name/email/phone).
    */
   @Get('number/:orderNumber')
-  findByNumber(@Param('orderNumber') orderNumber: string) {
-    return this.skipHireService.findByOrderNumber(orderNumber);
+  @UseGuards(JwtAuthGuard)
+  findByNumber(
+    @Param('orderNumber') orderNumber: string,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
+    return this.skipHireService.findByOrderNumber(orderNumber, req.user);
   }
 
   /**

@@ -101,12 +101,12 @@ export class OrdersController {
   }
 
   @Post(':id/start-loading')
-  startLoading(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
-    return this.ordersService.updateStatusAsUser(
-      id,
-      OrderStatus.IN_PROGRESS,
-      user,
-    );
+  startLoading(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+    @Body() body: { weightKg?: number },
+  ) {
+    return this.ordersService.startLoading(id, user, body?.weightKg);
   }
 
   @Post(':id/cancel')

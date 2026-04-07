@@ -1,14 +1,17 @@
 /**
- * InlineAddressStep
+ * InlineAddressStep (Now Fullscreen GlobalAddressPicker)
  *
- * Drop-in address-picking step for all booking wizards.
- * Map fills the available space; search bar + autocomplete sit below.
- * No modal overlay — the map lives natively in the step.
+ * Fullscreen address-picking step matching 2-screen design:
+ *   - Screen 1: Search / Select from Saved / GPS
+ *   - Screen 2: Map confirmation
  *
  * Usage:
  *   <InlineAddressStep
  *     picked={pickedAddress}
- *     onPick={(p) => { setPickedAddress(p); }}
+ *     onPick={(p) => setPickedAddress(p)}
+ *     onConfirm={() => goNext()}
+ *     onCancel={() => goBack()}
+ *     contextLabel="Izkraušanas vieta"
  *   />
  */
 
@@ -24,15 +27,17 @@ import {
   Platform,
   KeyboardAvoidingView,
   ScrollView,
+  SafeAreaView,
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { MapPin, Search, X, Navigation, CheckCircle, Star } from 'lucide-react-native';
+import { MapPin, Search, X, Navigation, CheckCircle, Star, Map, ChevronRight } from 'lucide-react-native';
 import { useGeocode } from '@/components/map';
 import type { GeocodeSuggestion } from '@/components/map';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { SavedAddress } from '@/lib/api';
+import { haptics } from '@/lib/haptics';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -44,19 +49,14 @@ export type PickedAddress = {
 };
 
 type Props = {
-  /** Currently confirmed address (null = none yet). */
   picked: PickedAddress | null;
-  /** Called whenever the user confirms a new address. */
   onPick: (p: PickedAddress) => void;
-  /** Pre-seed the search input text without marking an address as confirmed (e.g. reorder prefill). */
+  onConfirm?: () => void;
+  onCancel?: () => void;
   initialText?: string;
-  /** Optional compact banner shown above the map (e.g. pickup reference in transport step 2). */
   banner?: React.ReactNode;
-  /** Optional label describing what address we're selecting (e.g. "Piegādes vieta"). */
   contextLabel?: string;
-  /** Optional icon type: 'from' or 'to' to indicate source vs destination. */
   contextIcon?: 'from' | 'to';
-  /** Optional previously selected address to show as context (e.g., pickup when selecting delivery). */
   contextAddress?: PickedAddress | null;
 };
 
@@ -74,9 +74,11 @@ const RIGA_REGION = {
 export function InlineAddressStep({
   picked,
   onPick,
+  onConfirm,
+  onCancel,
   initialText,
   banner,
-  contextLabel,
+  contextLabel = 'Izvēlēties vietu',
   contextIcon,
   contextAddress,
 }: Props) {
@@ -87,6 +89,7 @@ export function InlineAddressStep({
   const { forwardGeocode, resolvePlace, reverseGeocodeWithCity } = useGeocode();
   const { token } = useAuth();
 
+  const [mode, setMode] = useState<'SEARCH' | 'MAP'>('SEARCH');
   const [pin, setPin] = useState<{ latitude: number; longitude: number } | null>(
     picked ? { latitude: picked.lat, longitude: picked.lng } : null,
   );
@@ -175,6 +178,7 @@ export function InlineAddressStep({
         const city = sug.place_name.split(',').slice(-2, -1)[0]?.trim() ?? '';
         onPick({ address: sug.place_name, lat, lng, city });
         setQuery(sug.place_name);
+        setMode('MAP');
       } finally {
         setResolving(false);
         setTimeout(() => {
@@ -196,11 +200,14 @@ export function InlineAddressStep({
       const { latitude, longitude } = loc.coords;
       const newPin = { latitude, longitude };
       setPin(newPin);
-      mapRef.current?.animateToRegion(
-        { ...newPin, latitudeDelta: 0.01, longitudeDelta: 0.01 },
-        600,
-      );
       await applyCoords(latitude, longitude);
+      setMode('MAP');
+      setTimeout(() => {
+        mapRef.current?.animateToRegion(
+          { ...newPin, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+          600,
+        );
+      }, 100);
     } finally {
       setLocating(false);
     }
@@ -232,12 +239,15 @@ export function InlineAddressStep({
       if (addr.lat != null && addr.lng != null) {
         const newPin = { latitude: addr.lat, longitude: addr.lng };
         setPin(newPin);
-        mapRef.current?.animateToRegion(
-          { ...newPin, latitudeDelta: 0.01, longitudeDelta: 0.01 },
-          600,
-        );
         setQuery(addr.address);
-        onPick({ address: addr.address, lat: addr.lat, lng: addr.lng, city: addr.city });
+        onPick({ address: addr.address, lat: addr.lat, lng: addr.lng, city: addr.city || '' });
+        setMode('MAP');
+        setTimeout(() => {
+          mapRef.current?.animateToRegion(
+            { ...newPin, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+            600,
+          );
+        }, 100);
       } else {
         setResolving(true);
         try {
@@ -248,12 +258,15 @@ export function InlineAddressStep({
           const [lng, lat] = coords;
           const newPin = { latitude: lat, longitude: lng };
           setPin(newPin);
-          mapRef.current?.animateToRegion(
-            { ...newPin, latitudeDelta: 0.01, longitudeDelta: 0.01 },
-            600,
-          );
           setQuery(addr.address);
-          onPick({ address: addr.address, lat, lng, city: addr.city });
+          onPick({ address: addr.address, lat, lng, city: addr.city || '' });
+          setMode('MAP');
+          setTimeout(() => {
+            mapRef.current?.animateToRegion(
+              { ...newPin, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+              600,
+            );
+          }, 100);
         } finally {
           setResolving(false);
         }
@@ -262,18 +275,23 @@ export function InlineAddressStep({
     [onPick, forwardGeocode, resolvePlace],
   );
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  const handleConfirmDone = useCallback(() => {
+    haptics.light();
+    if (onConfirm) onConfirm();
+  }, [onConfirm]);
 
-  return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      {/* Map fills all available space */}
-      <View style={{ flex: 1 }}>
+  const handleCancelDone = useCallback(() => {
+    if (onCancel) onCancel();
+  }, [onCancel]);
+
+  // ── Render MAP Mode ────────────────────────────────────────────────────────
+
+  if (mode === 'MAP') {
+    return (
+      <View style={s.root}>
         <MapView
           ref={mapRef}
-          style={{ flex: 1 }}
+          style={s.mapFullscreen}
           provider={PROVIDER_GOOGLE}
           initialRegion={pin ? { ...pin, latitudeDelta: 0.01, longitudeDelta: 0.01 } : RIGA_REGION}
           onPress={handleMapPress}
@@ -286,341 +304,329 @@ export function InlineAddressStep({
         >
           {pin && <Marker coordinate={pin} draggable onDragEnd={handleMarkerDragEnd} />}
         </MapView>
+        
+        {/* Floating cross circular button top-right */}
+        <SafeAreaView style={s.floatingHeader}>
+          <View style={s.floatingHeaderContent}>
+            <View style={{flex: 1}} />
+            <TouchableOpacity style={s.mapXBtn} onPress={() => setMode('SEARCH')} activeOpacity={0.8}>
+              <X size={24} color="#111827" />
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
 
-        <View style={s.mapHintWrap} pointerEvents="none">
-          <Text style={s.mapHintText}>
-            Pieskaries kartei vai velc marķieri precīzai izkraušanas vietai
-          </Text>
-        </View>
-
-        {/* GPS button */}
-        <TouchableOpacity
-          style={s.gpsBtn}
-          onPress={handleGPS}
-          disabled={locating}
-          activeOpacity={0.85}
-        >
-          {locating ? (
-            <ActivityIndicator size="small" color="#111827" />
-          ) : (
-            <Navigation size={20} color="#111827" />
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* Search panel */}
-      <View style={s.searchPanel}>
-        {/* Optional reference address timeline */}
-        {contextAddress && (
-          <View style={s.timelineWrap}>
-            <View style={s.timelineRow}>
-              <View style={s.timelineDot} />
-              <Text style={s.timelineText} numberOfLines={1}>
-                {contextAddress.address}
+        {/* Bottom Confirmation Card Overlay */}
+        <View style={s.bottomPanel}>
+          <Text style={s.panelTitle}>Apstipriniet vietu</Text>
+          <View style={s.panelInfoRow}>
+            <View style={s.panelPinOuter}>
+              <MapPin size={24} color="#3b82f6" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.panelAddress} numberOfLines={2}>
+                {picked?.address || query || 'Izvēlēties vietu kartē'}
               </Text>
             </View>
-            <View style={s.timelineLine} />
           </View>
-        )}
-
-        {/* Saved address quick-picks — shown when query is empty */}
-        {savedAddresses.length > 0 && !showSugs && query.trim().length === 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={s.savedChipsRow}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={s.savedChipsContent}
+          <TouchableOpacity 
+            style={[s.ctaBtn, resolving || locating ? s.ctaBtnDisabled : {}]} 
+            onPress={handleConfirmDone} 
+            disabled={resolving || locating || !picked}
+            activeOpacity={0.88}
           >
-            {[...savedAddresses]
-              .sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0))
-              .map((addr) => (
-                <TouchableOpacity
-                  key={addr.id}
-                  style={[s.savedChip, addr.isDefault && s.savedChipDefault]}
-                  onPress={() => handleSavedAddressPick(addr)}
-                  activeOpacity={0.75}
-                >
-                  {addr.isDefault && <Star size={11} color="#d97706" fill="#d97706" />}
-                  <Text
-                    style={[s.savedChipText, addr.isDefault && s.savedChipDefaultText]}
-                    numberOfLines={1}
-                  >
-                    {addr.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-          </ScrollView>
-        )}
+            {resolving || locating ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={s.ctaBtnText}>APSTIPRINĀT</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  // ── Render SEARCH Mode ─────────────────────────────────────────────────────
+
+  return (
+    <View style={s.root}>
+      <SafeAreaView style={s.searchSafeArea}>
+        {/* Header */}
+        <View style={s.searchHeader}>
+          <View style={s.headerSpacer} />
+          <Text style={s.headerTitle}>{contextLabel}</Text>
+          <TouchableOpacity style={s.headerSpacerRight} onPress={handleCancelDone} hitSlop={12}>
+            <X size={24} color="#111827" />
+          </TouchableOpacity>
+        </View>
 
         {/* Input */}
-        <View style={[s.searchBox, showSugs && s.searchBoxFocused]}>
-          <Search size={20} color="#111827" />
+        <View style={s.searchInputWrap}>
           <TextInput
-            style={s.searchInput}
-            placeholder="Meklēt adresi..."
-            placeholderTextColor="#9ca3af"
+            style={s.searchTextInput}
+            placeholder="Meklēt pēc adreses/nosaukuma"
+            placeholderTextColor="#9CA3AF"
             value={query}
             onChangeText={handleQueryChange}
-            returnKeyType="search"
+            autoFocus
             autoCorrect={false}
+            returnKeyType="search"
           />
           {query.length > 0 && (
-            <TouchableOpacity
-              hitSlop={8}
-              onPress={() => {
-                setQuery('');
-                setSuggestions([]);
-                setShowSugs(false);
-              }}
-            >
-              <X size={20} color="#111827" />
+            <TouchableOpacity style={s.searchClearBtn} onPress={() => { setQuery(''); setSuggestions([]); setShowSugs(false); }}>
+              <X size={18} color="#6B7280" />
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Autocomplete suggestions — floats above CTA */}
-        {showSugs && query.trim().length > 0 && (
-          <View style={s.sugBox}>
-            {searching ? (
-              <View style={s.sugStatusRow}>
-                <ActivityIndicator size="small" color="#6b7280" />
-                <Text style={s.sugStatusText}>Meklēju adreses...</Text>
-              </View>
-            ) : suggestions.length === 0 ? (
-              <View style={s.sugStatusRow}>
-                <Text style={s.sugStatusText}>
-                  Adreses netika atrastas. Pamēģini precīzāku ievadi.
-                </Text>
-              </View>
-            ) : (
-              <ScrollView keyboardShouldPersistTaps="always" style={s.sugScroll}>
-                {suggestions.map((sg, i) => (
-                  <TouchableOpacity
-                    key={sg.id}
-                    style={[s.sugRow, i < suggestions.length - 1 && s.sugBorder]}
-                    onPress={() => handleSuggestionSelect(sg)}
-                    activeOpacity={0.7}
-                  >
-                    <View
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 16,
-                        backgroundColor: '#f3f4f6',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <MapPin size={16} color="#4b5563" />
-                    </View>
-                    <Text style={s.sugText} numberOfLines={2}>
-                      {sg.place_name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
-          </View>
-        )}
+        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+          
+          {/* Action Buttons */}
+          <TouchableOpacity style={s.actionRow} onPress={handleGPS} activeOpacity={0.7}>
+            <View style={s.actionIconWrap}>
+              <Navigation size={20} color="#6B7280" />
+            </View>
+            <Text style={s.actionText}>Lietot manu šī brīža vietu</Text>
+          </TouchableOpacity>
 
-        {/* Confirmed address chip */}
-        {!!picked && !showSugs && (
-          <View style={s.confirmedChip}>
-            <CheckCircle size={14} color="#059669" />
-            <Text style={s.confirmedText} numberOfLines={2}>
-              {picked.address}
-            </Text>
-          </View>
-        )}
-      </View>
-    </KeyboardAvoidingView>
+          <TouchableOpacity style={s.actionRow} onPress={() => setMode('MAP')} activeOpacity={0.7}>
+            <View style={s.actionIconWrap}>
+              <Map size={20} color="#6B7280" />
+            </View>
+            <Text style={s.actionText}>Norādīt vietu kartē</Text>
+          </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={s.divider} />
+
+          {/* Autocomplete Suggestions OR Saved Places */}
+          {showSugs && suggestions.length > 0 ? (
+            <View>
+              {suggestions.map((sg, i) => (
+                <TouchableOpacity key={sg.id} style={s.savedPlaceRow} onPress={() => handleSuggestionSelect(sg)}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.savedPlaceTitle} numberOfLines={1}>{sg.place_name}</Text>
+                    <Text style={s.savedPlaceSub} numberOfLines={1}>{sg.place_name}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View style={{ marginTop: 8 }}>
+              <Text style={s.sectionHeader}>Manas vietas</Text>
+              {savedAddresses.map((addr) => (
+                <TouchableOpacity key={addr.id} style={s.savedPlaceRow} onPress={() => handleSavedAddressPick(addr)} activeOpacity={0.7}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.savedPlaceTitle} numberOfLines={1}>{addr.label}</Text>
+                    <Text style={s.savedPlaceSub} numberOfLines={1}>{addr.address}</Text>
+                  </View>
+                  <ChevronRight size={20} color="#D1D5DB" />
+                </TouchableOpacity>
+              ))}
+              {savedAddresses.length === 0 && (
+                <Text style={s.emptyText}>Jums nav saglabātu adrešu</Text>
+              )}
+            </View>
+          )}
+
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  mapHintWrap: {
-    position: 'absolute',
-    top: 14,
-    left: 14,
-    right: 14,
-    backgroundColor: 'rgba(17, 24, 39, 0.88)',
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+  root: {
+    flex: 1,
+    backgroundColor: '#fff',
   },
-  mapHintText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
+  
+  // ── MAP MODE ──
+  mapFullscreen: {
+    flex: 1,
   },
-  gpsBtn: {
+  floatingHeader: {
     position: 'absolute',
-    bottom: 34,
-    right: 16,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    top: 0,
+    left: 0,
+    right: 0,
+  },
+  floatingHeaderContent: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  mapXBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 5,
-  },
-  searchPanel: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 24,
-    gap: 12,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    marginTop: -20, // Overlap map
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: -4 },
-    elevation: 8,
-  },
-  timelineWrap: {
-    paddingHorizontal: 8,
-    paddingTop: 4,
-  },
-  timelineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  timelineDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#9ca3af',
-    marginLeft: 6,
-  },
-  timelineText: {
-    flex: 1,
-    fontSize: 15,
-    color: '#6b7280',
-    fontWeight: '500',
-  },
-  timelineLine: {
-    width: 2,
-    height: 16,
-    backgroundColor: '#e5e7eb',
-    marginLeft: 9,
-    marginTop: 4,
-    marginBottom: -4,
-  },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  searchBoxFocused: {
-    borderColor: '#111827',
-    backgroundColor: '#fff',
-  },
-  searchInput: { flex: 1, fontSize: 16, fontWeight: '500', color: '#111827', padding: 0 },
-  sugBox: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
-    maxHeight: 280,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
-    marginTop: 8,
-  },
-  sugScroll: {
-    maxHeight: 280,
-  },
-  sugRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  sugStatusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-  },
-  sugStatusText: {
-    flex: 1,
-    fontSize: 13,
-    color: '#6b7280',
-    lineHeight: 18,
-  },
-  sugBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f3f4f6',
-  },
-  sugText: { flex: 1, fontSize: 15, fontWeight: '500', color: '#111827', lineHeight: 22 },
-
-  confirmedChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderWidth: 2,
-    borderColor: '#10b981',
-    shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  confirmedText: { flex: 1, fontSize: 15, color: '#111827', lineHeight: 22, fontWeight: '600' },
-  savedChipsRow: {
-    marginHorizontal: -20,
+  bottomPanel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 8,
   },
-  savedChipsContent: {
-    paddingHorizontal: 20,
-    gap: 8,
-    flexDirection: 'row',
+  panelTitle: {
+    fontSize: 20,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#374151',
+    marginBottom: 16,
   },
-  savedChip: {
+  panelInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
+    marginBottom: 24,
+    gap: 16,
   },
-  savedChipDefault: {
-    backgroundColor: '#fef3c7',
-    borderColor: '#fde68a',
+  panelPinOuter: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#eff6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  savedChipText: {
-    fontSize: 13,
-    fontWeight: '600',
+  panelAddress: {
+    fontSize: 16,
+    fontFamily: 'Inter_500Medium',
+    color: '#111827',
+  },
+  ctaBtn: {
+    backgroundColor: '#10b981', // APSTIPRINĀT green
+    borderRadius: 12,
+    paddingVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaBtnDisabled: {
+    opacity: 0.6,
+  },
+  ctaBtnText: {
+    color: '#fff',
+    fontSize: 15,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 0.5,
+  },
+
+  // ── SEARCH MODE ──
+  searchSafeArea: {
+    flex: 1,
+  },
+  searchHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 56,
+    paddingHorizontal: 16,
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 17,
+    fontFamily: 'Inter_500Medium',
     color: '#374151',
-    maxWidth: 120,
   },
-  savedChipDefaultText: {
-    color: '#92400e',
+  headerSpacerRight: {
+    width: 40,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
+  searchInputWrap: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  searchTextInput: {
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    fontFamily: 'Inter_400Regular',
+    color: '#111827',
+    backgroundColor: '#fff',
+  },
+  searchClearBtn: {
+    position: 'absolute',
+    right: 28,
+    top: 28,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 16,
+  },
+  actionIconWrap: {
+    width: 24,
+    alignItems: 'center',
+  },
+  actionText: {
+    fontSize: 16,
+    fontFamily: 'Inter_500Medium',
+    color: '#374151',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginHorizontal: 16,
+    marginVertical: 8,
+  },
+  sectionHeader: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: '#6B7280',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  savedPlaceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F9FAFB',
+  },
+  savedPlaceTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter_500Medium',
+    color: '#374151',
+    marginBottom: 4,
+  },
+  savedPlaceSub: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: '#9CA3AF',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#9ca3af',
+    paddingHorizontal: 16,
+    fontFamily: 'Inter_400Regular',
+    marginTop: 10,
+  }
 });

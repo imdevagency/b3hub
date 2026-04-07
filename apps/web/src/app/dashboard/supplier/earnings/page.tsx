@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { getMyOrders, type ApiOrder, setupPayouts, getEarnings, type EarningsResponse } from '@/lib/api';
+import { setupPayouts, getEarnings, type EarningsResponse, type EarningEntry } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -55,28 +55,18 @@ type Period = 'today' | 'week' | 'month';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-const REVENUE_STATUSES = [
-  'CONFIRMED',
-  'PROCESSING',
-  'IN_PROGRESS',
-  'SHIPPED',
-  'DELIVERED',
-  'COMPLETED',
-];
-const PENDING_STATUSES = ['PENDING'];
-
 const LV_DAYS = ['Sv', 'Pr', 'Ot', 'Tr', 'Ce', 'Pk', 'Se'];
 
 function euro(v: number) {
   return `€${v.toLocaleString('lv-LV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function computeRevenue(orders: ApiOrder[]): {
+function computeRevenue(data: EarningsResponse | null): {
   stats: RevenueStats;
   entries: OrderEntry[];
   chart: DayBar[];
 } {
-  const safeOrders = Array.isArray(orders) ? orders : [];
+  const payments: EarningEntry[] = data?.payments ?? [];
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekStart = new Date(todayStart);
@@ -85,63 +75,52 @@ function computeRevenue(orders: ApiOrder[]): {
 
   let todayRevenue = 0,
     weekRevenue = 0,
-    monthRevenue = 0,
-    pendingRevenue = 0;
+    monthRevenue = 0;
   const entries: OrderEntry[] = [];
 
-  for (const order of safeOrders) {
-    const d = new Date(order.createdAt);
-    const amount = order.total ?? 0;
-    if (REVENUE_STATUSES.includes(order.status)) {
+  for (const p of payments) {
+    const d = new Date(p.date);
+    const amount = p.sellerPayout ?? p.grossAmount;
+    const entryStatus: 'delivered' | 'confirmed' | 'pending' =
+      p.status === 'RELEASED' || p.status === 'PAID'
+        ? 'delivered'
+        : p.status === 'CAPTURED'
+          ? 'confirmed'
+          : 'pending';
+
+    if (entryStatus !== 'pending') {
       if (d >= todayStart) todayRevenue += amount;
       if (d >= weekStart) weekRevenue += amount;
       if (d >= monthStart) monthRevenue += amount;
-      entries.push({
-        id: order.id,
-        orderNumber: order.orderNumber,
-        buyerName: order.buyer
-          ? `${order.buyer.firstName ?? ''} ${order.buyer.lastName ?? ''}`.trim()
-          : 'Pircējs',
-        date: d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-        rawDate: d,
-        amount,
-        status:
-          order.status === 'DELIVERED' || order.status === 'COMPLETED' ? 'delivered' : 'confirmed',
-      });
-    } else if (PENDING_STATUSES.includes(order.status)) {
-      pendingRevenue += amount;
-      entries.push({
-        id: order.id,
-        orderNumber: order.orderNumber,
-        buyerName: order.buyer
-          ? `${order.buyer.firstName ?? ''} ${order.buyer.lastName ?? ''}`.trim()
-          : 'Pircējs',
-        date: d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-        rawDate: d,
-        amount,
-        status: 'pending',
-      });
     }
+
+    entries.push({
+      id: p.id,
+      orderNumber: p.orderNumber ?? '—',
+      buyerName: p.buyerName ?? 'Pircējs',
+      date: d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+      rawDate: d,
+      amount,
+      status: entryStatus,
+    });
   }
 
-  const confirmedOrders = safeOrders.filter((o) => REVENUE_STATUSES.includes(o.status));
+  const paidEntries = entries.filter((e) => e.status !== 'pending');
   const avgOrderValue =
-    confirmedOrders.length > 0
-      ? confirmedOrders.reduce((s, o) => s + (o.total ?? 0), 0) / confirmedOrders.length
-      : 0;
+    paidEntries.length > 0 ? paidEntries.reduce((s, e) => s + e.amount, 0) / paidEntries.length : 0;
 
   // Build 7-day chart
   const chart: DayBar[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-    const nextD = new Date(d.getTime() + 86_400_000);
-    const amount = safeOrders
-      .filter((o) => {
-        if (!REVENUE_STATUSES.includes(o.status)) return false;
-        const od = new Date(o.createdAt);
-        return od >= d && od < nextD;
-      })
-      .reduce((s, o) => s + (o.total ?? 0), 0);
+    const dayStr = d.toISOString().split('T')[0];
+    const amount = payments
+      .filter(
+        (p) =>
+          (p.status === 'RELEASED' || p.status === 'PAID' || p.status === 'CAPTURED') &&
+          p.date.startsWith(dayStr),
+      )
+      .reduce((s, p) => s + (p.sellerPayout ?? p.grossAmount), 0);
     chart.push({
       label: `${d.getDate()}.${d.getMonth() + 1}`,
       shortLabel: i === 0 ? 'Šod' : LV_DAYS[d.getDay()],
@@ -157,8 +136,8 @@ function computeRevenue(orders: ApiOrder[]): {
       todayRevenue,
       weekRevenue,
       monthRevenue,
-      totalOrders: confirmedOrders.length,
-      pendingRevenue,
+      totalOrders: paidEntries.length,
+      pendingRevenue: data?.pendingAmount ?? 0,
       avgOrderValue,
     },
     entries,
@@ -232,7 +211,6 @@ function StatCard({
 export default function SupplierEarningsPage() {
   const { user, token } = useAuth();
   const router = useRouter();
-  const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [earnings, setEarnings] = useState<EarningsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -261,11 +239,7 @@ export default function SupplierEarningsPage() {
     if (!token) return;
     if (showRefresh) setRefreshing(true);
     try {
-      const [data, earningsData] = await Promise.all([
-        getMyOrders(token),
-        getEarnings(token).catch(() => null),
-      ]);
-      setOrders(data);
+      const earningsData = await getEarnings(token).catch(() => null);
       if (earningsData) setEarnings(earningsData);
     } catch {
       /* ignore */
@@ -279,7 +253,7 @@ export default function SupplierEarningsPage() {
     load();
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { stats, entries, chart } = computeRevenue(orders);
+  const { stats, entries, chart } = computeRevenue(earnings);
   const maxChart = Math.max(...chart.map((b) => b.amount), 1);
   const periodRevenue = stats[PERIOD_REVENUE[period]] as number;
 
@@ -309,7 +283,9 @@ export default function SupplierEarningsPage() {
           <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
           <div className="flex-1">
             <h3 className="text-sm font-medium text-amber-800 dark:text-amber-400">
-              {earnings.stripeStatus === 'PENDING' ? 'Stripe reģistrācija nepilnīga' : 'Pievienojiet izmaksu kontu'}
+              {earnings.stripeStatus === 'PENDING'
+                ? 'Stripe reģistrācija nepilnīga'
+                : 'Pievienojiet izmaksu kontu'}
             </h3>
             <p className="text-sm text-amber-700/80 dark:text-amber-500/80 mt-1 mb-3">
               {earnings.stripeStatus === 'PENDING'
@@ -321,7 +297,11 @@ export default function SupplierEarningsPage() {
               disabled={setupLoading}
               className="bg-amber-600 hover:bg-amber-700 text-white h-9 px-4 text-xs"
             >
-              {setupLoading ? 'Notiek apstrāde...' : earnings.stripeStatus === 'PENDING' ? 'Pabeigt reģistrāciju' : 'Pievienot bankas kontu'}
+              {setupLoading
+                ? 'Notiek apstrāde...'
+                : earnings.stripeStatus === 'PENDING'
+                  ? 'Pabeigt reģistrāciju'
+                  : 'Pievienot bankas kontu'}
             </Button>
           </div>
         </div>

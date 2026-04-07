@@ -12,12 +12,13 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { ShieldCheck, FileDown, Recycle, Clock, ExternalLink } from 'lucide-react-native';
+import { ShieldCheck, FileDown, Recycle, ExternalLink } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiWasteRecord, WasteType } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StatusPill } from '@/components/ui/StatusPill';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -65,15 +66,9 @@ function RecordCard({ item }: { item: ApiWasteRecord }) {
           <Text style={[s.typePillText, { color: typeColor }]}>{typeLabel}</Text>
         </View>
         {hasCertificate ? (
-          <View style={s.certBadge}>
-            <ShieldCheck size={12} color="#15803d" />
-            <Text style={s.certBadgeText}>Sertificēts</Text>
-          </View>
+          <StatusPill label="Sertificēts" bg="#dcfce7" color="#166534" size="sm" />
         ) : (
-          <View style={s.pendingBadge}>
-            <Clock size={12} color="#d97706" />
-            <Text style={s.pendingBadgeText}>Gaida sertifikātu</Text>
-          </View>
+          <StatusPill label="Gaida sertifikātu" bg="#fef9c3" color="#92400e" size="sm" />
         )}
       </View>
 

@@ -102,8 +102,6 @@ const DEMO_DOCS: Document[] = [
     isGenerated: true,
     notes: 'Ietvarlīgums #FR-2025-0007 — Rīga Būve SIA',
     createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
   },
 ];
@@ -119,7 +117,7 @@ const TABS: { id: FilterTab; label: string; icon: React.ElementType }[] = [
   { id: 'WASTE_CERTIFICATE', label: 'Sertifikāti', icon: Recycle },
   { id: 'DELIVERY_NOTE', label: 'Piegādes Pavadzīmes', icon: Truck },
   { id: 'CONTRACT', label: 'Līgumi', icon: ScrollText },
-];
+  { id: 'INVOICE', label: 'Rēķini', icon: ScrollText },
 
 // ── Page ─────────────────────────────────────────────────────
 
@@ -134,6 +132,7 @@ export default function DocumentsPage() {
   const [fetching, setFetching] = useState(false);
   const [viewerDoc, setViewerDoc] = useState<Document | null>(null);
   const [useDemoData, setUseDemoData] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Redirect if not authed
   useEffect(() => {
@@ -155,6 +154,7 @@ export default function DocumentsPage() {
       if (result.total === 0 && !search) {
         // No real docs yet → show demo data
         setUseDemoData(true);
+        setError(null);
         const filtered =
           activeTab === 'ALL' ? DEMO_DOCS : DEMO_DOCS.filter((d) => d.type === activeTab);
         setDocs(filtered);
@@ -167,30 +167,16 @@ export default function DocumentsPage() {
         });
       } else {
         setUseDemoData(false);
+        setError(null);
         setDocs(result.documents);
         setSummary(sum);
       }
     } catch {
-      // API not reachable – fall back to demo data
-      setUseDemoData(true);
-      const filtered =
-        activeTab === 'ALL' ? DEMO_DOCS : DEMO_DOCS.filter((d) => d.type === activeTab);
-      setDocs(
-        search
-          ? filtered.filter(
-              (d) =>
-                d.title.toLowerCase().includes(search.toLowerCase()) ||
-                d.notes?.toLowerCase().includes(search.toLowerCase()),
-            )
-          : filtered,
-      );
-      setSummary({
-        total: DEMO_DOCS.length,
-        byType: DEMO_DOCS.reduce(
-          (acc, d) => ({ ...acc, [d.type]: (acc[d.type as DocumentType] ?? 0) + 1 }),
-          {} as DocumentSummary['byType'],
-        ),
-      });
+      // API not reachable — show error, do not show demo data
+      setError('Neizdevās ielādēt dokumentus. Pārbaudiet savienojumu un mēģiniet vēlreiz.');
+      setUseDemoData(false);
+      setDocs([]);
+      setSummary(null);
     } finally {
       setFetching(false);
     }
@@ -237,6 +223,13 @@ export default function DocumentsPage() {
           Atjaunot sarakstu
         </Button>
       </div>
+
+      {/* ── Error banner ── */}
+      {error && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {/* ── Stats row ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

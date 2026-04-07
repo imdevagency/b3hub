@@ -30,6 +30,7 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { haptics } from '@/lib/haptics';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { ActionResultSheet } from '@/components/ui/ActionResultSheet';
+import { useToast } from '@/components/ui/Toast';
 
 // ── Status helpers ─────────────────────────────────────────────
 
@@ -57,12 +58,16 @@ export default function RfqDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  const toast = useToast();
+
   const [rfq, setRfq] = useState<QuoteRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [accepting, setAccepting] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [cancelResultVisible, setCancelResultVisible] = useState(false);
+  const [acceptResultVisible, setAcceptResultVisible] = useState(false);
+  const [acceptedOrderId, setAcceptedOrderId] = useState<string | null>(null);
 
   const load = useCallback(
     async (skeleton = true) => {
@@ -72,7 +77,7 @@ export default function RfqDetailScreen() {
         const data = await api.quoteRequests.get(String(id), token);
         setRfq(data);
       } catch (e) {
-        Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās ielādēt pieprasījumu');
+        toast.error(e instanceof Error ? e.message : 'Neizdevās ielādēt pieprasījumu');
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -104,10 +109,7 @@ export default function RfqDetailScreen() {
               haptics.success();
               setCancelResultVisible(true);
             } catch (e) {
-              Alert.alert(
-                'Kļūda',
-                e instanceof Error ? e.message : 'Neizdevās atcelt pieprasījumu',
-              );
+              toast.error(e instanceof Error ? e.message : 'Neizdevās atcelt pieprasījumu');
             } finally {
               setCancelling(false);
             }
@@ -131,25 +133,10 @@ export default function RfqDetailScreen() {
             try {
               const result = await api.quoteRequests.accept(rfq.id, response.id, token);
               haptics.success();
-              Alert.alert(
-                '✓ Pasūtījums izveidots',
-                'Apmaksājiet pasūtījumu, lai pārdevējs to apstiprinātu.',
-                [
-                  {
-                    text: 'Apmaksāt tagad',
-                    onPress: () => router.replace(`/(buyer)/order/${result.id}`),
-                  },
-                  {
-                    text: 'Vēlāk',
-                    onPress: () => router.replace('/(buyer)/orders'),
-                  },
-                ],
-              );
+              setAcceptedOrderId(result.id);
+              setAcceptResultVisible(true);
             } catch (e) {
-              Alert.alert(
-                'Kļūda',
-                e instanceof Error ? e.message : 'Neizdevās pieņemt piedāvājumu',
-              );
+              toast.error(e instanceof Error ? e.message : 'Neizdevās pieņemt piedāvājumu');
             } finally {
               setAccepting(null);
             }
@@ -278,7 +265,9 @@ export default function RfqDetailScreen() {
         {sortedResponses.length === 0 && rfq.status === 'EXPIRED' && (
           <View style={[ss.emptyResponses, ss.emptyResponsesExpired]}>
             <Clock size={32} color="#d1d5db" />
-            <Text style={[ss.emptyResponsesTitle, { color: '#6b7280' }]}>Piedāvājumu laiks beidzies</Text>
+            <Text style={[ss.emptyResponsesTitle, { color: '#6b7280' }]}>
+              Piedāvājumu laiks beidzies
+            </Text>
             <Text style={ss.emptyResponsesDesc}>
               Neviens piegādātājs neatbildēja laikā. Varat iesniegt jaunu pieprasījumu.
             </Text>
@@ -388,6 +377,27 @@ export default function RfqDetailScreen() {
         secondaryLabel="Uz maniem pieprasījumiem"
         onSecondary={() => {
           setCancelResultVisible(false);
+          router.replace('/(buyer)/orders');
+        }}
+      />
+
+      <ActionResultSheet
+        visible={acceptResultVisible}
+        onClose={() => {
+          setAcceptResultVisible(false);
+          router.replace('/(buyer)/orders');
+        }}
+        variant="success"
+        title="Pasūtījums izveidots"
+        subtitle="Apmaksājiet pasūtījumu, lai pārdevējs to apstiprinātu."
+        primaryLabel="Apmaksāt tagad"
+        onPrimary={() => {
+          setAcceptResultVisible(false);
+          if (acceptedOrderId) router.replace(`/(buyer)/order/${acceptedOrderId}` as any);
+        }}
+        secondaryLabel="Vēlāk"
+        onSecondary={() => {
+          setAcceptResultVisible(false);
           router.replace('/(buyer)/orders');
         }}
       />

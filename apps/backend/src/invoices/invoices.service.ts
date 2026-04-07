@@ -165,9 +165,9 @@ export class InvoicesService {
     return invoices.map(mapInvoice);
   }
 
-  async markAsPaid(invoiceId: string, userId: string, companyId?: string) {
+  async markAsPaid(invoiceId: string, userId: string, companyId?: string, isAdmin = false) {
     const invoice = await this.prisma.invoice.findFirst({
-      where: { id: invoiceId, order: this.buyerAccess(userId, companyId) },
+      where: isAdmin ? { id: invoiceId } : { id: invoiceId, order: this.buyerAccess(userId, companyId) },
       select: {
         id: true,
         orderId: true,

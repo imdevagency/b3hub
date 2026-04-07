@@ -19,6 +19,8 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { StatusPill } from '@/components/ui/StatusPill';
+import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiDocument, DocumentType } from '@/lib/api';
@@ -93,6 +95,14 @@ const STATUS_COLOR: Record<string, string> = {
   EXPIRED: '#ef4444',
 };
 
+const STATUS_BG: Record<string, string> = {
+  DRAFT: '#f3f4f6',
+  ISSUED: '#eff6ff',
+  SIGNED: '#f0fdf4',
+  ARCHIVED: '#fffbeb',
+  EXPIRED: '#fef2f2',
+};
+
 // ── Helpers ───────────────────────────────────────────────────
 
 function fmtDate(iso: string) {
@@ -106,18 +116,20 @@ function fmtDate(iso: string) {
 // ── Document row ──────────────────────────────────────────────
 
 function DocRow({ doc }: { doc: ApiDocument }) {
+  const toast = useToast();
   const meta = TYPE_META[doc.type] ?? TYPE_META.CONTRACT;
   const Icon = meta.icon;
   const statusLabel = STATUS_LABEL[doc.status] ?? doc.status;
   const statusColor = STATUS_COLOR[doc.status] ?? '#6b7280';
+  const statusBg = STATUS_BG[doc.status] ?? '#f3f4f6';
 
   const handleOpen = () => {
     if (!doc.fileUrl) {
-      Alert.alert('Fails nav pieejams', 'Fails vēl nav augšupielādēts.');
+      toast.info('Fails vēl nav augšupielādēts.');
       return;
     }
     haptics.light();
-    Linking.openURL(doc.fileUrl).catch(() => Alert.alert('Kļūda', 'Neizdevās atvērt dokumentu.'));
+    Linking.openURL(doc.fileUrl).catch(() => toast.error('Neizdevās atvērt dokumentu.'));
   };
 
   return (
@@ -131,8 +143,7 @@ function DocRow({ doc }: { doc: ApiDocument }) {
           {doc.title}
         </Text>
         <View style={s.rowMeta}>
-          <View style={[s.statusDot, { backgroundColor: statusColor }]} />
-          <Text style={[s.rowStatus, { color: statusColor }]}>{statusLabel}</Text>
+          <StatusPill label={statusLabel} bg={statusBg} color={statusColor} size="sm" />
           <Text style={s.rowSep}>·</Text>
           <Text style={s.rowDate}>{fmtDate(doc.createdAt)}</Text>
         </View>

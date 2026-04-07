@@ -14,7 +14,7 @@ import {
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
-import { api, type ApiOrder, paymentsApi } from '@/lib/api';
+import { api, type ApiOrder } from '@/lib/api';
 import { CATEGORY_LABELS } from '@/lib/materials';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -30,7 +30,7 @@ interface EarningsStats {
   completedJobs: number;
   pendingPayout: number;
   avgOrderValue: number;
-  fulfillmentRate: number;  // 0–100 %
+  fulfillmentRate: number; // 0–100 %
   repeatBuyerRate: number; // 0–100 %
   topMaterials: { label: string; amount: number }[]; // top 3
 }
@@ -114,7 +114,9 @@ function computeStats(orders: ApiOrder[]): {
       : 0;
 
   // Fulfillment rate: delivered / (delivered + cancelled)
-  const deliveredCount = orders.filter((o) => o.status === 'DELIVERED' || o.status === 'COMPLETED').length;
+  const deliveredCount = orders.filter(
+    (o) => o.status === 'DELIVERED' || o.status === 'COMPLETED',
+  ).length;
   const cancelledCount = orders.filter((o) => o.status === 'CANCELLED').length;
   const fulfillmentRate =
     deliveredCount + cancelledCount > 0
@@ -274,7 +276,7 @@ export default function SellerEarningsScreen() {
     if (!token) return;
     setSetupLoading(true);
     try {
-      const { url } = await paymentsApi.setupPayouts(token);
+      const { url } = await api.setupPayouts(token);
       if (url) {
         await Linking.openURL(url);
       } else {
@@ -296,7 +298,11 @@ export default function SellerEarningsScreen() {
       if (!silent) setLoading(true);
       try {
         const orders = await api.orders.myOrders(token);
-        const { stats: s, history: h, dailyChart: dc } = computeStats(orders);
+        // For hybrid users (canSell + canBuy), exclude orders they placed as a buyer
+        const sellerOrders = user?.canSell
+          ? orders.filter((o) => o.createdBy?.id !== user.id)
+          : orders;
+        const { stats: s, history: h, dailyChart: dc } = computeStats(sellerOrders);
         setStats(s);
         setHistory(h);
         setDailyChart(dc);
@@ -459,7 +465,12 @@ export default function SellerEarningsScreen() {
               <Text style={s.anCardValue}>{stats.repeatBuyerRate}%</Text>
               <Text style={s.anCardLabel}>Atkārtoti klienti</Text>
               <View style={s.anBar}>
-                <View style={[s.anBarFill, { width: `${stats.repeatBuyerRate}%` as any, backgroundColor: '#16a34a' }]} />
+                <View
+                  style={[
+                    s.anBarFill,
+                    { width: `${stats.repeatBuyerRate}%` as any, backgroundColor: '#16a34a' },
+                  ]}
+                />
               </View>
             </View>
           </View>
@@ -475,14 +486,19 @@ export default function SellerEarningsScreen() {
                     <Text style={s.anMatRank}>{i + 1}</Text>
                     <View style={{ flex: 1 }}>
                       <View style={s.anMatLabelRow}>
-                        <Text style={s.anMatLabel} numberOfLines={1}>{m.label}</Text>
+                        <Text style={s.anMatLabel} numberOfLines={1}>
+                          {m.label}
+                        </Text>
                         <Text style={s.anMatAmt}>€{m.amount.toFixed(0)}</Text>
                       </View>
                       <View style={s.anBar}>
                         <View
                           style={[
                             s.anBarFill,
-                            { width: `${(m.amount / maxAmt) * 100}%` as any, backgroundColor: '#374151' },
+                            {
+                              width: `${(m.amount / maxAmt) * 100}%` as any,
+                              backgroundColor: '#374151',
+                            },
                           ]}
                         />
                       </View>

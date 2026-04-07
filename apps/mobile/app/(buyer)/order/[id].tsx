@@ -159,6 +159,8 @@ export default function OrderDetailScreen() {
   // Stripe payment sheet — guarded for Expo Go
   const stripe = useStripe ? useStripe() : null;
   const [payLoading, setPayLoading] = useState(false);
+  // Optimistic flag: hide Pay button immediately after success while webhook fires
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
 
   const handlePay = async () => {
     if (!token || !order || !stripe) return;
@@ -185,6 +187,7 @@ export default function OrderDetailScreen() {
       }
       haptics.success();
       Alert.alert('Maksājums veiksmīgs', 'Jūsu pasūtījums tiek apstrādāts.');
+      setPaymentProcessing(true);
       load();
     } catch (err: unknown) {
       haptics.error();
@@ -290,6 +293,7 @@ export default function OrderDetailScreen() {
   const vehicle = activeJob?.vehicle;
   const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status);
   const canPay =
+    !paymentProcessing &&
     order.status === 'PENDING' &&
     (!order.paymentStatus || order.paymentStatus === 'PENDING') &&
     order.paymentMethod !== 'INVOICE' &&
@@ -333,7 +337,14 @@ export default function OrderDetailScreen() {
               {/* Grey background track */}
               <View style={s.stepperTrack} />
               {/* Green filled progress */}
-              {stepperIdx > 0 && <View style={[s.stepperFill, { width: `${stepperIdx * 20}%` }]} />}
+              {stepperIdx > 0 && (
+                <View
+                  style={[
+                    s.stepperFill,
+                    { width: `${(stepperIdx / (ORDER_STEPS.length - 1)) * 100}%` },
+                  ]}
+                />
+              )}
               {/* Step columns */}
               <View style={s.stepperDotsRow}>
                 {ORDER_STEPS.map((step, i) => {
@@ -466,7 +477,9 @@ export default function OrderDetailScreen() {
                 jobWithPhoto.actualWeightKg != null ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <Scale size={11} color="#374151" />
-                    <Text style={s.weighingWeight}>{jobWithPhoto.actualWeightKg.toFixed(0)} kg</Text>
+                    <Text style={s.weighingWeight}>
+                      {jobWithPhoto.actualWeightKg.toFixed(0)} kg
+                    </Text>
                   </View>
                 ) : undefined
               }
@@ -486,7 +499,7 @@ export default function OrderDetailScreen() {
           if (!jobWithWeight) return null;
           const actualKg = (jobWithWeight as any).actualWeightKg as number;
           const orderedKg = order.items.reduce(
-            (sum: number, item: any) => (item.unit === 'T' ? sum + item.quantity * 1000 : sum),
+            (sum: number, item: any) => (item.unit === 'TONNE' ? sum + item.quantity * 1000 : sum),
             0,
           );
           if (!orderedKg) return null;

@@ -164,10 +164,24 @@ export default function ActiveJobScreen() {
       allowsEditing: false,
       base64: true,
     });
-    if (!result.canceled && result.assets[0]) {
+    if (!result.canceled && result.assets[0] && job) {
       const asset = result.assets[0];
-      const uri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
-      setPickupPhotoUri(uri);
+      if (!asset.base64) {
+        Alert.alert('Kļūda', 'Neizdevās iegūt attēla datus.');
+        return;
+      }
+      try {
+        const mimeType = asset.mimeType ?? 'image/jpeg';
+        const { url } = await api.transportJobs.uploadPickupPhoto(
+          job.id,
+          `data:${mimeType};base64,${asset.base64}`,
+          mimeType,
+          token!,
+        );
+        setPickupPhotoUri(url);
+      } catch (err) {
+        Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās augšupielādēt foto');
+      }
     }
   };
 
@@ -593,11 +607,7 @@ export default function ActiveJobScreen() {
     }
     setSurchargeSubmitting(true);
     try {
-      await api.transportJobs.addSurcharge(
-        job.id,
-        { type: surchargeType, amount },
-        token,
-      );
+      await api.transportJobs.addSurcharge(job.id, { type: surchargeType, amount }, token);
       toast.success('Papildu maksa pievienota');
       setSurchargeSheetVisible(false);
       setSurchargeAmount('');
@@ -605,7 +615,10 @@ export default function ActiveJobScreen() {
       haptics.success();
     } catch (err: unknown) {
       haptics.error();
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās pievienot papildu maksu');
+      Alert.alert(
+        'Kļūda',
+        err instanceof Error ? err.message : 'Neizdevās pievienot papildu maksu',
+      );
     } finally {
       setSurchargeSubmitting(false);
     }
@@ -926,7 +939,8 @@ export default function ActiveJobScreen() {
             >
               <AlertCircle size={16} color="#dc2626" />
               <Text style={{ fontSize: 13, color: '#991b1b', fontWeight: '600', flex: 1 }}>
-                {openExceptions.length} atvērts izņēmums
+                {openExceptions.length}{' '}
+                {openExceptions.length === 1 ? 'atvērts izņēmums' : 'atvērti izņēmumi'}
               </Text>
             </View>
           )}

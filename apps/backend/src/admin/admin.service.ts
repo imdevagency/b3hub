@@ -112,55 +112,67 @@ export class AdminService {
     return updatedUser;
   }
 
-  async getOrders() {
-    return this.prisma.order.findMany({
-      select: {
-        id: true,
-        orderNumber: true,
-        orderType: true,
-        status: true,
-        paymentStatus: true,
-        total: true,
-        currency: true,
-        deliveryCity: true,
-        deliveryDate: true,
-        createdAt: true,
-        buyer: {
-          select: { id: true, name: true, email: true },
+  async getOrders(page = 1, limit = 50) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.order.findMany({
+        select: {
+          id: true,
+          orderNumber: true,
+          orderType: true,
+          status: true,
+          paymentStatus: true,
+          total: true,
+          currency: true,
+          deliveryCity: true,
+          deliveryDate: true,
+          createdAt: true,
+          buyer: {
+            select: { id: true, name: true, email: true },
+          },
+          items: { select: { id: true } },
+          transportJobs: { select: { id: true, status: true } },
         },
-        items: { select: { id: true } },
-        transportJobs: { select: { id: true, status: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 500,
-    });
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.order.count(),
+    ]);
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
   }
 
-  async getTransportJobs() {
-    return this.prisma.transportJob.findMany({
-      select: {
-        id: true,
-        jobNumber: true,
-        jobType: true,
-        status: true,
-        cargoType: true,
-        cargoWeight: true,
-        rate: true,
-        currency: true,
-        pickupCity: true,
-        deliveryCity: true,
-        pickupDate: true,
-        deliveryDate: true,
-        createdAt: true,
-        order: { select: { id: true, orderNumber: true } },
-        carrier: { select: { id: true, name: true } },
-        driver: { select: { id: true, firstName: true, lastName: true } },
-        vehicle: { select: { id: true, make: true, model: true, licensePlate: true } },
-        exceptions: { where: { status: 'OPEN' }, select: { id: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 500,
-    });
+  async getTransportJobs(page = 1, limit = 50) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.transportJob.findMany({
+        select: {
+          id: true,
+          jobNumber: true,
+          jobType: true,
+          status: true,
+          cargoType: true,
+          cargoWeight: true,
+          rate: true,
+          currency: true,
+          pickupCity: true,
+          deliveryCity: true,
+          pickupDate: true,
+          deliveryDate: true,
+          createdAt: true,
+          order: { select: { id: true, orderNumber: true } },
+          carrier: { select: { id: true, name: true } },
+          driver: { select: { id: true, firstName: true, lastName: true } },
+          vehicle: { select: { id: true, make: true, model: true, licensePlate: true } },
+          exceptions: { where: { status: 'OPEN' }, select: { id: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.transportJob.count(),
+    ]);
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
   }
 
   async getCompanies() {

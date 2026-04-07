@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { getMyTransportJobs, type ApiTransportJob, setupPayouts } from '@/lib/api';
+import { getEarnings, setupPayouts, type EarningsResponse, type EarningEntry } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -37,7 +37,7 @@ interface HistoryEntry {
   jobNumber: string;
   date: string;
   rawDate: Date;
-  route: string;
+  info: string;
   amount: number;
   status: 'delivered' | 'active';
 }
@@ -51,33 +51,21 @@ interface DayBar {
 
 type Period = 'today' | 'week' | 'month';
 
-const ACTIVE_STATUSES = [
-  'ACCEPTED',
-  'EN_ROUTE_PICKUP',
-  'AT_PICKUP',
-  'LOADED',
-  'EN_ROUTE_DELIVERY',
-  'AT_DELIVERY',
-];
 const LV_DAYS = ['Sv', 'Pr', 'Ot', 'Tr', 'Ce', 'Pk', 'Se'];
 
 function euro(v: number) {
   return `€${v.toLocaleString('lv-LV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function buildDailyChart(jobs: ApiTransportJob[]): DayBar[] {
+function buildDailyChart(payments: EarningEntry[]): DayBar[] {
   const now = new Date();
   const bars: DayBar[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-    const nextD = new Date(d.getTime() + 86_400_000);
-    const amount = jobs
-      .filter((j) => {
-        if (j.status !== 'DELIVERED') return false;
-        const jd = new Date(j.deliveryDate ?? j.pickupDate);
-        return jd >= d && jd < nextD;
-      })
-      .reduce((sum, j) => sum + (j.rate ?? 0), 0);
+    const dayStr = d.toISOString().split('T')[0];
+    const amount = payments
+      .filter((p) => p.date.startsWith(dayStr))
+      .reduce((sum, p) => sum + (p.driverPayout ?? p.grossAmount), 0);
     bars.push({
       label: `${d.getDate()}.${d.getMonth() + 1}`,
       shortLabel: i === 0 ? 'Šod' : LV_DAYS[d.getDay()],
@@ -88,11 +76,25 @@ function buildDailyChart(jobs: ApiTransportJob[]): DayBar[] {
   return bars;
 }
 
-function computeStats(jobs: ApiTransportJob[]): {
+function computeStats(data: EarningsResponse | null): {
   stats: EarningsStats;
   history: HistoryEntry[];
   chart: DayBar[];
 } {
+  if (!data) {
+    return {
+      stats: {
+        todayEarnings: 0,
+        weekEarnings: 0,
+        monthEarnings: 0,
+        completedJobs: 0,
+        pendingPayout: 0,
+      },
+      history: [],
+      chart: buildDailyChart([]),
+    };
+  }
+  const { payments, pendingAmount } = data;
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekStart = new Date(todayStart);
@@ -102,49 +104,40 @@ function computeStats(jobs: ApiTransportJob[]): {
   let todayEarnings = 0,
     weekEarnings = 0,
     monthEarnings = 0,
-    completedJobs = 0,
-    pendingPayout = 0;
+    completedJobs = 0;
   const history: HistoryEntry[] = [];
 
-  for (const job of jobs) {
-    const d = new Date(job.deliveryDate ?? job.pickupDate);
-    const rate = job.rate ?? 0;
-    if (job.status === 'DELIVERED') {
-      completedJobs++;
-      if (d >= todayStart) todayEarnings += rate;
-      if (d >= weekStart) weekEarnings += rate;
-      if (d >= monthStart) monthEarnings += rate;
-      history.push({
-        id: job.id,
-        jobNumber: job.jobNumber,
-        date: d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-        rawDate: d,
-        route: `${job.pickupCity} → ${job.deliveryCity}`,
-        amount: rate,
-        status: 'delivered',
-      });
-    } else if (ACTIVE_STATUSES.includes(job.status)) {
-      pendingPayout += rate;
-      const pd = new Date(job.pickupDate);
-      history.push({
-        id: job.id,
-        jobNumber: job.jobNumber,
-        date: pd.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-        rawDate: pd,
-        route: `${job.pickupCity} → ${job.deliveryCity}`,
-        amount: rate,
-        status: 'active',
-      });
-    }
+  for (const p of payments) {
+    const d = new Date(p.date);
+    const amount = p.driverPayout ?? p.grossAmount;
+    const isPaid = p.status === 'RELEASED' || p.status === 'PAID';
+    if (isPaid) completedJobs++;
+    if (d >= todayStart) todayEarnings += amount;
+    if (d >= weekStart) weekEarnings += amount;
+    if (d >= monthStart) monthEarnings += amount;
+    history.push({
+      id: p.id,
+      jobNumber: p.jobNumber ?? p.orderNumber ?? '—',
+      date: d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+      rawDate: d,
+      info: p.buyerName ?? '—',
+      amount,
+      status: isPaid ? 'delivered' : 'active',
+    });
   }
 
   history.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
-  const chart = buildDailyChart(jobs);
 
   return {
-    stats: { todayEarnings, weekEarnings, monthEarnings, completedJobs, pendingPayout },
+    stats: {
+      todayEarnings,
+      weekEarnings,
+      monthEarnings,
+      completedJobs,
+      pendingPayout: pendingAmount,
+    },
     history,
-    chart,
+    chart: buildDailyChart(payments),
   };
 }
 
@@ -195,7 +188,7 @@ const PERIOD_LABELS: Record<Period2, string> = {
 export default function TransporterEarningsPage() {
   const { user, token } = useAuth();
   const router = useRouter();
-  const [jobs, setJobs] = useState<ApiTransportJob[]>([]);
+  const [data, setData] = useState<EarningsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<Period>('week');
@@ -223,8 +216,8 @@ export default function TransporterEarningsPage() {
     if (!token) return;
     if (showRefresh) setRefreshing(true);
     try {
-      const data = await getMyTransportJobs(token);
-      setJobs(data);
+      const result = await getEarnings(token);
+      setData(result);
     } catch {
       /* ignore */
     } finally {
@@ -237,7 +230,7 @@ export default function TransporterEarningsPage() {
     load();
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { stats, history, chart } = computeStats(jobs);
+  const { stats, history, chart } = computeStats(data);
   const maxChart = Math.max(...chart.map((b) => b.amount), 1);
 
   const periodEarnings =
@@ -451,7 +444,7 @@ export default function TransporterEarningsPage() {
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground truncate">
-                          {entry.route} <span className="opacity-50 mx-1">•</span> {entry.date}
+                          {entry.info} <span className="opacity-50 mx-1">•</span> {entry.date}
                         </p>
                       </div>
                       <span className="text-lg font-bold tabular-nums tracking-tight shrink-0">

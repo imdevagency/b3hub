@@ -36,8 +36,9 @@ import {
   resumeSchedule,
   deleteSchedule,
   createSchedule,
+  getMaterials,
 } from '@/lib/api';
-import type { ApiOrderSchedule, CreateOrderScheduleInput } from '@/lib/api';
+import type { ApiOrderSchedule, CreateOrderScheduleInput, ApiMaterial } from '@/lib/api';
 
 const INTERVAL_LABELS: Record<number, string> = {
   7: 'Katru nedēļu',
@@ -73,6 +74,8 @@ export default function SchedulesPage() {
   const [creating, setCreating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<CreateOrderScheduleInput>(EMPTY_FORM);
+  const [materials, setMaterials] = useState<ApiMaterial[]>([]);
+  const [loadingMaterials, setLoadingMaterials] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -158,7 +161,19 @@ export default function SchedulesPage() {
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Atjaunot
           </Button>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <Dialog
+            open={dialogOpen}
+            onOpenChange={(open) => {
+              setDialogOpen(open);
+              if (open && token && materials.length === 0) {
+                setLoadingMaterials(true);
+                getMaterials(token)
+                  .then(setMaterials)
+                  .catch(() => {})
+                  .finally(() => setLoadingMaterials(false));
+              }
+            }}
+          >
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
@@ -231,17 +246,31 @@ export default function SchedulesPage() {
                     />
                   </div>
                   <div className="col-span-2 space-y-1">
-                    <Label>Materiāla ID *</Label>
-                    <Input
-                      placeholder="materiāla ID no kataloga"
-                      value={form.items[0]?.materialId ?? ''}
-                      onChange={(e) =>
-                        setForm((f) => ({
-                          ...f,
-                          items: [{ ...f.items[0], materialId: e.target.value }],
-                        }))
-                      }
-                    />
+                    <Label>Materiāls *</Label>
+                    {loadingMaterials ? (
+                      <p className="text-xs text-muted-foreground py-2">Ielādē materiālus...</p>
+                    ) : (
+                      <Select
+                        value={form.items[0]?.materialId ?? ''}
+                        onValueChange={(val) =>
+                          setForm((f) => ({
+                            ...f,
+                            items: [{ ...f.items[0], materialId: val }],
+                          }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Izvēlieties materiālu" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {materials.map((m) => (
+                            <SelectItem key={m.id} value={m.id}>
+                              {m.name} — {m.supplier.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <Label>Daudzums *</Label>

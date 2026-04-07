@@ -7,9 +7,10 @@ import { PaymentsModule } from '../payments/payments.module';
 import { InvoicesModule } from '../invoices/invoices.module';
 import { UpdatesModule } from '../updates/updates.module';
 import { MaterialsModule } from '../materials/materials.module';
+import { DocumentsModule } from '../documents/documents.module';
 
 @Module({
-  imports: [PrismaModule, NotificationsModule, PaymentsModule, InvoicesModule, UpdatesModule, MaterialsModule],
+  imports: [PrismaModule, NotificationsModule, PaymentsModule, InvoicesModule, UpdatesModule, MaterialsModule, DocumentsModule],
   controllers: [OrdersController],
   providers: [OrdersService],
   exports: [OrdersService],

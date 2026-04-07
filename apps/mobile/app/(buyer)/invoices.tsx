@@ -31,6 +31,7 @@ import { haptics } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { API_URL } from '@/lib/api/common';
 
 // Guard: expo-file-system / expo-sharing — available in dev builds and Expo Go
@@ -60,12 +61,12 @@ function fmtEur(n: number): string {
   return `€${n.toFixed(2)}`;
 }
 
-const STATUS_META: Record<InvoiceStatus, { label: string; dot: string; color: string }> = {
-  DRAFT: { label: 'Melnraksts', dot: '#9ca3af', color: '#6b7280' },
-  ISSUED: { label: 'Gaida apmaksu', dot: '#3b82f6', color: '#1d4ed8' },
-  PAID: { label: 'Apmaksāts', dot: '#22c55e', color: '#15803d' },
-  OVERDUE: { label: 'Kavēts', dot: '#ef4444', color: '#b91c1c' },
-  CANCELLED: { label: 'Atcelts', dot: '#d1d5db', color: '#9ca3af' },
+const STATUS_META: Record<InvoiceStatus, { label: string; bg: string; color: string }> = {
+  DRAFT: { label: 'Melnraksts', bg: '#f3f4f6', color: '#6b7280' },
+  ISSUED: { label: 'Gaida apmaksu', bg: '#eff6ff', color: '#1d4ed8' },
+  PAID: { label: 'Apmaksāts', bg: '#dcfce7', color: '#15803d' },
+  OVERDUE: { label: 'Kavēts', bg: '#fee2e2', color: '#b91c1c' },
+  CANCELLED: { label: 'Atcelts', bg: '#f3f4f6', color: '#9ca3af' },
 };
 
 // ── Invoice row ────────────────────────────────────────────────
@@ -82,10 +83,7 @@ function InvoiceRow({ invoice, onPress }: { invoice: ApiInvoice; onPress: () => 
           <Text style={[s.rowAmount, isActionable && s.rowAmountDue]}>{fmtEur(invoice.total)}</Text>
         </View>
         <View style={s.rowBottomLine}>
-          <View style={s.statusRow}>
-            <View style={[s.dot, { backgroundColor: meta.dot }]} />
-            <Text style={[s.statusLabel, { color: meta.color }]}>{meta.label}</Text>
-          </View>
+          <StatusPill label={meta.label} bg={meta.bg} color={meta.color} size="sm" />
           <Text style={s.rowDate}>
             {invoice.dueDate ? `Termiņš ${fmtDate(invoice.dueDate)}` : fmtDate(invoice.issuedAt)}
           </Text>
@@ -103,16 +101,12 @@ function InvoiceModal({
   invoice,
   visible,
   onClose,
-  onPay,
-  paying,
   onDownload,
   downloading,
 }: {
   invoice: ApiInvoice | null;
   visible: boolean;
   onClose: () => void;
-  onPay: () => void;
-  paying: boolean;
   onDownload: () => void;
   downloading: boolean;
 }) {
@@ -133,10 +127,7 @@ function InvoiceModal({
           <Text style={[m.amountHeroVal, isActionable && { color: '#111827' }]}>
             {fmtEur(inv.total)}
           </Text>
-          <View style={m.statusPill}>
-            <View style={[m.statusDot, { backgroundColor: meta.dot }]} />
-            <Text style={[m.statusText, { color: meta.color }]}>{meta.label}</Text>
-          </View>
+          <StatusPill label={meta.label} bg={meta.bg} color={meta.color} size="md" />
         </View>
 
         {/* Reference */}
@@ -194,23 +185,15 @@ function InvoiceModal({
           </View>
         )}
 
-        {/* Pay CTA */}
+        {/* Payment instructions */}
         {isActionable && (
-          <TouchableOpacity
-            style={[m.payBtn, inv.status === 'OVERDUE' && m.payBtnOverdue]}
-            onPress={onPay}
-            disabled={paying}
-            activeOpacity={0.85}
-          >
-            {paying ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <>
-                <CreditCard size={18} color="#fff" />
-                <Text style={m.payBtnText}>Apmaksāt {fmtEur(inv.total)}</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          <View style={m.payInfo}>
+            <CreditCard size={16} color="#2563eb" />
+            <Text style={m.payInfoText}>
+              Lūdzu veiciet pārskaitījumu uz B3Hub bankas kontu. Maksājums tiks apstiprināts
+              automātiski pēc bankas apstrādes.
+            </Text>
+          </View>
         )}
 
         {/* Download PDF CTA */}
@@ -250,7 +233,6 @@ export default function InvoicesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selected, setSelected] = useState<ApiInvoice | null>(null);
-  const [paying, setPaying] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [filter, setFilter] = useState<InvoiceStatus | 'ALL'>('ALL');
 
@@ -278,23 +260,6 @@ export default function InvoicesScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     load(true);
-  };
-
-  const handlePay = async () => {
-    if (!selected || !token) return;
-    setPaying(true);
-    try {
-      await api.invoices.markAsPaid(selected.id, token);
-      await load(true);
-      setSelected(null);
-      haptics.success();
-      toast.success('Rēķins ir veiksmīgi apmaksāts!');
-    } catch (err) {
-      haptics.error();
-      toast.error(err instanceof Error ? err.message : 'Neizdevās apstrādāt apmaksu.');
-    } finally {
-      setPaying(false);
-    }
   };
 
   const handleDownload = async () => {
@@ -437,8 +402,6 @@ export default function InvoicesScreen() {
         invoice={selected}
         visible={!!selected}
         onClose={() => setSelected(null)}
-        onPay={handlePay}
-        paying={paying}
         onDownload={handleDownload}
         downloading={downloading}
       />
@@ -590,18 +553,16 @@ const m = StyleSheet.create({
   lineTotalVal: { fontSize: 18, fontWeight: '800', color: '#111827' },
 
   // CTA
-  payBtn: {
+  payInfo: {
     marginTop: 20,
-    backgroundColor: '#111827',
-    borderRadius: 14,
-    paddingVertical: 16,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: '#eff6ff',
+    borderRadius: 12,
+    padding: 14,
   },
-  payBtnOverdue: { backgroundColor: '#dc2626' },
-  payBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  payInfoText: { flex: 1, fontSize: 13, color: '#1d4ed8', lineHeight: 18 },
   downloadBtn: {
     flexDirection: 'row',
     alignItems: 'center',

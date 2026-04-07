@@ -23,7 +23,6 @@ import {
   OrderStatus,
   OrderType,
   PaymentMethod,
-  PaymentStatus,
   TransportJobStatus,
   TransportJobType,
   Prisma,
@@ -37,6 +36,7 @@ import { InvoicesService } from '../invoices/invoices.service';
 import { UpdatesGateway } from '../updates/updates.gateway';
 import { VAT_RATE } from '../common/constants/tax';
 import { MaterialsService } from '../materials/materials.service';
+import { DocumentsService } from '../documents/documents.service';
 
 @Injectable()
 export class OrdersService {
@@ -66,6 +66,7 @@ export class OrdersService {
     private invoices: InvoicesService,
     private updates: UpdatesGateway,
     private materials: MaterialsService,
+    private documents: DocumentsService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, currentUser: RequestingUser) {
@@ -413,7 +414,7 @@ export class OrdersService {
         total,
         currency: 'EUR',
         status: OrderStatus.PENDING,
-        paymentStatus: orderData.paymentStatus || 'PENDING',
+        paymentStatus: 'PENDING',
         paymentMethod,
         items: {
           create: items.map((item) => ({
@@ -546,6 +547,7 @@ export class OrdersService {
                 select: {
                   name: true,
                   images: true,
+                  category: true,
                 },
               },
             },
@@ -554,6 +556,11 @@ export class OrdersService {
             select: {
               id: true,
               name: true,
+            },
+          },
+          createdBy: {
+            select: {
+              id: true,
             },
           },
           transportJobs: {
@@ -793,15 +800,16 @@ export class OrdersService {
       updateData.deliveryDate = new Date(updateOrderDto.deliveryDate);
     if (updateOrderDto.deliveryWindow)
       updateData.deliveryWindow = updateOrderDto.deliveryWindow;
-    if (updateOrderDto.deliveryFee !== undefined)
+    // Only admins may change the delivery fee — buyers could exploit this to
+    // reduce the amount captured in reconcileInvoiceWeight.
+    if (updateOrderDto.deliveryFee !== undefined && currentUser.userType === 'ADMIN')
       updateData.deliveryFee = updateOrderDto.deliveryFee;
     if (updateOrderDto.notes) updateData.notes = updateOrderDto.notes;
     if (updateOrderDto.siteContactName !== undefined)
       updateData.siteContactName = updateOrderDto.siteContactName;
     if (updateOrderDto.siteContactPhone !== undefined)
       updateData.siteContactPhone = updateOrderDto.siteContactPhone;
-    if (updateOrderDto.paymentStatus)
-      updateData.paymentStatus = updateOrderDto.paymentStatus;
+    // NOTE: paymentStatus is intentionally excluded — only the payments service may change it
 
     return this.prisma.order.update({
       where: { id },
@@ -1098,6 +1106,36 @@ export class OrdersService {
     return this.updateStatus(id, status);
   }
 
+  /**
+   * Seller confirms that loading is complete for a direct-collection order
+   * (no transport job). Transitions order to IN_PROGRESS and, when weight is
+   * provided, auto-generates a WEIGHING_SLIP document for the buyer.
+   */
+  async startLoading(id: string, currentUser: RequestingUser, weightKg?: number) {
+    // Fetch createdById before the status update (we need it for the weighing slip)
+    const existing = weightKg != null && weightKg > 0
+      ? await this.prisma.order.findUnique({ where: { id }, select: { createdById: true } })
+      : null;
+
+    const order = await this.updateStatusAsUser(id, OrderStatus.IN_PROGRESS, currentUser);
+
+    if (weightKg != null && weightKg > 0 && existing) {
+      const weightTonnes = weightKg / 1000;
+      try {
+        await this.documents.generateWeighingSlip(
+          id,
+          existing.createdById,
+          weightTonnes,
+          't',
+        );
+      } catch (err) {
+        this.logger.warn(`startLoading: failed to generate WEIGHING_SLIP for order ${id}: ${err}`);
+      }
+    }
+
+    return order;
+  }
+
   private canManageSupplierOrder(currentUser: RequestingUser): boolean {
     return (
       !!currentUser.companyId &&
@@ -1294,6 +1332,13 @@ export class OrdersService {
 
   async cancel(id: string, currentUser: RequestingUser) {
     const order = await this.findOne(id, currentUser);
+
+    // Only the buyer who placed the order (or an admin) may cancel it.
+    // Sellers and drivers can view the order via findOne but must not be able
+    // to cancel it — they have separate seller-cancel / dispute flows.
+    if (currentUser.userType !== 'ADMIN' && order.createdById !== currentUser.userId) {
+      throw new ForbiddenException('Only the buyer who placed this order can cancel it');
+    }
 
     if (order.status === OrderStatus.CANCELLED) {
       return order; // Already cancelled — no-op, do NOT decrement credit twice

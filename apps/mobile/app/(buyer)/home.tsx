@@ -91,7 +91,7 @@ const SERVICES = [
     id: 'materials',
     icon: HardHat,
     label: 'Materiāli',
-    route: '/(buyer)/catalog',
+    route: '/order-request-new',
   },
   {
     id: 'container',
@@ -470,6 +470,7 @@ export default function HomeScreen() {
                 key={item.id}
                 style={s.recentRow}
                 onPress={() => {
+                  haptics.light();
                   const route =
                     item.kind === 'skip'
                       ? `/(buyer)/skip-order/${item.id}`
@@ -522,7 +523,7 @@ export default function HomeScreen() {
               <TouchableOpacity
                 onPress={() => {
                   haptics.light();
-                  router.push('/(buyer)/catalog' as any);
+                  router.push('/order-request-new' as any);
                 }}
               >
                 <Text style={s.emptyHintLink}>Sākt pasūtīt →</Text>

@@ -1,18 +1,9 @@
 import { apiFetch } from './common';
+import type { TransportJobStatus } from '@b3hub/shared';
+
+export type { TransportJobStatus };
 
 // ─── Types ─────────────────────────────────────────────────────────────────
-
-export type TransportJobStatus =
-  | 'AVAILABLE'
-  | 'ASSIGNED'
-  | 'ACCEPTED'
-  | 'EN_ROUTE_PICKUP'
-  | 'AT_PICKUP'
-  | 'LOADED'
-  | 'EN_ROUTE_DELIVERY'
-  | 'AT_DELIVERY'
-  | 'DELIVERED'
-  | 'CANCELLED';
 
 export interface ApiTransportJob {
   id: string;
@@ -51,6 +42,8 @@ export interface ApiTransportJob {
   actualWeightKg: number | null;
   pickupPhotoUrl: string | null;
   driverId: string | null;
+  offeredToDriverId?: string | null;
+  offerExpiresAt?: string | null;
   driver: {
     id: string;
     firstName: string;
@@ -148,6 +141,8 @@ export interface ApiVehicle {
   capacity?: number | null;
   isActive: boolean;
   createdAt: string;
+  insuranceExpiry?: string | null;
+  inspectionExpiry?: string | null;
 }
 
 // ─── Driver Schedule ──────────────────────────────────────────────────────
@@ -223,6 +218,20 @@ export const transportApi = {
       apiFetch<ApiTransportJob>(`/transport-jobs/${id}/accept`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    declineOffer: (id: string, token: string) =>
+      apiFetch<{ ok: boolean }>(`/transport-jobs/${id}/decline-offer`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    /** Upload a pickup photo as base64 and get back a Storage URL. */
+    uploadPickupPhoto: (id: string, base64: string, mimeType: string, token: string) =>
+      apiFetch<{ url: string }>(`/transport-jobs/${id}/pickup-photo`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64, mimeType }),
       }),
 
     updateStatus: (
@@ -306,6 +315,7 @@ export const transportApi = {
         notes: string;
         photoUrls?: string[];
         requiresDispatchAction?: boolean;
+        actualQuantity?: number;
       },
       token: string,
     ) =>

@@ -24,6 +24,8 @@ import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useToast } from '@/components/ui/Toast';
+import { StatusPill } from '@/components/ui/StatusPill';
+import { haptics } from '@/lib/haptics';
 import type { ApiVehicle, VehicleType } from '@/lib/api';
 
 // ── Constants ──────────────────────────────────────────────────
@@ -58,6 +60,8 @@ interface VehicleForm {
   year: string;
   capacity: string;
   isActive: boolean;
+  insuranceExpiry: string;
+  inspectionExpiry: string;
 }
 
 const BLANK: VehicleForm = {
@@ -68,6 +72,8 @@ const BLANK: VehicleForm = {
   year: '',
   capacity: '',
   isActive: true,
+  insuranceExpiry: '',
+  inspectionExpiry: '',
 };
 
 // ── Vehicle Card ───────────────────────────────────────────────
@@ -95,7 +101,7 @@ function VehicleCard({
       <View style={s.cardContent}>
         <View style={s.cardHeader}>
           <Text style={s.cardPlate}>{vehicle.licensePlate}</Text>
-          {vehicle.isActive && <View style={s.activeDot} />}
+          {vehicle.isActive && <StatusPill label="Akтīvs" bg="#dcfce7" color="#166534" size="sm" />}
         </View>
         <Text style={s.cardSubtext}>
           {VEHICLE_LABELS[vehicle.vehicleType]}
@@ -142,6 +148,8 @@ function VehicleModal({
           year: initial.year != null ? String(initial.year) : '',
           capacity: initial.capacity != null ? String(initial.capacity) : '',
           isActive: initial.isActive,
+          insuranceExpiry: initial.insuranceExpiry ? initial.insuranceExpiry.slice(0, 10) : '',
+          inspectionExpiry: initial.inspectionExpiry ? initial.inspectionExpiry.slice(0, 10) : '',
         });
       } else {
         setForm(BLANK);
@@ -262,6 +270,31 @@ function VehicleModal({
             />
           </View>
 
+          <View style={s.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.formLabel}>Apdrošināšanas derīgums</Text>
+              <TextInput
+                style={s.input}
+                placeholder="GGGG-MM-DD"
+                value={form.insuranceExpiry}
+                onChangeText={set('insuranceExpiry')}
+                keyboardType="numbers-and-punctuation"
+                maxLength={10}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.formLabel}>Tehniskās apskates derīgums</Text>
+              <TextInput
+                style={s.input}
+                placeholder="GGGG-MM-DD"
+                value={form.inspectionExpiry}
+                onChangeText={set('inspectionExpiry')}
+                keyboardType="numbers-and-punctuation"
+                maxLength={10}
+              />
+            </View>
+          </View>
+
           {initial && onDelete && (
             <TouchableOpacity
               style={s.deleteButton}
@@ -305,10 +338,7 @@ export default function VehiclesScreen() {
         const data = await api.vehicles.getAll(token);
         setVehicles(data);
       } catch (err) {
-        Alert.alert(
-          'Kļūda',
-          err instanceof Error ? err.message : 'Neizdevās ielādēt transportlīdzekļus',
-        );
+        toast.error(err instanceof Error ? err.message : 'Neizdevās ielādēt transportlīdzeļlus');
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -332,6 +362,8 @@ export default function VehiclesScreen() {
       year: form.year ? Number(form.year) : undefined,
       capacity: form.capacity ? Number(form.capacity) : undefined,
       isActive: form.isActive,
+      insuranceExpiry: form.insuranceExpiry.trim() || undefined,
+      inspectionExpiry: form.inspectionExpiry.trim() || undefined,
     };
     try {
       if (editing?.id) {
@@ -373,6 +405,7 @@ export default function VehiclesScreen() {
   };
 
   const openModal = (v?: ApiVehicle) => {
+    haptics.light();
     setEditing(v || null);
     setModalVisible(true);
   };
@@ -497,7 +530,6 @@ const s = StyleSheet.create({
   cardContent: { flex: 1, gap: 2 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   cardPlate: { fontSize: 16, fontWeight: '700', color: '#111827', letterSpacing: 0.5 },
-  activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981' },
   cardSubtext: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
   cardChevron: { paddingLeft: 8 },
 

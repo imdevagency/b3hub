@@ -33,10 +33,13 @@ import { format } from 'date-fns';
 import { lv } from 'date-fns/locale';
 import { useOrders, type FilterKey } from '@/lib/use-orders';
 import { BottomSheet } from '@/components/ui/BottomSheet';
-import { SkeletonCard } from '@/components/ui/Skeleton';
+import { SkeletonCard, Skeleton } from '@/components/ui/Skeleton';
+import { StatusPill } from '@/components/ui/StatusPill';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { type ApiOrderSchedule } from '@/lib/api/orders';
+import { SIZE_LABEL } from '@/lib/materials';
 
 const PAYMENT_BADGE: Record<string, { label: string; bg: string; color: string } | undefined> = {
   PENDING: { label: 'Gaida maksājumu', bg: '#fef3c7', color: '#92400e' },
@@ -52,20 +55,7 @@ function PaymentBadge({ status }: { status?: string }) {
   if (!status) return null;
   const meta = PAYMENT_BADGE[status];
   if (!meta) return null;
-  return (
-    <View
-      style={{
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderRadius: 6,
-        backgroundColor: meta.bg,
-      }}
-    >
-      <Text style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: meta.color }}>
-        {meta.label}
-      </Text>
-    </View>
-  );
+  return <StatusPill label={meta.label} bg={meta.bg} color={meta.color} size="sm" />;
 }
 import { haptics } from '@/lib/haptics';
 import { estimateCo2Kg, formatCo2 } from '@/lib/co2';
@@ -321,24 +311,35 @@ export default function OrdersScreen() {
               <SkeletonCard count={3} />
             </View>
           ) : error ? (
-            <View style={s.emptyState}>
-              <Text style={s.emptyTitle}>Neizdevās ielādēt</Text>
-              <Text style={s.emptyText}>Pārbaudiet interneta savienojumu un mēģiniet vēlreiz.</Text>
-              <TouchableOpacity style={s.emptyButton} onPress={() => refresh()} activeOpacity={0.8}>
-                <Text style={s.emptyButtonText}>Mēģināt vēlreiz</Text>
-              </TouchableOpacity>
-            </View>
+            <EmptyState
+              icon={<AlertCircle size={32} color="#f87171" />}
+              title="Neizdevās ielādēt"
+              subtitle="Pārbaudiet interneta savienojumu un mēģiniet vēlreiz."
+              action={
+                <TouchableOpacity
+                  style={s.emptyButton}
+                  onPress={() => refresh()}
+                  activeOpacity={0.8}
+                >
+                  <Text style={s.emptyButtonText}>Mēģināt vēlreiz</Text>
+                </TouchableOpacity>
+              }
+            />
           ) : (
-            <View style={s.emptyState}>
-              <View style={s.emptyIcon}>
-                <Package size={32} color="#94a3b8" />
-              </View>
-              <Text style={s.emptyTitle}>Nav pasūtījumu</Text>
-              <Text style={s.emptyText}>Veiciet jaunu pasūtījumu vai RFQ, lai sāktu.</Text>
-              <TouchableOpacity style={s.emptyButton} onPress={handleNewOrder} activeOpacity={0.8}>
-                <Text style={s.emptyButtonText}>Jauns pasūtījums</Text>
-              </TouchableOpacity>
-            </View>
+            <EmptyState
+              icon={<Package size={32} color="#94a3b8" />}
+              title="Nav pasūtījumu"
+              subtitle="Veiciet jaunu pasūtījumu vai RFQ, lai sāktu."
+              action={
+                <TouchableOpacity
+                  style={s.emptyButton}
+                  onPress={handleNewOrder}
+                  activeOpacity={0.8}
+                >
+                  <Text style={s.emptyButtonText}>Jauns pasūtījums</Text>
+                </TouchableOpacity>
+              }
+            />
           )
         }
       />
@@ -379,19 +380,16 @@ export default function OrdersScreen() {
             </TouchableOpacity>
           </View>
           {schedulesLoading ? (
-            <View style={{ paddingVertical: 24, alignItems: 'center' }}>
-              <Text style={{ fontSize: 14, color: '#9ca3af' }}>Ielādē...</Text>
+            <View style={{ gap: 8 }}>
+              <Skeleton height={80} radius={12} />
+              <Skeleton height={80} radius={12} />
             </View>
           ) : schedules.length === 0 ? (
-            <View style={{ paddingVertical: 24, alignItems: 'center', gap: 8 }}>
-              <Calendar size={32} color="#d1d5db" />
-              <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center' }}>
-                Nav atkārtotu pasūtījumu
-              </Text>
-              <Text style={{ fontSize: 12, color: '#9ca3af', textAlign: 'center' }}>
-                Izveidojiet pasūtījumu un izvēlieties atkārtošanas biežumu
-              </Text>
-            </View>
+            <EmptyState
+              icon={<Calendar size={32} color="#d1d5db" />}
+              title="Nav atkārtotu pasūtījumu"
+              subtitle="Izveidojiet pasūtījumu un izvēlieties atkārtošanas biežumu"
+            />
           ) : (
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
               {schedules.map((sched) => (
@@ -558,24 +556,12 @@ function ScheduleRow({
         >
           {schedule.deliveryCity || schedule.deliveryAddress}
         </Text>
-        <View
-          style={{
-            paddingHorizontal: 8,
-            paddingVertical: 2,
-            borderRadius: 6,
-            backgroundColor: schedule.enabled ? '#dcfce7' : '#f3f4f6',
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 11,
-              fontFamily: 'Inter_600SemiBold',
-              color: schedule.enabled ? '#166534' : '#6b7280',
-            }}
-          >
-            {schedule.enabled ? 'Aktīvs' : 'Pauzēts'}
-          </Text>
-        </View>
+        <StatusPill
+          label={schedule.enabled ? 'Aktīvs' : 'Pauzēts'}
+          bg={schedule.enabled ? '#dcfce7' : '#f3f4f6'}
+          color={schedule.enabled ? '#166534' : '#6b7280'}
+          size="sm"
+        />
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 }}>
@@ -680,11 +666,12 @@ function MaterialOrderCard({ order }: { order: any }) {
             · #{order.orderNumber}
           </Text>
         </View>
-        <View style={[s.statusBadge, { backgroundColor: statusColors.bg }]}>
-          <Text style={[s.statusText, { color: statusColors.text }]}>
-            {formatStatus(order.status)}
-          </Text>
-        </View>
+        <StatusPill
+          label={formatStatus(order.status)}
+          bg={statusColors.bg}
+          color={statusColors.text}
+          size="sm"
+        />
       </View>
 
       <Text style={s.cardTitle} numberOfLines={2}>
@@ -776,11 +763,12 @@ function DisposalOrderCard({ req }: { req: any }) {
           <Trash2 size={16} color="#64748b" />
           <Text style={s.orderId}>Utilizācija</Text>
         </View>
-        <View style={[s.statusBadge, { backgroundColor: statusColors.bg }]}>
-          <Text style={[s.statusText, { color: statusColors.text }]}>
-            {formatStatus(req.status)}
-          </Text>
-        </View>
+        <StatusPill
+          label={formatStatus(req.status)}
+          bg={statusColors.bg}
+          color={statusColors.text}
+          size="sm"
+        />
       </View>
 
       <Text style={s.cardTitle} numberOfLines={2}>
@@ -829,11 +817,12 @@ function TransportRequestCard({ req }: { req: any }) {
           <Truck size={16} color="#64748b" />
           <Text style={s.orderId}>Transports</Text>
         </View>
-        <View style={[s.statusBadge, { backgroundColor: statusColors.bg }]}>
-          <Text style={[s.statusText, { color: statusColors.text }]}>
-            {formatStatus(req.status)}
-          </Text>
-        </View>
+        <StatusPill
+          label={formatStatus(req.status)}
+          bg={statusColors.bg}
+          color={statusColors.text}
+          size="sm"
+        />
       </View>
 
       <Text style={s.cardTitle} numberOfLines={2}>
@@ -878,11 +867,12 @@ function RfqCard({ rfq }: { rfq: any }) {
           <FileText size={16} color="#64748b" />
           <Text style={s.orderId}>Cenu aptauja</Text>
         </View>
-        <View style={[s.statusBadge, { backgroundColor: statusColors.bg }]}>
-          <Text style={[s.statusText, { color: statusColors.text }]}>
-            {formatStatus(rfq.status)}
-          </Text>
-        </View>
+        <StatusPill
+          label={formatStatus(rfq.status)}
+          bg={statusColors.bg}
+          color={statusColors.text}
+          size="sm"
+        />
       </View>
 
       <Text style={s.cardTitle} numberOfLines={2}>
@@ -934,22 +924,23 @@ function SkipOrderCard({ order }: { order: any }) {
             · #{order.orderNumber}
           </Text>
         </View>
-        <View style={[s.statusBadge, { backgroundColor: statusColors.bg }]}>
-          <Text style={[s.statusText, { color: statusColors.text }]}>
-            {formatStatus(order.status)}
-          </Text>
-        </View>
+        <StatusPill
+          label={formatStatus(order.status)}
+          bg={statusColors.bg}
+          color={statusColors.text}
+          size="sm"
+        />
       </View>
 
       <Text style={s.cardTitle} numberOfLines={2}>
-        {order.containerSize} m³ konteiners
+        {SIZE_LABEL[order.skipSize as string] ?? order.skipSize}
       </Text>
 
       <View style={s.cardMeta}>
         <View style={s.metaItem}>
           <MapPin size={14} color="#94a3b8" />
           <Text style={s.metaText} numberOfLines={1}>
-            {order.deliveryAddress}
+            {order.location}
           </Text>
         </View>
         <View style={s.metaItem}>
@@ -963,7 +954,7 @@ function SkipOrderCard({ order }: { order: any }) {
       </View>
 
       <View style={s.cardFooter}>
-        <Text style={s.price}>{order.totalAmount != null ? `€${order.totalAmount}` : '—'}</Text>
+        <Text style={s.price}>{order.price != null ? `€${order.price.toFixed(2)}` : '—'}</Text>
         <View style={s.chevronBox}>
           <ChevronRight size={18} color="#94a3b8" />
         </View>

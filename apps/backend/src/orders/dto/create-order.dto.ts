@@ -11,7 +11,7 @@ import {
   IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { OrderType, PaymentStatus, MaterialUnit } from '@prisma/client';
+import { OrderType, MaterialUnit } from '@prisma/client';
 
 class OrderItemDto {
   @IsString()

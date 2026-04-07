@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsOptional,
   IsInt,
+  IsDateString,
   Min,
   Max,
   MinLength,
@@ -64,4 +65,14 @@ export class CreateVehicleDto {
   @IsOptional()
   @IsEnum(VehicleStatus)
   status?: VehicleStatus;
+
+  /** Insurance certificate expiry date (ISO 8601 string). */
+  @IsOptional()
+  @IsDateString()
+  insuranceExpiry?: string;
+
+  /** Technical inspection (roadworthy) certificate expiry date (ISO 8601 string). */
+  @IsOptional()
+  @IsDateString()
+  inspectionExpiry?: string;
 }

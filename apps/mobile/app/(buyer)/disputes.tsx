@@ -17,6 +17,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { Text } from '@/components/ui/text';
 
 const REASON_LABEL: Record<DisputeReason, string> = {
@@ -89,9 +90,7 @@ export default function DisputesScreen() {
           <Text style={s.orderNum} numberOfLines={1}>
             {item.order?.orderNumber ?? item.orderId}
           </Text>
-          <View style={[s.statusBadge, { backgroundColor: status.bg }]}>
-            <Text style={[s.statusText, { color: status.color }]}>{status.label}</Text>
-          </View>
+          <StatusPill label={status.label} bg={status.bg} color={status.color} size="sm" />
         </View>
 
         <Text style={s.reason}>{reason}</Text>

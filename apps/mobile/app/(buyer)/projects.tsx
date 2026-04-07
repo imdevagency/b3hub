@@ -16,6 +16,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { Text } from '@/components/ui/text';
 import { colors, spacing, radius, fontSizes } from '@/lib/tokens';
 import { haptics } from '@/lib/haptics';
@@ -30,15 +31,6 @@ const STATUS_CONFIG: Record<ProjectStatus, { label: string; bg: string; color: s
 };
 
 // ─── Components ───────────────────────────────────────────────────────────
-
-function StatusPillLocal({ status }: { status: ProjectStatus }) {
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.PLANNING;
-  return (
-    <View style={[styles.pill, { backgroundColor: cfg.bg }]}>
-      <Text style={[styles.pillText, { color: cfg.color }]}>{cfg.label}</Text>
-    </View>
-  );
-}
 
 function SpendBar({ pct }: { pct: number | null }) {
   if (pct === null) return null;
@@ -68,7 +60,12 @@ function ProjectCard({ project, onPress }: { project: ApiProject; onPress: () =>
             {project.name}
           </Text>
         </View>
-        <StatusPillLocal status={project.status} />
+        <StatusPill
+          label={STATUS_CONFIG[project.status]?.label ?? project.status}
+          bg={STATUS_CONFIG[project.status]?.bg ?? '#f3f4f6'}
+          color={STATUS_CONFIG[project.status]?.color ?? '#6b7280'}
+          size="sm"
+        />
       </View>
 
       {project.clientName ? (
@@ -355,14 +352,5 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: fontSizes.xs,
     color: colors.textMuted,
-  },
-  pill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  pillText: {
-    fontSize: fontSizes.xs,
-    fontWeight: '600',
   },
 });

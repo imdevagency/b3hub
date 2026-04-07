@@ -3,25 +3,25 @@
  * Admin-only endpoints for user management, platform stats,
  * and provider application approval workflow.
  */
-import { Controller, Get, Patch, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Body, UseGuards, Query } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { IsBoolean, IsNumber, IsOptional, Min } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 
 class UpdateCompanyDto {
   @IsOptional() @IsBoolean() verified?: boolean;
   @IsOptional() @IsBoolean() payoutEnabled?: boolean;
-  @IsOptional() @IsNumber() @Min(0) commissionRate?: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(100) commissionRate?: number;
 }
 
 class UpdateJobRateDto {
   @IsOptional() @IsNumber() @Min(0) rate?: number;
   @IsOptional() @IsNumber() @Min(0) pricePerTonne?: number;
-  @IsOptional() note?: string;
+  @IsOptional() @IsString() note?: string;
 }
 
 import { ApiTags } from '@nestjs/swagger';
@@ -54,16 +54,28 @@ export class AdminController {
     return this.service.updateUser(id, body, admin.userId);
   }
 
-  /** GET /admin/orders — all orders */
+  /** GET /admin/orders — all orders (paginated) */
   @Get('orders')
-  getOrders() {
-    return this.service.getOrders();
+  getOrders(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.service.getOrders(
+      page ? Math.max(1, parseInt(page, 10)) : 1,
+      limit ? Math.min(200, Math.max(1, parseInt(limit, 10))) : 50,
+    );
   }
 
-  /** GET /admin/jobs — all transport jobs */
+  /** GET /admin/jobs — all transport jobs (paginated) */
   @Get('jobs')
-  getTransportJobs() {
-    return this.service.getTransportJobs();
+  getTransportJobs(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.service.getTransportJobs(
+      page ? Math.max(1, parseInt(page, 10)) : 1,
+      limit ? Math.min(200, Math.max(1, parseInt(limit, 10))) : 50,
+    );
   }
 
   /** GET /admin/companies — all companies */

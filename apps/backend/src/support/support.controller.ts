@@ -1,13 +1,19 @@
 /**
  * Support chat controller — /api/v1/support
  */
-import { Body, Controller, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { SupportService } from './support.service';
 import { SendSupportMessageDto } from './dto/send-support-message.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface.js';
+import { IsEnum } from 'class-validator';
+
+class SetThreadStatusDto {
+  @IsEnum(['OPEN', 'CLOSED'])
+  status!: 'OPEN' | 'CLOSED';
+}
 
 @ApiTags('Support')
 @Controller('support')
@@ -44,7 +50,7 @@ export class SupportController {
   @Get('admin/threads')
   adminListThreads(@CurrentUser() user: RequestingUser) {
     if (user.userType !== 'ADMIN') {
-      throw new Error('Forbidden');
+      throw new ForbiddenException();
     }
     return this.service.adminListThreads();
   }
@@ -56,7 +62,7 @@ export class SupportController {
     @CurrentUser() user: RequestingUser,
   ) {
     if (user.userType !== 'ADMIN') {
-      throw new Error('Forbidden');
+      throw new ForbiddenException();
     }
     return this.service.adminGetThread(id);
   }
@@ -69,7 +75,7 @@ export class SupportController {
     @Body() dto: SendSupportMessageDto,
   ) {
     if (user.userType !== 'ADMIN') {
-      throw new Error('Forbidden');
+      throw new ForbiddenException();
     }
     const name = user.email ?? 'Support';
     return this.service.adminReply(id, user.userId, name, dto);
@@ -79,11 +85,11 @@ export class SupportController {
   @Put('admin/threads/:id/status')
   adminSetStatus(
     @Param('id') id: string,
-    @Body() body: { status: 'OPEN' | 'CLOSED' },
+    @Body() body: SetThreadStatusDto,
     @CurrentUser() user: RequestingUser,
   ) {
     if (user.userType !== 'ADMIN') {
-      throw new Error('Forbidden');
+      throw new ForbiddenException();
     }
     return this.service.adminSetStatus(id, body.status);
   }

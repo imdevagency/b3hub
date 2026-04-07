@@ -38,7 +38,7 @@ export default function ReviewsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const companyId = user?.company?.id;
+  const companyId = user?.companyId;
 
   useEffect(() => {
     if (!token || !companyId) {

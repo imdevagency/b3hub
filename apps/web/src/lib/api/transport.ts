@@ -3,20 +3,11 @@
  * Functions for creating, listing, accepting, and updating transport jobs.
  */
 import { apiFetch } from './common';
+import type { TransportJobStatus } from '@b3hub/shared';
+
+export type { TransportJobStatus };
 
 // ─── Types ─────────────────────────────────────────────────────────────────
-
-export type TransportJobStatus =
-  | 'AVAILABLE'
-  | 'ASSIGNED'
-  | 'ACCEPTED'
-  | 'EN_ROUTE_PICKUP'
-  | 'AT_PICKUP'
-  | 'LOADED'
-  | 'EN_ROUTE_DELIVERY'
-  | 'AT_DELIVERY'
-  | 'DELIVERED'
-  | 'CANCELLED';
 
 export type TransportJobType =
   | 'MATERIAL_DELIVERY'

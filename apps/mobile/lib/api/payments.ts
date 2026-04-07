@@ -47,7 +47,7 @@ export const paymentsApi = {
    * Generates a Stripe Connect onboarding link.
    */
   setupPayouts: async (token: string): Promise<PaymentOnboardResponse> => {
-    return apiFetch('payments/onboard', {
+    return apiFetch('/payments/onboard', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -58,7 +58,7 @@ export const paymentsApi = {
    * Returns { available: 0, pending: 0, onboarded: false } if not yet set up.
    */
   getBalance: async (token: string): Promise<ConnectBalanceResponse> => {
-    return apiFetch('payments/balance', {
+    return apiFetch('/payments/balance', {
       headers: { Authorization: `Bearer ${token}` },
     });
   },
@@ -68,7 +68,7 @@ export const paymentsApi = {
    * Returns the clientSecret needed to present the payment sheet.
    */
   createIntent: async (orderId: string, token: string): Promise<PaymentIntentResponse> => {
-    return apiFetch(`payments/create-intent/${orderId}`, {
+    return apiFetch(`/payments/create-intent/${orderId}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -84,7 +84,7 @@ export const paymentsApi = {
     description: string | undefined,
     token: string,
   ): Promise<{ id: string; status: string }> => {
-    return apiFetch(`disputes`, {
+    return apiFetch('/disputes', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ orderId, reason, description: description || reason }),
@@ -95,7 +95,7 @@ export const paymentsApi = {
    * List the current buyer's disputes.
    */
   listDisputes: async (token: string): Promise<ApiDispute[]> => {
-    return apiFetch('disputes', {
+    return apiFetch('/disputes', {
       headers: { Authorization: `Bearer ${token}` },
     });
   },
@@ -104,7 +104,7 @@ export const paymentsApi = {
    * Fetch a single dispute by id.
    */
   getDispute: async (id: string, token: string): Promise<ApiDispute> => {
-    return apiFetch(`disputes/${id}`, {
+    return apiFetch(`/disputes/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
   },

@@ -47,6 +47,7 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import { t } from '@/lib/translations';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { haptics } from '@/lib/haptics';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -277,8 +278,8 @@ function RequestCard({ request, myCompanyId, onRespond }: RequestCardProps) {
 
   const statusText =
     request.status === 'QUOTED'
-      ? { text: sq.quotedBadge, color: '#2563eb' }
-      : { text: sq.openBadge, color: '#d97706' };
+      ? { text: sq.quotedBadge, color: '#2563eb', bg: '#eff6ff' }
+      : { text: sq.openBadge, color: '#d97706', bg: '#fff7ed' };
 
   return (
     <View style={[styles.card, alreadyResponded && styles.cardResponded]}>
@@ -298,10 +299,12 @@ function RequestCard({ request, myCompanyId, onRespond }: RequestCardProps) {
         </View>
 
         <View style={styles.cardTopRight}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <View style={[styles.statusDot, { backgroundColor: statusText.color }]} />
-            <Text style={[styles.statusText, { color: statusText.color }]}>{statusText.text}</Text>
-          </View>
+          <StatusPill
+            label={statusText.text}
+            bg={statusText.bg}
+            color={statusText.color}
+            size="sm"
+          />
           {responseCount > 0 && (
             <Text style={styles.responseCountText}>{responseCount} piedāv.</Text>
           )}
@@ -320,7 +323,9 @@ function RequestCard({ request, myCompanyId, onRespond }: RequestCardProps) {
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>{sq.postedBy}:</Text>
             <Text style={styles.detailValue}>
-              {request.buyer.firstName} {request.buyer.lastName.charAt(0)}.
+              {request.buyer
+                ? `${request.buyer.firstName ?? ''} ${request.buyer.lastName ? request.buyer.lastName.charAt(0) + '.' : ''}`.trim()
+                : '—'}
             </Text>
           </View>
 

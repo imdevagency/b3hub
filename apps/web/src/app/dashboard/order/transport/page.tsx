@@ -273,7 +273,7 @@ export default function TransportOrderPage() {
           dropoffLng,
           vehicleType,
           loadDescription,
-          estimatedWeight: estimatedWeight * 1000,
+          estimatedWeight: estimatedWeight,
           requestedDate: new Date(date).toISOString(),
           notes,
           siteContactName: siteContactName || undefined,
@@ -529,7 +529,9 @@ export default function TransportOrderPage() {
                           value={buyerOfferedRate}
                           onChange={(e) => setBuyerOfferedRate(e.target.value)}
                         />
-                        <span className="text-sm font-medium text-muted-foreground shrink-0">€</span>
+                        <span className="text-sm font-medium text-muted-foreground shrink-0">
+                          €
+                        </span>
                       </div>
                     </div>
                   </div>

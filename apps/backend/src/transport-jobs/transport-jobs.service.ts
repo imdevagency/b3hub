@@ -537,6 +537,7 @@ export class TransportJobsService {
   // ── My active job (in-progress job for the logged-in driver) ──
   async findMyActiveJob(driverId: string) {
     const activeStatuses: TransportJobStatus[] = [
+      TransportJobStatus.ASSIGNED,
       TransportJobStatus.ACCEPTED,
       TransportJobStatus.EN_ROUTE_PICKUP,
       TransportJobStatus.AT_PICKUP,
@@ -797,11 +798,35 @@ export class TransportJobsService {
       throw new BadRequestException('Job is no longer available');
     }
 
+    // Respect exclusive offer window: only the offered driver may accept while
+    // the offer is still live. Once it expires any driver may accept again.
+    if (
+      job.offeredToDriverId &&
+      job.offerExpiresAt &&
+      job.offerExpiresAt > new Date() &&
+      job.offeredToDriverId !== driverId
+    ) {
+      throw new BadRequestException(
+        'Šis darbs pašlaik ir piedāvāts citam šoferim. Uzgaidiet, kamēr piedāvājums beidzas.',
+      );
+    }
+
     // Ensure driver has no other active job
     const activeJob = await this.findMyActiveJob(driverId);
     if (activeJob) {
       throw new BadRequestException(
         'You already have an active job. Complete it first.',
+      );
+    }
+
+    // Compliance gate: driver license must not be expired
+    const driverProfile = await this.prisma.driverProfile.findUnique({
+      where: { userId: driverId },
+      select: { licenseExpiry: true },
+    });
+    if (driverProfile?.licenseExpiry && driverProfile.licenseExpiry < new Date()) {
+      throw new BadRequestException(
+        `Jūsu vadītāja apliecība ir beigusies (${driverProfile.licenseExpiry.toISOString().split('T')[0]}). Atjauniniet apliecību, lai pieņemtu darbus.`,
       );
     }
 
@@ -835,6 +860,148 @@ export class TransportJobsService {
     }
 
     return updatedJob;
+  }
+
+  // ── Decline an offered job ────────────────────────────────────
+  async declineOffer(jobId: string, driverId: string) {
+    const job = await this.prisma.transportJob.findUnique({ where: { id: jobId } });
+    if (!job) throw new NotFoundException('Transport job not found');
+
+    if (job.offeredToDriverId !== driverId) {
+      throw new BadRequestException('Šis darbs nav piedāvāts jums');
+    }
+
+    const updated = await this.prisma.transportJob.update({
+      where: { id: jobId },
+      data: {
+        offeredToDriverId: null,
+        offerExpiresAt: null,
+        declinedDriverIds: { push: driverId },
+      },
+    });
+
+    // Immediately try to dispatch to the next eligible driver
+    this.dispatchToNextDriver(updated).catch((err) =>
+      this.logger.error(
+        `Auto-dispatch after decline failed for job ${jobId}: ${(err as Error).message}`,
+      ),
+    );
+
+    return { ok: true };
+  }
+
+  // ── Auto-dispatch cron — run every 30 s ───────────────────────
+  @Cron('*/30 * * * * *')
+  async runAutoDispatch() {
+    const now = new Date();
+    const jobs = await this.prisma.transportJob.findMany({
+      where: {
+        status: TransportJobStatus.AVAILABLE,
+        OR: [
+          { offeredToDriverId: null },
+          { offerExpiresAt: { lt: now } },
+        ],
+      },
+      select: {
+        id: true,
+        pickupLat: true,
+        pickupLng: true,
+        pickupCity: true,
+        deliveryCity: true,
+        cargoType: true,
+        distanceKm: true,
+        declinedDriverIds: true,
+      },
+    });
+
+    for (const job of jobs) {
+      await this.dispatchToNextDriver(job).catch((err) =>
+        this.logger.error(
+          `runAutoDispatch: failed for job ${job.id}: ${(err as Error).message}`,
+        ),
+      );
+    }
+  }
+
+  private async dispatchToNextDriver(job: {
+    id: string;
+    pickupLat: number | null;
+    pickupLng: number | null;
+    pickupCity: string;
+    deliveryCity: string;
+    cargoType: string;
+    distanceKm: number | null;
+    declinedDriverIds: string[];
+  }) {
+    const candidates = await this.prisma.user.findMany({
+      where: {
+        canTransport: true,
+        status: 'ACTIVE',
+        notifJobAlerts: true,
+        id: { notIn: job.declinedDriverIds },
+      },
+      select: {
+        id: true,
+        company: { select: { lat: true, lng: true, serviceRadiusKm: true } },
+        driverProfile: { select: { currentLocation: true } },
+      },
+    });
+
+    const scored: { id: string; distKm: number }[] = [];
+
+    for (const driver of candidates) {
+      // Skip drivers who already have an active job
+      const active = await this.findMyActiveJob(driver.id);
+      if (active) continue;
+
+      if (!job.pickupLat || !job.pickupLng) {
+        scored.push({ id: driver.id, distKm: 9999 });
+        continue;
+      }
+
+      const loc = driver.driverProfile?.currentLocation as { lat?: number; lng?: number } | null;
+      const driverLat = loc?.lat ?? driver.company?.lat ?? null;
+      const driverLng = loc?.lng ?? driver.company?.lng ?? null;
+
+      if (!driverLat || !driverLng) {
+        scored.push({ id: driver.id, distKm: 9999 });
+        continue;
+      }
+
+      const maxKm = driver.company?.serviceRadiusKm ?? 200;
+      const distKm = this.haversineKm(driverLat, driverLng, job.pickupLat, job.pickupLng);
+      if (distKm <= maxKm) {
+        scored.push({ id: driver.id, distKm });
+      }
+    }
+
+    if (scored.length === 0) return; // no eligible drivers right now
+
+    scored.sort((a, b) => a.distKm - b.distKm);
+    const nextDriver = scored[0];
+    const offerExpiresAt = new Date(Date.now() + 45_000);
+
+    // Atomic offer assignment: only set offer if job is still AVAILABLE
+    const { count } = await this.prisma.transportJob.updateMany({
+      where: { id: job.id, status: TransportJobStatus.AVAILABLE },
+      data: { offeredToDriverId: nextDriver.id, offerExpiresAt },
+    });
+
+    if (count === 0) return; // job was accepted/cancelled between select and update
+
+    this.notifications
+      .create({
+        userId: nextDriver.id,
+        type: NotificationType.SYSTEM_ALERT,
+        title: `🚚 Jauns darbs: ${job.pickupCity} → ${job.deliveryCity}`,
+        message: `${job.cargoType}${job.distanceKm ? ` • ${Math.round(job.distanceKm)} km` : ''} — pieņem 45 s laikā`,
+        data: { jobId: job.id, offerExpiresAt: offerExpiresAt.toISOString() },
+      })
+      .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+
+    this.logger.log(
+      `Auto-dispatch: job ${job.id} offered to driver ${nextDriver.id} (${Math.round(nextDriver.distKm)} km away)`,
+    );
   }
 
   // ── Avoid Empty Runs — return trip suggestions ────────────
@@ -1113,6 +1280,17 @@ export class TransportJobsService {
       );
     }
 
+    // Compliance gate: driver license must not be expired
+    const assignDriverProfile = await this.prisma.driverProfile.findUnique({
+      where: { userId: driverId },
+      select: { licenseExpiry: true },
+    });
+    if (assignDriverProfile?.licenseExpiry && assignDriverProfile.licenseExpiry < new Date()) {
+      throw new BadRequestException(
+        `Šofera ${driver.firstName} ${driver.lastName} vadītāja apliecība ir beigusies (${assignDriverProfile.licenseExpiry.toISOString().split('T')[0]}). Atjauniniet apliecību pirms piešķiršanas.`,
+      );
+    }
+
     if (vehicleId) {
       const vehicle = await this.prisma.vehicle.findUnique({
         where: { id: vehicleId },
@@ -1142,6 +1320,18 @@ export class TransportJobsService {
       if (vehicleConflict) {
         throw new BadRequestException(
           `Vehicle is already assigned to active job ${vehicleConflict.jobNumber}. Choose a different vehicle.`,
+        );
+      }
+
+      // Compliance gate: vehicle insurance and inspection must not be expired
+      if (vehicle.insuranceExpiry && vehicle.insuranceExpiry < new Date()) {
+        throw new BadRequestException(
+          `Transportlīdzekļa ${vehicle.licensePlate} apdrošināšana ir beigusies (${vehicle.insuranceExpiry.toISOString().split('T')[0]}). Atjauniniet apdrošināšanu pirms piešķiršanas.`,
+        );
+      }
+      if (vehicle.inspectionExpiry && vehicle.inspectionExpiry < new Date()) {
+        throw new BadRequestException(
+          `Transportlīdzekļa ${vehicle.licensePlate} tehniskā apskate ir beigusies (${vehicle.inspectionExpiry.toISOString().split('T')[0]}). Nokārtojiet apskati pirms piešķiršanas.`,
         );
       }
     }

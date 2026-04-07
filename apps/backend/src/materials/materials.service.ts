@@ -345,6 +345,17 @@ export class MaterialsService {
         distanceKm != null
           ? Math.round(distanceKm * DELIVERY_RATE_EUR_PER_KM * 100) / 100
           : null;
+      // ETA: simple model — 60 km/h average laden speed + 1.5 h loading/unloading buffer
+      const etaHours = distanceKm != null ? Math.round(distanceKm / 60 + 1.5) : null;
+      const etaLabel =
+        etaHours == null
+          ? 'Rīt'
+          : etaHours <= 3
+          ? `~${etaHours} h`
+          : etaHours <= 8
+          ? 'Šodien'
+          : 'Rīt';
+      const etaDays = etaHours == null || etaHours > 8 ? 2 : 1;
       return {
         ...m,
         supplier: supplierPublic,
@@ -353,7 +364,9 @@ export class MaterialsService {
         deliveryFee,
         totalPrice:
           Math.round((effectivePrice * params.quantity + (deliveryFee ?? 0)) * 100) / 100,
-        etaDays: 1,
+        etaDays,
+        etaHours,
+        etaLabel,
         isInstant: true,
         completionRate,
         totalOrders: perf?.total ?? 0,

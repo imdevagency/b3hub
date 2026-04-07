@@ -1,21 +1,10 @@
 import { apiFetch } from './common';
 import type { ApiOrder } from './orders';
+import type { MaterialCategory, MaterialUnit } from '@b3hub/shared';
+
+export type { MaterialCategory, MaterialUnit };
 
 // ─── Types ─────────────────────────────────────────────────────────────────
-
-export type MaterialCategory =
-  | 'SAND'
-  | 'GRAVEL'
-  | 'STONE'
-  | 'CONCRETE'
-  | 'SOIL'
-  | 'RECYCLED_CONCRETE'
-  | 'RECYCLED_SOIL'
-  | 'ASPHALT'
-  | 'CLAY'
-  | 'OTHER';
-
-export type MaterialUnit = 'TONNE' | 'M3' | 'PIECE' | 'LOAD';
 
 export interface ApiMaterial {
   id: string;
@@ -49,6 +38,8 @@ export interface SupplierOffer {
   totalPrice: number;
   distanceKm: number | null;
   etaDays: number;
+  etaHours?: number | null;
+  etaLabel?: string;
   isInstant: true;
   minOrder?: number | null;
   deliveryRadiusKm: number | null;

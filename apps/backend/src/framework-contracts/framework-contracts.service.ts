@@ -344,15 +344,26 @@ export class FrameworkContractsService {
     userId: string,
     companyId?: string,
   ) {
-    await this.assertOwner(id, userId, companyId);
+    const ownership = await this.assertOwner(id, userId, companyId);
+
+    // Only the buyer side may change contract status
+    if (dto.status !== undefined) {
+      const isBuyer =
+        ownership.buyerId === companyId || ownership.createdById === userId;
+      if (!isBuyer) {
+        throw new ForbiddenException('Only the buyer can change contract status');
+      }
+    }
 
     const contract = await this.prisma.frameworkContract.update({
       where: { id },
       data: {
-        ...(dto.title ? { title: dto.title } : {}),
-        ...(dto.endDate ? { endDate: new Date(dto.endDate) } : {}),
+        ...(dto.title !== undefined ? { title: dto.title } : {}),
+        ...(dto.endDate !== undefined
+          ? { endDate: dto.endDate ? new Date(dto.endDate) : null }
+          : {}),
         ...(dto.notes !== undefined ? { notes: dto.notes } : {}),
-        ...(dto.status ? { status: dto.status } : {}),
+        ...(dto.status !== undefined ? { status: dto.status } : {}),
       },
       include: {
         positions: {
@@ -375,7 +386,13 @@ export class FrameworkContractsService {
     userId: string,
     companyId?: string,
   ) {
-    await this.assertOwner(contractId, userId, companyId);
+    const ownership = await this.assertOwner(contractId, userId, companyId);
+    // Only the buyer side can add positions
+    const isBuyer =
+      ownership.buyerId === companyId || ownership.createdById === userId;
+    if (!isBuyer) {
+      throw new ForbiddenException('Only the buyer can add positions to a contract');
+    }
 
     return this.prisma.frameworkPosition.create({
       data: {
@@ -399,7 +416,19 @@ export class FrameworkContractsService {
     userId: string,
     companyId?: string,
   ) {
-    await this.assertOwner(contractId, userId, companyId);
+    const ownership = await this.assertOwner(contractId, userId, companyId);
+    // Only the buyer side can remove positions
+    const isBuyer =
+      ownership.buyerId === companyId || ownership.createdById === userId;
+    if (!isBuyer) {
+      throw new ForbiddenException('Only the buyer can remove positions from a contract');
+    }
+    // Positions cannot be removed once the contract is active
+    if (ownership.status !== FrameworkContractStatus.DRAFT) {
+      throw new BadRequestException(
+        'Positions can only be removed while the contract is in DRAFT status',
+      );
+    }
 
     const position = await this.prisma.frameworkPosition.findFirst({
       where: { id: positionId, contractId },

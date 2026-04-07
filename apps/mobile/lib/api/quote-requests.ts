@@ -18,7 +18,8 @@ export interface OpenQuoteRequest {
   notes: string | null;
   status: QuoteRequestStatus;
   createdAt: string;
-  buyer: { firstName: string; lastName: string };
+  /** Not included in the open-requests list endpoint — always optional */
+  buyer?: { firstName: string; lastName: string };
   /** Array of supplier IDs that already responded */
   responses: { supplierId: string }[];
 }

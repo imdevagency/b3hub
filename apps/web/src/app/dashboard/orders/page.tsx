@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useRequireAuth } from '@/hooks/use-require-auth';
@@ -308,13 +308,14 @@ function SurchargePanel({ orderId, token, initialSurcharges }: SurchargePanelPro
   const [formError, setFormError] = useState<string | null>(null);
 
   // Fetch surcharges on first render if not provided
-  useState(() => {
+  useEffect(() => {
     if (initialSurcharges) return;
     getOrder(orderId, token)
       .then((o) => setSurcharges(o.surcharges ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAdd = async () => {
     const amount = parseFloat(formAmount);

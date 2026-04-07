@@ -33,12 +33,12 @@ import {
   AlignLeft,
   CreditCard,
   Weight,
-  Box,
   Truck,
-  Building2,
   Bookmark,
   type LucideIcon,
 } from 'lucide-react-native';
+import { TruckIllustration } from '@/components/ui/TruckIllustration';
+import { haptics } from '@/lib/haptics';
 import { useDisposal } from '@/lib/disposal-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -47,6 +47,7 @@ import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
+import { useToast } from '@/components/ui/Toast';
 
 // ── Types ─────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
@@ -75,58 +76,39 @@ const WASTE_OPTIONS: WasteOption[] = [
   },
 ];
 
-const VOLUME_PRESETS: Array<{
-  key: string;
+const TIPPER_TRUCKS: Array<{
+  type: DisposalTruckType;
   label: string;
   sublabel: string;
-  icon: LucideIcon;
-  truckType: DisposalTruckType;
-  truckCount: number;
-  fromPrice: number;
+  capacity: number; // tonnes per truck
+  volume: number; // m³ per truck
+  fromPrice: number; // price per truck
 }> = [
   {
-    key: 'sm',
-    label: 'Neliela',
-    sublabel: '~8 m³ · ~5 t · 1 mašīna',
-    icon: Package,
-    truckType: 'TIPPER_SMALL',
-    truckCount: 1,
+    type: 'TIPPER_SMALL',
+    label: 'Mazā pašizgāzēja',
+    sublabel: 'līdz 10 t · 8 m³',
+    capacity: 10,
+    volume: 8,
     fromPrice: 89,
   },
   {
-    key: 'md',
-    label: 'Vidēja',
-    sublabel: '~12 m³ · ~10 t · 1 mašīna',
-    icon: Truck,
-    truckType: 'TIPPER_LARGE',
-    truckCount: 1,
+    type: 'TIPPER_LARGE',
+    label: 'Lielā pašizgāzēja',
+    sublabel: 'līdz 18 t · 12 m³',
+    capacity: 18,
+    volume: 12,
     fromPrice: 149,
   },
   {
-    key: 'lg',
-    label: 'Liela',
-    sublabel: '~18 m³ · ~15 t · smagā tehnika',
-    icon: Building2,
-    truckType: 'ARTICULATED_TIPPER',
-    truckCount: 1,
+    type: 'ARTICULATED_TIPPER',
+    label: 'Puspiekabe',
+    sublabel: 'līdz 26 t · 18 m³',
+    capacity: 26,
+    volume: 18,
     fromPrice: 219,
   },
-  {
-    key: 'xl',
-    label: 'Ļoti liela',
-    sublabel: '~36 m³ · ~26 t · 2 mašīnas',
-    icon: Building2,
-    truckType: 'ARTICULATED_TIPPER',
-    truckCount: 2,
-    fromPrice: 399,
-  },
 ];
-
-const TRUCK_CONFIG: Record<string, { label: string; capacity: number; volume: number }> = {
-  TIPPER_SMALL: { label: 'Pašizgāzējs (10 t)', capacity: 10, volume: 8 },
-  TIPPER_LARGE: { label: 'Pašizgāzējs lielais (18 t)', capacity: 18, volume: 12 },
-  ARTICULATED_TIPPER: { label: 'Sattelkipper (26 t)', capacity: 26, volume: 18 },
-};
 
 const WASTE_LABELS: Record<string, string> = {
   CONCRETE: 'Betons / Bruģis',
@@ -151,6 +133,7 @@ function toISO(d: Date): string {
 // ── Component ─────────────────────────────────────────────────────
 export default function DisposalWizard() {
   const router = useRouter();
+  const toast = useToast();
   const {
     state,
     setLocation,
@@ -192,9 +175,10 @@ export default function DisposalWizard() {
       return next;
     });
   };
-  const [volumeKey, setVolumeKey] = useState<string>('sm');
+  const [selectedTruckType, setSelectedTruckType] = useState<DisposalTruckType>('TIPPER_SMALL');
+  const [numTrucks, setNumTrucks] = useState(1);
   const [desc, setDesc] = useState('');
-  const [weightText, setWeightText] = useState(''); // optional user-estimated weight in tonnes
+  const [weightText, setWeightText] = useState('');
   const today = new Date();
   const [date, setDate] = useState<Date>(addDays(today, 1));
   const [pickupWindow, setPickupWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
@@ -206,8 +190,7 @@ export default function DisposalWizard() {
   const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
   const [notes, setNotes] = useState('');
 
-  const preset = VOLUME_PRESETS.find((p) => p.key === volumeKey) ?? VOLUME_PRESETS[1];
-  const truck = TRUCK_CONFIG[preset.truckType];
+  const activeTruck = TIPPER_TRUCKS.find((t) => t.type === selectedTruckType) ?? TIPPER_TRUCKS[0];
 
   // ── Handlers ──────────────────────────────────────────────────
   const handlePickConfirm = useCallback(
@@ -227,22 +210,22 @@ export default function DisposalWizard() {
 
   const handleSubmit = useCallback(async () => {
     if (!token) {
-      Alert.alert('Kļūda', 'Jūs neesat pieteicies. Lūdzu, piesakieties vēlreiz.');
+      toast.error('Jūs neesat pieteicies. Lūdzu, piesakieties vēlreiz.');
       return;
     }
     if (!state.wasteType) {
-      Alert.alert('Kļūda', 'Lūdzu, izvēlieties atkritumu veidu.');
+      toast.error('Lūdzu, izvēlieties atkritumu veidu.');
       return;
     }
-    setTruckType(preset.truckType);
-    setTruckCount(preset.truckCount);
+    setTruckType(selectedTruckType);
+    setTruckCount(numTrucks);
     setDescription(desc);
     setRequestedDate(toISO(date));
     setLoading(true);
     // Derive estimated weight: user input takes priority, fall back to full-truck capacity
     const parsedWeight = parseFloat(weightText);
     const estimatedWeight =
-      !isNaN(parsedWeight) && parsedWeight > 0 ? parsedWeight : truck.capacity * preset.truckCount;
+      !isNaN(parsedWeight) && parsedWeight > 0 ? parsedWeight : activeTruck.capacity * numTrucks;
     // Build waste breakdown description prefix for operators
     const wasteBreakdownNote =
       selectedWastes.length > 1
@@ -257,8 +240,8 @@ export default function DisposalWizard() {
           pickupLat: state.locationLat ?? undefined,
           pickupLng: state.locationLng ?? undefined,
           wasteType: state.wasteType,
-          truckType: preset.truckType,
-          truckCount: preset.truckCount,
+          truckType: selectedTruckType,
+          truckCount: numTrucks,
           estimatedWeight,
           description: fullDescription || undefined,
           requestedDate: toISO(date),
@@ -266,7 +249,7 @@ export default function DisposalWizard() {
           siteContactName: contactName || undefined,
           siteContactPhone: contactPhone || undefined,
           notes: notes || undefined,
-          quotedRate: preset.fromPrice * preset.truckCount,
+          quotedRate: activeTruck.fromPrice * numTrucks,
         },
         token,
       );
@@ -292,11 +275,11 @@ export default function DisposalWizard() {
         pickupAddress: state.location ?? '',
         wasteType: state.wasteType,
         wasteBreakdown: selectedWastes,
-        truckType: preset.truckType,
-        truckCount: preset.truckCount,
+        truckType: selectedTruckType,
+        truckCount: numTrucks,
         requestedDate: toISO(date),
         estimatedWeight,
-        fromPrice: preset.fromPrice * preset.truckCount,
+        fromPrice: activeTruck.fromPrice * numTrucks,
       });
       router.replace({
         pathname: '/disposal/confirmation' as never,
@@ -304,14 +287,13 @@ export default function DisposalWizard() {
           jobNumber: jn,
           pickupAddress: state.location ?? '',
           wasteType: state.wasteType ?? '',
-          truckType: preset.truckType,
-          truckCount: String(preset.truckCount),
+          truckType: selectedTruckType,
+          truckCount: String(numTrucks),
           requestedDate: toISO(date),
         },
       } as never);
     } catch (err: unknown) {
-      Alert.alert(
-        'Kļūda',
+      toast.error(
         err instanceof Error ? err.message : 'Neizdevās nosūtīt pieprasījumu. Mēģiniet vēlreiz.',
       );
     } finally {
@@ -319,8 +301,9 @@ export default function DisposalWizard() {
     }
   }, [
     state,
-    preset,
-    truck,
+    selectedTruckType,
+    numTrucks,
+    activeTruck,
     desc,
     date,
     pickupWindow,
@@ -335,16 +318,14 @@ export default function DisposalWizard() {
     setDescription,
     setRequestedDate,
     setConfirmedDisposal,
+    selectedWastes,
+    picked,
   ]);
 
   const ctaDisabled =
-    (step === 1 && selectedWastes.length === 0) ||
-    (step === 2 && !picked) ||
-    (step === 3 && !volumeKey) ||
-    loading;
+    (step === 1 && selectedWastes.length === 0) || (step === 2 && !picked) || loading;
 
-  const ctaLabel =
-    step === 4 ? `Pasūtīt — no €${preset.fromPrice * preset.truckCount}` : 'Turpināt';
+  const ctaLabel = step === 4 ? `Pasūtīt — no €${activeTruck.fromPrice * numTrucks}` : 'Turpināt';
 
   const onCTA = useCallback(() => {
     if (step === 4) {
@@ -374,6 +355,18 @@ export default function DisposalWizard() {
     3: 'Kāds ir apjoms?',
     4: 'Apstiprini izvešanu',
   };
+
+  if (step === 2) {
+    return (
+      <InlineAddressStep
+        picked={picked}
+        onPick={setPicked}
+        onConfirm={onCTA}
+        onCancel={goBack}
+        contextLabel="Iekraušanas vieta"
+      />
+    );
+  }
 
   return (
     <>
@@ -434,67 +427,122 @@ export default function DisposalWizard() {
           </ScrollView>
         )}
 
-        {/* ── Step 2: Location ── */}
-        {step === 2 && (
-          <View style={{ flex: 1 }}>
-            <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
-              <SavedAddressPicker onPick={handlePickConfirm} currentAddress={picked} />
-            </View>
-            <InlineAddressStep picked={picked} onPick={handlePickConfirm} />
-          </View>
-        )}
-
-        {/* ── Step 3: Volume ── */}
+        {/* ── Step 3: Truck type + count ── */}
         {step === 3 && (
           <ScrollView
             style={s.content}
             contentContainerStyle={s.pad}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-            <Text style={s.stepSub}>Izvēlieties aptuvenu apjomu.</Text>
             {selectedWastes.includes('HAZARDOUS') && (
               <View style={s.hazardRow}>
                 <AlertTriangle size={14} color="#b91c1c" />
                 <Text style={s.hazardText}>Bīstamu atkritumu nodošana jāsaskaņo atsevišķi!</Text>
               </View>
             )}
-            <View style={s.volList}>
-              {VOLUME_PRESETS.map((p) => {
-                const isSel = volumeKey === p.key;
-                const Icon = p.icon;
+
+            {/* ── Truck type selector ── */}
+            <Text style={s.sectionLabel}>Transportlīdzekļa veids</Text>
+            <View style={s.truckTypeRow}>
+              {TIPPER_TRUCKS.map((t) => {
+                const isSel = selectedTruckType === t.type;
                 return (
                   <TouchableOpacity
-                    key={p.key}
-                    style={[s.volRow, isSel && s.volRowSel]}
-                    onPress={() => setVolumeKey(p.key)}
+                    key={t.type}
+                    style={[s.truckTypeCard, isSel && s.truckTypeCardSel]}
+                    onPress={() => {
+                      haptics.light();
+                      setSelectedTruckType(t.type);
+                    }}
                     activeOpacity={0.7}
                   >
-                    <View style={s.volRowIconBadge}>
-                      <Icon size={24} color={isSel ? '#111827' : '#6b7280'} strokeWidth={1.5} />
+                    {/* Truck illustration zone */}
+                    <View style={[s.truckIllZone, isSel && s.truckIllZoneSel]}>
+                      <TruckIllustration type={t.type} height={30} onDark={isSel} />
                     </View>
-
-                    <View style={s.volRowInfo}>
-                      <Text style={[s.volRowLabel, isSel && s.volRowLabelSel]}>{p.label}</Text>
-                      <Text style={[s.volRowSub, isSel && s.volRowSubSel]}>{p.sublabel}</Text>
-                    </View>
-
-                    <Text style={[s.volRowPrice, isSel && s.volRowPriceSel]}>
-                      no €{p.fromPrice * p.truckCount}
+                    <Text style={[s.truckTypeName, isSel && s.truckTypeNameSel]} numberOfLines={2}>
+                      {t.label}
+                    </Text>
+                    <Text style={[s.truckTypeCap, isSel && s.truckTypeCapSel]}>
+                      {t.capacity} t · {t.volume} m³
                     </Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
+
+            {/* ── Count stepper ── */}
+            <Text style={[s.sectionLabel, { marginTop: 4 }]}>Mašīnu skaits</Text>
+            <View style={s.countCard}>
+              {/* Hero truck illustration */}
+              <View style={s.heroIllZone}>
+                <TruckIllustration type={selectedTruckType} height={52} />
+              </View>
+              {/* Stepper */}
+              <View style={s.stepperRow}>
+                <TouchableOpacity
+                  style={[s.stepperBtn, numTrucks <= 1 && s.stepperBtnDim]}
+                  onPress={() => {
+                    if (numTrucks > 1) {
+                      haptics.light();
+                      setNumTrucks((n) => n - 1);
+                    }
+                  }}
+                  disabled={numTrucks <= 1}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.stepperBtnText}>−</Text>
+                </TouchableOpacity>
+
+                <View style={s.stepperCountBox}>
+                  <Text style={s.stepperNum}>{numTrucks}</Text>
+                  <Text style={s.stepperUnit}>{numTrucks === 1 ? 'mašīna' : 'mašīnas'}</Text>
+                </View>
+
+                <TouchableOpacity
+                  style={[s.stepperBtn, numTrucks >= 6 && s.stepperBtnDim]}
+                  onPress={() => {
+                    if (numTrucks < 6) {
+                      haptics.light();
+                      setNumTrucks((n) => n + 1);
+                    }
+                  }}
+                  disabled={numTrucks >= 6}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.stepperBtnText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* ── Live stats ── */}
+            <View style={s.liveStats}>
+              <View style={s.liveStatRow}>
+                <Text style={s.liveStatLabel}>Kopā</Text>
+                <Text style={s.liveStatValue}>
+                  {numTrucks} × {activeTruck.label}
+                </Text>
+              </View>
+              <View style={s.liveStatRow}>
+                <Text style={s.liveStatLabel}>Apjoms</Text>
+                <Text style={s.liveStatValue}>
+                  ≈ {activeTruck.capacity * numTrucks} t · ≈ {activeTruck.volume * numTrucks} m³
+                </Text>
+              </View>
+              <View style={[s.liveStatRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+                <Text style={s.liveStatLabel}>Cena</Text>
+                <Text style={[s.liveStatValue, { color: '#111827', fontWeight: '700' }]}>
+                  no €{activeTruck.fromPrice * numTrucks}
+                </Text>
+              </View>
+            </View>
+
+            {/* ── Optional weight override ── */}
             <Text
               style={[
                 s.sectionLabel,
-                {
-                  textTransform: 'none',
-                  color: '#6b7280',
-                  fontSize: 13,
-                  marginLeft: 4,
-                  marginTop: 12,
-                },
+                { textTransform: 'none', color: '#6b7280', fontSize: 13, marginTop: 16 },
               ]}
             >
               Aptuvenais svars tonnās (neobligāti)
@@ -511,7 +559,7 @@ export default function DisposalWizard() {
                   marginBottom: 4,
                 },
               ]}
-              placeholder={`piem., ${truck.capacity * preset.truckCount} t (pilna mašīna)`}
+              placeholder={`piem., ${activeTruck.capacity * numTrucks} t (pilna mašīna)`}
               placeholderTextColor="#9ca3af"
               value={weightText}
               onChangeText={setWeightText}
@@ -521,13 +569,7 @@ export default function DisposalWizard() {
             <Text
               style={[
                 s.sectionLabel,
-                {
-                  textTransform: 'none',
-                  color: '#6b7280',
-                  fontSize: 13,
-                  marginLeft: 4,
-                  marginTop: 10,
-                },
+                { textTransform: 'none', color: '#6b7280', fontSize: 13, marginTop: 10 },
               ]}
             >
               Papildu informācija (neobligāti)
@@ -648,7 +690,7 @@ export default function DisposalWizard() {
               <DetailRow
                 icon={Truck}
                 label="Transports"
-                value={`${preset.truckCount} × ${truck.label}`}
+                value={`${numTrucks} × ${activeTruck.label}`}
               />
               <DetailRow
                 icon={Weight}
@@ -656,14 +698,14 @@ export default function DisposalWizard() {
                 value={(() => {
                   const parsed = parseFloat(weightText);
                   const w =
-                    !isNaN(parsed) && parsed > 0 ? parsed : truck.capacity * preset.truckCount;
-                  return `${w} t ≈ ${truck.volume * preset.truckCount} m³`;
+                    !isNaN(parsed) && parsed > 0 ? parsed : activeTruck.capacity * numTrucks;
+                  return `${w} t ≈ ${activeTruck.volume * numTrucks} m³`;
                 })()}
               />
               <DetailRow
                 icon={CreditCard}
                 label="Orientējošā cena"
-                value={`no €${preset.fromPrice * preset.truckCount} + PVN 21%`}
+                value={`no €${activeTruck.fromPrice * numTrucks} + PVN 21%`}
                 isLast
               />
             </View>
@@ -1024,5 +1066,119 @@ const s = StyleSheet.create({
     height: 100,
     textAlignVertical: 'top',
     paddingTop: 16,
+  },
+
+  // ── Truck type selector ──────────────────────────────────────
+  truckTypeRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  truckTypeCard: {
+    flex: 1,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#f3f4f6',
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+  },
+  truckTypeCardSel: { borderColor: '#111827', backgroundColor: '#111827' },
+  truckIllZone: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    backgroundColor: '#f9fafb',
+  },
+  truckIllZoneSel: { backgroundColor: '#1f2937' },
+  truckTypeName: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#374151',
+    paddingHorizontal: 6,
+    paddingTop: 6,
+    textAlign: 'center',
+  },
+  truckTypeNameSel: { color: '#ffffff' },
+  truckTypeCap: {
+    fontSize: 10,
+    color: '#9ca3af',
+    paddingHorizontal: 6,
+    paddingBottom: 8,
+    textAlign: 'center',
+  },
+  truckTypeCapSel: { color: '#9ca3af' },
+
+  // ── Count stepper ────────────────────────────────────────────
+  countCard: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: '#f3f4f6',
+    overflow: 'hidden',
+    marginBottom: 14,
+  },
+  heroIllZone: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    backgroundColor: '#f9fafb',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#f3f4f6',
+  },
+  stepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  stepperBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperBtnDim: { backgroundColor: '#e5e7eb' },
+  stepperBtnText: {
+    fontSize: 26,
+    fontWeight: '300',
+    color: '#ffffff',
+    lineHeight: 30,
+    includeFontPadding: false,
+  },
+  stepperCountBox: { alignItems: 'center' },
+  stepperNum: {
+    fontSize: 42,
+    fontWeight: '800',
+    color: '#111827',
+    lineHeight: 46,
+    letterSpacing: -1,
+    includeFontPadding: false,
+  },
+  stepperUnit: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
+
+  // ── Live stats ───────────────────────────────────────────────
+  liveStats: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#f3f4f6',
+    padding: 14,
+    marginBottom: 16,
+  },
+  liveStatRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  liveStatLabel: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
+  liveStatValue: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '600',
+    textAlign: 'right',
+    flex: 1,
+    paddingLeft: 12,
   },
 });

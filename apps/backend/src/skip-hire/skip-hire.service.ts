@@ -19,6 +19,7 @@ import { PaymentsService } from '../payments/payments.service';
 import { CreateSkipHireDto } from './dto/create-skip-hire.dto';
 import { UpdateSkipHireStatusDto } from './dto/update-skip-hire-status.dto';
 import { CompanyType, SkipHireStatus, SkipSize, Prisma } from '@prisma/client';
+import type { RequestingUser } from '../common/types/requesting-user.interface.js';
 
 const SKIP_STATUS_LABEL: Partial<Record<SkipHireStatus, string>> = {
   [SkipHireStatus.CONFIRMED]: 'Konteiners apstiprināts',
@@ -256,11 +257,19 @@ export class SkipHireService {
   }
 
   // ── Orders by order number ─────────────────────────────────────
-  async findByOrderNumber(orderNumber: string) {
+  async findByOrderNumber(orderNumber: string, user: RequestingUser) {
     const order = await this.prisma.skipHireOrder.findUnique({
       where: { orderNumber },
     });
     if (!order) throw new NotFoundException(`Order ${orderNumber} not found`);
+    // Only the order owner, their company members, or admins may view details.
+    if (
+      user.userType !== 'ADMIN' &&
+      order.userId !== user.userId &&
+      (!user.companyId || order.userId !== user.companyId)
+    ) {
+      throw new ForbiddenException('You do not have access to this order');
+    }
     return order;
   }
 

@@ -54,7 +54,18 @@ export class PaymentsService {
 
     if (order.createdById !== user.userId && user.userType !== 'ADMIN') {
       // Basic check, might need more robust permission logic
-      throw new BadRequestException('Not authorized to pay for this order');
+      throw new ForbiddenException('Not authorized to pay for this order');
+    }
+
+    // Prevent overwriting an already-captured or released payment (double-charge guard)
+    const existingPayment = await this.prisma.payment.findUnique({
+      where: { orderId },
+      select: { status: true },
+    });
+    if (existingPayment && ['CAPTURED', 'RELEASED', 'REFUNDED'].includes(existingPayment.status)) {
+      throw new BadRequestException(
+        `Payment is already ${existingPayment.status} for this order`,
+      );
     }
 
     // Amount in cents
@@ -806,8 +817,10 @@ export class PaymentsService {
       'STRIPE_WEBHOOK_SECRET',
     );
     if (!webhookSecret || !this.stripe) {
-      this.logger.warn('Stripe webhook secret not configured — skipping');
-      return;
+      this.logger.error(
+        'CRITICAL: Stripe webhook received but STRIPE_WEBHOOK_SECRET is not configured — rejecting so Stripe retries',
+      );
+      throw new BadRequestException('Webhook processing unavailable — server misconfiguration');
     }
 
     let event: Stripe.Event;

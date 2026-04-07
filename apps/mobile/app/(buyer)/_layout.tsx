@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
 import { useMode, MODE_HOME } from '@/lib/mode-context';
-import { Home, ClipboardList, User, ShoppingCart, LayoutGrid } from 'lucide-react-native';
+import { Home, ClipboardList, User, ShoppingCart } from 'lucide-react-native';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
@@ -65,13 +65,7 @@ export default function BuyerLayout() {
             tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
           }}
         />
-        <Tabs.Screen
-          name="catalog"
-          options={{
-            title: t.tabs.catalog,
-            tabBarIcon: ({ color }) => <LayoutGrid size={22} color={color} />,
-          }}
-        />
+        <Tabs.Screen name="catalog" options={{ href: null }} />
         <Tabs.Screen
           name="profile"
           options={{

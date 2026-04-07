@@ -32,6 +32,15 @@ import {
   Settings,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
 
@@ -95,6 +104,13 @@ export default function TransporterDashboardPage() {
   const [openExceptions, setOpenExceptions] = useState<ApiTransportJobException[]>([]);
   const [resolvingExceptionId, setResolvingExceptionId] = useState<string | null>(null);
   const [reportingSlaJobId, setReportingSlaJobId] = useState<string | null>(null);
+  // Inline note dialog (replaces window.prompt)
+  const [noteDialog, setNoteDialog] = useState<{
+    title: string;
+    placeholder: string;
+    onConfirm: (text: string) => void;
+  } | null>(null);
+  const [noteText, setNoteText] = useState('');
 
   const refreshTriageQueues = async (authToken: string) => {
     const [slaRes, exRes] = await Promise.allSettled([
@@ -141,52 +157,51 @@ export default function TransporterDashboardPage() {
   const isDispatcher =
     Boolean(user.isCompany) && (user.companyRole === 'OWNER' || user.companyRole === 'MANAGER');
 
-  const handleResolveException = async (item: ApiTransportJobException) => {
-    if (!token || !item.transportJobId) return;
-
-    const resolution = window.prompt(
-      'Norādiet atrisinājuma komentāru',
-      'Atrisināts dispečera panelī',
-    );
-    if (!resolution || !resolution.trim()) return;
-
-    setResolvingExceptionId(item.id);
-    try {
-      await resolveTransportJobException(item.transportJobId, item.id, resolution.trim(), token);
-      await refreshTriageQueues(token);
-    } catch (error) {
-      alert(error instanceof Error ? error.message : 'Neizdevās atrisināt izņēmumu');
-    } finally {
-      setResolvingExceptionId(null);
-    }
+  const handleResolveException = (item: ApiTransportJobException) => {
+    setNoteText('Atrisiņāts dispeč era panelī');
+    setNoteDialog({
+      title: 'Atrisināt izņēmumu',
+      placeholder: 'Atrisnājuma komentārs...',
+      onConfirm: async (resolution) => {
+        if (!token || !item.transportJobId) return;
+        setResolvingExceptionId(item.id);
+        try {
+          await resolveTransportJobException(item.transportJobId, item.id, resolution, token);
+          await refreshTriageQueues(token);
+        } catch (error) {
+          console.warn(
+            'Failed to resolve exception',
+            error instanceof Error ? error.message : error,
+          );
+        } finally {
+          setResolvingExceptionId(null);
+        }
+      },
+    });
   };
 
-  const handleEscalateSla = async (job: ApiTransportJob) => {
-    if (!token) return;
-
-    const notes = window.prompt(
-      'Aprakstiet SLA kavējuma iemeslu',
-      `SLA kavējums: ${job.pickupCity} → ${job.deliveryCity}`,
-    );
-    if (!notes || !notes.trim()) return;
-
-    setReportingSlaJobId(job.id);
-    try {
-      await reportTransportJobException(
-        job.id,
-        {
-          type: 'OTHER',
-          notes: notes.trim(),
-          requiresDispatchAction: true,
-        },
-        token,
-      );
-      await refreshTriageQueues(token);
-    } catch (error) {
-      alert(error instanceof Error ? error.message : 'Neizdevās izveidot izņēmumu');
-    } finally {
-      setReportingSlaJobId(null);
-    }
+  const handleEscalateSla = (job: ApiTransportJob) => {
+    setNoteText(`SLA kavējums: ${job.pickupCity} → ${job.deliveryCity}`);
+    setNoteDialog({
+      title: 'Eskalet pārkāpumu',
+      placeholder: 'Aprakstiet SLA kavēj uma iemeslu...',
+      onConfirm: async (notes) => {
+        if (!token) return;
+        setReportingSlaJobId(job.id);
+        try {
+          await reportTransportJobException(
+            job.id,
+            { type: 'OTHER', notes, requiresDispatchAction: true },
+            token,
+          );
+          await refreshTriageQueues(token);
+        } catch (error) {
+          console.warn('Failed to escalate SLA', error instanceof Error ? error.message : error);
+        } finally {
+          setReportingSlaJobId(null);
+        }
+      },
+    });
   };
 
   const driverActions: Action[] = [
@@ -418,6 +433,42 @@ export default function TransporterDashboardPage() {
           <ActionItem key={action.label} action={action} />
         ))}
       </div>
+
+      {/* Inline note dialog — replaces window.prompt */}
+      <Dialog
+        open={!!noteDialog}
+        onOpenChange={(open) => {
+          if (!open) setNoteDialog(null);
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{noteDialog?.title}</DialogTitle>
+            <DialogDescription>Pievienojiet komentāru pirms turpināt.</DialogDescription>
+          </DialogHeader>
+          <Textarea
+            rows={3}
+            placeholder={noteDialog?.placeholder}
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            className="resize-none"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNoteDialog(null)}>
+              Atcelt
+            </Button>
+            <Button
+              disabled={!noteText.trim()}
+              onClick={() => {
+                noteDialog?.onConfirm(noteText.trim());
+                setNoteDialog(null);
+              }}
+            >
+              Apstiprināt
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

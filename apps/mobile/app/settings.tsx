@@ -36,8 +36,9 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { useLanguage } from '@/lib/language-context';
+import Constants from 'expo-constants';
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 const ACCENT = '#111827';
 
 // ── Section header ────────────────────────────────────────────────────────────

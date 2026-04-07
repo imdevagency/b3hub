@@ -119,7 +119,7 @@ function MemberRow({ member, onPress }: { member: ApiCompanyMember; onPress: () 
           </Text>
           {isOwner && (
             <View className={s.badge}>
-              <Text className={s.badgeText}>Owner</Text>
+              <Text className={s.badgeText}>{ROLE_LABEL.OWNER}</Text>
             </View>
           )}
         </View>

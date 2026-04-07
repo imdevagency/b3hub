@@ -3,6 +3,9 @@
  * Functions wrapping /api/v1/containers/* endpoints.
  */
 import { apiFetch } from './common';
+import type { WasteType } from '@b3hub/shared';
+
+export type { WasteType };
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -48,15 +51,7 @@ export interface ApiContainerOrder {
   createdAt: string;
 }
 
-export type WasteType =
-  | 'CONCRETE'
-  | 'BRICK'
-  | 'WOOD'
-  | 'METAL'
-  | 'PLASTIC'
-  | 'SOIL'
-  | 'MIXED'
-  | 'HAZARDOUS';
+// WasteType is imported from @b3hub/shared above.
 
 export interface ApiWasteRecord {
   id: string;

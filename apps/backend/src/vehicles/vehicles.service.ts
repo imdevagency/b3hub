@@ -57,6 +57,8 @@ export class VehiclesService {
         status: dto.status ?? VehicleStatus.ACTIVE,
         ownerId: userId,
         companyId: user?.companyId ?? undefined,
+        ...(dto.insuranceExpiry ? { insuranceExpiry: new Date(dto.insuranceExpiry) } : {}),
+        ...(dto.inspectionExpiry ? { inspectionExpiry: new Date(dto.inspectionExpiry) } : {}),
       },
     });
     this.logger.log(
@@ -109,9 +111,18 @@ export class VehiclesService {
       }
     }
 
+    const { insuranceExpiry, inspectionExpiry, ...rest } = dto;
     return this.prisma.vehicle.update({
       where: { id },
-      data: dto,
+      data: {
+        ...rest,
+        ...(insuranceExpiry !== undefined
+          ? { insuranceExpiry: insuranceExpiry ? new Date(insuranceExpiry) : null }
+          : {}),
+        ...(inspectionExpiry !== undefined
+          ? { inspectionExpiry: inspectionExpiry ? new Date(inspectionExpiry) : null }
+          : {}),
+      },
     });
   }
 

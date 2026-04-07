@@ -97,6 +97,11 @@ export default function TransportConfirmation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  if (!jobNumber) {
+    router.replace('/(buyer)/home');
+    return null;
+  }
+
   const pickupDisplay = [pickupAddress, pickupCity].filter(Boolean).join(', ');
   const dropoffDisplay = [dropoffAddress, dropoffCity].filter(Boolean).join(', ');
 

@@ -62,7 +62,7 @@ const TYPE_INFO: Record<string, TypeInfo> = {
 };
 const DEFAULT_TYPE_INFO: TypeInfo = { Icon: Bell, bg: '#f3f4f6', iconColor: '#6b7280' };
 
-function deepLinkPath(notif: ApiNotification): string | null {
+function deepLinkPath(notif: ApiNotification, canSell = false): string | null {
   const d = (notif.data ?? {}) as Record<string, string>;
   switch (notif.type) {
     // ── Buyer: transport / disposal job notifications ──────────
@@ -96,7 +96,7 @@ function deepLinkPath(notif: ApiNotification): string | null {
       return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/orders';
     // ── Finance / docs ─────────────────────────────────────────
     case 'PAYMENT_RECEIVED':
-      return '/(driver)/earnings';
+      return canSell ? '/(seller)/earnings' : '/(driver)/earnings';
     case 'INVOICE_ISSUED':
       return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/invoices';
     default:
@@ -121,11 +121,12 @@ function NotifCard({
 }) {
   const { Icon, bg, iconColor } = TYPE_INFO[notif.type] ?? DEFAULT_TYPE_INFO;
   const router = useRouter();
+  const { user } = useAuth();
 
   const handlePress = () => {
     haptics.light();
     if (!notif.isRead) onMarkRead(notif.id);
-    const path = deepLinkPath(notif);
+    const path = deepLinkPath(notif, user?.canSell ?? false);
     if (path) router.push(path as Parameters<typeof router.push>[0]);
   };
 

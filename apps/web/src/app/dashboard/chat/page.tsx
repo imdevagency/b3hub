@@ -24,7 +24,16 @@ export default function ChatPage() {
     getMyTransportJobs(token)
       .then((data) => {
         const active = data.filter((j) =>
-          ['PENDING', 'ACCEPTED', 'IN_TRANSIT', 'DELIVERED'].includes(j.status),
+          [
+            'PENDING',
+            'ACCEPTED',
+            'EN_ROUTE_PICKUP',
+            'AT_PICKUP',
+            'LOADED',
+            'EN_ROUTE_DELIVERY',
+            'AT_DELIVERY',
+            'DELIVERED',
+          ].includes(j.status),
         );
         setJobs(active);
         if (active.length > 0) setSelectedJobId(active[0].id);

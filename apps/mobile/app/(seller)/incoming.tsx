@@ -19,15 +19,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { StatusPill } from '@/components/ui/StatusPill';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { haptics } from '@/lib/haptics';
 import { SELLER_ORDER_STATUS } from '@/lib/materials';
 import { useToast } from '@/components/ui/Toast';
 import { api, type ApiOrder } from '@/lib/api';
 import { useLiveUpdates } from '@/lib/use-live-updates';
-import { X, Square, CheckSquare2, MapPin, Inbox, AlertCircle, Clock, Phone, FileText } from 'lucide-react-native';
+import {
+  X,
+  Square,
+  CheckSquare2,
+  MapPin,
+  Inbox,
+  AlertCircle,
+  Clock,
+  Phone,
+  FileText,
+} from 'lucide-react-native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-type OrderStatus = 'PENDING' | 'CONFIRMED' | 'LOADING' | 'DISPATCHED';
+type OrderStatus = 'PENDING' | 'CONFIRMED' | 'LOADING' | 'DISPATCHED' | 'CANCELLED';
 type FilterStatus = OrderStatus | 'ALL';
 
 interface IncomingOrder {
@@ -62,6 +74,9 @@ function mapApiOrder(o: ApiOrder): IncomingOrder {
     DELIVERING: 'DISPATCHED',
     DELIVERED: 'DISPATCHED',
     COMPLETED: 'DISPATCHED',
+    INVOICED: 'DISPATCHED',
+    CANCELLED: 'CANCELLED',
+    REJECTED: 'CANCELLED',
   };
   const item = o.items?.[0];
   const buyerName = o.buyer?.name ?? o.orderNumber;
@@ -97,15 +112,17 @@ function mapApiOrder(o: ApiOrder): IncomingOrder {
 function getMinimalStatus(status: OrderStatus) {
   switch (status) {
     case 'PENDING':
-      return { text: 'Jauns', color: '#d97706' };
+      return { text: 'Jauns', color: '#d97706', bg: '#fff7ed' };
     case 'CONFIRMED':
-      return { text: 'Apstiprināts', color: '#2563eb' };
+      return { text: 'Apstiprināts', color: '#2563eb', bg: '#eff6ff' };
     case 'LOADING':
-      return { text: 'Iekraušana', color: '#16a34a' };
+      return { text: 'Iekraušana', color: '#16a34a', bg: '#f0fdf4' };
     case 'DISPATCHED':
-      return { text: 'Piegādē', color: '#4b5563' };
+      return { text: 'Piegādē', color: '#4b5563', bg: '#f3f4f6' };
+    case 'CANCELLED':
+      return { text: 'Atcelts', color: '#b91c1c', bg: '#fef2f2' };
     default:
-      return { text: status, color: '#6b7280' };
+      return { text: status, color: '#6b7280', bg: '#f3f4f6' };
   }
 }
 
@@ -283,12 +300,12 @@ function OrderCard({
             ) : (
               <>
                 <Text style={styles.priceText}>€{order.price.toFixed(0)}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
-                  <Text style={[styles.statusText, { color: statusInfo.color }]}>
-                    {statusInfo.text}
-                  </Text>
-                </View>
+                <StatusPill
+                  label={statusInfo.text}
+                  bg={statusInfo.bg}
+                  color={statusInfo.color}
+                  size="sm"
+                />
               </>
             )}
           </View>
@@ -305,7 +322,9 @@ function OrderCard({
         {(order.deliveryWindow && order.deliveryWindow !== 'ANY') || order.siteContactName ? (
           <View style={styles.metaRow}>
             {order.deliveryWindow && order.deliveryWindow !== 'ANY' && (
-              <View style={[styles.windowPill, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+              <View
+                style={[styles.windowPill, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}
+              >
                 <Clock size={11} color="#1d4ed8" />
                 <Text style={styles.windowPillText}>
                   {order.deliveryWindow === 'AM' ? '8–12' : '12–17'}
@@ -335,36 +354,27 @@ function OrderCard({
 
         {/* Payment status badge */}
         {order.paymentStatus && (
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 4,
-              marginTop: 6,
-              marginBottom: 2,
-            }}
-          >
-            {order.paymentStatus === 'AUTHORIZED' || order.paymentStatus === 'CAPTURED' ? (
-              <>
-                <View
-                  style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#16a34a' }}
-                />
-                <Text style={{ fontSize: 12, color: '#16a34a', fontWeight: '600' }}>
-                  {order.paymentStatus === 'CAPTURED'
-                    ? 'Maksājums saņemts'
-                    : 'Maksājums autorizēts'}
-                </Text>
-              </>
-            ) : (
-              <>
-                <View
-                  style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#d97706' }}
-                />
-                <Text style={{ fontSize: 12, color: '#d97706', fontWeight: '600' }}>
-                  Gaida apmaksu
-                </Text>
-              </>
-            )}
+          <View style={{ marginTop: 6, marginBottom: 2 }}>
+            <StatusPill
+              label={
+                order.paymentStatus === 'CAPTURED'
+                  ? 'Maksājums saņemts'
+                  : order.paymentStatus === 'AUTHORIZED'
+                    ? 'Maksājums autorizēts'
+                    : 'Gaida apmaksu'
+              }
+              bg={
+                order.paymentStatus === 'AUTHORIZED' || order.paymentStatus === 'CAPTURED'
+                  ? '#dcfce7'
+                  : '#fff7ed'
+              }
+              color={
+                order.paymentStatus === 'AUTHORIZED' || order.paymentStatus === 'CAPTURED'
+                  ? '#16a34a'
+                  : '#d97706'
+              }
+              size="sm"
+            />
           </View>
         )}
       </TouchableOpacity>
@@ -484,7 +494,14 @@ export default function IncomingScreen() {
       try {
         const data = await api.orders.myOrders(token);
         const companyId = user?.company?.id;
-        const sellerOrders = companyId ? data.filter((o) => o.buyer?.id !== companyId) : data;
+        const userId = user?.id;
+        // Exclude self-orders: orders created by this user or placed by their own company.
+        // A hybrid account (canSell + buyer) should not see their own purchases in the seller inbox.
+        const sellerOrders = data.filter(
+          (o) =>
+            (companyId ? o.buyer?.id !== companyId : true) &&
+            (userId ? o.createdBy?.id !== userId : true),
+        );
         setOrders(sellerOrders.map(mapApiOrder));
       } catch (e) {
         if (!isRefresh) toast.error('Kļūda ielādējot pasūtījumus');
@@ -538,7 +555,7 @@ export default function IncomingScreen() {
           if (!token) return;
           setActioning(id);
           try {
-            await api.orders.cancel(id, token);
+            await api.orders.sellerCancel(id, 'Piegādātājs noraidīja pasūtījumu', token);
             setOrders((prev) => prev.filter((o) => o.id !== id));
             haptics.success();
           } catch (e: unknown) {
@@ -564,7 +581,7 @@ export default function IncomingScreen() {
       if (loadingOrder.transportJobId) {
         await api.transportJobs.loadingDock(loadingOrder.transportJobId, token, weightKg);
       } else {
-        await api.orders.startLoading(loadingOrder.id, token);
+        await api.orders.startLoading(loadingOrder.id, token, weightKg);
       }
       await fetchOrders(false);
       setLoadingOrder(null);
@@ -588,6 +605,7 @@ export default function IncomingScreen() {
     { key: 'CONFIRMED', label: 'Apstiprināti' },
     { key: 'LOADING', label: 'Iekraušana' },
     { key: 'DISPATCHED', label: 'Piegādē' },
+    { key: 'CANCELLED', label: 'Atcelti' },
   ];
 
   if (fetching && !refreshing) {
@@ -680,28 +698,26 @@ export default function IncomingScreen() {
         }
       >
         {visibleOrders.length === 0 ? (
-          <View style={styles.emptyWrap}>
-            <View style={styles.emptyIconWrap}>
-              <Inbox size={32} color="#111827" />
-            </View>
-            <Text style={styles.emptyTitle}>
-              {orders.length === 0 ? 'Nav pasūtījumu' : 'Nav atrasts'}
-            </Text>
-            <Text style={styles.emptyDesc}>
-              {orders.length === 0
+          <EmptyState
+            icon={<Inbox size={32} color="#9ca3af" />}
+            title={orders.length === 0 ? 'Nav pasūtījumu' : 'Nav atrasts'}
+            subtitle={
+              orders.length === 0
                 ? 'Šobrīd nav neviena aktīva pasūtījuma.'
-                : 'Šajā kategorijā pašlaik nav neviena pasūtījuma.'}
-            </Text>
-            {orders.length === 0 && (
-              <TouchableOpacity
-                style={styles.emptyCta}
-                onPress={() => router.push('/(seller)/catalog' as any)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.emptyCtaText}>Pārbaudīt katalogu →</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+                : 'Šajā kategorijā pašlaik nav neviena pasūtījuma.'
+            }
+            action={
+              orders.length === 0 ? (
+                <TouchableOpacity
+                  style={styles.emptyCta}
+                  onPress={() => router.push('/(seller)/catalog' as any)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.emptyCtaText}>Pārbaudīt katalogu →</Text>
+                </TouchableOpacity>
+              ) : undefined
+            }
+          />
         ) : (
           visibleOrders.map((order) => (
             <OrderCard

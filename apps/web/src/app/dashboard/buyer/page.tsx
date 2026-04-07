@@ -141,7 +141,7 @@ export default function BuyerDashboardPage() {
         <div className="flex items-center gap-8 sm:gap-12 py-2">
           <QuickStat value={n(data?.activeOrders)} label="Procesā" />
           <QuickStat value={n(data?.awaitingDelivery)} label="Gaidāmās Piegādes" />
-          <QuickStat value={n(data?.myOrders)} label="Konteineri" />
+          <QuickStat value={n(data?.myOrders)} label="Pasūtījumi" />
         </div>
       </div>
 

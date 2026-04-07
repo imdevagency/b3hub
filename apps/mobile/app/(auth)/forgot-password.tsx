@@ -46,8 +46,6 @@ export default function ForgotPasswordScreen() {
     }
   };
 
-  const BASE_URL = 'http://localhost:3001'; // web app URL in dev
-
   return (
     <ScreenContainer standalone bg="#fff" topInset={0}>
       <StatusBar style="dark" />
@@ -128,15 +126,15 @@ export default function ForgotPasswordScreen() {
                   mēs esam nosūtījuši paroles atjaunošanas saiti.
                 </Text>
 
-                {/* Dev helper — direct reset link */}
-                {devUrl && (
+                {/* Dev helper — direct reset link (dev builds only) */}
+                {__DEV__ && devUrl && (
                   <View style={s.devBox}>
                     <Text style={s.devLabel}>Dev mode · Reset link</Text>
                     <TouchableOpacity
-                      onPress={() => Linking.openURL(BASE_URL + devUrl)}
+                      onPress={() => Linking.openURL('http://localhost:3001' + devUrl)}
                       activeOpacity={0.7}
                     >
-                      <Text style={s.devLink}>{BASE_URL + devUrl}</Text>
+                      <Text style={s.devLink}>{'http://localhost:3001' + devUrl}</Text>
                     </TouchableOpacity>
                   </View>
                 )}

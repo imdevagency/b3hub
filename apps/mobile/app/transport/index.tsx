@@ -8,17 +8,10 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  TextInput,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Bookmark, Check, Truck, Weight } from 'lucide-react-native';
+import { Bookmark, Check, Weight } from 'lucide-react-native';
+import { TruckIllustration } from '@/components/ui/TruckIllustration';
 import { useTransport } from '@/lib/transport-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -28,6 +21,7 @@ import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
+import { useToast } from '@/components/ui/Toast';
 
 // ── Types ─────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
@@ -100,6 +94,7 @@ const DAY_OPTIONS = buildDays();
 // ── Component ─────────────────────────────────────────────────────
 export default function TransportWizard() {
   const router = useRouter();
+  const toast = useToast();
   const {
     state,
     setPickup,
@@ -249,7 +244,7 @@ export default function TransportWizard() {
         },
       } as never);
     } catch (e: unknown) {
-      Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās izveidot pasūtījumu');
+      toast.error(e instanceof Error ? e.message : 'Neizdevās izveidot pasūtījumu');
     } finally {
       setSubmitting(false);
     }
@@ -307,6 +302,32 @@ export default function TransportWizard() {
     4: 'Apstiprini pasūtījumu',
   };
 
+  if (step === 1) {
+    return (
+      <InlineAddressStep
+        picked={pickupPicked}
+        onPick={setPickupPicked}
+        onConfirm={onCTA}
+        onCancel={goBack}
+        contextLabel="Iekraušanas vieta"
+      />
+    );
+  }
+
+  if (step === 2) {
+    return (
+      <InlineAddressStep
+        picked={dropoffPicked}
+        onPick={setDropoffPicked}
+        onConfirm={onCTA}
+        onCancel={goBack}
+        contextLabel="Izkraušanas vieta"
+        contextAddress={pickupPicked ?? undefined}
+        contextIcon="from"
+      />
+    );
+  }
+
   return (
     <>
       <WizardLayout
@@ -323,31 +344,6 @@ export default function TransportWizard() {
         ctaDisabled={ctaDisabled}
         ctaLoading={submitting}
       >
-        {/* ── Step 1: Pickup ── */}
-        {step === 1 && (
-          <View style={{ flex: 1 }}>
-            <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
-              <SavedAddressPicker onPick={handlePickupConfirm} currentAddress={pickupPicked} />
-            </View>
-            <InlineAddressStep picked={pickupPicked} onPick={handlePickupConfirm} />
-          </View>
-        )}
-
-        {/* ── Step 2: Dropoff ── */}
-        {step === 2 && (
-          <View style={{ flex: 1 }}>
-            <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
-              <SavedAddressPicker onPick={handleDropoffConfirm} currentAddress={dropoffPicked} />
-            </View>
-            <InlineAddressStep
-              picked={dropoffPicked}
-              onPick={handleDropoffConfirm}
-              contextAddress={pickupPicked ?? undefined}
-              contextIcon="from"
-            />
-          </View>
-        )}
-
         {/* ── Step 3: Vehicle + Cargo ── */}
         {step === 3 && (
           <ScrollView
@@ -382,11 +378,11 @@ export default function TransportWizard() {
                     }}
                     activeOpacity={0.75}
                   >
-                    <Truck
-                      size={22}
-                      color={isSel ? '#fff' : '#6b7280'}
-                      style={{ marginRight: 14 }}
-                    />
+                    <View
+                      style={{ marginRight: 14, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <TruckIllustration type={v.type} height={28} onDark={isSel} />
+                    </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[s.vehicleLabel, isSel && s.vehicleLabelSel]}>{v.label}</Text>
                       <Text style={[s.vehicleSub, isSel && s.vehicleSubSel]}>{v.sub}</Text>

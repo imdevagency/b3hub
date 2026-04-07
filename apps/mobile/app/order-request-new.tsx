@@ -41,12 +41,12 @@ import {
   Clock,
   Zap as ZapIcon,
   CheckCircle2,
-  Lock,
-  Calculator,
   ChevronDown,
-  ChevronUp,
   Package,
 } from 'lucide-react-native';
+import { TruckIllustration } from '@/components/ui/TruckIllustration';
+import type { TruckType } from '@/components/ui/TruckIllustration';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Calendar as RNCalendar } from 'react-native-calendars';
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
@@ -69,6 +69,10 @@ type WizardDraft = {
   truckCount: number;
   truckIntervalMinutes: number;
   savedAt: number;
+  // Structured specs fields (added in redesign)
+  selectedFraction?: string;
+  orderType?: OrderType;
+  selectedTruckId?: string;
 };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -79,15 +83,6 @@ type SubmitResult = 'order' | 'rfq';
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const STEPS: Step[] = ['specs', 'address', 'when', 'offers'];
-
-const UNITS: MaterialUnit[] = ['TONNE', 'M3', 'PIECE', 'LOAD'];
-
-const UNIT_LABEL: Record<MaterialUnit, string> = {
-  TONNE: 'tonne',
-  M3: 'm³',
-  PIECE: 'gab.',
-  LOAD: 'krava',
-};
 
 /** Category-specific default unit; all others default to TONNE. */
 const CATEGORY_DEFAULT_UNIT: Partial<Record<string, MaterialUnit>> = {
@@ -115,6 +110,71 @@ const MATERIAL_DENSITY: Partial<Record<string, number>> = {
   OTHER: 1.7,
 };
 
+// ── Truck options ──────────────────────────────────────────────────────────
+
+type TruckOption = {
+  id: string;
+  label: string;
+  subtitle: string;
+  capacity: number;
+  truckType: TruckType;
+};
+
+const TRUCK_OPTIONS: TruckOption[] = [
+  {
+    id: 'SEMI_26',
+    label: '26 t',
+    subtitle: 'Piekabes',
+    capacity: 26,
+    truckType: 'ARTICULATED_TIPPER',
+  },
+  { id: 'TIPPER_17', label: '17 t', subtitle: '8×4', capacity: 17, truckType: 'TIPPER_LARGE' },
+  {
+    id: 'TIPPER_12',
+    label: '12 t',
+    subtitle: 'Standarta',
+    capacity: 12,
+    truckType: 'TIPPER_SMALL',
+  },
+];
+
+// ── Order type ─────────────────────────────────────────────────────────────
+
+type OrderType = 'BY_WEIGHT' | 'BY_VOLUME' | 'BY_LOAD';
+
+const ORDER_TYPE_LABELS: Record<OrderType, string> = {
+  BY_WEIGHT: 'Pēc svara (tonnas)',
+  BY_VOLUME: 'Pēc apjoma (m³)',
+  BY_LOAD: 'Kravas pēc skaita',
+};
+
+const ORDER_TYPE_UNIT_MAP: Record<OrderType, MaterialUnit> = {
+  BY_WEIGHT: 'TONNE',
+  BY_VOLUME: 'M3',
+  BY_LOAD: 'LOAD',
+};
+
+const ORDER_TYPE_UNIT_LABEL: Record<OrderType, string> = {
+  BY_WEIGHT: 'tonnas',
+  BY_VOLUME: 'm³',
+  BY_LOAD: 'kravas',
+};
+
+// ── Fractions per material category ────────────────────────────────────────
+
+const CATEGORY_FRACTIONS: Record<MaterialCategory, string[]> = {
+  SAND: ['Smalkā', 'Rupjā', 'Betonsmilts', '0–4 mm', 'Nav norādīts'],
+  GRAVEL: ['0–4 mm', '4–8 mm', '8–16 mm', '16–32 mm', '32–63 mm', 'Nav norādīts'],
+  STONE: ['0–4 mm', '4–8 mm', '8–16 mm', '16–32 mm', '32–63 mm', '63+ mm', 'Nav norādīts'],
+  CONCRETE: ['B15', 'B20', 'B22.5', 'B25', 'B30', 'Nav norādīts'],
+  SOIL: ['Izmestā augsne', 'Melnzeme', 'Dārza zeme', 'Nav norādīts'],
+  RECYCLED_CONCRETE: ['0–8 mm', '8–32 mm', '32–63 mm', 'Nav norādīts'],
+  RECYCLED_SOIL: ['Nav norādīts'],
+  ASPHALT: ['Karstais asfalts', 'Aukstais asfalts', 'Nav norādīts'],
+  CLAY: ['Nav norādīts'],
+  OTHER: ['Nav norādīts'],
+};
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function OrderRequestWizard() {
@@ -129,7 +189,10 @@ export default function OrderRequestWizard() {
     resumeDraft?: string;
   }>();
 
-  const category = (params.initialCategory ?? '') as MaterialCategory;
+  const [selectedCategory, setSelectedCategory] = useState<MaterialCategory>(
+    (params.initialCategory as MaterialCategory) || 'GRAVEL',
+  );
+  const category = selectedCategory; // backward-compat alias used in API calls
 
   // ── Step state ──
   const [step, setStep] = useState<Step>('specs');
@@ -137,17 +200,27 @@ export default function OrderRequestWizard() {
 
   // ── Specs step ──
   const [materialName, setMaterialName] = useState(
-    () => params.prefillMaterial || DEFAULT_MATERIAL_NAMES[category as MaterialCategory] || '',
+    () =>
+      params.prefillMaterial ||
+      DEFAULT_MATERIAL_NAMES[(params.initialCategory as MaterialCategory) || 'GRAVEL'] ||
+      '',
   );
-  const [unit, setUnit] = useState<MaterialUnit>(CATEGORY_DEFAULT_UNIT[category] ?? 'TONNE');
-  const [quantity, setQuantity] = useState(5);
+  const [unit, setUnit] = useState<MaterialUnit>(
+    CATEGORY_DEFAULT_UNIT[(params.initialCategory as MaterialCategory) || 'GRAVEL'] ?? 'TONNE',
+  );
+  const [quantity, setQuantity] = useState(TRUCK_OPTIONS[0].capacity);
   const [notes, setNotes] = useState('');
 
-  // ── Calculator ──
-  const [calcOpen, setCalcOpen] = useState(false);
-  const [calcW, setCalcW] = useState('');
-  const [calcL, setCalcL] = useState('');
-  const [calcD, setCalcD] = useState('');
+  // ── Structured specs (new pickers) ──
+  const [selectedFraction, setSelectedFraction] = useState<string>(
+    () => CATEGORY_FRACTIONS[(params.initialCategory as MaterialCategory) || 'GRAVEL'][0],
+  );
+  const [orderType, setOrderType] = useState<OrderType>('BY_WEIGHT');
+  const [selectedTruckId, setSelectedTruckId] = useState<string>(TRUCK_OPTIONS[0].id);
+  // Picker modal open state
+  const [catPickerOpen, setCatPickerOpen] = useState(false);
+  const [fractionPickerOpen, setFractionPickerOpen] = useState(false);
+  const [orderTypePickerOpen, setOrderTypePickerOpen] = useState(false);
 
   // ── Address step ──
   const [pickedAddress, setPickedAddress] = useState<PickedAddress | null>(null);
@@ -166,6 +239,7 @@ export default function OrderRequestWizard() {
   const [offersLoading, setOffersLoading] = useState(false);
   const [offersError, setOffersError] = useState('');
   const [offersSort, setOffersSort] = useState<'price' | 'distance' | 'eta' | 'rating'>('price');
+  const [priceMaxFilter, setPriceMaxFilter] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [submitted, setSubmitted] = useState<SubmitResult | null>(null);
@@ -203,6 +277,10 @@ export default function OrderRequestWizard() {
           setDeliveryWindow(d.deliveryWindow || 'ANY');
           setTruckCount(d.truckCount || 1);
           setTruckIntervalMinutes(d.truckIntervalMinutes || 60);
+          if (d.category) setSelectedCategory(d.category as MaterialCategory);
+          if (d.selectedFraction) setSelectedFraction(d.selectedFraction);
+          if (d.orderType) setOrderType(d.orderType as OrderType);
+          if (d.selectedTruckId) setSelectedTruckId(d.selectedTruckId);
         } catch {
           /* ignore corrupt draft */
         }
@@ -230,6 +308,9 @@ export default function OrderRequestWizard() {
       deliveryWindow,
       truckCount,
       truckIntervalMinutes,
+      selectedFraction,
+      orderType,
+      selectedTruckId,
       savedAt: Date.now(),
     };
     AsyncStorage.setItem(DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
@@ -249,8 +330,21 @@ export default function OrderRequestWizard() {
   ]);
 
   // ── Quantity quick-values ──
-  const stepAmt = unit === 'M3' ? 1 : 5;
-  const quickValues = unit === 'M3' ? [1, 5, 10, 20] : [5, 10, 20, 50];
+  const stepAmt = 1;
+
+  // ── Sync materialName from structured pickers ──
+  useEffect(() => {
+    const name =
+      selectedFraction !== 'Nav norādīts'
+        ? `${CATEGORY_LABELS[selectedCategory]} ${selectedFraction}`
+        : CATEGORY_LABELS[selectedCategory];
+    setMaterialName(name);
+  }, [selectedCategory, selectedFraction]);
+
+  // ── Sync unit from order type ──
+  useEffect(() => {
+    setUnit(ORDER_TYPE_UNIT_MAP[orderType]);
+  }, [orderType]);
 
   // ── Load offers when entering the offers step ──
   useEffect(() => {
@@ -261,7 +355,7 @@ export default function OrderRequestWizard() {
     api.materials
       .getOffers(
         {
-          category: category as MaterialCategory,
+          category: selectedCategory,
           quantity,
           lat: pickedAddress.lat,
           lng: pickedAddress.lng,
@@ -287,27 +381,23 @@ export default function OrderRequestWizard() {
       return;
     }
     if (stepIndex === 0) {
-      const hasDraft = quantity !== 5 || notes.trim() !== '';
+      const hasDraft = notes.trim() !== '';
       if (hasDraft) {
-        Alert.alert(
-          'Iziet no pasūtīšanas?',
-          'Ievadītie dati tiks zaudēti.',
-          [
-            { text: 'Turpināt', style: 'cancel' },
-            {
-              text: 'Iziet',
-              style: 'destructive',
-              onPress: () => {
-                if (router.canGoBack()) router.back();
-                else router.replace('/(buyer)/catalog' as never);
-              },
+        Alert.alert('Iziet no pasūtīšanas?', 'Ievadītie dati tiks zaudēti.', [
+          { text: 'Turpināt', style: 'cancel' },
+          {
+            text: 'Iziet',
+            style: 'destructive',
+            onPress: () => {
+              if (router.canGoBack()) router.back();
+              else router.replace('/(buyer)/home' as never);
             },
-          ],
-        );
+          },
+        ]);
         return;
       }
       if (router.canGoBack()) router.back();
-      else router.replace('/(buyer)/catalog' as never);
+      else router.replace('/(buyer)/home' as never);
       return;
     }
     setStep(STEPS[stepIndex - 1]);
@@ -427,7 +517,7 @@ export default function OrderRequestWizard() {
   // ── CTA config ──
   const canProceed =
     step === 'specs'
-      ? materialName.trim().length > 0 && quantity > 0
+      ? quantity > 0
       : step === 'address'
         ? !!pickedAddress
         : step === 'when'
@@ -450,116 +540,119 @@ export default function OrderRequestWizard() {
       ? handleSendRFQ
       : goNext;
 
-  // Whether the caller pre-selected a specific material (came from a catalog product row)
-  const hasPrefill = !!params.prefillMaterial;
-
   // ── Step renders ──────────────────────────────────────────────────────────
 
   const renderSpecs = () => (
     <ScrollView
-      contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+      contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 40 }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      {/* Material block */}
-      {hasPrefill ? (
-        /* ── Ultimate Minimal Locked State ── */
-        <View style={{ alignItems: 'center', marginTop: 24, marginBottom: 48 }}>
-          <View style={[s.catBadgeMin, { marginBottom: 12 }]}>
-            <Text style={s.catBadgeTextMin}>
-              {CATEGORY_LABELS[category as MaterialCategory] ?? category}
-            </Text>
-          </View>
-          <View
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 24 }}
-          >
-            <Text
-              style={{
-                fontSize: 32,
-                fontFamily: 'Inter_800ExtraBold',
-                color: '#111827',
-                textAlign: 'center',
-                flexShrink: 1,
-                lineHeight: 38,
-              }}
-            >
-              {materialName}
-            </Text>
-            <Lock size={20} color="#E5E7EB" style={{ marginTop: 4 }} />
-          </View>
-        </View>
-      ) : (
-        /* ── Open: user arrived via category only — let them describe ── */
-        <View style={{ marginBottom: 40, marginTop: 16 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 8,
-            }}
-          >
-            <Text style={s.fieldLabel}>Materiāls</Text>
-            <View style={s.catBadgeMin}>
-              <Text style={s.catBadgeTextMin}>
-                {CATEGORY_LABELS[category as MaterialCategory] ?? category}
-              </Text>
-            </View>
-          </View>
-
-          <TextInput
-            style={s.textInput}
-            value={materialName}
-            onChangeText={setMaterialName}
-            placeholder="Frakcija, precizējums (piem., 16/32 mm)"
-            placeholderTextColor="#9ca3af"
-          />
-        </View>
-      )}
-
-      {/* Hero Quantity & Unit Stepper */}
-      <View style={{ alignItems: 'center', marginBottom: 48 }}>
-        <View style={s.stepperRow}>
+      {/* Row 1: Material type + Fraction */}
+      <View style={{ flexDirection: 'row', gap: 24, marginBottom: 24 }}>
+        <View style={s.lineFieldWrap}>
+          <Text style={s.lineFieldLabel}>Materiāla veids</Text>
           <TouchableOpacity
-            style={s.stepBtn}
+            style={s.lineFieldBtn}
+            onPress={() => setCatPickerOpen(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={s.lineFieldValue} numberOfLines={1}>
+              {CATEGORY_LABELS[selectedCategory]}
+            </Text>
+            <ChevronDown size={20} color="#111827" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={s.lineFieldWrap}>
+          <Text style={s.lineFieldLabel}>Frakcija</Text>
+          <TouchableOpacity
+            style={s.lineFieldBtn}
+            onPress={() => setFractionPickerOpen(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={s.lineFieldValue} numberOfLines={1}>
+              {selectedFraction}
+            </Text>
+            <ChevronDown size={20} color="#111827" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Row 2: Order type */}
+      <View style={[s.lineFieldWrap, { marginBottom: 36 }]}>
+        <Text style={s.lineFieldLabel}>Pasūtījuma veids</Text>
+        <TouchableOpacity
+          style={s.lineFieldBtn}
+          onPress={() => setOrderTypePickerOpen(true)}
+          activeOpacity={0.8}
+        >
+          <Text style={s.lineFieldValue}>{ORDER_TYPE_LABELS[orderType]}</Text>
+          <ChevronDown size={20} color="#111827" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Truck selection */}
+      <Text style={s.sectionTitleCenter}>Kravas auto izvēle</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 24, marginBottom: 40 }}>
+        {TRUCK_OPTIONS.map((truck) => {
+          const active = selectedTruckId === truck.id;
+          return (
+            <TouchableOpacity
+              key={truck.id}
+              style={[s.truckCardPlain, { opacity: active ? 1 : 0.4 }]}
+              onPress={() => {
+                setSelectedTruckId(truck.id);
+                setQuantity(truck.capacity);
+                haptics.light();
+              }}
+              activeOpacity={0.8}
+            >
+              <View style={s.truckImageWrap}>
+                <TruckIllustration type={truck.truckType} height={38} />
+                {active && (
+                  <View style={s.truckCheckCircle}>
+                    <Check size={14} color="#fff" strokeWidth={3} />
+                  </View>
+                )}
+              </View>
+              <Text style={s.truckLabelPlain}>{truck.label}</Text>
+              {truck.subtitle !== 'Standarta' && truck.subtitle !== 'Piekabes' && (
+                <Text style={s.truckSubPlain}>{truck.subtitle}</Text>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Quantity stepper */}
+      <Text style={s.sectionTitleCenter}>
+        {ORDER_TYPE_UNIT_LABEL[orderType].charAt(0).toUpperCase() +
+          ORDER_TYPE_UNIT_LABEL[orderType].slice(1)}
+      </Text>
+      <View style={{ alignItems: 'center', marginBottom: 32 }}>
+        <View style={s.stepperLineRow}>
+          <TouchableOpacity
+            style={s.stepBtnDark}
             onPress={() => setQuantity((q) => Math.max(1, q - stepAmt))}
             activeOpacity={0.8}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Minus size={24} color="#111827" />
+            <Minus size={20} color="#fff" />
           </TouchableOpacity>
 
-          <View style={s.stepperValueWrap}>
-            <Text style={s.stepperValue}>{quantity}</Text>
+          <View style={s.stepperValueBox}>
+            <Text style={s.stepperValueLine}>{quantity}</Text>
           </View>
 
           <TouchableOpacity
-            style={s.stepBtn}
+            style={s.stepBtnDark}
             onPress={() => setQuantity((q) => q + stepAmt)}
             activeOpacity={0.8}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Plus size={24} color="#111827" />
+            <Plus size={20} color="#fff" />
           </TouchableOpacity>
-        </View>
-
-        {/* Units seamless toggle */}
-        <View style={s.unitToggleRow}>
-          {UNITS.map((u) => {
-            const isActive = unit === u;
-            return (
-              <TouchableOpacity
-                key={u}
-                style={[s.unitToggleBtn, isActive && s.unitToggleBtnActive]}
-                onPress={() => setUnit(u)}
-                activeOpacity={0.8}
-              >
-                <Text style={[s.unitToggleText, isActive && s.unitToggleTextActive]}>
-                  {UNIT_LABEL[u]}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
         </View>
       </View>
 
@@ -578,97 +671,10 @@ export default function OrderRequestWizard() {
           numberOfLines={3}
         />
       </View>
-
-      {/* Volume Calculator */}
-      {(unit === 'TONNE' || unit === 'M3') && (
-        <View style={s.calcWrap}>
-          <TouchableOpacity
-            style={s.calcHeader}
-            onPress={() => setCalcOpen((o) => !o)}
-            activeOpacity={0.8}
-          >
-            <Calculator size={16} color="#6b7280" />
-            <Text style={s.calcHeaderText}>Daudzuma kalkulators</Text>
-            {calcOpen ? (
-              <ChevronUp size={16} color="#6b7280" />
-            ) : (
-              <ChevronDown size={16} color="#6b7280" />
-            )}
-          </TouchableOpacity>
-
-          {calcOpen &&
-            (() => {
-              const w = parseFloat(calcW) || 0;
-              const l = parseFloat(calcL) || 0;
-              const d = parseFloat(calcD) || 0;
-              const m3 = w * l * d;
-              const density = MATERIAL_DENSITY[category] ?? 1.7;
-              const tonnes = m3 * density;
-              const hasResult = m3 > 0;
-              const resultValue = unit === 'TONNE' ? tonnes : m3;
-              const resultUnit = unit === 'TONNE' ? 't' : 'm³';
-              return (
-                <View style={s.calcBody}>
-                  <Text style={s.calcHint}>
-                    Ievadiet laukuma izmērus, lai aprēķinātu nepieciešamo daudzumu.
-                  </Text>
-                  <View style={s.calcRow}>
-                    {[
-                      { label: 'Platums (m)', value: calcW, set: setCalcW },
-                      { label: 'Garums (m)', value: calcL, set: setCalcL },
-                      { label: 'Dziļums (m)', value: calcD, set: setCalcD },
-                    ].map(({ label, value, set }) => (
-                      <View key={label} style={s.calcField}>
-                        <Text style={s.calcFieldLabel}>{label}</Text>
-                        <TextInput
-                          style={s.calcInput}
-                          value={value}
-                          onChangeText={set}
-                          keyboardType="decimal-pad"
-                          placeholder="0"
-                          placeholderTextColor="#d1d5db"
-                        />
-                      </View>
-                    ))}
-                  </View>
-                  {hasResult && (
-                    <View style={s.calcResult}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={s.calcResultLabel}>Aptuveni nepieciešams</Text>
-                        <Text style={s.calcResultValue}>
-                          {resultValue.toFixed(1)} {resultUnit}
-                          {unit === 'TONNE' && (
-                            <Text style={s.calcResultSub}> ({m3.toFixed(1)} m³)</Text>
-                          )}
-                        </Text>
-                      </View>
-                      <TouchableOpacity
-                        style={s.calcApplyBtn}
-                        onPress={() => {
-                          setQuantity(Math.ceil(resultValue));
-                          setCalcOpen(false);
-                        }}
-                        activeOpacity={0.85}
-                      >
-                        <Text style={s.calcApplyText}>Izmantot</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              );
-            })()}
-        </View>
-      )}
     </ScrollView>
   );
 
-  const renderAddress = () => (
-    <InlineAddressStep
-      picked={pickedAddress}
-      onPick={setPickedAddress}
-      initialText={params.prefillAddress}
-    />
-  );
+  // Removed inline renderAddress mapping, since it takes over the layout completely.
 
   const renderWhen = () => {
     const todayISO = new Date().toISOString().split('T')[0];
@@ -1068,20 +1074,26 @@ export default function OrderRequestWizard() {
     }
 
     // ── Offers list ──
-    const sorted = [...offers].sort((a, b) => {
-      if (offersSort === 'distance') {
-        const da = a.distanceKm ?? Infinity;
-        const db = b.distanceKm ?? Infinity;
-        return da - db;
-      }
-      if (offersSort === 'eta') return a.etaDays - b.etaDays;
-      if (offersSort === 'rating') {
-        const ra = a.supplier.rating ?? 0;
-        const rb = b.supplier.rating ?? 0;
-        return rb - ra;
-      }
-      return a.totalPrice - b.totalPrice; // default: price
-    });
+    const sorted = [...offers]
+      .filter((o) => priceMaxFilter == null || o.effectiveUnitPrice <= priceMaxFilter)
+      .sort((a, b) => {
+        if (offersSort === 'distance') {
+          const da = a.distanceKm ?? Infinity;
+          const db = b.distanceKm ?? Infinity;
+          return da - db;
+        }
+        if (offersSort === 'eta') {
+          const ea = a.etaHours ?? a.etaDays * 8;
+          const eb = b.etaHours ?? b.etaDays * 8;
+          return ea - eb;
+        }
+        if (offersSort === 'rating') {
+          const ra = a.supplier.rating ?? 0;
+          const rb = b.supplier.rating ?? 0;
+          return rb - ra;
+        }
+        return a.totalPrice - b.totalPrice; // default: price
+      });
 
     const SORT_OPTIONS: { key: typeof offersSort; label: string }[] = [
       { key: 'price', label: 'Cena' },
@@ -1093,7 +1105,9 @@ export default function OrderRequestWizard() {
     return (
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 12 }}>
         <Text style={s.offersTitle}>
-          {offers.length} piedāvājum{offers.length === 1 ? 's' : 'i'}
+          {sorted.length}
+          {sorted.length < offers.length ? `/${offers.length}` : ''} piedāvājum
+          {sorted.length === 1 ? 's' : 'i'}
         </Text>
 
         {/* Sort pills */}
@@ -1110,6 +1124,27 @@ export default function OrderRequestWizard() {
               >
                 <Text style={[s.sortPillText, offersSort === opt.key && s.sortPillTextActive]}>
                   {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+
+        {/* Price cap filter */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            <Text style={{ fontSize: 12, color: '#6b7280', marginRight: 2 }}>Max €/t:</Text>
+            {[null, 10, 20, 30, 50, 100].map((cap) => (
+              <TouchableOpacity
+                key={cap === null ? 'all' : cap}
+                onPress={() => {
+                  haptics.light();
+                  setPriceMaxFilter(cap);
+                }}
+                style={[s.sortPill, priceMaxFilter === cap && s.sortPillActive]}
+              >
+                <Text style={[s.sortPillText, priceMaxFilter === cap && s.sortPillTextActive]}>
+                  {cap === null ? 'Visi' : `≤€${cap}`}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -1149,32 +1184,147 @@ export default function OrderRequestWizard() {
   };
 
   // ── Layout ────────────────────────────────────────────────────────────────
+
+  if (step === 'address') {
+    return (
+      <InlineAddressStep
+        picked={pickedAddress}
+        onPick={(p) => setPickedAddress(p)}
+        onConfirm={goNext}
+        onCancel={goBack}
+        initialText={params.prefillAddress}
+        contextLabel="Izkraušanas vieta"
+      />
+    );
+  }
+
   return (
-    <WizardLayout
-      title={
-        submitted === 'order'
-          ? 'Pasūtījums veikts!'
-          : submitted === 'rfq'
-            ? 'Pieprasījums nosūtīts!'
-            : STEP_TITLES[step]
-      }
-      step={stepIndex + 1}
-      totalSteps={STEPS.length}
-      onBack={goBack}
-      onClose={() => {
-        if (router.canGoBack()) router.back();
-        else router.replace('/(buyer)/catalog' as never);
-      }}
-      ctaLabel={ctaLabel}
-      onCTA={handleCTA}
-      ctaDisabled={!canProceed || submitting}
-      ctaLoading={submitting && step !== 'offers'}
-    >
-      {step === 'specs' && renderSpecs()}
-      {step === 'address' && renderAddress()}
-      {step === 'when' && renderWhen()}
-      {step === 'offers' && renderOffers()}
-    </WizardLayout>
+    <>
+      <WizardLayout
+        title={
+          submitted === 'order'
+            ? 'Pasūtījums veikts!'
+            : submitted === 'rfq'
+              ? 'Pieprasījums nosūtīts!'
+              : STEP_TITLES[step]
+        }
+        step={stepIndex + 1}
+        totalSteps={STEPS.length}
+        onBack={goBack}
+        onClose={() => {
+          if (router.canGoBack()) router.back();
+          else router.replace('/(buyer)/home' as never);
+        }}
+        ctaLabel={ctaLabel}
+        onCTA={handleCTA}
+        ctaDisabled={!canProceed || submitting}
+        ctaLoading={submitting && step !== 'offers'}
+        footerLeft={
+          step === 'specs' ? (
+            <View>
+              <Text style={{ fontSize: 13, color: '#9CA3AF', fontFamily: 'Inter_500Medium' }}>
+                Pasūtījuma apjoms
+              </Text>
+              <Text
+                style={{
+                  fontSize: 16,
+                  color: '#111827',
+                  fontFamily: 'Inter_600SemiBold',
+                  marginTop: 2,
+                }}
+              >
+                {quantity.toFixed(2)} {ORDER_TYPE_UNIT_LABEL[orderType]}
+              </Text>
+            </View>
+          ) : undefined
+        }
+      >
+        {step === 'specs' && renderSpecs()}
+        {step === 'when' && renderWhen()}
+        {step === 'offers' && renderOffers()}
+      </WizardLayout>
+
+      {/* ── Category picker ── */}
+      <BottomSheet
+        visible={catPickerOpen}
+        onClose={() => setCatPickerOpen(false)}
+        title="Materiāla veids"
+        scrollable
+        maxHeightPct={0.6}
+      >
+        {(Object.keys(CATEGORY_FRACTIONS) as MaterialCategory[]).map((item) => (
+          <TouchableOpacity
+            key={item}
+            style={s.sheetItem}
+            onPress={() => {
+              setSelectedCategory(item);
+              setSelectedFraction(CATEGORY_FRACTIONS[item][0]);
+              setCatPickerOpen(false);
+              haptics.light();
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={[s.sheetItemText, selectedCategory === item && s.sheetItemTextActive]}>
+              {CATEGORY_LABELS[item]}
+            </Text>
+            {selectedCategory === item && <Check size={16} color="#111827" />}
+          </TouchableOpacity>
+        ))}
+      </BottomSheet>
+
+      {/* ── Fraction picker ── */}
+      <BottomSheet
+        visible={fractionPickerOpen}
+        onClose={() => setFractionPickerOpen(false)}
+        title="Frakcija"
+        scrollable
+        maxHeightPct={0.5}
+      >
+        {CATEGORY_FRACTIONS[selectedCategory].map((item) => (
+          <TouchableOpacity
+            key={item}
+            style={s.sheetItem}
+            onPress={() => {
+              setSelectedFraction(item);
+              setFractionPickerOpen(false);
+              haptics.light();
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={[s.sheetItemText, selectedFraction === item && s.sheetItemTextActive]}>
+              {item}
+            </Text>
+            {selectedFraction === item && <Check size={16} color="#111827" />}
+          </TouchableOpacity>
+        ))}
+      </BottomSheet>
+
+      {/* ── Order type picker ── */}
+      <BottomSheet
+        visible={orderTypePickerOpen}
+        onClose={() => setOrderTypePickerOpen(false)}
+        title="Pasūtījuma veids"
+        maxHeightPct={0.4}
+      >
+        {(Object.keys(ORDER_TYPE_LABELS) as OrderType[]).map((ot) => (
+          <TouchableOpacity
+            key={ot}
+            style={s.sheetItem}
+            onPress={() => {
+              setOrderType(ot);
+              setOrderTypePickerOpen(false);
+              haptics.light();
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={[s.sheetItemText, orderType === ot && s.sheetItemTextActive]}>
+              {ORDER_TYPE_LABELS[ot]}
+            </Text>
+            {orderType === ot && <Check size={16} color="#111827" />}
+          </TouchableOpacity>
+        ))}
+      </BottomSheet>
+    </>
   );
 }
 
@@ -1261,7 +1411,7 @@ function OfferCard({
         ) : null}
         <View style={oc.metaItem}>
           <Clock size={13} color="#6b7280" />
-          <Text style={oc.metaText}>{offer.etaDays} d.</Text>
+          <Text style={oc.metaText}>{offer.etaLabel ?? `${offer.etaDays} d.`}</Text>
         </View>
         {offer.isInstant ? (
           <View style={oc.metaItem}>
@@ -1393,6 +1543,197 @@ const s = StyleSheet.create({
     paddingVertical: 4,
   },
   catBadgeTextMin: { fontSize: 12, fontFamily: 'Inter_600SemiBold', color: '#6b7280' },
+
+  // ── Dropdown button ──
+  dropdownBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+    gap: 6,
+  },
+  dropdownBtnText: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#111827',
+  },
+
+  // ── Truck cards ──
+  truckCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    gap: 4,
+    position: 'relative',
+  },
+  truckCardActive: {
+    backgroundColor: '#ffffff',
+    borderColor: '#111827',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  truckCheckBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  truckLabel: {
+    fontSize: 13,
+    fontFamily: 'Inter_700Bold',
+    color: '#6B7280',
+  },
+  truckLabelActive: {
+    color: '#111827',
+  },
+  truckSub: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+    color: '#9CA3AF',
+  },
+
+  // ── BottomSheet picker rows ──
+  sheetItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F4F5F7',
+  },
+  sheetItemText: {
+    fontSize: 15,
+    fontFamily: 'Inter_500Medium',
+    color: '#374151',
+  },
+  sheetItemTextActive: {
+    fontFamily: 'Inter_700Bold',
+    color: '#111827',
+  },
+
+  // ── Line style inputs ──
+  lineFieldWrap: {
+    flex: 1,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    paddingBottom: 8,
+  },
+  lineFieldLabel: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    color: '#9CA3AF',
+    marginBottom: 4,
+  },
+  lineFieldBtn: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  lineFieldValue: {
+    flex: 1,
+    fontSize: 18,
+    fontFamily: 'Inter_500Medium',
+    color: '#374151',
+    letterSpacing: -0.2,
+  },
+
+  // ── Plain section title ──
+  sectionTitleCenter: {
+    textAlign: 'center',
+    fontSize: 15,
+    fontFamily: 'Inter_500Medium',
+    color: '#4B5563',
+    marginBottom: 6,
+  },
+
+  // ── Truck flat cards ──
+  truckCardPlain: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  truckImageWrap: {
+    position: 'relative',
+  },
+  truckCheckCircle: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#10b981', // green like attachment
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  truckLabelPlain: {
+    fontSize: 15,
+    fontFamily: 'Inter_500Medium',
+    color: '#4B5563',
+  },
+  truckSubPlain: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: '#9CA3AF',
+  },
+
+  // ── Line Stepper ──
+  stepperLineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 20,
+    paddingVertical: 12,
+  },
+  stepBtnDark: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#312e81', // dark purple like attachment
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperValueBox: {
+    minWidth: 100,
+    height: 60,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperValueLine: {
+    fontSize: 32,
+    fontFamily: 'Inter_500Medium',
+    color: '#111827',
+  },
 
   field: { gap: 10 },
   fieldLabel: {
