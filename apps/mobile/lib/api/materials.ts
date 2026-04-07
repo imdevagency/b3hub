@@ -116,6 +116,13 @@ export const materialsApi = {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
+    uploadImage: (id: string, base64: string, mimeType: string, token: string) =>
+      apiFetch<{ images: string[] }>(`/materials/${id}/upload-image`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ base64, mimeType }),
+      }),
+
     createOrder: (
       input: {
         buyerId: string;

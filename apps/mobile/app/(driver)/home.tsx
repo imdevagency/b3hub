@@ -7,6 +7,8 @@ import {
   Dimensions,
   Platform,
   ActivityIndicator,
+  ScrollView,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -57,6 +59,7 @@ export default function DriverHomeScreen() {
   const [fetchError, setFetchError] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [togglingOnline, setTogglingOnline] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Fly camera to driver's current location once on mount
   useEffect(() => {
@@ -78,21 +81,20 @@ export default function DriverHomeScreen() {
   }, []);
 
   // Refresh data whenever the screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      if (!token) return;
+  const loadData = useCallback(() => {
+    if (!token) return Promise.resolve();
+    return Promise.allSettled([
       api.transportJobs
         .myActive(token)
         .then((job) => {
           setHasActiveJob(!!job);
           setFetchError(false);
         })
-        .catch(() => setFetchError(true));
-      // Fetch driver online status
+        .catch(() => setFetchError(true)),
       api.driverSchedule
         .getStatus(token)
         .then((s) => setIsOnline(s.isOnline ?? true))
-        .catch(() => {});
+        .catch(() => {}),
       api.transportJobs
         .available(token)
         .then((jobs: ApiTransportJob[]) => {
@@ -103,15 +105,15 @@ export default function DriverHomeScreen() {
         .catch(() => {
           setLoadingJobs(false);
           setFetchError(true);
-        });
+        }),
       api.notifications
         .unreadCount(token)
         .then((res: { count: number }) => setUnreadCount(res.count))
-        .catch(() => {});
+        .catch(() => {}),
       api.vehicles
         .getAll(token)
         .then((vs: ApiVehicle[]) => setVehicleCount(Array.isArray(vs) ? vs.length : 0))
-        .catch(() => setVehicleCount(0));
+        .catch(() => setVehicleCount(0)),
       api.transportJobs
         .myJobs(token)
         .then((jobs) => {
@@ -126,8 +128,20 @@ export default function DriverHomeScreen() {
           }
           setTodayEarnings(earnings);
         })
-        .catch(() => {});
-    }, [token]),
+        .catch(() => {}),
+    ]);
+  }, [token]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData]),
   );
 
   const availableCount = Array.isArray(availableJobs) ? availableJobs.length : 0;
@@ -241,7 +255,18 @@ export default function DriverHomeScreen() {
       </View>
 
       {/* 3. Bottom Sheet Card — Slide-up panel styling */}
-      <View style={[s.bottomSheet, { height: BOTTOM_PANEL_H, paddingBottom: bottomInset + 10 }]}>
+      <View style={[s.bottomSheet, { height: BOTTOM_PANEL_H }]}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: bottomInset + 10 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="#111827"
+            />
+          }
+        >
         {/* Greeting / User Context */}
         <View style={s.sheetHeader}>
           <Text style={s.greetingLabel}>{greeting()},</Text>
@@ -329,6 +354,7 @@ export default function DriverHomeScreen() {
             onPress={() => router.push('/(driver)/skips')}
           />
         </View>
+        </ScrollView>
       </View>
     </ScreenContainer>
   );

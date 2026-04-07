@@ -44,6 +44,9 @@ export interface ApiOrder {
       phone: string | null;
     } | null;
   }[];
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
+  invoiceDueDate?: string | null;
   surcharges?: ApiOrderSurcharge[];
   createdAt: string;
   linkedSkipOrder?: {
@@ -258,6 +261,8 @@ export interface CreateTransportOrderInput {
   siteContactName?: string;
   siteContactPhone?: string;
   notes?: string;
+  /** Optional buyer-suggested transport rate (reverse auction) */
+  buyerOfferedRate?: number;
 }
 
 export interface CreateOrderResponse {

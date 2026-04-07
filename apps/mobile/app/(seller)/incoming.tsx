@@ -24,7 +24,7 @@ import { SELLER_ORDER_STATUS } from '@/lib/materials';
 import { useToast } from '@/components/ui/Toast';
 import { api, type ApiOrder } from '@/lib/api';
 import { useLiveUpdates } from '@/lib/use-live-updates';
-import { X, Square, CheckSquare2, MapPin, Inbox, AlertCircle } from 'lucide-react-native';
+import { X, Square, CheckSquare2, MapPin, Inbox, AlertCircle, Clock, Phone, FileText } from 'lucide-react-native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type OrderStatus = 'PENDING' | 'CONFIRMED' | 'LOADING' | 'DISPATCHED';
@@ -305,25 +305,32 @@ function OrderCard({
         {(order.deliveryWindow && order.deliveryWindow !== 'ANY') || order.siteContactName ? (
           <View style={styles.metaRow}>
             {order.deliveryWindow && order.deliveryWindow !== 'ANY' && (
-              <View style={styles.windowPill}>
+              <View style={[styles.windowPill, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                <Clock size={11} color="#1d4ed8" />
                 <Text style={styles.windowPillText}>
-                  {order.deliveryWindow === 'AM' ? '🌅 8–12' : '🌤 12–17'}
+                  {order.deliveryWindow === 'AM' ? '8–12' : '12–17'}
                 </Text>
               </View>
             )}
             {order.siteContactName && (
-              <Text style={styles.siteContactText} numberOfLines={1}>
-                📞 {order.siteContactName}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 }}>
+                <Phone size={11} color="#6b7280" />
+                <Text style={styles.siteContactText} numberOfLines={1}>
+                  {order.siteContactName}
+                </Text>
+              </View>
             )}
           </View>
         ) : null}
 
         {/* Buyer notes preview */}
         {order.notes ? (
-          <Text style={styles.notesPreview} numberOfLines={1}>
-            📝 {order.notes}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 4, marginTop: 4 }}>
+            <FileText size={11} color="#9ca3af" style={{ marginTop: 1 }} />
+            <Text style={[styles.notesPreview, { marginTop: 0, flex: 1 }]} numberOfLines={1}>
+              {order.notes}
+            </Text>
+          </View>
         ) : null}
 
         {/* Payment status badge */}

@@ -29,6 +29,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { haptics } from '@/lib/haptics';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
+import { ActionResultSheet } from '@/components/ui/ActionResultSheet';
 
 // ── Status helpers ─────────────────────────────────────────────
 
@@ -61,6 +62,7 @@ export default function RfqDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [accepting, setAccepting] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [cancelResultVisible, setCancelResultVisible] = useState(false);
 
   const load = useCallback(
     async (skeleton = true) => {
@@ -100,7 +102,7 @@ export default function RfqDetailScreen() {
             try {
               await api.quoteRequests.cancel(rfq.id, token);
               haptics.success();
-              router.back();
+              setCancelResultVisible(true);
             } catch (e) {
               Alert.alert(
                 'Kļūda',
@@ -245,18 +247,40 @@ export default function RfqDetailScreen() {
         </View>
 
         {/* Responses */}
-        <Text style={ss.sectionTitle}>
-          {sortedResponses.length === 0
-            ? 'Vēl nav piedāvājumu'
-            : `${sortedResponses.length} piedāvājum${sortedResponses.length === 1 ? 's' : 'i'}`}
-        </Text>
+        {(rfq.status !== 'CANCELLED' && rfq.status !== 'EXPIRED') || sortedResponses.length > 0 ? (
+          <Text style={ss.sectionTitle}>
+            {sortedResponses.length === 0
+              ? 'Vēl nav piedāvājumu'
+              : `${sortedResponses.length} piedāvājum${sortedResponses.length === 1 ? 's' : 'i'}`}
+          </Text>
+        ) : null}
 
-        {sortedResponses.length === 0 && (
+        {sortedResponses.length === 0 && rfq.status === 'PENDING' && (
           <View style={ss.emptyResponses}>
             <Clock size={32} color="#d1d5db" />
             <Text style={ss.emptyResponsesTitle}>Gaidām piegādātāju atbildes</Text>
             <Text style={ss.emptyResponsesDesc}>
               Saņemsi paziņojumu, kad piegādātāji nosūtīs savus piedāvājumus.
+            </Text>
+          </View>
+        )}
+
+        {sortedResponses.length === 0 && rfq.status === 'CANCELLED' && (
+          <View style={[ss.emptyResponses, ss.emptyResponsesCancelled]}>
+            <XCircle size={32} color="#fca5a5" />
+            <Text style={[ss.emptyResponsesTitle, { color: '#b91c1c' }]}>Pieprasījums atcelts</Text>
+            <Text style={ss.emptyResponsesDesc}>
+              Šis pieprasījums ir atcelts. Varat iesniegt jaunu pieprasījumu jebkurā laikā.
+            </Text>
+          </View>
+        )}
+
+        {sortedResponses.length === 0 && rfq.status === 'EXPIRED' && (
+          <View style={[ss.emptyResponses, ss.emptyResponsesExpired]}>
+            <Clock size={32} color="#d1d5db" />
+            <Text style={[ss.emptyResponsesTitle, { color: '#6b7280' }]}>Piedāvājumu laiks beidzies</Text>
+            <Text style={ss.emptyResponsesDesc}>
+              Neviens piegādātājs neatbildēja laikā. Varat iesniegt jaunu pieprasījumu.
             </Text>
           </View>
         )}
@@ -349,6 +373,24 @@ export default function RfqDetailScreen() {
           </View>
         ))}
       </ScrollView>
+
+      <ActionResultSheet
+        visible={cancelResultVisible}
+        onClose={() => setCancelResultVisible(false)}
+        variant="cancelled"
+        title="Pieprasījums atcelts"
+        subtitle="Piegādātāji tika informēti. Varat iesniegt jaunu pieprasījumu jebkurā laikā."
+        primaryLabel="Jauns pieprasījums"
+        onPrimary={() => {
+          setCancelResultVisible(false);
+          router.replace('/order-request-new');
+        }}
+        secondaryLabel="Uz maniem pieprasījumiem"
+        onSecondary={() => {
+          setCancelResultVisible(false);
+          router.replace('/(buyer)/orders');
+        }}
+      />
     </ScreenContainer>
   );
 }
@@ -377,6 +419,14 @@ const ss = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  emptyResponsesCancelled: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#fecaca',
+  },
+  emptyResponsesExpired: {
+    backgroundColor: '#f9fafb',
+    borderColor: '#e5e7eb',
   },
   headerTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
   statusPill: {

@@ -57,6 +57,7 @@ export interface ApiTransportJob {
   distanceKm: number | null;
   rate: number | null;
   pricePerTonne: number | null;
+  buyerOfferedRate: number | null;
   currency: string;
   status: TransportJobStatus;
   acceptedAt?: string | null;

@@ -480,12 +480,23 @@ export default function HomeScreen() {
                 }}
               >
                 <View style={s.recentIconSmall}>
-                  <Package size={16} color="#6b7280" />
+                  {item.kind === 'transport' ? (
+                    <Truck size={16} color="#6b7280" />
+                  ) : (
+                    <Package size={16} color="#6b7280" />
+                  )}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.recentRowTitle}>{item.sub}</Text>
                   <Text style={s.recentRowSub}>
                     {item.status} • {item.num}
+                    {item.date
+                      ? ' • ' +
+                        new Date(item.date).toLocaleDateString('lv', {
+                          day: 'numeric',
+                          month: 'short',
+                        })
+                      : ''}
                   </Text>
                 </View>
                 <ChevronRight size={16} color="#d1d5db" />
@@ -689,7 +700,7 @@ const s = StyleSheet.create({
   seeAllLink: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#3b82f6',
+    color: '#111827',
   },
   recentRow: {
     flexDirection: 'row',

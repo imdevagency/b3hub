@@ -14,6 +14,7 @@ import {
   deleteMaterial,
   getMaterialTiers,
   setMaterialTiers,
+  uploadMaterialImage,
   type PriceTier,
   type ApiMaterial,
   type MaterialCategory,
@@ -31,6 +32,7 @@ import {
   Trash2,
   X,
   AlertTriangle,
+  ImagePlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageSpinner } from '@/components/ui/page-spinner';
@@ -155,11 +157,14 @@ function MaterialFormModal({
   const [form, setForm] = useState<MaterialFormValues>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [images, setImages] = useState<string[]>([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Update form when editing changes or sheet opens
   useEffect(() => {
     if (open) {
       setForm(editing ? materialToForm(editing) : EMPTY_FORM);
+      setImages(editing?.images ?? []);
       setError('');
     }
   }, [open, editing]);
@@ -174,6 +179,29 @@ function MaterialFormModal({
   };
 
   const toggle = (k: 'inStock' | 'isRecycled') => () => setForm((f) => ({ ...f, [k]: !f[k] }));
+
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !editing?.id) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      const base64 = dataUrl.split(',')[1];
+      const mimeType = file.type || 'image/jpeg';
+      setUploadingImage(true);
+      try {
+        const result = await uploadMaterialImage(editing.id, base64, mimeType, token);
+        setImages(result.images);
+      } catch {
+        setError('Neizdevās augšupielādēt attēlu.');
+      } finally {
+        setUploadingImage(false);
+      }
+    };
+    reader.readAsDataURL(file);
+    // reset input so same file can be re-selected
+    e.target.value = '';
+  }
 
   async function handleSubmit(e?: React.FormEvent) {
     if (e) e.preventDefault();
@@ -402,6 +430,44 @@ function MaterialFormModal({
                 onChange={set('quality')}
                 className={inputClasses}
               />
+            </div>
+
+            {/* Product photos */}
+            <div>
+              <Label className="text-sm font-medium ml-1">Produkta bildes</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {images.map((url, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={i}
+                    src={url}
+                    alt={`Bilde ${i + 1}`}
+                    className="w-20 h-20 object-cover rounded-xl border border-border"
+                  />
+                ))}
+                {editing?.id ? (
+                  <label
+                    className={`w-20 h-20 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/40 cursor-pointer hover:bg-muted/70 transition-colors ${uploadingImage ? 'opacity-50 pointer-events-none' : ''}`}
+                  >
+                    {uploadingImage ? (
+                      <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                    ) : (
+                      <ImagePlus className="size-5 text-muted-foreground" />
+                    )}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="sr-only"
+                      onChange={handleImageChange}
+                      disabled={uploadingImage}
+                    />
+                  </label>
+                ) : (
+                  <p className="text-xs text-muted-foreground self-center">
+                    Saglabājiet materiālu, lai pievienotu bildes.
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Toggles */}

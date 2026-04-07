@@ -15,6 +15,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   DocumentType,
+  SurchargeType,
   TransportExceptionStatus,
   TransportJobStatus,
   OrderStatus,
@@ -471,6 +472,16 @@ export class TransportJobsService {
         data: { orderId, invoiceId: invoice.id },
       })
       .catch(() => null);
+
+    // Sync Stripe PaymentIntent to the new total so the buyer is charged
+    // the correct amount based on actual delivered weight.
+    // Swallow errors gracefully — a captured/released payment cannot be adjusted
+    // (Stripe will refuse), but the invoice + order totals are already corrected.
+    this.payments.updatePaymentIntentAmount(orderId, actualTotal + deliveryFee).catch((err) => {
+      this.logger.warn(
+        `reconcileInvoiceWeight: could not update PaymentIntent for order ${orderId} — ${(err as Error).message}`,
+      );
+    });
 
     this.logger.log(
       `Invoice ${invoice.id} reconciled for order ${orderId}: ${orderedTonnes}t ordered → ${actualTonnes.toFixed(3)}t actual (€${order.total} → €${(actualTotal + deliveryFee).toFixed(2)})`,
@@ -1967,6 +1978,59 @@ export class TransportJobsService {
    * Construction logistics norm: if a driver doesn't show up within 4 hours of
    * the agreed time, the job must be re-opened for another driver to claim.
    */
+
+  /**
+   * Driver adds a surcharge (fuel, waiting time, overweight, etc.) to the order
+   * linked to this transport job. The requesting user must be the assigned driver.
+   */
+  async addSurcharge(
+    jobId: string,
+    dto: { type: SurchargeType; label?: string; amount: number; billable?: boolean },
+    driverId: string,
+  ) {
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id: jobId },
+      select: { id: true, jobNumber: true, driverId: true, orderId: true, status: true },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+    if (job.driverId !== driverId) {
+      throw new ForbiddenException('Only the assigned driver can add surcharges');
+    }
+    if (!job.orderId) {
+      throw new BadRequestException(
+        'Surcharges can only be added to order-linked transport jobs',
+      );
+    }
+    const nonEditableStatuses: TransportJobStatus[] = [
+      TransportJobStatus.DELIVERED,
+      TransportJobStatus.CANCELLED,
+    ];
+    if (nonEditableStatuses.includes(job.status as TransportJobStatus)) {
+      throw new BadRequestException('Cannot add surcharges to a completed or cancelled job');
+    }
+
+    const SURCHARGE_LABELS: Partial<Record<SurchargeType, string>> = {
+      [SurchargeType.FUEL]: 'Degvielas piemaksa',
+      [SurchargeType.WAITING_TIME]: 'Gaidīšanas laiks',
+      [SurchargeType.OVERWEIGHT]: 'Pārslogota krava',
+      [SurchargeType.WEEKEND]: 'Nedēļas nogales piemaksa',
+      [SurchargeType.NARROW_ACCESS]: 'Šaura pieeja',
+      [SurchargeType.REMOTE_AREA]: 'Attāls objekts',
+      [SurchargeType.TOLL]: 'Ceļa nodeva',
+      [SurchargeType.OTHER]: 'Cita piemaksa',
+    };
+
+    return this.prisma.orderSurcharge.create({
+      data: {
+        orderId: job.orderId,
+        type: dto.type,
+        label: dto.label ?? SURCHARGE_LABELS[dto.type] ?? dto.type,
+        amount: dto.amount,
+        billable: dto.billable ?? true,
+      },
+    });
+  }
+
   @Cron(CronExpression.EVERY_HOUR)
   async releaseStaleAcceptedJobs(): Promise<void> {
     const now = new Date();

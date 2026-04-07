@@ -266,6 +266,7 @@ export default function DisposalWizard() {
           siteContactName: contactName || undefined,
           siteContactPhone: contactPhone || undefined,
           notes: notes || undefined,
+          quotedRate: preset.fromPrice * preset.truckCount,
         },
         token,
       );

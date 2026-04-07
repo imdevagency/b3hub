@@ -1824,7 +1824,7 @@ export class OrdersService {
         cargoVolume: truck.volume * dto.truckCount,
         requiredVehicleType: truck.label,
         specialRequirements: dto.description ?? null,
-        rate: dto.quotedRate,
+        rate: dto.quotedRate ?? 0,
         currency: 'EUR',
         status: TransportJobStatus.AVAILABLE,
       },
@@ -1839,7 +1839,7 @@ export class OrdersService {
       .createForCallOff({
         id: job.id,
         jobNumber: job.jobNumber,
-        rate: dto.quotedRate,
+        rate: dto.quotedRate ?? 0,
         currency: 'EUR',
         requestedById: userId,
       })

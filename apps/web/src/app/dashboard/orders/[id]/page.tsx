@@ -544,27 +544,72 @@ export default function OrderDetailPage() {
         </div>
       )}
 
+      {/* ── Cancelled banner ── */}
+      {order.status === 'CANCELLED' && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-5 flex items-start gap-3">
+          <div className="p-2 bg-red-100 rounded-xl shrink-0">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-red-800">Pasūtījums atcelts</p>
+            <p className="text-xs text-red-600 mt-0.5">
+              Šis pasūtījums vairs nav aktīvs. Ja nepieciešams, varat izveidot jaunu pasūtījumu.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3 border-red-200 text-red-700 hover:bg-red-100"
+              onClick={() => router.push('/dashboard/order/material')}
+            >
+              Izveidot jaunu pasūtījumu
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* ── Payment ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-slate-700">Maksājums</h2>
-        {!paymentClientSecret || !stripePromise ? (
-          <Button onClick={handleStartPayment} disabled={paymentInitLoading} className="w-full">
-            <CreditCard className="h-4 w-4 mr-2" />
-            {paymentInitLoading ? 'Sagatavo maksājumu...' : 'Apmaksāt pasūtījumu'}
-          </Button>
-        ) : (
-          <Elements stripe={stripePromise} options={{ clientSecret: paymentClientSecret }}>
-            <InlinePaymentForm
-              onError={setPaymentError}
-              onSuccess={async () => {
-                setPaymentError(null);
-                await loadData();
-              }}
-            />
-          </Elements>
+      {order.status !== 'CANCELLED' &&
+        order.status !== 'COMPLETED' &&
+        order.status !== 'DELIVERED' && (
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+            <h2 className="text-sm font-semibold text-slate-700">Maksājums</h2>
+            {order.paymentMethod === 'INVOICE' ? (
+              <div className="flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 p-4">
+                <CreditCard className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-amber-800">Rēķins</p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    Šis pasūtījums tiks apmaksāts ar rēķinu.
+                    {order.invoiceDueDate
+                      ? ` Apmaksas termiņš: ${fmtDate(order.invoiceDueDate)}.`
+                      : ''}
+                  </p>
+                </div>
+              </div>
+            ) : order.paymentStatus === 'PAID' ? (
+              <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                <CreditCard className="h-4 w-4 shrink-0" />
+                <span className="font-medium">Apmaksāts</span>
+              </div>
+            ) : !paymentClientSecret || !stripePromise ? (
+              <Button onClick={handleStartPayment} disabled={paymentInitLoading} className="w-full">
+                <CreditCard className="h-4 w-4 mr-2" />
+                {paymentInitLoading ? 'Sagatavo maksājumu...' : 'Apmaksāt pasūtījumu'}
+              </Button>
+            ) : (
+              <Elements stripe={stripePromise} options={{ clientSecret: paymentClientSecret }}>
+                <InlinePaymentForm
+                  onError={setPaymentError}
+                  onSuccess={async () => {
+                    setPaymentError(null);
+                    await loadData();
+                  }}
+                />
+              </Elements>
+            )}
+            {paymentError && <p className="text-sm text-red-600">{paymentError}</p>}
+          </div>
         )}
-        {paymentError && <p className="text-sm text-red-600">{paymentError}</p>}
-      </div>
     </div>
   );
 }

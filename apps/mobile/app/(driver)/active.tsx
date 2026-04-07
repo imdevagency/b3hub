@@ -47,6 +47,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Camera,
+  Plus,
 } from 'lucide-react-native';
 
 // ── Status progression ────────────────────────────────────────────────────────
@@ -84,6 +85,14 @@ const EXCEPTION_TYPE_OPTIONS: Array<{ value: TransportExceptionType; label: stri
   { value: 'OVERWEIGHT', label: 'Pārsniegts svars' },
   { value: 'OTHER', label: 'Cits' },
 ];
+
+const SURCHARGE_TYPE_OPTIONS = [
+  { value: 'WAITING_TIME', label: 'Gaidīšanas laiks' },
+  { value: 'FUEL', label: 'Degvielas piemaksa' },
+  { value: 'OVERWEIGHT', label: 'Pārslogota krava' },
+  { value: 'NARROW_ACCESS', label: 'Šaura pieeja' },
+  { value: 'OTHER', label: 'Cita piemaksa' },
+] as const;
 
 const SLA_STAGE_LABEL: Record<string, string> = {
   PICKUP_DELAY: 'Kavēta iekraušana',
@@ -136,6 +145,12 @@ export default function ActiveJobScreen() {
   const [weightInput, setWeightInput] = React.useState('');
   const [weightSubmitting, setWeightSubmitting] = React.useState(false);
   const [pickupPhotoUri, setPickupPhotoUri] = React.useState<string | null>(null);
+
+  // ── Surcharge sheet ──────────────────────────────────────────
+  const [surchargeSheetVisible, setSurchargeSheetVisible] = React.useState(false);
+  const [surchargeType, setSurchargeType] = React.useState<string>('WAITING_TIME');
+  const [surchargeAmount, setSurchargeAmount] = React.useState('');
+  const [surchargeSubmitting, setSurchargeSubmitting] = React.useState(false);
 
   const handleTakePickupPhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -569,6 +584,33 @@ export default function ActiveJobScreen() {
     }
   };
 
+  const handleAddSurcharge = async () => {
+    if (!job || !token) return;
+    const amount = parseFloat(surchargeAmount.replace(',', '.'));
+    if (!amount || amount <= 0 || isNaN(amount)) {
+      Alert.alert('Kļūda', 'Ievadiet derīgu summu eiro.');
+      return;
+    }
+    setSurchargeSubmitting(true);
+    try {
+      await api.transportJobs.addSurcharge(
+        job.id,
+        { type: surchargeType, amount },
+        token,
+      );
+      toast.success('Papildu maksa pievienota');
+      setSurchargeSheetVisible(false);
+      setSurchargeAmount('');
+      setSurchargeType('WAITING_TIME');
+      haptics.success();
+    } catch (err: unknown) {
+      haptics.error();
+      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās pievienot papildu maksu');
+    } finally {
+      setSurchargeSubmitting(false);
+    }
+  };
+
   return (
     <ScreenContainer bg="transparent" topInset={0} style={{ flex: 1 }} noAnimation>
       {/* ── Absolutely Positioned Map Layer ── */}
@@ -709,8 +751,6 @@ export default function ActiveJobScreen() {
                 fontSize: 13,
                 fontWeight: '800',
                 color: phaseColor.text || '#000',
-                textTransform: 'uppercase',
-                letterSpacing: 0.5,
               }}
             >
               {currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP'
@@ -762,10 +802,9 @@ export default function ActiveJobScreen() {
               fontSize: 11,
               color: 'rgba(255,255,255,0.5)',
               fontWeight: '600',
-              letterSpacing: 0.5,
             }}
           >
-            SOLIS {currentIndex + 1}/{STATUS_STEPS.length}
+            Solis {currentIndex + 1}/{STATUS_STEPS.length}
           </Text>
           <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>
             {t.activeJob.status[currentStatus] ?? currentStatus}
@@ -904,6 +943,21 @@ export default function ActiveJobScreen() {
             <AlertCircle size={16} color="#dc2626" />
             <Text style={styles.reportProblemText}>Ziņot par problēmu</Text>
           </TouchableOpacity>
+
+          {/* Surcharge CTA — only for in-progress jobs */}
+          {job.status !== 'DELIVERED' && job.status !== 'CANCELLED' && (
+            <TouchableOpacity
+              style={styles.addSurchargeBtn}
+              onPress={() => {
+                setDetailsVisible(false);
+                setSurchargeSheetVisible(true);
+              }}
+              activeOpacity={0.8}
+            >
+              <Plus size={16} color="#d97706" />
+              <Text style={styles.addSurchargeBtnText}>Pievienot papildu maksu</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </BottomSheet>
 
@@ -932,8 +986,6 @@ export default function ActiveJobScreen() {
                   paddingVertical: 8,
                   borderRadius: 20,
                   backgroundColor: exceptionType === opt.value ? '#991b1b' : '#f9fafb',
-                  borderWidth: 1,
-                  borderColor: exceptionType === opt.value ? '#991b1b' : '#e5e7eb',
                 }}
               >
                 <Text
@@ -1001,8 +1053,6 @@ export default function ActiveJobScreen() {
                   fontSize: 13,
                   fontWeight: '700',
                   color: '#6b7280',
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.5,
                 }}
               >
                 Vēsture
@@ -1042,6 +1092,73 @@ export default function ActiveJobScreen() {
           >
             <Text style={styles.weightConfirmText}>
               {reportingException ? 'Sūta...' : 'Ziņot dispečeram'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* ── Surcharge Sheet ── */}
+      <BottomSheet
+        visible={surchargeSheetVisible}
+        onClose={() => setSurchargeSheetVisible(false)}
+        title="Papildu maksa"
+        subtitle="Pievienojiet gaidīšanas laiku, degvielas piemaksu u.c."
+        scrollable
+        maxHeightPct={0.65}
+      >
+        <View style={{ gap: 14, paddingBottom: 32 }}>
+          {/* Surcharge type picker */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
+          >
+            {SURCHARGE_TYPE_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.value}
+                onPress={() => setSurchargeType(opt.value)}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 20,
+                  backgroundColor: surchargeType === opt.value ? '#d97706' : '#f3f4f6',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: '600',
+                    color: surchargeType === opt.value ? '#fff' : '#374151',
+                  }}
+                >
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* Amount input */}
+          <View style={styles.surchargeAmountRow}>
+            <Text style={styles.surchargeAmountLabel}>Summa (€)</Text>
+            <TextInput
+              style={styles.surchargeAmountInput}
+              value={surchargeAmount}
+              onChangeText={setSurchargeAmount}
+              keyboardType="decimal-pad"
+              placeholder="0.00"
+              placeholderTextColor="#9ca3af"
+            />
+          </View>
+
+          {/* Submit */}
+          <TouchableOpacity
+            style={[styles.surchargeSubmitBtn, surchargeSubmitting && { opacity: 0.6 }]}
+            onPress={handleAddSurcharge}
+            disabled={surchargeSubmitting || !surchargeAmount}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.surchargeSubmitText}>
+              {surchargeSubmitting ? 'Saglabā...' : 'Pievienot papildu maksu'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -1116,7 +1233,7 @@ export default function ActiveJobScreen() {
       <BottomSheet
         visible={weightModalVisible}
         onClose={() => setWeightModalVisible(false)}
-        title="⚖️ Svēršanas biļete"
+        title="Svēršanas biļete"
         subtitle="Ievadiet faktisko svēršanas rādījumu (kg), pirms atzīmēt kravu kā iekrauta."
         scrollable
       >
@@ -1367,7 +1484,6 @@ const styles = StyleSheet.create({
   statusPillText: {
     fontSize: 11,
     fontWeight: '700',
-    textTransform: 'uppercase',
   },
   jobIdText: {
     fontSize: 12,
@@ -1668,5 +1784,55 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 15,
+  },
+  // Surcharge sheet
+  addSurchargeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    borderRadius: 12,
+    padding: 14,
+  },
+  addSurchargeBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#d97706',
+  },
+  surchargeAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    padding: 14,
+  },
+  surchargeAmountLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  surchargeAmountInput: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+    textAlign: 'right',
+    minWidth: 100,
+  },
+  surchargeSubmitBtn: {
+    backgroundColor: '#d97706',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  surchargeSubmitText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
   },
 });

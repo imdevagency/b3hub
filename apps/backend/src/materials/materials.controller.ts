@@ -23,12 +23,18 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { MaterialCategory } from '@prisma/client';
+import { IsString } from 'class-validator';
 
 /** Checks that the authenticated user has canSell=true (or is ADMIN) */
 function assertCanSell(user: RequestingUser) {
   if (!user.canSell && user.userType !== 'ADMIN') {
     throw new ForbiddenException('Only approved sellers can manage materials');
   }
+}
+
+class UploadMaterialImageDto {
+  @IsString() base64: string;
+  @IsString() mimeType: string;
 }
 
 import { ApiTags } from '@nestjs/swagger';
@@ -64,6 +70,8 @@ export class MaterialsController {
     @Query('priceMax') priceMax?: string,
     @Query('limit') limit?: string,
     @Query('skip') skip?: string,
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
   ) {
     return this.materialsService.findAll({
       category: category as MaterialCategory | undefined,
@@ -74,6 +82,8 @@ export class MaterialsController {
       priceMax: priceMax != null ? Number(priceMax) : undefined,
       limit: limit != null ? Number(limit) : undefined,
       skip: skip != null ? Number(skip) : undefined,
+      lat: lat != null ? parseFloat(lat) : undefined,
+      lng: lng != null ? parseFloat(lng) : undefined,
     });
   }
 
@@ -146,5 +156,21 @@ export class MaterialsController {
   ) {
     assertCanSell(user);
     return this.materialsService.setTiers(id, tiers, user);
+  }
+
+  /**
+   * POST /materials/:id/upload-image
+   * Upload a product photo (base64-encoded) to Supabase Storage.
+   * Returns the updated images array for the material.
+   * Body: { base64: string; mimeType: 'image/jpeg' | 'image/png' }
+   */
+  @Post(':id/upload-image')
+  uploadImage(
+    @Param('id') id: string,
+    @Body() dto: UploadMaterialImageDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    assertCanSell(user);
+    return this.materialsService.uploadMaterialImage(id, dto.base64, dto.mimeType, user);
   }
 }

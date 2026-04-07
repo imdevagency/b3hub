@@ -68,6 +68,7 @@ interface TransportJob {
   time: string;
   priceTotal: number;
   pricePerTonne: number;
+  buyerOfferedRate: number | null;
   currency: string;
 }
 
@@ -231,6 +232,7 @@ function mapApiJob(j: ApiTransportJob): TransportJob {
     time: d.toLocaleTimeString('lv-LV', { hour: '2-digit', minute: '2-digit' }),
     priceTotal: j.rate ?? 0,
     pricePerTonne: j.pricePerTonne ?? 0,
+    buyerOfferedRate: j.buyerOfferedRate ?? null,
     currency: j.currency,
   };
 }
@@ -765,6 +767,11 @@ export default function JobsPage() {
                           </>
                         )}
                       </div>
+                      {job.buyerOfferedRate != null && job.buyerOfferedRate > 0 && (
+                        <div className="inline-flex items-center gap-1 mt-1.5 bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                          Piedāvā €{job.buyerOfferedRate.toFixed(2)}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center bg-muted/50 text-muted-foreground px-3 py-1.5 rounded-full text-xs font-medium">
                       {job.vehicleType}

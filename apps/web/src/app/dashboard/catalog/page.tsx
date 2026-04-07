@@ -232,6 +232,8 @@ interface WizardState {
   lng?: number;
   deliveryDate: string;
   notes: string;
+  truckCount: number;
+  truckIntervalMinutes: number;
 }
 
 function WizardInline({
@@ -264,6 +266,8 @@ function WizardInline({
     postal: '',
     deliveryDate: '',
     notes: '',
+    truckCount: 1,
+    truckIntervalMinutes: 30,
   });
 
   const [offers, setOffers] = useState<SupplierOffer[]>([]);
@@ -652,6 +656,10 @@ function WizardInline({
               <MatStep3When
                 deliveryDate={form.deliveryDate}
                 onDateChange={(d) => patch({ deliveryDate: d })}
+                truckCount={form.truckCount}
+                onTruckCountChange={(n) => patch({ truckCount: n })}
+                truckIntervalMinutes={form.truckIntervalMinutes}
+                onTruckIntervalChange={(n) => patch({ truckIntervalMinutes: n })}
                 onNext={goToOffers}
                 onBack={() => setStep('where')}
               />
@@ -850,6 +858,20 @@ function OfferCard({
 }) {
   return (
     <div className="rounded-2xl border border-border/60 bg-background overflow-hidden hover:border-foreground/20 transition-colors">
+      {/* Product photo strip */}
+      {offer.images && offer.images.length > 0 && (
+        <div className="flex gap-1 p-2 pb-0">
+          {offer.images.slice(0, 4).map((url, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={i}
+              src={url}
+              alt={offer.name}
+              className="h-20 w-20 object-cover rounded-xl border border-border/40 flex-shrink-0"
+            />
+          ))}
+        </div>
+      )}
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
@@ -868,8 +890,27 @@ function OfferCard({
                 </span>
               )}
             </div>
+            {/* Star rating */}
+            {offer.supplier.rating != null && (
+              <div className="flex items-center gap-1 mt-0.5">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star
+                    key={n}
+                    className={`size-3 ${
+                      n <= Math.round(offer.supplier.rating!)
+                        ? 'text-amber-400 fill-amber-400'
+                        : 'text-muted-foreground/30 fill-muted-foreground/10'
+                    }`}
+                  />
+                ))}
+                <span className="text-xs text-muted-foreground ml-0.5">
+                  {offer.supplier.rating.toFixed(1)}
+                  {offer.totalOrders > 0 && ` · ${offer.totalOrders} pasūtījumi`}
+                </span>
+              </div>
+            )}
             {offer.supplier.city && (
-              <p className="text-sm text-muted-foreground">{offer.supplier.city}</p>
+              <p className="text-sm text-muted-foreground mt-0.5">{offer.supplier.city}</p>
             )}
           </div>
           <div className="text-right shrink-0">
@@ -894,6 +935,12 @@ function OfferCard({
             <Zap className="size-3.5 text-amber-500" />
             <span className="text-amber-600 font-medium">Tūlītējs</span>
           </div>
+          {offer.completionRate != null && (
+            <div className="flex items-center gap-1">
+              <CheckCircle2 className="size-3.5 text-green-500" />
+              <span className="text-green-700 font-medium">{offer.completionRate}% izpilde</span>
+            </div>
+          )}
         </div>
       </div>
       <div className="px-4 pb-4">

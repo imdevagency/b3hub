@@ -9,12 +9,14 @@ import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
 import { useOpenQuoteCount } from '@/lib/use-open-quote-count';
+import { useUnreadCount } from '@/lib/use-unread-count';
 
 export default function SellerLayout() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const openQuoteCount = useOpenQuoteCount();
+  const unreadCount = useUnreadCount();
   // eslint-disable-next-line react/display-name
   const renderTabBar = useCallback((props: BottomTabBarProps) => <AnimatedTabBar {...props} />, []);
 
@@ -57,6 +59,7 @@ export default function SellerLayout() {
           options={{
             title: t.tabs.incoming,
             tabBarIcon: ({ color }) => <Inbox size={22} color={color} />,
+            tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
           }}
         />
         <Tabs.Screen

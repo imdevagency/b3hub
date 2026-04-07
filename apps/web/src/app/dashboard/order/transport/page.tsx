@@ -70,6 +70,7 @@ export default function TransportOrderPage() {
   const [vehicleType, setVehicleType] = useState<TransportVehicleType>('TIPPER_LARGE');
   const [loadDescription, setLoadDescription] = useState('');
   const [estimatedWeight, setEstimatedWeight] = useState<number>(20);
+  const [buyerOfferedRate, setBuyerOfferedRate] = useState<string>('');
 
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
@@ -277,6 +278,7 @@ export default function TransportOrderPage() {
           notes,
           siteContactName: siteContactName || undefined,
           siteContactPhone: siteContactPhone || undefined,
+          buyerOfferedRate: buyerOfferedRate ? parseFloat(buyerOfferedRate) : undefined,
         },
         token,
       );
@@ -506,6 +508,29 @@ export default function TransportOrderPage() {
                         value={loadDescription}
                         onChange={(e) => setLoadDescription(e.target.value)}
                       />
+                    </div>
+
+                    {/* Optional buyer-offered rate (reverse auction) */}
+                    <div className="rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/60 p-4 space-y-2">
+                      <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                        Ieteiktā transporta maksa (neobligāts)
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Piedāvājiet transporta maksu — šoferiem ar šo summu tiks prioritizēts jūsu
+                        pasūtījums.
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          placeholder="piem. 85.00"
+                          className="rounded-xl border-2 py-5 text-[15px] focus-visible:ring-0 focus-visible:border-amber-500 outline-none"
+                          value={buyerOfferedRate}
+                          onChange={(e) => setBuyerOfferedRate(e.target.value)}
+                        />
+                        <span className="text-sm font-medium text-muted-foreground shrink-0">€</span>
+                      </div>
                     </div>
                   </div>
                 </div>

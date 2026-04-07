@@ -1044,9 +1044,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#f9fafb',
   },
   chipActive: {
     backgroundColor: '#111827',
@@ -1112,7 +1110,6 @@ const s = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Inter_600SemiBold',
     color: '#64748b',
-    textTransform: 'uppercase',
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -1122,7 +1119,6 @@ const s = StyleSheet.create({
   statusText: {
     fontSize: 11,
     fontFamily: 'Inter_700Bold',
-    textTransform: 'uppercase',
   },
   cardTitle: {
     fontSize: 17,

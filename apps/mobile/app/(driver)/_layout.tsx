@@ -9,12 +9,14 @@ import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
 import { useActiveJob } from '@/lib/use-active-job';
+import { useUnreadCount } from '@/lib/use-unread-count';
 
 export default function DriverLayout() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { hasActiveJob } = useActiveJob();
+  const unreadCount = useUnreadCount();
 
   // eslint-disable-next-line react/display-name
   const renderTabBar = useCallback(
@@ -61,6 +63,7 @@ export default function DriverLayout() {
           options={{
             title: t.tabs.home,
             tabBarIcon: ({ color }) => <Home size={22} color={color} />,
+            tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
           }}
         />
         <Tabs.Screen

@@ -13,7 +13,9 @@ import {
   Alert,
   Switch,
   ActivityIndicator,
+  Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useFocusEffect } from 'expo-router';
 import {
@@ -28,6 +30,7 @@ import {
   Square,
   X,
   Zap,
+  Camera,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { CATEGORY_LABELS, DEFAULT_MATERIAL_NAMES, UNIT_SHORT } from '@/lib/materials';
@@ -486,6 +489,7 @@ function ListingModal({
   onSave,
   onDelete,
   saving,
+  token,
 }: {
   visible: boolean;
   initial: Partial<ApiMaterial> | null;
@@ -493,9 +497,12 @@ function ListingModal({
   onSave: (form: ListingForm) => void;
   onDelete: (id: string) => void;
   saving: boolean;
+  token: string;
 }) {
   const [form, setForm] = useState<ListingForm>(BLANK_FORM);
   const [catSheetOpen, setCatSheetOpen] = useState(false);
+  const [localImages, setLocalImages] = useState<string[]>([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -510,11 +517,42 @@ function ListingModal({
           inStock: initial.inStock ?? true,
           isRecycled: initial.isRecycled ?? false,
         });
+        setLocalImages(initial.images ?? []);
       } else {
         setForm(BLANK_FORM);
+        setLocalImages([]);
       }
     }
   }, [visible, initial]);
+
+  const handlePickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Atļauja nepieciešama', 'Atļaujiet piekļuvi galerijā iestatījumos.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      base64: true,
+      quality: 0.7,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    });
+    if (result.canceled || !result.assets[0]?.base64) return;
+    const asset = result.assets[0];
+    if (!initial?.id || !token) {
+      // New material — store preview locally; upload after creation
+      setLocalImages((prev) => [...prev, `data:image/jpeg;base64,${asset.base64}`]);
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const { images } = await api.materials.uploadImage(initial.id, asset.base64!, 'image/jpeg', token);
+      setLocalImages(images);
+    } catch {
+      Alert.alert('Kļūda', 'Neizdevās augšupielādēt attēlu.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const set = (key: keyof ListingForm) => (v: string | boolean) =>
     setForm((f) => ({ ...f, [key]: v }));
@@ -650,6 +688,36 @@ function ListingModal({
               multiline
               numberOfLines={3}
             />
+          </View>
+
+          {/* Product Photos */}
+          <View style={s.formGroup}>
+            <Text style={s.label}>Bildes</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8, paddingRight: 4 }}
+            >
+              {localImages.map((uri, i) => (
+                <Image
+                  key={i}
+                  source={{ uri }}
+                  style={{ width: 72, height: 72, borderRadius: 10 }}
+                />
+              ))}
+              <TouchableOpacity
+                style={s.addPhotoBtn}
+                onPress={handlePickImage}
+                disabled={uploadingImage}
+                activeOpacity={0.7}
+              >
+                {uploadingImage ? (
+                  <ActivityIndicator size="small" color="#6b7280" />
+                ) : (
+                  <Camera size={24} color="#6b7280" />
+                )}
+              </TouchableOpacity>
+            </ScrollView>
           </View>
 
           {/* Actions */}
@@ -955,6 +1023,7 @@ export default function SellerCatalog() {
         onSave={handleSave}
         onDelete={handleDelete}
         saving={saving}
+        token={token ?? ''}
       />
 
       <QuickEditSheet
@@ -1208,6 +1277,18 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   deleteBtnText: { color: '#ef4444', fontWeight: '700', fontSize: 16 },
+
+  addPhotoBtn: {
+    width: 72,
+    height: 72,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f9fafb',
+  },
 
   // Picker Sheet
   overlay: {

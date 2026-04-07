@@ -32,6 +32,8 @@ import {
   CreditCard,
   AlertTriangle,
   Navigation2,
+  RotateCcw,
+  Scale,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -46,6 +48,7 @@ import { InfoSection } from '@/components/ui/InfoSection';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { DetailRow } from '@/components/ui/DetailRow';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { ActionResultSheet } from '@/components/ui/ActionResultSheet';
 import { UNIT_SHORT, MAT_STATUS } from '@/lib/materials';
 import { formatDate } from '@/lib/format';
 
@@ -99,6 +102,8 @@ export default function OrderDetailScreen() {
   const [actionLoading, setActionLoading] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [showDispute, setShowDispute] = useState(false);
+  const [cancelResultVisible, setCancelResultVisible] = useState(false);
+  const [disputeResultVisible, setDisputeResultVisible] = useState(false);
   const [disputeReason, setDisputeReason] = useState('');
   const [disputeDetails, setDisputeDetails] = useState('');
   const [disputeLoading, setDisputeLoading] = useState(false);
@@ -218,10 +223,7 @@ export default function OrderDetailScreen() {
       haptics.success();
       setDisputeFiled(true);
       setShowDispute(false);
-      Alert.alert(
-        'Sūdzība saņemta',
-        'Mēs izskatīsim jūsu paziņojumu un sazināsimies 1–2 darba dienu laikā.',
-      );
+      setDisputeResultVisible(true);
     } catch (err: unknown) {
       haptics.error();
       Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās nosūtīt sūdzību');
@@ -244,6 +246,7 @@ export default function OrderDetailScreen() {
             const updated = await api.orders.cancel(order.id, token);
             setOrder(updated);
             haptics.success();
+            setCancelResultVisible(true);
           } catch (err: unknown) {
             haptics.error();
             Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās atcelt');
@@ -289,7 +292,9 @@ export default function OrderDetailScreen() {
   const canPay =
     order.status === 'PENDING' &&
     (!order.paymentStatus || order.paymentStatus === 'PENDING') &&
+    order.paymentMethod !== 'INVOICE' &&
     !!stripe;
+  const isInvoiceOrder = order.paymentMethod === 'INVOICE';
   const stepperIdx = ORDER_STEPS.findIndex((x) => x.key === order.status);
 
   // ── Exception banners ──────────────────────────────────────────
@@ -459,9 +464,10 @@ export default function OrderDetailScreen() {
               title="Svēršanas biļete"
               right={
                 jobWithPhoto.actualWeightKg != null ? (
-                  <Text style={s.weighingWeight}>
-                    ⚖️ {jobWithPhoto.actualWeightKg.toFixed(0)} kg
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Scale size={11} color="#374151" />
+                    <Text style={s.weighingWeight}>{jobWithPhoto.actualWeightKg.toFixed(0)} kg</Text>
+                  </View>
                 ) : undefined
               }
             >
@@ -701,11 +707,11 @@ export default function OrderDetailScreen() {
             {documents.map((doc) => {
               const docLabel =
                 doc.type === 'WEIGHING_SLIP'
-                  ? '⚖️ Svēršanas kvīts'
+                  ? 'Svēršanas kvīts'
                   : doc.type === 'DELIVERY_NOTE'
-                    ? '📋 Pavadzīme (CMR)'
+                    ? 'Pavadzīme (CMR)'
                     : doc.type === 'INVOICE'
-                      ? '🧾 Rēķins'
+                      ? 'Rēķins'
                       : doc.title;
               return (
                 <View key={doc.id} style={s.docRow}>
@@ -819,6 +825,21 @@ export default function OrderDetailScreen() {
                 </Text>
               </View>
             )}
+          {/* Invoice payment banner — shown for NET-terms orders */}
+          {isInvoiceOrder && order.status === 'PENDING' && (
+            <View style={s.invoiceBanner}>
+              <FileText size={16} color="#2563eb" />
+              <View style={{ flex: 1 }}>
+                <Text style={s.invoiceBannerTitle}>Rēķina apmaksa</Text>
+                <Text style={s.invoiceBannerDesc}>
+                  Šis pasūtījums tiks apmaksāts ar rēķinu saskaņā ar jūsu kredīta noteikumiem
+                  {order.invoiceDueDate
+                    ? `. Apmaksas termiņš: ${new Date(order.invoiceDueDate).toLocaleDateString('lv-LV')}`
+                    : '.'}
+                </Text>
+              </View>
+            </View>
+          )}
           {/* Chat with driver — shown whenever there's an active transport job */}
           {activeJob && (
             <TouchableOpacity
@@ -881,7 +902,8 @@ export default function OrderDetailScreen() {
               }
               activeOpacity={0.85}
             >
-              <Text style={s.reorderBtnText}>🔁 Pasūtīt vēlreiz</Text>
+              <RotateCcw size={16} color="#fff" />
+              <Text style={s.reorderBtnText}>Pasūtīt vēlreiz</Text>
             </TouchableOpacity>
           )}
 
@@ -921,7 +943,8 @@ export default function OrderDetailScreen() {
                 }
                 activeOpacity={0.85}
               >
-                <Text style={s.reorderBtnText}>🔁 Pasūtīt no jauna</Text>
+                <RotateCcw size={16} color="#fff" />
+                <Text style={s.reorderBtnText}>Pasūtīt no jauna</Text>
               </TouchableOpacity>
             </>
           )}
@@ -1129,6 +1152,36 @@ export default function OrderDetailScreen() {
           </TouchableOpacity>
         </View>
       </BottomSheet>
+
+      {/* Cancel confirmation result */}
+      <ActionResultSheet
+        visible={cancelResultVisible}
+        onClose={() => setCancelResultVisible(false)}
+        variant="cancelled"
+        title="Pasūtījums atcelts"
+        subtitle="Jūsu pasūtījums ir atcelts. Ja vēlaties, varat pasūtīt no jauna."
+        primaryLabel="Pasūtīt no jauna"
+        onPrimary={() => {
+          setCancelResultVisible(false);
+          router.replace({ pathname: '/order-request-new' });
+        }}
+        secondaryLabel="Mani pasūtījumi"
+        onSecondary={() => {
+          setCancelResultVisible(false);
+          router.replace('/(buyer)/orders');
+        }}
+      />
+
+      {/* Dispute submitted result */}
+      <ActionResultSheet
+        visible={disputeResultVisible}
+        onClose={() => setDisputeResultVisible(false)}
+        variant="info"
+        title="Sūdzība iesniegta"
+        subtitle="Mēs izskatīsim jūsu paziņojumu un sazināsimies 1–2 darba dienu laikā."
+        primaryLabel="Labi, sapratu"
+        onPrimary={() => setDisputeResultVisible(false)}
+      />
     </ScreenContainer>
   );
 }
@@ -1404,6 +1457,18 @@ const s = StyleSheet.create({
     padding: 12,
   },
   stripeUnavailableText: { flex: 1, fontSize: 13, color: '#92400e', lineHeight: 18 },
+  invoiceBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: '#eff6ff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    padding: 14,
+  },
+  invoiceBannerTitle: { fontSize: 14, fontWeight: '700', color: '#1d4ed8', marginBottom: 2 },
+  invoiceBannerDesc: { fontSize: 13, color: '#1e40af', lineHeight: 18 },
   rateBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1441,6 +1506,9 @@ const s = StyleSheet.create({
     borderRadius: 999,
     paddingVertical: 15,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
   },
   reorderBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
 

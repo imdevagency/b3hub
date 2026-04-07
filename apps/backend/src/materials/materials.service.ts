@@ -8,17 +8,23 @@ import {
   Logger,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
+import { Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
 import { MaterialCategory } from '@prisma/client';
+import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
 export class MaterialsService {
   private readonly logger = new Logger(MaterialsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Optional() private readonly supabase: SupabaseService,
+  ) {}
 
   async create(createMaterialDto: CreateMaterialDto) {
     const material = await this.prisma.material.create({
@@ -47,8 +53,10 @@ export class MaterialsService {
     priceMax?: number;
     limit?: number;
     skip?: number;
+    lat?: number;
+    lng?: number;
   }) {
-    const { category, supplierId, isRecycled, inStock, search, priceMax, limit = 40, skip = 0 } = filters ?? {};
+    const { category, supplierId, isRecycled, inStock, search, priceMax, limit = 40, skip = 0, lat, lng } = filters ?? {};
 
     const where = {
       active: true,
@@ -67,7 +75,7 @@ export class MaterialsService {
         : {}),
     };
 
-    const [items, total] = await this.prisma.$transaction([
+    const [rawItems, total] = await this.prisma.$transaction([
       this.prisma.material.findMany({
         where,
         include: {
@@ -78,6 +86,8 @@ export class MaterialsService {
               logo: true,
               rating: true,
               city: true,
+              lat: true,
+              lng: true,
             },
           },
         },
@@ -87,6 +97,34 @@ export class MaterialsService {
       }),
       this.prisma.material.count({ where }),
     ]);
+
+    // Apply location-based filtering when lat/lng are provided
+    // deliveryRadiusKm lives on the Material, not the Company
+    let filteredItems = rawItems;
+    if (lat != null && lng != null) {
+      filteredItems = rawItems.filter((m) => {
+        const sLat = m.supplier.lat;
+        const sLng = m.supplier.lng;
+        if (sLat == null || sLng == null) return true; // supplier has no coords → keep
+        const R = 6371;
+        const dLat = ((lat - sLat) * Math.PI) / 180;
+        const dLng = ((lng - sLng) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos((sLat * Math.PI) / 180) *
+            Math.cos((lat * Math.PI) / 180) *
+            Math.sin(dLng / 2) ** 2;
+        const distKm = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+        const radius = m.deliveryRadiusKm ?? null;
+        return radius == null || distKm <= radius;
+      });
+    }
+
+    // Strip internal lat/lng from supplier before returning
+    const items = filteredItems.map((m) => {
+      const { lat: _lat, lng: _lng, ...supplierPublic } = m.supplier;
+      return { ...m, supplier: supplierPublic };
+    });
 
     return { items, total, limit: Math.min(limit, 100), skip, hasMore: skip + items.length < total };
   }
@@ -381,5 +419,44 @@ export class MaterialsService {
         : []),
     ]);
     return this.getTiers(materialId);
+  }
+
+  /**
+   * Upload a product photo (base64) to Supabase Storage and append the URL
+   * to the material's images array. Returns the updated image list.
+   */
+  async uploadMaterialImage(
+    materialId: string,
+    base64: string,
+    mimeType: string,
+    currentUser: { userType: string; companyId?: string },
+  ): Promise<{ images: string[] }> {
+    const material = await this.findOne(materialId);
+    if (currentUser.userType !== 'ADMIN' && material.supplierId !== currentUser.companyId) {
+      throw new ForbiddenException('You do not own this material');
+    }
+
+    if (!this.supabase) {
+      throw new BadRequestException('File storage is not configured');
+    }
+
+    // Strip data URI prefix if present
+    const raw = base64.includes(',') ? base64.split(',')[1] : base64;
+    const buffer = Buffer.from(raw, 'base64');
+
+    const ext = mimeType === 'image/png' ? 'png' : 'jpg';
+    const path = `material-images/${materialId}/${Date.now()}.${ext}`;
+
+    await this.supabase.uploadFile('material-images', path, buffer);
+    const imageUrl = this.supabase.getPublicUrl('material-images', path);
+
+    const updated = await this.prisma.material.update({
+      where: { id: materialId },
+      data: { images: { push: imageUrl } },
+      select: { images: true },
+    });
+
+    this.logger.log(`Material ${materialId} image uploaded: ${imageUrl}`);
+    return { images: updated.images };
   }
 }

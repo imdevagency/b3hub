@@ -23,7 +23,7 @@ Full order flow: buyer places order → seller confirms loading → driver deliv
 
 Package manager: **npm workspaces**. Run installs from the repo root.
 
-> **Before adding a new feature**, check `STATUS.md` to see what is already built, what is connected, and what is missing. Update it when you complete or partially implement a feature.
+> **Before adding a new feature**, check `STATUS.md` for a high-level feature map — but **do not rely on it as proof of implementation**. MD files lag behind the code. Always verify real status by reading the actual source files (controllers, services, screens, API functions). If unsure whether something is built, `grep` for it in the codebase first.
 
 ---
 

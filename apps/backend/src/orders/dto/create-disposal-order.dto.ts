@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsString,
   Min,
+  IsIn,
 } from 'class-validator';
 import { WasteType } from '@prisma/client';
 
@@ -58,7 +59,25 @@ export class CreateDisposalOrderDto {
   @IsString()
   requestedDate!: string; // ISO date string
 
+  @IsString()
+  @IsIn(['AM', 'PM', 'ANY'])
+  @IsOptional()
+  pickupWindow?: string;
+
+  @IsString()
+  @IsOptional()
+  siteContactName?: string;
+
+  @IsString()
+  @IsOptional()
+  siteContactPhone?: string;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
+
   @IsNumber()
   @Min(0)
-  quotedRate!: number; // EUR, incl. platform fee, excl. VAT
+  @IsOptional()
+  quotedRate?: number; // EUR, incl. platform fee, excl. VAT
 }

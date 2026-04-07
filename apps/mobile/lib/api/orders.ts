@@ -38,6 +38,8 @@ export interface CreateDisposalOrderInput {
   siteContactName?: string;
   siteContactPhone?: string;
   notes?: string;
+  /** Displayed price shown to buyer (fromPrice × truckCount) */
+  quotedRate?: number;
 }
 
 export interface CreateTransportOrderInput {
@@ -133,6 +135,8 @@ export interface ApiOrder {
   orderNumber: string;
   status: string;
   paymentStatus?: string;
+  paymentMethod?: string; // 'CARD' | 'INVOICE'
+  invoiceDueDate?: string | null;
   items: {
     material: { name: string; category: string };
     quantity: number;

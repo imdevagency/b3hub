@@ -153,6 +153,19 @@ export async function deleteMaterial(id: string, token: string): Promise<void> {
   });
 }
 
+export async function uploadMaterialImage(
+  id: string,
+  base64: string,
+  mimeType: string,
+  token: string,
+): Promise<{ images: string[] }> {
+  return apiFetch<{ images: string[] }>(`/materials/${id}/upload-image`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ base64, mimeType }),
+  });
+}
+
 // ─── Price tiers ────────────────────────────────────────────────────────────
 
 export interface PriceTier {
@@ -195,6 +208,9 @@ export interface SupplierOffer {
   isInstant: boolean;
   stockQty?: number | null;
   deliveryRadiusKm: number | null;
+  images: string[];
+  completionRate: number | null;
+  totalOrders: number;
   supplier: {
     id: string;
     name: string;

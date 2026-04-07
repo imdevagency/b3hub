@@ -344,6 +344,20 @@ export const transportApi = {
           body: JSON.stringify(dto),
         },
       ),
+
+    addSurcharge: (
+      id: string,
+      dto: { type: string; amount: number; label?: string; billable?: boolean },
+      token: string,
+    ) =>
+      apiFetch<{ id: string; type: string; amount: number; label: string; createdAt: string }>(
+        `/transport-jobs/${id}/surcharges`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: JSON.stringify(dto),
+        },
+      ),
   },
 
   vehicles: {

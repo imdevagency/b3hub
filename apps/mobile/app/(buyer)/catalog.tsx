@@ -8,6 +8,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
 import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -26,6 +27,7 @@ import {
   Package,
   FolderOpen,
   ChevronRight,
+  MapPin,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -153,6 +155,9 @@ export default function CatalogScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState('');
   const [filterMode, setFilterMode] = useState<'ALL' | 'RECYCLED'>('ALL');
+  const [nearMe, setNearMe] = useState(false);
+  const [nearMeCoords, setNearMeCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [nearMeLoading, setNearMeLoading] = useState(false);
   const [resumeDraft, setResumeDraft] = useState<{
     materialName: string;
     quantity: number;
@@ -192,27 +197,61 @@ export default function CatalogScreen() {
     useCallback(() => {
       if (!token) return;
       setLoading(true);
+      const params: Record<string, string> = {};
+      if (nearMeCoords) {
+        params.lat = String(nearMeCoords.lat);
+        params.lng = String(nearMeCoords.lng);
+      }
       api.materials
-        .getAll(token, {})
+        .getAll(token, params)
         .then((data) => {
           setAllMaterials(Array.isArray(data) ? data : ((data as any).items ?? []));
         })
         .catch(() => setAllMaterials([]))
         .finally(() => setLoading(false));
-    }, [token]),
+    }, [token, nearMeCoords]),
   );
+
+  const handleNearMeToggle = useCallback(async () => {
+    haptics.light();
+    if (nearMe) {
+      setNearMe(false);
+      setNearMeCoords(null);
+      return;
+    }
+    setNearMeLoading(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setNearMeLoading(false);
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      setNearMeCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      setNearMe(true);
+    } catch {
+      // silently fail — if location unavailable just don't filter
+    } finally {
+      setNearMeLoading(false);
+    }
+  }, [nearMe]);
 
   const handleRefresh = useCallback(() => {
     if (!token) return;
     setRefreshing(true);
+    const params: Record<string, string> = {};
+    if (nearMeCoords) {
+      params.lat = String(nearMeCoords.lat);
+      params.lng = String(nearMeCoords.lng);
+    }
     api.materials
-      .getAll(token, {})
+      .getAll(token, params)
       .then((data) => {
         setAllMaterials(Array.isArray(data) ? data : ((data as any).items ?? []));
       })
       .catch(() => {})
       .finally(() => setRefreshing(false));
-  }, [token]);
+  }, [token, nearMeCoords]);
 
   // Per-category: unique supplier count + recycled flag + lowest base price
   const categoryData = useMemo(() => {
@@ -339,6 +378,17 @@ export default function CatalogScreen() {
             Reciklēti
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[s.chip, nearMe && s.chipActiveBlue]}
+          onPress={handleNearMeToggle}
+          activeOpacity={0.8}
+          disabled={nearMeLoading}
+        >
+          <MapPin size={13} color={nearMe ? '#fff' : '#2563eb'} />
+          <Text style={[s.chipText, nearMe ? s.chipTextActive : s.chipTextBlue]}>
+            {nearMeLoading ? '...' : 'Tuvumā'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* ── Project context banner ── */}
@@ -462,6 +512,10 @@ const s = StyleSheet.create({
     backgroundColor: '#16a34a',
     borderColor: '#16a34a',
   },
+  chipActiveBlue: {
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb',
+  },
   chipText: {
     fontSize: 13,
     fontWeight: '600',
@@ -472,6 +526,9 @@ const s = StyleSheet.create({
   },
   chipTextGreen: {
     color: '#16a34a',
+  },
+  chipTextBlue: {
+    color: '#2563eb',
   },
   searchBox: {
     flexDirection: 'row',

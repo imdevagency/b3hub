@@ -21,6 +21,7 @@ import {
   StyleSheet,
   TextInput,
   Image,
+  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
@@ -286,6 +287,25 @@ export default function OrderRequestWizard() {
       return;
     }
     if (stepIndex === 0) {
+      const hasDraft = quantity !== 5 || notes.trim() !== '';
+      if (hasDraft) {
+        Alert.alert(
+          'Iziet no pasūtīšanas?',
+          'Ievadītie dati tiks zaudēti.',
+          [
+            { text: 'Turpināt', style: 'cancel' },
+            {
+              text: 'Iziet',
+              style: 'destructive',
+              onPress: () => {
+                if (router.canGoBack()) router.back();
+                else router.replace('/(buyer)/catalog' as never);
+              },
+            },
+          ],
+        );
+        return;
+      }
       if (router.canGoBack()) router.back();
       else router.replace('/(buyer)/catalog' as never);
       return;
@@ -294,7 +314,10 @@ export default function OrderRequestWizard() {
   }, [stepIndex, router, submitted]);
 
   const goNext = useCallback(() => {
-    if (stepIndex < STEPS.length - 1) setStep(STEPS[stepIndex + 1]);
+    if (stepIndex < STEPS.length - 1) {
+      haptics.medium();
+      setStep(STEPS[stepIndex + 1]);
+    }
   }, [stepIndex]);
 
   // ── Submit: buyer selects a specific supplier offer ──
@@ -360,6 +383,7 @@ export default function OrderRequestWizard() {
       setOrderNumber(order.orderNumber);
       setOrderId(order.id);
       setSubmitted('order');
+      haptics.success();
       AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Kaut kas nogāja greizi.');
@@ -391,6 +415,7 @@ export default function OrderRequestWizard() {
       setRfqNumber(result.requestNumber);
       setRfqId(result.id);
       setSubmitted('rfq');
+      haptics.success();
       AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Kaut kas nogāja greizi.');

@@ -27,16 +27,24 @@ import {
   ReportTransportExceptionDto,
   ResolveTransportExceptionDto,
 } from './dto/report-exception.dto';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { ReviewsService } from '../reviews/reviews.service';
+import { SurchargeType } from '@prisma/client';
 
 class CreateDriverReviewDto {
   @IsInt() @Min(1) @Max(5) @Type(() => Number) rating: number;
   @IsString() @IsOptional() comment?: string;
+}
+
+class CreateTransportSurchargeDto {
+  @IsEnum(SurchargeType) type: SurchargeType;
+  @IsNumber() @Min(0) @Type(() => Number) amount: number;
+  @IsString() @IsOptional() label?: string;
+  @IsBoolean() @IsOptional() billable?: boolean;
 }
 
 function canDispatch(user: RequestingUser): boolean {
@@ -428,5 +436,19 @@ export class TransportJobsController {
     @CurrentUser() user: RequestingUser,
   ) {
     return this.reviewsService.createDriverReview(id, dto, user.userId);
+  }
+
+  /**
+   * POST /transport-jobs/:id/surcharges
+   * The assigned driver adds a surcharge (fuel, waiting time, overweight, etc.)
+   * to the order linked to this transport job.
+   */
+  @Post(':id/surcharges')
+  addSurcharge(
+    @Param('id') id: string,
+    @Body() dto: CreateTransportSurchargeDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.service.addSurcharge(id, dto, user.userId);
   }
 }
