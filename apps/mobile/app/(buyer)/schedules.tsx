@@ -2,14 +2,7 @@
  * schedules.tsx — Buyer: recurring order schedule management
  */
 import React, { useState, useCallback, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -98,21 +91,26 @@ export default function SchedulesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const load = useCallback(async (silent = false) => {
-    if (!token) return;
-    if (!silent) setLoading(true);
-    try {
-      const data = await api.schedules.list(token);
-      setSchedules(data);
-    } catch {
-      // silent fail
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [token]);
+  const load = useCallback(
+    async (silent = false) => {
+      if (!token) return;
+      if (!silent) setLoading(true);
+      try {
+        const data = await api.schedules.list(token);
+        setSchedules(data);
+      } catch {
+        // silent fail
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [token],
+  );
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const handlePause = async (id: string) => {
     if (!token) return;
@@ -182,7 +180,10 @@ export default function SchedulesScreen() {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={() => { setRefreshing(true); load(true); }}
+              onRefresh={() => {
+                setRefreshing(true);
+                load(true);
+              }}
               tintColor="#111827"
             />
           }

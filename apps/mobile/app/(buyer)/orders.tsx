@@ -104,13 +104,16 @@ export default function OrdersScreen() {
 
   const showCo2Banner = !loading && deliveredJobCount > 0;
 
-  const kindCounts = React.useMemo(() => ({
-    all: filtered.length,
-    material: filtered.filter((i) => i.kind === 'material').length,
-    logistics: filtered.filter((i) => i.kind === 'transport' || i.kind === 'disposal').length,
-    skip: filtered.filter((i) => i.kind === 'skip').length,
-    rfq: filtered.filter((i) => i.kind === 'rfq').length,
-  }), [filtered]);
+  const kindCounts = React.useMemo(
+    () => ({
+      all: filtered.length,
+      material: filtered.filter((i) => i.kind === 'material').length,
+      logistics: filtered.filter((i) => i.kind === 'transport' || i.kind === 'disposal').length,
+      skip: filtered.filter((i) => i.kind === 'skip').length,
+      rfq: filtered.filter((i) => i.kind === 'rfq').length,
+    }),
+    [filtered],
+  );
 
   const hasMultipleKinds = React.useMemo(() => {
     const kinds = new Set(unified.map((i) => (i.kind === 'disposal' ? 'logistics' : i.kind)));
@@ -119,7 +122,8 @@ export default function OrdersScreen() {
 
   const displayItems = React.useMemo(() => {
     if (kindFilter === 'all') return filtered;
-    if (kindFilter === 'logistics') return filtered.filter((i) => i.kind === 'transport' || i.kind === 'disposal');
+    if (kindFilter === 'logistics')
+      return filtered.filter((i) => i.kind === 'transport' || i.kind === 'disposal');
     return filtered.filter((i) => i.kind === kindFilter);
   }, [filtered, kindFilter]);
 
@@ -251,14 +255,20 @@ export default function OrdersScreen() {
               label="Visi"
               count={kindCounts.all}
               active={kindFilter === 'all'}
-              onPress={() => { haptics.light(); setKindFilter('all'); }}
+              onPress={() => {
+                haptics.light();
+                setKindFilter('all');
+              }}
             />
             {kindCounts.material > 0 && (
               <TypeChip
                 label="Materiāli"
                 count={kindCounts.material}
                 active={kindFilter === 'material'}
-                onPress={() => { haptics.light(); setKindFilter('material'); }}
+                onPress={() => {
+                  haptics.light();
+                  setKindFilter('material');
+                }}
               />
             )}
             {kindCounts.logistics > 0 && (
@@ -266,7 +276,10 @@ export default function OrdersScreen() {
                 label="Transports"
                 count={kindCounts.logistics}
                 active={kindFilter === 'logistics'}
-                onPress={() => { haptics.light(); setKindFilter('logistics'); }}
+                onPress={() => {
+                  haptics.light();
+                  setKindFilter('logistics');
+                }}
               />
             )}
             {kindCounts.skip > 0 && (
@@ -274,7 +287,10 @@ export default function OrdersScreen() {
                 label="Konteineri"
                 count={kindCounts.skip}
                 active={kindFilter === 'skip'}
-                onPress={() => { haptics.light(); setKindFilter('skip'); }}
+                onPress={() => {
+                  haptics.light();
+                  setKindFilter('skip');
+                }}
               />
             )}
             {kindCounts.rfq > 0 && (
@@ -282,7 +298,10 @@ export default function OrdersScreen() {
                 label="RFQ"
                 count={kindCounts.rfq}
                 active={kindFilter === 'rfq'}
-                onPress={() => { haptics.light(); setKindFilter('rfq'); }}
+                onPress={() => {
+                  haptics.light();
+                  setKindFilter('rfq');
+                }}
               />
             )}
           </ScrollView>

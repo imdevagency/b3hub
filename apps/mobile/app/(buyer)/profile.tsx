@@ -223,9 +223,11 @@ export default function ProfileScreen() {
   const [applications, setApplications] = useState<ProviderApplication[]>([]);
   useEffect(() => {
     if (!token) return;
-    api.providerApplications.mine(token).then(setApplications).catch(() => {});
+    api.providerApplications
+      .mine(token)
+      .then(setApplications)
+      .catch(() => {});
   }, [token]);
-
 
   const ROLE_THEME: Record<string, { avatarBg: string; badgeBg: string; badgeText: string }> = {
     buyer: { avatarBg: '#fee2e2', badgeBg: '#fef2f2', badgeText: '#b91c1c' },
@@ -331,7 +333,15 @@ export default function ProfileScreen() {
           </TouchableOpacity>
 
           {/* Identity chips */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 12 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 8,
+              justifyContent: 'center',
+              marginTop: 12,
+            }}
+          >
             {!!user?.phone && (
               <View style={s.identityChip}>
                 <Text style={s.identityChipText}>{user.phone}</Text>
@@ -425,7 +435,11 @@ export default function ProfileScreen() {
                   (() => {
                     if (getApp('supplier', 'PENDING'))
                       return (
-                        <ApplicationRow emoji="📦" label="Piegādātāja pieteikums" status="PENDING" />
+                        <ApplicationRow
+                          emoji="📦"
+                          label="Piegādātāja pieteikums"
+                          status="PENDING"
+                        />
                       );
                     if (getApp('supplier', 'REJECTED'))
                       return (
@@ -450,7 +464,11 @@ export default function ProfileScreen() {
                   (() => {
                     if (getApp('carrier', 'PENDING'))
                       return (
-                        <ApplicationRow emoji="🚛" label="Pārvadātāja pieteikums" status="PENDING" />
+                        <ApplicationRow
+                          emoji="🚛"
+                          label="Pārvadātāja pieteikums"
+                          status="PENDING"
+                        />
                       );
                     if (getApp('carrier', 'REJECTED'))
                       return (

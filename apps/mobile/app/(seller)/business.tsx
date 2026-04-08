@@ -1,13 +1,7 @@
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter } from 'expo-router';
-import {
-  LayoutGrid,
-  Wallet,
-  FileText,
-  Handshake,
-  ChevronRight,
-} from 'lucide-react-native';
+import { LayoutGrid, Wallet, FileText, Handshake, ChevronRight } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 
 interface BizTool {

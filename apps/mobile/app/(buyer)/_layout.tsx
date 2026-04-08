@@ -50,14 +50,8 @@ export default function BuyerLayout() {
             tabBarIcon: ({ color }) => <Home size={22} color={color} />,
           }}
         />
-        <Tabs.Screen
-          name="new-order"
-          options={{ href: null }}
-        />
-        <Tabs.Screen
-          name="catalog"
-          options={{ href: null }}
-        />
+        <Tabs.Screen name="new-order" options={{ href: null }} />
+        <Tabs.Screen name="catalog" options={{ href: null }} />
         <Tabs.Screen
           name="orders"
           options={{

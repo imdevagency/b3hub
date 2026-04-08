@@ -206,7 +206,7 @@ export default function DriverHomeScreen() {
       </View>
 
       {/* 2. Floating Header (Top Bar) — Transparent, laid over map */}
-      <TopBar 
+      <TopBar
         transparent
         unreadCount={unreadCount}
         leftElement={
@@ -258,149 +258,145 @@ export default function DriverHomeScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: bottomInset + 10 }}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor="#111827"
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#111827" />
           }
         >
-        {/* Greeting / User Context */}
-        <View style={s.sheetHeader}>
-          <Text style={s.greetingLabel}>{greeting()},</Text>
-          <Text style={s.greetingName}>{user?.firstName}</Text>
-        </View>
-
-        {/* Detailed Stats Row */}
-        <View style={s.statsContainer}>
-          <View style={s.statBox}>
-            <Text style={s.statValue}>{loadingJobs ? '--' : availableCount}</Text>
-            <Text style={s.statLabel}>Pieejami darbi</Text>
+          {/* Greeting / User Context */}
+          <View style={s.sheetHeader}>
+            <Text style={s.greetingLabel}>{greeting()},</Text>
+            <Text style={s.greetingName}>{user?.firstName}</Text>
           </View>
-          <View style={s.verticalLine} />
-          <View style={s.statBox}>
-            <Text style={s.statValue}>
-              {todayEarnings !== null ? `€${todayEarnings.toFixed(0)}` : '--'}
-            </Text>
-            <Text style={s.statLabel}>Nopelnīts šodien</Text>
-          </View>
-        </View>
 
-        {/* Upcoming accepted jobs — shown when driver has scheduled work today */}
-        {upcomingJobs.length > 0 && !hasActiveJob && (
-          <View style={s.upcomingSection}>
-            <View style={s.upcomingSectionHeader}>
-              <Text style={s.upcomingSectionTitle}>Nākamie darbi</Text>
-              <TouchableOpacity
-                onPress={() => router.push('/(driver)/jobs')}
-                hitSlop={8}
-              >
-                <Text style={s.upcomingSeeAll}>Visi →</Text>
-              </TouchableOpacity>
+          {/* Detailed Stats Row */}
+          <View style={s.statsContainer}>
+            <View style={s.statBox}>
+              <Text style={s.statValue}>{loadingJobs ? '--' : availableCount}</Text>
+              <Text style={s.statLabel}>Pieejami darbi</Text>
             </View>
-            {upcomingJobs.map((job) => {
-              const pickupDate = new Date(job.pickupDate);
-              const isToday =
-                pickupDate.toDateString() === new Date().toDateString();
-              const timeLabel = pickupDate.toLocaleTimeString('lv-LV', {
-                hour: '2-digit',
-                minute: '2-digit',
-              });
-              return (
-                <TouchableOpacity
-                  key={job.id}
-                  style={s.upcomingCard}
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    haptics.light();
-                    router.push('/(driver)/active');
-                  }}
-                >
-                  <View style={s.upcomingCardLeft}>
-                    <Text style={s.upcomingTime}>
-                      {isToday ? 'Šodien' : pickupDate.toLocaleDateString('lv-LV', { weekday: 'short' })}{' '}
-                      {timeLabel}
-                    </Text>
-                    <Text style={s.upcomingRoute} numberOfLines={1}>
-                      {job.pickupCity} → {job.deliveryCity}
-                    </Text>
-                  </View>
-                  <View style={s.upcomingCardRight}>
-                    <Text style={s.upcomingEarning}>€{job.rate?.toFixed(0) ?? '—'}</Text>
-                    <ArrowRight size={14} color="#9ca3af" />
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+            <View style={s.verticalLine} />
+            <View style={s.statBox}>
+              <Text style={s.statValue}>
+                {todayEarnings !== null ? `€${todayEarnings.toFixed(0)}` : '--'}
+              </Text>
+              <Text style={s.statLabel}>Nopelnīts šodien</Text>
+            </View>
           </View>
-        )}
 
-        {/* First-run prompt: no vehicles registered yet */}
-        {vehicleCount === 0 && !hasActiveJob && (
+          {/* Upcoming accepted jobs — shown when driver has scheduled work today */}
+          {upcomingJobs.length > 0 && !hasActiveJob && (
+            <View style={s.upcomingSection}>
+              <View style={s.upcomingSectionHeader}>
+                <Text style={s.upcomingSectionTitle}>Nākamie darbi</Text>
+                <TouchableOpacity onPress={() => router.push('/(driver)/jobs')} hitSlop={8}>
+                  <Text style={s.upcomingSeeAll}>Visi →</Text>
+                </TouchableOpacity>
+              </View>
+              {upcomingJobs.map((job) => {
+                const pickupDate = new Date(job.pickupDate);
+                const isToday = pickupDate.toDateString() === new Date().toDateString();
+                const timeLabel = pickupDate.toLocaleTimeString('lv-LV', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                });
+                return (
+                  <TouchableOpacity
+                    key={job.id}
+                    style={s.upcomingCard}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      haptics.light();
+                      router.push('/(driver)/active');
+                    }}
+                  >
+                    <View style={s.upcomingCardLeft}>
+                      <Text style={s.upcomingTime}>
+                        {isToday
+                          ? 'Šodien'
+                          : pickupDate.toLocaleDateString('lv-LV', { weekday: 'short' })}{' '}
+                        {timeLabel}
+                      </Text>
+                      <Text style={s.upcomingRoute} numberOfLines={1}>
+                        {job.pickupCity} → {job.deliveryCity}
+                      </Text>
+                    </View>
+                    <View style={s.upcomingCardRight}>
+                      <Text style={s.upcomingEarning}>€{job.rate?.toFixed(0) ?? '—'}</Text>
+                      <ArrowRight size={14} color="#9ca3af" />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
+          {/* First-run prompt: no vehicles registered yet */}
+          {vehicleCount === 0 && !hasActiveJob && (
+            <TouchableOpacity
+              style={s.vehiclePrompt}
+              activeOpacity={0.8}
+              onPress={() => {
+                haptics.medium();
+                router.push('/(driver)/vehicles');
+              }}
+            >
+              <View style={s.vehiclePromptIcon}>
+                <Truck size={20} color="#ffffff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.vehiclePromptTitle}>Pievienojiet transportlīdzekli</Text>
+                <Text style={s.vehiclePromptSub}>Jums nav reģistrētu auto</Text>
+              </View>
+              <ArrowRight size={16} color="#4b5563" />
+            </TouchableOpacity>
+          )}
+
+          {/* Primary Action Button — The Big Button */}
           <TouchableOpacity
-            style={s.vehiclePrompt}
+            style={[s.primaryAction, hasActiveJob && s.primaryActionActive]}
             activeOpacity={0.8}
             onPress={() => {
               haptics.medium();
-              router.push('/(driver)/vehicles');
+              if (hasActiveJob) {
+                router.push('/(driver)/active');
+              } else {
+                router.push('/(driver)/jobs');
+              }
             }}
           >
-            <View style={s.vehiclePromptIcon}>
-              <Truck size={20} color="#ffffff" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.vehiclePromptTitle}>Pievienojiet transportlīdzekli</Text>
-              <Text style={s.vehiclePromptSub}>Jums nav reģistrētu auto</Text>
-            </View>
-            <ArrowRight size={16} color="#4b5563" />
+            <Text style={s.primaryActionText}>
+              {hasActiveJob ? 'ATVĒRT DARBU' : 'MEKLĒT DARBUS'}
+            </Text>
+            {!hasActiveJob && <ChevronRight size={24} color="#fff" style={{ marginLeft: 4 }} />}
           </TouchableOpacity>
-        )}
 
-        {/* Primary Action Button — The Big Button */}
-        <TouchableOpacity
-          style={[s.primaryAction, hasActiveJob && s.primaryActionActive]}
-          activeOpacity={0.8}
-          onPress={() => {
-            haptics.medium();
-            if (hasActiveJob) {
-              router.push('/(driver)/active');
-            } else {
-              router.push('/(driver)/jobs');
-            }
-          }}
-        >
-          <Text style={s.primaryActionText}>{hasActiveJob ? 'ATVĒRT DARBU' : 'MEKLĒT DARBUS'}</Text>
-          {!hasActiveJob && <ChevronRight size={24} color="#fff" style={{ marginLeft: 4 }} />}
-        </TouchableOpacity>
+          {/* Empty hint — only when not loading and no jobs nearby */}
+          {fetchError && (
+            <Text style={[s.noJobsHint, { color: '#ef4444' }]}>
+              Neizdevās ielādēt datus — pārbaudiet savienojumu
+            </Text>
+          )}
+          {!fetchError && !hasActiveJob && !loadingJobs && availableCount === 0 && (
+            <Text style={s.noJobsHint}>Nav pieejamo darbu jūsu reģionā</Text>
+          )}
 
-        {/* Empty hint — only when not loading and no jobs nearby */}
-        {fetchError && (
-          <Text style={[s.noJobsHint, { color: '#ef4444' }]}>
-            Neizdevās ielādēt datus — pārbaudiet savienojumu
-          </Text>
-        )}
-        {!fetchError && !hasActiveJob && !loadingJobs && availableCount === 0 && (
-          <Text style={s.noJobsHint}>Nav pieejamo darbu jūsu reģionā</Text>
-        )}
-
-        {/* Secondary Quick Actions — Clean icons */}
-        <View style={s.quickGrid}>
-          <QuickAction
-            icon={<Wallet size={20} color="#4b5563" />}
-            label="Ienākumi"
-            onPress={() => router.push('/(driver)/earnings')}
-          />
-          <QuickAction
-            icon={<Truck size={20} color="#4b5563" />}
-            label="Transportlīdzekļi"
-            onPress={() => router.push('/(driver)/vehicles')}
-          />
-          <QuickAction
-            icon={<Trash2 size={20} color="#4b5563" />}
-            label="Konteineri"
-            onPress={() => router.push('/(driver)/skips')}
-          />
-        </View>
+          {/* Secondary Quick Actions — Clean icons */}
+          <View style={s.quickGrid}>
+            <QuickAction
+              icon={<Wallet size={20} color="#4b5563" />}
+              label="Ienākumi"
+              onPress={() => router.push('/(driver)/earnings')}
+            />
+            <QuickAction
+              icon={<Truck size={20} color="#4b5563" />}
+              label="Transportlīdzekļi"
+              onPress={() => router.push('/(driver)/vehicles')}
+            />
+            <QuickAction
+              icon={<Trash2 size={20} color="#4b5563" />}
+              label="Konteineri"
+              onPress={() => router.push('/(driver)/skips')}
+            />
+          </View>
         </ScrollView>
       </View>
     </ScreenContainer>
@@ -578,7 +574,13 @@ const s = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-  upcomingSectionTitle: { fontSize: 13, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 },
+  upcomingSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   upcomingSeeAll: { fontSize: 13, fontWeight: '600', color: '#111827' },
   upcomingCard: {
     flexDirection: 'row',

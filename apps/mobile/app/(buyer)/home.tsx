@@ -395,7 +395,9 @@ export default function HomeScreen() {
             </Text>
 
             {/* address / destination */}
-            <Text style={s.activeHeroSub} numberOfLines={1}>{activeItem.sub}</Text>
+            <Text style={s.activeHeroSub} numberOfLines={1}>
+              {activeItem.sub}
+            </Text>
 
             {/* CTA row */}
             <View style={s.activeHeroCTA}>

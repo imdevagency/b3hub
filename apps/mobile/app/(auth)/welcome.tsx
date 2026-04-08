@@ -67,7 +67,10 @@ export default function WelcomeScreen() {
           <TouchableOpacity
             className="w-full h-14 bg-white rounded-xl items-center justify-center flex-row"
             activeOpacity={0.8}
-            onPress={() => { haptics.light(); router.push('/(auth)/register'); }}
+            onPress={() => {
+              haptics.light();
+              router.push('/(auth)/register');
+            }}
           >
             <Text
               className="text-lg text-black"
@@ -80,7 +83,10 @@ export default function WelcomeScreen() {
           <TouchableOpacity
             className="w-full h-14 items-center justify-center"
             activeOpacity={0.8}
-            onPress={() => { haptics.light(); router.push('/(auth)/login'); }}
+            onPress={() => {
+              haptics.light();
+              router.push('/(auth)/login');
+            }}
           >
             <Text className="text-lg text-text-disabled">
               Jau ir konts?{' '}

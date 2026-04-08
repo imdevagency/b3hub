@@ -8,14 +8,7 @@ import type { ApiOrder } from '@/lib/api';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
-import {
-  Inbox,
-  ArrowRight,
-  Plus,
-  CheckCircle,
-  Wallet,
-  ChevronRight,
-} from 'lucide-react-native';
+import { Inbox, ArrowRight, Plus, CheckCircle, Wallet, ChevronRight } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 
 import { TopBar } from '@/components/ui/TopBar';
@@ -513,7 +506,12 @@ const s = StyleSheet.create({
     elevation: 1,
   },
   recentRowTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  recentOrderNum: { fontSize: 14, fontFamily: 'Inter_600SemiBold', fontWeight: '600', color: '#111827' },
+  recentOrderNum: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: '#111827',
+  },
   recentStatusPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
   pillPending: { backgroundColor: '#fef3c7' },
   pillConfirmed: { backgroundColor: '#dcfce7' },
@@ -521,5 +519,10 @@ const s = StyleSheet.create({
   pillNeutral: { backgroundColor: '#f3f4f6' },
   recentStatusText: { fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   recentOrderSub: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
-  recentOrderTotal: { fontSize: 15, fontFamily: 'Inter_700Bold', fontWeight: '700', color: '#111827' },
+  recentOrderTotal: {
+    fontSize: 15,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#111827',
+  },
 });

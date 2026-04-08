@@ -759,7 +759,9 @@ export default function JobsScreen() {
         ListHeaderComponent={
           filteredJobs.length > 0 ? (
             <View style={styles.swipeHint}>
-              <Text style={styles.swipeHintText}>Pieskarieties kartei vai velciet pa kreisi, lai pieņemtu darbu</Text>
+              <Text style={styles.swipeHintText}>
+                Pieskarieties kartei vai velciet pa kreisi, lai pieņemtu darbu
+              </Text>
             </View>
           ) : null
         }
