@@ -289,8 +289,8 @@ function JobCard({
   const card = (
     <TouchableOpacity
       style={[styles.card, tourMode && selected && styles.cardSelected]}
-      activeOpacity={tourMode ? 0.8 : 0.96}
-      onPress={tourMode ? () => onToggleSelect?.(job.id) : undefined}
+      activeOpacity={0.85}
+      onPress={tourMode ? () => onToggleSelect?.(job.id) : () => onAccept(job.id)}
     >
       {/* Tour selection indicator */}
       {tourMode && (
@@ -756,6 +756,13 @@ export default function JobsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
         }
         keyboardShouldPersistTaps="handled"
+        ListHeaderComponent={
+          filteredJobs.length > 0 ? (
+            <View style={styles.swipeHint}>
+              <Text style={styles.swipeHintText}>Pieskarieties kartei vai velciet pa kreisi, lai pieņemtu darbu</Text>
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           <EmptyState
             icon={<Search size={32} color="#9ca3af" />}
@@ -899,6 +906,18 @@ const styles = StyleSheet.create({
   sortLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
 
   list: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32, gap: 12 },
+
+  swipeHint: {
+    alignItems: 'center',
+    paddingBottom: 4,
+    paddingTop: 0,
+  },
+  swipeHintText: {
+    fontSize: 12,
+    color: '#9ca3af',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
 
   cardWrap: {
     borderRadius: 20,

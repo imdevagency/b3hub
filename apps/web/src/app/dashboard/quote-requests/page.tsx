@@ -21,6 +21,24 @@ import {
   Archive,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageSpinner } from '@/components/ui/page-spinner';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useAuth } from '@/lib/auth-context';
 import {
   getMyQuoteRequests,
@@ -137,49 +155,46 @@ function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 sm:p-6 transition-opacity">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-slate-50/50">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">Kur un ko jums vajag?</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Izveidojiet jaunu pieprasījumu</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors"
-          >
-            ×
-          </button>
-        </div>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Kur un ko jums vajag?</DialogTitle>
+          <DialogDescription>Izveidojiet jaunu cenu pieprasījumu piegādātājiem</DialogDescription>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto">
+        <form onSubmit={handleSubmit} className="space-y-5 mt-2">
           {/* Category + name */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                Materiāla Kat.
-              </label>
-              <select
+              <Label htmlFor="rfq-category">Materiāla kategorija</Label>
+              <Select
                 value={form.materialCategory}
-                onChange={(e) => set('materialCategory', e.target.value as MaterialCategory)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black transition-colors"
+                onValueChange={(v) => set('materialCategory', v as MaterialCategory)}
               >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {CATEGORY_LV[c]}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="rfq-category">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {CATEGORY_LV[c]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                Precīzs Nosaukums
-              </label>
-              <input
+              <Label htmlFor="rfq-name">Precīzs nosaukums</Label>
+              <Input
+                id="rfq-name"
                 value={form.materialName}
                 onChange={(e) => set('materialName', e.target.value)}
                 placeholder="piem. Skalotas smiltis 0-2mm"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black transition-colors placeholder:font-normal placeholder:text-slate-400"
               />
             </div>
           </div>
@@ -187,109 +202,88 @@ function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
           {/* Quantity + unit */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                Daudzums
-              </label>
-              <input
+              <Label htmlFor="rfq-qty">Daudzums</Label>
+              <Input
+                id="rfq-qty"
                 type="number"
                 min={0.1}
                 step={0.1}
                 value={form.quantity}
                 onChange={(e) => set('quantity', parseFloat(e.target.value))}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black transition-colors"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                Mērvienība
-              </label>
-              <select
-                value={form.unit}
-                onChange={(e) => set('unit', e.target.value as MaterialUnit)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black transition-colors"
-              >
-                {UNITS.map((u) => (
-                  <option key={u} value={u}>
-                    {UNIT_LV[u]} ({u})
-                  </option>
-                ))}
-              </select>
+              <Label htmlFor="rfq-unit">Mērvienība</Label>
+              <Select value={form.unit} onValueChange={(v) => set('unit', v as MaterialUnit)}>
+                <SelectTrigger id="rfq-unit">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {UNITS.map((u) => (
+                    <SelectItem key={u} value={u}>
+                      {UNIT_LV[u]} ({u})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           {/* Delivery */}
-          <div className="relative rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="absolute left-6.75 top-10 bottom-9 w-0.5 bg-slate-100"></div>
-
-            <div className="relative flex items-start gap-3 mb-4">
-              <div className="mt-2.5 h-3 w-3 rounded-full bg-slate-800 shrink-0 relative z-10 box-content border-4 border-white shadow-sm" />
-              <div className="flex-1 space-y-1.5">
-                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Pilsēta/Novads
-                </label>
-                <input
-                  value={form.deliveryCity}
-                  onChange={(e) => set('deliveryCity', e.target.value)}
-                  placeholder="Rīga"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black transition-colors"
-                />
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="rfq-city">Pilsēta / Novads</Label>
+              <Input
+                id="rfq-city"
+                value={form.deliveryCity}
+                onChange={(e) => set('deliveryCity', e.target.value)}
+                placeholder="Rīga"
+              />
             </div>
-
-            <div className="relative flex items-start gap-3">
-              <div className="mt-2.5 h-3 w-3 rounded-sm bg-black shrink-0 relative z-10 box-content border-4 border-white shadow-sm" />
-              <div className="flex-1 space-y-1.5">
-                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Precīza Adrese
-                </label>
-                <input
-                  value={form.deliveryAddress}
-                  onChange={(e) => set('deliveryAddress', e.target.value)}
-                  placeholder="Brīvības iela 1"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black transition-colors"
-                />
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="rfq-address">Precīza adrese</Label>
+              <Input
+                id="rfq-address"
+                value={form.deliveryAddress}
+                onChange={(e) => set('deliveryAddress', e.target.value)}
+                placeholder="Brīvības iela 1"
+              />
             </div>
           </div>
 
           {/* Notes */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex gap-1 items-center">
-              <Info className="h-3 w-3" /> Komentāri piegādātājam (Neobligāti)
-            </label>
-            <textarea
+            <Label htmlFor="rfq-notes">
+              <Info className="inline h-3 w-3 mr-1" />
+              Komentāri piegādātājam{' '}
+              <span className="text-muted-foreground font-normal">(neobligāti)</span>
+            </Label>
+            <Textarea
+              id="rfq-notes"
               rows={2}
               value={form.notes}
               onChange={(e) => set('notes', e.target.value)}
-              placeholder="Ievadiet papildus prasības vai termiņus..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black resize-none transition-colors"
+              placeholder="Papildus prasības vai termiņi..."
             />
           </div>
 
           {error && (
-            <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700 font-medium">{error}</div>
+            <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
+              {error}
+            </p>
           )}
 
-          <div className="flex gap-3 pt-2">
-            <Button
-              variant="outline"
-              type="button"
-              onClick={onClose}
-              className="w-1/3 rounded-xl h-12 text-sm font-bold border-slate-200 bg-white hover:bg-slate-50"
-            >
+          <div className="flex gap-3 pt-1">
+            <Button variant="outline" type="button" onClick={onClose} className="w-1/3">
               Atcelt
             </Button>
-            <Button
-              type="submit"
-              disabled={saving}
-              className="w-2/3 rounded-xl h-12 text-sm font-bold bg-black text-white hover:bg-slate-800 shadow-md"
-            >
+            <Button type="submit" disabled={saving} className="w-2/3">
               {saving ? 'Sūta...' : 'Pieprasīt Cenas'}
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -588,12 +582,7 @@ export default function QuoteRequestsPage() {
       )}
 
       {loading ? (
-        <div className="flex h-64 items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-black" />
-            <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Ielādē</p>
-          </div>
-        </div>
+        <PageSpinner className="h-64" />
       ) : error ? (
         <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center shadow-sm">
           <XCircle className="h-10 w-10 text-red-400 mx-auto mb-3" />

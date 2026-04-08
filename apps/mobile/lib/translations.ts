@@ -210,6 +210,7 @@ export const lv = {
     schedule: 'Grafiks',
     skips: 'Konteineri',
     more: 'Vairāk',
+    business: 'Bizness',
   },
 
   /** Screen titles shown in the TopBar — single source of truth. */
@@ -768,6 +769,7 @@ export const ru: Translations = {
     schedule: 'Расписание',
     skips: 'Контейнеры',
     more: 'Ещё',
+    business: 'Бизнес',
   },
 
   nav: {

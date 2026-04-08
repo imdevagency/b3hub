@@ -15,7 +15,6 @@ import {
   Truck,
   BarChart3,
   Building2,
-  RefreshCw,
   ArrowRight,
   ShieldCheck,
 } from 'lucide-react';
@@ -38,7 +37,7 @@ function StatCard({
 }) {
   const inner = (
     <div
-      className={`bg-white border rounded-2xl p-5 shadow-sm flex items-center gap-4 group ${href ? 'hover:border-gray-300 cursor-pointer transition-colors' : ''}`}
+      className={`bg-background border border-border rounded-2xl p-5 flex items-center gap-4 group ${href ? 'hover:border-foreground/20 cursor-pointer transition-colors' : ''}`}
     >
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
         <Icon className="h-6 w-6" />
@@ -47,10 +46,10 @@ function StatCard({
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           {label}
         </p>
-        <p className="text-3xl font-extrabold text-gray-900 mt-0.5">{value}</p>
+        <p className="text-3xl font-extrabold text-foreground mt-0.5">{value}</p>
       </div>
       {href && (
-        <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500 shrink-0 transition-colors" />
+        <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground shrink-0 transition-colors" />
       )}
     </div>
   );
@@ -82,7 +81,7 @@ export default function AdminOverviewPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32">
-        <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-foreground border-r-transparent" />
       </div>
     );
   }
@@ -124,7 +123,11 @@ export default function AdminOverviewPage() {
           label="Gaidošie pieteikumi"
           value={stats?.pendingApplications ?? 0}
           icon={ClipboardList}
-          color={stats?.pendingApplications ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-400'}
+          color={
+            stats?.pendingApplications
+              ? 'bg-red-50 text-red-700'
+              : 'bg-muted/50 text-muted-foreground/50'
+          }
           href="/dashboard/admin/applications"
         />
       </div>
@@ -132,52 +135,52 @@ export default function AdminOverviewPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Link
           href="/dashboard/admin/users"
-          className="flex items-center justify-between bg-white border rounded-2xl p-5 shadow-sm hover:border-gray-300 transition-colors group"
+          className="flex items-center justify-between bg-background border border-border rounded-2xl p-5 hover:border-foreground/20 transition-colors group"
         >
           <div className="flex items-center gap-3">
             <Users className="h-5 w-5 text-blue-600" />
-            <span className="font-semibold text-gray-900">Pārvaldīt lietotājus</span>
+            <span className="font-semibold text-foreground">Pārvaldīt lietotājus</span>
           </div>
-          <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500" />
+          <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground" />
         </Link>
         <Link
           href="/dashboard/admin/companies"
-          className="flex items-center justify-between bg-white border rounded-2xl p-5 shadow-sm hover:border-gray-300 transition-colors group"
+          className="flex items-center justify-between bg-background border border-border rounded-2xl p-5 hover:border-foreground/20 transition-colors group"
         >
           <div className="flex items-center gap-3">
             <Building2 className="h-5 w-5 text-indigo-600" />
-            <span className="font-semibold text-gray-900">Uzņēmumi</span>
+            <span className="font-semibold text-foreground">Uzņēmumi</span>
           </div>
-          <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500" />
+          <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground" />
         </Link>
         <Link
           href="/dashboard/admin/orders"
-          className="flex items-center justify-between bg-white border rounded-2xl p-5 shadow-sm hover:border-gray-300 transition-colors group"
+          className="flex items-center justify-between bg-background border border-border rounded-2xl p-5 hover:border-foreground/20 transition-colors group"
         >
           <div className="flex items-center gap-3">
             <BarChart3 className="h-5 w-5 text-purple-600" />
-            <span className="font-semibold text-gray-900">Visi pasūtījumi</span>
+            <span className="font-semibold text-foreground">Visi pasūtījumi</span>
           </div>
-          <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500" />
+          <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground" />
         </Link>
         <Link
           href="/dashboard/admin/jobs"
-          className="flex items-center justify-between bg-white border rounded-2xl p-5 shadow-sm hover:border-gray-300 transition-colors group"
+          className="flex items-center justify-between bg-background border border-border rounded-2xl p-5 hover:border-foreground/20 transition-colors group"
         >
           <div className="flex items-center gap-3">
             <Truck className="h-5 w-5 text-amber-600" />
-            <span className="font-semibold text-gray-900">Transporta darbi</span>
+            <span className="font-semibold text-foreground">Transporta darbi</span>
           </div>
-          <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500" />
+          <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground" />
         </Link>
         <Link
           href="/dashboard/admin/applications"
-          className="flex items-center justify-between bg-white border rounded-2xl p-5 shadow-sm hover:border-gray-300 transition-colors group"
+          className="flex items-center justify-between bg-background border border-border rounded-2xl p-5 hover:border-foreground/20 transition-colors group"
         >
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-5 w-5 text-primary" />
             <div>
-              <span className="font-semibold text-gray-900">Piegādātāju pieteikumi</span>
+              <span className="font-semibold text-foreground">Piegādātāju pieteikumi</span>
               {!!stats?.pendingApplications && (
                 <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold">
                   {stats.pendingApplications}
@@ -185,7 +188,7 @@ export default function AdminOverviewPage() {
               )}
             </div>
           </div>
-          <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500" />
+          <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground" />
         </Link>
       </div>
     </div>

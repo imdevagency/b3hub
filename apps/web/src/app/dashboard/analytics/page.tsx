@@ -18,6 +18,7 @@ import {
   type FleetUtilization,
   type MaterialSpend,
 } from '@/lib/api';
+import { PageSpinner } from '@/components/ui/page-spinner';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -43,20 +44,28 @@ function StatValue({ label, value, sub }: { label: string; value: string; sub?: 
 
 // ── monthly bar chart ─────────────────────────────────────────────────────────
 
-function MonthlyChart({ data, label }: { data: MonthlyValue[]; label: string }) {
+function MonthlyChart({
+  data,
+  label,
+  months = 6,
+}: {
+  data: MonthlyValue[];
+  label: string;
+  months?: number;
+}) {
   const max = Math.max(...data.map((d) => d.value), 1);
-  const last6 = data.slice(-6);
+  const lastN = data.slice(-months);
   return (
     <div className="py-6 border-b border-border/40">
       <h3 className="text-lg font-medium mb-6">{label}</h3>
       <div className="flex items-end gap-3 h-32">
-        {last6.map((d) => {
+        {lastN.map((d) => {
           const heightPct = Math.round((d.value / max) * 100);
           const [year, month] = d.month.split('-');
           const monthLabel = new Date(Number(year), Number(month) - 1).toLocaleString('lv-LV', {
             month: 'short',
           });
-          const isLatest = d === last6[last6.length - 1];
+          const isLatest = d === lastN[lastN.length - 1];
           return (
             <div key={d.month} className="flex flex-col items-center gap-2 flex-1 group">
               <div className="w-full flex items-end justify-center h-full relative">
@@ -260,6 +269,7 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [chartMonths, setChartMonths] = useState<3 | 6 | 12>(6);
 
   useEffect(() => {
     if (!token) return;
@@ -271,11 +281,7 @@ export default function AnalyticsPage() {
   }, [token]);
 
   if (loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-foreground border-r-transparent" />
-      </div>
-    );
+    return <PageSpinner className="min-h-[60vh]" />;
   }
 
   if (error) {
@@ -295,7 +301,24 @@ export default function AnalyticsPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-8 w-full animate-in fade-in duration-500">
-      <h1 className="text-3xl font-light mb-12 tracking-tight">Analītika</h1>
+      <div className="flex items-center justify-between mb-12">
+        <h1 className="text-3xl font-light tracking-tight">Analītika</h1>
+        <div className="flex gap-1 bg-muted/50 rounded-xl p-1">
+          {([3, 6, 12] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setChartMonths(m)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                chartMonths === m
+                  ? 'bg-background shadow-xs text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+            >
+              {m}M
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* ── top KPI row ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-4 mb-12 border-b border-border/40 pb-8">
@@ -330,7 +353,11 @@ export default function AnalyticsPage() {
         {/* ── buyer section ── */}
         {buyer && (
           <div className="space-y-2">
-            <MonthlyChart data={buyer.monthlySpend} label="Ikmēneša Izdevumi" />
+            <MonthlyChart
+              data={buyer.monthlySpend}
+              label="Ikmēneša Izdevumi"
+              months={chartMonths}
+            />
             <MaterialBreakdownChart breakdown={buyer.materialBreakdown ?? []} />
             <ArAgingList aging={buyer.arAging} />
             <OrderBreakdownList breakdown={buyer.orderBreakdown} title="Pasūtījumi" />
@@ -340,7 +367,11 @@ export default function AnalyticsPage() {
         {/* ── seller section ── */}
         {seller && (
           <div className="space-y-2">
-            <MonthlyChart data={seller.monthlyRevenue} label="Ikmēneša Ieņēmumi" />
+            <MonthlyChart
+              data={seller.monthlyRevenue}
+              label="Ikmēneša Ieņēmumi"
+              months={chartMonths}
+            />
             <TopMaterialsList materials={seller.topMaterials} />
             <OrderBreakdownList breakdown={seller.orderBreakdown} title="Pasūtījumi" />
           </div>
@@ -349,7 +380,7 @@ export default function AnalyticsPage() {
         {/* ── carrier section ── */}
         {carrier && (
           <div className="space-y-2">
-            <MonthlyChart data={carrier.monthlyEarnings} label="Ienākumi" />
+            <MonthlyChart data={carrier.monthlyEarnings} label="Ienākumi" months={chartMonths} />
             <FleetList fleet={carrier.fleetUtilization} />
             <OrderBreakdownList breakdown={carrier.jobBreakdown} title="Darbi" />
           </div>

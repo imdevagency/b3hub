@@ -113,7 +113,6 @@ export default function ActiveJobScreen() {
   const insets = useSafeAreaInsets();
   const { token } = useAuth();
   const toast = useToast();
-  const [detailsVisible, setDetailsVisible] = React.useState(false);
   const [job, setJob] = React.useState<ApiTransportJob | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [currentLat, setCurrentLat] = React.useState<number | null>(null);
@@ -137,7 +136,7 @@ export default function ActiveJobScreen() {
   const [resolutionById, setResolutionById] = React.useState<Record<string, string>>({});
 
   // ── Extra sheet visibility ────────────────────────────────────
-  const [exceptionSheetVisible, setExceptionSheetVisible] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState<'navigate' | 'details' | 'issues'>('navigate');
   const [returnTripsSheetVisible, setReturnTripsSheetVisible] = React.useState(false);
 
   // ── Weight ticket modal ──────────────────────────────────────
@@ -717,14 +716,23 @@ export default function ActiveJobScreen() {
 
       {/* ── Static Bottom Card ── */}
       <View style={[styles.staticBottomCard, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-        <TouchableOpacity
-          style={styles.detailsPull}
-          onPress={() => setDetailsVisible(true)}
-          activeOpacity={0.7}
-        >
+        <View style={styles.detailsPull}>
           <View style={styles.detailsPullHandle} />
-        </TouchableOpacity>
+        </View>
 
+        {/* ── Inline Tab Bar ── */}
+        <View style={inlineTabStyles.bar}>
+          <InlineTab label="Navigācija" active={activeTab === 'navigate'} onPress={() => setActiveTab('navigate')} />
+          <InlineTab label="Detaļas" active={activeTab === 'details'} onPress={() => setActiveTab('details')} />
+          <InlineTab
+            label="Problēmas"
+            active={activeTab === 'issues'}
+            badge={openExceptions.length > 0 && activeTab !== 'issues' ? openExceptions.length : undefined}
+            onPress={() => setActiveTab('issues')}
+          />
+        </View>
+
+        <View style={activeTab !== 'navigate' ? { display: 'none' } : undefined}>
         {/* Return trips proactive chip */}
         {returnTrips.length > 0 && (
           <TouchableOpacity
@@ -875,241 +883,108 @@ export default function ActiveJobScreen() {
             </View>
           )}
         </View>
-      </View>
+        </View> {/* end navigate wrapper */}
 
-      {/* ── Details Modal (lean — cargo info only) ── */}
-      <BottomSheet
-        visible={detailsVisible}
-        onClose={() => setDetailsVisible(false)}
-        title="Kravas detaļas"
-        subtitle={`Krava #${job.jobNumber}`}
-        scrollable
-        maxHeightPct={0.75}
-      >
-        <View style={{ paddingBottom: 32 }}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Materiāls</Text>
-            <Text style={styles.detailValue}>{job.cargoType}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Svars</Text>
-            <Text style={styles.detailValue}>{job.cargoWeight ?? '-'} t</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Cena</Text>
-            <Text style={styles.detailValue}>€{job.rate?.toFixed(2) ?? '-'}</Text>
-          </View>
-          {(() => {
-            const co2 = estimateCo2Kg(job.distanceKm, job.cargoWeight);
-            if (!co2) return null;
-            return (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>CO₂ ietekme</Text>
-                <Text style={[styles.detailValue, { color: '#16a34a' }]}>~{formatCo2(co2)}</Text>
-              </View>
-            );
-          })()}
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Iekraušana</Text>
-            <Text style={styles.detailValue}>
-              {job.pickupAddress}, {job.pickupCity}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Izkraušana</Text>
-            <Text style={styles.detailValue}>
-              {job.deliveryAddress}, {job.deliveryCity}
-            </Text>
-          </View>
-
-          {/* Open exceptions summary */}
-          {openExceptions.length > 0 && (
-            <View
-              style={{
-                marginTop: 16,
-                flexDirection: 'row',
-                gap: 6,
-                alignItems: 'center',
-                backgroundColor: '#fef2f2',
-                padding: 12,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: '#fecaca',
-              }}
-            >
-              <AlertCircle size={16} color="#dc2626" />
-              <Text style={{ fontSize: 13, color: '#991b1b', fontWeight: '600', flex: 1 }}>
-                {openExceptions.length}{' '}
-                {openExceptions.length === 1 ? 'atvērts izņēmums' : 'atvērti izņēmumi'}
-              </Text>
+        {/* ── Details Tab (inline) ── */}
+        {activeTab === 'details' && (
+          <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 268 }} contentContainerStyle={{ paddingBottom: 12 }}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Materiāls</Text>
+              <Text style={styles.detailValue}>{job.cargoType}</Text>
             </View>
-          )}
-
-          {/* Report problem CTA */}
-          <TouchableOpacity
-            style={styles.reportProblemBtn}
-            onPress={() => {
-              setDetailsVisible(false);
-              setExceptionSheetVisible(true);
-            }}
-            activeOpacity={0.8}
-          >
-            <AlertCircle size={16} color="#dc2626" />
-            <Text style={styles.reportProblemText}>Ziņot par problēmu</Text>
-          </TouchableOpacity>
-
-          {/* Surcharge CTA — only for in-progress jobs */}
-          {job.status !== 'DELIVERED' && job.status !== 'CANCELLED' && (
-            <TouchableOpacity
-              style={styles.addSurchargeBtn}
-              onPress={() => {
-                setDetailsVisible(false);
-                setSurchargeSheetVisible(true);
-              }}
-              activeOpacity={0.8}
-            >
-              <Plus size={16} color="#d97706" />
-              <Text style={styles.addSurchargeBtnText}>Pievienot papildu maksu</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </BottomSheet>
-
-      {/* ── Exception Sheet ── */}
-      <BottomSheet
-        visible={exceptionSheetVisible}
-        onClose={() => setExceptionSheetVisible(false)}
-        title="Ziņot par problēmu"
-        subtitle="Dispečers saņems paziņojumu nekavējoties"
-        scrollable
-        maxHeightPct={0.85}
-      >
-        <View style={{ gap: 14, paddingBottom: 32 }}>
-          {/* Exception type picker */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
-          >
-            {EXCEPTION_TYPE_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.value}
-                onPress={() => setExceptionType(opt.value)}
-                style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: 20,
-                  backgroundColor: exceptionType === opt.value ? '#991b1b' : '#f9fafb',
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: '600',
-                    color: exceptionType === opt.value ? '#fff' : '#374151',
-                  }}
-                >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          <TextInput
-            style={{
-              backgroundColor: '#f9fafb',
-              borderRadius: 12,
-              padding: 14,
-              height: 100,
-              fontSize: 15,
-              borderWidth: 1,
-              borderColor: '#e5e7eb',
-              color: '#111827',
-              textAlignVertical: 'top',
-            }}
-            placeholder="Aprakstiet situāciju..."
-            placeholderTextColor="#9ca3af"
-            value={exceptionNotes}
-            onChangeText={setExceptionNotes}
-            multiline
-          />
-
-          {/* Actual quantity — only for PARTIAL_DELIVERY */}
-          {exceptionType === 'PARTIAL_DELIVERY' && (
-            <View>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 }}>
-                Faktiskā piegādātā daudzums
-              </Text>
-              <TextInput
-                style={{
-                  backgroundColor: '#f9fafb',
-                  borderRadius: 12,
-                  padding: 14,
-                  fontSize: 15,
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                  color: '#111827',
-                }}
-                placeholder="piem. 4.5"
-                placeholderTextColor="#9ca3af"
-                value={exceptionActualQty}
-                onChangeText={setExceptionActualQty}
-                keyboardType="decimal-pad"
-              />
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Svars</Text>
+              <Text style={styles.detailValue}>{job.cargoWeight ?? '-'} t</Text>
             </View>
-          )}
-
-          {/* Past exceptions list */}
-          {exceptions.length > 0 && (
-            <View style={{ gap: 8 }}>
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: '700',
-                  color: '#6b7280',
-                }}
-              >
-                Vēsture
-              </Text>
-              {exceptions.map((ex) => (
-                <View
-                  key={ex.id}
-                  style={{
-                    backgroundColor: ex.status === 'OPEN' ? '#fef2f2' : '#f0fdf4',
-                    padding: 12,
-                    borderRadius: 10,
-                    borderWidth: 1,
-                    borderColor: ex.status === 'OPEN' ? '#fecaca' : '#bbf7d0',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: '700',
-                      color: ex.status === 'OPEN' ? '#991b1b' : '#15803d',
-                    }}
-                  >
-                    {EXCEPTION_TYPE_OPTIONS.find((o) => o.value === ex.type)?.label ?? ex.type}
-                    {' · '}
-                    {ex.status === 'OPEN' ? 'Atvērts' : 'Atrisināts'}
-                  </Text>
-                  <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>{ex.notes}</Text>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Cena</Text>
+              <Text style={styles.detailValue}>€{job.rate?.toFixed(2) ?? '-'}</Text>
+            </View>
+            {(() => {
+              const co2 = estimateCo2Kg(job.distanceKm, job.cargoWeight);
+              if (!co2) return null;
+              return (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>CO₂ ietekme</Text>
+                  <Text style={[styles.detailValue, { color: '#16a34a' }]}>~{formatCo2(co2)}</Text>
                 </View>
-              ))}
+              );
+            })()}
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Iekraušana</Text>
+              <Text style={styles.detailValue}>{job.pickupAddress}, {job.pickupCity}</Text>
             </View>
-          )}
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Izkraušana</Text>
+              <Text style={styles.detailValue}>{job.deliveryAddress}, {job.deliveryCity}</Text>
+            </View>
+            <TouchableOpacity style={styles.reportProblemBtn} onPress={() => setActiveTab('issues')} activeOpacity={0.8}>
+              <AlertCircle size={16} color="#dc2626" />
+              <Text style={styles.reportProblemText}>Ziņot par problēmu</Text>
+            </TouchableOpacity>
+            {job.status !== 'DELIVERED' && job.status !== 'CANCELLED' && (
+              <TouchableOpacity style={styles.addSurchargeBtn} onPress={() => setSurchargeSheetVisible(true)} activeOpacity={0.8}>
+                <Plus size={16} color="#d97706" />
+                <Text style={styles.addSurchargeBtnText}>Pievienot papildu maksu</Text>
+              </TouchableOpacity>
+            )}
+          </ScrollView>
+        )}
 
-          <TouchableOpacity
-            style={[styles.weightConfirm, reportingException && { opacity: 0.6 }]}
-            onPress={handleReportException}
-            disabled={reportingException}
-          >
-            <Text style={styles.weightConfirmText}>
-              {reportingException ? 'Sūta...' : 'Ziņot dispečeram'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </BottomSheet>
+        {/* ── Issues Tab (inline) ── */}
+        {activeTab === 'issues' && (
+          <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 268 }} contentContainerStyle={{ gap: 10, paddingBottom: 12 }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+              {EXCEPTION_TYPE_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt.value}
+                  onPress={() => setExceptionType(opt.value)}
+                  style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: exceptionType === opt.value ? '#991b1b' : '#f9fafb' }}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: exceptionType === opt.value ? '#fff' : '#374151' }}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TextInput
+              style={{ backgroundColor: '#f9fafb', borderRadius: 12, padding: 14, height: 80, fontSize: 15, borderWidth: 1, borderColor: '#e5e7eb', color: '#111827', textAlignVertical: 'top' }}
+              placeholder="Aprakstiet situāciju..."
+              placeholderTextColor="#9ca3af"
+              value={exceptionNotes}
+              onChangeText={setExceptionNotes}
+              multiline
+            />
+            {exceptionType === 'PARTIAL_DELIVERY' && (
+              <View>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 }}>Faktiskā piegādātā daudzums</Text>
+                <TextInput
+                  style={{ backgroundColor: '#f9fafb', borderRadius: 12, padding: 14, fontSize: 15, borderWidth: 1, borderColor: '#e5e7eb', color: '#111827' }}
+                  placeholder="piem. 4.5"
+                  placeholderTextColor="#9ca3af"
+                  value={exceptionActualQty}
+                  onChangeText={setExceptionActualQty}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            )}
+            {exceptions.length > 0 && (
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#6b7280' }}>Vēsture</Text>
+                {exceptions.map((ex) => (
+                  <View key={ex.id} style={{ backgroundColor: ex.status === 'OPEN' ? '#fef2f2' : '#f0fdf4', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: ex.status === 'OPEN' ? '#fecaca' : '#bbf7d0' }}>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: ex.status === 'OPEN' ? '#991b1b' : '#15803d' }}>
+                      {EXCEPTION_TYPE_OPTIONS.find((o) => o.value === ex.type)?.label ?? ex.type}{' · '}{ex.status === 'OPEN' ? 'Atvērts' : 'Atrisināts'}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>{ex.notes}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+            <TouchableOpacity style={[styles.weightConfirm, reportingException && { opacity: 0.6 }]} onPress={handleReportException} disabled={reportingException}>
+              <Text style={styles.weightConfirmText}>{reportingException ? 'Sūta...' : 'Ziņot dispečeram'}</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        )}
+      </View>
 
       {/* ── Surcharge Sheet ── */}
       <BottomSheet
@@ -1318,6 +1193,39 @@ export default function ActiveJobScreen() {
     </ScreenContainer>
   );
 }
+
+function InlineTab({
+  label,
+  active,
+  onPress,
+  badge,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+  badge?: number;
+}) {
+  return (
+    <TouchableOpacity onPress={onPress} style={[inlineTabStyles.btn, active && inlineTabStyles.btnActive]} activeOpacity={0.75}>
+      <Text style={[inlineTabStyles.text, active && inlineTabStyles.textActive]}>{label}</Text>
+      {!!badge && (
+        <View style={inlineTabStyles.badge}>
+          <Text style={inlineTabStyles.badgeText}>{badge}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
+
+const inlineTabStyles = StyleSheet.create({
+  bar: { flexDirection: 'row', gap: 6, marginBottom: 12 },
+  btn: { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center', backgroundColor: '#f3f4f6', flexDirection: 'row', justifyContent: 'center', gap: 6 },
+  btnActive: { backgroundColor: '#1d4ed8' },
+  text: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
+  textActive: { color: '#fff' },
+  badge: { backgroundColor: '#dc2626', borderRadius: 9, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  badgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
+});
 
 const styles = StyleSheet.create({
   // New minimal styles

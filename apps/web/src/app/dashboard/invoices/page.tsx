@@ -37,6 +37,7 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'PAID' | 'OVERDUE'>('ALL');
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -72,6 +73,11 @@ export default function InvoicesPage() {
 
   const totalPages = Math.ceil(total / limit);
 
+  const filteredInvoices =
+    statusFilter === 'ALL'
+      ? invoices
+      : invoices.filter((inv) => inv.paymentStatus === statusFilter);
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -84,6 +90,35 @@ export default function InvoicesPage() {
           </Button>
         }
       />
+
+      {/* Status filter tabs */}
+      <div className="flex gap-1 bg-muted/50 rounded-xl p-1 w-fit overflow-x-auto">
+        {(
+          [
+            { key: 'ALL', label: 'Visi' },
+            { key: 'PENDING', label: 'Neapmaksāti' },
+            { key: 'PAID', label: 'Apmaksāti' },
+            { key: 'OVERDUE', label: 'Kavēti' },
+          ] as const
+        ).map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setStatusFilter(key)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+              statusFilter === key
+                ? 'bg-background shadow-xs text-foreground'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            }`}
+          >
+            {label}
+            {key !== 'ALL' && (
+              <span className="ml-1.5 tabular-nums">
+                ({invoices.filter((inv) => inv.paymentStatus === key).length})
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
 
       {error && (
         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
@@ -108,6 +143,11 @@ export default function InvoicesPage() {
             </Link>
           }
         />
+      ) : filteredInvoices.length === 0 ? (
+        <div className="py-16 text-center space-y-2">
+          <Receipt className="mx-auto size-10 text-muted-foreground/40" />
+          <p className="text-muted-foreground text-sm">Nav rēķinu šajā kategorijā</p>
+        </div>
       ) : (
         <>
           {/* Desktop table */}
@@ -117,14 +157,14 @@ export default function InvoicesPage() {
                 <tr className="border-b bg-muted/30 text-xs text-muted-foreground uppercase tracking-wide">
                   <th className="text-left px-5 py-3 font-medium">Rēķins</th>
                   <th className="text-left px-5 py-3 font-medium">Pasūtījums</th>
-                  <th className="text-left px-5 py-3 font-medium">Apmaksas termiņš</th>
+                  <th className="text-left px-5 py-3 font-medium">Apmaksas terņš</th>
                   <th className="text-right px-5 py-3 font-medium">Summa</th>
                   <th className="text-center px-5 py-3 font-medium">Statuss</th>
                   <th className="px-5 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {invoices.map((inv) => (
+                {filteredInvoices.map((inv) => (
                   <tr key={inv.id} className="hover:bg-muted/20 transition-colors">
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2">
@@ -197,7 +237,7 @@ export default function InvoicesPage() {
 
           {/* Mobile cards */}
           <div className="sm:hidden space-y-3">
-            {invoices.map((inv) => (
+            {filteredInvoices.map((inv) => (
               <div key={inv.id} className="rounded-2xl border bg-card p-4 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>

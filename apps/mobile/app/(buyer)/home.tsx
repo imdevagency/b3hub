@@ -23,11 +23,9 @@ import {
   FileText,
   ChevronRight,
   Bell,
-  Menu,
   AlertCircle,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
-import { Sidebar } from '@/components/ui/Sidebar';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { TopBar } from '@/components/ui/TopBar';
 // Guard: expo-linear-gradient requires a native build (not available in Expo Go)
@@ -91,25 +89,25 @@ const SERVICES = [
     id: 'materials',
     icon: HardHat,
     label: 'Materiāli',
-    route: '/order-request-new',
-  },
-  {
-    id: 'container',
-    icon: Package,
-    label: 'Konteineri (noma)',
-    route: '/order',
-  },
-  {
-    id: 'disposal',
-    icon: Trash2,
-    label: 'Utilizācija (izvešana)',
-    route: '/disposal',
+    route: '/(buyer)/catalog',
   },
   {
     id: 'transport',
     icon: Truck,
     label: 'Transports',
     route: '/transport',
+  },
+  {
+    id: 'disposal',
+    icon: Trash2,
+    label: 'Utilizācija',
+    route: '/disposal',
+  },
+  {
+    id: 'container',
+    icon: Package,
+    label: 'Konteineri',
+    route: '/order',
   },
   {
     id: 'rfq',
@@ -127,7 +125,6 @@ export default function HomeScreen() {
   const { user, token } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [skipOrders, setSkipOrders] = useState<SkipHireOrder[]>([]);
@@ -320,9 +317,22 @@ export default function HomeScreen() {
     <ScreenContainer topInset={insets.top} bg="#ffffff">
       <TopBar
         title=""
-        onMenuPress={() => setSidebarOpen(true)}
-        unreadCount={unreadCount}
         transparent={true}
+        unreadCount={unreadCount}
+        leftElement={
+          <TouchableOpacity
+            style={s.avatarBtn}
+            activeOpacity={0.85}
+            onPress={() => {
+              haptics.light();
+              router.push('/(buyer)/profile');
+            }}
+          >
+            <Text style={s.avatarBtnText}>
+              {(user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')}
+            </Text>
+          </TouchableOpacity>
+        }
       />
 
       <ScrollView
@@ -357,34 +367,74 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* ─── Active Order Float ──────────────────────────── */}
+        {/* ─── Active Order Hero ──────────────────────────── */}
         {activeItem && (
-          <View style={s.activeFloatWrapper}>
-            <TouchableOpacity style={s.activePill} onPress={navToActive} activeOpacity={0.9}>
-              <View style={s.activeIconBox}>
-                <Animated.View
-                  style={[
-                    s.pulseRing,
-                    { transform: [{ scale: pulseAnim }], backgroundColor: activeItem.dotColor },
-                  ]}
-                />
-                <View style={[s.activeDot, { backgroundColor: activeItem.dotColor }]} />
-              </View>
-              <View style={{ flex: 1, marginRight: 16 }}>
-                <Text style={s.activeStatus}>
-                  {activeCount > 1 ? `${activeCount} aktīvi pasūtījumi` : activeItem.status}
-                </Text>
-                <Text style={s.activeSub} numberOfLines={1}>
-                  {activeItem.sub}
+          <TouchableOpacity style={s.activeHero} onPress={navToActive} activeOpacity={0.92}>
+            {/* top row: live dot + tag + order number */}
+            <View style={s.activeHeroTop}>
+              <View style={s.activeHeroLiveRow}>
+                <View style={s.activeHeroDotWrap}>
+                  <Animated.View
+                    style={[
+                      s.pulseRing,
+                      { transform: [{ scale: pulseAnim }], backgroundColor: activeItem.dotColor },
+                    ]}
+                  />
+                  <View style={[s.activeDot, { backgroundColor: activeItem.dotColor }]} />
+                </View>
+                <Text style={s.activeHeroTag}>
+                  {activeCount > 1 ? `${activeCount} aktīvi pasūtījumi` : 'Aktīvs pasūtījums'}
                 </Text>
               </View>
-              <ChevronRight size={20} color="#9ca3af" />
-            </TouchableOpacity>
-          </View>
+              <Text style={s.activeHeroNum}>{activeItem.num}</Text>
+            </View>
+
+            {/* big status headline */}
+            <Text style={s.activeHeroStatus}>
+              {activeCount > 1 ? `${activeCount} pasūtījumi ceļā` : activeItem.status}
+            </Text>
+
+            {/* address / destination */}
+            <Text style={s.activeHeroSub} numberOfLines={1}>{activeItem.sub}</Text>
+
+            {/* CTA row */}
+            <View style={s.activeHeroCTA}>
+              <Text style={s.activeHeroCTAText}>Skatīt detaļas</Text>
+              <ChevronRight size={16} color="#ffffff" />
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* New-user hero — shown only when user has no history yet */}
+        {isNewUser && !loading && (
+          <TouchableOpacity
+            style={s.newUserHero}
+            activeOpacity={0.88}
+            onPress={() => {
+              haptics.medium();
+              router.push('/(buyer)/catalog' as any);
+            }}
+          >
+            <View>
+              <Text style={s.newUserHeroGreeting}>
+                Sveiki{user?.firstName ? `, ${user.firstName}` : ''} 👋
+              </Text>
+              <Text style={s.newUserHeroTitle}>Ko pasūtīt šodien?</Text>
+              <Text style={s.newUserHeroSub}>
+                Materi\u0101li, transports un konteineri — dažos klikšķos.
+              </Text>
+            </View>
+            <View style={s.newUserHeroCTA}>
+              <Text style={s.newUserHeroCTAText}>Sākt pasūtīt</Text>
+              <ChevronRight size={16} color="#ffffff" />
+            </View>
+          </TouchableOpacity>
         )}
 
         {/* Services Row */}
-        <Text style={s.sectionTitle}>Pakalpojumi</Text>
+        <Text style={[s.sectionTitle, activeItem && s.sectionTitleSecondary]}>
+          {activeItem ? 'Pasūtīt vēl' : 'Pakalpojumi'}
+        </Text>
         <View style={{ position: 'relative', marginBottom: 24 }}>
           <ScrollView
             horizontal
@@ -522,7 +572,7 @@ export default function HomeScreen() {
               <TouchableOpacity
                 onPress={() => {
                   haptics.light();
-                  router.push('/order-request-new' as any);
+                  router.push('/(buyer)/catalog' as any);
                 }}
               >
                 <Text style={s.emptyHintLink}>Sākt pasūtīt →</Text>
@@ -533,13 +583,6 @@ export default function HomeScreen() {
           )}
         </View>
       </ScrollView>
-
-      <Sidebar
-        visible={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        role="buyer"
-        accentColor="#111827"
-      />
     </ScreenContainer>
   );
 }
@@ -589,6 +632,61 @@ const s = StyleSheet.create({
     marginLeft: 20,
     marginBottom: 16,
     letterSpacing: -0.4,
+  },
+  sectionTitleSecondary: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
+    color: '#9ca3af',
+    marginTop: -8,
+  },
+
+  newUserHero: {
+    marginHorizontal: 20,
+    marginBottom: 28,
+    backgroundColor: '#111827',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+    gap: 20,
+  },
+  newUserHeroGreeting: {
+    fontSize: 14,
+    fontFamily: 'Inter_500Medium',
+    color: '#9ca3af',
+    marginBottom: 4,
+  },
+  newUserHeroTitle: {
+    fontSize: 28,
+    fontFamily: 'Inter_800ExtraBold',
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: -0.8,
+    marginBottom: 6,
+  },
+  newUserHeroSub: {
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    color: '#6b7280',
+    lineHeight: 20,
+  },
+  newUserHeroCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    paddingTop: 16,
+  },
+  newUserHeroCTAText: {
+    fontSize: 15,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#ffffff',
   },
   servicesScroll: {
     marginBottom: 4,
@@ -722,6 +820,74 @@ const s = StyleSheet.create({
     color: '#111827',
     fontWeight: '700',
   },
+  // ── Active hero card (replaces the compact pill) ──────────────────────
+  activeHero: {
+    marginHorizontal: 20,
+    marginBottom: 28,
+    backgroundColor: '#111827',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.14,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  activeHeroTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  activeHeroLiveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  activeHeroDotWrap: {
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeHeroTag: {
+    color: '#9ca3af',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  activeHeroNum: {
+    color: '#6b7280',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  activeHeroStatus: {
+    color: '#ffffff',
+    fontSize: 26,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    letterSpacing: -0.6,
+    marginBottom: 6,
+  },
+  activeHeroSub: {
+    color: '#9ca3af',
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 20,
+  },
+  activeHeroCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    paddingTop: 16,
+  },
+  activeHeroCTAText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
   profileNudge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -738,5 +904,19 @@ const s = StyleSheet.create({
     fontSize: 14,
     color: '#92400e',
     fontWeight: '600',
+  },
+  avatarBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarBtnText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
   },
 });

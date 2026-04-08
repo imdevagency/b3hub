@@ -5,6 +5,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useRequireAuth } from '@/hooks/use-require-auth';
@@ -86,7 +87,7 @@ function QuickStat({ value, label, alert }: { value: string; label: string; aler
 
 // ActiveJobTab removed — drivers manage active jobs exclusively in the mobile app.
 
-function CarrierHistoryView({ token }: { token: string }) {
+export function CarrierHistoryView({ token }: { token: string }) {
   const { jobs, loading, reload } = useTransportJobs(token);
   const [filter, setFilter] = useState<'all' | 'active' | 'done'>('all');
 
@@ -451,7 +452,7 @@ function SurchargePanel({ orderId, token, initialSurcharges }: SurchargePanelPro
 
 // ── SUPPLIER view ──────────────────────────────────────────────────────────────
 
-function SupplierView({ token }: { token: string }) {
+export function SupplierView({ token }: { token: string }) {
   const { orders, setOrders, loading, reload } = useMaterialOrders(token);
   const [actioning, setActioning] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -1188,6 +1189,12 @@ function BuyerView({ token }: { token: string }) {
 export default function OrdersPage() {
   const { user, token } = useRequireAuth();
   const { activeMode } = useMode();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (activeMode === 'SUPPLIER') router.replace('/dashboard/incoming-orders');
+    else if (activeMode === 'CARRIER') router.replace('/dashboard/transport-history');
+  }, [activeMode, router]);
 
   if (!token || !user) {
     return <div className="p-8 text-center text-muted-foreground text-sm">Ielādē...</div>;

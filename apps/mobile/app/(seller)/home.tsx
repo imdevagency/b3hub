@@ -4,47 +4,19 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import type { ApiOrder } from '@/lib/api';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
 import {
   Inbox,
-  LayoutGrid,
-  FileText,
-  Wallet,
-  Bell,
   ArrowRight,
   Plus,
   CheckCircle,
+  Wallet,
+  ChevronRight,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
-
-const QUICK_ACTIONS = [
-  {
-    id: 'catalog',
-    icon: LayoutGrid,
-    label: 'Katalogs',
-    route: '/(seller)/catalog',
-  },
-  {
-    id: 'quotes',
-    icon: FileText,
-    label: 'Pieprasījumi',
-    route: '/(seller)/quotes',
-  },
-  {
-    id: 'earnings',
-    icon: Wallet,
-    label: 'Ienākumi',
-    route: '/(seller)/earnings',
-  },
-  {
-    id: 'all_orders',
-    icon: Inbox,
-    label: 'Visi pasūtījumi',
-    route: '/(seller)/incoming',
-  },
-];
 
 import { TopBar } from '@/components/ui/TopBar';
 
@@ -55,6 +27,7 @@ export default function SellerHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [pendingCount, setPendingCount] = useState<number | null>(null);
+  const [recentOrders, setRecentOrders] = useState<ApiOrder[]>([]);
   const [materialCount, setMaterialCount] = useState<number | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -73,6 +46,11 @@ export default function SellerHomeScreen() {
             (o) => o.status === 'PENDING' || o.status === 'CONFIRMED',
           ).length;
           setPendingCount(pending);
+          // Recent = last 5 seller orders sorted by newest
+          const sorted = [...sellerOrders].sort(
+            (a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime(),
+          );
+          setRecentOrders(sorted.slice(0, 5));
         })
         .catch(() => {
           toast.error('Neizdevās ielādēt pasūtījumus');
@@ -83,7 +61,6 @@ export default function SellerHomeScreen() {
         .unreadCount(token)
         .then((res) => setUnreadCount(res.count))
         .catch(() => {});
-      // Detect new seller: check if they have any materials listed
       const companyId = user?.company?.id;
       if (companyId) {
         api.materials
@@ -108,8 +85,25 @@ export default function SellerHomeScreen() {
 
   return (
     <ScreenContainer noAnimation bg="#F3F4F6">
-      {/* MINIMAL TOP BAR */}
-      <TopBar title="Pārdevējs" transparent={false} unreadCount={unreadCount} />
+      <TopBar
+        transparent
+        title=""
+        unreadCount={unreadCount}
+        leftElement={
+          <TouchableOpacity
+            style={s.avatarBtn}
+            activeOpacity={0.85}
+            onPress={() => {
+              haptics.light();
+              router.push('/(seller)/profile');
+            }}
+          >
+            <Text style={s.avatarBtnText}>
+              {(user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')}
+            </Text>
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -394,119 +388,138 @@ export default function SellerHomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* QUICK ACTIONS GRID */}
-        <View style={{ gap: 12 }}>
-          {/* Row 1 */}
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            {QUICK_ACTIONS.slice(0, 2).map((action) => {
-              const Icon = action.icon;
-              return (
-                <TouchableOpacity
-                  key={action.id}
-                  onPress={() => {
-                    haptics.light();
-                    router.push(action.route as any);
-                  }}
-                  activeOpacity={0.7}
-                  style={{
-                    flex: 1,
-                    backgroundColor: '#ffffff',
-                    borderRadius: 24,
-                    padding: 16,
-                    height: 116,
-                    justifyContent: 'space-between',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.04,
-                    shadowRadius: 8,
-                    elevation: 2,
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
-                      backgroundColor: '#f3f4f6',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Icon size={20} color="#000000" strokeWidth={2} />
-                  </View>
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      fontFamily: 'Inter_600SemiBold',
-                      fontWeight: '600',
-                      color: '#000000',
-                      marginLeft: 4,
-                      letterSpacing: -0.4,
-                    }}
-                  >
-                    {action.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+        {/* RECENT ORDERS */}
+        <View style={s.recentSection}>
+          <View style={s.recentHeader}>
+            <Text style={s.recentTitle}>Pēdējie pasūtījumi</Text>
+            <TouchableOpacity onPress={() => router.push('/(seller)/incoming' as any)}>
+              <Text style={s.recentSeeAll}>Visi</Text>
+            </TouchableOpacity>
           </View>
 
-          {/* Row 2 */}
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            {QUICK_ACTIONS.slice(2, 4).map((action) => {
-              const Icon = action.icon;
-              return (
-                <TouchableOpacity
-                  key={action.id}
-                  onPress={() => {
-                    haptics.light();
-                    router.push(action.route as any);
-                  }}
-                  activeOpacity={0.7}
-                  style={{
-                    flex: 1,
-                    backgroundColor: '#ffffff',
-                    borderRadius: 24,
-                    padding: 16,
-                    height: 116,
-                    justifyContent: 'space-between',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.04,
-                    shadowRadius: 8,
-                    elevation: 2,
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
-                      backgroundColor: '#f3f4f6',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Icon size={20} color="#000000" strokeWidth={2} />
+          {pendingCount === null ? (
+            <SkeletonCard count={3} />
+          ) : recentOrders.length === 0 ? (
+            <View style={s.recentEmpty}>
+              <Inbox size={28} color="#d1d5db" />
+              <Text style={s.recentEmptyText}>Pagaidām nav pasūtījumu</Text>
+            </View>
+          ) : (
+            recentOrders.map((order) => (
+              <TouchableOpacity
+                key={order.id}
+                style={s.recentRow}
+                activeOpacity={0.75}
+                onPress={() => {
+                  haptics.light();
+                  router.push(`/(seller)/order/${order.id}` as any);
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <View style={s.recentRowTop}>
+                    <Text style={s.recentOrderNum}>#{order.orderNumber}</Text>
+                    <View
+                      style={[
+                        s.recentStatusPill,
+                        order.status === 'PENDING'
+                          ? s.pillPending
+                          : order.status === 'CONFIRMED'
+                            ? s.pillConfirmed
+                            : order.status === 'DELIVERED'
+                              ? s.pillDelivered
+                              : s.pillNeutral,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.recentStatusText,
+                          order.status === 'PENDING'
+                            ? { color: '#92400e' }
+                            : order.status === 'CONFIRMED'
+                              ? { color: '#166534' }
+                              : order.status === 'DELIVERED'
+                                ? { color: '#1d4ed8' }
+                                : { color: '#6b7280' },
+                        ]}
+                      >
+                        {order.status === 'PENDING'
+                          ? 'Gaida'
+                          : order.status === 'CONFIRMED'
+                            ? 'Apstiprināts'
+                            : order.status === 'DELIVERED'
+                              ? 'Piegādāts'
+                              : order.status}
+                      </Text>
+                    </View>
                   </View>
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      fontFamily: 'Inter_600SemiBold',
-                      fontWeight: '600',
-                      color: '#000000',
-                      marginLeft: 4,
-                      letterSpacing: -0.4,
-                    }}
-                  >
-                    {action.label}
+                  <Text style={s.recentOrderSub} numberOfLines={1}>
+                    {order.buyer?.name ?? '—'} · {order.deliveryCity}
                   </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                </View>
+                <Text style={s.recentOrderTotal}>€{order.total.toFixed(0)}</Text>
+                <ChevronRight size={16} color="#d1d5db" style={{ marginLeft: 8 }} />
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </ScrollView>
     </ScreenContainer>
   );
 }
+
+const s = StyleSheet.create({
+  avatarBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarBtnText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+  },
+  recentSection: { marginTop: 8 },
+  recentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  recentTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#111827',
+    letterSpacing: -0.3,
+  },
+  recentSeeAll: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
+  recentEmpty: { alignItems: 'center', paddingVertical: 32, gap: 10 },
+  recentEmptyText: { fontSize: 14, color: '#9ca3af', fontWeight: '500' },
+  recentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  recentRowTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  recentOrderNum: { fontSize: 14, fontFamily: 'Inter_600SemiBold', fontWeight: '600', color: '#111827' },
+  recentStatusPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
+  pillPending: { backgroundColor: '#fef3c7' },
+  pillConfirmed: { backgroundColor: '#dcfce7' },
+  pillDelivered: { backgroundColor: '#dbeafe' },
+  pillNeutral: { backgroundColor: '#f3f4f6' },
+  recentStatusText: { fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+  recentOrderSub: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
+  recentOrderTotal: { fontSize: 15, fontFamily: 'Inter_700Bold', fontWeight: '700', color: '#111827' },
+});

@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
-import { Inbox, LayoutGrid, User, Wallet, Home } from 'lucide-react-native';
+import { Inbox, Briefcase, User, Home } from 'lucide-react-native';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
@@ -39,43 +39,36 @@ export default function SellerLayout() {
     );
   }
 
+  const combinedBadge = unreadCount + openQuoteCount;
+
   return (
     <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: insets.top }}>
-      <Tabs
-        initialRouteName="incoming"
-        screenOptions={{ headerShown: false }}
-        tabBar={renderTabBar}
-      >
+      <Tabs initialRouteName="home" screenOptions={{ headerShown: false }} tabBar={renderTabBar}>
         <Tabs.Screen
           name="home"
           options={{
             title: t.tabs.home,
             tabBarIcon: ({ color }) => <Home size={22} color={color} />,
-            tabBarBadge: openQuoteCount > 0 ? openQuoteCount : undefined,
           }}
         />
         <Tabs.Screen
           name="incoming"
           options={{
-            title: t.tabs.incoming,
+            title: 'Pieprasījumi',
             tabBarIcon: ({ color }) => <Inbox size={22} color={color} />,
-            tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+            tabBarBadge: combinedBadge > 0 ? combinedBadge : undefined,
           }}
         />
+        <Tabs.Screen name="quotes" options={{ href: null }} />
         <Tabs.Screen
-          name="catalog"
+          name="business"
           options={{
-            title: t.tabs.catalog,
-            tabBarIcon: ({ color }) => <LayoutGrid size={22} color={color} />,
+            title: 'Bizness',
+            tabBarIcon: ({ color }) => <Briefcase size={22} color={color} />,
           }}
         />
-        <Tabs.Screen
-          name="earnings"
-          options={{
-            title: t.tabs.earnings,
-            tabBarIcon: ({ color }) => <Wallet size={22} color={color} />,
-          }}
-        />
+        <Tabs.Screen name="catalog" options={{ href: null }} />
+        <Tabs.Screen name="earnings" options={{ href: null }} />
         <Tabs.Screen
           name="profile"
           options={{
@@ -83,12 +76,10 @@ export default function SellerLayout() {
             tabBarIcon: ({ color }) => <User size={22} color={color} />,
           }}
         />
-        <Tabs.Screen name="quotes" options={{ href: null }} />
         <Tabs.Screen name="documents" options={{ href: null }} />
         <Tabs.Screen name="framework-contracts" options={{ href: null }} />
         <Tabs.Screen name="framework-contract/[id]" options={{ href: null }} />
         <Tabs.Screen name="order/[id]" options={{ href: null }} />
-        <Tabs.Screen name="catalog.tsx.bak" options={{ href: null }} />
       </Tabs>
     </View>
   );

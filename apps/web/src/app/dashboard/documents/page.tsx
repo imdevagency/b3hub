@@ -20,6 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { DocumentCard } from '@/components/documents/DocumentCard';
 import { DocumentViewer } from '@/components/documents/DocumentViewer';
+import { PageSpinner } from '@/components/ui/page-spinner';
 import { useAuth } from '@/lib/auth-context';
 import {
   getMyDocuments,
@@ -260,19 +261,20 @@ export default function DocumentsPage() {
       </div>
 
       {useDemoData && (
-        <div className="flex items-center gap-3 rounded-2xl bg-amber-500/10 px-5 py-4 text-sm text-amber-700/80">
-          <div className="animate-pulse bg-amber-500/20 h-2 w-2 rounded-full shrink-0" />
+        <div className="flex items-center gap-3 rounded-2xl border border-amber-300/40 bg-amber-500/10 px-5 py-4 text-sm text-amber-800 dark:text-amber-400">
+          <div className="animate-pulse bg-amber-500/30 h-2 w-2 rounded-full shrink-0" />
           <span>
-            <strong>Priekšskatījuma režīms</strong> — šie ir piemēra dokumenti. Jūsu ištie dokumenti
-            tiks ģenerēti šeit.
+            <strong>Priekšskatījuma režīms</strong> — šie ir piemēra dokumenti. Jūsu īstie
+            dokumenti tiks ģenerēti šeit, sākot ar pirmo pasūtījumu.
           </span>
         </div>
       )}
 
       {/* ── Filters + Search ── */}
       <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 pb-2">
-        {/* Tab pills */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Tab pills — horizontally scrollable on small screens */}
+        <div className="w-full overflow-x-auto pb-1 -mb-1">
+          <div className="flex items-center gap-2 min-w-max">
           {TABS.map((tab) => {
             const count =
               tab.id === 'ALL' ? summary?.total : summary?.byType?.[tab.id as DocumentType];
@@ -302,6 +304,7 @@ export default function DocumentsPage() {
               </button>
             );
           })}
+          </div>
         </div>
 
         {/* Search */}
@@ -319,9 +322,7 @@ export default function DocumentsPage() {
 
       {/* ── Document list ── */}
       {fetching ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground/20 border-t-foreground" />
-        </div>
+        <PageSpinner className="py-20" />
       ) : docs.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 gap-4 px-4 text-center">
           <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-2">

@@ -33,12 +33,11 @@ import { format } from 'date-fns';
 import { lv } from 'date-fns/locale';
 import { useOrders, type FilterKey } from '@/lib/use-orders';
 import { BottomSheet } from '@/components/ui/BottomSheet';
-import { SkeletonCard, Skeleton } from '@/components/ui/Skeleton';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { type ApiOrderSchedule } from '@/lib/api/orders';
 import { SIZE_LABEL } from '@/lib/materials';
 
 const PAYMENT_BADGE: Record<string, { label: string; bg: string; color: string } | undefined> = {
@@ -78,47 +77,9 @@ export default function OrdersScreen() {
 
   const { token } = useAuth();
   const [showTypePicker, setShowTypePicker] = useState(false);
-  const [showSchedulesSheet, setShowSchedulesSheet] = useState(false);
-  const [schedules, setSchedules] = useState<ApiOrderSchedule[]>([]);
-  const [schedulesLoading, setSchedulesLoading] = useState(false);
 
-  const loadSchedules = useCallback(async () => {
-    if (!token) return;
-    setSchedulesLoading(true);
-    try {
-      const data = await api.schedules.list(token);
-      setSchedules(data);
-    } catch {
-      // ignore
-    } finally {
-      setSchedulesLoading(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    if (showSchedulesSheet) loadSchedules();
-  }, [showSchedulesSheet, loadSchedules]);
-
-  const handleSchedulePause = async (id: string) => {
-    if (!token) return;
-    haptics.light();
-    await api.schedules.pause(id, token);
-    await loadSchedules();
-  };
-
-  const handleScheduleResume = async (id: string) => {
-    if (!token) return;
-    haptics.light();
-    await api.schedules.resume(id, token);
-    await loadSchedules();
-  };
-
-  const handleScheduleDelete = async (id: string) => {
-    if (!token) return;
-    haptics.medium();
-    await api.schedules.delete(id, token);
-    await loadSchedules();
-  };
+  type KindFilter = 'all' | 'material' | 'logistics' | 'skip' | 'rfq';
+  const [kindFilter, setKindFilter] = useState<KindFilter>('all');
 
   // Sustainability: aggregate CO2 from all delivered transport/disposal jobs
   const { totalCo2Kg, totalTonnes, deliveredJobCount } = React.useMemo(() => {
@@ -143,9 +104,29 @@ export default function OrdersScreen() {
 
   const showCo2Banner = !loading && deliveredJobCount > 0;
 
+  const kindCounts = React.useMemo(() => ({
+    all: filtered.length,
+    material: filtered.filter((i) => i.kind === 'material').length,
+    logistics: filtered.filter((i) => i.kind === 'transport' || i.kind === 'disposal').length,
+    skip: filtered.filter((i) => i.kind === 'skip').length,
+    rfq: filtered.filter((i) => i.kind === 'rfq').length,
+  }), [filtered]);
+
+  const hasMultipleKinds = React.useMemo(() => {
+    const kinds = new Set(unified.map((i) => (i.kind === 'disposal' ? 'logistics' : i.kind)));
+    return kinds.size > 1;
+  }, [unified]);
+
+  const displayItems = React.useMemo(() => {
+    if (kindFilter === 'all') return filtered;
+    if (kindFilter === 'logistics') return filtered.filter((i) => i.kind === 'transport' || i.kind === 'disposal');
+    return filtered.filter((i) => i.kind === kindFilter);
+  }, [filtered, kindFilter]);
+
   const handleFilterChange = (key: FilterKey) => {
     haptics.light();
     setFilter(key);
+    setKindFilter('all');
   };
 
   const handleNewOrder = () => {
@@ -183,7 +164,7 @@ export default function OrdersScreen() {
               activeOpacity={0.8}
               onPress={() => {
                 haptics.light();
-                setShowSchedulesSheet(true);
+                router.push('/(buyer)/schedules' as any);
               }}
               style={{
                 width: 40,
@@ -258,6 +239,56 @@ export default function OrdersScreen() {
         </ScrollView>
       </View>
 
+      {/* ── Type Filters ─────────────────────────────────────── */}
+      {hasMultipleKinds && (
+        <View style={s.typeFilterContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={s.filterContent}
+          >
+            <TypeChip
+              label="Visi"
+              count={kindCounts.all}
+              active={kindFilter === 'all'}
+              onPress={() => { haptics.light(); setKindFilter('all'); }}
+            />
+            {kindCounts.material > 0 && (
+              <TypeChip
+                label="Materiāli"
+                count={kindCounts.material}
+                active={kindFilter === 'material'}
+                onPress={() => { haptics.light(); setKindFilter('material'); }}
+              />
+            )}
+            {kindCounts.logistics > 0 && (
+              <TypeChip
+                label="Transports"
+                count={kindCounts.logistics}
+                active={kindFilter === 'logistics'}
+                onPress={() => { haptics.light(); setKindFilter('logistics'); }}
+              />
+            )}
+            {kindCounts.skip > 0 && (
+              <TypeChip
+                label="Konteineri"
+                count={kindCounts.skip}
+                active={kindFilter === 'skip'}
+                onPress={() => { haptics.light(); setKindFilter('skip'); }}
+              />
+            )}
+            {kindCounts.rfq > 0 && (
+              <TypeChip
+                label="RFQ"
+                count={kindCounts.rfq}
+                active={kindFilter === 'rfq'}
+                onPress={() => { haptics.light(); setKindFilter('rfq'); }}
+              />
+            )}
+          </ScrollView>
+        </View>
+      )}
+
       {/* ── Search ───────────────────────────────────────────── */}
       <View style={s.searchRow}>
         <Search size={16} color="#9ca3af" style={{ marginRight: 8 }} />
@@ -282,7 +313,7 @@ export default function OrdersScreen() {
       {/* ── List ─────────────────────────────────────────────── */}
       <FlatList
         style={{ flex: 1 }}
-        data={filtered}
+        data={displayItems}
         keyExtractor={(item) => `${item.kind}-${item.data.id}`}
         renderItem={renderItem}
         contentContainerStyle={s.list}
@@ -343,68 +374,6 @@ export default function OrdersScreen() {
           )
         }
       />
-
-      {/* ── Schedules Sheet ──────────────────────────────────── */}
-      <BottomSheet visible={showSchedulesSheet} onClose={() => setShowSchedulesSheet(false)}>
-        <View style={s.sheetContent}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 16,
-            }}
-          >
-            <Text style={s.sheetTitle}>Atkārtoti pasūtījumi</Text>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => {
-                haptics.light();
-                setShowSchedulesSheet(false);
-                router.push('/(buyer)/catalog?schedule=1' as any);
-              }}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 4,
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 8,
-                backgroundColor: '#111827',
-              }}
-            >
-              <Plus size={14} color="#fff" />
-              <Text style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#fff' }}>
-                Jauns
-              </Text>
-            </TouchableOpacity>
-          </View>
-          {schedulesLoading ? (
-            <View style={{ gap: 8 }}>
-              <Skeleton height={80} radius={12} />
-              <Skeleton height={80} radius={12} />
-            </View>
-          ) : schedules.length === 0 ? (
-            <EmptyState
-              icon={<Calendar size={32} color="#d1d5db" />}
-              title="Nav atkārtotu pasūtījumu"
-              subtitle="Izveidojiet pasūtījumu un izvēlieties atkārtošanas biežumu"
-            />
-          ) : (
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
-              {schedules.map((sched) => (
-                <ScheduleRow
-                  key={sched.id}
-                  schedule={sched}
-                  onPause={() => handleSchedulePause(sched.id)}
-                  onResume={() => handleScheduleResume(sched.id)}
-                  onDelete={() => handleScheduleDelete(sched.id)}
-                />
-              ))}
-            </ScrollView>
-          )}
-        </View>
-      </BottomSheet>
 
       {/* ── New Order Sheet ──────────────────────────────────── */}
       <BottomSheet visible={showTypePicker} onClose={() => setShowTypePicker(false)}>
@@ -507,110 +476,6 @@ export default function OrdersScreen() {
 
 // ── Components ────────────────────────────────────────────────
 
-const INTERVAL_LABELS: Record<number, string> = {
-  1: 'Katru dienu',
-  7: 'Katru nedēļu',
-  14: 'Katru 2 nedēļas',
-  30: 'Katru mēnesi',
-};
-
-function ScheduleRow({
-  schedule,
-  onPause,
-  onResume,
-  onDelete,
-}: {
-  schedule: ApiOrderSchedule;
-  onPause: () => void;
-  onResume: () => void;
-  onDelete: () => void;
-}) {
-  const intervalLabel =
-    INTERVAL_LABELS[schedule.intervalDays] ?? `Ik ${schedule.intervalDays} dienas`;
-  const nextDate = schedule.nextRunAt
-    ? format(new Date(schedule.nextRunAt), 'd. MMM yyyy', { locale: lv })
-    : '—';
-
-  return (
-    <View
-      style={{
-        borderWidth: 1,
-        borderColor: '#e5e7eb',
-        borderRadius: 12,
-        padding: 14,
-        marginBottom: 10,
-        backgroundColor: schedule.enabled ? '#ffffff' : '#f9fafb',
-      }}
-    >
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 4,
-        }}
-      >
-        <Text
-          style={{ fontSize: 14, fontFamily: 'Inter_600SemiBold', color: '#111827', flex: 1 }}
-          numberOfLines={1}
-        >
-          {schedule.deliveryCity || schedule.deliveryAddress}
-        </Text>
-        <StatusPill
-          label={schedule.enabled ? 'Aktīvs' : 'Pauzēts'}
-          bg={schedule.enabled ? '#dcfce7' : '#f3f4f6'}
-          color={schedule.enabled ? '#166534' : '#6b7280'}
-          size="sm"
-        />
-      </View>
-
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <Calendar size={12} color="#9ca3af" />
-          <Text style={{ fontSize: 12, color: '#6b7280' }}>{intervalLabel}</Text>
-        </View>
-        <Text style={{ fontSize: 12, color: '#9ca3af' }}>·</Text>
-        <Text style={{ fontSize: 12, color: '#6b7280' }}>Nākamais: {nextDate}</Text>
-      </View>
-
-      <View style={{ flexDirection: 'row', gap: 8 }}>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={schedule.enabled ? onPause : onResume}
-          style={{
-            flex: 1,
-            paddingVertical: 8,
-            borderRadius: 8,
-            borderWidth: 1,
-            borderColor: '#d1d5db',
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#374151' }}>
-            {schedule.enabled ? 'Pauzēt' : 'Atsākt'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={onDelete}
-          style={{
-            paddingVertical: 8,
-            paddingHorizontal: 16,
-            borderRadius: 8,
-            borderWidth: 1,
-            borderColor: '#fca5a5',
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#dc2626' }}>
-            Dzēst
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
 function FilterChip({
   label,
   active,
@@ -627,6 +492,31 @@ function FilterChip({
       activeOpacity={0.7}
     >
       <Text style={[s.chipText, active && s.chipTextActive]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function TypeChip({
+  label,
+  count,
+  active,
+  onPress,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={[s.typeChip, active && s.typeChipActive]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Text style={[s.typeChipText, active && s.typeChipTextActive]}>{label}</Text>
+      <View style={[s.typeChipBadge, active && s.typeChipBadgeActive]}>
+        <Text style={[s.typeChipBadgeText, active && s.typeChipBadgeTextActive]}>{count}</Text>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -1010,6 +900,53 @@ const s = StyleSheet.create({
     paddingTop: 12,
     backgroundColor: '#ffffff',
     paddingBottom: 12,
+  },
+  typeFilterContainer: {
+    paddingBottom: 8,
+    backgroundColor: '#ffffff',
+  },
+  typeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  typeChipActive: {
+    backgroundColor: '#111827',
+    borderColor: '#111827',
+  },
+  typeChipText: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#4b5563',
+  },
+  typeChipTextActive: {
+    color: '#ffffff',
+  },
+  typeChipBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  typeChipBadgeActive: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  typeChipBadgeText: {
+    fontSize: 11,
+    fontFamily: 'Inter_700Bold',
+    color: '#6b7280',
+  },
+  typeChipBadgeTextActive: {
+    color: '#ffffff',
   },
   filterContent: {
     paddingHorizontal: 16,

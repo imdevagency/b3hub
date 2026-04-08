@@ -9,7 +9,7 @@ import { ModeProvider } from '@/lib/mode-context';
 import { DashboardGuard } from '@/components/dashboard-guard';
 import { NotificationBell } from '@/components/notification-bell';
 import { PageAnimate } from '@/components/ui/page-animate';
-import { RoleModeSwitcher } from '@/components/role-mode-switcher';
+import { DashboardBreadcrumb } from '@/components/dashboard-breadcrumb';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -25,9 +25,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <span className="text-sm font-semibold tracking-tight text-foreground/80 md:hidden block">
                   B3Hub
                 </span>
+                <DashboardBreadcrumb />
               </div>
               <div className="flex items-center gap-3">
-                <RoleModeSwitcher />
                 <div className="rounded-full bg-background/50 hover:bg-muted/50 transition-colors p-1">
                   <NotificationBell />
                 </div>
@@ -35,7 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </header>
 
             {/* Page content */}
-            <div className="relative flex flex-1 flex-col gap-6 p-6 xl:p-8 min-h-[calc(100vh-4rem)]">
+            <div className="relative flex flex-1 flex-col gap-6 p-6 xl:p-8 min-h-[calc(100vh-4rem)] max-w-screen-2xl w-full mx-auto">
               <PageAnimate>{children}</PageAnimate>
             </div>
           </SidebarInset>

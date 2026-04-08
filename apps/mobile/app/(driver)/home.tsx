@@ -23,7 +23,6 @@ import * as Location from 'expo-location';
 import {
   Bell,
   Wallet,
-  Calendar,
   Trash2,
   ChevronRight,
   User,
@@ -53,6 +52,7 @@ export default function DriverHomeScreen() {
 
   const [availableJobs, setAvailableJobs] = useState<ApiTransportJob[]>([]);
   const [hasActiveJob, setHasActiveJob] = useState(false);
+  const [upcomingJobs, setUpcomingJobs] = useState<ApiTransportJob[]>([]);
   const [vehicleCount, setVehicleCount] = useState<number | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [todayEarnings, setTodayEarnings] = useState<number | null>(null);
@@ -121,13 +121,20 @@ export default function DriverHomeScreen() {
           const todayStart = new Date();
           todayStart.setHours(0, 0, 0, 0);
           let earnings = 0;
+          const upcoming: ApiTransportJob[] = [];
           for (const j of jobs) {
             if (j.status === 'DELIVERED') {
               const d = new Date(j.deliveryDate ?? j.pickupDate);
               if (d >= todayStart) earnings += j.rate;
             }
+            // Show ACCEPTED jobs (today or future) as upcoming
+            if (j.status === 'ACCEPTED') {
+              const d = new Date(j.pickupDate);
+              if (d >= todayStart) upcoming.push(j);
+            }
           }
           setTodayEarnings(earnings);
+          setUpcomingJobs(upcoming.slice(0, 3));
         })
         .catch(() => {}),
     ]);
@@ -279,6 +286,55 @@ export default function DriverHomeScreen() {
           </View>
         </View>
 
+        {/* Upcoming accepted jobs — shown when driver has scheduled work today */}
+        {upcomingJobs.length > 0 && !hasActiveJob && (
+          <View style={s.upcomingSection}>
+            <View style={s.upcomingSectionHeader}>
+              <Text style={s.upcomingSectionTitle}>Nākamie darbi</Text>
+              <TouchableOpacity
+                onPress={() => router.push('/(driver)/jobs')}
+                hitSlop={8}
+              >
+                <Text style={s.upcomingSeeAll}>Visi →</Text>
+              </TouchableOpacity>
+            </View>
+            {upcomingJobs.map((job) => {
+              const pickupDate = new Date(job.pickupDate);
+              const isToday =
+                pickupDate.toDateString() === new Date().toDateString();
+              const timeLabel = pickupDate.toLocaleTimeString('lv-LV', {
+                hour: '2-digit',
+                minute: '2-digit',
+              });
+              return (
+                <TouchableOpacity
+                  key={job.id}
+                  style={s.upcomingCard}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    haptics.light();
+                    router.push('/(driver)/active');
+                  }}
+                >
+                  <View style={s.upcomingCardLeft}>
+                    <Text style={s.upcomingTime}>
+                      {isToday ? 'Šodien' : pickupDate.toLocaleDateString('lv-LV', { weekday: 'short' })}{' '}
+                      {timeLabel}
+                    </Text>
+                    <Text style={s.upcomingRoute} numberOfLines={1}>
+                      {job.pickupCity} → {job.deliveryCity}
+                    </Text>
+                  </View>
+                  <View style={s.upcomingCardRight}>
+                    <Text style={s.upcomingEarning}>€{job.rate?.toFixed(0) ?? '—'}</Text>
+                    <ArrowRight size={14} color="#9ca3af" />
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
         {/* First-run prompt: no vehicles registered yet */}
         {vehicleCount === 0 && !hasActiveJob && (
           <TouchableOpacity
@@ -335,9 +391,9 @@ export default function DriverHomeScreen() {
             onPress={() => router.push('/(driver)/earnings')}
           />
           <QuickAction
-            icon={<Calendar size={20} color="#4b5563" />}
-            label="Grafiks"
-            onPress={() => router.push('/(driver)/schedule')}
+            icon={<Truck size={20} color="#4b5563" />}
+            label="Transportlīdzekļi"
+            onPress={() => router.push('/(driver)/vehicles')}
           />
           <QuickAction
             icon={<Trash2 size={20} color="#4b5563" />}
@@ -513,4 +569,32 @@ const s = StyleSheet.create({
   quickItem: { alignItems: 'center', gap: 8 },
   quickIcon: {},
   quickLabel: { fontSize: 12, color: '#4b5563', fontWeight: '500' },
+
+  // Upcoming Jobs
+  upcomingSection: { marginBottom: 20 },
+  upcomingSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  upcomingSectionTitle: { fontSize: 13, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 },
+  upcomingSeeAll: { fontSize: 13, fontWeight: '600', color: '#111827' },
+  upcomingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f9fafb',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  upcomingCardLeft: { flex: 1, marginRight: 8 },
+  upcomingTime: { fontSize: 11, fontWeight: '600', color: '#6b7280', marginBottom: 2 },
+  upcomingRoute: { fontSize: 14, fontWeight: '700', color: '#111827' },
+  upcomingCardRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  upcomingEarning: { fontSize: 15, fontWeight: '800', color: '#111827' },
 });

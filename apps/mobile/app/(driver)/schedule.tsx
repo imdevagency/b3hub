@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { useToast } from '@/components/ui/Toast';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { TopBar } from '@/components/ui/TopBar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/button';
@@ -272,7 +272,7 @@ export default function ScheduleScreen() {
 
   return (
     <ScreenContainer bg="#F4F5F7">
-      <ScreenHeader title="Darba grafiks" />
+      <TopBar title="Grafiks" />
 
       <ScrollView
         style={{ flex: 1 }}

@@ -14,6 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/lib/translations';
@@ -24,8 +25,9 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { haptics } from '@/lib/haptics';
 import { SELLER_ORDER_STATUS } from '@/lib/materials';
 import { useToast } from '@/components/ui/Toast';
-import { api, type ApiOrder } from '@/lib/api';
+import { api, type ApiOrder, type OpenQuoteRequest } from '@/lib/api';
 import { useLiveUpdates } from '@/lib/use-live-updates';
+import { useOpenQuoteCount } from '@/lib/use-open-quote-count';
 import {
   X,
   Square,
@@ -36,6 +38,9 @@ import {
   Clock,
   Phone,
   FileText,
+  ChevronRight,
+  Package,
+  Send,
 } from 'lucide-react-native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -434,6 +439,10 @@ export default function IncomingScreen() {
   const { token, user } = useAuth();
   const router = useRouter();
   const toast = useToast();
+  const openQuoteCount = useOpenQuoteCount();
+  const [section, setSection] = useState<'orders' | 'quotes'>('orders');
+  const [quoteRequests, setQuoteRequests] = useState<OpenQuoteRequest[]>([]);
+  const [quotesLoading, setQuotesLoading] = useState(false);
   const [orders, setOrders] = useState<IncomingOrder[]>([]);
   const [fetching, setFetching] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -516,8 +525,22 @@ export default function IncomingScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchOrders();
+      fetchQuotes();
     }, [fetchOrders]),
   );
+
+  const fetchQuotes = useCallback(async () => {
+    if (!token) return;
+    setQuotesLoading(true);
+    try {
+      const data = await api.quoteRequests.openRequests(token);
+      setQuoteRequests(data);
+    } catch {
+      // silent
+    } finally {
+      setQuotesLoading(false);
+    }
+  }, [token]);
 
   // ── Live push: new orders from buyers arrive in real-time ─────────────────
   const { sellerNewOrder } = useLiveUpdates({
@@ -620,122 +643,216 @@ export default function IncomingScreen() {
 
   return (
     <ScreenContainer bg="white">
-      {/* Batch select toggle — shown when there are PENDING orders */}
-      {orders.some((o) => o.status === 'PENDING') && (
-        <View
-          style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, alignItems: 'flex-end' }}
-        >
-          <TouchableOpacity
-            style={[styles.batchToggleBtn, batchMode && styles.batchToggleBtnActive]}
-            onPress={toggleBatchMode}
-            activeOpacity={0.8}
-          >
-            {batchMode ? (
-              <X size={15} color="#6b7280" />
-            ) : (
-              <CheckSquare2 size={15} color="#374151" />
-            )}
-            <Text style={styles.batchToggleText}>{batchMode ? 'Atcelt' : 'Atlasīt'}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Filter Tabs */}
-      {orders.length > 0 && (
-        <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8 }}
-          >
-            {STATUS_FILTERS.map((f) => {
-              const count =
-                f.key === 'ALL' ? orders.length : orders.filter((o) => o.status === f.key).length;
-              const active = filterStatus === f.key;
-              return (
-                <TouchableOpacity
-                  key={f.key}
-                  style={[styles.filterPill, active && styles.filterPillActive]}
-                  onPress={() => {
-                    haptics.light();
-                    setFilterStatus(f.key);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.filterPillText, active && styles.filterPillTextActive]}>
-                    {f.label}
-                  </Text>
-                  {count > 0 && (
-                    <View style={[styles.filterBadge, active && styles.filterBadgeActive]}>
-                      <Text
-                        style={[styles.filterBadgeText, active && styles.filterBadgeTextActive]}
-                      >
-                        {count}
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-      )}
-
-      <ScrollView
-        contentContainerStyle={[
-          styles.list,
-          visibleOrders.length === 0 && { flexGrow: 1, justifyContent: 'center' },
-        ]}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              fetchOrders(true);
-            }}
-            tintColor="#111827"
-          />
+      <ScreenHeader
+        title="Pieprasījumi"
+        onBack={null}
+        rightAction={
+          section === 'orders' && orders.some((o) => o.status === 'PENDING') ? (
+            <TouchableOpacity
+              style={[styles.batchToggleBtn, batchMode && styles.batchToggleBtnActive]}
+              onPress={toggleBatchMode}
+              activeOpacity={0.8}
+            >
+              {batchMode ? (
+                <X size={15} color="#6b7280" />
+              ) : (
+                <CheckSquare2 size={15} color="#374151" />
+              )}
+              <Text style={styles.batchToggleText}>{batchMode ? 'Atcelt' : 'Atlasīt'}</Text>
+            </TouchableOpacity>
+          ) : undefined
         }
-      >
-        {visibleOrders.length === 0 ? (
-          <EmptyState
-            icon={<Inbox size={32} color="#9ca3af" />}
-            title={orders.length === 0 ? 'Nav pasūtījumu' : 'Nav atrasts'}
-            subtitle={
-              orders.length === 0
-                ? 'Šobrīd nav neviena aktīva pasūtījuma.'
-                : 'Šajā kategorijā pašlaik nav neviena pasūtījuma.'
-            }
-            action={
-              orders.length === 0 ? (
-                <TouchableOpacity
-                  style={styles.emptyCta}
-                  onPress={() => router.push('/(seller)/catalog' as any)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.emptyCtaText}>Pārbaudīt katalogu →</Text>
-                </TouchableOpacity>
-              ) : undefined
-            }
-          />
-        ) : (
-          visibleOrders.map((order) => (
-            <OrderCard
-              key={order.id}
-              order={order}
-              onConfirm={handleConfirm}
-              onReject={handleReject}
-              onStartLoading={handleStartLoading}
-              actioning={actioning}
-              onPress={() => router.push(`/(seller)/order/${order.id}` as any)}
-              batchMode={batchMode}
-              isSelected={batchSelectedIds.has(order.id)}
-              onToggleSelect={() => toggleBatchSelect(order.id)}
-            />
-          ))
-        )}
-      </ScrollView>
+      />
 
+      {/* ── Segment control ── */}
+      <View style={styles.segmentBar}>
+        <TouchableOpacity
+          style={[styles.segmentBtn, section === 'orders' && styles.segmentBtnActive]}
+          onPress={() => {
+            haptics.light();
+            setSection('orders');
+          }}
+          activeOpacity={0.8}
+        >
+          <Text
+            style={[styles.segmentBtnText, section === 'orders' && styles.segmentBtnTextActive]}
+          >
+            Pasūtījumi{orders.length > 0 ? ` · ${orders.length}` : ''}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segmentBtn, section === 'quotes' && styles.segmentBtnActive]}
+          onPress={() => {
+            haptics.light();
+            setSection('quotes');
+          }}
+          activeOpacity={0.8}
+        >
+          <Text
+            style={[styles.segmentBtnText, section === 'quotes' && styles.segmentBtnTextActive]}
+          >
+            Cenas{openQuoteCount > 0 ? ` · ${openQuoteCount}` : ''}
+          </Text>
+          {openQuoteCount > 0 && section !== 'quotes' && <View style={styles.segmentDot} />}
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Quotes section ── */}
+      {section === 'quotes' && (
+        <ScrollView
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, paddingTop: 8 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={quotesLoading}
+              onRefresh={fetchQuotes}
+              tintColor="#111827"
+            />
+          }
+        >
+          {quotesLoading && quoteRequests.length === 0 ? (
+            <View style={{ gap: 12, marginTop: 8 }}>
+              <SkeletonCard count={3} />
+            </View>
+          ) : quoteRequests.length === 0 ? (
+            <EmptyState
+              icon={<FileText size={32} color="#9ca3af" />}
+              title="Nav cenu pieprasījumu"
+              subtitle="Jauni pieprasījumi parādīsies šeit."
+            />
+          ) : (
+            quoteRequests.map((req) => (
+              <TouchableOpacity
+                key={req.id}
+                style={styles.quoteCard}
+                activeOpacity={0.8}
+                onPress={() => {
+                  haptics.light();
+                  router.push('/(seller)/quotes' as any);
+                }}
+              >
+                <View style={styles.quoteCardTop}>
+                  <View style={styles.quoteIconWrap}>
+                    <Package size={16} color="#2563eb" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.quoteCardTitle}>{req.materialCategory}</Text>
+                    <Text style={styles.quoteCardSub}>
+                      {req.quantity} {req.unit} · {req.deliveryCity}
+                    </Text>
+                  </View>
+                  <View style={styles.quoteRespondBtn}>
+                    <Send size={13} color="#fff" />
+                    <Text style={styles.quoteRespondBtnText}>Atbildēt</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+        </ScrollView>
+      )}
+
+      {/* ── Orders section ── */}
+      {section === 'orders' && (
+        <>
+          {/* Filter Tabs */}
+          {orders.length > 0 && (
+            <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8 }}
+              >
+                {STATUS_FILTERS.map((f) => {
+                  const count =
+                    f.key === 'ALL'
+                      ? orders.length
+                      : orders.filter((o) => o.status === f.key).length;
+                  const active = filterStatus === f.key;
+                  return (
+                    <TouchableOpacity
+                      key={f.key}
+                      style={[styles.filterPill, active && styles.filterPillActive]}
+                      onPress={() => {
+                        haptics.light();
+                        setFilterStatus(f.key);
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.filterPillText, active && styles.filterPillTextActive]}>
+                        {f.label}
+                      </Text>
+                      {count > 0 && (
+                        <View style={[styles.filterBadge, active && styles.filterBadgeActive]}>
+                          <Text
+                            style={[styles.filterBadgeText, active && styles.filterBadgeTextActive]}
+                          >
+                            {count}
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
+
+          <ScrollView
+            contentContainerStyle={[
+              styles.list,
+              visibleOrders.length === 0 && { flexGrow: 1, justifyContent: 'center' },
+            ]}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => {
+                  setRefreshing(true);
+                  fetchOrders(true);
+                }}
+                tintColor="#111827"
+              />
+            }
+          >
+            {visibleOrders.length === 0 ? (
+              <EmptyState
+                icon={<Inbox size={32} color="#9ca3af" />}
+                title={orders.length === 0 ? 'Nav pasūtījumu' : 'Nav atrasts'}
+                subtitle={
+                  orders.length === 0
+                    ? 'Šobrīd nav neviena aktīva pasūtījuma.'
+                    : 'Šajā kategorijā pašlaik nav neviena pasūtījuma.'
+                }
+                action={
+                  orders.length === 0 ? (
+                    <TouchableOpacity
+                      style={styles.emptyCta}
+                      onPress={() => router.push('/(seller)/catalog' as any)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.emptyCtaText}>Pārbaudīt katalogu →</Text>
+                    </TouchableOpacity>
+                  ) : undefined
+                }
+              />
+            ) : (
+              visibleOrders.map((order) => (
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  onConfirm={handleConfirm}
+                  onReject={handleReject}
+                  onStartLoading={handleStartLoading}
+                  actioning={actioning}
+                  onPress={() => router.push(`/(seller)/order/${order.id}` as any)}
+                  batchMode={batchMode}
+                  isSelected={batchSelectedIds.has(order.id)}
+                  onToggleSelect={() => toggleBatchSelect(order.id)}
+                />
+              ))
+            )}
+          </ScrollView>
+        </>
+      )}
       {batchMode && batchSelectedIds.size > 0 && (
         <View style={styles.batchBar}>
           <Text style={styles.batchBarText}>{batchSelectedIds.size} atlasīti</Text>
@@ -769,18 +886,6 @@ export default function IncomingScreen() {
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
-  },
-  heroTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#111827',
-    letterSpacing: -0.5,
-  },
-
   filterPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -807,6 +912,44 @@ const styles = StyleSheet.create({
   filterBadgeTextActive: { color: '#ffffff' },
 
   list: { padding: 16, paddingBottom: 40 },
+
+  quoteBanner: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    padding: 12,
+    backgroundColor: '#eff6ff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  quoteBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  quoteBannerIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#dbeafe',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quoteBannerTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#1e40af',
+  },
+  quoteBannerSub: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    color: '#3b82f6',
+    marginTop: 1,
+  },
 
   card: {
     paddingVertical: 18,
@@ -937,6 +1080,67 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   batchBarBtnText: { color: '#111827', fontWeight: '700', fontSize: 14 },
+
+  // Segment control
+  segmentBar: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+    padding: 3,
+  },
+  segmentBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 9,
+    borderRadius: 10,
+    gap: 5,
+  },
+  segmentBtnActive: {
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
+  },
+  segmentBtnText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
+  segmentBtnTextActive: { color: '#111827' },
+  segmentDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#2563eb' },
+
+  // Quote cards
+  quoteCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    padding: 14,
+    marginBottom: 10,
+  },
+  quoteCardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  quoteIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#eff6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quoteCardTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2 },
+  quoteCardSub: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
+  quoteRespondBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+  },
+  quoteRespondBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
 });
 
 const modalStyles = StyleSheet.create({

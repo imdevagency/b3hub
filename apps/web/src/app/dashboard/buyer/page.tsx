@@ -9,9 +9,11 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
 import { getDashboardStats, type DashboardStats } from '@/lib/api';
-import { ArrowRight, ChevronRight, ClipboardList, FolderOpen, Package, Trash2 } from 'lucide-react';
+import { ArrowRight, ClipboardList, FolderOpen, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
+import { ActionListItem } from '@/components/ui/action-list-item';
+import { PageSpinner } from '@/components/ui/page-spinner';
 
 type Action = {
   label: string;
@@ -33,34 +35,6 @@ function QuickStat({ value, label }: { value: string; label: string }) {
         {label}
       </span>
     </div>
-  );
-}
-
-function ActionItem({ action }: { action: Action }) {
-  return (
-    <Link
-      href={action.href}
-      className="group flex items-center justify-between p-4 -mx-4 rounded-2xl hover:bg-muted/40 active:bg-muted/60 transition-all"
-    >
-      <div className="flex items-center gap-4">
-        <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors ${
-            action.primary
-              ? 'bg-primary/10 text-primary group-hover:bg-primary/20'
-              : 'bg-muted text-foreground group-hover:bg-muted/80'
-          }`}
-        >
-          <action.icon className="h-5 w-5" />
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold text-foreground">{action.label}</h3>
-          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1 pr-4">
-            {action.description}
-          </p>
-        </div>
-      </div>
-      <ChevronRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-foreground transition-colors group-hover:translate-x-0.5" />
-    </Link>
   );
 }
 
@@ -88,21 +62,10 @@ export default function BuyerDashboardPage() {
   }, [user, token]);
 
   if (isLoading || !user) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-foreground border-r-transparent" />
-      </div>
-    );
+    return <PageSpinner className="min-h-[60vh]" />;
   }
 
   const actions: Action[] = [
-    {
-      label: 'Pasūtīt Materiālus',
-      description: 'Smiltis, grants, betons, šķembas — no kataloga',
-      icon: Package,
-      href: '/dashboard/catalog',
-      primary: true,
-    },
     {
       label: 'Pasūtīt Konteineru',
       description: 'Rezervēt atkritumu konteineru savai darba vai mājas vietai',
@@ -157,7 +120,9 @@ export default function BuyerDashboardPage() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
               </span>
-              Izpēti piedāvājumu
+              {data?.activeOrders
+                ? `${data.activeOrders} aktīvi pasūtījumi`
+                : 'Izpēti piedāvājumus'}
             </div>
             <h2 className="text-xl sm:text-2xl font-semibold">Atver Katalogu</h2>
             <p className="text-background/70 text-sm mt-1">
@@ -177,7 +142,7 @@ export default function BuyerDashboardPage() {
           Ātrās Darbības
         </h2>
         {actions.map((action) => (
-          <ActionItem key={action.label} action={action} />
+          <ActionListItem key={action.label} {...action} />
         ))}
       </div>
     </div>

@@ -55,7 +55,7 @@ export default function WelcomeScreen() {
               ] as const
             ).map(({ Icon, text }) => (
               <View key={text} style={styles.featureRow}>
-                <Icon size={18} color="#6b7280" strokeWidth={1.5} />
+                <Icon size={18} color="#9ca3af" strokeWidth={1.5} />
                 <Text style={styles.featureText}>{text}</Text>
               </View>
             ))}
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   },
   featureText: {
     fontSize: 15,
-    color: '#6b7280',
+    color: '#9ca3af',
     fontFamily: 'Inter_400Regular',
     flex: 1,
     lineHeight: 22,

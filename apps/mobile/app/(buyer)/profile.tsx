@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -23,32 +23,24 @@ import {
   LogOut,
   Trash2,
   ChevronRight,
-  Phone,
   AlertCircle,
   HelpCircle,
   MessageCircle,
-  Mail,
   Shield,
   Settings,
   Bell,
-  Activity,
   ArrowUpDown,
   Building2,
   Globe,
-  FolderKanban,
-  FileText,
-  FileCheck,
-  ShieldCheck,
-  Users,
-  Handshake,
-  MapPin,
+  Package,
+  Truck,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
 import { useMode } from '@/lib/mode-context';
 import { RoleSheet } from '@/components/ui/TopBar';
-import { api } from '@/lib/api';
+import { api, type ProviderApplication } from '@/lib/api';
 import { t } from '@/lib/translations';
 import { ACCOUNT_STATUS } from '@/lib/materials';
 import { getRoleName } from '@/lib/utils';
@@ -77,28 +69,16 @@ const s = StyleSheet.create({
   },
   headerEditBtnText: { fontWeight: '600', color: '#374151', fontSize: 14 },
 
-  nudge: {
-    marginHorizontal: 16,
-    marginBottom: 24,
-    padding: 16,
-    backgroundColor: '#fffbeb',
-    borderRadius: 12,
+  identityChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    borderWidth: 1,
-    borderColor: '#fef3c7',
-  },
-  nudgeIcon: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#fef3c7',
+    gap: 4,
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  nudgeTitle: { fontWeight: '700', color: '#78350f', fontSize: 14 },
-  nudgeSubtitle: { color: '#b45309', fontSize: 12, marginTop: 2 },
+  identityChipText: { fontSize: 12, fontFamily: 'Inter_500Medium', color: '#374151' },
 
   completenessCard: {
     marginHorizontal: 16,
@@ -240,6 +220,13 @@ export default function ProfileScreen() {
   const roleLabel = t.mode[mode];
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`;
 
+  const [applications, setApplications] = useState<ProviderApplication[]>([]);
+  useEffect(() => {
+    if (!token) return;
+    api.providerApplications.mine(token).then(setApplications).catch(() => {});
+  }, [token]);
+
+
   const ROLE_THEME: Record<string, { avatarBg: string; badgeBg: string; badgeText: string }> = {
     buyer: { avatarBg: '#fee2e2', badgeBg: '#fef2f2', badgeText: '#b91c1c' },
     seller: { avatarBg: '#d1fae5', badgeBg: '#f0fdf4', badgeText: '#15803d' },
@@ -342,6 +329,25 @@ export default function ProfileScreen() {
             <Pencil size={14} color="#374151" />
             <Text style={s.headerEditBtnText}>Rediģēt profilu</Text>
           </TouchableOpacity>
+
+          {/* Identity chips */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 12 }}>
+            {!!user?.phone && (
+              <View style={s.identityChip}>
+                <Text style={s.identityChipText}>{user.phone}</Text>
+              </View>
+            )}
+            {!!user?.company && (
+              <View style={s.identityChip}>
+                <Building2 size={12} color="#6b7280" />
+                <Text style={s.identityChipText}>{user.company.name}</Text>
+              </View>
+            )}
+            <View style={s.identityChip}>
+              <Shield size={12} color="#6b7280" />
+              <Text style={s.identityChipText}>{accountTypeLabel}</Text>
+            </View>
+          </View>
         </View>
 
         {/* Role Switcher */}
@@ -398,66 +404,75 @@ export default function ProfileScreen() {
 
         {/* Menu Items */}
         <View style={s.menuConfig}>
-          <Text style={s.sectionHeader}>Darba rīki</Text>
+          {/* ── Expand capabilities ──────────────────────────────────────── */}
+          {(() => {
+            const needsSell = !user?.canSell;
+            const needsTransport = !user?.canTransport;
+            if (!needsSell && !needsTransport) return null;
 
-          <MenuItem
-            icon={FolderKanban}
-            label="Projekti"
-            onPress={() => router.push('/(buyer)/projects' as any)}
-          />
-          <MenuItem
-            icon={FileText}
-            label="Rēķini"
-            onPress={() => router.push('/(buyer)/invoices' as any)}
-          />
-          <MenuItem
-            icon={FileCheck}
-            label="Dokumenti"
-            onPress={() => router.push('/(buyer)/documents' as any)}
-          />
-          <MenuItem
-            icon={ShieldCheck}
-            label="Atkritumu sertifikāti"
-            onPress={() => router.push('/(buyer)/certificates' as any)}
-          />
-          <MenuItem
-            icon={AlertCircle}
-            label="Strīdi"
-            onPress={() => router.push('/(buyer)/disputes' as any)}
-          />
-          <MenuItem
-            icon={Users}
-            label="Komanda"
-            onPress={() => router.push('/(buyer)/team' as any)}
-          />
-          <MenuItem
-            icon={Handshake}
-            label="Ietvarlīgumi"
-            onPress={() => router.push('/(buyer)/framework-contracts' as any)}
-          />
+            const getApp = (type: 'supplier' | 'carrier', status: 'PENDING' | 'REJECTED') =>
+              applications.find(
+                (a) =>
+                  a.status === status &&
+                  (type === 'supplier' ? a.appliesForSell : a.appliesForTransport),
+              );
 
-          <Text style={[s.sectionHeader, { marginTop: 32 }]}>Konta informācija</Text>
+            return (
+              <>
+                <Text style={[s.sectionHeader, { marginTop: 32 }]}>Paplašināt iespējas</Text>
 
-          <MenuItem
-            icon={Phone}
-            label="Tālrunis"
-            value={user?.phone || 'Nav norādīts'}
-            onPress={openEdit}
-          />
-          {user?.company && (
-            <MenuItem icon={Building2} label="Uzņēmums" value={user.company.name} />
-          )}
-          <MenuItem icon={Shield} label="Konta veids" value={accountTypeLabel} />
-          <MenuItem
-            icon={MapPin}
-            label="Saglabātās adreses"
-            onPress={() => router.push('/(buyer)/saved-addresses' as any)}
-          />
-          <MenuItem
-            icon={Activity}
-            label="Statuss"
-            value={ACCOUNT_STATUS[user?.status ?? ''] ?? user?.status}
-          />
+                {needsSell &&
+                  (() => {
+                    if (getApp('supplier', 'PENDING'))
+                      return (
+                        <ApplicationRow emoji="📦" label="Piegādātāja pieteikums" status="PENDING" />
+                      );
+                    if (getApp('supplier', 'REJECTED'))
+                      return (
+                        <ApplicationRow
+                          emoji="📦"
+                          label="Piegādātāja pieteikums"
+                          status="REJECTED"
+                          onReapply={() => router.push('/(auth)/apply-role?type=supplier' as any)}
+                        />
+                      );
+                    return (
+                      <MenuItem
+                        icon={Package}
+                        label="Kļūt par piegādātāju"
+                        value="Pārdod materiālus platformā"
+                        onPress={() => router.push('/(auth)/apply-role?type=supplier' as any)}
+                      />
+                    );
+                  })()}
+
+                {needsTransport &&
+                  (() => {
+                    if (getApp('carrier', 'PENDING'))
+                      return (
+                        <ApplicationRow emoji="🚛" label="Pārvadātāja pieteikums" status="PENDING" />
+                      );
+                    if (getApp('carrier', 'REJECTED'))
+                      return (
+                        <ApplicationRow
+                          emoji="🚛"
+                          label="Pārvadātāja pieteikums"
+                          status="REJECTED"
+                          onReapply={() => router.push('/(auth)/apply-role?type=carrier' as any)}
+                        />
+                      );
+                    return (
+                      <MenuItem
+                        icon={Truck}
+                        label="Kļūt par pārvadātāju"
+                        value="Izpildi piegādes, pelni vairāk"
+                        onPress={() => router.push('/(auth)/apply-role?type=carrier' as any)}
+                      />
+                    );
+                  })()}
+              </>
+            );
+          })()}
 
           <Text style={[s.sectionHeader, { marginTop: 32 }]}>Atbalsts</Text>
 
@@ -602,6 +617,63 @@ export default function ProfileScreen() {
       </Modal>
       {isMultiRole && <RoleSheet visible={roleSheetOpen} onClose={() => setRoleSheetOpen(false)} />}
     </ScreenContainer>
+  );
+}
+
+function ApplicationRow({
+  emoji,
+  label,
+  status,
+  onReapply,
+}: {
+  emoji: string;
+  label: string;
+  status: 'PENDING' | 'REJECTED';
+  onReapply?: () => void;
+}) {
+  return (
+    <View style={s.menuItem}>
+      <View style={s.menuItemContent}>
+        <View style={[s.menuIcon, s.iconNormal]}>
+          <Text style={{ fontSize: 18 }}>{emoji}</Text>
+        </View>
+        <Text style={s.menuLabel}>{label}</Text>
+      </View>
+      {status === 'PENDING' ? (
+        <View
+          style={{
+            backgroundColor: '#fef3c7',
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+            borderRadius: 20,
+          }}
+        >
+          <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: '#92400e' }}>
+            Izskatīšanā
+          </Text>
+        </View>
+      ) : (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View
+            style={{
+              backgroundColor: '#fee2e2',
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              borderRadius: 20,
+            }}
+          >
+            <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: '#b91c1c' }}>
+              Noraidīts
+            </Text>
+          </View>
+          <TouchableOpacity onPress={onReapply} activeOpacity={0.7}>
+            <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: '#2563eb' }}>
+              Pieteikties atkārtoti
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
   );
 }
 

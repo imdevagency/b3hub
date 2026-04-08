@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
 import { useMode, MODE_HOME } from '@/lib/mode-context';
-import { Home, ClipboardList, User, ShoppingCart } from 'lucide-react-native';
+import { Home, ClipboardList, User, Briefcase } from 'lucide-react-native';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
@@ -52,10 +52,11 @@ export default function BuyerLayout() {
         />
         <Tabs.Screen
           name="new-order"
-          options={{
-            title: t.tabs.order,
-            tabBarIcon: ({ color }) => <ShoppingCart size={22} color={color} />,
-          }}
+          options={{ href: null }}
+        />
+        <Tabs.Screen
+          name="catalog"
+          options={{ href: null }}
         />
         <Tabs.Screen
           name="orders"
@@ -65,7 +66,13 @@ export default function BuyerLayout() {
             tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
           }}
         />
-        <Tabs.Screen name="catalog" options={{ href: null }} />
+        <Tabs.Screen
+          name="business"
+          options={{
+            title: t.tabs.business,
+            tabBarIcon: ({ color }) => <Briefcase size={22} color={color} />,
+          }}
+        />
         <Tabs.Screen
           name="profile"
           options={{
@@ -88,6 +95,7 @@ export default function BuyerLayout() {
         <Tabs.Screen name="project/new" options={{ href: null }} />
         <Tabs.Screen name="saved-addresses" options={{ href: null }} />
         <Tabs.Screen name="disputes" options={{ href: null }} />
+        <Tabs.Screen name="schedules" options={{ href: null }} />
       </Tabs>
     </View>
   );
