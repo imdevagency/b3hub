@@ -5,7 +5,6 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -19,7 +18,7 @@ export class QueryMaterialsDto {
   category?: MaterialCategory;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
   supplierId?: string;
 
   @IsOptional()

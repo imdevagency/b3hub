@@ -5,7 +5,19 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Bell, CheckCheck, Package, Truck, CreditCard, AlertCircle, RefreshCw } from 'lucide-react';
+import {
+  Bell,
+  CheckCheck,
+  Package,
+  Truck,
+  CreditCard,
+  AlertCircle,
+  RefreshCw,
+  XCircle,
+  MessageSquare,
+  FileText,
+  Scale,
+} from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -25,12 +37,17 @@ const TYPE_META: Record<NotificationType, { icon: React.ElementType; color: stri
   {
     ORDER_CREATED: { icon: Package, color: 'text-blue-600', bg: 'bg-blue-100' },
     ORDER_CONFIRMED: { icon: CheckCheck, color: 'text-green-600', bg: 'bg-green-100' },
+    ORDER_CANCELLED: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-100' },
     ORDER_DELIVERED: { icon: CheckCheck, color: 'text-green-700', bg: 'bg-green-100' },
     TRANSPORT_ASSIGNED: { icon: Truck, color: 'text-primary', bg: 'bg-primary/10' },
     TRANSPORT_STARTED: { icon: Truck, color: 'text-primary', bg: 'bg-primary/10' },
     TRANSPORT_COMPLETED: { icon: Truck, color: 'text-green-600', bg: 'bg-green-100' },
     PAYMENT_RECEIVED: { icon: CreditCard, color: 'text-emerald-600', bg: 'bg-emerald-100' },
+    QUOTE_RECEIVED: { icon: MessageSquare, color: 'text-sky-600', bg: 'bg-sky-100' },
+    QUOTE_ACCEPTED: { icon: CheckCheck, color: 'text-green-600', bg: 'bg-green-100' },
     SYSTEM_ALERT: { icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-100' },
+    DOCUMENT_EXPIRING_SOON: { icon: FileText, color: 'text-amber-600', bg: 'bg-amber-100' },
+    WEIGHING_SLIP: { icon: Scale, color: 'text-slate-600', bg: 'bg-slate-100' },
   };
 
 function fmtRelative(iso: string): string {

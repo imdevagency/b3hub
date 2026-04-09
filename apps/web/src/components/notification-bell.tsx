@@ -20,12 +20,17 @@ import {
 const TYPE_ICONS: Record<string, string> = {
   ORDER_CREATED: '📦',
   ORDER_CONFIRMED: '✅',
+  ORDER_CANCELLED: '❌',
   ORDER_DELIVERED: '🎉',
   TRANSPORT_ASSIGNED: '🚛',
   TRANSPORT_STARTED: '🛣️',
   TRANSPORT_COMPLETED: '🏁',
   PAYMENT_RECEIVED: '💳',
+  QUOTE_RECEIVED: '💬',
+  QUOTE_ACCEPTED: '🤝',
   SYSTEM_ALERT: '⚠️',
+  DOCUMENT_EXPIRING_SOON: '📄',
+  WEIGHING_SLIP: '⚖️',
 };
 
 function fmtRelative(iso: string): string {

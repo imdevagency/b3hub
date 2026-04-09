@@ -80,6 +80,12 @@ export class OrdersController {
     return this.ordersService.findAll(user, status as OrderStatus | undefined, limitNum, skipNum);
   }
 
+  /** GET /orders/schedules — list caller's recurring schedules (must be before :id) */
+  @Get('schedules')
+  getMySchedules(@CurrentUser() user: RequestingUser) {
+    return this.ordersService.getMySchedules(user);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.ordersService.findOne(id, user);
@@ -169,12 +175,6 @@ export class OrdersController {
     @CurrentUser() user: RequestingUser,
   ) {
     return this.ordersService.createSchedule(dto, user);
-  }
-
-  /** GET /orders/schedules — list caller's recurring schedules */
-  @Get('schedules')
-  getMySchedules(@CurrentUser() user: RequestingUser) {
-    return this.ordersService.getMySchedules(user);
   }
 
   /** POST /orders/schedules/:id/pause — pause a schedule */

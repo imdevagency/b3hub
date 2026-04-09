@@ -107,9 +107,10 @@ export async function getMaterials(
 }
 
 export async function getMyMaterials(token: string, supplierId: string): Promise<ApiMaterial[]> {
-  return apiFetch<ApiMaterial[]>(`/materials?supplierId=${supplierId}`, {
+  const res = await apiFetch<{ items: ApiMaterial[] } | ApiMaterial[]>(`/materials?supplierId=${supplierId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
+  return Array.isArray(res) ? res : (res as { items: ApiMaterial[] }).items ?? [];
 }
 
 export async function createMaterial(

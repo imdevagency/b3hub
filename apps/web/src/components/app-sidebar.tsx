@@ -44,6 +44,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useMode, type Mode } from '@/lib/mode-context';
 import {
   getAllTransportJobs,
+  getMyOrders,
   getMyTransportJobs,
   getOpenQuoteRequests,
   getProviderApplications,
@@ -91,6 +92,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       items: [
         { label: 'Mani Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
         { label: 'Regulārie Pasūtījumi', href: '/dashboard/orders/schedules', icon: CalendarClock },
+        { label: 'Skip Noma', href: '/dashboard/order/skip-hire', icon: Box },
       ],
     },
     {
@@ -100,7 +102,6 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       items: [
         { label: 'Ietvarlīgumi', href: '/dashboard/framework-contracts', icon: FolderKanban },
         { label: 'Cenu Pieprasījumi', href: '/dashboard/quote-requests', icon: FileQuestion },
-        { label: 'Skip Noma', href: '/dashboard/order/skip-hire', icon: Box },
       ],
     },
     {
@@ -149,7 +150,6 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
         { label: 'Darbu Tirgus', href: '/dashboard/jobs', icon: Briefcase },
         { label: 'Mani Darbi', href: '/dashboard/transport-history', icon: ClipboardList },
         { label: 'Grafiks', href: '/dashboard/schedule', icon: Calendar },
-        { label: 'Utilizācijas Centri', href: '/dashboard/recycling-centers', icon: Recycle },
       ],
     },
     {
@@ -158,7 +158,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       icon: Car,
       items: [
         { label: 'Flotes Pārvaldība', href: '/dashboard/fleet-management', icon: LayoutGrid },
-        { label: 'Operatora Iestatījumi', href: '/dashboard/transporter/settings', icon: Settings },
+        { label: 'Utilizācijas Centri', href: '/dashboard/recycling-centers', icon: Recycle },
       ],
     },
     {
@@ -213,6 +213,7 @@ type SidebarBadgeCounts = {
   activeJobs: number;
   openDisputes: number;
   pendingApplications: number;
+  pendingSellerOrders: number;
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -226,6 +227,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     activeJobs: 0,
     openDisputes: 0,
     pendingApplications: 0,
+    pendingSellerOrders: 0,
   });
 
   const isRouteActive = React.useCallback(
@@ -309,6 +311,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       }
     }
 
+    if (activeMode === 'CARRIER' && user?.canSkipHire) {
+      // Skip-hire operators get the operator settings link
+      sections = sections.map((section) => {
+        if (section.id !== 'carrier-fleet') return section;
+        return {
+          ...section,
+          items: [
+            ...section.items,
+            {
+              label: 'Operatora Iestatījumi',
+              href: '/dashboard/transporter/settings',
+              icon: Settings,
+            },
+          ],
+        };
+      });
+    }
+
     if (activeMode === 'SUPPLIER' && !user?.isCompany) {
       // Individual (non-company) suppliers have no company reviews — hide the Reviews link
       sections = sections.map((section) => ({
@@ -328,6 +348,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         activeJobs: 0,
         openDisputes: 0,
         pendingApplications: 0,
+        pendingSellerOrders: 0,
       });
       return;
     }
@@ -335,35 +356,44 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     let cancelled = false;
 
     const loadBadgeCounts = async () => {
-      const [notificationsResult, rfqResult, activeJobsResult, disputesResult, applicationsResult] =
-        await Promise.allSettled([
-          getUnreadNotificationCount(token),
-          activeMode === 'SUPPLIER' ? getOpenQuoteRequests(token) : Promise.resolve([]),
-          activeMode === 'CARRIER'
-            ? (async () => {
-                const canDispatchCarrierJobs =
-                  user?.userType === 'ADMIN' ||
-                  user?.companyRole === 'OWNER' ||
-                  user?.companyRole === 'MANAGER' ||
-                  !!user?.permManageOrders ||
-                  (!!user?.canTransport && !!user?.isCompany);
+      const [
+        notificationsResult,
+        rfqResult,
+        activeJobsResult,
+        disputesResult,
+        applicationsResult,
+        pendingSellerResult,
+      ] = await Promise.allSettled([
+        getUnreadNotificationCount(token),
+        activeMode === 'SUPPLIER' ? getOpenQuoteRequests(token) : Promise.resolve([]),
+        activeMode === 'CARRIER'
+          ? (async () => {
+              const canDispatchCarrierJobs =
+                user?.userType === 'ADMIN' ||
+                user?.companyRole === 'OWNER' ||
+                user?.companyRole === 'MANAGER' ||
+                !!user?.permManageOrders ||
+                (!!user?.canTransport && !!user?.isCompany);
 
-                const jobs = canDispatchCarrierJobs
-                  ? await getAllTransportJobs(token)
-                  : await getMyTransportJobs(token);
+              const jobs = canDispatchCarrierJobs
+                ? await getAllTransportJobs(token)
+                : await getMyTransportJobs(token);
 
-                return jobs.filter((job) => ACTIVE_JOB_STATUSES.has(job.status)).length;
-              })()
-            : Promise.resolve(0),
-          user?.userType === 'ADMIN'
-            ? listDisputes(token).then(
-                (ds) => ds.filter((d) => d.status === 'OPEN' || d.status === 'UNDER_REVIEW').length,
-              )
-            : Promise.resolve(0),
-          user?.userType === 'ADMIN'
-            ? getProviderApplications(token, 'PENDING').then((apps) => apps.length)
-            : Promise.resolve(0),
-        ]);
+              return jobs.filter((job) => ACTIVE_JOB_STATUSES.has(job.status)).length;
+            })()
+          : Promise.resolve(0),
+        user?.userType === 'ADMIN'
+          ? listDisputes(token).then(
+              (ds) => ds.filter((d) => d.status === 'OPEN' || d.status === 'UNDER_REVIEW').length,
+            )
+          : Promise.resolve(0),
+        user?.userType === 'ADMIN'
+          ? getProviderApplications(token, 'PENDING').then((apps) => apps.length)
+          : Promise.resolve(0),
+        activeMode === 'SUPPLIER' && user?.canSell
+          ? getMyOrders(token, 'PENDING').then((orders) => orders.length)
+          : Promise.resolve(0),
+      ]);
 
       if (cancelled) return;
 
@@ -378,6 +408,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         openDisputes: disputesResult.status === 'fulfilled' ? Math.max(0, disputesResult.value) : 0,
         pendingApplications:
           applicationsResult.status === 'fulfilled' ? Math.max(0, applicationsResult.value) : 0,
+        pendingSellerOrders:
+          pendingSellerResult.status === 'fulfilled' ? Math.max(0, pendingSellerResult.value) : 0,
       });
     };
 
@@ -388,12 +420,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [activeMode, token, user?.companyRole, user?.permManageOrders, user?.userType]);
+  }, [activeMode, token, user?.canSell, user?.companyRole, user?.permManageOrders, user?.userType]);
 
   const itemBadgeCountByHref = React.useMemo<Record<string, number>>(() => {
     const map: Record<string, number> = {
       '/dashboard/notifications': badgeCounts.notifications,
       '/dashboard/quote-requests/open': badgeCounts.openRfqs,
+      '/dashboard/incoming-orders': badgeCounts.pendingSellerOrders,
     };
 
     if (activeMode === 'CARRIER') {
@@ -411,6 +444,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     badgeCounts.notifications,
     badgeCounts.openRfqs,
     badgeCounts.openDisputes,
+    badgeCounts.pendingSellerOrders,
   ]);
 
   const renderBadge = React.useCallback((count: number) => {
@@ -579,7 +613,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuButton
                   asChild
                   tooltip="Pārskats"
-                  isActive={pathname === '/dashboard/admin'}
+                  isActive={isRouteActive('/dashboard/admin')}
                 >
                   <Link href="/dashboard/admin">
                     <LayoutDashboard className="size-4 shrink-0" />
@@ -591,7 +625,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuButton
                   asChild
                   tooltip="Lietotāji"
-                  isActive={pathname === '/dashboard/admin/users'}
+                  isActive={isRouteActive('/dashboard/admin/users')}
                 >
                   <Link href="/dashboard/admin/users">
                     <Users className="size-4 shrink-0" />
@@ -603,7 +637,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuButton
                   asChild
                   tooltip="Uzņēmumi"
-                  isActive={pathname === '/dashboard/admin/companies'}
+                  isActive={isRouteActive('/dashboard/admin/companies')}
                 >
                   <Link href="/dashboard/admin/companies">
                     <Building2 className="size-4 shrink-0" />
@@ -615,7 +649,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuButton
                   asChild
                   tooltip="Pasūtījumi"
-                  isActive={pathname === '/dashboard/admin/orders'}
+                  isActive={isRouteActive('/dashboard/admin/orders')}
                 >
                   <Link href="/dashboard/admin/orders">
                     <ClipboardList className="size-4 shrink-0" />
@@ -627,7 +661,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuButton
                   asChild
                   tooltip="Transporta darbi"
-                  isActive={pathname === '/dashboard/admin/jobs'}
+                  isActive={isRouteActive('/dashboard/admin/jobs')}
                 >
                   <Link href="/dashboard/admin/jobs">
                     <Truck className="size-4 shrink-0" />
@@ -639,7 +673,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuButton
                   asChild
                   tooltip="Pieteikumi"
-                  isActive={pathname === '/dashboard/admin/applications'}
+                  isActive={isRouteActive('/dashboard/admin/applications')}
                 >
                   <Link href="/dashboard/admin/applications">
                     <ShieldCheck className="size-4 shrink-0" />
@@ -652,7 +686,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuButton
                   asChild
                   tooltip="Sūdzības"
-                  isActive={pathname === '/dashboard/admin/disputes'}
+                  isActive={isRouteActive('/dashboard/admin/disputes')}
                 >
                   <Link href="/dashboard/admin/disputes">
                     <AlertTriangle className="size-4 shrink-0" />
@@ -674,7 +708,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <SidebarMenuButton
                     asChild
                     tooltip="Uzņēmuma profils"
-                    isActive={pathname === '/dashboard/company'}
+                    isActive={isRouteActive('/dashboard/company')}
                   >
                     <Link href="/dashboard/company">
                       <Building2 className="size-4 shrink-0" />
@@ -687,7 +721,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <SidebarMenuButton
                       asChild
                       tooltip="Komanda"
-                      isActive={pathname === '/dashboard/company/team'}
+                      isActive={isRouteActive('/dashboard/company/team')}
                     >
                       <Link href="/dashboard/company/team">
                         <Users className="size-4 shrink-0" />
@@ -702,7 +736,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenuButton
                 asChild
                 tooltip="Iestatījumi"
-                isActive={pathname === '/dashboard/settings'}
+                isActive={isRouteActive('/dashboard/settings')}
               >
                 <Link href="/dashboard/settings">
                   <Settings className="size-4 shrink-0" />
@@ -742,7 +776,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               tooltip="Iziet"
               onClick={() => {
                 logout();
-                router.push('/');
+                router.push('/login');
               }}
               className="text-muted-foreground hover:text-primary hover:bg-primary/10"
             >

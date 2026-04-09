@@ -928,6 +928,10 @@ export class TransportJobsService {
         cargoType: true,
         distanceKm: true,
         declinedDriverIds: true,
+        offeredToDriverId: true,
+        offerExpiresAt: true,
+        requestedById: true,
+        order: { select: { createdById: true } },
       },
     });
 
@@ -949,13 +953,37 @@ export class TransportJobsService {
     cargoType: string;
     distanceKm: number | null;
     declinedDriverIds: string[];
+    offeredToDriverId?: string | null;
+    offerExpiresAt?: Date | null;
+    requestedById?: string | null;
+    order?: { createdById: string } | null;
   }) {
+    const now = new Date();
+    // If the previous offer expired (driver did not respond), treat them as
+    // declined so they are not re-offered the same job indefinitely.
+    const expiredDriverId =
+      job.offeredToDriverId &&
+      job.offerExpiresAt &&
+      job.offerExpiresAt < now
+        ? job.offeredToDriverId
+        : null;
+
+    const effectiveDeclined = expiredDriverId
+      ? [...new Set([...job.declinedDriverIds, expiredDriverId])]
+      : job.declinedDriverIds;
+
+    // Never offer a job back to the user who created it (buyer-driver dual role)
+    const creatorUserId = job.requestedById ?? job.order?.createdById ?? null;
+    const excludedIds = creatorUserId
+      ? [...new Set([...effectiveDeclined, creatorUserId])]
+      : effectiveDeclined;
+
     const candidates = await this.prisma.user.findMany({
       where: {
         canTransport: true,
         status: 'ACTIVE',
         notifJobAlerts: true,
-        id: { notIn: job.declinedDriverIds },
+        id: { notIn: excludedIds },
       },
       select: {
         id: true,
@@ -998,10 +1026,18 @@ export class TransportJobsService {
     const nextDriver = scored[0];
     const offerExpiresAt = new Date(Date.now() + 45_000);
 
-    // Atomic offer assignment: only set offer if job is still AVAILABLE
+    // Atomic offer assignment: only set offer if job is still AVAILABLE.
+    // Also persist the expired driver into declinedDriverIds so the cron
+    // does not re-offer them the same job after the next expiry.
     const { count } = await this.prisma.transportJob.updateMany({
       where: { id: job.id, status: TransportJobStatus.AVAILABLE },
-      data: { offeredToDriverId: nextDriver.id, offerExpiresAt },
+      data: {
+        offeredToDriverId: nextDriver.id,
+        offerExpiresAt,
+        ...(expiredDriverId
+          ? { declinedDriverIds: { push: expiredDriverId } }
+          : {}),
+      },
     });
 
     if (count === 0) return; // job was accepted/cancelled between select and update

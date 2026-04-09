@@ -38,6 +38,13 @@ export default function LoginPage() {
     setError(null);
     try {
       const res = await loginUser(data);
+      // Set the HttpOnly cookie BEFORE navigating so the middleware
+      // recognises the session on the very first /dashboard request.
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: res.token }),
+      }).catch(() => null);
       setAuth(res.user, res.token);
       router.push('/dashboard');
     } catch (err) {

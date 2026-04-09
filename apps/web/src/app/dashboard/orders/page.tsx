@@ -47,6 +47,8 @@ import {
   Zap,
 } from 'lucide-react';
 
+import { CATEGORY_LABELS, UNIT_SHORT } from '@b3hub/shared';
+
 // ── Order-again helpers ───────────────────────────────────────────────────────
 
 function skipSizeToWizardId(size: string): string {
@@ -526,11 +528,28 @@ export function SupplierView({ token }: { token: string }) {
 
   return (
     <div className="space-y-4">
-      {/* QUICK STATS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 py-2 mt-4">
-        <QuickStat value={String(orders.length)} label="Kopā pasūtījumi" />
-        <QuickStat value={String(pending)} label="Gaida apstiprinājumu" alert={pending > 0} />
-        <QuickStat value={fmtMoney(revenue)} label="Kopā ieņēmumi" />
+      {/* QUICK STATS - Minimalist */}
+      <div className="flex flex-wrap items-end gap-x-12 gap-y-6 pt-4 pb-6">
+        <div>
+          <p className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase mb-1">
+            Kopā Pasūtījumi
+          </p>
+          <p className="text-3xl font-medium tracking-tight text-foreground">{orders.length}</p>
+        </div>
+        <div>
+          <p
+            className={`text-[10px] font-semibold tracking-widest uppercase mb-1 ${pending > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}
+          >
+            Gaida Apstiprinājumu
+          </p>
+          <p className="text-3xl font-medium tracking-tight text-foreground">{pending}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase mb-1">
+            Kopā Ieņēmumi
+          </p>
+          <p className="text-3xl font-medium tracking-tight text-foreground">{fmtMoney(revenue)}</p>
+        </div>
       </div>
 
       {actionError && (
@@ -545,27 +564,31 @@ export function SupplierView({ token }: { token: string }) {
         </div>
       )}
 
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end mb-6 border-b border-border/40 pb-4">
         <button
           onClick={reload}
           disabled={loading}
-          className="flex items-center gap-2 rounded-full bg-muted/40 hover:bg-muted/80 px-4 py-2 text-sm font-medium text-foreground transition-colors border-0"
+          className="flex items-center gap-2 rounded-xl bg-muted/40 hover:bg-muted/80 px-4 py-2 text-[13px] font-semibold text-foreground transition-colors"
         >
-          <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`size-[14px] ${loading ? 'animate-spin' : ''}`} />
           Atjaunot
         </button>
       </div>
 
       {loading ? (
-        <div className="py-16 text-center text-muted-foreground text-sm">Ielādē...</div>
+        <div className="flex justify-center items-center py-20">
+          <div className="size-6 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
+        </div>
       ) : orders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-muted/20 rounded-3xl">
-          <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
-            <Package className="h-10 w-10 text-muted-foreground/60" />
+        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-card border-[3px] border-dashed border-border/60 rounded-[32px]">
+          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+            <Package className="h-8 w-8 text-foreground/40" />
           </div>
-          <div className="space-y-1.5">
-            <p className="text-base font-bold text-foreground">Nav ienākošu pasūtījumu</p>
-            <p className="text-sm text-muted-foreground max-w-xs">
+          <div className="space-y-1">
+            <p className="text-lg font-semibold text-foreground tracking-tight">
+              Nav ienākošu pasūtījumu
+            </p>
+            <p className="text-sm text-muted-foreground/80 max-w-sm">
               Kad pircēji veiks pasūtījumu, tas parādīsies šeit. Pārliecinieties, ka jūsu
               piedāvājumi ir aktīvi.
             </p>
@@ -598,160 +621,177 @@ export function SupplierView({ token }: { token: string }) {
             return (
               <div
                 key={order.id}
-                className="group block relative bg-muted/30 rounded-3xl p-6 mb-4 hover:bg-muted/50 transition-all duration-300"
+                className="group block relative bg-card border border-border/60 hover:border-border/80 rounded-[24px] p-5 md:p-6 mb-5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] transition-all duration-300"
               >
                 {/* Header row */}
-                <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/50">
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
+                <div className="flex items-start justify-between pb-4 mb-4 border-b border-border/40">
+                  <div className="flex flex-col gap-1">
+                    <span className="font-mono text-[13px] font-semibold tracking-tight text-muted-foreground uppercase">
                       #{order.orderNumber}
                     </span>
-                    <span className="text-xs font-medium text-muted-foreground">
+                    <span className="text-[13px] font-medium text-foreground">
                       {fmtDate(order.createdAt)}
                     </span>
                   </div>
                   <div
-                    className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                    className="inline-flex items-center rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider"
                     style={{ backgroundColor: st.bg, color: st.text }}
                   >
                     {st.label}
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-2">
-                  {/* Material Info */}
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-baseline justify-between mb-2">
-                      <h3 className="font-medium text-base">{item?.material?.name ?? '—'}</h3>
-                      {item && (
-                        <span className="text-sm font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md">
-                          {item.quantity} {item.unit}
-                        </span>
+                <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+                  {/* Left Column: Material & Route */}
+                  <div className="flex-[2] space-y-6">
+                    {/* Material Info */}
+                    <div>
+                      <h3 className="font-semibold text-xl text-foreground tracking-tight">
+                        {item
+                          ? `${item.quantity} ${UNIT_SHORT[item.unit as keyof typeof UNIT_SHORT] ?? item.unit} • ${item.material?.name ?? '—'}`
+                          : '—'}
+                      </h3>
+                      {item?.material?.category && (
+                        <p className="text-[13px] font-medium text-muted-foreground mt-1">
+                          {CATEGORY_LABELS[
+                            item.material.category as keyof typeof CATEGORY_LABELS
+                          ] ?? item.material.category}
+                        </p>
                       )}
                     </div>
-                    {item?.material?.category && (
-                      <p className="text-sm text-muted-foreground">{item.material.category}</p>
-                    )}
-                  </div>
 
-                  {/* Route & Contact Timeline */}
-                  <div className="flex-[1.5] space-y-4">
-                    <div className="relative pl-6">
-                      <div className="absolute left-2.75 top-2 -bottom-4 w-px bg-black/10" />
-
-                      {/* Buyer */}
-                      <div className="relative mb-4">
-                        <div className="absolute -left-6 top-1.5 size-2 rounded-full bg-blue-500 ring-4 ring-white" />
-                        <p className="text-xs font-medium text-muted-foreground mb-0.5">Pircējs</p>
-                        {order.buyer ? (
-                          <div>
-                            <p className="text-sm font-medium text-foreground">
+                    {/* Uber-like Flawless Timeline Grid */}
+                    <div className="flex flex-col mt-2">
+                      {/* Origin Node */}
+                      <div className="flex gap-4">
+                        {/* Timeline Graphic Column */}
+                        <div className="flex flex-col items-center">
+                          <div className="size-3 rounded-full bg-border ring-4 ring-card z-10 shrink-0 mt-[2px] transition-colors" />
+                          <div className="w-[1.5px] bg-border/70 flex-1 -my-[4px] z-0 group-hover:bg-border transition-colors" />
+                        </div>
+                        {/* Content Column */}
+                        <div className="flex-1 pb-6">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5 leading-none mt-[1px]">
+                            Pasūtītājs
+                          </p>
+                          {order.buyer ? (
+                            <div className="text-[14px] font-semibold text-foreground tracking-tight mt-1">
                               {order.buyer.firstName} {order.buyer.lastName}
-                            </p>
-                            {order.buyer.phone && (
-                              <div
-                                className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 mt-1 cursor-pointer"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  window.location.href = `tel:${order.buyer?.phone}`;
-                                }}
-                              >
-                                <Phone className="size-3.5" />
-                                {order.buyer.phone}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">—</span>
-                        )}
+                              {order.buyer.phone && (
+                                <span
+                                  className="ml-3 font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    window.location.href = `tel:${order.buyer?.phone}`;
+                                  }}
+                                >
+                                  {order.buyer.phone}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-[14px] text-muted-foreground mt-1 block">—</span>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Delivery */}
-                      <div className="relative">
-                        <div className="absolute -left-6 top-1.5 size-3 rounded-full bg-emerald-500 ring-4 ring-background shadow-sm" />
-                        <p className="text-xs font-medium text-muted-foreground mb-0.5">
-                          Piegāde • {fmtDate(order.deliveryDate)}
-                        </p>
-                        <p className="text-sm font-medium text-foreground pr-8">
-                          {order.deliveryAddress || order.deliveryCity || '—'}
-                        </p>
-                        {order.siteContactPhone && (
-                          <div
-                            className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 mt-1 cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              window.location.href = `tel:${order.siteContactPhone}`;
-                            }}
-                          >
-                            <Phone className="size-3.5" />
-                            {order.siteContactName ?? 'Objekta'}, {order.siteContactPhone}
-                          </div>
-                        )}
+                      {/* Destination Node */}
+                      <div className="flex gap-4">
+                        {/* Timeline Graphic Column */}
+                        <div className="flex flex-col items-center">
+                          <div className="size-3 bg-foreground ring-4 ring-card z-10 shrink-0 mt-[2px]" />
+                        </div>
+                        {/* Content Column */}
+                        <div className="flex-1">
+                          <p className="text-[10px] font-bold text-foreground uppercase tracking-widest mb-0.5 leading-none mt-[1px]">
+                            Piegādes Adrese
+                          </p>
+                          <p className="text-[15px] font-semibold text-foreground tracking-tight mt-1">
+                            {order.deliveryAddress || order.deliveryCity || '—'}
+                          </p>
+                          {order.siteContactPhone && (
+                            <div className="text-[13px] font-medium text-muted-foreground mt-1">
+                              {order.siteContactName ?? 'Objekta'} •{' '}
+                              <span
+                                className="hover:text-foreground cursor-pointer transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.location.href = `tel:${order.siteContactPhone}`;
+                                }}
+                              >
+                                {order.siteContactPhone}
+                              </span>
+                            </div>
+                          )}
+                          <p className="text-[12px] font-semibold text-foreground bg-muted/60 inline-flex px-2 py-1 rounded-md mt-2 items-center gap-1.5">
+                            {fmtDate(order.deliveryDate)}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Financials & Actions */}
-                  <div className="flex-1 flex flex-col justify-between pt-4 sm:pt-0">
-                    <div className="flex flex-row sm:flex-col justify-between sm:justify-start items-center sm:items-end gap-1 mb-4">
-                      <span className="text-sm text-muted-foreground sm:text-right">Summa</span>
-                      <span className="text-lg font-bold tabular-nums">
+                  {/* Right Column: Financials & Actions */}
+                  <div className="flex-1 flex flex-col justify-between py-1 md:border-l md:border-border/40 md:pl-6">
+                    <div className="flex flex-row md:flex-col justify-between md:justify-start items-center md:items-start gap-1 mb-6">
+                      <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">
+                        Kopsumma
+                      </span>
+                      <span className="text-3xl font-semibold tracking-tight text-foreground">
                         {fmtMoney(order.total)}
                       </span>
                     </div>
 
-                    {order.status === 'PENDING' && (
-                      <div className="flex flex-col gap-2 mt-auto">
-                        <button
-                          disabled={busy}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleConfirm(order.id);
-                          }}
-                          className="flex items-center justify-center w-full gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-                        >
-                          <CheckCircle className="size-4" />
-                          Apstiprināt
-                        </button>
-                        <button
-                          disabled={busy}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleCancel(order.id);
-                          }}
-                          className="flex items-center justify-center w-full gap-2 rounded-xl border border-red-200 bg-red-50 text-red-700 px-4 py-2.5 text-sm font-semibold hover:bg-red-100 disabled:opacity-50 transition-colors"
-                        >
-                          <X className="size-4" />
-                          Noraidīt
-                        </button>
-                      </div>
-                    )}
-                    {order.status === 'CONFIRMED' && (
-                      <div className="flex flex-col gap-2 mt-auto">
-                        <button
-                          disabled={busy}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleStartLoading(order.id);
-                          }}
-                          className="flex items-center justify-center w-full gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                        >
-                          <Zap className="size-4" />
-                          Sākt iekraušanu
-                        </button>
-                        <button
-                          disabled={busy}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleSellerCancel(order.id);
-                          }}
-                          className="flex items-center justify-center w-full gap-2 rounded-xl border border-red-200 bg-red-50 text-red-700 px-4 py-2.5 text-sm font-semibold hover:bg-red-100 disabled:opacity-50 transition-colors"
-                        >
-                          <X className="size-4" />
-                          Atcelt
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex flex-col gap-2.5 mt-auto">
+                      {order.status === 'PENDING' && (
+                        <>
+                          <button
+                            disabled={busy}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleConfirm(order.id);
+                            }}
+                            className="flex items-center justify-center w-full rounded-xl bg-foreground text-background px-4 py-3.5 text-[14px] font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
+                          >
+                            Apstiprināt
+                          </button>
+                          <button
+                            disabled={busy}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleCancel(order.id);
+                            }}
+                            className="flex items-center justify-center w-full rounded-xl bg-transparent border-[1.5px] border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted/40 px-4 py-3 text-[14px] font-semibold disabled:opacity-50 transition-all"
+                          >
+                            Noraidīt
+                          </button>
+                        </>
+                      )}
+                      {order.status === 'CONFIRMED' && (
+                        <>
+                          <button
+                            disabled={busy}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleStartLoading(order.id);
+                            }}
+                            className="flex items-center justify-center w-full rounded-xl bg-foreground text-background px-4 py-3.5 text-[14px] font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
+                          >
+                            Sākt iekraušanu
+                          </button>
+                          <button
+                            disabled={busy}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleSellerCancel(order.id);
+                            }}
+                            className="flex items-center justify-center w-full rounded-xl bg-transparent border-[1.5px] border-border/80 text-muted-foreground hover:text-red-600 hover:border-red-200 hover:bg-red-50/50 px-4 py-3 text-[14px] font-semibold disabled:opacity-50 transition-all"
+                          >
+                            Atcelt
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -856,24 +896,27 @@ function BuyerView({ token }: { token: string }) {
               return (
                 <div
                   key={o.id}
-                  className="group block relative bg-muted/30 rounded-3xl p-6 mb-4 hover:bg-muted/50 transition-all duration-300"
+                  className="group block relative bg-card border border-border/60 hover:border-border/80 rounded-[24px] p-5 md:p-6 mb-5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] transition-all duration-300"
                 >
                   {/* Header row */}
-                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/50">
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
+                  <div className="flex items-start justify-between pb-4 mb-4 border-b border-border/40">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-mono text-[13px] font-semibold tracking-tight text-muted-foreground uppercase">
                         #{o.orderNumber}
+                      </span>
+                      <span className="text-[13px] font-medium text-foreground">
+                        {fmtDate(o.createdAt)}
                       </span>
                     </div>
                     <div
-                      className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                      className="inline-flex items-center rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider"
                       style={{ backgroundColor: st.bg, color: st.text }}
                     >
                       {st.label}
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-2">
+                  <div className="flex flex-col md:flex-row gap-6 md:gap-8">
                     {/* Skip Info */}
                     <div className="flex-1 space-y-1">
                       <div className="flex items-baseline justify-between mb-2">
@@ -887,17 +930,16 @@ function BuyerView({ token }: { token: string }) {
                     </div>
 
                     {/* Timeline */}
-                    <div className="flex-[1.5] space-y-4">
-                      <div className="relative pl-6">
-                        <div className="absolute left-2.75 top-2 bottom-2 w-px bg-black/10" />
-
-                        {/* Delivery */}
-                        <div className="relative">
-                          <div className="absolute -left-6 top-1.5 size-3 rounded-full bg-emerald-500 ring-4 ring-background shadow-sm" />
-                          <p className="text-xs font-medium text-muted-foreground mb-0.5">
+                    <div className="flex-[1.5] mt-1 flex flex-col pt-0.5">
+                      <div className="flex gap-4">
+                        <div className="flex flex-col items-center">
+                          <div className="size-3 bg-emerald-500 rounded-full ring-4 ring-card z-10 shrink-0 transition-colors" />
+                        </div>
+                        <div className="flex-1 -mt-0.5">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5 leading-none">
                             Adrese • {fmtDate(o.deliveryDate)}
                           </p>
-                          <p className="text-sm font-medium text-foreground pr-8">
+                          <p className="text-[14px] font-semibold text-foreground tracking-tight mt-1 pr-8">
                             {o.location || '—'}
                           </p>
                         </div>
@@ -966,48 +1008,51 @@ function BuyerView({ token }: { token: string }) {
               <Link
                 href={`/dashboard/orders/${o.id}`}
                 key={o.id}
-                className="group block relative bg-muted/30 rounded-3xl p-6 mb-4 hover:bg-muted/50 transition-all duration-300"
+                className="group block relative bg-card border border-border/60 hover:border-border/80 rounded-[24px] p-5 md:p-6 mb-5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] transition-all duration-300"
               >
                 {/* Header row */}
-                <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/50">
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
+                <div className="flex items-start justify-between pb-4 mb-4 border-b border-border/40">
+                  <div className="flex flex-col gap-1">
+                    <span className="font-mono text-[13px] font-semibold tracking-tight text-muted-foreground uppercase">
                       #{o.orderNumber}
+                    </span>
+                    <span className="text-[13px] font-medium text-foreground">
+                      {fmtDate(o.createdAt)}
                     </span>
                   </div>
                   <div
-                    className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                    className="inline-flex items-center rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider"
                     style={{ backgroundColor: st.bg, color: st.text }}
                   >
                     {st.label}
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-2">
+                <div className="flex flex-col md:flex-row gap-6 md:gap-8">
                   {/* Material Info */}
                   <div className="flex-1 space-y-1">
                     <div className="flex items-baseline justify-between mb-2">
                       <h3 className="font-medium text-base">{item?.material?.name ?? '—'}</h3>
                       {item && (
                         <span className="text-sm font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md">
-                          {item.quantity} {item.unit}
+                          {item.quantity}{' '}
+                          {UNIT_SHORT[item.unit as keyof typeof UNIT_SHORT] ?? item.unit}
                         </span>
                       )}
                     </div>
                   </div>
 
                   {/* Timeline */}
-                  <div className="flex-[1.5] space-y-4">
-                    <div className="relative pl-6">
-                      <div className="absolute left-2.75 top-2 bottom-2 w-px bg-black/10" />
-
-                      {/* Delivery */}
-                      <div className="relative">
-                        <div className="absolute -left-6 top-1.5 size-3 rounded-full bg-emerald-500 ring-4 ring-background shadow-sm" />
-                        <p className="text-xs font-medium text-muted-foreground mb-0.5">
+                  <div className="flex-[1.5] mt-1 flex flex-col pt-0.5">
+                    <div className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <div className="size-3 bg-emerald-500 rounded-full ring-4 ring-card z-10 shrink-0 transition-colors" />
+                      </div>
+                      <div className="flex-1 -mt-0.5">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5 leading-none">
                           Adrese • {fmtDate(o.deliveryDate)}
                         </p>
-                        <p className="text-sm font-medium text-foreground pr-8">
+                        <p className="text-[14px] font-semibold text-foreground tracking-tight mt-1 pr-8">
                           {o.deliveryAddress || o.deliveryCity || '—'}
                         </p>
                         {(() => {
@@ -1019,7 +1064,7 @@ function BuyerView({ token }: { token: string }) {
                           )?.driver;
                           if (!driver) return null;
                           return (
-                            <div className="mt-2 flex items-center gap-1.5">
+                            <div className="mt-3 flex items-center gap-1.5">
                               <User className="size-3 text-blue-500 shrink-0" />
                               <span className="text-xs text-blue-700 font-medium">
                                 {driver.firstName} {driver.lastName}
@@ -1105,42 +1150,53 @@ function BuyerView({ token }: { token: string }) {
               return (
                 <div
                   key={j.id}
-                  className="block relative bg-muted/30 rounded-3xl p-6 mb-2 hover:bg-muted/50 transition-all duration-300"
+                  className="group block relative bg-card border border-border/60 hover:border-border/80 rounded-[24px] p-5 md:p-6 mb-5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] transition-all duration-300"
                 >
                   {/* Header row */}
-                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/50">
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
+                  <div className="flex items-start justify-between pb-4 mb-4 border-b border-border/40">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-mono text-[13px] font-semibold tracking-tight text-muted-foreground uppercase">
                         #{j.jobNumber}
                       </span>
-                      <span className="text-xs text-muted-foreground capitalize">
+                      <span className="text-[13px] font-medium text-foreground capitalize">
                         {j.jobType?.replace(/_/g, ' ').toLowerCase()}
                       </span>
                     </div>
                     <StatusBadgeHex cfg={st} />
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-2">
+                  <div className="flex flex-col md:flex-row gap-6 md:gap-8">
                     {/* Route */}
-                    <div className="flex-2 relative pl-6">
-                      <div className="absolute left-2.5 top-2 bottom-2 w-px bg-black/10" />
-                      <div className="relative mb-3">
-                        <div className="absolute -left-6 top-1.5 size-3 rounded-full bg-amber-500 ring-4 ring-background shadow-sm" />
-                        <p className="text-xs font-medium text-muted-foreground mb-0.5">
-                          Paņemšana · {fmtDate(j.pickupDate)}
-                        </p>
-                        <p className="text-sm font-medium text-foreground">
-                          {j.pickupAddress || j.pickupCity || '—'}
-                        </p>
+                    <div className="flex-2 flex flex-col pt-1">
+                      {/* Origin Node */}
+                      <div className="flex gap-4">
+                        <div className="flex flex-col items-center">
+                          <div className="size-3 rounded-full bg-border ring-4 ring-muted/30 group-hover:ring-muted/50 z-10 shrink-0 transition-colors" />
+                          <div className="w-[1.5px] bg-border/40 flex-1 -my-[4px] z-0 transition-colors group-hover:bg-border/60" />
+                        </div>
+                        <div className="flex-1 pb-6 -mt-0.5">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5 leading-none">
+                            Paņemšana · {fmtDate(j.pickupDate)}
+                          </p>
+                          <p className="text-[14px] font-semibold text-foreground tracking-tight mt-1">
+                            {j.pickupAddress || j.pickupCity || '—'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="relative">
-                        <div className="absolute -left-6 top-1.5 size-3 rounded-full bg-emerald-500 ring-4 ring-background shadow-sm" />
-                        <p className="text-xs font-medium text-muted-foreground mb-0.5">
-                          Piegāde · {fmtDate(j.deliveryDate)}
-                        </p>
-                        <p className="text-sm font-medium text-foreground">
-                          {j.deliveryAddress || j.deliveryCity || '—'}
-                        </p>
+
+                      {/* Destination Node */}
+                      <div className="flex gap-4">
+                        <div className="flex flex-col items-center">
+                          <div className="size-3 bg-foreground ring-4 ring-muted/30 group-hover:ring-muted/50 z-10 shrink-0 transition-colors" />
+                        </div>
+                        <div className="flex-1 -mt-0.5">
+                          <p className="text-[10px] font-bold text-foreground uppercase tracking-widest mb-0.5 leading-none">
+                            Piegāde · {fmtDate(j.deliveryDate)}
+                          </p>
+                          <p className="text-[14px] font-semibold text-foreground tracking-tight mt-1">
+                            {j.deliveryAddress || j.deliveryCity || '—'}
+                          </p>
+                        </div>
                       </div>
                     </div>
 

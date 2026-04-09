@@ -6,6 +6,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { User, getMe } from '@/lib/api';
 
 interface AuthContextValue {
@@ -40,6 +41,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const storedToken = localStorage.getItem('b3hub_token');
@@ -58,12 +61,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .catch(() => {
           localStorage.removeItem('b3hub_token');
           fetch('/api/auth/session', { method: 'DELETE' }).catch(() => null);
+          // Redirect to login if the user was on a protected route
+          if (pathname.startsWith('/dashboard')) {
+            router.replace('/login');
+          }
         })
         .finally(() => setIsLoading(false));
     } else {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setAuth = (user: User, token: string) => {

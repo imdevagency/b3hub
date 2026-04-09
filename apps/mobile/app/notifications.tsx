@@ -42,15 +42,19 @@ const TYPE_INFO: Record<string, TypeInfo> = {
   ORDER_CREATED: { Icon: Package, bg: '#f3f4f6', iconColor: '#374151' },
   ORDER_CONFIRMED: { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#111827' },
   ORDER_DELIVERED: { Icon: CheckCircle2, bg: '#dcfce7', iconColor: '#15803d' },
+  ORDER_CANCELLED: { Icon: XCircle, bg: '#fef2f2', iconColor: '#b91c1c' },
   TRANSPORT_ASSIGNED: { Icon: Truck, bg: '#eff6ff', iconColor: '#2563eb' },
   TRANSPORT_STARTED: { Icon: Truck, bg: '#f3f4f6', iconColor: '#374151' },
   TRANSPORT_COMPLETED: { Icon: Award, bg: '#f0fdf4', iconColor: '#059669' },
   PAYMENT_RECEIVED: { Icon: Banknote, bg: '#f0fdf4', iconColor: '#111827' },
+  QUOTE_RECEIVED: { Icon: MessageSquare, bg: '#f0f9ff', iconColor: '#0369a1' },
+  QUOTE_ACCEPTED: { Icon: CheckCircle2, bg: '#dcfce7', iconColor: '#15803d' },
   SYSTEM_ALERT: { Icon: Bell, bg: '#fefce8', iconColor: '#ca8a04' },
+  DOCUMENT_EXPIRING_SOON: { Icon: FileText, bg: '#fefce8', iconColor: '#ca8a04' },
+  WEIGHING_SLIP: { Icon: Receipt, bg: '#f9fafb', iconColor: '#374151' },
   // Legacy / future
   ORDER_PLACED: { Icon: Package, bg: '#f3f4f6', iconColor: '#374151' },
   ORDER_SHIPPED: { Icon: Truck, bg: '#f3f4f6', iconColor: '#374151' },
-  ORDER_CANCELLED: { Icon: XCircle, bg: '#fef2f2', iconColor: '#111827' },
   JOB_AVAILABLE: { Icon: Briefcase, bg: '#f3f4f6', iconColor: '#374151' },
   JOB_ACCEPTED: { Icon: CheckCircle2, bg: '#f0fdf4', iconColor: '#059669' },
   JOB_COMPLETED: { Icon: Award, bg: '#f3f4f6', iconColor: '#6b7280' },
@@ -90,8 +94,16 @@ function deepLinkPath(notif: ApiNotification, canSell = false): string | null {
     case 'QUOTE_SUBMITTED':
       return d.quoteRequestId ? `/(buyer)/rfq/${d.quoteRequestId}` : '/(buyer)/orders';
     case 'QUOTE_REQUEST_RECEIVED':
+      return '/(seller)/quotes'; // ── Quote responses ─────────────────────────────────────────
+    case 'QUOTE_RECEIVED':
+      return d.requestId ? `/(buyer)/rfq/${d.requestId}` : '/(buyer)/orders';
+    case 'QUOTE_ACCEPTED':
       return '/(seller)/quotes';
-    // ── Rejected / cancelled ──────────────────────────────────────
+    // ── Documents ───────────────────────────────────────────────
+    case 'DOCUMENT_EXPIRING_SOON':
+      return '/(driver)/documents';
+    case 'WEIGHING_SLIP':
+      return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/documents'; // ── Rejected / cancelled ──────────────────────────────────────
     case 'ORDER_REJECTED':
       return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/orders';
     // ── Finance / docs ─────────────────────────────────────────
