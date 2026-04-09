@@ -11,20 +11,32 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { loadGoogleMapsScript, type PlaceAddress } from '@/components/ui/AddressAutocomplete';
-import { AddressMapPicker } from '@/components/ui/AddressMapPicker';
+import {
+  loadGoogleMapsScript,
+  type PlaceAddress,
+  AddressAutocomplete,
+} from '@/components/ui/AddressAutocomplete';
 import { createDisposalOrder } from '@/lib/api/orders';
 import { type WasteType } from '@/lib/api/containers';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 import { Trash2, CheckCircle2, ChevronRight, MapPin, CalendarDays, Loader2 } from 'lucide-react';
-import { MapWizardShell } from '@/components/order/MapWizardShell';
+import { WizardShell } from '@/components/order/WizardShell';
 
-const WASTE_TYPES: { id: WasteType; label: string; emoji: string }[] = [
-  { id: 'CONCRETE', label: 'Betons', emoji: '🏗️' },
+const WASTE_TYPES: { id: WasteType; label: string; emoji: string; warning?: string }[] = [
+  { id: 'CONCRETE', label: 'Betons / Bruģis', emoji: '🏗️' },
   { id: 'BRICK', label: 'Ķieģeļi / Būvgruži', emoji: '🧱' },
   { id: 'WOOD', label: 'Koksne', emoji: '🪵' },
-  { id: 'MIXED', label: 'Jaukti atkritumi', emoji: '🗑️' },
+  { id: 'METAL', label: 'Metāls', emoji: '🔧' },
+  { id: 'PLASTIC', label: 'Plastmasa', emoji: '♻️' },
   { id: 'SOIL', label: 'Zeme / Augsne', emoji: '🌱' },
+  { id: 'MIXED', label: 'Jaukti atkritumi', emoji: '🗑️' },
+  {
+    id: 'HAZARDOUS',
+    label: 'Bīstami atkritumi',
+    emoji: '⚠️',
+    warning:
+      'Azbesta, krāsu un šķīdinātāju utilizācijai nepieciešama īpaša atļauja. Sazinieties ar mums tieši.',
+  },
 ];
 
 const VOLUME_PRESETS: {
@@ -79,11 +91,13 @@ const DEFAULT_CENTER = { lat: 56.9496, lng: 24.1052 };
 
 export default function DisposalOrderPage() {
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [createdRef, setCreatedRef] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [contactPrefilled, setContactPrefilled] = useState(false);
 
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
@@ -98,6 +112,18 @@ export default function DisposalOrderPage() {
   const [notes, setNotes] = useState('');
   const [siteContactName, setSiteContactName] = useState('');
   const [siteContactPhone, setSiteContactPhone] = useState('');
+
+  // Pre-fill contact from authenticated user profile
+  useEffect(() => {
+    if (user && !contactPrefilled) {
+      const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+      if (fullName || user.phone) {
+        setSiteContactName(fullName);
+        setSiteContactPhone(user.phone ?? '');
+        setContactPrefilled(true);
+      }
+    }
+  }, [user, contactPrefilled]);
 
   // Map refs
   const mapDivRef = useRef<HTMLDivElement>(null);
@@ -248,8 +274,7 @@ export default function DisposalOrderPage() {
       );
       setCreatedRef(result.jobNumber ?? result.orderNumber ?? result.id.slice(0, 8).toUpperCase());
     } catch (err) {
-      console.warn('Order submission error', err instanceof Error ? err.message : err);
-      alert('Kļūda saglabājot pasūtījumu');
+      setSubmitError(err instanceof Error ? err.message : 'Kļūda saglabājot pasūtījumu');
     } finally {
       setLoading(false);
     }
@@ -283,229 +308,256 @@ export default function DisposalOrderPage() {
   }
 
   return (
-    <MapWizardShell
-      title="Būvgružu Izvešana"
-      backHref="/dashboard/order"
-      steps={STEPS}
-      step={step}
-      mapSlot={
-        <div className="relative w-full h-75 lg:h-auto lg:flex-1 bg-muted/30">
-          <div ref={mapDivRef} className="absolute inset-0" />
-          <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-            {address && (
-              <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-green-600" />
-                <span className="truncate max-w-50">{address}</span>
-              </div>
-            )}
-            {date && (
-              <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-blue-600" />
-                {date}
-              </div>
-            )}
-          </div>
-        </div>
-      }
-    >
-      <div>
-        {/* Step 1: Waste type */}
-        {step === 1 && (
-          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
-            <div>
-              <h2 className="text-lg font-bold">Ko vēlaties utilizēt?</h2>
-              <p className="text-sm text-muted-foreground mt-0.5">Izvēlieties atkritumu veidu</p>
+    <>
+      <div className="absolute inset-0 bg-[#e5e3df] z-0">
+        <div ref={mapDivRef} className="absolute inset-0" />
+        <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+          {address && (
+            <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-green-600" />
+              <span className="truncate max-w-50">{address}</span>
             </div>
-
-            <div className="grid grid-cols-1 gap-2">
-              {WASTE_TYPES.map((type) => (
-                <button
-                  key={type.id}
-                  onClick={() => setWasteType(type.id)}
-                  className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all border-2 ${
-                    wasteType === type.id
-                      ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
-                      : 'border-transparent bg-muted/60 hover:bg-muted'
-                  }`}
-                >
-                  <span className="text-xl">{type.emoji}</span>
-                  <span className="font-medium text-sm">{type.label}</span>
-                  {wasteType === type.id && (
-                    <CheckCircle2 className="h-4 w-4 text-primary ml-auto" />
-                  )}
-                </button>
-              ))}
+          )}
+          {date && (
+            <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-blue-600" />
+              {date}
             </div>
-
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-foreground">Apjoms</p>
-              <div className="grid grid-cols-2 gap-2">
-                {VOLUME_PRESETS.map((preset) => (
-                  <button
-                    key={preset.key}
-                    type="button"
-                    onClick={() => setSelectedVolume(preset.key)}
-                    className={`flex flex-col gap-0.5 p-3.5 rounded-xl text-left transition-all border-2 ${
-                      selectedVolume === preset.key
-                        ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
-                        : 'border-transparent bg-muted/60 hover:bg-muted'
-                    }`}
-                  >
-                    <span className="font-semibold text-sm">{preset.label}</span>
-                    <span className="text-xs text-muted-foreground">{preset.sublabel}</span>
-                    <span className="text-xs font-semibold text-primary mt-1">
-                      no €{preset.fromPrice}
-                    </span>
-                    {selectedVolume === preset.key && (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-1" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Address */}
-        {step === 2 && (
-          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
-            <div>
-              <h2 className="text-lg font-bold">No kurienes izvest?</h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Ievadiet precīzu adresi, kur atrodas atkritumi
-              </p>
-            </div>
-
-            <AddressMapPicker
-              value={address}
-              lat={lat}
-              lng={lng}
-              onChange={(v) => setAddress(v)}
-              onSelect={handleAddressSelect}
-              placeholder="Iela, mājas numurs, pilsēta..."
-            />
-
-            {address && (
-              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-green-50 ring-1 ring-green-200">
-                <MapPin className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-green-800">{address}</p>
-                  {city && <p className="text-xs text-green-600">{city}</p>}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Step 3: Date */}
-        {step === 3 && (
-          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
-            <div>
-              <h2 className="text-lg font-bold">Kad izvest?</h2>
-              <p className="text-sm text-muted-foreground mt-0.5">Izvēlieties vēlamo datumu</p>
-            </div>
-
-            {/* Summary */}
-            <div className="rounded-xl bg-muted/60 p-4 space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-muted-foreground">Adrese:</span>
-                <span className="font-medium truncate">{address}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-muted-foreground">Veids:</span>
-                <span className="font-medium">
-                  {WASTE_TYPES.find((t) => t.id === wasteType)?.label} · {selectedPreset.label}
-                </span>
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-sm font-semibold">Izvešanas datums</Label>
-              <Input
-                type="date"
-                className="mt-1.5 rounded-xl"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <Label className="text-sm font-semibold">Papildus piezīmes</Label>
-              <Textarea
-                placeholder="Piekļuves nosacījumi, vārtu kodi u.c."
-                className="mt-1.5 rounded-xl resize-none"
-                rows={3}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
-
-            {/* Site contact info */}
-            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50/60 p-4 space-y-3">
-              <div>
-                <p className="text-sm font-semibold text-slate-700">Objekta kontaktpersona</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Šoferis var sazināties ar šo personu piegādes brīdī
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs font-semibold text-slate-600 mb-1 block">
-                    Vārds, uzvārds
-                  </Label>
-                  <Input
-                    type="text"
-                    placeholder="Jānis Bērziņš"
-                    value={siteContactName}
-                    onChange={(e) => setSiteContactName(e.target.value)}
-                    className="rounded-lg h-9 text-sm"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold text-slate-600 mb-1 block">
-                    Tālrunis
-                  </Label>
-                  <Input
-                    type="tel"
-                    placeholder="+371 20 000 000"
-                    value={siteContactPhone}
-                    onChange={(e) => setSiteContactPhone(e.target.value)}
-                    className="rounded-lg h-9 text-sm"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Navigation */}
-        <div className="mt-6 pt-5 border-t flex justify-between items-center">
-          <Button
-            variant="ghost"
-            onClick={() => setStep(step - 1)}
-            disabled={step === 1 || loading}
-          >
-            Atpakaļ
-          </Button>
-
-          {step < 3 ? (
-            <Button onClick={() => setStep(step + 1)} disabled={!canAdvance()} className="gap-1.5">
-              Tālāk <ChevronRight className="h-4 w-4" />
-            </Button>
-          ) : (
-            <Button onClick={handleSubmit} disabled={!canAdvance() || loading} className="gap-1.5">
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <CheckCircle2 className="h-4 w-4" />
-              )}
-              Apstiprināt pasūtījumu
-            </Button>
           )}
         </div>
       </div>
-    </MapWizardShell>
+      <WizardShell
+        className="w-full lg:w-115 flex-1 min-h-0 lg:flex-none z-20 relative lg:absolute lg:top-4 lg:bottom-4 lg:left-4 lg:rounded-2xl lg:shadow-2xl border-t lg:border-none flex flex-col bg-white"
+        title="Būvgružu Izvešana"
+        step={step}
+        totalSteps={3}
+        onBack={() => router.push('/dashboard/order')}
+      >
+        {submitError && (
+          <div className="mb-5 flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <span className="font-semibold">Kļūda:</span> {submitError}
+          </div>
+        )}
+        <div>
+          {/* Step 1: Waste type */}
+          {step === 1 && (
+            <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+              <div>
+                <h2 className="text-lg font-bold">Ko vēlaties utilizēt?</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">Izvēlieties atkritumu veidu</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2">
+                {WASTE_TYPES.map((type) => {
+                  const isHazardous = type.id === 'HAZARDOUS';
+                  return (
+                    <button
+                      key={type.id}
+                      onClick={() => {
+                        if (!isHazardous) setWasteType(type.id);
+                      }}
+                      disabled={isHazardous}
+                      className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all border-2 ${
+                        isHazardous
+                          ? 'border-amber-200 bg-amber-50 cursor-not-allowed opacity-80'
+                          : wasteType === type.id
+                            ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
+                            : 'border-transparent bg-muted/60 hover:bg-muted'
+                      }`}
+                    >
+                      <span className="text-xl">{type.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-sm block">{type.label}</span>
+                        {type.warning && (
+                          <span className="text-xs text-amber-700 block mt-0.5">
+                            {type.warning}
+                          </span>
+                        )}
+                      </div>
+                      {!isHazardous && wasteType === type.id && (
+                        <CheckCircle2 className="h-4 w-4 text-primary ml-auto shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-foreground">Apjoms</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {VOLUME_PRESETS.map((preset) => (
+                    <button
+                      key={preset.key}
+                      type="button"
+                      onClick={() => setSelectedVolume(preset.key)}
+                      className={`flex flex-col gap-0.5 p-3.5 rounded-xl text-left transition-all border-2 ${
+                        selectedVolume === preset.key
+                          ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
+                          : 'border-transparent bg-muted/60 hover:bg-muted'
+                      }`}
+                    >
+                      <span className="font-semibold text-sm">{preset.label}</span>
+                      <span className="text-xs text-muted-foreground">{preset.sublabel}</span>
+                      <span className="text-xs font-semibold text-primary mt-1">
+                        no €{preset.fromPrice}
+                      </span>
+                      {selectedVolume === preset.key && (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-1" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Address */}
+          {step === 2 && (
+            <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+              <div>
+                <h2 className="text-lg font-bold">No kurienes izvest?</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Ievadiet precīzu adresi, kur atrodas atkritumi
+                </p>
+              </div>
+
+              <AddressAutocomplete
+                value={address}
+                onChange={(v) => setAddress(v)}
+                onSelect={handleAddressSelect}
+                placeholder="Iela, mājas numurs, pilsēta..."
+              />
+
+              {address && (
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-green-50 ring-1 ring-green-200">
+                  <MapPin className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-green-800">{address}</p>
+                    {city && <p className="text-xs text-green-600">{city}</p>}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 3: Date */}
+          {step === 3 && (
+            <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+              <div>
+                <h2 className="text-lg font-bold">Kad izvest?</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">Izvēlieties vēlamo datumu</p>
+              </div>
+
+              {/* Summary */}
+              <div className="rounded-xl bg-muted/60 p-4 space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">Adrese:</span>
+                  <span className="font-medium truncate">{address}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">Veids:</span>
+                  <span className="font-medium">
+                    {WASTE_TYPES.find((t) => t.id === wasteType)?.label} · {selectedPreset.label}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-semibold">Izvešanas datums</Label>
+                <Input
+                  type="date"
+                  className="mt-1.5 rounded-xl"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-semibold">Papildus piezīmes</Label>
+                <Textarea
+                  placeholder="Piekļuves nosacījumi, vārtu kodi u.c."
+                  className="mt-1.5 rounded-xl resize-none"
+                  rows={3}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
+
+              {/* Site contact info */}
+              <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50/60 p-4 space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-700">Objekta kontaktpersona</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Šoferis var sazināties ar šo personu piegādes brīdī
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs font-semibold text-slate-600 mb-1 block">
+                      Vārds, uzvārds
+                    </Label>
+                    <Input
+                      type="text"
+                      placeholder="Jānis Bērziņš"
+                      value={siteContactName}
+                      onChange={(e) => setSiteContactName(e.target.value)}
+                      className="rounded-lg h-9 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold text-slate-600 mb-1 block">
+                      Tālrunis
+                    </Label>
+                    <Input
+                      type="tel"
+                      placeholder="+371 20 000 000"
+                      value={siteContactPhone}
+                      onChange={(e) => setSiteContactPhone(e.target.value)}
+                      className="rounded-lg h-9 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation */}
+          <div className="mt-6 pt-5 border-t flex justify-between items-center">
+            <Button
+              variant="ghost"
+              onClick={() => setStep(step - 1)}
+              disabled={step === 1 || loading}
+            >
+              Atpakaļ
+            </Button>
+
+            {step < 3 ? (
+              <Button
+                onClick={() => setStep(step + 1)}
+                disabled={!canAdvance()}
+                className="gap-1.5"
+              >
+                Tālāk <ChevronRight className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                onClick={handleSubmit}
+                disabled={!canAdvance() || loading}
+                className="gap-1.5"
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4" />
+                )}
+                Apstiprināt pasūtījumu
+              </Button>
+            )}
+          </div>
+        </div>
+      </WizardShell>
+    </>
   );
 }

@@ -11,8 +11,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { loadGoogleMapsScript, type PlaceAddress } from '@/components/ui/AddressAutocomplete';
-import { AddressMapPicker } from '@/components/ui/AddressMapPicker';
+import {
+  loadGoogleMapsScript,
+  type PlaceAddress,
+  AddressAutocomplete,
+} from '@/components/ui/AddressAutocomplete';
 import { createTransportOrder, type TransportVehicleType } from '@/lib/api/orders';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 import {
@@ -24,7 +27,7 @@ import {
   Loader2,
   Navigation,
 } from 'lucide-react';
-import { MapWizardShell } from '@/components/order/MapWizardShell';
+import { WizardShell } from '@/components/order/WizardShell';
 
 const DEFAULT_CENTER = { lat: 56.9496, lng: 24.1052 };
 
@@ -44,13 +47,28 @@ const MAP_STYLES = [
   { featureType: 'transit', stylers: [{ visibility: 'off' }] },
 ];
 
+const VEHICLE_OPTIONS: {
+  type: TransportVehicleType;
+  label: string;
+  sub: string;
+  fromPrice: number;
+}[] = [
+  { type: 'TIPPER_SMALL', label: 'Mazais pašizgāzējs', sub: 'līdz 5 t · 6 m³', fromPrice: 89 },
+  { type: 'TIPPER_LARGE', label: 'Lielais pašizgāzējs', sub: 'līdz 15 t · 18 m³', fromPrice: 149 },
+  { type: 'ARTICULATED_TIPPER', label: 'Puspiekabe', sub: 'līdz 26 t · 22 m³', fromPrice: 219 },
+  { type: 'FLATBED', label: 'Platforma', sub: 'līdz 20 t · 13.6 m', fromPrice: 199 },
+  { type: 'BOX_TRUCK', label: 'Kravas furgons', sub: 'līdz 3.5 t · 20 m³', fromPrice: 79 },
+];
+
 export default function TransportOrderPage() {
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [createdRef, setCreatedRef] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [contactPrefilled, setContactPrefilled] = useState(false);
 
   const [pickupAddress, setPickupAddress] = useState('');
   const [pickupCity, setPickupCity] = useState('');
@@ -71,6 +89,18 @@ export default function TransportOrderPage() {
   const [notes, setNotes] = useState('');
   const [siteContactName, setSiteContactName] = useState('');
   const [siteContactPhone, setSiteContactPhone] = useState('');
+
+  // Pre-fill contact from authenticated user profile
+  useEffect(() => {
+    if (user && !contactPrefilled) {
+      const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+      if (fullName || user.phone) {
+        setSiteContactName(fullName);
+        setSiteContactPhone(user.phone ?? '');
+        setContactPrefilled(true);
+      }
+    }
+  }, [user, contactPrefilled]);
 
   // Map refs
   const mapDivRef = useRef<HTMLDivElement>(null);
@@ -255,6 +285,7 @@ export default function TransportOrderPage() {
   const handleSubmit = async () => {
     if (!token || !vehicleType) return;
     setLoading(true);
+    setSubmitError(null);
     try {
       const result = await createTransportOrder(
         {
@@ -279,8 +310,7 @@ export default function TransportOrderPage() {
       );
       setCreatedRef(result.jobNumber ?? result.orderNumber ?? result.id.slice(0, 8).toUpperCase());
     } catch (err) {
-      console.warn('Order submission error', err instanceof Error ? err.message : err);
-      alert('Kļūda saglabājot pasūtījumu');
+      setSubmitError(err instanceof Error ? err.message : 'Kļūda saglabājot pasūtījumu');
     } finally {
       setLoading(false);
     }
@@ -317,13 +347,282 @@ export default function TransportOrderPage() {
   }
 
   return (
-    <MapWizardShell
-      title="Kravu Pārvadājumi"
-      backHref="/dashboard/order"
-      steps={STEPS}
-      step={step}
-      footerSlot={
-        <div className="flex items-center justify-between gap-3">
+    <>
+      <div className="absolute inset-0 bg-[#e5e3df] z-0">
+        <div ref={mapDivRef} className="absolute inset-0" />
+        <div className="absolute inset-x-0 top-0 h-24 bg-linear-to-b from-black/10 to-transparent pointer-events-none z-10" />
+
+        {(pickupAddress || dropoffAddress) && (
+          <div className="absolute top-4 right-4 max-w-75 w-[calc(100%-2rem)] z-20 space-y-2 pointer-events-none animate-in fade-in slide-in-from-bottom-2">
+            {pickupAddress && (
+              <div className="bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-lg ring-1 ring-black/5 flex items-center gap-3">
+                <div className="h-6 w-6 rounded-full bg-black flex items-center justify-center shrink-0">
+                  <div className="h-2 w-2 rounded-full bg-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                    Iekraušana
+                  </p>
+                  <p className="text-[13px] font-semibold truncate text-foreground">
+                    {pickupAddress}
+                  </p>
+                </div>
+              </div>
+            )}
+            {dropoffAddress && (
+              <div className="bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-lg ring-1 ring-black/5 flex items-center gap-3">
+                <div className="h-6 w-6 bg-black flex items-center justify-center shrink-0">
+                  <div className="h-2 w-2 bg-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                    Izkraušana
+                  </p>
+                  <p className="text-[13px] font-semibold truncate text-foreground">
+                    {dropoffAddress}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <WizardShell
+        className="w-full lg:w-115 flex-1 min-h-0 lg:flex-none z-20 relative lg:absolute lg:top-4 lg:bottom-4 lg:left-4 lg:rounded-2xl lg:shadow-2xl border-t lg:border-none flex flex-col bg-white"
+        title="Kravu Pārvadājumi"
+        step={step}
+        totalSteps={4}
+        onBack={() => router.push('/dashboard/order')}
+      >
+        {submitError && (
+          <div className="mb-5 flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <span className="font-semibold">Kļūda:</span> {submitError}
+          </div>
+        )}
+        <div>
+          {step === 1 && (
+            <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+              <div>
+                <h2 className="text-xl font-bold">No kurienes vedīsim?</h2>
+                <p className="text-sm text-muted-foreground mt-1">Ievadiet iekraušanas adresi</p>
+              </div>
+              <AddressAutocomplete
+                value={pickupAddress}
+                onChange={(v) => setPickupAddress(v)}
+                onSelect={handlePickupSelect}
+                placeholder="Iekraušanas adrese..."
+              />
+              {pickupAddress && (
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-black/5">
+                  <MapPin className="h-5 w-5 text-black mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-[15px] font-medium text-foreground">{pickupAddress}</p>
+                    {pickupCity && <p className="text-sm text-muted-foreground">{pickupCity}</p>}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+              <div>
+                <h2 className="text-xl font-bold">Uz kurieni vedīsim?</h2>
+                <p className="text-sm text-muted-foreground mt-1">Ievadiet izkraušanas adresi</p>
+              </div>
+              <AddressAutocomplete
+                value={dropoffAddress}
+                onChange={(v) => setDropoffAddress(v)}
+                onSelect={handleDropoffSelect}
+                placeholder="Izkraušanas adrese..."
+              />
+              {dropoffAddress && (
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-black/5">
+                  <MapPin className="h-5 w-5 text-black mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-[15px] font-medium text-foreground">{dropoffAddress}</p>
+                    {dropoffCity && <p className="text-sm text-muted-foreground">{dropoffCity}</p>}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+              <div>
+                <h2 className="text-xl font-bold">Kravas detaļas</h2>
+                <p className="text-sm text-muted-foreground mt-1">Ko nepieciešams pārvest?</p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                    Tehnikas veids
+                  </Label>
+                  <div className="flex flex-col gap-2">
+                    {VEHICLE_OPTIONS.map((v) => {
+                      const isSel = vehicleType === v.type;
+                      return (
+                        <button
+                          key={v.type}
+                          type="button"
+                          onClick={() => setVehicleType(v.type)}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all ${
+                            isSel
+                              ? 'border-black bg-black/5'
+                              : 'border-border hover:border-black/30 bg-muted/40'
+                          }`}
+                        >
+                          <Truck
+                            className={`h-5 w-5 shrink-0 ${isSel ? 'text-black' : 'text-muted-foreground'}`}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className={`text-[14px] font-semibold ${isSel ? 'text-black' : 'text-foreground'}`}
+                            >
+                              {v.label}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{v.sub}</p>
+                          </div>
+                          <p
+                            className={`text-sm font-bold shrink-0 ${isSel ? 'text-black' : 'text-muted-foreground'}`}
+                          >
+                            no €{v.fromPrice}
+                          </p>
+                          {isSel && <CheckCircle2 className="h-4 w-4 text-black shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                    Kravas svars (tonnās)
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0.1}
+                    step={0.1}
+                    className="rounded-xl border-2 py-6 text-lg focus-visible:ring-0 focus-visible:border-black outline-none"
+                    value={estimatedWeight || ''}
+                    onChange={(e) => setEstimatedWeight(parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                    Kravas apraksts
+                  </Label>
+                  <Textarea
+                    placeholder="Piem. Ekskavators CAT 320, smilts krava..."
+                    className="rounded-xl border-2 resize-none focus-visible:ring-0 focus-visible:border-black text-[15px] p-3 outline-none"
+                    rows={3}
+                    value={loadDescription}
+                    onChange={(e) => setLoadDescription(e.target.value)}
+                  />
+                </div>
+
+                {/* Optional buyer-offered rate (reverse auction) */}
+                <div className="rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/60 p-4 space-y-2">
+                  <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                    Ieteiktā transporta maksa (neobligāts)
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Piedāvājiet transporta maksu — šoferiem ar šo summu tiks prioritizēts jūsu
+                    pasūtījums.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      placeholder="piem. 85.00"
+                      className="rounded-xl border-2 py-5 text-[15px] focus-visible:ring-0 focus-visible:border-amber-500 outline-none"
+                      value={buyerOfferedRate}
+                      onChange={(e) => setBuyerOfferedRate(e.target.value)}
+                    />
+                    <span className="text-sm font-medium text-muted-foreground shrink-0">€</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+              <div>
+                <h2 className="text-xl font-bold">Kad vedīsim?</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Izvēlieties datumu un pievienojiet piezīmes
+                </p>
+              </div>
+
+              <div className="space-y-5">
+                <div>
+                  <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                    Vēlamais datums
+                  </Label>
+                  <Input
+                    type="date"
+                    className="rounded-xl border-2 py-6 text-[15px] focus-visible:ring-0 focus-visible:border-black outline-none"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                    Papildus piezīmes
+                  </Label>
+                  <Textarea
+                    placeholder="Piekļuves nosacījumi, vārtu kodi u.c."
+                    className="rounded-xl border-2 resize-none focus-visible:ring-0 focus-visible:border-black text-[15px] p-3 outline-none"
+                    rows={3}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                </div>
+
+                {/* Site contact info */}
+                <div className="rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/60 p-4 space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700">Objekta kontaktpersona</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Šoferis var sazināties ar šo personu piegādes brīdī
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-[13px] font-semibold text-slate-600 mb-1 block">
+                        Vārds, uzvārds
+                      </Label>
+                      <Input
+                        type="text"
+                        placeholder="Jānis Bērziņš"
+                        value={siteContactName}
+                        onChange={(e) => setSiteContactName(e.target.value)}
+                        className="rounded-xl border-2 py-2 text-[14px] focus-visible:ring-0 focus-visible:border-black outline-none"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[13px] font-semibold text-slate-600 mb-1 block">
+                        Tālrunis
+                      </Label>
+                      <Input
+                        type="tel"
+                        placeholder="+371 20 000 000"
+                        value={siteContactPhone}
+                        onChange={(e) => setSiteContactPhone(e.target.value)}
+                        className="rounded-xl border-2 py-2 text-[14px] focus-visible:ring-0 focus-visible:border-black outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="mt-6 pt-5 border-t flex items-center justify-between gap-3">
           <Button
             variant="outline"
             size="lg"
@@ -359,273 +658,7 @@ export default function TransportOrderPage() {
             </Button>
           )}
         </div>
-      }
-      mapSlot={
-        <div className="flex-1 relative bg-[#e5e3df] min-h-100 lg:min-h-0">
-          <div ref={mapDivRef} className="w-full h-full absolute inset-0 z-0" />
-          <div className="absolute inset-x-0 top-0 h-24 bg-linear-to-b from-black/10 to-transparent pointer-events-none z-10" />
-
-          {(pickupAddress || dropoffAddress) && (
-            <div className="absolute top-4 right-4 max-w-75 w-[calc(100%-2rem)] z-20 space-y-2 pointer-events-none animate-in fade-in slide-in-from-bottom-2">
-              {pickupAddress && (
-                <div className="bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-lg ring-1 ring-black/5 flex items-center gap-3">
-                  <div className="h-6 w-6 rounded-full bg-black flex items-center justify-center shrink-0">
-                    <div className="h-2 w-2 rounded-full bg-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
-                      Iekraušana
-                    </p>
-                    <p className="text-[13px] font-semibold truncate text-foreground">
-                      {pickupAddress}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {dropoffAddress && (
-                <div className="bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-lg ring-1 ring-black/5 flex items-center gap-3">
-                  <div className="h-6 w-6 bg-black flex items-center justify-center shrink-0">
-                    <div className="h-2 w-2 bg-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
-                      Izkraušana
-                    </p>
-                    <p className="text-[13px] font-semibold truncate text-foreground">
-                      {dropoffAddress}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      }
-    >
-      <div>
-        {step === 1 && (
-          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
-            <div>
-              <h2 className="text-xl font-bold">No kurienes vedīsim?</h2>
-              <p className="text-sm text-muted-foreground mt-1">Ievadiet iekraušanas adresi</p>
-            </div>
-            <AddressMapPicker
-              value={pickupAddress}
-              lat={pickupLat}
-              lng={pickupLng}
-              onChange={(v) => setPickupAddress(v)}
-              onSelect={handlePickupSelect}
-              placeholder="Iekraušanas adrese..."
-            />
-            {pickupAddress && (
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-black/5">
-                <MapPin className="h-5 w-5 text-black mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-[15px] font-medium text-foreground">{pickupAddress}</p>
-                  {pickupCity && <p className="text-sm text-muted-foreground">{pickupCity}</p>}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
-            <div>
-              <h2 className="text-xl font-bold">Uz kurieni vedīsim?</h2>
-              <p className="text-sm text-muted-foreground mt-1">Ievadiet izkraušanas adresi</p>
-            </div>
-            <AddressMapPicker
-              value={dropoffAddress}
-              lat={dropoffLat}
-              lng={dropoffLng}
-              onChange={(v) => setDropoffAddress(v)}
-              onSelect={handleDropoffSelect}
-              placeholder="Izkraušanas adrese..."
-            />
-            {dropoffAddress && (
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-black/5">
-                <MapPin className="h-5 w-5 text-black mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-[15px] font-medium text-foreground">{dropoffAddress}</p>
-                  {dropoffCity && <p className="text-sm text-muted-foreground">{dropoffCity}</p>}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-            <div>
-              <h2 className="text-xl font-bold">Kravas detaļas</h2>
-              <p className="text-sm text-muted-foreground mt-1">Ko nepieciešams pārvest?</p>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
-                  Tehnikas veids
-                </Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    variant="outline"
-                    type="button"
-                    className={`h-16 justify-start px-4 rounded-xl border-2 transition-all ${vehicleType === 'TIPPER_SMALL' ? 'border-black bg-black/5 ring-0' : 'border-border hover:border-black/30'}`}
-                    onClick={() => setVehicleType('TIPPER_SMALL')}
-                  >
-                    <div className="flex flex-col items-start gap-1">
-                      <Truck
-                        className={`h-5 w-5 ${vehicleType === 'TIPPER_SMALL' ? 'text-black' : 'text-muted-foreground'}`}
-                      />
-                      <span className={vehicleType === 'TIPPER_SMALL' ? 'font-bold' : ''}>
-                        Pašizgāzējs (10 t)
-                      </span>
-                    </div>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    type="button"
-                    className={`h-16 justify-start px-4 rounded-xl border-2 transition-all ${vehicleType === 'TIPPER_LARGE' ? 'border-black bg-black/5 ring-0' : 'border-border hover:border-black/30'}`}
-                    onClick={() => setVehicleType('TIPPER_LARGE')}
-                  >
-                    <div className="flex flex-col items-start gap-1">
-                      <Truck
-                        className={`h-5 w-5 ${vehicleType === 'TIPPER_LARGE' ? 'text-black' : 'text-muted-foreground'}`}
-                      />
-                      <span className={vehicleType === 'TIPPER_LARGE' ? 'font-bold' : ''}>
-                        Pašizgāzējs (18 t)
-                      </span>
-                    </div>
-                  </Button>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
-                  Kravas svars (tonnās)
-                </Label>
-                <Input
-                  type="number"
-                  min={0.1}
-                  step={0.1}
-                  className="rounded-xl border-2 py-6 text-lg focus-visible:ring-0 focus-visible:border-black outline-none"
-                  value={estimatedWeight || ''}
-                  onChange={(e) => setEstimatedWeight(parseFloat(e.target.value) || 0)}
-                />
-              </div>
-              <div>
-                <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
-                  Kravas apraksts
-                </Label>
-                <Textarea
-                  placeholder="Piem. Ekskavators CAT 320, smilts krava..."
-                  className="rounded-xl border-2 resize-none focus-visible:ring-0 focus-visible:border-black text-[15px] p-3 outline-none"
-                  rows={3}
-                  value={loadDescription}
-                  onChange={(e) => setLoadDescription(e.target.value)}
-                />
-              </div>
-
-              {/* Optional buyer-offered rate (reverse auction) */}
-              <div className="rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/60 p-4 space-y-2">
-                <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                  Ieteiktā transporta maksa (neobligāts)
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Piedāvājiet transporta maksu — šoferiem ar šo summu tiks prioritizēts jūsu
-                  pasūtījums.
-                </p>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    placeholder="piem. 85.00"
-                    className="rounded-xl border-2 py-5 text-[15px] focus-visible:ring-0 focus-visible:border-amber-500 outline-none"
-                    value={buyerOfferedRate}
-                    onChange={(e) => setBuyerOfferedRate(e.target.value)}
-                  />
-                  <span className="text-sm font-medium text-muted-foreground shrink-0">€</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {step === 4 && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-            <div>
-              <h2 className="text-xl font-bold">Kad vedīsim?</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Izvēlieties datumu un pievienojiet piezīmes
-              </p>
-            </div>
-
-            <div className="space-y-5">
-              <div>
-                <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
-                  Vēlamais datums
-                </Label>
-                <Input
-                  type="date"
-                  className="rounded-xl border-2 py-6 text-[15px] focus-visible:ring-0 focus-visible:border-black outline-none"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
-                  Papildus piezīmes
-                </Label>
-                <Textarea
-                  placeholder="Piekļuves nosacījumi, vārtu kodi u.c."
-                  className="rounded-xl border-2 resize-none focus-visible:ring-0 focus-visible:border-black text-[15px] p-3 outline-none"
-                  rows={3}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </div>
-
-              {/* Site contact info */}
-              <div className="rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/60 p-4 space-y-3">
-                <div>
-                  <p className="text-sm font-semibold text-slate-700">Objekta kontaktpersona</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Šoferis var sazināties ar šo personu piegādes brīdī
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-[13px] font-semibold text-slate-600 mb-1 block">
-                      Vārds, uzvārds
-                    </Label>
-                    <Input
-                      type="text"
-                      placeholder="Jānis Bērziņš"
-                      value={siteContactName}
-                      onChange={(e) => setSiteContactName(e.target.value)}
-                      className="rounded-xl border-2 py-2 text-[14px] focus-visible:ring-0 focus-visible:border-black outline-none"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-[13px] font-semibold text-slate-600 mb-1 block">
-                      Tālrunis
-                    </Label>
-                    <Input
-                      type="tel"
-                      placeholder="+371 20 000 000"
-                      value={siteContactPhone}
-                      onChange={(e) => setSiteContactPhone(e.target.value)}
-                      className="rounded-xl border-2 py-2 text-[14px] focus-visible:ring-0 focus-visible:border-black outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </MapWizardShell>
+      </WizardShell>
+    </>
   );
 }

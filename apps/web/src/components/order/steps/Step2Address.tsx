@@ -1,12 +1,12 @@
 /**
  * Step2Address — Order wizard step 2 (delivery address).
- * Uses AddressMapPicker: search bar + draggable map marker + GPS button.
+ * Uses AddressAutocomplete: search bar with Google Places suggestions.
  */
 'use client';
 
 import { useEffect, useState } from 'react';
 import { Bookmark, ChevronDown, ChevronUp, Loader2, MapPin, Star } from 'lucide-react';
-import { AddressMapPicker } from '@/components/ui/AddressMapPicker';
+import { AddressAutocomplete, type PlaceAddress } from '@/components/ui/AddressAutocomplete';
 import { getSavedAddresses, type SavedAddress } from '@/lib/api/saved-addresses';
 
 interface Props {
@@ -64,12 +64,8 @@ export function Step2Address({
     setSavedOpen(false);
   }
 
-  function handleMapPickerSelect(place: {
-    address: string;
-    city: string;
-    lat: number;
-    lng: number;
-  }) {
+  function handleMapPickerSelect(place: PlaceAddress) {
+    if (place.lat == null || place.lng == null) return;
     const addr = [place.address, place.city].filter(Boolean).join(', ');
     setInput(addr);
     setLocalLat(place.lat);
@@ -137,17 +133,14 @@ export function Step2Address({
           </div>
         )}
 
-        <AddressMapPicker
+        <AddressAutocomplete
           value={input}
-          lat={localLat}
-          lng={localLng}
           onChange={(v) => {
             setInput(v);
             onAddressChange(v);
           }}
           onSelect={handleMapPickerSelect}
           placeholder="Iela, mājas numurs, pilsēta..."
-          className="w-full rounded-xl border bg-muted/30 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
         />
       </div>
 

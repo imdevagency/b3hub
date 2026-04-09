@@ -6,7 +6,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
-import { MapPin, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { MapPin, Loader2, Search } from 'lucide-react';
 
 // Minimal Google Maps type stubs (avoids @types/google.maps dependency)
 interface GmapsPrediction {
@@ -248,27 +249,30 @@ export function AddressAutocomplete({
 
   return (
     <div className="relative w-full" ref={containerRef}>
-      <input
-        id={id}
-        type="text"
-        value={value}
-        onChange={(e) => {
-          onChange(e.target.value);
-          setOpen(true);
-        }}
-        onFocus={() => {
-          if (predictions.length > 0) setOpen(true);
-        }}
-        placeholder={placeholder}
-        required={required}
-        className={className}
-        autoComplete="new-password"
-      />
-      {loading && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center pointer-events-none">
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        </div>
-      )}
+      <div className="relative flex items-center">
+        <Search className="absolute left-3.5 h-4 w-4 text-muted-foreground pointer-events-none z-10 shrink-0" />
+        <Input
+          id={id}
+          type="text"
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => {
+            if (predictions.length > 0) setOpen(true);
+          }}
+          placeholder={placeholder}
+          required={required}
+          className={`pl-9 pr-9 ${className ?? ''}`}
+          autoComplete="new-password"
+        />
+        {loading && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          </div>
+        )}
+      </div>
       {isOpen && predictions.length > 0 && (
         <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl border border-gray-100 shadow-2xl overflow-hidden z-9999 animate-in fade-in slide-in-from-top-2 duration-200">
           <ul className="max-h-64 overflow-y-auto w-full divide-y divide-gray-50 flex flex-col scrollbar-thin">
