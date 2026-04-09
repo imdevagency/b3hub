@@ -80,10 +80,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       id: 'buyer-main',
       label: 'Galvenā',
       icon: LayoutDashboard,
-      items: [
-        { label: 'Sākumlapa', href: '/dashboard/buyer', icon: LayoutDashboard },
-        { label: 'Materiālu Katalogs', href: '/dashboard/catalog', icon: Package },
-      ],
+      items: [{ label: 'Sākumlapa', href: '/dashboard/buyer', icon: LayoutDashboard }],
     },
     {
       id: 'buyer-orders',
@@ -100,8 +97,9 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       label: 'Iepirkumi',
       icon: FolderKanban,
       items: [
-        { label: 'Ietvarlīgumi', href: '/dashboard/framework-contracts', icon: FolderKanban },
+        { label: 'Pasūtīt Materiālus', href: '/dashboard/catalog', icon: Package },
         { label: 'Cenu Pieprasījumi', href: '/dashboard/quote-requests', icon: FileQuestion },
+        { label: 'Ietvarlīgumi', href: '/dashboard/framework-contracts', icon: FolderKanban },
       ],
     },
     {

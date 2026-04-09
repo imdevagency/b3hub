@@ -5,6 +5,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Plus,
   RefreshCw,
@@ -19,36 +20,12 @@ import {
   Star,
   Info,
   Archive,
+  ArrowRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageSpinner } from '@/components/ui/page-spinner';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useAuth } from '@/lib/auth-context';
-import {
-  getMyQuoteRequests,
-  createQuoteRequest,
-  acceptQuoteResponse,
-  type QuoteRequest,
-  type MaterialCategory,
-  type MaterialUnit,
-  type CreateQuoteRequestInput,
-} from '@/lib/api';
+import { getMyQuoteRequests, acceptQuoteResponse, type QuoteRequest } from '@/lib/api';
 import { fmtDate } from '@/lib/format';
 import { CATEGORY_LABELS, UNIT_SHORT } from '@b3hub/shared';
 
@@ -95,195 +72,6 @@ const STATUS_CFG: Record<
 
 function fmtEur(n: number) {
   return new Intl.NumberFormat('lv-LV', { style: 'currency', currency: 'EUR' }).format(n);
-}
-
-// ── New RFQ modal ─────────────────────────────────────────────────────────────
-
-const CATEGORIES: MaterialCategory[] = [
-  'SAND',
-  'GRAVEL',
-  'STONE',
-  'CONCRETE',
-  'SOIL',
-  'RECYCLED_CONCRETE',
-  'RECYCLED_SOIL',
-  'ASPHALT',
-  'CLAY',
-  'OTHER',
-];
-const UNITS: MaterialUnit[] = ['TONNE', 'M3', 'PIECE', 'LOAD'];
-
-interface NewRfqModalProps {
-  onClose: () => void;
-  onCreated: (r: QuoteRequest) => void;
-  token: string;
-}
-
-function NewRfqModal({ onClose, onCreated, token }: NewRfqModalProps) {
-  const [form, setForm] = useState<CreateQuoteRequestInput>({
-    materialCategory: 'SAND',
-    materialName: '',
-    quantity: 1,
-    unit: 'TONNE',
-    deliveryAddress: '',
-    deliveryCity: '',
-    notes: '',
-  });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const set = (k: keyof CreateQuoteRequestInput, v: CreateQuoteRequestInput[typeof k]) =>
-    setForm((prev) => ({ ...prev, [k]: v }));
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.materialName.trim() || !form.deliveryAddress.trim() || !form.deliveryCity.trim()) {
-      setError('Aizpildiet visus obligātos laukus');
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    try {
-      const created = await createQuoteRequest(form, token);
-      onCreated(created);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Kļūda nosūtot pieprasījumu');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Dialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-    >
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Kur un ko jums vajag?</DialogTitle>
-          <DialogDescription>Izveidojiet jaunu cenu pieprasījumu piegādātājiem</DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-5 mt-2">
-          {/* Category + name */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="rfq-category">Materiāla kategorija</Label>
-              <Select
-                value={form.materialCategory}
-                onValueChange={(v) => set('materialCategory', v as MaterialCategory)}
-              >
-                <SelectTrigger id="rfq-category">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {CATEGORY_LV[c]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="rfq-name">Precīzs nosaukums</Label>
-              <Input
-                id="rfq-name"
-                value={form.materialName}
-                onChange={(e) => set('materialName', e.target.value)}
-                placeholder="piem. Skalotas smiltis 0-2mm"
-              />
-            </div>
-          </div>
-
-          {/* Quantity + unit */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="rfq-qty">Daudzums</Label>
-              <Input
-                id="rfq-qty"
-                type="number"
-                min={0.1}
-                step={0.1}
-                value={form.quantity}
-                onChange={(e) => set('quantity', parseFloat(e.target.value))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="rfq-unit">Mērvienība</Label>
-              <Select value={form.unit} onValueChange={(v) => set('unit', v as MaterialUnit)}>
-                <SelectTrigger id="rfq-unit">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {UNITS.map((u) => (
-                    <SelectItem key={u} value={u}>
-                      {UNIT_LV[u]} ({u})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Delivery */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="rfq-city">Pilsēta / Novads</Label>
-              <Input
-                id="rfq-city"
-                value={form.deliveryCity}
-                onChange={(e) => set('deliveryCity', e.target.value)}
-                placeholder="Rīga"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="rfq-address">Precīza adrese</Label>
-              <Input
-                id="rfq-address"
-                value={form.deliveryAddress}
-                onChange={(e) => set('deliveryAddress', e.target.value)}
-                placeholder="Brīvības iela 1"
-              />
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div className="space-y-1.5">
-            <Label htmlFor="rfq-notes">
-              <Info className="inline h-3 w-3 mr-1" />
-              Komentāri piegādātājam{' '}
-              <span className="text-muted-foreground font-normal">(neobligāti)</span>
-            </Label>
-            <Textarea
-              id="rfq-notes"
-              rows={2}
-              value={form.notes}
-              onChange={(e) => set('notes', e.target.value)}
-              placeholder="Papildus prasības vai termiņi..."
-            />
-          </div>
-
-          {error && (
-            <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
-              {error}
-            </p>
-          )}
-
-          <div className="flex gap-3 pt-1">
-            <Button variant="outline" type="button" onClick={onClose} className="w-1/3">
-              Atcelt
-            </Button>
-            <Button type="submit" disabled={saving} className="w-2/3">
-              {saving ? 'Sūta...' : 'Pieprasīt Cenas'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
 }
 
 // ── Request card ──────────────────────────────────────────────────────────────
@@ -480,10 +268,12 @@ function RequestCard({ request, onAccept }: RequestCardProps) {
 
 export default function QuoteRequestsPage() {
   const { token } = useAuth();
+  const router = useRouter();
   const [requests, setRequests] = useState<QuoteRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
+
+  const goToWizard = () => router.push('/dashboard/catalog');
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -502,11 +292,6 @@ export default function QuoteRequestsPage() {
   useEffect(() => {
     load();
   }, [load]);
-
-  const handleCreated = (r: QuoteRequest) => {
-    setShowModal(false);
-    setRequests((prev) => [r, ...prev]);
-  };
 
   const handleAccept = async (requestId: string, responseId: string) => {
     if (!token) return;
@@ -546,7 +331,7 @@ export default function QuoteRequestsPage() {
           </Button>
           <Button
             size="sm"
-            onClick={() => setShowModal(true)}
+            onClick={goToWizard}
             className="h-11 px-5 rounded-xl bg-black text-white hover:bg-slate-800 font-bold shadow-md"
           >
             <Plus className="h-5 w-5 sm:mr-1.5" />
@@ -599,18 +384,20 @@ export default function QuoteRequestsPage() {
           <div className="h-20 w-20 bg-white rounded-full shadow-sm flex items-center justify-center mb-5">
             <Package className="h-10 w-10 text-slate-300" />
           </div>
-          <h3 className="text-lg font-bold text-slate-900">Nekas nav pieprasīts</h3>
+          <h3 className="text-lg font-bold text-slate-900">Nav aktīvu pieprasījumu</h3>
           <p className="mt-2 text-sm font-medium text-slate-500 max-w-sm">
-            Izveidojiet savu pirmo cenu pieprasījumu, lai ātri un ērti saņemtu piedāvājumus no
-            labākajiem piegādātājiem.
+            Atlasiet materiālu, norādiet adresi un piegādes datumu — piegādātāji jūsu rajonā
+            atbildēs ar savām cenām.
           </p>
           <Button
             className="mt-6 h-12 px-6 rounded-xl bg-black text-white hover:bg-slate-800 font-bold shadow-md"
-            onClick={() => setShowModal(true)}
+            onClick={goToWizard}
           >
             <Plus className="h-5 w-5 mr-2" />
-            Izveidot Pieprasījumu
+            Pieprasīt Cenas
+            <ArrowRight className="h-4 w-4 ml-1.5" />
           </Button>
+          <p className="mt-3 text-xs text-slate-400">Jūs tiksiet novirzīts uz materiālu katalogu</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:gap-5">
@@ -618,11 +405,6 @@ export default function QuoteRequestsPage() {
             <RequestCard key={r.id} request={r} onAccept={handleAccept} />
           ))}
         </div>
-      )}
-
-      {/* New RFQ modal */}
-      {showModal && token && (
-        <NewRfqModal token={token} onClose={() => setShowModal(false)} onCreated={handleCreated} />
       )}
     </div>
   );

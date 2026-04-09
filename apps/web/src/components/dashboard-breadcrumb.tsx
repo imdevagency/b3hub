@@ -13,7 +13,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   admin: 'Administrācija',
 
   // top-level sections
-  catalog: 'Katalogs',
+  catalog: 'Pasūtīt Materiālus',
   orders: 'Pasūtījumi',
   materials: 'Materiāli',
   jobs: 'Darbu Tirgus',

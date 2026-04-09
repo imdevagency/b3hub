@@ -408,6 +408,22 @@ function WizardInline({
     setSubmitting(true);
     setSubmitError('');
     try {
+      const noteParts: string[] = [];
+      if (form.deliveryDate) {
+        const formatted = new Date(form.deliveryDate + 'T00:00:00').toLocaleDateString('lv-LV', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        });
+        noteParts.push(`Vēlamais piegādes datums: ${formatted}`);
+      }
+      if (form.truckCount > 1) {
+        noteParts.push(
+          `Nepieciešami ${form.truckCount} transportlīdzekļi` +
+            (form.truckIntervalMinutes ? `, intervāls ${form.truckIntervalMinutes} min` : ''),
+        );
+      }
+      if (form.notes) noteParts.push(form.notes);
       const result = await createQuoteRequest(
         {
           materialCategory: form.category,
@@ -418,7 +434,7 @@ function WizardInline({
           deliveryCity: form.city || form.address.split(',').slice(-1)[0]?.trim() || '',
           deliveryLat: form.lat,
           deliveryLng: form.lng,
-          notes: form.notes || undefined,
+          notes: noteParts.length > 0 ? noteParts.join('\n') : undefined,
         },
         token,
       );
@@ -1001,8 +1017,8 @@ export default function CatalogPage() {
   return (
     <div className="flex flex-col gap-6 pb-24 max-w-350 mx-auto w-full">
       <PageHeader
-        title="Būvmateriāli"
-        description="Izvēlieties materiāla kategoriju, lai atrastu labākos piedāvājumus."
+        title="Ko jums nepieciešams?"
+        description="Izvēlieties materiāla veidu — jūs saņemsiet cenas no tuvākajiem piegādātājiem."
         action={
           <div className="relative w-full sm:w-[320px]">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
