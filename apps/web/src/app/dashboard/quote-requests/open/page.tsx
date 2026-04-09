@@ -32,7 +32,6 @@ import {
   getOpenQuoteRequests,
   respondToQuoteRequest,
   type QuoteRequest,
-  type MaterialCategory,
   type MaterialUnit,
   type CreateQuoteResponseInput,
 } from '@/lib/api';

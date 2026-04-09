@@ -55,21 +55,24 @@ const VAT_RATE = 0.21;
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [hydrated, setHydrated] = useState(false);
-
-  // Hydrate from localStorage on mount (client-only)
-  useEffect(() => {
+  const [items, setItems] = useState<CartItem[]>(() => {
+    if (typeof window === 'undefined') return [];
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as CartItem[];
-        if (Array.isArray(parsed)) setItems(parsed);
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch {
       // Corrupt storage — start fresh
     }
-    setHydrated(true);
+    return [];
+  });
+  const [hydrated, setHydrated] = useState(false);
+
+  // Mark hydrated after first client render (deferred to avoid sync setState in effect)
+  useEffect(() => {
+    queueMicrotask(() => setHydrated(true));
   }, []);
 
   // Persist to localStorage whenever items change

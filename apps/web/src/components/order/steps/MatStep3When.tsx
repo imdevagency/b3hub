@@ -42,6 +42,8 @@ const INTERVAL_OPTIONS = [
 interface Props {
   deliveryDate: string;
   onDateChange: (date: string) => void;
+  deliveryWindow?: 'ANY' | 'AM' | 'PM';
+  onDeliveryWindowChange?: (window: 'ANY' | 'AM' | 'PM') => void;
   truckCount: number;
   onTruckCountChange: (n: number) => void;
   truckIntervalMinutes: number;
@@ -53,6 +55,8 @@ interface Props {
 export function MatStep3When({
   deliveryDate,
   onDateChange,
+  deliveryWindow = 'ANY',
+  onDeliveryWindowChange,
   truckCount,
   onTruckCountChange,
   truckIntervalMinutes,
@@ -71,12 +75,41 @@ export function MatStep3When({
       })()
     : undefined;
 
+  const DELIVERY_WINDOWS = [
+    { id: 'ANY' as const, label: 'Jebkurā laikā' },
+    { id: 'AM' as const, label: 'Rītā (8:00–13:00)' },
+    { id: 'PM' as const, label: 'Pēcpusdienā (13:00–18:00)' },
+  ];
+
   return (
     <div className="flex flex-col space-y-5">
       <div>
         <h2 className="text-lg font-bold">Kad piegādāt?</h2>
         <p className="text-sm text-muted-foreground mt-0.5">Izvēlieties vēlamo piegādes datumu</p>
       </div>
+
+      {/* Delivery window */}
+      {onDeliveryWindowChange && (
+        <div className="space-y-2">
+          <p className="text-sm font-semibold">Vēlamais piegādes laiks</p>
+          <div className="flex flex-col gap-2">
+            {DELIVERY_WINDOWS.map((w) => (
+              <button
+                key={w.id}
+                type="button"
+                onClick={() => onDeliveryWindowChange(w.id)}
+                className={`rounded-xl border py-2.5 px-4 text-sm font-medium text-left transition-colors ${
+                  deliveryWindow === w.id
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-background text-foreground hover:bg-muted'
+                }`}
+              >
+                {w.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Calendar */}
       <div className="rounded-2xl border overflow-hidden">
@@ -92,7 +125,7 @@ export function MatStep3When({
       {/* Confirmed date pill */}
       {deliveryDate && selected && (
         <div className="flex items-center gap-2.5 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3">
-          <CalendarDays className="size-4 text-primary shrink-0" />
+          <CalendarDays className="size-4 text-black shrink-0" />
           <span className="text-sm font-semibold text-primary">Piegāde: {fmtFull(selected)}</span>
         </div>
       )}

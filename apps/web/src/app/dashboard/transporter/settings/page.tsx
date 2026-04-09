@@ -16,7 +16,6 @@ import {
   type CarrierPricing,
   type CarrierServiceZone,
   type CarrierBlockedDate,
-  type CarrierRadiusSettings,
   getCarrierPricing,
   setCarrierPrice,
   deleteCarrierPrice,
@@ -549,7 +548,6 @@ function AvailabilityTab({ token }: { token: string }) {
 // ─── Radius tab ───────────────────────────────────────────────────────────────────
 
 function RadiusTab({ token }: { token: string }) {
-  const [data, setData] = useState<CarrierRadiusSettings | null>(null);
   const [inputVal, setInputVal] = useState<string>('');
   const [noLimit, setNoLimit] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -558,7 +556,6 @@ function RadiusTab({ token }: { token: string }) {
 
   useEffect(() => {
     getCarrierRadius(token).then((d) => {
-      setData(d);
       if (d.serviceRadiusKm === null) {
         setNoLimit(true);
         setInputVal('');
@@ -576,7 +573,7 @@ function RadiusTab({ token }: { token: string }) {
     try {
       const radiusKm = noLimit ? null : parseInt(inputVal, 10);
       const updated = await setCarrierRadius(token, radiusKm);
-      setData(updated);
+      setInputVal(String(updated.serviceRadiusKm ?? ''));
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } finally {

@@ -407,7 +407,7 @@ function CreateContractDialog({
 // ─── Page component ───────────────────────────────────────────────────────────
 
 export default function FrameworkContractsPage() {
-  const { token, user } = useAuth();
+  const { token } = useAuth();
   const [contracts, setContracts] = useState<ApiFrameworkContract[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);

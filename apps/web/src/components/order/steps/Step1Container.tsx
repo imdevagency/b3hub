@@ -91,7 +91,7 @@ export function Step1Container({
 
   useEffect(() => {
     if (minPricesProp) {
-      setMarketPrices(minPricesProp);
+      queueMicrotask(() => setMarketPrices(minPricesProp));
       return;
     }
     getSkipHireMarketPrices()

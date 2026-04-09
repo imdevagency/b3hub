@@ -5,7 +5,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Plus, Building2, TrendingUp, Package } from 'lucide-react';
+import { Plus, Building2, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';

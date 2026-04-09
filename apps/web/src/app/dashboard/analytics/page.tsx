@@ -273,7 +273,6 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     if (!token) return;
-    setLoading(true);
     getAnalyticsOverview(token)
       .then(setData)
       .catch((e: Error) => setError(e.message))

@@ -11,16 +11,7 @@ import { adminGetCompanies, adminUpdateCompany, type AdminCompany } from '@/lib/
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
-import {
-  RefreshCw,
-  Building2,
-  Search,
-  CheckCircle,
-  XCircle,
-  DollarSign,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react';
+import { RefreshCw, Building2, Search, DollarSign, ChevronDown, ChevronUp } from 'lucide-react';
 
 // ── Company type badge ────────────────────────────────────────────────────────
 

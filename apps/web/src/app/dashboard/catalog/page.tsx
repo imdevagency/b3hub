@@ -35,11 +35,9 @@ import {
   type SupplierOffer,
 } from '@/lib/api';
 import {
-  ArrowLeft,
   ArrowRight,
   CalendarDays,
   CheckCircle2,
-  ChevronRight,
   Clock,
   Leaf,
   Loader2,
@@ -48,12 +46,10 @@ import {
   Package,
   Plus,
   ReceiptText,
-  RefreshCw,
   Search,
   Send,
   Star,
   Truck,
-  X,
   Mountain,
   MountainSnow,
   Box,
@@ -67,8 +63,8 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
+import { WizardShell } from '@/components/order/WizardShell';
 import { Step2Address } from '@/components/order/steps/Step2Address';
 import { MatStep3When } from '@/components/order/steps/MatStep3When';
 import {
@@ -174,13 +170,6 @@ const UNIT_SHORT = SHARED_UNIT_SHORT;
 const UNITS: MaterialUnit[] = ['TONNE', 'M3', 'PIECE', 'LOAD'];
 
 const DEFAULT_CENTER = { lat: 56.9496, lng: 24.1052 };
-
-const WIZARD_STEPS = [
-  { label: 'Materiāls', icon: Package },
-  { label: 'Kur', icon: MapPin },
-  { label: 'Kad', icon: CalendarDays },
-  { label: 'Piedāvājumi', icon: Zap },
-];
 
 // ── Category card ──────────────────────────────────────────────────────────────
 
@@ -442,402 +431,362 @@ function WizardInline({
     }
   }
 
-  const currentStepIndex = stepIndex[step];
-
   return (
-    <div className="flex flex-col lg:flex-row bg-background border sm:rounded-[24px] shadow-sm overflow-hidden animate-in fade-in zoom-in-95 duration-300 xl:h-187.5 min-h-150 mb-12">
-      {/* Left panel */}
-      <div className="w-full lg:w-115 shrink-0 flex flex-col bg-background border-t lg:border-t-0 lg:border-r border-border/50 z-10">
-        {/* Header */}
-        <div className="p-5 border-b border-border/50 bg-background space-y-4">
-          <button
-            onClick={onClose}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" /> Atpakaļ uz katalogu
-          </button>
-          <div className="flex items-center gap-3 rounded-2xl bg-muted/40 px-4 py-3">
-            <Package className="size-5 text-foreground shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-[15px] font-bold truncate text-foreground">
-                {form.materialName || CATEGORY_META[form.category].label}
-              </p>
-              <p className="text-sm font-medium text-muted-foreground">
-                {CATEGORY_META[form.category].label} · {form.quantity} {UNIT_SHORT[form.unit]}
-              </p>
-            </div>
-          </div>
-          {step !== 'order-confirmed' && step !== 'rfq-sent' && (
-            <div className="flex gap-2 w-full">
-              {WIZARD_STEPS.map((s, i) => {
-                const done = currentStepIndex > i;
-                const active = currentStepIndex === i;
-                return (
-                  <div key={i} className="flex-1 flex flex-col gap-1.5">
-                    <div
-                      className={`h-1.5 w-full rounded-full transition-all ${
-                        done || active ? 'bg-foreground' : 'bg-muted/60'
-                      }`}
-                    />
-                    <div className="flex items-center gap-1">
-                      <s.icon
-                        className={`h-3.5 w-3.5 ${
-                          done || active ? 'text-foreground' : 'text-muted-foreground/40'
-                        }`}
-                      />
-                      <span
-                        className={`text-[12px] font-bold hidden sm:inline ${
-                          done || active ? 'text-foreground' : 'text-muted-foreground/40'
-                        }`}
-                      >
-                        {s.label}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+    <>
+      <div className="absolute inset-0 bg-[#e5e3df] z-0">
+        <div ref={mapDivRef} className="absolute inset-0" />
+      </div>
 
-        {/* Step content */}
-        <div className="flex-1 overflow-y-auto p-5">
-          {/* Step 1: Specs */}
-          {step === 'specs' && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-              <div>
-                <p className="text-xl font-bold text-foreground">Ko jums nepieciešams?</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Aprakstiet materiālu un norādiet nepieciešamo daudzumu
+      <WizardShell
+        className="w-full lg:w-115 flex-1 min-h-0 lg:flex-none z-20 relative lg:absolute lg:top-4 lg:bottom-4 lg:left-4 lg:rounded-2xl lg:shadow-2xl border-t lg:border-none flex flex-col bg-white"
+        step={stepIndex[step] + 1}
+        totalSteps={4}
+        title={
+          step === 'rfq-sent'
+            ? 'Pieprasījums nosūtīts'
+            : step === 'order-confirmed'
+              ? 'Pasūtījums pieņemts'
+              : CATEGORY_META[form.category].label
+        }
+        onBack={
+          stepIndex[step] > 0 && step !== 'order-confirmed' && step !== 'rfq-sent'
+            ? () => setStep(Object.keys(stepIndex)[stepIndex[step] - 1] as WizardStep)
+            : null
+        }
+        onClose={onClose}
+      >
+        {step !== 'rfq-sent' && step !== 'order-confirmed' && (
+          <div className="mb-6 rounded-2xl bg-gray-100 p-4">
+            <div className="flex items-center gap-3">
+              <Package className="size-5 text-gray-700 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[15px] font-bold truncate text-black">
+                  {form.materialName || CATEGORY_META[form.category].label}
+                </p>
+                <p className="text-sm font-medium text-gray-500 truncate">
+                  {form.quantity} {UNIT_SHORT[form.unit]}
                 </p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Kategorija</label>
-                  <Select
-                    value={form.category}
-                    onValueChange={(val) => {
-                      const m = CATEGORY_META[val as MaterialCategory];
-                      patch({
-                        category: val as MaterialCategory,
-                        materialName: m.defaultName,
-                        unit: m.defaultUnit as MaterialUnit,
-                      });
-                    }}
-                  >
-                    <SelectTrigger className="w-full rounded-2xl h-13 bg-muted/40 border-0 px-4 text-[15px] font-medium focus:ring-2 focus:ring-foreground/10 transition-shadow data-[state=open]:bg-muted/60">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      {ALL_CATEGORIES.map((c) => {
-                        const cMeta = CATEGORY_META[c];
-                        return (
-                          <SelectItem key={c} value={c} className="rounded-lg py-3 cursor-pointer">
-                            <span className="font-medium">{cMeta.label}</span>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {offers.length > 0 && step === 'offers' && (
+                <span className="font-bold text-lg text-primary shrink-0">
+                  no €{offers[0].totalPrice}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">
-                    Frakcija / Precizējums
-                  </label>
-                  <input
-                    type="text"
-                    value={form.materialName}
-                    onChange={(e) => patch({ materialName: e.target.value })}
-                    placeholder={meta.defaultName || 'Piem., 16-32 mm'}
-                    className="w-full rounded-2xl border-0 bg-muted/40 px-4 h-13 text-[15px] font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-shadow"
-                  />
-                </div>
-              </div>
+        {/* Step 1: Specs */}
+        {step === 'specs' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+            <div>
+              <p className="text-xl font-bold text-foreground">Ko jums nepieciešams?</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Aprakstiet materiālu un norādiet nepieciešamo daudzumu
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground">Daudzums</label>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() =>
-                      patch({
-                        quantity: Math.max(
-                          0.5,
-                          parseFloat(
-                            (form.quantity - (form.unit === 'PIECE' ? 1 : 0.5)).toFixed(2),
-                          ),
-                        ),
-                      })
-                    }
-                    className="flex shrink-0 items-center justify-center rounded-2xl w-14 h-14 bg-muted/40 hover:bg-muted/70 transition-colors text-foreground"
-                  >
-                    <Minus className="size-5" />
-                  </button>
-                  <input
-                    type="number"
-                    value={form.quantity}
-                    min={0.5}
-                    step={0.5}
-                    onChange={(e) => {
-                      const v = parseFloat(e.target.value);
-                      if (!isNaN(v) && v > 0) patch({ quantity: v });
-                    }}
-                    className="flex-1 min-w-0 text-center bg-transparent border-0 px-2 py-2 text-4xl font-bold tracking-tighter focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                  <button
-                    onClick={() =>
-                      patch({
-                        quantity: parseFloat(
-                          (form.quantity + (form.unit === 'PIECE' ? 1 : 0.5)).toFixed(2),
-                        ),
-                      })
-                    }
-                    className="flex shrink-0 items-center justify-center rounded-2xl w-14 h-14 bg-muted/40 hover:bg-muted/70 transition-colors text-foreground"
-                  >
-                    <Plus className="size-5" />
-                  </button>
-                </div>
-                <div className="flex gap-2 flex-wrap mt-3">
-                  {UNITS.map((u) => (
-                    <button
-                      key={u}
-                      onClick={() => patch({ unit: u })}
-                      className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
-                        form.unit === u
-                          ? 'bg-foreground text-background'
-                          : 'bg-muted/50 text-foreground hover:bg-muted/80'
-                      }`}
-                    >
-                      {UNIT_LABEL[u]}
-                    </button>
-                  ))}
-                </div>
+                <label className="text-sm font-semibold text-foreground">Kategorija</label>
+                <Select
+                  value={form.category}
+                  onValueChange={(val) => {
+                    const m = CATEGORY_META[val as MaterialCategory];
+                    patch({
+                      category: val as MaterialCategory,
+                      materialName: m.defaultName,
+                      unit: m.defaultUnit as MaterialUnit,
+                    });
+                  }}
+                >
+                  <SelectTrigger className="w-full rounded-2xl h-13 bg-muted/40 border-0 px-4 text-[15px] font-medium focus:ring-2 focus:ring-foreground/10 transition-shadow data-[state=open]:bg-muted/60">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    {ALL_CATEGORIES.map((c) => {
+                      const cMeta = CATEGORY_META[c];
+                      return (
+                        <SelectItem key={c} value={c} className="rounded-lg py-3 cursor-pointer">
+                          <span className="font-medium">{cMeta.label}</span>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-foreground">
-                  Papildu prasības{' '}
-                  <span className="text-muted-foreground font-normal">(neobligāti)</span>
+                  Frakcija / Precizējums
                 </label>
-                <textarea
-                  value={form.notes}
-                  onChange={(e) => patch({ notes: e.target.value })}
-                  placeholder="piem. frakcionēts 0-16, sasmalcināts, nesasaldēts..."
-                  rows={3}
-                  className="w-full rounded-2xl border-0 bg-muted/40 px-4 py-3 text-[15px] font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-shadow resize-none"
+                <input
+                  type="text"
+                  value={form.materialName}
+                  onChange={(e) => patch({ materialName: e.target.value })}
+                  placeholder={meta.defaultName || 'Piem., 16-32 mm'}
+                  className="w-full rounded-2xl border-0 bg-muted/40 px-4 h-13 text-[15px] font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-shadow"
                 />
               </div>
-              <Button
-                onClick={() => setStep('where')}
-                disabled={!form.materialName.trim() || form.quantity <= 0}
-                className="w-full rounded-2xl h-12 text-[15px] font-bold"
-              >
-                Tālāk — piegādes adrese <ArrowRight className="size-4 ml-1" />
-              </Button>
             </div>
-          )}
-
-          {/* Step 2: Where */}
-          {step === 'where' && (
-            <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
-              <Step2Address
-                value={form.address}
-                onAddressChange={handleAddressChange}
-                title="Kur piegādāt materiālus?"
-                subtitle="Ievadiet precīzu būvlaukuma adresi vai izmantojiet GPS"
-                nextLabel="Tālāk — izvēlēties datumu"
-                onNext={() => setStep('when')}
-                onBack={() => setStep('specs')}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-foreground">Daudzums</label>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() =>
+                    patch({
+                      quantity: Math.max(
+                        0.5,
+                        parseFloat((form.quantity - (form.unit === 'PIECE' ? 1 : 0.5)).toFixed(2)),
+                      ),
+                    })
+                  }
+                  className="flex shrink-0 items-center justify-center rounded-2xl w-14 h-14 bg-muted/40 hover:bg-muted/70 transition-colors text-foreground"
+                >
+                  <Minus className="size-5" />
+                </button>
+                <input
+                  type="number"
+                  value={form.quantity}
+                  min={0.5}
+                  step={0.5}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    if (!isNaN(v) && v > 0) patch({ quantity: v });
+                  }}
+                  className="flex-1 min-w-0 text-center bg-transparent border-0 px-2 py-2 text-4xl font-bold tracking-tighter focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <button
+                  onClick={() =>
+                    patch({
+                      quantity: parseFloat(
+                        (form.quantity + (form.unit === 'PIECE' ? 1 : 0.5)).toFixed(2),
+                      ),
+                    })
+                  }
+                  className="flex shrink-0 items-center justify-center rounded-2xl w-14 h-14 bg-muted/40 hover:bg-muted/70 transition-colors text-foreground"
+                >
+                  <Plus className="size-5" />
+                </button>
+              </div>
+              <div className="flex gap-2 flex-wrap mt-3">
+                {UNITS.map((u) => (
+                  <button
+                    key={u}
+                    onClick={() => patch({ unit: u })}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                      form.unit === u
+                        ? 'bg-foreground text-background'
+                        : 'bg-muted/50 text-foreground hover:bg-muted/80'
+                    }`}
+                  >
+                    {UNIT_LABEL[u]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-foreground">
+                Papildu prasības{' '}
+                <span className="text-muted-foreground font-normal">(neobligāti)</span>
+              </label>
+              <textarea
+                value={form.notes}
+                onChange={(e) => patch({ notes: e.target.value })}
+                placeholder="piem. frakcionēts 0-16, sasmalcināts, nesasaldēts..."
+                rows={3}
+                className="w-full rounded-2xl border-0 bg-muted/40 px-4 py-3 text-[15px] font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-shadow resize-none"
               />
             </div>
-          )}
+            <Button
+              onClick={() => setStep('where')}
+              disabled={!form.materialName.trim() || form.quantity <= 0}
+              className="w-full rounded-2xl h-12 text-[15px] font-bold"
+            >
+              Tālāk — piegādes adrese <ArrowRight className="size-4 ml-1" />
+            </Button>
+          </div>
+        )}
 
-          {/* Step 3: When */}
-          {step === 'when' && (
-            <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
-              <MatStep3When
-                deliveryDate={form.deliveryDate}
-                onDateChange={(d) => patch({ deliveryDate: d })}
-                truckCount={form.truckCount}
-                onTruckCountChange={(n) => patch({ truckCount: n })}
-                truckIntervalMinutes={form.truckIntervalMinutes}
-                onTruckIntervalChange={(n) => patch({ truckIntervalMinutes: n })}
-                onNext={goToOffers}
-                onBack={() => setStep('where')}
-              />
-            </div>
-          )}
+        {/* Step 2: Where */}
+        {step === 'where' && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
+            <Step2Address
+              value={form.address}
+              onAddressChange={handleAddressChange}
+              title="Kur piegādāt materiālus?"
+              subtitle="Ievadiet precīzu būvlaukuma adresi vai izmantojiet GPS"
+              nextLabel="Tālāk — izvēlēties datumu"
+              onNext={() => setStep('when')}
+              onBack={() => setStep('specs')}
+            />
+          </div>
+        )}
 
-          {/* Step 4: Offers */}
-          {step === 'offers' && (
-            <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
-              {offersLoading ? (
-                <div className="py-20 flex flex-col items-center gap-3">
-                  <Loader2 className="size-8 animate-spin text-muted-foreground" />
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Meklējam pieejamos piegādātājus...
+        {/* Step 3: When */}
+        {step === 'when' && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
+            <MatStep3When
+              deliveryDate={form.deliveryDate}
+              onDateChange={(d) => patch({ deliveryDate: d })}
+              truckCount={form.truckCount}
+              onTruckCountChange={(n) => patch({ truckCount: n })}
+              truckIntervalMinutes={form.truckIntervalMinutes}
+              onTruckIntervalChange={(n) => patch({ truckIntervalMinutes: n })}
+              onNext={goToOffers}
+              onBack={() => setStep('where')}
+            />
+          </div>
+        )}
+
+        {/* Step 4: Offers */}
+        {step === 'offers' && (
+          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+            {offersLoading ? (
+              <div className="py-20 flex flex-col items-center gap-3">
+                <Loader2 className="size-8 animate-spin text-muted-foreground" />
+                <p className="text-sm font-medium text-muted-foreground">
+                  Meklējam pieejamos piegādātājus...
+                </p>
+              </div>
+            ) : offersError || offers.length === 0 ? (
+              <div className="space-y-4">
+                {offersError ? (
+                  <p className="text-sm text-destructive font-medium">{offersError}</p>
+                ) : (
+                  <div>
+                    <p className="text-xl font-bold text-foreground">Nav tūlītēju piedāvājumu</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Nosūtiet pieprasījumu — piegādātāji atbildēs ar savām cenām.
+                    </p>
+                  </div>
+                )}
+                <RFQPanel submitting={submitting} error={submitError} onSend={handleSendRFQ} />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xl font-bold text-foreground">
+                    {offers.length} piedāvājum{offers.length === 1 ? 's' : 'i'}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Sakārtoti pēc cenas — lētākais pirmais
                   </p>
                 </div>
-              ) : offersError || offers.length === 0 ? (
-                <div className="space-y-4">
-                  {offersError ? (
-                    <p className="text-sm text-destructive font-medium">{offersError}</p>
-                  ) : (
-                    <div>
-                      <p className="text-xl font-bold text-foreground">Nav tūlītēju piedāvājumu</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Nosūtiet pieprasījumu — piegādātāji atbildēs ar savām cenām.
-                      </p>
-                    </div>
-                  )}
-                  <RFQPanel submitting={submitting} error={submitError} onSend={handleSendRFQ} />
+                {submitError && (
+                  <p className="text-sm text-destructive font-medium">{submitError}</p>
+                )}
+                {[...offers]
+                  .sort((a, b) => a.totalPrice - b.totalPrice)
+                  .map((offer, idx) => (
+                    <OfferCard
+                      key={offer.id}
+                      offer={offer}
+                      unit={form.unit}
+                      isCheapest={idx === 0}
+                      submitting={submitting}
+                      onSelect={() => handleSelectOffer(offer)}
+                    />
+                  ))}
+                <div className="pt-2 border-t border-border/50">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Vēlaties saņemt vairāk piedāvājumu?
+                  </p>
+                  <RFQPanel compact submitting={submitting} error="" onSend={handleSendRFQ} />
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xl font-bold text-foreground">
-                      {offers.length} piedāvājum{offers.length === 1 ? 's' : 'i'}
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Sakārtoti pēc cenas — lētākais pirmais
-                    </p>
-                  </div>
-                  {submitError && (
-                    <p className="text-sm text-destructive font-medium">{submitError}</p>
-                  )}
-                  {[...offers]
-                    .sort((a, b) => a.totalPrice - b.totalPrice)
-                    .map((offer, idx) => (
-                      <OfferCard
-                        key={offer.id}
-                        offer={offer}
-                        unit={form.unit}
-                        isCheapest={idx === 0}
-                        submitting={submitting}
-                        onSelect={() => handleSelectOffer(offer)}
-                      />
-                    ))}
-                  <div className="pt-2 border-t border-border/50">
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Vēlaties saņemt vairāk piedāvājumu?
-                    </p>
-                    <RFQPanel compact submitting={submitting} error="" onSend={handleSendRFQ} />
-                  </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* RFQ sent */}
+        {step === 'rfq-sent' && (
+          <div className="flex flex-col items-center justify-center py-10 text-center space-y-5 animate-in zoom-in-95">
+            <div className="flex size-20 items-center justify-center rounded-full bg-blue-50">
+              <Send className="size-9 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-foreground">Pieprasījums nosūtīts!</p>
+              <p className="text-base text-muted-foreground font-medium mt-1">
+                Nr. <span className="font-bold text-foreground">{rfqNumber}</span>
+              </p>
+            </div>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Piegādātāji jūsu rajonā saņēma paziņojumu. Kad kāds atbildēs ar cenu, jūs saņemsiet
+              paziņojumu.
+            </p>
+            <div className="w-full space-y-3 pt-2">
+              <Button
+                onClick={() => (window.location.href = '/dashboard/quote-requests')}
+                className="w-full rounded-2xl h-12 font-bold"
+              >
+                <ReceiptText className="size-4 mr-1.5" /> Skatīt pieprasījumus
+              </Button>
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="w-full rounded-2xl h-12 font-semibold"
+              >
+                Turpināt iepirkties
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Order confirmed */}
+        {step === 'order-confirmed' && (
+          <div className="flex flex-col items-center justify-center py-10 text-center space-y-5 animate-in zoom-in-95">
+            <div className="flex size-20 items-center justify-center rounded-full bg-foreground">
+              <CheckCircle2 className="size-9 text-background" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-foreground">Pasūtījums veikts!</p>
+              <p className="text-base text-muted-foreground font-medium mt-1">
+                Nr. <span className="font-bold text-foreground">{orderNumber}</span>
+              </p>
+            </div>
+            <div className="w-full rounded-2xl bg-muted/40 divide-y divide-border/50 text-[15px]">
+              <div className="flex items-center gap-3 px-5 py-4 text-muted-foreground">
+                <Package className="size-4 shrink-0 text-foreground" />
+                <span>
+                  {form.quantity} {UNIT_SHORT[form.unit]} {form.materialName}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 px-5 py-4 text-muted-foreground">
+                <MapPin className="size-4 shrink-0 text-foreground" />
+                <span className="truncate">{form.address}</span>
+              </div>
+              {form.deliveryDate && (
+                <div className="flex items-center gap-3 px-5 py-4 text-muted-foreground">
+                  <CalendarDays className="size-4 shrink-0 text-foreground" />
+                  <span>
+                    {new Date(form.deliveryDate + 'T00:00:00').toLocaleDateString('lv-LV', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </span>
                 </div>
               )}
             </div>
-          )}
-
-          {/* RFQ sent */}
-          {step === 'rfq-sent' && (
-            <div className="flex flex-col items-center justify-center py-10 text-center space-y-5 animate-in zoom-in-95">
-              <div className="flex size-20 items-center justify-center rounded-full bg-blue-50">
-                <Send className="size-9 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">Pieprasījums nosūtīts!</p>
-                <p className="text-base text-muted-foreground font-medium mt-1">
-                  Nr. <span className="font-bold text-foreground">{rfqNumber}</span>
-                </p>
-              </div>
-              <p className="text-sm text-muted-foreground max-w-xs">
-                Piegādātāji jūsu rajonā saņēma paziņojumu. Kad kāds atbildēs ar cenu, jūs saņemsiet
-                paziņojumu.
-              </p>
-              <div className="w-full space-y-3 pt-2">
-                <Button
-                  onClick={() => (window.location.href = '/dashboard/quote-requests')}
-                  className="w-full rounded-2xl h-12 font-bold"
-                >
-                  <ReceiptText className="size-4 mr-1.5" /> Skatīt pieprasījumus
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={onClose}
-                  className="w-full rounded-2xl h-12 font-semibold"
-                >
-                  Turpināt iepirkties
-                </Button>
-              </div>
+            <div className="w-full space-y-3">
+              <Button
+                onClick={() => (window.location.href = '/dashboard/orders')}
+                className="w-full rounded-2xl h-12 font-bold"
+              >
+                <ReceiptText className="size-4 mr-1.5" /> Skatīt pasūtījumus
+              </Button>
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="w-full rounded-2xl h-12 font-semibold"
+              >
+                Turpināt iepirkties
+              </Button>
             </div>
-          )}
-
-          {/* Order confirmed */}
-          {step === 'order-confirmed' && (
-            <div className="flex flex-col items-center justify-center py-10 text-center space-y-5 animate-in zoom-in-95">
-              <div className="flex size-20 items-center justify-center rounded-full bg-foreground">
-                <CheckCircle2 className="size-9 text-background" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">Pasūtījums veikts!</p>
-                <p className="text-base text-muted-foreground font-medium mt-1">
-                  Nr. <span className="font-bold text-foreground">{orderNumber}</span>
-                </p>
-              </div>
-              <div className="w-full rounded-2xl bg-muted/40 divide-y divide-border/50 text-[15px]">
-                <div className="flex items-center gap-3 px-5 py-4 text-muted-foreground">
-                  <Package className="size-4 shrink-0 text-foreground" />
-                  <span>
-                    {form.quantity} {UNIT_SHORT[form.unit]} {form.materialName}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 px-5 py-4 text-muted-foreground">
-                  <MapPin className="size-4 shrink-0 text-foreground" />
-                  <span className="truncate">{form.address}</span>
-                </div>
-                {form.deliveryDate && (
-                  <div className="flex items-center gap-3 px-5 py-4 text-muted-foreground">
-                    <CalendarDays className="size-4 shrink-0 text-foreground" />
-                    <span>
-                      {new Date(form.deliveryDate + 'T00:00:00').toLocaleDateString('lv-LV', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="w-full space-y-3">
-                <Button
-                  onClick={() => (window.location.href = '/dashboard/orders')}
-                  className="w-full rounded-2xl h-12 font-bold"
-                >
-                  <ReceiptText className="size-4 mr-1.5" /> Skatīt pasūtījumus
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={onClose}
-                  className="w-full rounded-2xl h-12 font-semibold"
-                >
-                  Turpināt iepirkties
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Right panel: map */}
-      <div className="relative w-full h-72 lg:h-auto lg:flex-1 bg-muted/30">
-        <div ref={mapDivRef} className="absolute inset-0" />
-        <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-          {form.address && (
-            <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-amber-500" />
-              <span className="truncate max-w-52">{form.address}</span>
-            </div>
-          )}
-          {form.deliveryDate && (
-            <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-blue-600" />
-              {new Date(form.deliveryDate + 'T00:00:00').toLocaleDateString('lv-LV', {
-                day: 'numeric',
-                month: 'long',
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+          </div>
+        )}
+      </WizardShell>
+    </>
   );
 }
 

@@ -16,7 +16,6 @@ import {
   CheckCircle2,
   Pencil,
   X,
-  Building2,
   Leaf,
   MapPin,
   FileText,

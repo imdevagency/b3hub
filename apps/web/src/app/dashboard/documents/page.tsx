@@ -20,6 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { DocumentCard } from '@/components/documents/DocumentCard';
 import { DocumentViewer } from '@/components/documents/DocumentViewer';
+import { PageHeader } from '@/components/ui/page-header';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { useAuth } from '@/lib/auth-context';
 import {
@@ -43,8 +44,7 @@ const DEMO_DOCS: Document[] = [
     ownerId: 'demo',
     issuedBy: 'Riga Weigh Station',
     isGenerated: true,
-    notes: 'Confirmed weight: 18.4 t (sand, order #ORD-2025-0042)',
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
@@ -58,7 +58,6 @@ const DEMO_DOCS: Document[] = [
     ownerId: 'demo',
     issuedBy: 'Driver: Pēteris Ozoliņš',
     isGenerated: false,
-    notes: 'Recipient signature captured on site',
     createdAt: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(),
   },
@@ -73,7 +72,6 @@ const DEMO_DOCS: Document[] = [
     ownerId: 'demo',
     issuedBy: 'EcoCenter Rīga',
     isGenerated: true,
-    notes: 'Concrete rubble — 6 t recycled',
     createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
   },
@@ -101,7 +99,6 @@ const DEMO_DOCS: Document[] = [
     ownerId: 'demo',
     issuedBy: 'B3Hub Platform',
     isGenerated: true,
-    notes: 'Ietvarlīgums #FR-2025-0007 — Rīga Būve SIA',
     createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
   },
@@ -119,6 +116,7 @@ const TABS: { id: FilterTab; label: string; icon: React.ElementType }[] = [
   { id: 'DELIVERY_NOTE', label: 'Piegādes Pavadzīmes', icon: Truck },
   { id: 'CONTRACT', label: 'Līgumi', icon: ScrollText },
   { id: 'INVOICE', label: 'Rēķini', icon: ScrollText },
+];
 
 // ── Page ─────────────────────────────────────────────────────
 
@@ -203,27 +201,16 @@ export default function DocumentsPage() {
 
   return (
     <div className="w-full h-full pb-20 space-y-10">
-      {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-4 border-b border-border/40">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
-            Mani Dokumenti
-          </h1>
-          <p className="text-muted-foreground mt-2 max-w-2xl text-sm sm:text-base">
-            Visi jūsu rēķini, svēršanas lapas, piegādes apstiprinājumi un sertifikāti — bez papīra,
-            vienā vietā.
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={fetchDocs}
-          disabled={fetching}
-          className="rounded-full shadow-none bg-background border-border hover:bg-muted/60 shrink-0"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${fetching ? 'animate-spin' : ''}`} />
-          Atjaunot sarakstu
-        </Button>
-      </div>
+      <PageHeader
+        title="Mani Dokumenti"
+        description="Visi jūsu rēķini, svēršanas lapas, piegādes apstiprinājumi un sertifikāti — bez papīra, vienā vietā."
+        action={
+          <Button variant="outline" onClick={fetchDocs} disabled={fetching}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${fetching ? 'animate-spin' : ''}`} />
+            Atjaunot sarakstu
+          </Button>
+        }
+      />
 
       {/* ── Error banner ── */}
       {error && (
@@ -264,8 +251,8 @@ export default function DocumentsPage() {
         <div className="flex items-center gap-3 rounded-2xl border border-amber-300/40 bg-amber-500/10 px-5 py-4 text-sm text-amber-800 dark:text-amber-400">
           <div className="animate-pulse bg-amber-500/30 h-2 w-2 rounded-full shrink-0" />
           <span>
-            <strong>Priekšskatījuma režīms</strong> — šie ir piemēra dokumenti. Jūsu īstie
-            dokumenti tiks ģenerēti šeit, sākot ar pirmo pasūtījumu.
+            <strong>Priekšskatījuma režīms</strong> — šie ir piemēra dokumenti. Jūsu īstie dokumenti
+            tiks ģenerēti šeit, sākot ar pirmo pasūtījumu.
           </span>
         </div>
       )}
@@ -275,35 +262,35 @@ export default function DocumentsPage() {
         {/* Tab pills — horizontally scrollable on small screens */}
         <div className="w-full overflow-x-auto pb-1 -mb-1">
           <div className="flex items-center gap-2 min-w-max">
-          {TABS.map((tab) => {
-            const count =
-              tab.id === 'ALL' ? summary?.total : summary?.byType?.[tab.id as DocumentType];
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`relative flex items-center justify-center h-9 px-4 rounded-full text-sm font-medium transition-all duration-200 ${
-                  isActive
-                    ? 'bg-foreground text-background shadow-md'
-                    : 'bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground'
-                }`}
-              >
-                {tab.label}
-                {count != null && count > 0 && (
-                  <span
-                    className={`ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-bold transition-colors ${
-                      isActive
-                        ? 'bg-background/20 text-background'
-                        : 'bg-background text-muted-foreground'
-                    }`}
-                  >
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+            {TABS.map((tab) => {
+              const count =
+                tab.id === 'ALL' ? summary?.total : summary?.byType?.[tab.id as DocumentType];
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative flex items-center justify-center h-9 px-4 rounded-full text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? 'bg-foreground text-background shadow-md'
+                      : 'bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+                  }`}
+                >
+                  {tab.label}
+                  {count != null && count > 0 && (
+                    <span
+                      className={`ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-bold transition-colors ${
+                        isActive
+                          ? 'bg-background/20 text-background'
+                          : 'bg-background text-muted-foreground'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 

@@ -8,18 +8,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { setupPayouts, getEarnings, type EarningsResponse, type EarningEntry } from '@/lib/api';
-import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-  AlertCircle,
-  Banknote,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  Package,
-  BarChart3,
-  RefreshCw,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 
@@ -174,37 +163,6 @@ const STATUS_CONFIG: Record<
       'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50',
   },
 };
-
-// ── sub-components ────────────────────────────────────────────────────────────
-
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  sub,
-  color,
-}: {
-  label: string;
-  value: string;
-  icon: React.ElementType;
-  sub?: string;
-  color: string;
-}) {
-  return (
-    <Card className="shadow-none border-border/50">
-      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2 pt-4 px-4">
-        <CardDescription className="text-xs font-medium">{label}</CardDescription>
-        <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${color}`}>
-          <Icon className="h-3.5 w-3.5" />
-        </div>
-      </CardHeader>
-      <CardContent className="px-4 pb-4">
-        <p className="text-2xl font-bold tabular-nums">{value}</p>
-        {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
-      </CardContent>
-    </Card>
-  );
-}
 
 // ── page ─────────────────────────────────────────────────────────────────────
 

@@ -22,7 +22,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
 import { getAllTransportJobs, getTransportJobLocation, type ApiTransportJob } from '@/lib/api';
-import { PageHeader } from '@/components/ui/page-header';
 import { PageContainer } from '@/components/ui/page-container';
 
 const FleetMap = dynamic(
@@ -166,7 +165,9 @@ export default function FleetPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
-  const [liveLocations, setLiveLocations] = useState<Record<string, { lat: number; lng: number }>>({});
+  const [liveLocations, setLiveLocations] = useState<Record<string, { lat: number; lng: number }>>(
+    {},
+  );
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
@@ -205,7 +206,11 @@ export default function FleetPage() {
     if (viewMode !== 'map' || !token) return;
 
     const ACTIVE = new Set([
-      'EN_ROUTE_PICKUP', 'AT_PICKUP', 'LOADED', 'EN_ROUTE_DELIVERY', 'AT_DELIVERY',
+      'EN_ROUTE_PICKUP',
+      'AT_PICKUP',
+      'LOADED',
+      'EN_ROUTE_DELIVERY',
+      'AT_DELIVERY',
     ]);
 
     const pollLocations = async () => {

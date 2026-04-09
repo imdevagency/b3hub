@@ -10,7 +10,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   AlertTriangle,
-  Award,
   Banknote,
   BarChart3,
   Bell,
@@ -76,28 +75,46 @@ type NavSection = {
 const ROLE_NAV: Record<Mode, NavSection[]> = {
   BUYER: [
     {
+      id: 'buyer-main',
+      label: 'Galvenā',
+      icon: LayoutDashboard,
+      items: [
+        { label: 'Sākumlapa', href: '/dashboard/buyer', icon: LayoutDashboard },
+        { label: 'Materiālu Katalogs', href: '/dashboard/catalog', icon: Package },
+      ],
+    },
+    {
       id: 'buyer-orders',
       label: 'Pasūtījumi',
       icon: ClipboardList,
       items: [
-        { label: 'Sākumlapa', href: '/dashboard/buyer', icon: LayoutDashboard },
-        { label: 'Materiālu Katalogs', href: '/dashboard/catalog', icon: Package },
         { label: 'Mani Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
         { label: 'Regulārie Pasūtījumi', href: '/dashboard/orders/schedules', icon: CalendarClock },
-        { label: 'Ietvarlīgumi', href: '/dashboard/framework-contracts', icon: FolderKanban },
-        { label: 'Cenu Pieprasījumi', href: '/dashboard/quote-requests', icon: FileQuestion },
-        { label: 'Konteineri', href: '/dashboard/skip-hire', icon: Box },
       ],
     },
     {
+      id: 'buyer-procurement',
+      label: 'Iepirkumi',
+      icon: FolderKanban,
+      items: [
+        { label: 'Ietvarlīgumi', href: '/dashboard/framework-contracts', icon: FolderKanban },
+        { label: 'Cenu Pieprasījumi', href: '/dashboard/quote-requests', icon: FileQuestion },
+      ],
+    },
+    {
+      id: 'buyer-skip',
+      label: 'Skip Hire',
+      icon: Box,
+      items: [{ label: 'Skip Noma', href: '/dashboard/order/skip-hire', icon: Box }],
+    },
+    {
       id: 'buyer-finance',
-      label: 'Finanses un Dokumenti',
-      icon: FolderOpen,
+      label: 'Finanses',
+      icon: Receipt,
       items: [
         { label: 'Rēķini', href: '/dashboard/invoices', icon: Receipt },
         { label: 'Analītika', href: '/dashboard/analytics', icon: BarChart3 },
         { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
-        { label: 'Sertifikāti', href: '/dashboard/certificates', icon: Award },
       ],
     },
   ],
@@ -109,9 +126,8 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       items: [
         { label: 'Sākumlapa', href: '/dashboard/supplier', icon: LayoutDashboard },
         { label: 'Mani Materiāli', href: '/dashboard/materials', icon: Package },
-        { label: 'Ienākošie Pasūtījumi', href: '/dashboard/incoming-orders', icon: ClipboardList },
+        { label: 'Ienākošie Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
         { label: 'Pieprasījumu Tirgus', href: '/dashboard/quote-requests/open', icon: Search },
-        { label: 'Sertifikāti', href: '/dashboard/certificates', icon: Award },
       ],
     },
     {
@@ -119,7 +135,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       label: 'Bizness',
       icon: Banknote,
       items: [
-        { label: 'Ieņēmumi', href: '/dashboard/supplier/earnings', icon: Banknote },
+        { label: 'Ieņēmumi', href: '/dashboard/earnings', icon: Banknote },
         { label: 'Analītika', href: '/dashboard/analytics', icon: BarChart3 },
         { label: 'Atsauksmes', href: '/dashboard/reviews', icon: Star },
         { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
@@ -134,8 +150,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       items: [
         { label: 'Sākumlapa', href: '/dashboard/transporter', icon: LayoutDashboard },
         { label: 'Darbu Tirgus', href: '/dashboard/jobs', icon: Briefcase },
-        { label: 'Mani Darbi', href: '/dashboard/transport-history', icon: ClipboardList },
-        { label: 'Darba Grafiks', href: '/dashboard/schedule', icon: CalendarClock },
+        { label: 'Mani Darbi', href: '/dashboard/orders', icon: ClipboardList },
         { label: 'Utilizācijas Centri', href: '/dashboard/recycling-centers', icon: Recycle },
       ],
     },
@@ -144,9 +159,8 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       label: 'Flote',
       icon: Car,
       items: [
-        { label: 'Mans Autoparks', href: '/dashboard/garage', icon: Car },
-        { label: 'Konteineru Flote', href: '/dashboard/containers/fleet', icon: Package },
-        { label: 'Nesēja Iestatījumi', href: '/dashboard/transporter/settings', icon: Settings },
+        { label: 'Flotes Pārvaldība', href: '/dashboard/fleet-management', icon: LayoutGrid },
+        { label: 'Grafiks & Iestatījumi', href: '/dashboard/transporter/settings', icon: Settings },
       ],
     },
     {
@@ -154,7 +168,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       label: 'Finanses un Dokumenti',
       icon: Banknote,
       items: [
-        { label: 'Ienākumi', href: '/dashboard/transporter/earnings', icon: Banknote },
+        { label: 'Ienākumi', href: '/dashboard/earnings', icon: Banknote },
         { label: 'Analītika', href: '/dashboard/analytics', icon: BarChart3 },
         { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
       ],
@@ -234,7 +248,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     if (activeMode === 'BUYER' && user?.isCompany) {
       // Company buyers (CONSTRUCTION / HYBRID) get the construction project tracker
       sections = sections.map((section) => {
-        if (section.id !== 'buyer-orders') return section;
+        if (section.id !== 'buyer-procurement') return section;
         return {
           ...section,
           items: [
@@ -295,23 +309,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           };
         });
       }
+    }
 
-      // Skip-hire items are only relevant for carriers with canSkipHire capability
-      if (!user?.canSkipHire) {
-        sections = sections.map((section) => {
-          if (section.id === 'carrier-fleet') {
-            return {
-              ...section,
-              items: section.items.filter(
-                (item) =>
-                  item.href !== '/dashboard/containers/fleet' &&
-                  item.href !== '/dashboard/transporter/settings',
-              ),
-            };
-          }
-          return section;
-        });
-      }
+    if (activeMode === 'SUPPLIER' && !user?.isCompany) {
+      // Individual (non-company) suppliers have no company reviews — hide the Reviews link
+      sections = sections.map((section) => ({
+        ...section,
+        items: section.items.filter((item) => item.href !== '/dashboard/reviews'),
+      }));
     }
 
     return sections;

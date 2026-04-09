@@ -46,10 +46,9 @@ export function Step2Address({
   const [localLng, setLocalLng] = useState<number | undefined>(lng);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [savedOpen, setSavedOpen] = useState(false);
-  const [savedLoading, setSavedLoading] = useState(false);
+  const [savedLoading, setSavedLoading] = useState(true);
 
   useEffect(() => {
-    setSavedLoading(true);
     getSavedAddresses()
       .then(setSavedAddresses)
       .catch(() => {})

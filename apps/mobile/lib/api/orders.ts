@@ -66,9 +66,6 @@ export interface CreateMaterialOrderInput {
   deliveryPostal?: string;
   deliveryDate: string;
   deliveryWindow?: string;
-  siteContactName?: string;
-  siteContactPhone?: string;
-  notes?: string;
   projectId?: string;
   /** Number of trucks to dispatch (each becomes a separate transport job). */
   truckCount?: number;
@@ -86,9 +83,6 @@ export interface CreateOrderScheduleInput {
   deliveryPostal: string;
   deliveryWindow?: string;
   deliveryFee?: number;
-  notes?: string;
-  siteContactName?: string;
-  siteContactPhone?: string;
   projectId?: string;
   items: { materialId: string; quantity: number; unit: string }[];
   intervalDays: number;
@@ -140,9 +134,6 @@ export interface ApiOrder {
   deliveryFee: number;
   total: number;
   currency: string;
-  siteContactName: string | null;
-  siteContactPhone: string | null;
-  notes?: string | null;
   buyer?: {
     id: string;
     name: string;
@@ -170,7 +161,6 @@ export interface ApiOrder {
     deliveryProof?: {
       id: string;
       photos: string[];
-      notes: string | null;
       recipientName: string | null;
       createdAt: string;
     } | null;
@@ -178,7 +168,6 @@ export interface ApiOrder {
       id: string;
       type: string;
       status: string;
-      notes: string;
       createdAt: string;
     }[];
   }[];
@@ -248,9 +237,6 @@ export const ordersApi = {
       body: {
         deliveryDate?: string;
         deliveryWindow?: string;
-        notes?: string;
-        siteContactName?: string;
-        siteContactPhone?: string;
         deliveryAddress?: string;
         deliveryCity?: string;
       },

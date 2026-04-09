@@ -45,7 +45,6 @@ import {
   createQuoteRequest,
   acceptQuoteResponse,
   type QuoteRequest,
-  type QuoteResponse,
   type MaterialCategory,
   type MaterialUnit,
   type CreateQuoteRequestInput,

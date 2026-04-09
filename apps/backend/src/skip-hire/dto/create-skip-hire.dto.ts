@@ -53,10 +53,6 @@ export class CreateSkipHireDto {
 
   @IsOptional()
   @IsString()
-  notes?: string;
-
-  @IsOptional()
-  @IsString()
   unloadingPointPhotoUrl?: string;
 
   @IsOptional()

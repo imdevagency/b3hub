@@ -11,26 +11,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  AddressAutocomplete,
-  loadGoogleMapsScript,
-  type PlaceAddress,
-} from '@/components/ui/AddressAutocomplete';
+import { loadGoogleMapsScript, type PlaceAddress } from '@/components/ui/AddressAutocomplete';
 import { AddressMapPicker } from '@/components/ui/AddressMapPicker';
 import { createDisposalOrder } from '@/lib/api/orders';
 import { type WasteType } from '@/lib/api/containers';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
-import {
-  ArrowLeft,
-  Trash2,
-  CheckCircle2,
-  ChevronRight,
-  MapPin,
-  CalendarDays,
-  Loader2,
-  Search,
-} from 'lucide-react';
-import Link from 'next/link';
+import { Trash2, CheckCircle2, ChevronRight, MapPin, CalendarDays, Loader2 } from 'lucide-react';
+import { MapWizardShell } from '@/components/order/MapWizardShell';
 
 const WASTE_TYPES: { id: WasteType; label: string; emoji: string }[] = [
   { id: 'CONCRETE', label: 'Betons', emoji: '🏗️' },
@@ -296,289 +283,229 @@ export default function DisposalOrderPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-100px)] w-full bg-background rounded-2xl overflow-hidden shadow-lg border flex flex-col-reverse lg:flex-row">
-      <div className="w-full lg:w-105 shrink-0 flex flex-col bg-background z-10 relative border-t lg:border-t-0 lg:border-r">
-        <div className="p-5 border-b bg-card space-y-3">
-          <Link
-            href="/dashboard/order"
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" /> Atpakaļ
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Būvgružu Izvešana</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Pasūtiet konteineru vai tehniku būvgružu izvešanai
-            </p>
+    <MapWizardShell
+      title="Būvgružu Izvešana"
+      backHref="/dashboard/order"
+      steps={STEPS}
+      step={step}
+      mapSlot={
+        <div className="relative w-full h-75 lg:h-auto lg:flex-1 bg-muted/30">
+          <div ref={mapDivRef} className="absolute inset-0" />
+          <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+            {address && (
+              <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-green-600" />
+                <span className="truncate max-w-50">{address}</span>
+              </div>
+            )}
+            {date && (
+              <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-blue-600" />
+                {date}
+              </div>
+            )}
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-5 scrollbar-thin">
-          <div className="space-y-6">
-            {/* Step indicators */}
-            <div className="flex gap-2 w-full mb-6">
-              {STEPS.map((s, i) => {
-                const n = i + 1;
-                const done = step > n;
-                const active = step === n;
-                return (
-                  <div key={n} className="flex-1 flex flex-col gap-2">
-                    <div
-                      className={`h-1.25 w-full rounded-full transition-all ${
-                        done ? 'bg-green-500' : active ? 'bg-primary' : 'bg-muted'
-                      }`}
-                    />
-                    <div className="flex items-center gap-1.5 opacity-80">
-                      <s.icon
-                        className={`h-3.5 w-3.5 ${done ? 'text-green-600' : active ? 'text-primary' : 'text-muted-foreground'}`}
-                      />
-                      <span
-                        className={`text-xs font-semibold ${
-                          done
-                            ? 'text-green-700'
-                            : active
-                              ? 'text-foreground'
-                              : 'text-muted-foreground'
-                        }`}
-                      >
-                        {s.label}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+      }
+    >
+      <div>
+        {/* Step 1: Waste type */}
+        {step === 1 && (
+          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+            <div>
+              <h2 className="text-lg font-bold">Ko vēlaties utilizēt?</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">Izvēlieties atkritumu veidu</p>
             </div>
 
-            <div className="p-0">
-              {/* Step 1: Waste type */}
-              {step === 1 && (
-                <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
-                  <div>
-                    <h2 className="text-lg font-bold">Ko vēlaties utilizēt?</h2>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      Izvēlieties atkritumu veidu
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-2">
-                    {WASTE_TYPES.map((type) => (
-                      <button
-                        key={type.id}
-                        onClick={() => setWasteType(type.id)}
-                        className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all border-2 ${
-                          wasteType === type.id
-                            ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
-                            : 'border-transparent bg-muted/60 hover:bg-muted'
-                        }`}
-                      >
-                        <span className="text-xl">{type.emoji}</span>
-                        <span className="font-medium text-sm">{type.label}</span>
-                        {wasteType === type.id && (
-                          <CheckCircle2 className="h-4 w-4 text-primary ml-auto" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-foreground">Apjoms</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {VOLUME_PRESETS.map((preset) => (
-                        <button
-                          key={preset.key}
-                          type="button"
-                          onClick={() => setSelectedVolume(preset.key)}
-                          className={`flex flex-col gap-0.5 p-3.5 rounded-xl text-left transition-all border-2 ${
-                            selectedVolume === preset.key
-                              ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
-                              : 'border-transparent bg-muted/60 hover:bg-muted'
-                          }`}
-                        >
-                          <span className="font-semibold text-sm">{preset.label}</span>
-                          <span className="text-xs text-muted-foreground">{preset.sublabel}</span>
-                          <span className="text-xs font-semibold text-primary mt-1">
-                            no €{preset.fromPrice}
-                          </span>
-                          {selectedVolume === preset.key && (
-                            <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-1" />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2: Address */}
-              {step === 2 && (
-                <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
-                  <div>
-                    <h2 className="text-lg font-bold">No kurienes izvest?</h2>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      Ievadiet precīzu adresi, kur atrodas atkritumi
-                    </p>
-                  </div>
-
-                  <AddressMapPicker
-                    value={address}
-                    lat={lat}
-                    lng={lng}
-                    onChange={(v) => setAddress(v)}
-                    onSelect={handleAddressSelect}
-                    placeholder="Iela, mājas numurs, pilsēta..."
-                  />
-
-                  {address && (
-                    <div className="flex items-start gap-2.5 p-3 rounded-xl bg-green-50 ring-1 ring-green-200">
-                      <MapPin className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-green-800">{address}</p>
-                        {city && <p className="text-xs text-green-600">{city}</p>}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Step 3: Date */}
-              {step === 3 && (
-                <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
-                  <div>
-                    <h2 className="text-lg font-bold">Kad izvest?</h2>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      Izvēlieties vēlamo datumu
-                    </p>
-                  </div>
-
-                  {/* Summary */}
-                  <div className="rounded-xl bg-muted/60 p-4 space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-muted-foreground">Adrese:</span>
-                      <span className="font-medium truncate">{address}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-muted-foreground">Veids:</span>
-                      <span className="font-medium">
-                        {WASTE_TYPES.find((t) => t.id === wasteType)?.label} ·{' '}
-                        {selectedPreset.label}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-semibold">Izvešanas datums</Label>
-                    <Input
-                      type="date"
-                      className="mt-1.5 rounded-xl"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-semibold">Papildus piezīmes</Label>
-                    <Textarea
-                      placeholder="Piekļuves nosacījumi, vārtu kodi u.c."
-                      className="mt-1.5 rounded-xl resize-none"
-                      rows={3}
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                    />
-                  </div>
-
-                  {/* Site contact info */}
-                  <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50/60 p-4 space-y-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-700">Objekta kontaktpersona</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Šoferis var sazināties ar šo personu piegādes brīdī
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs font-semibold text-slate-600 mb-1 block">
-                          Vārds, uzvārds
-                        </Label>
-                        <Input
-                          type="text"
-                          placeholder="Jānis Bērziņš"
-                          value={siteContactName}
-                          onChange={(e) => setSiteContactName(e.target.value)}
-                          className="rounded-lg h-9 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs font-semibold text-slate-600 mb-1 block">
-                          Tālrunis
-                        </Label>
-                        <Input
-                          type="tel"
-                          placeholder="+371 20 000 000"
-                          value={siteContactPhone}
-                          onChange={(e) => setSiteContactPhone(e.target.value)}
-                          className="rounded-lg h-9 text-sm"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Navigation */}
-              <div className="mt-6 pt-5 border-t flex justify-between items-center">
-                <Button
-                  variant="ghost"
-                  onClick={() => setStep(step - 1)}
-                  disabled={step === 1 || loading}
+            <div className="grid grid-cols-1 gap-2">
+              {WASTE_TYPES.map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => setWasteType(type.id)}
+                  className={`flex items-center gap-3 p-3.5 rounded-xl text-left transition-all border-2 ${
+                    wasteType === type.id
+                      ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
+                      : 'border-transparent bg-muted/60 hover:bg-muted'
+                  }`}
                 >
-                  Atpakaļ
-                </Button>
+                  <span className="text-xl">{type.emoji}</span>
+                  <span className="font-medium text-sm">{type.label}</span>
+                  {wasteType === type.id && (
+                    <CheckCircle2 className="h-4 w-4 text-primary ml-auto" />
+                  )}
+                </button>
+              ))}
+            </div>
 
-                {step < 3 ? (
-                  <Button
-                    onClick={() => setStep(step + 1)}
-                    disabled={!canAdvance()}
-                    className="gap-1.5"
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-foreground">Apjoms</p>
+              <div className="grid grid-cols-2 gap-2">
+                {VOLUME_PRESETS.map((preset) => (
+                  <button
+                    key={preset.key}
+                    type="button"
+                    onClick={() => setSelectedVolume(preset.key)}
+                    className={`flex flex-col gap-0.5 p-3.5 rounded-xl text-left transition-all border-2 ${
+                      selectedVolume === preset.key
+                        ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
+                        : 'border-transparent bg-muted/60 hover:bg-muted'
+                    }`}
                   >
-                    Tālāk <ChevronRight className="h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={!canAdvance() || loading}
-                    className="gap-1.5"
-                  >
-                    {loading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <CheckCircle2 className="h-4 w-4" />
+                    <span className="font-semibold text-sm">{preset.label}</span>
+                    <span className="text-xs text-muted-foreground">{preset.sublabel}</span>
+                    <span className="text-xs font-semibold text-primary mt-1">
+                      no €{preset.fromPrice}
+                    </span>
+                    {selectedVolume === preset.key && (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-1" />
                     )}
-                    Apstiprināt pasūtījumu
-                  </Button>
-                )}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
+        )}
+
+        {/* Step 2: Address */}
+        {step === 2 && (
+          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+            <div>
+              <h2 className="text-lg font-bold">No kurienes izvest?</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Ievadiet precīzu adresi, kur atrodas atkritumi
+              </p>
+            </div>
+
+            <AddressMapPicker
+              value={address}
+              lat={lat}
+              lng={lng}
+              onChange={(v) => setAddress(v)}
+              onSelect={handleAddressSelect}
+              placeholder="Iela, mājas numurs, pilsēta..."
+            />
+
+            {address && (
+              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-green-50 ring-1 ring-green-200">
+                <MapPin className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-green-800">{address}</p>
+                  {city && <p className="text-xs text-green-600">{city}</p>}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 3: Date */}
+        {step === 3 && (
+          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+            <div>
+              <h2 className="text-lg font-bold">Kad izvest?</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">Izvēlieties vēlamo datumu</p>
+            </div>
+
+            {/* Summary */}
+            <div className="rounded-xl bg-muted/60 p-4 space-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground">Adrese:</span>
+                <span className="font-medium truncate">{address}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground">Veids:</span>
+                <span className="font-medium">
+                  {WASTE_TYPES.find((t) => t.id === wasteType)?.label} · {selectedPreset.label}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-semibold">Izvešanas datums</Label>
+              <Input
+                type="date"
+                className="mt-1.5 rounded-xl"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-semibold">Papildus piezīmes</Label>
+              <Textarea
+                placeholder="Piekļuves nosacījumi, vārtu kodi u.c."
+                className="mt-1.5 rounded-xl resize-none"
+                rows={3}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </div>
+
+            {/* Site contact info */}
+            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50/60 p-4 space-y-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-700">Objekta kontaktpersona</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Šoferis var sazināties ar šo personu piegādes brīdī
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs font-semibold text-slate-600 mb-1 block">
+                    Vārds, uzvārds
+                  </Label>
+                  <Input
+                    type="text"
+                    placeholder="Jānis Bērziņš"
+                    value={siteContactName}
+                    onChange={(e) => setSiteContactName(e.target.value)}
+                    className="rounded-lg h-9 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-slate-600 mb-1 block">
+                    Tālrunis
+                  </Label>
+                  <Input
+                    type="tel"
+                    placeholder="+371 20 000 000"
+                    value={siteContactPhone}
+                    onChange={(e) => setSiteContactPhone(e.target.value)}
+                    className="rounded-lg h-9 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Navigation */}
+        <div className="mt-6 pt-5 border-t flex justify-between items-center">
+          <Button
+            variant="ghost"
+            onClick={() => setStep(step - 1)}
+            disabled={step === 1 || loading}
+          >
+            Atpakaļ
+          </Button>
+
+          {step < 3 ? (
+            <Button onClick={() => setStep(step + 1)} disabled={!canAdvance()} className="gap-1.5">
+              Tālāk <ChevronRight className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button onClick={handleSubmit} disabled={!canAdvance() || loading} className="gap-1.5">
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
+              Apstiprināt pasūtījumu
+            </Button>
+          )}
         </div>
       </div>
-      <div className="relative w-full h-75 lg:h-auto lg:flex-1 bg-muted/30">
-        <div ref={mapDivRef} className="absolute inset-0" />
-        <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-          {address && (
-            <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-green-600" />
-              <span className="truncate max-w-50">{address}</span>
-            </div>
-          )}
-          {date && (
-            <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-blue-600" />
-              {date}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+    </MapWizardShell>
   );
 }

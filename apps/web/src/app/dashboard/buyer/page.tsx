@@ -9,7 +9,15 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
 import { getDashboardStats, type DashboardStats } from '@/lib/api';
-import { ArrowRight, ClipboardList, FolderOpen, Trash2 } from 'lucide-react';
+import {
+  ArrowRight,
+  ClipboardList,
+  Trash2,
+  Package,
+  MessageSquare,
+  FolderKanban,
+  Receipt,
+} from 'lucide-react';
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
 import { ActionListItem } from '@/components/ui/action-list-item';
@@ -70,7 +78,7 @@ export default function BuyerDashboardPage() {
       label: 'Pasūtīt Konteineru',
       description: 'Rezervēt atkritumu konteineru savai darba vai mājas vietai',
       icon: Trash2,
-      href: '/dashboard/skip-hire',
+      href: '/dashboard/order/skip-hire',
       primary: true,
     },
     {
@@ -80,9 +88,27 @@ export default function BuyerDashboardPage() {
       href: '/dashboard/orders',
     },
     {
-      label: 'Mani Dokumenti',
-      description: 'Rēķini, svēršanas lapas un citi dokumenti',
-      icon: FolderOpen,
+      label: 'Materiālu Katalogs',
+      description: 'Grants, smiltis, betona izstrādājumi un citi materiāli',
+      icon: Package,
+      href: '/dashboard/catalog',
+    },
+    {
+      label: 'Cenu Aptauja',
+      description: 'Pieprasīt piedāvājumus no piegādātājiem',
+      icon: MessageSquare,
+      href: '/dashboard/quote-requests',
+    },
+    {
+      label: 'Projekti',
+      description: 'Būvdarbu projektu pārvaldība un pasūtījumu grupēšana',
+      icon: FolderKanban,
+      href: '/dashboard/projects',
+    },
+    {
+      label: 'Rēķini & Dokumenti',
+      description: 'Rēķini, svēršanas lapas un piegādes dokumenti',
+      icon: Receipt,
       href: '/dashboard/documents',
     },
   ];

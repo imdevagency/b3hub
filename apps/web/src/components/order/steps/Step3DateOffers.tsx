@@ -322,12 +322,12 @@ export function Step3DateOffers({
                     className={cn(
                       'w-full text-left rounded-2xl border-2 p-4 transition-all hover:shadow-md relative',
                       sel
-                        ? 'border-primary bg-red-50 shadow-md ring-4 ring-red-100'
+                        ? 'border-black ring-1 ring-black bg-gray-50 shadow-sm'
                         : 'border-gray-200 bg-white hover:border-gray-300',
                     )}
                   >
                     {offer.badge && (
-                      <span className="absolute -top-3 left-4 rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-white">
+                      <span className="absolute -top-3 left-4 rounded-full bg-black px-2.5 py-0.5 text-xs font-bold text-white">
                         {offer.badge}
                       </span>
                     )}

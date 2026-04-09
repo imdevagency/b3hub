@@ -87,7 +87,8 @@ export default function OrderHubPage() {
         </div>
         <AddressAutocomplete
           value={place?.address ?? ''}
-          onChange={setPlace}
+          onChange={() => {}}
+          onSelect={setPlace}
           placeholder="Ievadiet adresi..."
         />
         {place && <p className="text-xs text-muted-foreground">{place.address}</p>}

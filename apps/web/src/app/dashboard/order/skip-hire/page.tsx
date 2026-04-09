@@ -5,11 +5,10 @@
 'use client';
 
 import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 import {
-  ArrowLeft,
   Package,
   MapPin,
   CalendarDays,
@@ -18,7 +17,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import Link from 'next/link';
+import { MapWizardShell } from '@/components/order/MapWizardShell';
 
 // Import steps and types
 import { Step1Container } from '@/components/order/steps/Step1Container';
@@ -49,7 +48,6 @@ const STEPS = [
 ];
 
 function SkipHireOrderPageInner() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { token, user } = useAuth();
 
@@ -75,7 +73,6 @@ function SkipHireOrderPageInner() {
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
-  const [notes, setNotes] = useState('');
   const [contactPrefilled, setContactPrefilled] = useState(false);
 
   // Material order linking (Stage 2)
@@ -253,7 +250,6 @@ function SkipHireOrderPageInner() {
           contactName,
           contactEmail,
           contactPhone,
-          notes: notes || undefined,
         },
         token,
       );
@@ -309,243 +305,186 @@ function SkipHireOrderPageInner() {
   }
 
   return (
-    <div className="h-[calc(100vh-100px)] w-full bg-background rounded-2xl overflow-hidden shadow-lg border flex flex-col-reverse lg:flex-row">
-      <div className="w-full lg:w-115 shrink-0 flex flex-col bg-background z-10 relative border-t lg:border-t-0 lg:border-r">
-        <div className="p-5 border-b bg-card space-y-3">
-          <Link
-            href="/dashboard/order"
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" /> Atpakaļ
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Konteinera Noma</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Pasūtiet būvgružu konteineru un izvēlieties labāko piedāvājumu
-            </p>
+    <MapWizardShell
+      title="Konteinera Noma"
+      backHref="/dashboard/order"
+      steps={STEPS}
+      step={step}
+      submitError={submitError}
+      mapSlot={
+        <div className="relative w-full h-75 lg:h-auto lg:flex-1 bg-muted/30">
+          <div ref={mapDivRef} className="absolute inset-0" />
+          <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+            {address && (
+              <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-green-600" />
+                <span className="truncate max-w-50">{address}</span>
+              </div>
+            )}
+            {deliveryDate && (
+              <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-blue-600" />
+                {deliveryDate}
+              </div>
+            )}
           </div>
         </div>
+      }
+    >
+      {step === 1 && (
+        <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
+          <Step1Container
+            size={size}
+            wasteType={wasteType}
+            onSizeChange={(v) => setSize(v)}
+            onWasteChange={(v) => setWasteType(v)}
+            onNext={() => setStep(2)}
+          />
+        </div>
+      )}
 
-        <div className="flex-1 overflow-y-auto p-5 scrollbar-thin flex flex-col space-y-6">
-          {/* Step indicators */}
-          <div className="flex gap-2 w-full shrink-0">
-            {STEPS.map((s, i) => {
-              const n = i + 1;
-              const done = step > n;
-              const active = step === n;
-              return (
-                <div key={n} className="flex-1 flex flex-col gap-2">
-                  <div
-                    className={`h-1.25 w-full rounded-full transition-all ${
-                      done ? 'bg-green-500' : active ? 'bg-primary' : 'bg-muted'
-                    }`}
-                  />
-                  <div className="flex items-center gap-1.5 opacity-80">
-                    <s.icon
-                      className={`h-3.5 w-3.5 ${done ? 'text-green-600' : active ? 'text-primary' : 'text-muted-foreground'}`}
-                    />
-                    <span
-                      className={`text-xs font-semibold ${
-                        done
-                          ? 'text-green-700'
-                          : active
-                            ? 'text-foreground'
-                            : 'text-muted-foreground'
-                      }`}
-                    >
-                      <span className="hidden sm:inline">{s.label}</span>
-                    </span>
+      {step === 2 && (
+        <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
+          <Step2Address
+            value={address}
+            lat={lat}
+            lng={lng}
+            onAddressChange={handleAddressChange}
+            onNext={() => setStep(3)}
+            onBack={() => setStep(1)}
+          />
+        </div>
+      )}
+
+      {step === 3 && (
+        <div className="animate-in fade-in slide-in-from-bottom-2 pb-6 relative overflow-visible">
+          <Step3DateOffers
+            size={size}
+            location={address}
+            deliveryDate={deliveryDate}
+            hirePeriodDays={hirePeriodDays}
+            selectedOffer={selectedOfferId}
+            compact={true}
+            onDeliveryDateChange={(d) => {
+              setDeliveryDate(d);
+              setSelectedOfferId('');
+              setSelectedOffer(null);
+            }}
+            onHirePeriodChange={(d) => setHirePeriodDays(d)}
+            onOfferSelect={handleOfferSelect}
+            onNext={() => setStep(4)}
+            onBack={() => setStep(2)}
+          />
+        </div>
+      )}
+
+      {step === 4 && (
+        <div className="animate-in fade-in slide-in-from-bottom-2 pb-6 space-y-4">
+          {/* Link to material order */}
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => setShowMatLink((v) => !v)}
+              className="w-full flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+            >
+              <Link2 className="h-4 w-4 shrink-0" />
+              <span className="flex-1 text-left">
+                {linkedMaterialOrderId
+                  ? `Saistīts: #${matOrders.find((o) => o.id === linkedMaterialOrderId)?.orderNumber ?? '...'}`
+                  : 'Saistīt ar materiālu pasūtījumu (neobligāti)'}
+              </span>
+              {showMatLink ? (
+                <ChevronUp className="h-4 w-4 shrink-0" />
+              ) : (
+                <ChevronDown className="h-4 w-4 shrink-0" />
+              )}
+            </button>
+
+            {showMatLink && (
+              <div className="rounded-xl border border-border overflow-hidden">
+                {matOrdersLoading ? (
+                  <div className="p-4 text-sm text-center text-muted-foreground">Ielādē...</div>
+                ) : matOrders.length === 0 ? (
+                  <div className="p-4 text-sm text-center text-muted-foreground">
+                    Nav aktīvu materiālu pasūtījumu
                   </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="flex-1">
-            {submitError && (
-              <div className="mb-4 flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-                <span className="font-semibold">Kļūda:</span> {submitError}
-              </div>
-            )}
-
-            {step === 1 && (
-              <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
-                <Step1Container
-                  size={size}
-                  wasteType={wasteType}
-                  onSizeChange={(v) => setSize(v)}
-                  onWasteChange={(v) => setWasteType(v)}
-                  onNext={() => setStep(2)}
-                />
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
-                <Step2Address
-                  value={address}
-                  lat={lat}
-                  lng={lng}
-                  onAddressChange={handleAddressChange}
-                  onNext={() => setStep(3)}
-                  onBack={() => setStep(1)}
-                />
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="animate-in fade-in slide-in-from-bottom-2 pb-6 relative overflow-visible">
-                <Step3DateOffers
-                  size={size}
-                  location={address}
-                  deliveryDate={deliveryDate}
-                  hirePeriodDays={hirePeriodDays}
-                  selectedOffer={selectedOfferId}
-                  compact={true}
-                  onDeliveryDateChange={(d) => {
-                    setDeliveryDate(d);
-                    setSelectedOfferId('');
-                    setSelectedOffer(null);
-                  }}
-                  onHirePeriodChange={(d) => setHirePeriodDays(d)}
-                  onOfferSelect={handleOfferSelect}
-                  onNext={() => setStep(4)}
-                  onBack={() => setStep(2)}
-                />
-              </div>
-            )}
-
-            {step === 4 && (
-              <div className="animate-in fade-in slide-in-from-bottom-2 pb-6 space-y-4">
-                {/* Link to material order */}
-                <div className="space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowMatLink((v) => !v)}
-                    className="w-full flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
-                  >
-                    <Link2 className="h-4 w-4 shrink-0" />
-                    <span className="flex-1 text-left">
-                      {linkedMaterialOrderId
-                        ? `Saistīts: #${matOrders.find((o) => o.id === linkedMaterialOrderId)?.orderNumber ?? '...'}`
-                        : 'Saistīt ar materiālu pasūtījumu (neobligāti)'}
-                    </span>
-                    {showMatLink ? (
-                      <ChevronUp className="h-4 w-4 shrink-0" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 shrink-0" />
+                ) : (
+                  <div className="divide-y divide-border">
+                    {linkedMaterialOrderId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLinkedMaterialOrderId(null);
+                          setShowMatLink(false);
+                        }}
+                        className="w-full px-4 py-3 text-left text-sm text-muted-foreground hover:bg-muted/40 transition-colors"
+                      >
+                        Noņemt saiti
+                      </button>
                     )}
-                  </button>
-
-                  {showMatLink && (
-                    <div className="rounded-xl border border-border overflow-hidden">
-                      {matOrdersLoading ? (
-                        <div className="p-4 text-sm text-center text-muted-foreground">
-                          Ielādē...
-                        </div>
-                      ) : matOrders.length === 0 ? (
-                        <div className="p-4 text-sm text-center text-muted-foreground">
-                          Nav aktīvu materiālu pasūtījumu
-                        </div>
-                      ) : (
-                        <div className="divide-y divide-border">
-                          {linkedMaterialOrderId && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setLinkedMaterialOrderId(null);
-                                setShowMatLink(false);
-                              }}
-                              className="w-full px-4 py-3 text-left text-sm text-muted-foreground hover:bg-muted/40 transition-colors"
+                    {matOrders.map((o) => {
+                      const selected = o.id === linkedMaterialOrderId;
+                      const name = o.items?.[0]?.material?.name ?? '—';
+                      return (
+                        <button
+                          key={o.id}
+                          type="button"
+                          onClick={() => {
+                            setLinkedMaterialOrderId(o.id);
+                            setShowMatLink(false);
+                          }}
+                          className={`w-full px-4 py-3 text-left text-sm flex items-center justify-between transition-colors ${
+                            selected
+                              ? 'bg-emerald-600 text-white'
+                              : 'hover:bg-muted/40 text-foreground'
+                          }`}
+                        >
+                          <div>
+                            <span className="font-semibold">#{o.orderNumber}</span>
+                            <span
+                              className={`ml-2 ${selected ? 'text-emerald-100' : 'text-muted-foreground'}`}
                             >
-                              Noņemt saiti
-                            </button>
-                          )}
-                          {matOrders.map((o) => {
-                            const selected = o.id === linkedMaterialOrderId;
-                            const name = o.items?.[0]?.material?.name ?? '—';
-                            return (
-                              <button
-                                key={o.id}
-                                type="button"
-                                onClick={() => {
-                                  setLinkedMaterialOrderId(o.id);
-                                  setShowMatLink(false);
-                                }}
-                                className={`w-full px-4 py-3 text-left text-sm flex items-center justify-between transition-colors ${
-                                  selected
-                                    ? 'bg-emerald-600 text-white'
-                                    : 'hover:bg-muted/40 text-foreground'
-                                }`}
-                              >
-                                <div>
-                                  <span className="font-semibold">#{o.orderNumber}</span>
-                                  <span
-                                    className={`ml-2 ${selected ? 'text-emerald-100' : 'text-muted-foreground'}`}
-                                  >
-                                    {name}
-                                  </span>
-                                </div>
-                                {selected && <span className="text-xs font-bold">✓</span>}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <Step4ContactForm
-                  name={contactName}
-                  email={contactEmail}
-                  phone={contactPhone}
-                  notes={notes}
-                  summary={{
-                    size,
-                    wasteType,
-                    address,
-                    deliveryDate,
-                    hirePeriodDays,
-                    offerCarrier: selectedOffer?.carrier ?? '',
-                    offerPrice: selectedOffer?.price ?? 0,
-                  }}
-                  onChange={(k, v) => {
-                    if (k === 'name') setContactName(v);
-                    else if (k === 'email') setContactEmail(v);
-                    else if (k === 'phone') setContactPhone(v);
-                    else if (k === 'notes') setNotes(v);
-                  }}
-                  onSubmit={handleSubmit}
-                  onBack={() => setStep(3)}
-                  submitting={submitting}
-                  error={submitError}
-                  preFilledFromProfile={contactPrefilled}
-                />
+                              {name}
+                            </span>
+                          </div>
+                          {selected && <span className="text-xs font-bold">✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
-        </div>
-      </div>
 
-      <div className="relative w-full h-75 lg:h-auto lg:flex-1 bg-muted/30">
-        <div ref={mapDivRef} className="absolute inset-0" />
-        <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-          {address && (
-            <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-green-600" />
-              <span className="truncate max-w-50">{address}</span>
-            </div>
-          )}
-          {deliveryDate && (
-            <div className="bg-background/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm border text-sm font-medium flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-blue-600" />
-              {deliveryDate}
-            </div>
-          )}
+          <Step4ContactForm
+            name={contactName}
+            email={contactEmail}
+            phone={contactPhone}
+            notes=""
+            summary={{
+              size,
+              wasteType,
+              address,
+              deliveryDate,
+              hirePeriodDays,
+              offerCarrier: selectedOffer?.carrier ?? '',
+              offerPrice: selectedOffer?.price ?? 0,
+            }}
+            onChange={(k, v) => {
+              if (k === 'name') setContactName(v);
+              else if (k === 'email') setContactEmail(v);
+              else if (k === 'phone') setContactPhone(v);
+            }}
+            onSubmit={handleSubmit}
+            onBack={() => setStep(3)}
+            submitting={submitting}
+            error={submitError}
+            preFilledFromProfile={contactPrefilled}
+          />
         </div>
-      </div>
-    </div>
+      )}
+    </MapWizardShell>
   );
 }
 

@@ -12,14 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ArrowLeft, Building2, HardHat, Loader2, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { registerUser, RegistrationRole } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -404,7 +397,7 @@ export default function RegisterPage() {
                   </Button>
 
                   <p className="text-center text-[13px] text-gray-500 mt-6 pt-4 border-t border-gray-100 leading-relaxed">
-                    Noklikšķinot "Pabeigt reģistrāciju", piekrītat mūsu{' '}
+                    Noklikšķinot &ldquo;Pabeigt reģistrāciju&rdquo;, piekrītat mūsu{' '}
                     <Link href="/terms" className="underline hover:text-black">
                       Noteikumiem
                     </Link>{' '}
