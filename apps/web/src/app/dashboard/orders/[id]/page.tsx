@@ -558,7 +558,7 @@ export default function OrderDetailPage() {
               variant="outline"
               size="sm"
               className="mt-3 border-red-200 text-red-700 hover:bg-red-100"
-              onClick={() => router.push('/dashboard/order/material')}
+              onClick={() => router.push('/dashboard/order')}
             >
               Izveidot jaunu pasūtījumu
             </Button>

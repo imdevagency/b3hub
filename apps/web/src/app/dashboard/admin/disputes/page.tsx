@@ -225,7 +225,7 @@ export default function AdminDisputesPage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Pasūtījums</span>
                   <Link
-                    href={`/dashboard/admin/orders/${selected.orderId}`}
+                    href={`/dashboard/orders/${selected.orderId}`}
                     className="font-medium text-primary hover:underline"
                   >
                     #{selected.order.orderNumber}

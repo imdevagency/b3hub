@@ -669,6 +669,7 @@ export default function CarrierSettingsPage() {
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
     if (!isLoading && user && !user.canSkipHire) router.push('/dashboard/transporter');
+    // Note: this page is only available to carriers with skip-hire approval (canSkipHire).
   }, [user, isLoading, router]);
 
   if (isLoading || !token) {

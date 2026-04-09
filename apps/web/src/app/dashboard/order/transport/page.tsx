@@ -18,15 +18,7 @@ import {
 } from '@/components/ui/AddressAutocomplete';
 import { createTransportOrder, type TransportVehicleType } from '@/lib/api/orders';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
-import {
-  Truck,
-  CheckCircle2,
-  ChevronRight,
-  MapPin,
-  CalendarDays,
-  Loader2,
-  Navigation,
-} from 'lucide-react';
+import { Truck, CheckCircle2, ChevronRight, MapPin, CalendarDays, Loader2 } from 'lucide-react';
 import { WizardShell } from '@/components/order/WizardShell';
 
 const DEFAULT_CENTER = { lat: 56.9496, lng: 24.1052 };
@@ -315,13 +307,6 @@ export default function TransportOrderPage() {
       setLoading(false);
     }
   };
-
-  const STEPS = [
-    { label: 'Iekraušana', icon: MapPin },
-    { label: 'Izkraušana', icon: Navigation },
-    { label: 'Krava', icon: Truck },
-    { label: 'Datums', icon: CalendarDays },
-  ];
 
   if (createdRef) {
     return (

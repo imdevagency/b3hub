@@ -280,12 +280,6 @@ export default function DisposalOrderPage() {
     }
   };
 
-  const STEPS = [
-    { label: 'Veids', icon: Trash2 },
-    { label: 'Adrese', icon: MapPin },
-    { label: 'Datums', icon: CalendarDays },
-  ];
-
   if (createdRef) {
     return (
       <div className="mx-auto max-w-2xl rounded-2xl border bg-card p-8 text-center space-y-6">

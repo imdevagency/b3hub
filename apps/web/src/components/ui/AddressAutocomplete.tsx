@@ -83,7 +83,7 @@ export function loadGoogleMapsScript(apiKey: string, onReady: () => void) {
   };
 
   const script = document.createElement('script');
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&language=lv&callback=__googleMapsPlacesInit`;
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&language=lv&loading=async&callback=__googleMapsPlacesInit`;
   script.async = true;
   script.defer = true;
   document.head.appendChild(script);

@@ -4,11 +4,9 @@
  */
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { FileText, HardHat, Package, Trash2, Truck, MapPin } from 'lucide-react';
+import { FileText, HardHat, Package, Trash2, Truck } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
-import { AddressAutocomplete, type PlaceAddress } from '@/components/ui/AddressAutocomplete';
 
 const SERVICES = [
   {
@@ -59,40 +57,9 @@ const SERVICES = [
 ];
 
 export default function OrderHubPage() {
-  const [place, setPlace] = useState<PlaceAddress | null>(null);
-
-  function buildHref(svcId: string, basePath: string) {
-    // RFQ already has its own address input on the quote-requests page
-    if (svcId === 'rfq' || !place) return basePath;
-    const params = new URLSearchParams({
-      address: place.address,
-      lat: String(place.lat),
-      lng: String(place.lng),
-    });
-    return `${basePath}?${params.toString()}`;
-  }
-
   return (
     <div className="w-full h-full pb-20 space-y-8">
-      <PageHeader
-        title="Pasūtīt"
-        description="Ievadiet piegādes adresi un izvēlieties pakalpojumu"
-      />
-
-      {/* Address input — primary intent capture */}
-      <div className="rounded-3xl ring-1 ring-black/5 bg-white p-6 shadow-sm space-y-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-          <MapPin className="h-4 w-4 text-primary" />
-          Piegādes adrese
-        </div>
-        <AddressAutocomplete
-          value={place?.address ?? ''}
-          onChange={() => {}}
-          onSelect={setPlace}
-          placeholder="Ievadiet adresi..."
-        />
-        {place && <p className="text-xs text-muted-foreground">{place.address}</p>}
-      </div>
+      <PageHeader title="Pasūtīt" description="Izvēlieties pakalpojumu" />
 
       {/* Services Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -101,7 +68,7 @@ export default function OrderHubPage() {
           return (
             <Link
               key={svc.id}
-              href={buildHref(svc.id, svc.basePath)}
+              href={svc.basePath}
               className="group relative rounded-3xl ring-1 ring-black/5 bg-white p-6 md:p-8 shadow-sm hover:shadow-md transition-all duration-200 block"
             >
               <div className="flex items-start justify-between gap-4">
@@ -117,12 +84,6 @@ export default function OrderHubPage() {
                   <Icon className={`h-8 w-8 md:h-10 md:w-10 ${svc.color}`} strokeWidth={1.5} />
                 </div>
               </div>
-              {place && (
-                <p className="mt-3 text-xs text-primary font-medium flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {place.address}
-                </p>
-              )}
             </Link>
           );
         })}

@@ -16,6 +16,7 @@ import {
   Box,
   Briefcase,
   Building2,
+  Calendar,
   CalendarClock,
   Car,
   ClipboardList,
@@ -99,13 +100,8 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       items: [
         { label: 'Ietvarlīgumi', href: '/dashboard/framework-contracts', icon: FolderKanban },
         { label: 'Cenu Pieprasījumi', href: '/dashboard/quote-requests', icon: FileQuestion },
+        { label: 'Skip Noma', href: '/dashboard/order/skip-hire', icon: Box },
       ],
-    },
-    {
-      id: 'buyer-skip',
-      label: 'Skip Hire',
-      icon: Box,
-      items: [{ label: 'Skip Noma', href: '/dashboard/order/skip-hire', icon: Box }],
     },
     {
       id: 'buyer-finance',
@@ -126,8 +122,9 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       items: [
         { label: 'Sākumlapa', href: '/dashboard/supplier', icon: LayoutDashboard },
         { label: 'Mani Materiāli', href: '/dashboard/materials', icon: Package },
-        { label: 'Ienākošie Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
+        { label: 'Ienākošie Pasūtījumi', href: '/dashboard/incoming-orders', icon: ClipboardList },
         { label: 'Pieprasījumu Tirgus', href: '/dashboard/quote-requests/open', icon: Search },
+        { label: 'Mani Piedāvājumi', href: '/dashboard/quote-requests', icon: FileQuestion },
       ],
     },
     {
@@ -150,7 +147,8 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       items: [
         { label: 'Sākumlapa', href: '/dashboard/transporter', icon: LayoutDashboard },
         { label: 'Darbu Tirgus', href: '/dashboard/jobs', icon: Briefcase },
-        { label: 'Mani Darbi', href: '/dashboard/orders', icon: ClipboardList },
+        { label: 'Mani Darbi', href: '/dashboard/transport-history', icon: ClipboardList },
+        { label: 'Grafiks', href: '/dashboard/schedule', icon: Calendar },
         { label: 'Utilizācijas Centri', href: '/dashboard/recycling-centers', icon: Recycle },
       ],
     },
@@ -160,7 +158,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       icon: Car,
       items: [
         { label: 'Flotes Pārvaldība', href: '/dashboard/fleet-management', icon: LayoutGrid },
-        { label: 'Grafiks & Iestatījumi', href: '/dashboard/transporter/settings', icon: Settings },
+        { label: 'Operatora Iestatījumi', href: '/dashboard/transporter/settings', icon: Settings },
       ],
     },
     {
@@ -399,7 +397,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     };
 
     if (activeMode === 'CARRIER') {
-      map['/dashboard/orders'] = badgeCounts.activeJobs;
+      map['/dashboard/transport-history'] = badgeCounts.activeJobs;
     }
 
     if (badgeCounts.openDisputes > 0) {
@@ -494,7 +492,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground w-full justify-center shadow font-semibold h-10"
             >
-              <Link href="/dashboard/materials/new">
+              <Link href="/dashboard/materials?new=true">
                 <PackagePlus className="mr-2 size-4" />
                 Pievienot Materiālu
               </Link>

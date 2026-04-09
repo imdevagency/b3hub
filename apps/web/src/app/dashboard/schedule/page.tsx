@@ -219,7 +219,7 @@ export default function DriverSchedulePage() {
   useEffect(() => {
     if (isLoading) return;
     if (!token) {
-      router.push('/');
+      router.push('/login');
       return;
     }
     if (!user?.canTransport) {
