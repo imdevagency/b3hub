@@ -230,11 +230,11 @@ export default function ProfileScreen() {
   }, [token]);
 
   const ROLE_THEME: Record<string, { avatarBg: string; badgeBg: string; badgeText: string }> = {
-    buyer: { avatarBg: '#fee2e2', badgeBg: '#fef2f2', badgeText: '#b91c1c' },
-    seller: { avatarBg: '#d1fae5', badgeBg: '#f0fdf4', badgeText: '#15803d' },
-    driver: { avatarBg: '#dbeafe', badgeBg: '#eff6ff', badgeText: '#1d4ed8' },
+    BUYER: { avatarBg: '#fee2e2', badgeBg: '#fef2f2', badgeText: '#b91c1c' },
+    SUPPLIER: { avatarBg: '#d1fae5', badgeBg: '#f0fdf4', badgeText: '#15803d' },
+    CARRIER: { avatarBg: '#dbeafe', badgeBg: '#eff6ff', badgeText: '#1d4ed8' },
   };
-  const roleTheme = ROLE_THEME[mode] ?? ROLE_THEME.buyer;
+  const roleTheme = ROLE_THEME[mode] ?? ROLE_THEME.BUYER;
 
   const accountTypeLabel = user?.userType === 'ADMIN' ? 'Administrators' : getRoleName(user);
   const { language, setLanguage } = useLanguage();

@@ -272,7 +272,7 @@ export default function ScheduleScreen() {
 
   return (
     <ScreenContainer bg="#F4F5F7">
-      <TopBar title="Grafiks" />
+      <TopBar />
 
       <ScrollView
         style={{ flex: 1 }}

@@ -75,10 +75,10 @@ export default function BuyerDashboardPage() {
 
   const actions: Action[] = [
     {
-      label: 'Pasūtīt Konteineru',
-      description: 'Rezervēt atkritumu konteineru savai darba vai mājas vietai',
-      icon: Trash2,
-      href: '/dashboard/order/skip-hire',
+      label: 'Pasūtīt Materiālus',
+      description: 'Grants, smiltis, betona izstrādājumi un citi materiāli',
+      icon: Package,
+      href: '/dashboard/catalog',
       primary: true,
     },
     {
@@ -88,16 +88,16 @@ export default function BuyerDashboardPage() {
       href: '/dashboard/orders',
     },
     {
-      label: 'Materiālu Katalogs',
-      description: 'Grants, smiltis, betona izstrādājumi un citi materiāli',
-      icon: Package,
-      href: '/dashboard/catalog',
-    },
-    {
       label: 'Cenu Aptauja',
       description: 'Pieprasīt piedāvājumus no piegādātājiem',
       icon: MessageSquare,
       href: '/dashboard/quote-requests',
+    },
+    {
+      label: 'Pasūtīt Konteineru',
+      description: 'Rezervēt atkritumu konteineru savai darba vai mājas vietai',
+      icon: Trash2,
+      href: '/dashboard/order/skip-hire',
     },
     {
       label: 'Projekti',
@@ -150,7 +150,7 @@ export default function BuyerDashboardPage() {
                 ? `${data.activeOrders} aktīvi pasūtījumi`
                 : 'Izpēti piedāvājumus'}
             </div>
-            <h2 className="text-xl sm:text-2xl font-semibold">Atver Katalogu</h2>
+            <h2 className="text-xl sm:text-2xl font-semibold">Pasūtīt Materiālus</h2>
             <p className="text-background/70 text-sm mt-1">
               Pasūti materiālus un pakalpojumus no piegādātājiem
             </p>

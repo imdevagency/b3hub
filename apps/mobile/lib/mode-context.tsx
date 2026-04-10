@@ -1,21 +1,21 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { useAuth } from './auth-context';
 
-export type AppMode = 'buyer' | 'seller' | 'driver';
+export type AppMode = 'BUYER' | 'SUPPLIER' | 'CARRIER';
 
 export const MODE_HOME: Record<AppMode, string> = {
-  buyer: '/(buyer)/home',
-  seller: '/(seller)/home',
-  driver: '/(driver)/home',
+  BUYER: '/(buyer)/home',
+  SUPPLIER: '/(seller)/home',
+  CARRIER: '/(driver)/home',
 };
 
 /** Derive the best default mode from the user's role flags. */
 function defaultModeForUser(user: { canSell: boolean; canTransport: boolean } | null): AppMode {
-  if (!user) return 'buyer';
+  if (!user) return 'BUYER';
   // Capability flags are canonical for seller/driver access.
-  if (user.canTransport && !user.canSell) return 'driver';
-  if (user.canSell && !user.canTransport) return 'seller';
-  return 'buyer';
+  if (user.canTransport && !user.canSell) return 'CARRIER';
+  if (user.canSell && !user.canTransport) return 'SUPPLIER';
+  return 'BUYER';
 }
 
 interface ModeContextValue {
@@ -37,10 +37,10 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
     // Mixed or unapproved → always include buyer
     const isPureCarrier = !!(user?.canTransport && !user?.canSell);
     const isPureSupplier = !!(user?.canSell && !user?.canTransport);
-    if (!isPureCarrier && !isPureSupplier) modes.push('buyer');
-    if (user?.canSell) modes.push('seller');
-    if (user?.canTransport) modes.push('driver');
-    if (modes.length === 0) modes.push('buyer'); // fallback
+    if (!isPureCarrier && !isPureSupplier) modes.push('BUYER');
+    if (user?.canSell) modes.push('SUPPLIER');
+    if (user?.canTransport) modes.push('CARRIER');
+    if (modes.length === 0) modes.push('BUYER'); // fallback
     return modes;
   }, [user?.canSell, user?.canTransport]);
 

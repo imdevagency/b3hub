@@ -63,7 +63,7 @@ export default function SellerLayout() {
         <Tabs.Screen
           name="business"
           options={{
-            title: 'Bizness',
+            title: t.tabs.business,
             tabBarIcon: ({ color }) => <Briefcase size={22} color={color} />,
           }}
         />

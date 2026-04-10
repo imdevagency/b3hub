@@ -210,7 +210,7 @@ export const lv = {
     schedule: 'Grafiks',
     skips: 'Konteineri',
     more: 'Vairāk',
-    business: 'Bizness',
+    business: 'Rīki',
   },
 
   /** Screen titles shown in the TopBar — single source of truth. */
@@ -239,13 +239,14 @@ export const lv = {
     disposal: 'Utilizācija',
     transport: 'Transports',
     chat: 'Čats',
+    schedule: 'Grafiks',
     fallback: 'B3Hub',
   },
 
   mode: {
-    buyer: 'Pasūtītājs',
-    driver: 'Šoferis',
-    seller: 'Pārdevējs',
+    BUYER: 'Pasūtītājs',
+    SUPPLIER: 'Piegādātājs',
+    CARRIER: 'Šoferis',
   },
 
   jobs: {
@@ -769,7 +770,7 @@ export const ru: Translations = {
     schedule: 'Расписание',
     skips: 'Контейнеры',
     more: 'Ещё',
-    business: 'Бизнес',
+    business: 'Управление',
   },
 
   nav: {
@@ -797,10 +798,11 @@ export const ru: Translations = {
     disposal: 'Утилизация',
     transport: 'Транспорт',
     chat: 'Чат',
+    schedule: 'Расписание',
     fallback: 'B3Hub',
   },
 
-  mode: { buyer: 'Покупатель', driver: 'Водитель', seller: 'Продавец' },
+  mode: { BUYER: 'Покупатель', CARRIER: 'Водитель', SUPPLIER: 'Продавец' },
 
   jobs: {
     title: 'Доступные работы',

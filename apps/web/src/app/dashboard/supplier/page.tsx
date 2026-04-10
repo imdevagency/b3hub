@@ -119,7 +119,7 @@ export default function SupplierDashboardPage() {
 
       {/* MAIN BANNER ACTION */}
       <Link
-        href="/dashboard/orders"
+        href="/dashboard/incoming-orders"
         className="block relative overflow-hidden rounded-3xl bg-foreground text-background p-6 sm:p-8 transition-transform active:scale-[0.98] hover:shadow-lg"
       >
         <div className="relative z-10 flex items-center justify-between">

@@ -116,19 +116,18 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
   SUPPLIER: [
     {
       id: 'supplier-workspace',
-      label: 'Katalogs un Pasūtījumi',
+      label: 'Mani Materiāli un Pasūtījumi',
       icon: LayoutGrid,
       items: [
         { label: 'Sākumlapa', href: '/dashboard/supplier', icon: LayoutDashboard },
         { label: 'Mani Materiāli', href: '/dashboard/materials', icon: Package },
         { label: 'Ienākošie Pasūtījumi', href: '/dashboard/incoming-orders', icon: ClipboardList },
         { label: 'Pieprasījumu Tirgus', href: '/dashboard/quote-requests/open', icon: Search },
-        { label: 'Mani Piedāvājumi', href: '/dashboard/quote-requests', icon: FileQuestion },
       ],
     },
     {
       id: 'supplier-business',
-      label: 'Bizness',
+      label: 'Finanses',
       icon: Banknote,
       items: [
         { label: 'Ieņēmumi', href: '/dashboard/earnings', icon: Banknote },
@@ -148,6 +147,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
         { label: 'Darbu Tirgus', href: '/dashboard/jobs', icon: Briefcase },
         { label: 'Mani Darbi', href: '/dashboard/transport-history', icon: ClipboardList },
         { label: 'Grafiks', href: '/dashboard/schedule', icon: Calendar },
+        { label: 'Utilizācijas Centri', href: '/dashboard/recycling-centers', icon: Recycle },
       ],
     },
     {
@@ -156,7 +156,6 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       icon: Car,
       items: [
         { label: 'Flotes Pārvaldība', href: '/dashboard/fleet-management', icon: LayoutGrid },
-        { label: 'Utilizācijas Centri', href: '/dashboard/recycling-centers', icon: Recycle },
       ],
     },
     {
@@ -243,8 +242,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       items: [...section.items],
     }));
 
-    if (activeMode === 'BUYER' && user?.isCompany) {
-      // Company buyers (CONSTRUCTION / HYBRID) get the construction project tracker
+    if (activeMode === 'BUYER') {
+      // All buyers get the project tracker
       sections = sections.map((section) => {
         if (section.id !== 'buyer-procurement') return section;
         return {
@@ -527,6 +526,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <Link href="/dashboard/materials?new=true">
                 <PackagePlus className="mr-2 size-4" />
                 Pievienot Materiālu
+              </Link>
+            </SidebarMenuButton>
+          )}
+          {activeMode === 'CARRIER' && (
+            <SidebarMenuButton
+              asChild
+              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground w-full justify-center shadow font-semibold h-10"
+            >
+              <Link href="/dashboard/jobs">
+                <PackagePlus className="mr-2 size-4" />
+                Meklēt Darbu
               </Link>
             </SidebarMenuButton>
           )}

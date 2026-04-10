@@ -66,20 +66,38 @@ const TYPE_INFO: Record<string, TypeInfo> = {
 };
 const DEFAULT_TYPE_INFO: TypeInfo = { Icon: Bell, bg: '#f3f4f6', iconColor: '#6b7280' };
 
-function deepLinkPath(notif: ApiNotification, canSell = false): string | null {
+function deepLinkPath(
+  notif: ApiNotification,
+  canSell = false,
+  canTransport = false,
+): string | null {
   const d = (notif.data ?? {}) as Record<string, string>;
   switch (notif.type) {
     // ── Buyer: transport / disposal job notifications ──────────
     case 'TRANSPORT_ASSIGNED':
-    case 'ORDER_DELIVERED':
     case 'SYSTEM_ALERT':
       return d.jobId ? `/(buyer)/transport-job/${d.jobId}` : '/(buyer)/orders';
-    // ── Buyer: material / skip-hire order notifications ────────
+    // ORDER_DELIVERED is sent to buyers with orderId (not jobId) — link directly to the order
+    case 'ORDER_DELIVERED':
+      return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/orders';
+    // ── Seller: new order notification ────────────────────────
+    // ORDER_CREATED is sent exclusively to sellers; route to seller order detail
     case 'ORDER_CREATED':
+      return d.orderId
+        ? canSell
+          ? `/(seller)/order/${d.orderId}`
+          : `/(buyer)/order/${d.orderId}`
+        : canSell
+          ? '/(seller)/incoming'
+          : '/(buyer)/orders';
+    // ── Buyer: material / skip-hire order notifications ────────
     case 'ORDER_CONFIRMED':
     case 'ORDER_PLACED':
     case 'ORDER_SHIPPED':
+      return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/orders';
+    // ORDER_CANCELLED is sent to buyers AND to drivers whose job was cancelled
     case 'ORDER_CANCELLED':
+      if (canTransport && !canSell && d.jobId) return '/(driver)/jobs';
       return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/orders';
     // ── Driver ────────────────────────────────────────────────
     case 'JOB_AVAILABLE':
@@ -138,7 +156,7 @@ function NotifCard({
   const handlePress = () => {
     haptics.light();
     if (!notif.isRead) onMarkRead(notif.id);
-    const path = deepLinkPath(notif, user?.canSell ?? false);
+    const path = deepLinkPath(notif, user?.canSell ?? false, user?.canTransport ?? false);
     if (path) router.push(path as Parameters<typeof router.push>[0]);
   };
 

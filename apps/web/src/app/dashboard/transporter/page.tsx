@@ -175,7 +175,7 @@ export default function TransporterDashboardPage() {
 
   const driverActions: Action[] = [
     {
-      label: 'Job Board',
+      label: 'Darbu Tirgus',
       description: 'Atrodi un pieņem nākamo reisu',
       icon: MapPin,
       href: '/dashboard/jobs',
@@ -185,7 +185,7 @@ export default function TransporterDashboardPage() {
       label: 'Mani Darbi',
       description: 'Vēsture un piešķirtie pasūtījumi',
       icon: ClipboardList,
-      href: '/dashboard/orders',
+      href: '/dashboard/transport-history',
     },
     {
       label: 'Darba Grafiks',
@@ -197,7 +197,7 @@ export default function TransporterDashboardPage() {
       label: 'Mans Autoparks',
       description: 'Pārvaldi savus transportlīdzekļus',
       icon: Car,
-      href: '/dashboard/garage',
+      href: '/dashboard/fleet-management',
     },
     ...(user.canSkipHire
       ? [
@@ -232,7 +232,7 @@ export default function TransporterDashboardPage() {
       primary: true,
     },
     {
-      label: 'Job Board',
+      label: 'Darbu Tirgus',
       description: 'Meklē jaunus darbus uzņēmumam',
       icon: MapPin,
       href: '/dashboard/jobs',
@@ -241,13 +241,13 @@ export default function TransporterDashboardPage() {
       label: 'Autoparks',
       description: 'Pārvaldi tehniku un šoferus',
       icon: Car,
-      href: '/dashboard/garage',
+      href: '/dashboard/fleet-management',
     },
     {
       label: 'Darbu Vēsture',
       description: 'Visi uzņēmuma darbi un statistika',
       icon: ClipboardList,
-      href: '/dashboard/orders',
+      href: '/dashboard/transport-history',
     },
     {
       label: 'Dokumenti',

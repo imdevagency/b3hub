@@ -18,24 +18,24 @@ const MODE_CONFIG: Record<
     pillText: string;
   }
 > = {
-  buyer: {
-    label: t.mode.buyer,
+  BUYER: {
+    label: t.mode.BUYER,
     sub: 'Pasūtīt materiālus un konteinerus',
     iconBg: '#fee2e2',
     iconColor: '#111827',
     pillBg: 'rgba(220,38,38,0.10)',
     pillText: '#111827',
   },
-  seller: {
-    label: t.mode.seller,
+  SUPPLIER: {
+    label: t.mode.SUPPLIER,
     sub: 'Pārvaldīt pasūtījumus un katalogu',
     iconBg: '#dcfce7',
     iconColor: '#111827',
     pillBg: 'rgba(22,163,74,0.10)',
     pillText: '#15803d',
   },
-  driver: {
-    label: t.mode.driver,
+  CARRIER: {
+    label: t.mode.CARRIER,
     sub: 'Transporta darbi un maršruti',
     iconBg: '#fee2e2',
     iconColor: '#111827',
@@ -45,8 +45,8 @@ const MODE_CONFIG: Record<
 };
 
 function ModeIcon({ mode, color, size = 16 }: { mode: AppMode; color: string; size?: number }) {
-  if (mode === 'buyer') return <ShoppingCart size={size} color={color} />;
-  if (mode === 'seller') return <Store size={size} color={color} />;
+  if (mode === 'BUYER') return <ShoppingCart size={size} color={color} />;
+  if (mode === 'SUPPLIER') return <Store size={size} color={color} />;
   return <Truck size={size} color={color} />;
 }
 

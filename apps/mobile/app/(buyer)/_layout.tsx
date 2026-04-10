@@ -23,9 +23,9 @@ export default function BuyerLayout() {
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace('/(auth)/welcome');
-    } else if (!isLoading && user && !availableModes.includes('buyer')) {
+    } else if (!isLoading && user && !availableModes.includes('BUYER')) {
       // Pure carrier or pure supplier — they have no buyer mode; send to their home
-      const home = MODE_HOME[availableModes[0] ?? 'buyer'];
+      const home = MODE_HOME[availableModes[0] ?? 'BUYER'];
       router.replace(home as any);
     }
   }, [user, isLoading, availableModes]);

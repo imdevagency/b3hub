@@ -32,6 +32,7 @@ const SEGMENT_TITLE: Record<string, string> = {
   disposal: t.nav.disposal,
   transport: t.nav.transport,
   chat: t.nav.chat,
+  schedule: t.nav.schedule,
 };
 
 function titleFromPath(pathname: string): string {
@@ -49,17 +50,17 @@ function titleFromPath(pathname: string): string {
 // ── Role config ───────────────────────────────────────────────────────────────
 
 const ROLE_CFG: Record<AppMode, { Icon: React.ElementType; label: string; desc: string }> = {
-  buyer: {
+  BUYER: {
     Icon: ShoppingCart,
     label: 'Pircējs',
     desc: 'Pasūtīt materiālus un piegādes',
   },
-  seller: {
+  SUPPLIER: {
     Icon: Store,
     label: 'Pārdevējs',
     desc: 'Pārdot materiālus, cenu piedāvājumi',
   },
-  driver: {
+  CARRIER: {
     Icon: Truck,
     label: 'Vadītājs',
     desc: 'Piegādes darbi un maršruti',
@@ -156,7 +157,9 @@ export function RoleSheet({ visible, onClose }: { visible: boolean; onClose: () 
                   <Text style={[styles.roleLabel, isActive && styles.roleLabelActive]}>
                     {cfg.label}
                   </Text>
-                  <Text style={styles.roleDesc}>{cfg.desc}</Text>
+                  <Text style={[styles.roleDesc, isActive && styles.roleDescActive]}>
+                    {cfg.desc}
+                  </Text>
                 </View>
                 {isActive && (
                   <View style={styles.checkWrap}>
@@ -193,15 +196,15 @@ interface TopBarProps {
   transparent?: boolean;
 }
 
-export function TopBar({ 
-  title, 
-  accentColor = '#111827', 
-  onMenuPress, 
+export function TopBar({
+  title,
+  accentColor = '#111827',
+  onMenuPress,
   unreadCount = 0,
   leftElement,
   centerElement,
   rightElement,
-  transparent = false
+  transparent = false,
 }: TopBarProps) {
   const { isMultiRole } = useMode();
   const router = useRouter();
@@ -209,7 +212,7 @@ export function TopBar({
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const displayTitle = title ?? titleFromPath(pathname);
-  
+
   // Left slot content
   const renderLeft = () => {
     if (leftElement) return leftElement;
@@ -225,7 +228,7 @@ export function TopBar({
         </TouchableOpacity>
       );
     }
-    return <View style={{ width: 44 }} />; // Placeholder 
+    return <View style={{ width: 44 }} />; // Placeholder
   };
 
   // Center slot content
@@ -263,9 +266,7 @@ export function TopBar({
         >
           <View>
             <Bell size={22} color={accentColor} />
-            {unreadCount > 0 && (
-              <View style={styles.badge} />
-            )}
+            {unreadCount > 0 && <View style={styles.badge} />}
           </View>
         </TouchableOpacity>
       </View>
@@ -274,8 +275,8 @@ export function TopBar({
 
   return (
     <>
-      <View 
-        style={[styles.bar, transparent ? styles.barTransparent : styles.barSolid]} 
+      <View
+        style={[styles.bar, transparent ? styles.barTransparent : styles.barSolid]}
         pointerEvents="box-none"
       >
         <View style={styles.leftContainer}>{renderLeft()}</View>
@@ -430,12 +431,12 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 16,
   },
-  roleName: {
+  roleLabel: {
     fontSize: 16,
     fontWeight: '700',
     color: '#111827',
   },
-  roleNameActive: {
+  roleLabelActive: {
     color: '#ffffff',
   },
   roleDesc: {

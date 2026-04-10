@@ -20,14 +20,15 @@ import {
   Trash2,
   Truck,
   Package,
-  FileText,
   ChevronRight,
   Bell,
   AlertCircle,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { useMode } from '@/lib/mode-context';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { TopBar } from '@/components/ui/TopBar';
+import { ModeSwitcher } from '@/components/ui/ModeSwitcher';
 // Guard: expo-linear-gradient requires a native build (not available in Expo Go)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let LinearGradient: React.ComponentType<any>;
@@ -109,12 +110,6 @@ const SERVICES = [
     label: 'Konteineri',
     route: '/order',
   },
-  {
-    id: 'rfq',
-    icon: FileText,
-    label: 'Cenu aptauja',
-    route: '/order-request-new',
-  },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -123,6 +118,7 @@ const SERVICES = [
 
 export default function HomeScreen() {
   const { user, token } = useAuth();
+  const { isMultiRole } = useMode();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -334,6 +330,8 @@ export default function HomeScreen() {
           </TouchableOpacity>
         }
       />
+
+      {isMultiRole && <ModeSwitcher />}
 
       <ScrollView
         style={{ flex: 1 }}

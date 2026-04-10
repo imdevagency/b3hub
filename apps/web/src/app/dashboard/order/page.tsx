@@ -50,7 +50,7 @@ const SERVICES = [
     title: 'Cenu aptauja',
     description: 'Aprakstiet vajadzību — piegādātāji piedāvā cenu; jūs izvēlaties labāko',
     icon: FileText,
-    basePath: '/dashboard/quote-requests',
+    basePath: '/dashboard/catalog',
     color: 'text-violet-700',
     bgColor: 'bg-violet-500/10',
   },

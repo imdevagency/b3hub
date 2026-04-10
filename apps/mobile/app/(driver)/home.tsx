@@ -391,11 +391,13 @@ export default function DriverHomeScreen() {
               label="Transportlīdzekļi"
               onPress={() => router.push('/(driver)/vehicles')}
             />
-            <QuickAction
-              icon={<Trash2 size={20} color="#4b5563" />}
-              label="Konteineri"
-              onPress={() => router.push('/(driver)/skips')}
-            />
+            {user?.canSkipHire && (
+              <QuickAction
+                icon={<Trash2 size={20} color="#4b5563" />}
+                label="Konteineri"
+                onPress={() => router.push('/(driver)/skips')}
+              />
+            )}
           </View>
         </ScrollView>
       </View>

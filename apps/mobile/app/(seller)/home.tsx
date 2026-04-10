@@ -10,7 +10,8 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
 import { Inbox, ArrowRight, Plus, CheckCircle, Wallet, ChevronRight } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
-
+import { useMode } from '@/lib/mode-context';
+import { ModeSwitcher } from '@/components/ui/ModeSwitcher';
 import { TopBar } from '@/components/ui/TopBar';
 
 const TAB_H = 52;
@@ -19,6 +20,7 @@ export default function SellerHomeScreen() {
   const { user, token } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { isMultiRole } = useMode();
   const [pendingCount, setPendingCount] = useState<number | null>(null);
   const [recentOrders, setRecentOrders] = useState<ApiOrder[]>([]);
   const [materialCount, setMaterialCount] = useState<number | null>(null);
@@ -97,6 +99,8 @@ export default function SellerHomeScreen() {
           </TouchableOpacity>
         }
       />
+
+      {isMultiRole && <ModeSwitcher />}
 
       <ScrollView
         style={{ flex: 1 }}
