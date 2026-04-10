@@ -123,89 +123,96 @@ function VehicleRow({
 }) {
   const status = VEHICLE_STATUS_CONFIG[v.status];
   return (
-    <div className="grid grid-cols-[3rem_1fr_1fr_1fr_1fr_1fr_8rem] gap-4 items-center border-b last:border-0 px-5 py-4 hover:bg-muted/30 transition-colors">
-      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted shrink-0">
-        <Truck className="h-4 w-4 text-muted-foreground" />
-      </div>
-      <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-foreground">
-          {VEHICLE_TYPE_LABELS[v.vehicleType]}
-        </p>
-        <p className="truncate text-xs text-muted-foreground">
-          {v.make} {v.model} · {v.year}
-          {v.driveType && (
-            <span className="ml-1 text-[10px] font-medium bg-muted px-1.5 py-0.5 rounded">
-              {v.driveType}
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b border-gray-100 last:border-0 hover:bg-gray-50/80 transition-all bg-white group">
+      <div className="flex items-center gap-4 min-w-0">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-50 shrink-0">
+          <Truck className="h-5 w-5 text-gray-700" />
+        </div>
+        <div className="flex flex-col min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-base font-semibold text-gray-900 tracking-tight truncate">
+              {v.make} {v.model}
             </span>
-          )}
-        </p>
-      </div>
-      <div>
-        <span className="inline-flex items-center rounded border border-border bg-muted px-2 py-0.5 font-mono text-sm font-semibold tracking-wider">
-          {v.licensePlate}
-        </span>
-      </div>
-      <div className="text-sm">
-        <span className="font-semibold">{(v.capacity * 1000).toLocaleString('lv-LV')}</span>
-        <span className="ml-1 text-muted-foreground text-xs">kg</span>
-      </div>
-      <div className="text-sm">
-        {v.maxGrossWeight ? (
-          <>
-            <span className="font-semibold">
-              {(v.maxGrossWeight * 1000).toLocaleString('lv-LV')}
+            <span className="inline-flex items-center rounded-md bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-gray-600 uppercase tracking-wider shrink-0">
+              {v.licensePlate}
             </span>
-            <span className="ml-1 text-muted-foreground text-xs">kg</span>
-          </>
-        ) : (
-          <span className="text-muted-foreground text-xs">—</span>
-        )}
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 text-[13px] text-gray-500 mt-0.5">
+            <span className="font-medium text-gray-700">{VEHICLE_TYPE_LABELS[v.vehicleType]}</span>
+            <span className="text-gray-300">&bull;</span>
+            <span>{v.year}</span>
+            <span className="text-gray-300">&bull;</span>
+            <span>{v.capacity}t</span>
+            {v.maxGrossWeight ? (
+              <>
+                <span className="text-gray-300">&bull;</span>
+                <span>Maks {v.maxGrossWeight}t</span>
+              </>
+            ) : null}
+            {v.driveType ? (
+              <>
+                <span className="text-gray-300">&bull;</span>
+                <span>{v.driveType}</span>
+              </>
+            ) : null}
+          </div>
+        </div>
       </div>
-      <div>
+      
+      <div className="flex items-center justify-end sm:justify-between gap-4 mt-3 sm:mt-0 pl-16 sm:pl-4 shrink-0">
         <span
-          className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${status.className}`}
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${
+            v.status === 'ACTIVE' 
+              ? 'bg-green-50 text-green-700' 
+              : v.status === 'IN_USE' 
+              ? 'bg-blue-50 text-blue-700' 
+              : v.status === 'MAINTENANCE' 
+              ? 'bg-orange-50 text-orange-700' 
+              : 'bg-gray-100 text-gray-500'
+          }`}
         >
           {status.label}
         </span>
-      </div>
-      <div className="flex items-center justify-end gap-1">
-        {isReadOnly ? null : confirmingDelete ? (
-          <>
-            <Button
-              size="sm"
-              variant="destructive"
-              className="h-7 px-2 text-xs"
-              onClick={onConfirmDelete}
-            >
-              Dzēst
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-2 text-xs"
-              onClick={onCancelDelete}
-            >
-              Atcelt
-            </Button>
-          </>
-        ) : (
-          <>
-            <button
-              onClick={onEdit}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-              title="Rediģēt"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={onDelete}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-colors"
-              title="Dzēst"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </>
-        )}
+
+        <div className="flex items-center justify-end gap-1 w-[80px]">
+          {isReadOnly ? null : confirmingDelete ? (
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-8 px-3 rounded-full text-xs font-semibold"
+                onClick={onConfirmDelete}
+              >
+                Dzēst
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0 rounded-full hover:bg-gray-100 text-gray-500"
+                onClick={onCancelDelete}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={onEdit}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                title="Rediģēt"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button
+                onClick={onDelete}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                title="Dzēst"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -213,22 +220,22 @@ function VehicleRow({
 
 function VehicleEmptyState({ hasVehicles, onAdd }: { hasVehicles: boolean; onAdd?: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-background py-20 text-center">
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-        <Car className="h-8 w-8 text-primary" />
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 py-24 text-center">
+      <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
+        <Car className="h-6 w-6 text-gray-500" />
       </div>
-      <h3 className="text-base font-semibold text-foreground">
-        {hasVehicles ? 'Nav atbilstošu transportlīdzekļu' : 'Jūsu autoparks ir tukšs'}
+      <h3 className="text-lg font-bold text-gray-900 tracking-tight">
+        {hasVehicles ? 'Nav atrasts neviens transportlīdzeklis' : 'Autoparks ir tukšs'}
       </h3>
-      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+      <p className="mt-2 max-w-sm text-[15px] leading-relaxed text-gray-500">
         {hasVehicles
           ? 'Mēģiniet mainīt meklēšanas vai filtrēšanas kritērijus.'
-          : 'Pievienojiet savu pirmo transportlīdzekli, lai sāktu saņemt atbilstošus pasūtījumus.'}
+          : 'Pievienojiet savu pirmo transportlīdzekli, lai varētu pieņemt pasūtījumus.'}
       </p>
       {!hasVehicles && onAdd && (
-        <Button className="mt-6 gap-2" onClick={onAdd}>
+        <Button className="mt-8 rounded-full bg-black text-white hover:bg-gray-800 px-6 h-12 text-[15px] font-semibold gap-2" onClick={onAdd}>
           <Plus className="h-4 w-4" />
-          Pievienot pirmo transportlīdzekli
+          Pievienot transportlīdzekli
         </Button>
       )}
     </div>
@@ -366,54 +373,58 @@ function VehiclesTab({ token, isReadOnly }: { token: string; isReadOnly: boolean
   return (
     <div className="flex flex-col gap-6">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3 justify-between">
-        <div className="flex flex-wrap items-center gap-3 flex-1">
-          <div className="relative flex-1 min-w-50 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+          <div className="relative w-full sm:min-w-[280px]">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              className="pl-9"
-              placeholder="Meklēt transportlīdzekļus..."
+              className="pl-10 h-11 rounded-full border-gray-200 bg-gray-50/50 hover:bg-gray-100/50 transition-colors focus-visible:ring-1 focus-visible:ring-black text-[15px]"
+              placeholder="Meklēt..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
             {search && (
               <button
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-900"
                 onClick={() => setSearch('')}
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <button
-              className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm hover:bg-accent transition-colors"
+              className="flex w-full sm:w-auto h-11 items-center justify-between sm:justify-start gap-2 rounded-full border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
               onClick={() => setShowTypeMenu((x) => !x)}
             >
-              {typeFilter ? VEHICLE_TYPE_LABELS[typeFilter] : 'Transportlīdzekļa veids'}
-              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              {typeFilter ? VEHICLE_TYPE_LABELS[typeFilter] : 'Visi veidi'}
+              <ChevronDown className="h-4 w-4 text-gray-400" />
             </button>
             {showTypeMenu && (
-              <div className="absolute left-0 top-full z-50 mt-1 w-52 rounded-md border bg-background shadow-lg">
+              <div className="absolute left-0 top-full z-50 mt-2 w-full sm:w-56 p-1.5 rounded-2xl border border-gray-100 bg-white shadow-xl">
                 <button
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
+                  className="w-full px-3 py-2 text-left text-sm rounded-xl hover:bg-gray-50 transition-colors"
                   onClick={() => {
                     setTypeFilter('');
                     setShowTypeMenu(false);
                   }}
                 >
-                  Visi veidi
+                  <span className={!typeFilter ? 'font-semibold text-black' : 'text-gray-600'}>
+                    Visi veidi
+                  </span>
                 </button>
                 {(Object.entries(VEHICLE_TYPE_LABELS) as [VehicleType, string][]).map(([k, v]) => (
                   <button
                     key={k}
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
+                    className="w-full px-3 py-2 text-left text-sm rounded-xl hover:bg-gray-50 transition-colors"
                     onClick={() => {
-                      setTypeFilter(k);
+                      setTypeFilter(k as VehicleType);
                       setShowTypeMenu(false);
                     }}
                   >
-                    {v}
+                    <span className={typeFilter === k ? 'font-semibold text-black' : 'text-gray-600'}>
+                      {v}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -421,29 +432,28 @@ function VehiclesTab({ token, isReadOnly }: { token: string; isReadOnly: boolean
           </div>
           {typeFilter && (
             <button
-              className="flex items-center gap-1 rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-200 transition-colors"
+              className="flex w-full sm:w-auto items-center justify-center sm:justify-start gap-1 rounded-full bg-gray-100 px-4 h-11 text-xs font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
               onClick={() => setTypeFilter('')}
             >
-              {VEHICLE_TYPE_LABELS[typeFilter]}
-              <X className="h-3 w-3" />
+              Notīrīt filtru
+              <X className="h-3.5 w-3.5 ml-0.5" />
             </button>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full md:w-auto">
           <Button
             variant="outline"
-            size="sm"
+            className="flex-1 md:flex-none h-11 px-4 rounded-full text-sm font-semibold border-gray-200 gap-2 hover:bg-gray-50"
             onClick={refresh}
             disabled={refreshing}
-            className="gap-2"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Atjaunot
+            <span className="hidden sm:inline">Atjaunot</span>
           </Button>
           {!isReadOnly && (
-            <Button size="sm" onClick={openAdd} className="gap-2">
+            <Button className="flex-1 md:flex-none h-11 px-5 rounded-full text-sm font-semibold bg-black text-white hover:bg-gray-800 gap-2" onClick={openAdd}>
               <Plus className="h-4 w-4" />
-              Pievienot Transportu
+              Pievienot
             </Button>
           )}
         </div>
@@ -456,16 +466,7 @@ function VehiclesTab({ token, isReadOnly }: { token: string; isReadOnly: boolean
           onAdd={isReadOnly ? undefined : openAdd}
         />
       ) : (
-        <div className="rounded-xl border border-border bg-background shadow-sm overflow-hidden">
-          <div className="grid grid-cols-[3rem_1fr_1fr_1fr_1fr_1fr_8rem] gap-4 border-b bg-muted/50 px-5 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <div />
-            <div>Transportlīdzeklis</div>
-            <div>Valsts numurzīme</div>
-            <div>Kravnesība</div>
-            <div>Maks. pilnmasa</div>
-            <div>Statuss</div>
-            <div />
-          </div>
+        <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden flex flex-col">
           {filtered.map((v) => (
             <VehicleRow
               key={v.id}
@@ -905,10 +906,10 @@ function ContainersTab({ token }: { token: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{containers.length} konteineri flotē</p>
-        <Button size="sm" className="gap-1.5" onClick={() => setShowAdd(true)}>
-          <Plus className="h-3.5 w-3.5" />
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <p className="text-sm font-medium text-gray-500">{containers.length} konteineri flotē</p>
+        <Button className="h-11 px-5 rounded-full text-sm font-semibold bg-black text-white hover:bg-gray-800 gap-2" onClick={() => setShowAdd(true)}>
+          <Plus className="h-4 w-4" />
           Pievienot konteineru
         </Button>
       </div>
@@ -917,102 +918,105 @@ function ContainersTab({ token }: { token: string }) {
           <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       ) : containers.length === 0 ? (
-        <div className="flex flex-col items-center py-20 gap-3 text-center">
-          <Package className="h-10 w-10 text-muted-foreground/30" />
-          <p className="text-sm text-muted-foreground">Flotē nav konteineru.</p>
-          <Button size="sm" variant="outline" onClick={() => setShowAdd(true)}>
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 py-24 text-center">
+          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
+            <Package className="h-6 w-6 text-gray-500" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 tracking-tight">Konteineru parks ir tukšs</h3>
+          <p className="mt-2 max-w-sm text-[15px] leading-relaxed text-gray-500">Pievienojiet pirmo konteineru, lai varētu piedāvāt konteineru servisu.</p>
+          <Button className="mt-8 rounded-full bg-black text-white hover:bg-gray-800 px-6 h-12 text-[15px] font-semibold gap-2" onClick={() => setShowAdd(true)}>
+            <Plus className="h-4 w-4" />
             Pievienot pirmo konteineru
           </Button>
         </div>
       ) : (
-        <div className="border rounded-2xl overflow-hidden bg-white">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-gray-50 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <th className="px-5 py-3 text-left">Tips / izmērs</th>
-                <th className="px-5 py-3 text-left">Tilpums</th>
-                <th className="px-5 py-3 text-left">Noma / dienā</th>
-                <th className="px-5 py-3 text-left">Atrašanās</th>
-                <th className="px-5 py-3 text-left">Statuss</th>
-                <th className="px-5 py-3 text-right">Darbības</th>
-              </tr>
-            </thead>
-            <tbody>
-              {containers.map((c) => (
-                <tr
-                  key={c.id}
-                  className="border-b last:border-0 hover:bg-gray-50/50 transition-colors"
-                >
-                  <td className="px-5 py-3.5">
-                    <span className="font-medium text-gray-900">
+        <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden flex flex-col">
+          {containers.map((c) => (
+            <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b border-gray-100 last:border-0 hover:bg-gray-50/80 transition-all bg-white group">
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-50 shrink-0">
+                  <Package className="h-5 w-5 text-gray-700" />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-semibold text-gray-900 tracking-tight truncate">
                       {containerTypeLabel(c.containerType)}
                     </span>
-                    <span className="text-muted-foreground"> · {containerSizeLabel(c.size)}</span>
-                  </td>
-                  <td className="px-5 py-3.5 text-muted-foreground">{c.volume} m³</td>
-                  <td className="px-5 py-3.5 font-semibold">€ {c.rentalPrice.toFixed(2)}</td>
-                  <td className="px-5 py-3.5 text-muted-foreground">{c.location || '—'}</td>
-                  <td className="px-5 py-3.5">
-                    <span
-                      className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full border ${
-                        statusColor[c.status] ?? 'bg-gray-100 text-gray-500'
-                      }`}
-                    >
-                      {statusLabel[c.status] ?? c.status}
+                    <span className="inline-flex items-center rounded-md bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-gray-600 uppercase tracking-wider shrink-0">
+                      {containerSizeLabel(c.size)}
                     </span>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    {pendingDeleteId === c.id ? (
-                      <div className="flex items-center justify-end gap-2 text-xs">
-                        <span className="text-muted-foreground">Dzēst?</span>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="h-6 px-2 text-xs"
-                          onClick={() => handleDelete(c.id)}
-                          disabled={deletingId === c.id}
-                        >
-                          Jā
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 px-2 text-xs"
-                          onClick={() => setPendingDeleteId(null)}
-                        >
-                          Atpakaļ
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                          onClick={() => setEditingContainer(c)}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-destructive hover:bg-red-50"
-                          disabled={deletingId === c.id}
-                          onClick={() => setPendingDeleteId(c.id)}
-                        >
-                          {deletingId === c.id ? (
-                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 text-[13px] text-gray-500 mt-0.5">
+                    <span className="font-medium text-gray-700">{c.volume} m³</span>
+                    <span className="text-gray-300">&bull;</span>
+                    <span>€{c.rentalPrice.toFixed(2)}/d</span>
+                    <span className="text-gray-300">&bull;</span>
+                    <span className="truncate">{c.location || 'Nav norādīts'}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-end sm:justify-between gap-4 mt-3 sm:mt-0 pl-16 sm:pl-4 shrink-0">
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${
+                    c.status === 'AVAILABLE'
+                      ? 'bg-green-50 text-green-700'
+                      : c.status === 'RENTED'
+                      ? 'bg-blue-50 text-blue-700'
+                      : c.status === 'MAINTENANCE'
+                      ? 'bg-orange-50 text-orange-700'
+                      : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  {statusLabel[c.status] ?? c.status}
+                </span>
+
+                <div className="flex items-center justify-end gap-1 w-[80px]">
+                  {pendingDeleteId === c.id ? (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="h-8 px-3 rounded-full text-xs font-semibold"
+                        onClick={() => handleDelete(c.id)}
+                        disabled={deletingId === c.id}
+                      >
+                        Dzēst
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 rounded-full hover:bg-gray-100 text-gray-500"
+                        onClick={() => setPendingDeleteId(null)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => setEditingContainer(c)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        disabled={deletingId === c.id}
+                        onClick={() => setPendingDeleteId(c.id)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                      >
+                        {deletingId === c.id ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
       {(showAdd || editingContainer) && (

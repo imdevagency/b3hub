@@ -220,8 +220,8 @@ export function Step3DateOffers({
                     className={cn(
                       'rounded-lg border-2 py-1.5 text-sm font-semibold transition-all',
                       active
-                        ? 'border-primary bg-red-50 text-red-700'
-                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300',
+                        ? 'border-black bg-black text-white'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-400',
                     )}
                   >
                     {d}d
@@ -252,9 +252,9 @@ export function Step3DateOffers({
               defaultMonth={tomorrow}
               numberOfMonths={1}
               classNames={{
-                range_start: 'rounded-l-md bg-red-100',
-                range_end: 'rounded-r-md bg-red-100',
-                range_middle: 'rounded-none bg-red-50',
+                range_start: 'rounded-l-md bg-gray-200',
+                range_end: 'rounded-r-md bg-gray-200',
+                range_middle: 'rounded-none bg-gray-100',
               }}
             />
           </div>
@@ -266,7 +266,7 @@ export function Step3DateOffers({
             <p className="text-sm font-semibold text-gray-700">
               {deliveryDate ? 'Izvēlieties piedāvājumu' : 'Izvēlieties piegādes datumu'}
             </p>
-            {loadingOffers && <Loader2 className="size-3.5 animate-spin text-gray-400" />}
+            {loadingOffers && <Loader2 className="size-3.5 animate-spin text-gray-500" />}
           </div>
 
           {!deliveryDate && (
@@ -280,7 +280,7 @@ export function Step3DateOffers({
 
           {deliveryDate && loadingOffers && (
             <div className="flex flex-col items-center gap-3 py-10 text-sm text-gray-500">
-              <Loader2 className="size-8 animate-spin text-red-500" />
+              <Loader2 className="size-8 animate-spin text-gray-800" />
               <p>Meklē pieejamos pārvadātājus...</p>
             </div>
           )}
@@ -354,15 +354,12 @@ export function Step3DateOffers({
                       </div>
                       <div className="text-right shrink-0">
                         <p
-                          className={cn(
-                            'text-xl font-bold',
-                            sel ? 'text-primary' : 'text-gray-900',
-                          )}
+                          className={cn('text-xl font-bold', sel ? 'text-black' : 'text-gray-900')}
                         >
                           €{offer.price}
                         </p>
                         <p className="text-xs text-gray-500">iekļ. PVN</p>
-                        {sel && <CheckCircle2 className="size-5 text-primary mt-1 ml-auto" />}
+                        {sel && <CheckCircle2 className="size-5 text-black mt-1 ml-auto" />}
                       </div>
                     </div>
                   </button>
@@ -417,7 +414,7 @@ export function Step3DateOffers({
                     </div>
                     <div className="flex justify-between items-baseline">
                       <span className="text-sm text-gray-500">Kopā</span>
-                      <span className="text-2xl font-bold text-primary">€{o.price}</span>
+                      <span className="text-2xl font-bold text-black">€{o.price}</span>
                     </div>
                     <p className="text-xs text-gray-400 text-right">iekļ. PVN</p>
                   </div>
@@ -441,7 +438,7 @@ export function Step3DateOffers({
         <button
           onClick={onNext}
           disabled={!canProceed}
-          className="flex-2 rounded-2xl bg-primary py-3.5 text-base font-bold text-white shadow-md transition-all hover:bg-primary/90 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
+          className="flex-2 rounded-2xl bg-black py-3.5 text-base font-bold text-white shadow-md transition-all hover:bg-gray-800 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
         >
           Turpināt
         </button>

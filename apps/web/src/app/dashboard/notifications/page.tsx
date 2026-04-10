@@ -33,21 +33,20 @@ import {
 
 // ─── Notification icon + color map ───────────────────────────────────────────
 
-const TYPE_META: Record<NotificationType, { icon: React.ElementType; color: string; bg: string }> =
-  {
-    ORDER_CREATED: { icon: Package, color: 'text-blue-600', bg: 'bg-blue-100' },
-    ORDER_CONFIRMED: { icon: CheckCheck, color: 'text-green-600', bg: 'bg-green-100' },
-    ORDER_CANCELLED: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-100' },
-    ORDER_DELIVERED: { icon: CheckCheck, color: 'text-green-700', bg: 'bg-green-100' },
-    TRANSPORT_ASSIGNED: { icon: Truck, color: 'text-primary', bg: 'bg-primary/10' },
-    TRANSPORT_STARTED: { icon: Truck, color: 'text-primary', bg: 'bg-primary/10' },
-    TRANSPORT_COMPLETED: { icon: Truck, color: 'text-green-600', bg: 'bg-green-100' },
-    PAYMENT_RECEIVED: { icon: CreditCard, color: 'text-emerald-600', bg: 'bg-emerald-100' },
-    QUOTE_RECEIVED: { icon: MessageSquare, color: 'text-sky-600', bg: 'bg-sky-100' },
-    QUOTE_ACCEPTED: { icon: CheckCheck, color: 'text-green-600', bg: 'bg-green-100' },
-    SYSTEM_ALERT: { icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-100' },
-    DOCUMENT_EXPIRING_SOON: { icon: FileText, color: 'text-amber-600', bg: 'bg-amber-100' },
-    WEIGHING_SLIP: { icon: Scale, color: 'text-slate-600', bg: 'bg-slate-100' },
+const TYPE_META: Record<NotificationType, { icon: React.ElementType }> = {
+    ORDER_CREATED: { icon: Package },
+    ORDER_CONFIRMED: { icon: CheckCheck },
+    ORDER_CANCELLED: { icon: XCircle },
+    ORDER_DELIVERED: { icon: CheckCheck },
+    TRANSPORT_ASSIGNED: { icon: Truck },
+    TRANSPORT_STARTED: { icon: Truck },
+    TRANSPORT_COMPLETED: { icon: Truck },
+    PAYMENT_RECEIVED: { icon: CreditCard },
+    QUOTE_RECEIVED: { icon: MessageSquare },
+    QUOTE_ACCEPTED: { icon: CheckCheck },
+    SYSTEM_ALERT: { icon: AlertCircle },
+    DOCUMENT_EXPIRING_SOON: { icon: FileText },
+    WEIGHING_SLIP: { icon: Scale },
   };
 
 function fmtRelative(iso: string): string {
@@ -82,57 +81,68 @@ function groupNotifications(items: AppNotification[]) {
 
 // ─── Notification row ────────────────────────────────────────────────────────
 
+function stripEmojis(text: string) {
+  if (!text) return text;
+  return text.replace(/\p{Extended_Pictographic}/gu, '').trim();
+}
+
 function NotifRow({ n, onMarkRead }: { n: AppNotification; onMarkRead: (id: string) => void }) {
-  const meta = TYPE_META[n.type] ?? { icon: Bell, color: 'text-muted-foreground', bg: 'bg-muted' };
+  const meta = TYPE_META[n.type] ?? { icon: Bell };
   const Icon = meta.icon;
+
+  const cleanTitle = stripEmojis(n.title);
+  const cleanMessage = stripEmojis(n.message);
 
   return (
     <div
-      className={`group relative flex items-start gap-4 p-4 sm:p-5 rounded-[2rem] transition-all duration-200 border ${
+      className={`group relative flex items-start gap-4 p-4 rounded-2xl transition-all border border-transparent ${
         n.isRead
-          ? 'bg-muted/10 border-transparent hover:bg-muted/30'
-          : 'bg-white dark:bg-zinc-950 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border-border/40'
+          ? 'opacity-70 hover:bg-gray-50/50'
+          : 'bg-white hover:bg-gray-50 border-gray-100 shadow-sm'
       }`}
     >
       <div
-        className={`mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${n.isRead ? 'opacity-60 saturate-50' : ''} ${meta.bg}`}
+        className={`mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${
+          n.isRead ? 'bg-gray-100 text-gray-400' : 'bg-black text-white'
+        }`}
       >
-        <Icon className={`h-5 w-5 ${meta.color}`} />
+        <Icon className="h-5 w-5" />
       </div>
 
       <div className="flex-1 min-w-0 pr-2">
-        <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 justify-between">
-          <p
-            className={`text-[15px] leading-tight ${
-              n.isRead ? 'font-medium text-foreground/70' : 'font-semibold text-foreground'
-            }`}
-          >
-            {n.title}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 justify-between">
+          <div className="flex items-center gap-2">
+            <p
+              className={`text-[15px] leading-tight tracking-tight truncate ${
+                n.isRead ? 'font-medium text-gray-500' : 'font-bold text-gray-900'
+              }`}
+            >
+              {cleanTitle}
+            </p>
             {!n.isRead && (
-              <span className="ml-2 inline-block h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+              <span className="shrink-0 h-2 w-2 rounded-full bg-blue-600" />
             )}
-          </p>
-          <span className="text-xs font-medium text-muted-foreground shrink-0 bg-muted/40 px-2 py-0.5 rounded-full whitespace-nowrap">
+          </div>
+          <span className="text-xs font-medium text-gray-400 shrink-0">
             {fmtRelative(n.createdAt)}
           </span>
         </div>
 
         <p
-          className={`mt-1.5 text-sm leading-relaxed ${
-            n.isRead ? 'text-muted-foreground/70' : 'text-muted-foreground'
+          className={`mt-1.5 text-[14px] leading-relaxed ${
+            n.isRead ? 'text-gray-500' : 'text-gray-700'
           }`}
         >
-          {n.message}
+          {cleanMessage}
         </p>
 
         {!n.isRead && (
-          <div className="mt-4 flex">
+          <div className="mt-3 flex opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => onMarkRead(n.id)}
-              className="inline-flex items-center justify-center rounded-xl bg-muted hover:bg-muted/80 px-3 py-1.5 text-xs font-semibold text-foreground transition-all duration-200"
+              className="inline-flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors"
             >
-              <CheckCheck className="mr-1.5 h-3.5 w-3.5" />
-              Atzīmēt kā lasītu
+              Atzīmēt kā izlasītu
             </button>
           </div>
         )}
@@ -140,7 +150,6 @@ function NotifRow({ n, onMarkRead }: { n: AppNotification; onMarkRead: (id: stri
     </div>
   );
 }
-
 function GroupSection({
   title,
   items,
@@ -222,14 +231,22 @@ export default function NotificationsPage() {
         }
         action={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => load(1)}>
-              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+            <Button
+              variant="outline"
+              className="h-9 px-4 rounded-full text-xs font-semibold border-gray-200 gap-1.5 hover:bg-gray-50"
+              onClick={() => load(1)}
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
               Atjaunot
             </Button>
             {unreadCount > 0 && (
-              <Button size="sm" onClick={handleMarkAll} disabled={marking}>
-                <CheckCheck className="h-3.5 w-3.5 mr-1.5" />
-                {marking ? 'Apstrādā...' : 'Atzīmēt visus'}
+              <Button
+                className="h-9 px-4 rounded-full text-xs font-semibold bg-black text-white hover:bg-gray-800 gap-1.5"
+                onClick={handleMarkAll}
+                disabled={marking}
+              >
+                <CheckCheck className="h-3.5 w-3.5" />
+                {marking ? 'Apstrādā...' : 'Atzīmēt izlasītus'}
               </Button>
             )}
           </div>
@@ -241,7 +258,7 @@ export default function NotificationsPage() {
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="flex items-start gap-4 p-4 sm:p-5 rounded-[2rem] bg-muted/10 border border-transparent mb-3 last:mb-0"
+              className="flex items-start gap-4 p-4 sm:p-5 rounded-[2rem] bg-white border-transparent mb-3 last:mb-0"
             >
               <Skeleton className="h-12 w-12 rounded-2xl shrink-0 opacity-40" />
               <div className="flex-1 space-y-3 pt-1">

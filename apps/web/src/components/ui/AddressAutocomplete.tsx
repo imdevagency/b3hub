@@ -114,7 +114,6 @@ export function AddressAutocomplete({
 
   // Google Maps services
   const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null);
-  const placesService = useRef<google.maps.places.PlacesService | null>(null);
   const sessionToken = useRef<google.maps.places.AutocompleteSessionToken | undefined>(undefined);
 
   useEffect(() => {
@@ -126,7 +125,6 @@ export function AddressAutocomplete({
       if (!google) return;
 
       autocompleteService.current = new google.maps.places.AutocompleteService();
-      placesService.current = new google.maps.places.PlacesService(document.createElement('div'));
       sessionToken.current = new google.maps.places.AutocompleteSessionToken();
     });
   }, []);
@@ -182,53 +180,44 @@ export function AddressAutocomplete({
     return () => clearTimeout(timeoutId);
   }, [value, id]);
 
-  const handleSelect = (prediction: google.maps.places.AutocompletePrediction) => {
+  const handleSelect = async (prediction: google.maps.places.AutocompletePrediction) => {
     setOpen(false);
     onChange(prediction.description);
 
-    if (!placesService.current) return;
+    try {
+      const place = new google.maps.places.Place({ id: prediction.place_id });
+      await place.fetchFields({ fields: ['addressComponents', 'formattedAddress', 'location'] });
 
-    placesService.current.getDetails(
-      {
-        placeId: prediction.place_id,
-        fields: ['address_components', 'formatted_address', 'geometry'],
-        sessionToken: sessionToken.current,
-      },
-      (
-        place: google.maps.places.PlaceResult | null,
-        status: google.maps.places.PlacesServiceStatus,
-      ) => {
-        const google = window.google;
-        if (status !== google.maps.places.PlacesServiceStatus.OK || !place) return;
+      let route = '';
+      let streetNumber = '';
+      let city = '';
+      let postal = '';
 
-        let route = '';
-        let streetNumber = '';
-        let city = '';
-        let postal = '';
+      const comps = place.addressComponents || [];
+      for (const component of comps) {
+        const type = component.types[0];
+        if (type === 'route') route = component.longText ?? '';
+        else if (type === 'street_number') streetNumber = component.longText ?? '';
+        else if (type === 'locality') city = component.longText ?? '';
+        else if (type === 'postal_code') postal = component.longText ?? '';
+      }
 
-        const comps = place.address_components || [];
-        for (const component of comps) {
-          const type = component.types[0];
-          if (type === 'route') route = component.long_name;
-          else if (type === 'street_number') streetNumber = component.long_name;
-          else if (type === 'locality') city = component.long_name;
-          else if (type === 'postal_code') postal = component.long_name;
-        }
+      const address = route
+        ? `${route}${streetNumber ? ' ' + streetNumber : ''}`
+        : (place.formattedAddress ?? '');
 
-        const address = route
-          ? `${route}${streetNumber ? ' ' + streetNumber : ''}`
-          : (place.formatted_address ?? '');
+      const lat = place.location?.lat();
+      const lng = place.location?.lng();
 
-        const lat = place.geometry?.location?.lat();
-        const lng = place.geometry?.location?.lng();
+      onChange(address);
+      onSelect({ address, city, postal, lat, lng });
+    } catch {
+      // fallback: use the description as-is
+      onSelect({ address: prediction.description, city: '', postal: '' });
+    }
 
-        onChange(address);
-        onSelect({ address, city, postal, lat, lng });
-
-        // Reset session token after a selection
-        sessionToken.current = new google.maps.places.AutocompleteSessionToken();
-      },
-    );
+    // Reset session token after a selection
+    sessionToken.current = new window.google.maps.places.AutocompleteSessionToken();
   };
 
   return (

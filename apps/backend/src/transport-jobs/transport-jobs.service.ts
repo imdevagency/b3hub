@@ -164,8 +164,11 @@ export class TransportJobsService {
         createdById: true,
         siteContactName: true,
         siteContactPhone: true,
+        notes: true,
       },
     },
+    truckIndex: true,
+    truckCount: true,
   } as const;
 
   private statusSortOrder: Record<TransportJobStatus, number> = {

@@ -370,7 +370,7 @@ function SkipHireOrderPageInner() {
               <button
                 type="button"
                 onClick={() => setShowMatLink((v) => !v)}
-                className="w-full flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                className="w-full flex items-center gap-2 rounded-xl bg-gray-50 border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
               >
                 <Link2 className="h-4 w-4 shrink-0" />
                 <span className="flex-1 text-left">
@@ -419,20 +419,18 @@ function SkipHireOrderPageInner() {
                               setShowMatLink(false);
                             }}
                             className={`w-full px-4 py-3 text-left text-sm flex items-center justify-between transition-colors ${
-                              selected
-                                ? 'bg-emerald-600 text-white'
-                                : 'hover:bg-muted/40 text-foreground'
+                              selected ? 'bg-black text-white' : 'hover:bg-muted/40 text-foreground'
                             }`}
                           >
                             <div>
                               <span className="font-semibold">#{o.orderNumber}</span>
                               <span
-                                className={`ml-2 ${selected ? 'text-emerald-100' : 'text-muted-foreground'}`}
+                                className={`ml-2 ${selected ? 'text-gray-300' : 'text-muted-foreground'}`}
                               >
                                 {name}
                               </span>
                             </div>
-                            {selected && <span className="text-xs font-bold">✓</span>}
+                            {selected && <span className="text-xs font-bold"></span>}
                           </button>
                         );
                       })}
