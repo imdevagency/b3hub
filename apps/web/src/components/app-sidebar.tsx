@@ -707,6 +707,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Atbalsta iesūtne"
+                  isActive={isRouteActive('/dashboard/admin/support')}
+                >
+                  <Link href="/dashboard/admin/support">
+                    <MessageSquare className="size-4 shrink-0" />
+                    <span>Atbalsts</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>
         )}

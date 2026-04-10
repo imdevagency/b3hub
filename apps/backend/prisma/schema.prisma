@@ -497,16 +497,31 @@ model Material {
   specifications Json?
 
   // Relations
-  supplier    Company              @relation(fields: [supplierId], references: [id])
-  supplierId  String
-  orderItems  OrderItem[]
-  priceTiers  MaterialPriceTier[]
+  supplier            Company                      @relation(fields: [supplierId], references: [id])
+  supplierId          String
+  orderItems          OrderItem[]
+  priceTiers          MaterialPriceTier[]
+  availabilityBlocks  MaterialAvailabilityBlock[]
 
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("materials")
+}
+
+model MaterialAvailabilityBlock {
+  id         String   @id @default(cuid())
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  materialId String
+
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  note      String?
+
+  createdAt DateTime @default(now())
+
+  @@map("material_availability_blocks")
 }
 
 model Container {

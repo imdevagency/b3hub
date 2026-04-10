@@ -47,7 +47,10 @@ import {
   ChevronRight,
   Ruler,
   Route,
+  Map,
+  List,
 } from 'lucide-react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 // Lazy-load: react-native-gesture-handler native module not available in Expo Go
 type SwipeableProps = {
   children?: React.ReactNode;
@@ -467,6 +470,10 @@ export default function JobsScreen() {
     null,
   );
 
+  // ── View mode ─────────────────────────────────────────────────
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const mapRef = useRef<MapView>(null);
+
   // ── Accept sheet ──────────────────────────────────────────────
   const [acceptSheetJob, setAcceptSheetJob] = useState<TransportJob | null>(null);
   const [accepting, setAccepting] = useState(false);
@@ -724,10 +731,26 @@ export default function JobsScreen() {
         title="Darbi"
         onBack={null}
         rightAction={
-          <TouchableOpacity onPress={togglePanel} style={styles.filterBtn} activeOpacity={0.7}>
-            <Settings2 size={22} color="#111827" />
-            {activeFilter && <View style={styles.filterDot} />}
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                setViewMode((m) => (m === 'list' ? 'map' : 'list'));
+              }}
+              style={styles.filterBtn}
+              activeOpacity={0.7}
+            >
+              {viewMode === 'list' ? (
+                <Map size={22} color="#111827" />
+              ) : (
+                <List size={22} color="#111827" />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={togglePanel} style={styles.filterBtn} activeOpacity={0.7}>
+              <Settings2 size={22} color="#111827" />
+              {activeFilter && <View style={styles.filterDot} />}
+            </TouchableOpacity>
+          </View>
         }
       />
 
@@ -746,44 +769,98 @@ export default function JobsScreen() {
       {/* ── Active filter pill ────────────────────────────── */}
       {activeFilter && <ActiveFilterPill filter={activeFilter} onClear={handleReset} />}
 
-      <FlatList
-        style={{ flex: 1 }}
-        data={filteredJobs}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <JobCard job={item} onAccept={handleAcceptPressed} />}
-        contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
-        }
-        keyboardShouldPersistTaps="handled"
-        ListHeaderComponent={
-          filteredJobs.length > 0 ? (
-            <View style={styles.swipeHint}>
-              <Text style={styles.swipeHintText}>
-                Pieskarieties kartei vai velciet pa kreisi, lai pieņemtu darbu
-              </Text>
+      {/* ── Map view ─────────────────────────────────────── */}
+      {viewMode === 'map' ? (
+        <View style={{ flex: 1 }}>
+          <MapView
+            ref={mapRef}
+            style={{ flex: 1 }}
+            provider={PROVIDER_GOOGLE}
+            initialRegion={{ latitude: 56.9496, longitude: 24.1052, latitudeDelta: 2.5, longitudeDelta: 2.5 }}
+            onMapReady={() => {
+              if (filteredJobs.length > 0) {
+                const coords = filteredJobs
+                  .filter((j) => j.fromLat && j.fromLng)
+                  .map((j) => ({ latitude: j.fromLat, longitude: j.fromLng }));
+                if (coords.length > 0) {
+                  mapRef.current?.fitToCoordinates(coords, {
+                    edgePadding: { top: 60, right: 40, bottom: 60, left: 40 },
+                    animated: false,
+                  });
+                }
+              }
+            }}
+          >
+            {filteredJobs
+              .filter((j) => j.fromLat && j.fromLng)
+              .map((job) => (
+                <Marker
+                  key={job.id}
+                  coordinate={{ latitude: job.fromLat, longitude: job.fromLng }}
+                  title={`${job.fromCity} → ${job.toCity}`}
+                  description={`€${job.priceTotal.toFixed(0)} · ${job.weightTonnes}t · ${Math.round(job.distanceKm)} km`}
+                  pinColor="#111827"
+                  onCalloutPress={() => handleAcceptPressed(job)}
+                />
+              ))}
+          </MapView>
+          {filteredJobs.length === 0 && (
+            <View style={{ position: 'absolute', bottom: 24, left: 0, right: 0, alignItems: 'center' }}>
+              <View style={{ backgroundColor: 'white', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 }}>
+                <Text style={{ fontSize: 13, color: '#6b7280' }}>Nav pieejamu darbu kartē</Text>
+              </View>
             </View>
-          ) : null
-        }
-        ListEmptyComponent={
-          <EmptyState
-            icon={<Search size={32} color="#9ca3af" />}
-            title={t.jobs.empty}
-            subtitle={
-              activeFilter
-                ? t.jobs.emptyDesc
-                : 'Jauni darbi parādās katru rītu. Ieslēdz paziņojumus, lai saņemtu brīdinājumus par jauniem darbiem.'
-            }
-            action={
-              activeFilter ? (
-                <TouchableOpacity style={styles.emptyResetBtn} onPress={handleReset}>
-                  <Text style={styles.emptyResetBtnText}>{t.jobSearch.resetFilter}</Text>
-                </TouchableOpacity>
-              ) : undefined
-            }
-          />
-        }
-      />
+          )}
+          {filteredJobs.length > 0 && (
+            <View style={{ position: 'absolute', bottom: 24, left: 0, right: 0, alignItems: 'center' }}>
+              <View style={{ backgroundColor: 'white', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 }}>
+                <Text style={{ fontSize: 13, color: '#374151', fontFamily: 'Inter_600SemiBold' }}>
+                  {filteredJobs.length} darb{filteredJobs.length === 1 ? 's' : 'i'} — pieskarieties, lai pieņemtu
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
+      ) : (
+        <FlatList
+          style={{ flex: 1 }}
+          data={filteredJobs}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <JobCard job={item} onAccept={handleAcceptPressed} />}
+          contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
+          }
+          keyboardShouldPersistTaps="handled"
+          ListHeaderComponent={
+            filteredJobs.length > 0 ? (
+              <View style={styles.swipeHint}>
+                <Text style={styles.swipeHintText}>
+                  Pieskarieties kartei vai velciet pa kreisi, lai pieņemtu darbu
+                </Text>
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
+            <EmptyState
+              icon={<Search size={32} color="#9ca3af" />}
+              title={t.jobs.empty}
+              subtitle={
+                activeFilter
+                  ? t.jobs.emptyDesc
+                  : 'Jauni darbi parādās katru rītu. Ieslēdz paziņojumus, lai saņemtu brīdinājumus par jauniem darbiem.'
+              }
+              action={
+                activeFilter ? (
+                  <TouchableOpacity style={styles.emptyResetBtn} onPress={handleReset}>
+                    <Text style={styles.emptyResetBtnText}>{t.jobSearch.resetFilter}</Text>
+                  </TouchableOpacity>
+                ) : undefined
+              }
+            />
+          }
+        />
+      )}
 
       {/* Save-search modal */}
       <SaveSearchModal

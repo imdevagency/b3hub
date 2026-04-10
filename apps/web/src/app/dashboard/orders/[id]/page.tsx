@@ -40,6 +40,7 @@ import {
   ArrowLeft,
   Clock,
   CreditCard,
+  MessageSquare,
   Package,
   Phone,
   Truck,
@@ -347,21 +348,30 @@ export default function OrderDetailPage() {
                 <p className="text-sm font-medium text-slate-900">{job.jobNumber}</p>
               </div>
             </div>
-            {(() => {
-              const cfg = JOB_STATUS_CFG[job.status] ?? {
-                label: job.status,
-                bg: '#f1f5f9',
-                text: '#475569',
-              };
-              return (
-                <span
-                  style={{ backgroundColor: cfg.bg, color: cfg.text }}
-                  className="inline-block rounded-full px-3 py-1 text-xs font-semibold"
-                >
-                  {cfg.label}
-                </span>
-              );
-            })()}
+            <div className="flex items-center gap-2">
+              <a
+                href={`/dashboard/chat/${job.id}`}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 px-2.5 py-1.5 rounded-xl border border-blue-200 hover:bg-blue-50 transition-colors"
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                Sarakste
+              </a>
+              {(() => {
+                const cfg = JOB_STATUS_CFG[job.status] ?? {
+                  label: job.status,
+                  bg: '#f1f5f9',
+                  text: '#475569',
+                };
+                return (
+                  <span
+                    style={{ backgroundColor: cfg.bg, color: cfg.text }}
+                    className="inline-block rounded-full px-3 py-1 text-xs font-semibold"
+                  >
+                    {cfg.label}
+                  </span>
+                );
+              })()}
+            </div>
           </div>
 
           {/* Driver & vehicle */}
@@ -408,6 +418,36 @@ export default function OrderDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* CO₂ estimate */}
+          {(() => {
+            const weightTonnes = job.actualWeightKg != null
+              ? job.actualWeightKg / 1000
+              : job.cargoWeight;
+            const co2Kg =
+              job.distanceKm != null && weightTonnes != null && job.distanceKm > 0 && weightTonnes > 0
+                ? Math.round(job.distanceKm * weightTonnes * 0.12)
+                : null;
+            if (co2Kg == null) return null;
+            const display = co2Kg >= 1000 ? `${(co2Kg / 1000).toFixed(1)} t CO₂` : `${co2Kg} kg CO₂`;
+            return (
+              <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-xl">
+                  <svg className="h-4 w-4 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1M4.22 4.22l.71.71m13.14 13.14.71.71M3 12H2m20 0h-1M4.22 19.78l.71-.71M18.36 5.64l.71-.71" />
+                    <circle cx="12" cy="12" r="4" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-xs text-green-700 font-medium">CO₂ emisijas</p>
+                  <p className="text-sm font-bold text-green-900">{display}</p>
+                  <p className="text-[11px] text-green-600 mt-0.5">
+                    {job.distanceKm?.toFixed(0)} km · {weightTonnes?.toFixed(1)} t · HBEFA 0.12 kg/t·km
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Live map */}
           <div>

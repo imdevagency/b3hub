@@ -14,6 +14,15 @@ export enum NotificationType {
   SYSTEM_ALERT = 'SYSTEM_ALERT',
   DOCUMENT_EXPIRING_SOON = 'DOCUMENT_EXPIRING_SOON',
   WEIGHING_SLIP = 'WEIGHING_SLIP',
+  // Semantic types added to replace generic SYSTEM_ALERT
+  JOB_ALERT = 'JOB_ALERT',               // new transport job matches driver's criteria
+  DRIVER_EN_ROUTE = 'DRIVER_EN_ROUTE',   // driver heading to pickup
+  DRIVER_AT_DELIVERY = 'DRIVER_AT_DELIVERY', // driver arrived at delivery site
+  DISPUTE_FILED = 'DISPUTE_FILED',        // buyer filed a dispute (notify admin)
+  DISPUTE_RESOLVED = 'DISPUTE_RESOLVED', // admin resolved/rejected dispute (notify buyer)
+  INVOICE_OVERDUE = 'INVOICE_OVERDUE',   // invoice past due date
+  WEIGHT_DISCREPANCY = 'WEIGHT_DISCREPANCY', // weighbridge weight differs >5% from ordered
+  INVOICE_ADJUSTED = 'INVOICE_ADJUSTED', // invoice reconciled to actual weight
 }
 
 export class CreateNotificationDto {

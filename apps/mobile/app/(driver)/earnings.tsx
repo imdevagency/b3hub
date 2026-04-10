@@ -438,6 +438,65 @@ export default function EarningsScreen() {
           </View>
         )}
 
+        {/* ── Payout Timeline ───────────────────────────── */}
+        <View
+          style={{
+            marginHorizontal: 16,
+            marginBottom: 16,
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: '#e5e7eb',
+            backgroundColor: '#f9fafb',
+            padding: 16,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 12,
+              color: '#374151',
+              fontFamily: 'Inter_600SemiBold',
+              marginBottom: 12,
+              letterSpacing: 0.3,
+            }}
+          >
+            KĀ NOTIEK IZMAKSA
+          </Text>
+          {[
+            { step: '1', label: 'Piegāde pabeigta', sub: 'Jūs atzīmējat darbu kā piegādātu', color: '#059669' },
+            { step: '2', label: 'Pircējs apstiprina', sub: 'Līdz 48 stundām automātiski', color: '#6366f1' },
+            { step: '3', label: 'Summa atbrīvota', sub: 'Nauda nonāk jūsu Stripe kontā', color: '#f59e0b' },
+            { step: '4', label: 'Izmaksa uz banku', sub: '1–2 darba dienas (Stripe standarts)', color: '#111827' },
+          ].map((item, i, arr) => (
+            <View key={item.step} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+              <View style={{ alignItems: 'center', width: 28 }}>
+                <View
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: item.color,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ fontSize: 12, color: 'white', fontFamily: 'Inter_700Bold' }}>
+                    {item.step}
+                  </Text>
+                </View>
+                {i < arr.length - 1 && (
+                  <View style={{ width: 2, flex: 1, minHeight: 12, backgroundColor: '#e5e7eb', marginVertical: 2 }} />
+                )}
+              </View>
+              <View style={{ flex: 1, paddingBottom: i < arr.length - 1 ? 12 : 0 }}>
+                <Text style={{ fontSize: 13, color: '#111827', fontFamily: 'Inter_600SemiBold' }}>
+                  {item.label}
+                </Text>
+                <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }}>{item.sub}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
         {/* ── Recent Activity List ──────────────────────── */}
         <View style={s.listSection}>
           <Text style={s.sectionTitle}>Nesenā aktivitāte</Text>

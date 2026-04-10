@@ -140,4 +140,24 @@ export class InvoicesController {
     await this.invoicesService.emailInvoice(id, user.email, user.userId);
     return { message: 'Invoice emailed successfully' };
   }
+
+  /** GET /invoices/export/csv — download all user invoices as CSV */
+  @Get('export/csv')
+  async exportCsv(
+    @CurrentUser() user: RequestingUser,
+    @Res() res: Response,
+  ) {
+    if (!canViewFinancials(user)) {
+      throw new ForbiddenException(
+        'You do not have permission to view invoices',
+      );
+    }
+    const csv = await this.invoicesService.exportCsv(user.userId, user.companyId);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="invoices-${new Date().toISOString().slice(0, 10)}.csv"`,
+    );
+    res.end('\uFEFF' + csv); // BOM for Excel UTF-8 auto-detection
+  }
 }

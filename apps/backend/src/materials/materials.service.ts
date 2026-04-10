@@ -480,4 +480,59 @@ export class MaterialsService {
     this.logger.log(`Material ${materialId} image uploaded: ${imageUrl}`);
     return { images: updated.images };
   }
+
+  // ── Availability blocks ────────────────────────────────────────────────────
+
+  async getAvailabilityBlocks(materialId: string) {
+    return this.prisma.materialAvailabilityBlock.findMany({
+      where: { materialId },
+      orderBy: { startDate: 'asc' },
+    });
+  }
+
+  async addAvailabilityBlock(
+    materialId: string,
+    dto: { startDate: string; endDate: string; note?: string },
+    currentUser: { userType: string; companyId?: string },
+  ) {
+    const material = await this.findOne(materialId);
+    if (currentUser.userType !== 'ADMIN' && material.supplierId !== currentUser.companyId) {
+      throw new ForbiddenException('You do not own this material');
+    }
+
+    const start = new Date(dto.startDate);
+    const end = new Date(dto.endDate);
+    if (end < start) {
+      throw new BadRequestException('endDate must be on or after startDate');
+    }
+
+    return this.prisma.materialAvailabilityBlock.create({
+      data: {
+        materialId,
+        startDate: start,
+        endDate: end,
+        note: dto.note ?? null,
+      },
+    });
+  }
+
+  async removeAvailabilityBlock(
+    materialId: string,
+    blockId: string,
+    currentUser: { userType: string; companyId?: string },
+  ) {
+    const block = await this.prisma.materialAvailabilityBlock.findUnique({
+      where: { id: blockId },
+      include: { material: { select: { supplierId: true } } },
+    });
+    if (!block || block.materialId !== materialId) {
+      throw new NotFoundException('Availability block not found');
+    }
+    if (currentUser.userType !== 'ADMIN' && block.material.supplierId !== currentUser.companyId) {
+      throw new ForbiddenException('You do not own this material');
+    }
+
+    await this.prisma.materialAvailabilityBlock.delete({ where: { id: blockId } });
+    return { deleted: true };
+  }
 }

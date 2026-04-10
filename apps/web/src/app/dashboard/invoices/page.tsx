@@ -11,6 +11,7 @@ import { getMyInvoices, markInvoicePaid, type ApiInvoice } from '@/lib/api';
 import {
   ChevronLeft,
   ChevronRight,
+  Download,
   ExternalLink,
   FileText,
   Loader2,
@@ -37,7 +38,31 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [csvLoading, setCsvLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'PAID' | 'OVERDUE'>('ALL');
+
+  async function handleExportCsv() {
+    if (!token) return;
+    setCsvLoading(true);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+      const res = await fetch(`${API_URL}/invoices/export/csv`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoices-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError('Neizdevās eksportēt CSV.');
+    } finally {
+      setCsvLoading(false);
+    }
+  }
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -85,9 +110,19 @@ export default function InvoicesPage() {
         title="Rēķini"
         description="Jūsu pasūtījumu rēķini un maksājumu statuss"
         action={
-          <Button variant="outline" size="icon" onClick={load} disabled={loading}>
-            <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={csvLoading}>
+              {csvLoading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Download className="size-4 mr-1.5" />
+              )}
+              Eksportēt CSV
+            </Button>
+            <Button variant="outline" size="icon" onClick={load} disabled={loading}>
+              <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         }
       />
 

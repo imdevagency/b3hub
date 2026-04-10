@@ -148,4 +148,34 @@ export class MaterialsController {
     assertCanSell(user);
     return this.materialsService.uploadMaterialImage(id, dto.base64, dto.mimeType, user);
   }
+
+  // ── Availability blocks ────────────────────────────────────────────────────
+
+  /** GET /materials/:id/availability — list unavailability blocks */
+  @Get(':id/availability')
+  getAvailability(@Param('id') id: string) {
+    return this.materialsService.getAvailabilityBlocks(id);
+  }
+
+  /** POST /materials/:id/availability — add an unavailability block */
+  @Post(':id/availability')
+  addAvailability(
+    @Param('id') id: string,
+    @Body() dto: { startDate: string; endDate: string; note?: string },
+    @CurrentUser() user: RequestingUser,
+  ) {
+    assertCanSell(user);
+    return this.materialsService.addAvailabilityBlock(id, dto, user);
+  }
+
+  /** DELETE /materials/:id/availability/:blockId — remove a block */
+  @Delete(':id/availability/:blockId')
+  removeAvailability(
+    @Param('id') id: string,
+    @Param('blockId') blockId: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    assertCanSell(user);
+    return this.materialsService.removeAvailabilityBlock(id, blockId, user);
+  }
 }

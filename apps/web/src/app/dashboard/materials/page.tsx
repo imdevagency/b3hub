@@ -15,7 +15,11 @@ import {
   getMaterialTiers,
   setMaterialTiers,
   uploadMaterialImage,
+  getMaterialAvailability,
+  addMaterialAvailabilityBlock,
+  removeMaterialAvailabilityBlock,
   type PriceTier,
+  type AvailabilityBlock,
   type ApiMaterial,
   type MaterialCategory,
   type MaterialUnit,
@@ -500,6 +504,11 @@ function MaterialFormModal({
             {editing && (
               <PriceTiersSection materialId={editing.id} unit={form.unit} token={token} />
             )}
+
+            {/* Availability blocks — only shown when editing an existing material */}
+            {editing && (
+              <AvailabilitySection materialId={editing.id} token={token} />
+            )}
           </div>
         </div>
 
@@ -659,7 +668,141 @@ function PriceTiersSection({
   );
 }
 
-// ── Delete confirm ─────────────────────────────────────────────────────────────
+// ── Availability blocks section ───────────────────────────────────────────────
+
+function AvailabilitySection({ materialId, token }: { materialId: string; token: string }) {
+  const [blocks, setBlocks] = useState<AvailabilityBlock[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    getMaterialAvailability(token, materialId)
+      .then(setBlocks)
+      .catch(() => setBlocks([]))
+      .finally(() => setLoading(false));
+  }, [materialId, token]);
+
+  async function handleAdd() {
+    if (!startDate || !endDate) return;
+    setSaving(true);
+    setError('');
+    try {
+      const block = await addMaterialAvailabilityBlock(token, materialId, {
+        startDate,
+        endDate,
+        note: note.trim() || undefined,
+      });
+      setBlocks((prev) => [...prev, block].sort((a, b) => a.startDate.localeCompare(b.startDate)));
+      setStartDate('');
+      setEndDate('');
+      setNote('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Kļūda pievienojot periodu');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleRemove(blockId: string) {
+    try {
+      await removeMaterialAvailabilityBlock(token, materialId, blockId);
+      setBlocks((prev) => prev.filter((b) => b.id !== blockId));
+    } catch {
+      // silently ignore — block stays in list
+    }
+  }
+
+  function fmtDate(iso: string) {
+    return new Date(iso).toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  return (
+    <div className="mt-6 space-y-3">
+      <Label className="text-sm font-semibold ml-1">Nepieejamības periodi</Label>
+      <p className="text-xs text-muted-foreground ml-1">
+        Norādiet datumus, kad materiāls nav pieejams (atvaļinājums, plānotā apkope u.c.).
+      </p>
+
+      {loading ? (
+        <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
+          <Loader2 className="size-4 animate-spin" /> Ielādē...
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {blocks.length === 0 && (
+            <p className="text-xs text-muted-foreground ml-1">Nav neviena perioda.</p>
+          )}
+          {blocks.map((block) => (
+            <div
+              key={block.id}
+              className="flex items-center justify-between gap-2 rounded-xl bg-muted/40 px-3 py-2 text-sm"
+            >
+              <span className="font-medium">
+                {fmtDate(block.startDate)} – {fmtDate(block.endDate)}
+              </span>
+              {block.note && (
+                <span className="text-muted-foreground truncate max-w-30">{block.note}</span>
+              )}
+              <button
+                type="button"
+                onClick={() => handleRemove(block.id)}
+                className="ml-auto text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                aria-label="Dzēst periodu"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="text-xs ml-1">No</Label>
+          <Input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="h-9 text-sm bg-muted/40 border-0 shadow-none rounded-xl"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs ml-1">Līdz</Label>
+          <Input
+            type="date"
+            value={endDate}
+            min={startDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="h-9 text-sm bg-muted/40 border-0 shadow-none rounded-xl"
+          />
+        </div>
+      </div>
+      <Input
+        placeholder="Piezīme (neobligāta)"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        className="h-9 text-sm bg-muted/40 border-0 shadow-none rounded-xl"
+      />
+      {error && <p className="text-xs text-destructive ml-1">{error}</p>}
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        onClick={handleAdd}
+        disabled={saving || !startDate || !endDate}
+        className="h-9 w-full rounded-xl text-sm"
+      >
+        {saving ? <Loader2 className="size-4 animate-spin mr-1" /> : <Plus className="size-4 mr-1" />}
+        Pievienot periodu
+      </Button>
+    </div>
+  );
+}
+
 
 function DeleteConfirm({
   material,

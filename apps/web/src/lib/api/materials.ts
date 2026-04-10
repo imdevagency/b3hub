@@ -223,3 +223,46 @@ export async function getMaterialOffers(
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ─── Availability blocks ─────────────────────────────────────────────────────
+
+export interface AvailabilityBlock {
+  id: string;
+  materialId: string;
+  startDate: string;
+  endDate: string;
+  note?: string | null;
+  createdAt: string;
+}
+
+export async function getMaterialAvailability(
+  token: string,
+  materialId: string,
+): Promise<AvailabilityBlock[]> {
+  return apiFetch<AvailabilityBlock[]>(`/materials/${materialId}/availability`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function addMaterialAvailabilityBlock(
+  token: string,
+  materialId: string,
+  dto: { startDate: string; endDate: string; note?: string },
+): Promise<AvailabilityBlock> {
+  return apiFetch<AvailabilityBlock>(`/materials/${materialId}/availability`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function removeMaterialAvailabilityBlock(
+  token: string,
+  materialId: string,
+  blockId: string,
+): Promise<{ deleted: boolean }> {
+  return apiFetch<{ deleted: boolean }>(`/materials/${materialId}/availability/${blockId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

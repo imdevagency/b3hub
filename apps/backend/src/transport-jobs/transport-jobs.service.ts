@@ -371,7 +371,7 @@ export class TransportJobsService {
 
     if (eligible.length === 0) return;
     await this.notifications.createForMany(eligible, {
-      type: NotificationType.SYSTEM_ALERT,
+      type: NotificationType.JOB_ALERT,
       title,
       message,
       data: { jobId },
@@ -466,7 +466,7 @@ export class TransportJobsService {
     this.notifications
       .create({
         userId: order.createdById,
-        type: NotificationType.SYSTEM_ALERT,
+        type: NotificationType.INVOICE_ADJUSTED,
         title: 'Rēķins precizēts',
         message: `Pasūtījums #${order.orderNumber}: faktiskais svars ${actualTonnes.toFixed(2)} t (pasūtīts ${orderedTonnes.toFixed(2)} t, starpība ${delta} t). Rēķins ${direction}. Jauna summa: €${(actualTotal + deliveryFee).toFixed(2)}.`,
         data: { orderId, invoiceId: invoice.id },
@@ -1523,7 +1523,7 @@ export class TransportJobsService {
               this.notifications
                 .create({
                   userId: orderForAlert.createdById,
-                  type: NotificationType.SYSTEM_ALERT,
+                  type: NotificationType.WEIGHT_DISCREPANCY,
                   title: '⚠️ Svara neatbilstība',
                   message: `Job #${updatedJob.jobNumber}: ${diffPct.toFixed(1)}% starpība starp pasūtīto (${expectedTonnes.toFixed(1)}t) un svētītāja (${actualTonnes.toFixed(1)}t) svaru`,
                   data: { jobId: updatedJob.id },
@@ -1552,7 +1552,7 @@ export class TransportJobsService {
           this.notifications
             .create({
               userId: buyerId,
-              type: NotificationType.SYSTEM_ALERT,
+              type: NotificationType.DRIVER_EN_ROUTE,
               title: '🚚 Šoferis dodas uz iekraušanu',
               message: `${driverName} dodas uz iekraušanas vietu • ${orderNum}`,
               data: { jobId: updatedJob.id },
@@ -1575,7 +1575,7 @@ export class TransportJobsService {
           this.notifications
             .create({
               userId: buyerId,
-              type: NotificationType.SYSTEM_ALERT,
+              type: NotificationType.TRANSPORT_STARTED,
               title: '🚛 Piegāde ceļā',
               message: `${driverName} dodas uz piegādes vietu • ${orderNum}`,
               data: { jobId: updatedJob.id },
@@ -1585,7 +1585,7 @@ export class TransportJobsService {
           this.notifications
             .create({
               userId: buyerId,
-              type: NotificationType.SYSTEM_ALERT,
+              type: NotificationType.DRIVER_AT_DELIVERY,
               title: '📍 Šoferis ieradies',
               message: `${driverName} ir ieradies piegādes vietā • ${orderNum}`,
               data: { jobId: updatedJob.id },

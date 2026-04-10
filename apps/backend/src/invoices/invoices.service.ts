@@ -165,6 +165,58 @@ export class InvoicesService {
     return invoices.map(mapInvoice);
   }
 
+  /** Export all user invoices as a UTF-8 CSV string (for accounts payable / accounting). */
+  async exportCsv(userId: string, companyId?: string): Promise<string> {
+    const invoices = await this.prisma.invoice.findMany({
+      where: { order: this.buyerAccess(userId, companyId) },
+      include: {
+        order: { select: { orderNumber: true, deliveryAddress: true, deliveryCity: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5000,
+    });
+
+    const escape = (v: string | null | undefined) => {
+      if (v == null) return '';
+      const str = String(v);
+      return str.includes(',') || str.includes('"') || str.includes('\n')
+        ? `"${str.replace(/"/g, '""')}"`
+        : str;
+    };
+
+    const headers = [
+      'Rēķina numurs',
+      'Pasūtījuma numurs',
+      'Datums',
+      'Apmaksas termiņš',
+      'Apmaksas datums',
+      'Statuss',
+      'Apraksts',
+      'Starpsumma (EUR)',
+      'PVN (EUR)',
+      'Kopā (EUR)',
+      'Piegādes adrese',
+      'Pilsēta',
+    ];
+
+    const rows = invoices.map((inv) => [
+      escape(inv.invoiceNumber),
+      escape(inv.order?.orderNumber),
+      escape(inv.createdAt.toISOString().slice(0, 10)),
+      escape(inv.dueDate ? inv.dueDate.toISOString().slice(0, 10) : null),
+      escape(inv.paidDate ? inv.paidDate.toISOString().slice(0, 10) : null),
+      escape(inv.paymentStatus),
+      escape(inv.description),
+      escape(inv.subtotal != null ? Number(inv.subtotal).toFixed(2) : null),
+      escape(inv.tax != null ? Number(inv.tax).toFixed(2) : null),
+      escape(inv.total != null ? Number(inv.total).toFixed(2) : null),
+      escape(inv.order?.deliveryAddress),
+      escape(inv.order?.deliveryCity),
+    ]);
+
+    return [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
+  }
+
   async markAsPaid(invoiceId: string, userId: string, companyId?: string, isAdmin = false) {
     const invoice = await this.prisma.invoice.findFirst({
       where: isAdmin ? { id: invoiceId } : { id: invoiceId, order: this.buyerAccess(userId, companyId) },
@@ -740,7 +792,7 @@ export class InvoicesService {
         await this.notifications
           .create({
             userId: buyerId,
-            type: NotificationType.SYSTEM_ALERT,
+            type: NotificationType.INVOICE_OVERDUE,
             title: 'Rēķins ir nokavēts',
             message: `Rēķins #${inv.invoiceNumber} par pasūtījumu #${inv.order?.orderNumber} ir nokavēts. Lūdzu, samaksājiet pēc iespējas ātrāk.`,
             data: { invoiceId: inv.id, orderId: inv.orderId },

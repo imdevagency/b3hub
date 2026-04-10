@@ -86,9 +86,9 @@ export class DisputesService {
             this.notifications
               .create({
                 userId: admin.id,
-                type: NotificationType.SYSTEM_ALERT,
+                type: NotificationType.DISPUTE_FILED,
                 title: '⚠️ Jauns strīds',
-                message: `Pircējs iesniedza strīdu par pasūtījumu #${dispute.order.orderNumber}. Iemesls: ${dto.reason}.`,
+                message: `Pirćējs iesniedzis strīdu par pasūtījumu #${dispute.order.orderNumber}. Iemesls: ${dto.reason}.`,
                 data: { orderId: dto.orderId, disputeId: dispute.id },
               })
               .catch(() => null),
@@ -214,7 +214,7 @@ export class DisputesService {
       this.notifications
         .create({
           userId: updated.raisedBy.id,
-          type: NotificationType.SYSTEM_ALERT,
+          type: NotificationType.DISPUTE_RESOLVED,
           title: dto.status === 'RESOLVED' ? '✅ Strīds atrisināts' : 'ℹ️ Strīds noraidīts',
           message:
             dto.status === 'RESOLVED'

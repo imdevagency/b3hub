@@ -16,7 +16,8 @@ import {
   type TransportJobStatus,
 } from '@/lib/api';
 import { fmtDate } from '@/lib/format';
-import { ArrowLeft, CheckCircle2, Circle, Clock, Truck, User } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, CheckCircle2, Circle, Clock, MessageSquare, Truck, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageSpinner } from '@/components/ui/page-spinner';
 
@@ -187,7 +188,13 @@ export default function TransportJobDetailPage() {
             {job.cargoWeight ? ` · ${job.cargoWeight} t` : ''}
           </p>
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/dashboard/chat/${job.id}`}>
+              <MessageSquare className="h-4 w-4 mr-1.5" />
+              Sarakste
+            </Link>
+          </Button>
           <span
             style={{ backgroundColor: statusCfg.bg, color: statusCfg.text }}
             className="inline-block rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap"

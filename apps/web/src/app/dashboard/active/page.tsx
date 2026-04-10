@@ -10,7 +10,7 @@ import dynamic from 'next/dynamic';
 import { RefreshCw, Truck, MapPin, Package, Radio } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
-import { getAllTransportJobs, type ApiTransportJob } from '@/lib/api';
+import { getAllTransportJobs, getTransportJobLocation, type ApiTransportJob } from '@/lib/api';
 
 const FleetMap = dynamic(
   () => import('@/components/fleet-map').then((m) => ({ default: m.FleetMap })),
@@ -144,7 +144,9 @@ export default function ActiveTrackingPage() {
   const [jobs, setJobs] = useState<ApiTransportJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [liveLocations, setLiveLocations] = useState<Record<string, { lat: number; lng: number }>>({});
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const gpsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchJobs = useCallback(
     async (silent = false) => {
@@ -163,6 +165,26 @@ export default function ActiveTrackingPage() {
     [token],
   );
 
+  const fetchLiveLocations = useCallback(
+    async (activeJobs: ApiTransportJob[]) => {
+      if (!token || activeJobs.length === 0) return;
+      const results = await Promise.allSettled(
+        activeJobs.map((j) => getTransportJobLocation(j.id, token)),
+      );
+      const next: Record<string, { lat: number; lng: number }> = {};
+      results.forEach((r, i) => {
+        if (r.status === 'fulfilled' && r.value.currentLocation) {
+          next[activeJobs[i].id] = {
+            lat: r.value.currentLocation.lat,
+            lng: r.value.currentLocation.lng,
+          };
+        }
+      });
+      setLiveLocations(next);
+    },
+    [token],
+  );
+
   useEffect(() => {
     fetchJobs();
     intervalRef.current = setInterval(() => fetchJobs(true), 15_000);
@@ -170,6 +192,15 @@ export default function ActiveTrackingPage() {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [fetchJobs]);
+
+  // Poll per-job GPS every 10 s (faster than job-list poll)
+  useEffect(() => {
+    fetchLiveLocations(jobs);
+    gpsIntervalRef.current = setInterval(() => fetchLiveLocations(jobs), 10_000);
+    return () => {
+      if (gpsIntervalRef.current) clearInterval(gpsIntervalRef.current);
+    };
+  }, [jobs, fetchLiveLocations]);
 
   const selectedJob = jobs.find((j) => j.id === selectedId) ?? null;
   const mapJobs = selectedJob ? [selectedJob] : jobs;
@@ -245,7 +276,7 @@ export default function ActiveTrackingPage() {
 
           {/* Map */}
           <div className="flex-1 overflow-hidden">
-            <FleetMap jobs={mapJobs} />
+            <FleetMap jobs={mapJobs} liveLocations={liveLocations} />
           </div>
         </div>
       )}
