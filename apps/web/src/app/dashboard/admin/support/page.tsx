@@ -21,15 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
-import {
-  MessageSquare,
-  RefreshCw,
-  Send,
-  CheckCheck,
-  RotateCcw,
-  User,
-  Clock,
-} from 'lucide-react';
+import { MessageSquare, RefreshCw, Send, CheckCheck, RotateCcw, User, Clock } from 'lucide-react';
 
 function formatTime(iso: string) {
   const d = new Date(iso);
@@ -98,14 +90,10 @@ function Bubble({ msg }: { msg: SupportMessage }) {
     <div className={`flex ${isAdmin ? 'justify-end' : 'justify-start'} mb-2`}>
       <div
         className={`max-w-[75%] rounded-xl px-3 py-2 text-sm ${
-          isAdmin
-            ? 'bg-primary text-primary-foreground'
-            : 'bg-muted text-foreground'
+          isAdmin ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
         }`}
       >
-        {!isAdmin && (
-          <p className="text-[11px] font-medium opacity-70 mb-0.5">{msg.senderName}</p>
-        )}
+        {!isAdmin && <p className="text-[11px] font-medium opacity-70 mb-0.5">{msg.senderName}</p>}
         <p className="whitespace-pre-wrap break-words">{msg.body}</p>
         <p className={`text-[10px] mt-1 opacity-60 text-right`}>
           {new Date(msg.createdAt).toLocaleTimeString('lv-LV', {
@@ -181,9 +169,7 @@ export default function AdminSupportPage() {
     setSendError('');
     try {
       const msg = await adminReplySupportThread(activeThread.id, reply.trim(), token);
-      setActiveThread((prev) =>
-        prev ? { ...prev, messages: [...prev.messages, msg] } : prev,
-      );
+      setActiveThread((prev) => (prev ? { ...prev, messages: [...prev.messages, msg] } : prev));
       setReply('');
       // Refresh thread list to update last-message preview
       loadThreads();
@@ -266,11 +252,7 @@ export default function AdminSupportPage() {
                   <p className="text-xs text-muted-foreground">{activeThread.user.email}</p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleToggleStatus}
-              >
+              <Button variant="outline" size="sm" onClick={handleToggleStatus}>
                 {activeThread.status === 'OPEN' ? (
                   <>
                     <CheckCheck className="h-4 w-4 mr-1.5" />
@@ -310,9 +292,7 @@ export default function AdminSupportPage() {
             {/* Reply box */}
             {activeThread.status === 'OPEN' && (
               <div className="px-4 py-3 border-t border-border bg-background shrink-0">
-                {sendError && (
-                  <p className="text-sm text-destructive mb-2">{sendError}</p>
-                )}
+                {sendError && <p className="text-sm text-destructive mb-2">{sendError}</p>}
                 <div className="flex gap-2">
                   <Textarea
                     value={reply}

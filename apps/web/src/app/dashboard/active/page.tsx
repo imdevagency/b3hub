@@ -144,7 +144,9 @@ export default function ActiveTrackingPage() {
   const [jobs, setJobs] = useState<ApiTransportJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [liveLocations, setLiveLocations] = useState<Record<string, { lat: number; lng: number }>>({});
+  const [liveLocations, setLiveLocations] = useState<Record<string, { lat: number; lng: number }>>(
+    {},
+  );
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const gpsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 

@@ -506,9 +506,7 @@ function MaterialFormModal({
             )}
 
             {/* Availability blocks — only shown when editing an existing material */}
-            {editing && (
-              <AvailabilitySection materialId={editing.id} token={token} />
-            )}
+            {editing && <AvailabilitySection materialId={editing.id} token={token} />}
           </div>
         </div>
 
@@ -717,7 +715,11 @@ function AvailabilitySection({ materialId, token }: { materialId: string; token:
   }
 
   function fmtDate(iso: string) {
-    return new Date(iso).toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return new Date(iso).toLocaleDateString('lv-LV', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
   }
 
   return (
@@ -796,13 +798,16 @@ function AvailabilitySection({ materialId, token }: { materialId: string; token:
         disabled={saving || !startDate || !endDate}
         className="h-9 w-full rounded-xl text-sm"
       >
-        {saving ? <Loader2 className="size-4 animate-spin mr-1" /> : <Plus className="size-4 mr-1" />}
+        {saving ? (
+          <Loader2 className="size-4 animate-spin mr-1" />
+        ) : (
+          <Plus className="size-4 mr-1" />
+        )}
         Pievienot periodu
       </Button>
     </div>
   );
 }
-
 
 function DeleteConfirm({
   material,

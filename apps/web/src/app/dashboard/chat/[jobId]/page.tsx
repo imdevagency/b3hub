@@ -47,10 +47,10 @@ function Bubble({ msg, myId }: { msg: ChatMessage; myId: string }) {
   const isMe = msg.senderId === myId;
   return (
     <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-1.5`}>
-      <div className={`max-w-[70%] rounded-2xl px-3.5 py-2 ${isMe ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'}`}>
-        {!isMe && (
-          <p className="text-[11px] font-semibold opacity-70 mb-0.5">{msg.senderName}</p>
-        )}
+      <div
+        className={`max-w-[70%] rounded-2xl px-3.5 py-2 ${isMe ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'}`}
+      >
+        {!isMe && <p className="text-[11px] font-semibold opacity-70 mb-0.5">{msg.senderName}</p>}
         <p className="text-sm whitespace-pre-wrap wrap-break-word">{msg.body}</p>
         <p className={`text-[10px] mt-0.5 opacity-60 ${isMe ? 'text-right' : 'text-left'}`}>
           {formatTime(msg.createdAt)}
@@ -151,11 +151,7 @@ export default function JobChatPage() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-6 py-2 border-t border-border">
         {messages.length === 0 ? (
-          <EmptyState
-            icon={MessageSquare}
-            title="Nav ziņojumu"
-            description="Sāciet sarunu zemāk"
-          />
+          <EmptyState icon={MessageSquare} title="Nav ziņojumu" description="Sāciet sarunu zemāk" />
         ) : (
           <>
             {groups.map((g) => (

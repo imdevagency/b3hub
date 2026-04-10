@@ -462,12 +462,35 @@ export default function EarningsScreen() {
             KĀ NOTIEK IZMAKSA
           </Text>
           {[
-            { step: '1', label: 'Piegāde pabeigta', sub: 'Jūs atzīmējat darbu kā piegādātu', color: '#059669' },
-            { step: '2', label: 'Pircējs apstiprina', sub: 'Līdz 48 stundām automātiski', color: '#6366f1' },
-            { step: '3', label: 'Summa atbrīvota', sub: 'Nauda nonāk jūsu Stripe kontā', color: '#f59e0b' },
-            { step: '4', label: 'Izmaksa uz banku', sub: '1–2 darba dienas (Stripe standarts)', color: '#111827' },
+            {
+              step: '1',
+              label: 'Piegāde pabeigta',
+              sub: 'Jūs atzīmējat darbu kā piegādātu',
+              color: '#059669',
+            },
+            {
+              step: '2',
+              label: 'Pircējs apstiprina',
+              sub: 'Līdz 48 stundām automātiski',
+              color: '#6366f1',
+            },
+            {
+              step: '3',
+              label: 'Summa atbrīvota',
+              sub: 'Nauda nonāk jūsu Stripe kontā',
+              color: '#f59e0b',
+            },
+            {
+              step: '4',
+              label: 'Izmaksa uz banku',
+              sub: '1–2 darba dienas (Stripe standarts)',
+              color: '#111827',
+            },
           ].map((item, i, arr) => (
-            <View key={item.step} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+            <View
+              key={item.step}
+              style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}
+            >
               <View style={{ alignItems: 'center', width: 28 }}>
                 <View
                   style={{
@@ -484,7 +507,15 @@ export default function EarningsScreen() {
                   </Text>
                 </View>
                 {i < arr.length - 1 && (
-                  <View style={{ width: 2, flex: 1, minHeight: 12, backgroundColor: '#e5e7eb', marginVertical: 2 }} />
+                  <View
+                    style={{
+                      width: 2,
+                      flex: 1,
+                      minHeight: 12,
+                      backgroundColor: '#e5e7eb',
+                      marginVertical: 2,
+                    }}
+                  />
                 )}
               </View>
               <View style={{ flex: 1, paddingBottom: i < arr.length - 1 ? 12 : 0 }}>

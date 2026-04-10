@@ -222,7 +222,8 @@ export function CarrierHistoryView({ token }: { token: string }) {
                       )}
                       {(() => {
                         const wt = job.cargoWeight != null ? job.cargoWeight / 1000 : null;
-                        const co2 = job.distanceKm && wt ? Math.round(job.distanceKm * wt * 0.12) : null;
+                        const co2 =
+                          job.distanceKm && wt ? Math.round(job.distanceKm * wt * 0.12) : null;
                         if (!co2) return null;
                         const label = co2 >= 1000 ? `${(co2 / 1000).toFixed(1)}t` : `${co2}kg`;
                         return (

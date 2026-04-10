@@ -776,7 +776,12 @@ export default function JobsScreen() {
             ref={mapRef}
             style={{ flex: 1 }}
             provider={PROVIDER_GOOGLE}
-            initialRegion={{ latitude: 56.9496, longitude: 24.1052, latitudeDelta: 2.5, longitudeDelta: 2.5 }}
+            initialRegion={{
+              latitude: 56.9496,
+              longitude: 24.1052,
+              latitudeDelta: 2.5,
+              longitudeDelta: 2.5,
+            }}
             onMapReady={() => {
               if (filteredJobs.length > 0) {
                 const coords = filteredJobs
@@ -805,17 +810,44 @@ export default function JobsScreen() {
               ))}
           </MapView>
           {filteredJobs.length === 0 && (
-            <View style={{ position: 'absolute', bottom: 24, left: 0, right: 0, alignItems: 'center' }}>
-              <View style={{ backgroundColor: 'white', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 }}>
+            <View
+              style={{ position: 'absolute', bottom: 24, left: 0, right: 0, alignItems: 'center' }}
+            >
+              <View
+                style={{
+                  backgroundColor: 'white',
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  shadowColor: '#000',
+                  shadowOpacity: 0.1,
+                  shadowRadius: 8,
+                  elevation: 4,
+                }}
+              >
                 <Text style={{ fontSize: 13, color: '#6b7280' }}>Nav pieejamu darbu kartē</Text>
               </View>
             </View>
           )}
           {filteredJobs.length > 0 && (
-            <View style={{ position: 'absolute', bottom: 24, left: 0, right: 0, alignItems: 'center' }}>
-              <View style={{ backgroundColor: 'white', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 }}>
+            <View
+              style={{ position: 'absolute', bottom: 24, left: 0, right: 0, alignItems: 'center' }}
+            >
+              <View
+                style={{
+                  backgroundColor: 'white',
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  shadowColor: '#000',
+                  shadowOpacity: 0.1,
+                  shadowRadius: 8,
+                  elevation: 4,
+                }}
+              >
                 <Text style={{ fontSize: 13, color: '#374151', fontFamily: 'Inter_600SemiBold' }}>
-                  {filteredJobs.length} darb{filteredJobs.length === 1 ? 's' : 'i'} — pieskarieties, lai pieņemtu
+                  {filteredJobs.length} darb{filteredJobs.length === 1 ? 's' : 'i'} — pieskarieties,
+                  lai pieņemtu
                 </Text>
               </View>
             </View>
