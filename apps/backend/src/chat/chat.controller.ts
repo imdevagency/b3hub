@@ -25,6 +25,25 @@ export class ChatController {
     return this.service.getMyRooms(user.userId);
   }
 
+  /** GET /chat/order/:orderId — fetch all messages for an order */
+  @Get('order/:orderId')
+  getOrderMessages(
+    @Param('orderId') orderId: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.service.getOrderMessages(orderId, user.userId);
+  }
+
+  /** POST /chat/order/:orderId — send a message in an order chat */
+  @Post('order/:orderId')
+  sendOrderMessage(
+    @Param('orderId') orderId: string,
+    @Body() dto: SendMessageDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.service.sendOrderMessage(orderId, user.userId, dto);
+  }
+
   /** GET /chat/:jobId — fetch all messages for a transport job */
   @Get(':jobId')
   getMessages(

@@ -1785,6 +1785,11 @@ export class TransportJobsService {
         photos: dto.photos ?? [],
         notes: dto.notes,
         deliveredAt: new Date(),
+        loadCondition: dto.loadCondition,
+        isPartialLoad: dto.isPartialLoad ?? false,
+        hasDamage: dto.hasDamage ?? false,
+        damageNote: dto.damageNote,
+        gradeConfirmed: dto.gradeConfirmed ?? false,
       },
     });
 

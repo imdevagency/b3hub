@@ -5,6 +5,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ChevronDown,
   ChevronUp,
@@ -240,7 +241,8 @@ const RADIUS_OPTIONS = [25, 50, 100, 150, 200];
 const LS_KEY = 'b3hub_web_saved_job_searches';
 
 export default function JobsPage() {
-  const { user, token } = useAuth();
+  const { user, token, isLoading } = useAuth();
+  const router = useRouter();
 
   const {
     jobs: apiJobs,
@@ -288,6 +290,11 @@ export default function JobsPage() {
     setCreateForm((p) => ({ ...p, [k]: v }));
 
   // Load saved searches from localStorage
+  useEffect(() => {
+    if (!isLoading && user && !user.canTransport) router.replace('/dashboard');
+    else if (!isLoading && !user) router.replace('/login');
+  }, [user, isLoading, router]);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LS_KEY);

@@ -254,7 +254,16 @@ export const transportApi = {
     /** Submit delivery proof — transitions job AT_DELIVERY → DELIVERED. */
     deliveryProof: (
       id: string,
-      dto: { recipientName?: string; notes?: string; photos?: string[] },
+      dto: {
+        recipientName?: string;
+        notes?: string;
+        photos?: string[];
+        loadCondition?: 'FULL' | 'PARTIAL' | 'DAMAGED';
+        isPartialLoad?: boolean;
+        hasDamage?: boolean;
+        damageNote?: string;
+        gradeConfirmed?: boolean;
+      },
       token: string,
     ) =>
       apiFetch<ApiTransportJob>(`/transport-jobs/${id}/delivery-proof`, {

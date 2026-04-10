@@ -61,7 +61,7 @@ export default function OrderPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gradient-to-b from-primary/5 via-white to-white">
+      <main className="min-h-screen bg-linear-to-b from-primary/5 via-white to-white">
         {/* Hero */}
         <section className="mx-auto max-w-3xl px-6 pt-20 pb-10 text-center">
           <span className="inline-block rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary mb-5">

@@ -13,6 +13,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
+import PDFDocument from 'pdfkit';
 
 /** kg CO2 emitted per km driven, by vehicle type (HBEFA 3.3 averages, EU) */
 const CO2_KG_PER_KM: Record<string, number> = {
@@ -405,5 +406,299 @@ export class AnalyticsService {
       result.push({ month: key, value: map[key] ?? 0 });
     }
     return result;
+  }
+
+  // ─── Delivery Calendar ────────────────────────────────────────────────────
+
+  async getDeliveryCalendar(user: RequestingUser) {
+    const { userId, companyId, canSell, canTransport } = user;
+    const now = new Date();
+    const sixWeeksOut = new Date(now.getTime() + 42 * 24 * 60 * 60 * 1000);
+
+    const buyerWhere = companyId
+      ? { OR: [{ buyerId: companyId }, { createdById: userId }] }
+      : { createdById: userId };
+
+    const activeOrderStatuses = [
+      OrderStatus.CONFIRMED,
+      OrderStatus.IN_PROGRESS,
+      OrderStatus.DELIVERED,
+    ] as const;
+
+    const [buyerOrders, sellerOrders, carrierJobs] = await Promise.all([
+      // Buyer: their upcoming confirmed orders
+      this.prisma.order.findMany({
+        where: {
+          ...buyerWhere,
+          status: { in: [...activeOrderStatuses] },
+          deliveryDate: { gte: now, lte: sixWeeksOut },
+        },
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          deliveryDate: true,
+          deliveryAddress: true,
+          deliveryCity: true,
+          total: true,
+          items: { select: { material: { select: { name: true, category: true } } }, take: 1 },
+        },
+        orderBy: { deliveryDate: 'asc' },
+      }),
+      // Seller: orders assigned to their materials
+      canSell && companyId
+        ? this.prisma.order.findMany({
+            where: {
+              status: { in: [...activeOrderStatuses] },
+              deliveryDate: { gte: now, lte: sixWeeksOut },
+              items: { some: { material: { supplierId: companyId } } },
+            },
+            select: {
+              id: true,
+              orderNumber: true,
+              status: true,
+              deliveryDate: true,
+              deliveryAddress: true,
+              deliveryCity: true,
+              total: true,
+              items: { select: { material: { select: { name: true, category: true } } }, take: 1 },
+            },
+            orderBy: { deliveryDate: 'asc' },
+          })
+        : Promise.resolve([]),
+      // Carrier: their upcoming transport jobs
+      canTransport && companyId
+        ? this.prisma.transportJob.findMany({
+            where: {
+              carrierId: companyId,
+              status: {
+                in: [
+                  'AVAILABLE',
+                  'ACCEPTED',
+                  'EN_ROUTE_PICKUP',
+                  'AT_PICKUP',
+                  'LOADED',
+                  'EN_ROUTE_DELIVERY',
+                  'AT_DELIVERY',
+                ] as const,
+              },
+              deliveryDate: { gte: now, lte: sixWeeksOut },
+            },
+            select: {
+              id: true,
+              jobNumber: true,
+              status: true,
+              deliveryDate: true,
+              deliveryAddress: true,
+              deliveryCity: true,
+              rate: true,
+              order: {
+                select: {
+                  orderNumber: true,
+                  items: { select: { material: { select: { name: true } } }, take: 1 },
+                },
+              },
+            },
+            orderBy: { deliveryDate: 'asc' },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    // Map to unified shape, deduplicate by id+type
+    const seen = new Set<string>();
+    const entries: {
+      id: string;
+      type: 'ORDER' | 'JOB';
+      ref: string;
+      status: string;
+      deliveryDate: string;
+      address: string;
+      city: string;
+      materialName: string | null;
+      amount: number;
+      role: 'BUYER' | 'SELLER' | 'CARRIER';
+    }[] = [];
+
+    for (const o of [...buyerOrders, ...sellerOrders]) {
+      const key = `ORDER-${o.id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      entries.push({
+        id: o.id,
+        type: 'ORDER',
+        ref: o.orderNumber,
+        status: o.status,
+        deliveryDate: o.deliveryDate!.toISOString(),
+        address: o.deliveryAddress,
+        city: o.deliveryCity,
+        materialName: o.items[0]?.material?.name ?? null,
+        amount: o.total,
+        role: buyerOrders.some((b) => b.id === o.id) ? 'BUYER' : 'SELLER',
+      });
+    }
+
+    for (const j of carrierJobs) {
+      entries.push({
+        id: j.id,
+        type: 'JOB',
+        ref: j.jobNumber ?? j.order?.orderNumber,
+        status: j.status,
+        deliveryDate: j.deliveryDate.toISOString(),
+        address: j.deliveryAddress,
+        city: j.deliveryCity,
+        materialName: j.order?.items[0]?.material?.name ?? null,
+        amount: j.rate,
+        role: 'CARRIER',
+      });
+    }
+
+    return entries.sort(
+      (a, b) => new Date(a.deliveryDate).getTime() - new Date(b.deliveryDate).getTime(),
+    );
+  }
+
+  // ─── PDF Report ───────────────────────────────────────────────────────────
+
+  async generateReport(user: RequestingUser): Promise<Buffer> {
+    const data = await this.getOverview(user);
+    const { buyer, seller, carrier } = data;
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      const chunks: Buffer[] = [];
+      doc.on('data', (c: Buffer) => chunks.push(c));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      const euro = (v: number) =>
+        `EUR ${v.toLocaleString('en-LV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` ;
+      const pct = (v: number) => `${Math.round(v)}%`;
+      const today = new Date().toLocaleDateString('lv-LV');
+
+      // ── Header ──────────────────────────────────────────────────────────
+      doc.fontSize(24).font('Helvetica-Bold').fillColor('#111827').text('B3Hub', 50, 50);
+      doc
+        .fontSize(10)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text('b3hub.lv  |  support@b3hub.lv', 50, 78);
+      doc
+        .fontSize(20)
+        .font('Helvetica-Bold')
+        .fillColor('#111827')
+        .text('Analītikas Pārskats', 0, 52, { align: 'right' });
+      doc
+        .fontSize(10)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text(today, 0, 78, { align: 'right' });
+
+      doc.moveTo(50, 105).lineTo(545, 105).strokeColor('#e5e7eb').stroke();
+
+      let y = 120;
+
+      const sectionTitle = (title: string) => {
+        y += 12;
+        doc.fontSize(14).font('Helvetica-Bold').fillColor('#111827').text(title, 50, y);
+        y += 22;
+        doc.moveTo(50, y).lineTo(545, y).strokeColor('#e5e7eb').stroke();
+        y += 10;
+      };
+
+      const row = (label: string, value: string, bold = false) => {
+        doc
+          .fontSize(10)
+          .font(bold ? 'Helvetica-Bold' : 'Helvetica')
+          .fillColor('#374151')
+          .text(label, 50, y);
+        doc
+          .fontSize(10)
+          .font(bold ? 'Helvetica-Bold' : 'Helvetica')
+          .fillColor('#111827')
+          .text(value, 0, y, { align: 'right' });
+        y += 18;
+      };
+
+      // ── Buyer section ────────────────────────────────────────────────────
+      if (buyer) {
+        sectionTitle('Izdevumi (Pasūtītājs)');
+        const totalSpend = buyer.monthlySpend.reduce((s, m) => s + m.value, 0);
+        row('Kopējie izdevumi (pēdējie 12 mēn.)', euro(totalSpend), true);
+        if ((buyer.co2Kg ?? 0) > 0) {
+          row('CO₂ emisijas (aprēķināts)', `${Math.round(buyer.co2Kg).toLocaleString('lv-LV')} kg`);
+        }
+        y += 6;
+
+        // Monthly spend (last 6)
+        doc.fontSize(10).font('Helvetica-Bold').fillColor('#6b7280').text('Mēnešu izdevumi', 50, y);
+        y += 16;
+        for (const m of buyer.monthlySpend.slice(-6)) {
+          const [yr, mo] = m.month.split('-');
+          const label = new Date(Number(yr), Number(mo) - 1).toLocaleString('lv-LV', { month: 'long', year: 'numeric' });
+          row(label, euro(m.value));
+        }
+        y += 6;
+
+        // Material breakdown
+        if (buyer.materialBreakdown?.length) {
+          doc.fontSize(10).font('Helvetica-Bold').fillColor('#6b7280').text('Izdevumi pēc materiāla', 50, y);
+          y += 16;
+          for (const b of buyer.materialBreakdown.slice(0, 5)) {
+            row(b.category, euro(b.totalSpent));
+          }
+          y += 6;
+        }
+
+        // Order breakdown
+        doc.fontSize(10).font('Helvetica-Bold').fillColor('#6b7280').text('Pasūtījumi pēc statusa', 50, y);
+        y += 16;
+        for (const b of buyer.orderBreakdown) {
+          row(b.status, `${b._count.id} (${euro(b._sum?.total ?? 0)})`); // eslint-disable-line @typescript-eslint/no-explicit-any
+        }
+      }
+
+      // ── Seller section ───────────────────────────────────────────────────
+      if (seller) {
+        if (y > 650) { doc.addPage(); y = 50; }
+        sectionTitle('Ieņēmumi (Piegādātājs)');
+        const totalRevenue = seller.monthlyRevenue.reduce((s, m) => s + m.value, 0);
+        row('Kopējie ieņēmumi (pēdējie 12 mēn.)', euro(totalRevenue), true);
+        row('Vidējais vērtējums', `${seller.performanceStats.avgRating.toFixed(1)} (${seller.performanceStats.totalReviews} atsauksmes)`);
+        row('Izpildes rādītājs', pct(seller.performanceStats.completionRate));
+        row('Laicīgums', pct(seller.performanceStats.onTimeRate));
+        y += 6;
+
+        if (seller.topMaterials.length) {
+          doc.fontSize(10).font('Helvetica-Bold').fillColor('#6b7280').text('Populārākie materiāli', 50, y);
+          y += 16;
+          for (const m of seller.topMaterials) {
+            row(m.material?.name ?? '-', euro(m.revenue));
+          }
+        }
+      }
+
+      // ── Carrier section ──────────────────────────────────────────────────
+      if (carrier) {
+        if (y > 650) { doc.addPage(); y = 50; }
+        sectionTitle('Ienākumi (Pārvadātājs)');
+        const totalEarnings = carrier.monthlyEarnings.reduce((s, m) => s + m.value, 0);
+        row('Kopējie ienākumi (pēdējie 12 mēn.)', euro(totalEarnings), true);
+        row('Flotes noslodze', pct(carrier.fleetUtilization.utilizationRate));
+        row('Transportlīdzekļi kopā', `${carrier.fleetUtilization.total}`);
+        row('Aktīvie', `${carrier.fleetUtilization.active}`);
+        row('Darbā', `${carrier.fleetUtilization.inUse}`);
+      }
+
+      // ── Footer ───────────────────────────────────────────────────────────
+      doc
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#9ca3af')
+        .text('B3Hub SIA  |  Rīga, Latvija  |  support@b3hub.lv  |  b3hub.lv', 50, 750, {
+          align: 'center',
+        });
+
+      doc.end();
+    });
   }
 }

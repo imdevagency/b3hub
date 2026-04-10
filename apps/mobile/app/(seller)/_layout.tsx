@@ -27,7 +27,7 @@ export default function SellerLayout() {
       // User is logged in but not an approved seller — send to buyer home
       router.replace('/(buyer)/home');
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, router]);
 
   if (isLoading) {
     return (

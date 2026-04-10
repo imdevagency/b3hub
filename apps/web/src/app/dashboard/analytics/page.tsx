@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth-context';
 import { CATEGORY_LABELS } from '@b3hub/shared';
 import {
   getAnalyticsOverview,
+  exportAnalyticsPdf,
   type AnalyticsOverview,
   type MonthlyValue,
   type ArAging,
@@ -19,6 +20,7 @@ import {
   type MaterialSpend,
 } from '@/lib/api';
 import { PageSpinner } from '@/components/ui/page-spinner';
+import { Download } from 'lucide-react';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -270,6 +272,7 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [chartMonths, setChartMonths] = useState<3 | 6 | 12>(6);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -278,6 +281,22 @@ export default function AnalyticsPage() {
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [token]);
+
+  const handleExport = async () => {
+    if (!token || exporting) return;
+    setExporting(true);
+    try {
+      const blob = await exportAnalyticsPdf(token);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `analytics-${new Date().toISOString().slice(0, 10)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   if (loading) {
     return <PageSpinner className="min-h-[60vh]" />;
@@ -302,20 +321,30 @@ export default function AnalyticsPage() {
     <div className="max-w-4xl mx-auto py-8 w-full animate-in fade-in duration-500">
       <div className="flex items-center justify-between mb-12">
         <h1 className="text-3xl font-light tracking-tight">Analītika</h1>
-        <div className="flex gap-1 bg-muted/50 rounded-xl p-1">
-          {([3, 6, 12] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => setChartMonths(m)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                chartMonths === m
-                  ? 'bg-background shadow-xs text-foreground'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-              }`}
-            >
-              {m}M
-            </button>
-          ))}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExport}
+            disabled={exporting || !data}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium border border-border/60 hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Download className="h-3.5 w-3.5" />
+            {exporting ? 'Lejupielādē...' : 'PDF'}
+          </button>
+          <div className="flex gap-1 bg-muted/50 rounded-xl p-1">
+            {([3, 6, 12] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setChartMonths(m)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  chartMonths === m
+                    ? 'bg-background shadow-xs text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                }`}
+              >
+                {m}M
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

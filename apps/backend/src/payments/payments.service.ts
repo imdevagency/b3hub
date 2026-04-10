@@ -645,7 +645,7 @@ export class PaymentsService {
             data: { orderId },
           },
         )
-        .catch(() => null);
+        .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
     }
 
     // Notify driver that the job is fully closed and their payout is en route
@@ -659,7 +659,7 @@ export class PaymentsService {
           message: `Piegāde ir apstiprināta. Jūsu atalgojums tiek pārskaitīts uz jūsu Stripe kontu.`,
           data: { orderId },
         })
-        .catch(() => null);
+        .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
     }
   }
 
@@ -805,7 +805,7 @@ export class PaymentsService {
         message: `Pasūtītājs ir apmaksājis darbu ${job.jobNumber}. Jūsu atalgojums tiek pārskaitīts uz jūsu Stripe kontu.`,
         data: { jobId },
       })
-      .catch(() => null);
+      .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
   }
 
   /**
@@ -972,7 +972,7 @@ export class PaymentsService {
                   message: `Pasūtījums #${order.orderNumber} tika atcelts, jo banka vai Stripe atcēla maksājuma autorizāciju. Lūdzu, mēģiniet no jauna.`,
                   data: { orderId },
                 })
-                .catch(() => null);
+                .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
             }
           }
         }
@@ -1211,7 +1211,7 @@ export class PaymentsService {
           message: `Jūsu sūdzība par pasūtījumu #${order.orderNumber} ir izskatīta. Piegāde apstiprināta.`,
           data: { orderId },
         })
-        .catch(() => null);
+        .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
     } else {
       // Uphold dispute — refund buyer, cancel order
       await this.prisma.order.update({
@@ -1231,7 +1231,7 @@ export class PaymentsService {
           message: `Jūsu sūdzība par pasūtījumu #${order.orderNumber} ir apstiprināta. Atmaksa tiks apstrādāta 5-10 darba dienu laikā.`,
           data: { orderId },
         })
-        .catch(() => null);
+        .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
     }
 
     return { ok: true, resolution };
@@ -1304,7 +1304,7 @@ export class PaymentsService {
                 data: { orderId: order.id, isExpired },
               },
             )
-            .catch(() => null);
+            .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
         }
       }
     }

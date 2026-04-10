@@ -41,7 +41,7 @@ export default function DriverLayout() {
       // User is logged in but not an approved driver — send to buyer home
       router.replace('/(buyer)/home');
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, router]);
 
   if (isLoading) {
     return (

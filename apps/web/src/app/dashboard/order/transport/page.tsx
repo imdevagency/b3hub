@@ -110,7 +110,7 @@ export default function TransportOrderPage() {
     if (!apiKey) return;
     loadGoogleMapsScript(apiKey, () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const google = (window as any).google;
+      const google = window.google;
       if (!google || !mapDivRef.current || mapInstanceRef.current) return;
       const map = new google.maps.Map(mapDivRef.current, {
         center: DEFAULT_CENTER,
@@ -154,7 +154,7 @@ export default function TransportOrderPage() {
 
   const updateRoutePolyline = useCallback(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const google = (window as any).google;
+    const google = window.google;
     if (!google || !mapInstanceRef.current) return;
     if (
       pickupLat === undefined ||
@@ -195,7 +195,7 @@ export default function TransportOrderPage() {
         setPickupLat(result.lat);
         setPickupLng(result.lng);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const google = (window as any).google;
+        const google = window.google;
         if (!google || !mapInstanceRef.current) return;
         const pos = { lat: result.lat, lng: result.lng };
         if (pickupMarkerRef.current) {
@@ -232,7 +232,7 @@ export default function TransportOrderPage() {
         setDropoffLat(result.lat);
         setDropoffLng(result.lng);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const google = (window as any).google;
+        const google = window.google;
         if (!google || !mapInstanceRef.current) return;
         const pos = { lat: result.lat, lng: result.lng };
         if (dropoffMarkerRef.current) {

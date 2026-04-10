@@ -139,7 +139,7 @@ export default function DisposalOrderPage() {
 
     loadGoogleMapsScript(apiKey, () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const google = (window as any).google;
+      const google = window.google;
       if (!google || !mapDivRef.current || mapInstanceRef.current) return;
 
       const map = new google.maps.Map(mapDivRef.current, {
@@ -178,7 +178,7 @@ export default function DisposalOrderPage() {
             map.panTo(userPos);
             map.setZoom(14);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            new (window as any).google.maps.Marker({
+            new window.google.maps.Marker({
               position: userPos,
               map,
               title: 'Jūsu atrašanās vieta',
@@ -205,7 +205,7 @@ export default function DisposalOrderPage() {
   // Update marker/center when lat/lng change
   const updateMapPin = useCallback((newLat: number, newLng: number) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const google = (window as any).google;
+    const google = window.google;
     if (!google || !mapInstanceRef.current) return;
 
     const position = { lat: newLat, lng: newLng };

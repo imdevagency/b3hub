@@ -278,7 +278,7 @@ function WizardInline({
     if (!apiKey) return;
     loadGoogleMapsScript(apiKey, () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const google = (window as any).google;
+      const google = window.google;
       if (!google || !mapDivRef.current || mapInstanceRef.current) return;
       const map = new google.maps.Map(mapDivRef.current, {
         center: DEFAULT_CENTER,
@@ -312,7 +312,7 @@ function WizardInline({
 
   const updateMapPin = useCallback((lat: number, lng: number) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const google = (window as any).google;
+    const google = window.google;
     if (!google || !mapInstanceRef.current) return;
     const position = { lat, lng };
     if (markerRef.current) {
@@ -832,7 +832,7 @@ function OfferCard({
               key={i}
               src={url}
               alt={offer.name}
-              className="h-20 w-20 object-cover rounded-xl border border-border/40 flex-shrink-0"
+              className="h-20 w-20 object-cover rounded-xl border border-border/40 shrink-0"
             />
           ))}
         </div>

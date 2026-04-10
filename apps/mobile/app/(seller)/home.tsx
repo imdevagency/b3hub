@@ -36,7 +36,9 @@ export default function SellerHomeScreen() {
         .myOrders(token)
         .then((orders) => {
           const companyId = user?.company?.id;
-          const sellerOrders = companyId ? orders.filter((o) => o.buyer?.id !== companyId) : orders;
+          const sellerOrders = companyId
+            ? orders.filter((o) => o.buyer?.id !== companyId)
+            : orders.filter((o) => o.createdBy?.id !== user?.id);
           const pending = sellerOrders.filter(
             (o) => o.status === 'PENDING' || o.status === 'CONFIRMED',
           ).length;

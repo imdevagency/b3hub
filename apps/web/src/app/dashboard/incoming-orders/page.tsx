@@ -4,13 +4,20 @@
  */
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { SupplierView } from '../orders/page';
 
 export default function IncomingOrdersPage() {
-  const { token } = useRequireAuth();
+  const { token, user, isLoading } = useRequireAuth();
+  const router = useRouter();
 
-  if (!token) {
+  useEffect(() => {
+    if (!isLoading && user && !user.canSell) router.replace('/dashboard');
+  }, [user, isLoading, router]);
+
+  if (!token || (user && !user.canSell)) {
     return <div className="p-8 text-center text-muted-foreground text-sm">Ielādē...</div>;
   }
 

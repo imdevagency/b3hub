@@ -125,9 +125,11 @@ export class OrdersService {
     const itemsBySupplier = new Map<string, EnrichedItem[]>();
     let grandSubtotal = 0;
 
-    for (const item of items) {
-      const material = await this.prisma.material.findUnique({
-        where: { id: item.materialId },
+    // Batch-fetch all materials and their price tiers in two queries (avoids N+1)
+    const materialIds = [...new Set(items.map((i) => i.materialId))];
+    const [materialsRaw, tiersRaw] = await Promise.all([
+      this.prisma.material.findMany({
+        where: { id: { in: materialIds } },
         select: {
           id: true,
           basePrice: true,
@@ -138,7 +140,22 @@ export class OrdersService {
           minOrder: true,
           maxOrder: true,
         },
-      });
+      }),
+      this.prisma.materialPriceTier.findMany({
+        where: { materialId: { in: materialIds } },
+        select: { materialId: true, minQty: true, unitPrice: true },
+      }),
+    ]);
+    const materialMap = new Map(materialsRaw.map((m) => [m.id, m]));
+    const tiersByMaterial = new Map<string, { minQty: number; unitPrice: number }[]>();
+    for (const tier of tiersRaw) {
+      const list = tiersByMaterial.get(tier.materialId) ?? [];
+      list.push({ minQty: tier.minQty, unitPrice: tier.unitPrice });
+      tiersByMaterial.set(tier.materialId, list);
+    }
+
+    for (const item of items) {
+      const material = materialMap.get(item.materialId);
       if (!material) {
         throw new NotFoundException(`Material ${item.materialId} not found`);
       }
@@ -164,10 +181,7 @@ export class OrdersService {
         );
       }
       // Resolve volume-tier price: use the best qualifying tier, fall back to basePrice
-      const tiers = await this.prisma.materialPriceTier.findMany({
-        where: { materialId: item.materialId },
-        select: { minQty: true, unitPrice: true },
-      });
+      const tiers = tiersByMaterial.get(item.materialId) ?? [];
       const resolvedPrice = this.materials.resolvePrice(
         material.basePrice,
         tiers,
@@ -502,29 +516,27 @@ export class OrdersService {
       include: { material: { select: { supplierId: true } } },
     });
     const supplierIds = [...new Set(items.map((i) => i.material.supplierId))];
-    for (const supplierId of supplierIds) {
-      // Push real-time event to seller's WebSocket room (fire-and-forget)
-      this.updates.broadcastSellerNewOrder({
-        companyId: supplierId,
-        orderId,
-        orderNumber,
-      });
 
-      const users = await this.prisma.user.findMany({
-        where: { companyId: supplierId },
-        select: { id: true },
-      });
-      for (const user of users) {
-        this.notifications
-          .create({
-            userId: user.id,
-            type: NotificationType.ORDER_CREATED,
-            title: 'Jauns pasūtījums',
-            message: `Saņemts jauns pasūtījums #${orderNumber} jūsu materiāliem.`,
-            data: { orderId },
-          })
-          .catch(() => null);
-      }
+    // Broadcast WebSocket events first (fire-and-forget, one per supplier)
+    for (const supplierId of supplierIds) {
+      this.updates.broadcastSellerNewOrder({ companyId: supplierId, orderId, orderNumber });
+    }
+
+    // Batch-fetch all supplier members in a single query (avoids N+1)
+    const allUsers = await this.prisma.user.findMany({
+      where: { companyId: { in: supplierIds } },
+      select: { id: true },
+    });
+    for (const user of allUsers) {
+      this.notifications
+        .create({
+          userId: user.id,
+          type: NotificationType.ORDER_CREATED,
+          title: 'Jauns pasūtījums',
+          message: `Saņemts jauns pasūtījums #${orderNumber} jūsu materiāliem.`,
+          data: { orderId },
+        })
+        .catch(() => null);
     }
   }
 

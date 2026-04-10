@@ -28,7 +28,7 @@ export default function BuyerLayout() {
       const home = MODE_HOME[availableModes[0] ?? 'BUYER'];
       router.replace(home as any);
     }
-  }, [user, isLoading, availableModes]);
+  }, [user, isLoading, availableModes, router]);
 
   if (isLoading) {
     return (

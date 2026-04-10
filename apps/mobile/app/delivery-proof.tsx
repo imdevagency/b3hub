@@ -23,7 +23,15 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import { Camera, Trash2, CheckCircle2, PenLine } from 'lucide-react-native';
+import {
+  Camera,
+  Trash2,
+  CheckCircle2,
+  PenLine,
+  AlertTriangle,
+  Package,
+  Star,
+} from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { addToProofQueue } from '@/lib/proof-queue';
 
@@ -39,6 +47,12 @@ export default function DeliveryProofScreen() {
   const [notes, setNotes] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  // ── Checklist state ─────────────────────────────────────────────────────────
+  const [loadCondition, setLoadCondition] = useState<'FULL' | 'PARTIAL' | 'DAMAGED'>('FULL');
+  const [hasDamage, setHasDamage] = useState(false);
+  const [damageNote, setDamageNote] = useState('');
+  const [gradeConfirmed, setGradeConfirmed] = useState(false);
 
   // ── Signature pad ───────────────────────────────────────────────────────────
   const [strokes, setStrokes] = useState<string[]>([]);
@@ -135,6 +149,11 @@ export default function DeliveryProofScreen() {
           recipientName: recipientName.trim() || undefined,
           notes: notes.trim() || undefined,
           photos: photos.length > 0 ? photos : undefined,
+          loadCondition,
+          isPartialLoad: loadCondition === 'PARTIAL',
+          hasDamage,
+          damageNote: hasDamage && damageNote.trim() ? damageNote.trim() : undefined,
+          gradeConfirmed,
         },
         token,
       );
@@ -188,6 +207,90 @@ export default function DeliveryProofScreen() {
           </TouchableOpacity>
           <Text style={styles.title}>{t.deliveryProof.title}</Text>
           <Text style={styles.subtitle}>{t.deliveryProof.subtitle}</Text>
+        </View>
+
+        {/* ── Checklist ────────────────────────────────────────────────── */}
+        <View style={styles.section}>
+          <View style={styles.labelRow}>
+            <Package size={15} color="#374151" />
+            <Text style={styles.label}>Kravas stāvoklis</Text>
+          </View>
+
+          <View style={styles.conditionRow}>
+            {(['FULL', 'PARTIAL', 'DAMAGED'] as const).map((val) => {
+              const labels = { FULL: 'Pilna', PARTIAL: 'Daļēja', DAMAGED: 'Bojāta' };
+              const active = loadCondition === val;
+              const isDamaged = val === 'DAMAGED';
+              return (
+                <TouchableOpacity
+                  key={val}
+                  style={[
+                    styles.conditionChip,
+                    active &&
+                      (isDamaged ? styles.conditionChipDamaged : styles.conditionChipActive),
+                  ]}
+                  onPress={() => {
+                    setLoadCondition(val);
+                    if (val === 'DAMAGED') setHasDamage(true);
+                    if (val === 'FULL') setHasDamage(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.conditionChipText,
+                      active &&
+                        (isDamaged
+                          ? styles.conditionChipTextDamaged
+                          : styles.conditionChipTextActive),
+                    ]}
+                  >
+                    {labels[val]}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Damage note — only visible when damaged */}
+        {hasDamage && (
+          <View style={styles.section}>
+            <View style={styles.labelRow}>
+              <AlertTriangle size={15} color="#ef4444" />
+              <Text style={[styles.label, { color: '#ef4444' }]}>Bojājuma apraksts</Text>
+            </View>
+            <TextInput
+              style={[styles.input, styles.notesInput]}
+              value={damageNote}
+              onChangeText={setDamageNote}
+              placeholder="Aprakstiet bojājumu..."
+              placeholderTextColor="#9ca3af"
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+              maxLength={500}
+            />
+          </View>
+        )}
+
+        {/* Grade confirmation */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.checkRow}
+            onPress={() => setGradeConfirmed((v) => !v)}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.checkbox, gradeConfirmed && styles.checkboxChecked]}>
+              {gradeConfirmed && <CheckCircle2 size={14} color="#fff" />}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.checkLabel}>Materiāla kvalitāte apstiprināta</Text>
+              <Text style={styles.checkSublabel}>
+                Piegādātais materiāls atbilst pasūtījuma specifikācijai
+              </Text>
+            </View>
+            <Star size={16} color={gradeConfirmed ? '#f59e0b' : '#d1d5db'} />
+          </TouchableOpacity>
         </View>
 
         {/* Recipient name */}
@@ -407,6 +510,46 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   photoAddText: { fontSize: 11, color: '#9ca3af', fontWeight: '600' },
+
+  // Checklist
+  conditionRow: { flexDirection: 'row', gap: 10 },
+  conditionChip: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  conditionChipActive: { borderColor: '#111827', backgroundColor: '#111827' },
+  conditionChipDamaged: { borderColor: '#ef4444', backgroundColor: '#fef2f2' },
+  conditionChipText: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
+  conditionChipTextActive: { color: '#fff' },
+  conditionChipTextDamaged: { color: '#ef4444' },
+  checkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    padding: 14,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f9fafb',
+  },
+  checkboxChecked: { backgroundColor: '#111827', borderColor: '#111827' },
+  checkLabel: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  checkSublabel: { fontSize: 12, color: '#6b7280', marginTop: 2 },
 
   // Submit
   submitBtn: {

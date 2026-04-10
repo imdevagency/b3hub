@@ -9,26 +9,14 @@ import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 import { Input } from '@/components/ui/input';
 import { MapPin, Loader2, Search } from 'lucide-react';
 
-// Minimal Google Maps type stubs (avoids @types/google.maps dependency)
-interface GmapsPrediction {
-  description: string;
-  place_id: string;
+/// <reference types="@types/google.maps" />
+
+// Extend Window to declare the custom Maps init callback property
+declare global {
+  interface Window {
+    __googleMapsPlacesInit?: () => void;
+  }
 }
-interface GmapsAddressComponent {
-  types: string[];
-  long_name: string;
-}
-interface GmapsPlaceResult {
-  formatted_address?: string;
-  address_components?: GmapsAddressComponent[];
-  geometry?: { location: { lat(): number; lng(): number } };
-}
-type GmapsStatus = string;
-type GmapsGoogle = {
-  maps: {
-    places: { PlacesServiceStatus: { OK: string }; AutocompleteSessionToken: new () => unknown };
-  };
-};
 
 // ── Script loader (singleton — loads the script once) ────────────────────────
 
@@ -75,8 +63,7 @@ export function loadGoogleMapsScript(apiKey: string, onReady: () => void) {
 
   scriptState = 'loading';
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (window as any).__googleMapsPlacesInit = () => {
+  window.__googleMapsPlacesInit = () => {
     scriptState = 'ready';
     pendingCallbacks.forEach((cb) => cb());
     pendingCallbacks.length = 0;
@@ -122,25 +109,20 @@ export function AddressAutocomplete({
 }: Props) {
   const [isOpen, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [predictions, setPredictions] = useState<any[]>([]);
+  const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Google Maps services
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const autocompleteService = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const placesService = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sessionToken = useRef<any>(null);
+  const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null);
+  const placesService = useRef<google.maps.places.PlacesService | null>(null);
+  const sessionToken = useRef<google.maps.places.AutocompleteSessionToken | undefined>(undefined);
 
   useEffect(() => {
     const apiKey = getGoogleMapsPublicKey();
     if (!apiKey) return;
 
     loadGoogleMapsScript(apiKey, () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const google = (window as any).google;
+      const google = window.google;
       if (!google) return;
 
       autocompleteService.current = new google.maps.places.AutocompleteService();
@@ -172,17 +154,18 @@ export function AddressAutocomplete({
 
     setLoading(true);
     const timeoutId = setTimeout(() => {
-      autocompleteService.current.getPlacePredictions(
+      autocompleteService.current!.getPlacePredictions(
         {
           input: value,
           componentRestrictions: { country: ['lv'] },
           types: ['address'],
           sessionToken: sessionToken.current,
         },
-        (results: GmapsPrediction[] | null, status: GmapsStatus) => {
-          // eslint-disable-line @typescript-eslint/no-explicit-any
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const google = (window as unknown as { google: GmapsGoogle }).google;
+        (
+          results: google.maps.places.AutocompletePrediction[] | null,
+          status: google.maps.places.PlacesServiceStatus,
+        ) => {
+          const google = window.google;
           setLoading(false);
           if (status === google.maps.places.PlacesServiceStatus.OK && results) {
             setPredictions(results);
@@ -199,7 +182,7 @@ export function AddressAutocomplete({
     return () => clearTimeout(timeoutId);
   }, [value, id]);
 
-  const handleSelect = (prediction: GmapsPrediction) => {
+  const handleSelect = (prediction: google.maps.places.AutocompletePrediction) => {
     setOpen(false);
     onChange(prediction.description);
 
@@ -211,10 +194,11 @@ export function AddressAutocomplete({
         fields: ['address_components', 'formatted_address', 'geometry'],
         sessionToken: sessionToken.current,
       },
-      (place: GmapsPlaceResult | null, status: GmapsStatus) => {
-        // eslint-disable-line @typescript-eslint/no-explicit-any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const google = (window as unknown as { google: GmapsGoogle }).google;
+      (
+        place: google.maps.places.PlaceResult | null,
+        status: google.maps.places.PlacesServiceStatus,
+      ) => {
+        const google = window.google;
         if (status !== google.maps.places.PlacesServiceStatus.OK || !place) return;
 
         let route = '';

@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsBoolean } from 'class-validator';
 
 export class SubmitDeliveryProofDto {
   @IsString()
@@ -12,4 +12,25 @@ export class SubmitDeliveryProofDto {
   @IsArray()
   @IsOptional()
   photos?: string[];
+
+  /** 'FULL' | 'PARTIAL' | 'DAMAGED' */
+  @IsString()
+  @IsOptional()
+  loadCondition?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isPartialLoad?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  hasDamage?: boolean;
+
+  @IsString()
+  @IsOptional()
+  damageNote?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  gradeConfirmed?: boolean;
 }

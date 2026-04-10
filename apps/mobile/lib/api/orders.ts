@@ -84,6 +84,9 @@ export interface CreateOrderScheduleInput {
   deliveryWindow?: string;
   deliveryFee?: number;
   projectId?: string;
+  notes?: string;
+  siteContactName?: string;
+  siteContactPhone?: string;
   items: { materialId: string; quantity: number; unit: string }[];
   intervalDays: number;
   nextRunAt?: string;
@@ -162,12 +165,14 @@ export interface ApiOrder {
       id: string;
       photos: string[];
       recipientName: string | null;
+      notes: string | null;
       createdAt: string;
     } | null;
     exceptions?: {
       id: string;
       type: string;
       status: string;
+      notes?: string | null;
       createdAt: string;
     }[];
   }[];
@@ -188,6 +193,9 @@ export interface ApiOrder {
     price: number;
   } | null;
   project?: { id: string; name: string } | null;
+  notes?: string | null;
+  siteContactName?: string | null;
+  siteContactPhone?: string | null;
   createdAt: string;
 }
 

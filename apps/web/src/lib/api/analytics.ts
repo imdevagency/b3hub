@@ -2,7 +2,7 @@
  * Analytics API module.
  * ERP analytics aggregations for buyer, seller, and carrier roles.
  */
-import { apiFetch } from './common';
+import { apiFetch, API_URL } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -109,4 +109,35 @@ export async function getAnalyticsOverview(token: string): Promise<AnalyticsOver
 
 export async function getSuppliersPerformance(): Promise<SupplierScore[]> {
   return apiFetch<SupplierScore[]>('/analytics/suppliers');
+}
+
+// ─── Delivery Calendar ─────────────────────────────────────────────────────
+
+export interface DeliveryCalendarEntry {
+  id: string;
+  type: 'ORDER' | 'JOB';
+  ref: string;
+  status: string;
+  deliveryDate: string;
+  address: string;
+  city: string;
+  materialName: string | null;
+  amount: number;
+  role: 'BUYER' | 'SELLER' | 'CARRIER';
+}
+
+export async function getDeliveryCalendar(token: string): Promise<DeliveryCalendarEntry[]> {
+  return apiFetch<DeliveryCalendarEntry[]>('/analytics/delivery-calendar', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ─── PDF Export ─────────────────────────────────────────────────────────────
+
+export async function exportAnalyticsPdf(token: string): Promise<Blob> {
+  const res = await fetch(`${API_URL}/analytics/export-pdf`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.blob();
 }

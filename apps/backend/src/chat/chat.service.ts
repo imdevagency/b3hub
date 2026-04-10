@@ -27,6 +27,26 @@ export class ChatService {
     @Optional() private readonly supabase: SupabaseService,
   ) {}
 
+  /** Verify the requesting user is the buyer or a seller with materials in the order. */
+  private async assertOrderAccess(orderId: string, userId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        createdById: true,
+        items: { select: { material: { select: { supplierId: true } } } },
+      },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+
+    const isBuyer = order.createdById === userId;
+    const isSeller = order.items.some((i) => i.material?.supplierId === userId);
+
+    if (!isBuyer && !isSeller) {
+      throw new ForbiddenException('You are not a participant in this order');
+    }
+    return order;
+  }
+
   /** Verify the requesting user is the driver or the order creator. */
   private async assertAccess(jobId: string, userId: string) {
     const job = await this.prisma.transportJob.findUnique({
@@ -51,33 +71,61 @@ export class ChatService {
   }
 
   async getMyRooms(userId: string) {
-    const jobs = await this.prisma.transportJob.findMany({
-      where: {
-        chatMessages: { some: {} },
-        OR: [
-          { driverId: userId },
-          { requestedById: userId },
-          { order: { createdById: userId } },
-        ],
-      },
-      select: {
-        id: true,
-        jobNumber: true,
-        jobType: true,
-        cargoType: true,
-        pickupCity: true,
-        deliveryCity: true,
-        status: true,
-        chatMessages: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          select: { body: true, senderName: true, createdAt: true, imageUrl: true },
+    const [jobs, orderMsgs] = await Promise.all([
+      this.prisma.transportJob.findMany({
+        where: {
+          chatMessages: { some: {} },
+          OR: [
+            { driverId: userId },
+            { requestedById: userId },
+            { order: { createdById: userId } },
+          ],
         },
-      },
-      orderBy: { updatedAt: 'desc' },
-    });
+        select: {
+          id: true,
+          jobNumber: true,
+          jobType: true,
+          cargoType: true,
+          pickupCity: true,
+          deliveryCity: true,
+          status: true,
+          chatMessages: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { body: true, senderName: true, createdAt: true, imageUrl: true },
+          },
+        },
+        orderBy: { updatedAt: 'desc' },
+      }),
+      this.prisma.chatMessage.findMany({
+        where: {
+          orderId: { not: null },
+          OR: [
+            { order: { createdById: userId } },
+            { order: { items: { some: { material: { supplierId: userId } } } } },
+          ],
+        },
+        distinct: ['orderId'],
+        orderBy: { createdAt: 'desc' },
+        select: {
+          orderId: true,
+          body: true,
+          senderName: true,
+          createdAt: true,
+          imageUrl: true,
+          order: {
+            select: {
+              orderNumber: true,
+              status: true,
+              deliveryCity: true,
+            },
+          },
+        },
+      }),
+    ]);
 
-    return jobs.map((j) => ({
+    const jobRooms = jobs.map((j) => ({
+      type: 'job' as const,
       jobId: j.id,
       jobNumber: j.jobNumber,
       jobType: j.jobType,
@@ -87,6 +135,23 @@ export class ChatService {
       status: j.status,
       lastMessage: j.chatMessages[0] ?? null,
     }));
+
+    const orderRooms = orderMsgs
+      .filter((m) => m.orderId && m.order)
+      .map((m) => ({
+        type: 'order' as const,
+        orderId: m.orderId!,
+        orderNumber: m.order!.orderNumber,
+        status: m.order!.status,
+        deliveryCity: m.order!.deliveryCity,
+        lastMessage: { body: m.body, senderName: m.senderName, createdAt: m.createdAt, imageUrl: m.imageUrl },
+      }));
+
+    return [...jobRooms, ...orderRooms].sort(
+      (a, b) =>
+        new Date(b.lastMessage?.createdAt ?? 0).getTime() -
+        new Date(a.lastMessage?.createdAt ?? 0).getTime(),
+    );
   }
 
   async getMessages(jobId: string, userId: string) {
@@ -140,6 +205,60 @@ export class ChatService {
 
     // Broadcast to all connected clients in this job's room
     this.gateway?.broadcastMessage(jobId, message);
+
+    return message;
+  }
+
+  async getOrderMessages(orderId: string, userId: string) {
+    await this.assertOrderAccess(orderId, userId);
+
+    return this.prisma.chatMessage.findMany({
+      where: { orderId },
+      orderBy: { createdAt: 'asc' },
+      take: 300,
+      select: {
+        id: true,
+        senderId: true,
+        senderName: true,
+        body: true,
+        imageUrl: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  async sendOrderMessage(orderId: string, userId: string, dto: SendMessageDto) {
+    await this.assertOrderAccess(orderId, userId);
+
+    if (!dto.body?.trim() && !dto.imageUrl) {
+      throw new BadRequestException('Message must have a body or an image');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { firstName: true, lastName: true },
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    const message = await this.prisma.chatMessage.create({
+      data: {
+        orderId,
+        senderId: userId,
+        senderName: `${user.firstName} ${user.lastName}`,
+        body: dto.body?.trim() ?? '',
+        ...(dto.imageUrl ? { imageUrl: dto.imageUrl } : {}),
+      },
+      select: {
+        id: true,
+        senderId: true,
+        senderName: true,
+        body: true,
+        imageUrl: true,
+        createdAt: true,
+      },
+    });
+
+    this.gateway?.broadcastOrderMessage(orderId, message);
 
     return message;
   }

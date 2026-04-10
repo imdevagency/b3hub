@@ -447,4 +447,12 @@ const styles = StyleSheet.create({
   roleDescActive: {
     color: '#9ca3af',
   },
+  checkWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

@@ -31,79 +31,6 @@ import {
   type DocumentSummary,
 } from '@/lib/api';
 
-// ── Demo seed (shown when API returns empty) ──────────────────
-const DEMO_DOCS: Document[] = [
-  {
-    id: 'd2',
-    title: 'Weighing Slip — 18.4 t',
-    type: 'WEIGHING_SLIP',
-    status: 'SIGNED',
-    mimeType: 'application/pdf',
-    fileSize: 34100,
-    orderId: 'ord-01',
-    ownerId: 'demo',
-    issuedBy: 'Riga Weigh Station',
-    isGenerated: true,
-        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'd3',
-    title: 'Delivery Proof — ORD-2025-0042',
-    type: 'DELIVERY_PROOF',
-    status: 'SIGNED',
-    mimeType: 'image/jpeg',
-    fileSize: 215000,
-    orderId: 'ord-01',
-    ownerId: 'demo',
-    issuedBy: 'Driver: Pēteris Ozoliņš',
-    isGenerated: false,
-    createdAt: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'd4',
-    title: 'Waste Certificate #WC-2025-0011',
-    type: 'WASTE_CERTIFICATE',
-    status: 'ISSUED',
-    mimeType: 'application/pdf',
-    fileSize: 62000,
-    orderId: 'ord-02',
-    ownerId: 'demo',
-    issuedBy: 'EcoCenter Rīga',
-    isGenerated: true,
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'd5',
-    title: 'CMR Delivery Note — Job #TJ-2025-0088',
-    type: 'DELIVERY_NOTE',
-    status: 'SIGNED',
-    mimeType: 'application/pdf',
-    fileSize: 47500,
-    transportJobId: 'tj-01',
-    ownerId: 'demo',
-    issuedBy: 'FastCarry OÜ',
-    isGenerated: false,
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'd6',
-    title: 'Ietvarlīgums — Smilts un grants 2025',
-    type: 'CONTRACT',
-    status: 'SIGNED',
-    mimeType: 'application/pdf',
-    fileSize: 71000,
-    ownerId: 'demo',
-    issuedBy: 'B3Hub Platform',
-    isGenerated: true,
-    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
-
 // ── Filter tabs ──────────────────────────────────────────────
 
 type FilterTab = 'ALL' | DocumentType;
@@ -130,7 +57,6 @@ export default function DocumentsPage() {
   const [search, setSearch] = useState('');
   const [fetching, setFetching] = useState(false);
   const [viewerDoc, setViewerDoc] = useState<Document | null>(null);
-  const [useDemoData, setUseDemoData] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Redirect if not authed
@@ -150,30 +76,12 @@ export default function DocumentsPage() {
         }),
         getDocumentSummary(token),
       ]);
-      if (result.total === 0 && !search) {
-        // No real docs yet → show demo data
-        setUseDemoData(true);
-        setError(null);
-        const filtered =
-          activeTab === 'ALL' ? DEMO_DOCS : DEMO_DOCS.filter((d) => d.type === activeTab);
-        setDocs(filtered);
-        setSummary({
-          total: DEMO_DOCS.length,
-          byType: DEMO_DOCS.reduce(
-            (acc, d) => ({ ...acc, [d.type]: (acc[d.type as DocumentType] ?? 0) + 1 }),
-            {} as DocumentSummary['byType'],
-          ),
-        });
-      } else {
-        setUseDemoData(false);
-        setError(null);
-        setDocs(result.documents);
-        setSummary(sum);
-      }
+      setError(null);
+      setDocs(result.documents);
+      setSummary(sum);
     } catch {
-      // API not reachable — show error, do not show demo data
+      // API not reachable — show error
       setError('Neizdevās ielādēt dokumentus. Pārbaudiet savienojumu un mēģiniet vēlreiz.');
-      setUseDemoData(false);
       setDocs([]);
       setSummary(null);
     } finally {
@@ -219,49 +127,36 @@ export default function DocumentsPage() {
         </div>
       )}
 
-      {/* ── Stats row ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {/* ── Header stats (Uber-like flat stats) ── */}
+      <div className="flex flex-wrap gap-x-10 gap-y-4 pb-6 border-b border-border/30">
         {[
-          { label: 'Kopā dokumenti', value: summary?.total ?? 0, color: 'text-foreground' },
-          { label: 'Šajā mēnesī', value: thisMonth, color: 'text-foreground' },
+          { label: 'Kopā Dokumenti', value: summary?.total ?? 0 },
+          { label: 'Šajā mēnesī', value: thisMonth },
           {
-            label: 'Piegādes apstiprinājumi',
+            label: 'Piegādes Apstiprinājumi',
             value: summary?.byType?.DELIVERY_PROOF ?? 0,
-            color: 'text-foreground',
           },
           {
-            label: 'Svēršanas lapas',
+            label: 'Svēršanas Lapas',
             value: summary?.byType?.WEIGHING_SLIP ?? 0,
-            color: 'text-foreground',
           },
         ].map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-muted/30 rounded-2xl p-5 flex flex-col justify-center"
-          >
-            <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">
+          <div key={stat.label} className="flex flex-col gap-0.5">
+            <span className="text-[12px] font-medium text-muted-foreground uppercase tracking-widest">
               {stat.label}
-            </p>
-            <p className={`text-3xl font-medium tracking-tight ${stat.color}`}>{stat.value}</p>
+            </span>
+            <span className="text-3xl font-medium tracking-tight text-foreground">
+              {stat.value}
+            </span>
           </div>
         ))}
       </div>
 
-      {useDemoData && (
-        <div className="flex items-center gap-3 rounded-2xl border border-amber-300/40 bg-amber-500/10 px-5 py-4 text-sm text-amber-800 dark:text-amber-400">
-          <div className="animate-pulse bg-amber-500/30 h-2 w-2 rounded-full shrink-0" />
-          <span>
-            <strong>Priekšskatījuma režīms</strong> — šie ir piemēra dokumenti. Jūsu īstie dokumenti
-            tiks ģenerēti šeit, sākot ar pirmo pasūtījumu.
-          </span>
-        </div>
-      )}
-
       {/* ── Filters + Search ── */}
-      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 pb-2">
-        {/* Tab pills — horizontally scrollable on small screens */}
-        <div className="w-full overflow-x-auto pb-1 -mb-1">
-          <div className="flex items-center gap-2 min-w-max">
+      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 pb-2 mt-4">
+        {/* Tab pills — flat text style */}
+        <div className="w-full overflow-x-auto pb-1 -mb-1 scrollbar-hide">
+          <div className="flex items-center gap-6 min-w-max border-b border-border/30">
             {TABS.map((tab) => {
               const count =
                 tab.id === 'ALL' ? summary?.total : summary?.byType?.[tab.id as DocumentType];
@@ -270,19 +165,19 @@ export default function DocumentsPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative flex items-center justify-center h-9 px-4 rounded-full text-sm font-medium transition-all duration-200 ${
+                  className={`relative flex items-center justify-center h-10 text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-foreground text-background shadow-md'
-                      : 'bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+                      ? 'text-foreground border-b-2 border-foreground'
+                      : 'text-muted-foreground hover:text-foreground border-b-2 border-transparent'
                   }`}
                 >
                   {tab.label}
                   {count != null && count > 0 && (
                     <span
-                      className={`ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-bold transition-colors ${
+                      className={`ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded-md ${
                         isActive
-                          ? 'bg-background/20 text-background'
-                          : 'bg-background text-muted-foreground'
+                          ? 'bg-foreground text-background'
+                          : 'bg-muted/60 text-muted-foreground'
                       }`}
                     >
                       {count}
@@ -296,13 +191,13 @@ export default function DocumentsPage() {
 
         {/* Search */}
         <div className="relative w-full xl:w-72 shrink-0">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="Meklēt dokumentos…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm bg-muted/30 border-transparent rounded-full focus:outline-none focus:bg-background focus:ring-1 focus:ring-ring focus:border-border transition-all placeholder:text-muted-foreground/60"
+            className="w-full pl-9 pr-4 py-2 text-sm bg-muted/20 border-transparent rounded-lg focus:outline-none focus:bg-muted/40 focus:ring-0 transition-colors placeholder:text-muted-foreground/60"
           />
         </div>
       </div>
@@ -312,23 +207,29 @@ export default function DocumentsPage() {
         <PageSpinner className="py-20" />
       ) : docs.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 gap-4 px-4 text-center">
-          <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-2">
-            <FolderOpen className="h-8 w-8 text-muted-foreground/40" />
+          <div className="h-16 w-16 rounded-full bg-muted/20 flex items-center justify-center mb-2">
+            <FolderOpen className="h-8 w-8 text-muted-foreground/30" />
           </div>
-          <h3 className="text-xl font-semibold text-foreground">Nav atrasts neviens dokuments</h3>
-          <p className="text-sm text-muted-foreground max-w-sm">
+          <h3 className="text-xl font-medium text-foreground tracking-tight">
+            Nav atrasts neviens dokuments
+          </h3>
+          <p className="text-[13px] text-muted-foreground max-w-sm">
             {search
               ? `Nav rezultātu meklējumam "${search}". Mēģiniet citu meklēšanas frazi.`
               : 'Dokumenti parādīsīsies šeit automātiski, tīklīdz jūsu pasūtījumi tiks apstiprināti un piegādes pabeigtas.'}
           </p>
           {search && (
-            <Button variant="outline" onClick={() => setSearch('')} className="mt-4 rounded-full">
-              Kā atcelt meklēšanu
+            <Button
+              variant="outline"
+              onClick={() => setSearch('')}
+              className="mt-4 rounded-xl text-xs font-medium border-border/60"
+            >
+              Notīrīt meklēšanu
             </Button>
           )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="flex flex-col border-t border-border/30">
           {docs.map((doc) => (
             <DocumentCard key={doc.id} document={doc} onView={setViewerDoc} />
           ))}

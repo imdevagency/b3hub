@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import {
   listDisputes,
@@ -37,7 +38,8 @@ const STATUS_FILTERS: { value: 'ALL' | DisputeStatus; label: string }[] = [
 ];
 
 export default function AdminDisputesPage() {
-  const { token, user } = useAuth();
+  const { token, user, isLoading } = useAuth();
+  const router = useRouter();
   const [disputes, setDisputes] = useState<ApiDispute[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'ALL' | DisputeStatus>('ALL');
@@ -61,6 +63,12 @@ export default function AdminDisputesPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!isLoading && (!user || user.userType !== 'ADMIN')) {
+      router.replace('/dashboard');
+    }
+  }, [user, isLoading, router]);
 
   useEffect(() => {
     if (selected) {
@@ -89,8 +97,8 @@ export default function AdminDisputesPage() {
     }
   };
 
-  if (user?.userType !== 'ADMIN') {
-    return <div className="p-8 text-center text-muted-foreground">Pieeja atteikta.</div>;
+  if (!user || user.userType !== 'ADMIN') {
+    return null;
   }
 
   const filtered =

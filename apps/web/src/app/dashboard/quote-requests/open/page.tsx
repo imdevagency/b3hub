@@ -5,6 +5,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { RefreshCw, MessageSquare, MapPin, Package, Clock3, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -330,7 +331,8 @@ function RequestCardSkeleton() {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function OpenQuoteRequestsPage() {
-  const { token } = useAuth();
+  const { token, user, isLoading } = useAuth();
+  const router = useRouter();
   const [requests, setRequests] = useState<QuoteRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -355,6 +357,10 @@ export default function OpenQuoteRequestsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!isLoading && user && !user.canSell) router.replace('/dashboard');
+  }, [user, isLoading, router]);
 
   const handleResponded = (updated: QuoteRequest) => {
     setResponding(null);

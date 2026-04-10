@@ -570,7 +570,7 @@ export function SupplierView({ token }: { token: string }) {
           disabled={loading}
           className="flex items-center gap-2 rounded-xl bg-muted/40 hover:bg-muted/80 px-4 py-2 text-[13px] font-semibold text-foreground transition-colors"
         >
-          <RefreshCw className={`size-[14px] ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`size-3.5 ${loading ? 'animate-spin' : ''}`} />
           Atjaunot
         </button>
       </div>
@@ -643,7 +643,7 @@ export function SupplierView({ token }: { token: string }) {
 
                 <div className="flex flex-col md:flex-row gap-6 md:gap-8">
                   {/* Left Column: Material & Route */}
-                  <div className="flex-[2] space-y-6">
+                  <div className="flex-2 space-y-6">
                     {/* Material Info */}
                     <div>
                       <h3 className="font-semibold text-xl text-foreground tracking-tight">
@@ -666,12 +666,12 @@ export function SupplierView({ token }: { token: string }) {
                       <div className="flex gap-4">
                         {/* Timeline Graphic Column */}
                         <div className="flex flex-col items-center">
-                          <div className="size-3 rounded-full bg-border ring-4 ring-card z-10 shrink-0 mt-[2px] transition-colors" />
-                          <div className="w-[1.5px] bg-border/70 flex-1 -my-[4px] z-0 group-hover:bg-border transition-colors" />
+                          <div className="size-3 rounded-full bg-border ring-4 ring-card z-10 shrink-0 mt-0.5 transition-colors" />
+                          <div className="w-[1.5px] bg-border/70 flex-1 -my-1 z-0 group-hover:bg-border transition-colors" />
                         </div>
                         {/* Content Column */}
                         <div className="flex-1 pb-6">
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5 leading-none mt-[1px]">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5 leading-none mt-px">
                             Pasūtītājs
                           </p>
                           {order.buyer ? (
@@ -699,11 +699,11 @@ export function SupplierView({ token }: { token: string }) {
                       <div className="flex gap-4">
                         {/* Timeline Graphic Column */}
                         <div className="flex flex-col items-center">
-                          <div className="size-3 bg-foreground ring-4 ring-card z-10 shrink-0 mt-[2px]" />
+                          <div className="size-3 bg-foreground ring-4 ring-card z-10 shrink-0 mt-0.5" />
                         </div>
                         {/* Content Column */}
                         <div className="flex-1">
-                          <p className="text-[10px] font-bold text-foreground uppercase tracking-widest mb-0.5 leading-none mt-[1px]">
+                          <p className="text-[10px] font-bold text-foreground uppercase tracking-widest mb-0.5 leading-none mt-px">
                             Piegādes Adrese
                           </p>
                           <p className="text-[15px] font-semibold text-foreground tracking-tight mt-1">
@@ -1172,7 +1172,7 @@ function BuyerView({ token }: { token: string }) {
                       <div className="flex gap-4">
                         <div className="flex flex-col items-center">
                           <div className="size-3 rounded-full bg-border ring-4 ring-muted/30 group-hover:ring-muted/50 z-10 shrink-0 transition-colors" />
-                          <div className="w-[1.5px] bg-border/40 flex-1 -my-[4px] z-0 transition-colors group-hover:bg-border/60" />
+                          <div className="w-[1.5px] bg-border/40 flex-1 -my-1 z-0 transition-colors group-hover:bg-border/60" />
                         </div>
                         <div className="flex-1 pb-6 -mt-0.5">
                           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5 leading-none">

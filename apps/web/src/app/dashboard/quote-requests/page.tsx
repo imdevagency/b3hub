@@ -1,6 +1,6 @@
 /**
  * Quote requests page — /dashboard/quote-requests
- * Lists the buyer's RFQs and received offers. Suppliers see open RFQs they can bid on.
+ * Lists the buyer's RFQs. Tapping a card navigates to /dashboard/quote-requests/[id]
  */
 'use client';
 
@@ -12,20 +12,15 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
-  ChevronDown,
-  ChevronUp,
   Package,
-  MapPin,
   Truck,
-  Star,
-  Info,
   Archive,
   ArrowRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { useAuth } from '@/lib/auth-context';
-import { getMyQuoteRequests, acceptQuoteResponse, type QuoteRequest } from '@/lib/api';
+import { getMyQuoteRequests, type QuoteRequest } from '@/lib/api';
 import { fmtDate } from '@/lib/format';
 import { CATEGORY_LABELS, UNIT_SHORT } from '@b3hub/shared';
 
@@ -41,32 +36,32 @@ const STATUS_CFG: Record<
   PENDING: {
     label: 'Meklē piedāvājumus',
     icon: Clock,
-    color: 'text-slate-700',
-    bg: 'bg-slate-100 border-slate-200',
+    color: 'text-foreground',
+    bg: 'bg-muted/50',
   },
   QUOTED: {
     label: 'Saņemti piedāvājumi',
     icon: Truck,
-    color: 'text-blue-700',
-    bg: 'bg-blue-50 border-blue-200',
+    color: 'text-foreground',
+    bg: 'bg-muted/50',
   },
   ACCEPTED: {
     label: 'Apstiprināts',
     icon: CheckCircle2,
-    color: 'text-emerald-700',
-    bg: 'bg-emerald-50 border-emerald-200',
+    color: 'text-foreground',
+    bg: 'bg-muted/50',
   },
   CANCELLED: {
     label: 'Atcelts',
     icon: XCircle,
-    color: 'text-red-700',
-    bg: 'bg-red-50 border-red-200',
+    color: 'text-muted-foreground',
+    bg: 'bg-muted/30',
   },
   EXPIRED: {
     label: 'Beidzies',
     icon: Archive,
-    color: 'text-slate-500',
-    bg: 'bg-slate-50 border-slate-200',
+    color: 'text-muted-foreground',
+    bg: 'bg-muted/30',
   },
 };
 
@@ -78,189 +73,74 @@ function fmtEur(n: number) {
 
 interface RequestCardProps {
   request: QuoteRequest;
-  onAccept: (requestId: string, responseId: string) => Promise<void>;
 }
 
-function RequestCard({ request, onAccept }: RequestCardProps) {
-  const [expanded, setExpanded] = useState(false);
-  const [accepting, setAccepting] = useState<string | null>(null);
+function RequestCard({ request }: RequestCardProps) {
+  const router = useRouter();
   const cfg = STATUS_CFG[request.status] ?? STATUS_CFG.PENDING;
-  const Icon = cfg.icon;
-
-  const handleAccept = async (responseId: string) => {
-    setAccepting(responseId);
-    await onAccept(request.id, responseId);
-    setAccepting(null);
-  };
 
   return (
-    <div
-      className={`bg-white rounded-3xl border ${expanded ? 'border-slate-300 shadow-md' : 'border-slate-100 shadow-sm'} overflow-hidden transition-all hover:shadow-md hover:border-slate-200`}
+    <button
+      type="button"
+      onClick={() => router.push(`/dashboard/quote-requests/${request.id}`)}
+      className="w-full text-left bg-card md:rounded-xl border border-border/40 hover:border-border/70 hover:bg-muted/10 overflow-hidden transition-all duration-150 mb-3 relative group"
     >
-      {/* Header (Clickable) */}
-      <div
-        className="p-5 cursor-pointer flex flex-col gap-4 relative"
-        onClick={() => setExpanded((e) => !e)}
-      >
-        <div className="flex items-start justify-between gap-4">
-          {/* Material Info */}
-          <div className="flex items-start gap-3 flex-1 min-w-0">
-            <div className="h-12 w-12 shrink-0 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-700 border border-slate-100">
-              <Package className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-base font-bold text-slate-900 truncate">
-                {request.materialName || CATEGORY_LV[request.materialCategory]}
-              </p>
-              <p className="text-sm font-medium text-slate-500 mt-0.5">
-                {request.quantity}{' '}
-                <span className="text-xs uppercase">{UNIT_LV[request.unit]}</span> •{' '}
-                {CATEGORY_LV[request.materialCategory]}
-              </p>
-            </div>
+      <div className="p-5 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+        {/* Material */}
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <div className="h-12 w-12 shrink-0 flex items-center justify-center rounded-xl bg-muted text-foreground">
+            <Package className="h-5 w-5" strokeWidth={1.5} />
           </div>
-
-          {/* Badge */}
-          <div className="shrink-0 text-right">
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold border ${cfg.bg} ${cfg.color}`}
-            >
-              <Icon className="h-3 w-3" /> {cfg.label}
-            </span>
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold text-foreground truncate tracking-tight">
+              {request.materialName || CATEGORY_LV[request.materialCategory]}
+            </p>
+            <p className="text-[13px] font-medium text-muted-foreground mt-0.5">
+              {request.quantity} <span className="uppercase">{UNIT_LV[request.unit]}</span>
+              {' · '}
+              {CATEGORY_LV[request.materialCategory]}
+            </p>
           </div>
         </div>
 
-        {/* Location / Route row */}
-        <div className="flex items-center gap-3 bg-slate-50/80 rounded-xl p-3 border border-slate-100/50">
-          <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-          <p className="text-sm text-slate-800 font-semibold truncate leading-none">
-            {request.deliveryCity}
-          </p>
-          {/* separator dot */}
-          <div className="h-1 w-1 rounded-full bg-slate-300 mx-1 shrink-0"></div>
-          <p className="text-sm text-slate-500 truncate leading-none">{request.deliveryAddress}</p>
-        </div>
-
-        {/* Meta info */}
-        <div className="flex items-center justify-between mt-1">
-          <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-slate-400">
-            ID: {request.requestNumber}
-          </span>
+        {/* Route */}
+        <div className="flex flex-col justify-center relative pl-8 sm:pl-0 sm:flex-1">
           <div className="flex items-center gap-3">
+            <div className="size-2.5 rounded-full border-2 border-foreground/30 shrink-0 bg-card z-10" />
+            <p className="text-[13px] text-foreground font-medium truncate leading-none">
+              {request.deliveryCity}
+            </p>
+          </div>
+          <div className="flex items-center gap-3 mt-4">
+            <div className="size-2.5 rounded-full bg-foreground shrink-0 z-10 ring-4 ring-card" />
+            <p className="text-[13px] text-muted-foreground truncate leading-none font-medium">
+              {request.deliveryAddress}
+            </p>
+          </div>
+          <div className="absolute w-0.5 bg-border/40 left-[0.27rem] top-3 bottom-3 z-0 group-hover:bg-border/60 transition-colors" />
+        </div>
+
+        {/* Status + arrow */}
+        <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0">
+          <div className="flex flex-col items-end gap-2">
+            <span
+              className={`inline-flex items-center rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${cfg.bg} ${cfg.color}`}
+            >
+              {cfg.label}
+            </span>
             {request.responses.length > 0 && (
-              <span className="text-xs font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
+              <span className="text-[11px] font-semibold text-muted-foreground">
                 {request.responses.length} piedāvājum{request.responses.length === 1 ? 's' : 'i'}
               </span>
             )}
-            <span className="text-xs font-medium text-slate-400">{fmtDate(request.createdAt)}</span>
-            <div className="h-6 w-6 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100">
-              {expanded ? (
-                <ChevronUp className="h-3 w-3 text-slate-600" />
-              ) : (
-                <ChevronDown className="h-3 w-3 text-slate-600" />
-              )}
-            </div>
+            <span className="text-[11px] text-muted-foreground/60 font-medium">
+              {fmtDate(request.createdAt)}
+            </span>
           </div>
+          <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground/60 transition-colors shrink-0" />
         </div>
       </div>
-
-      {/* Expanded Actions & Responses */}
-      {expanded && (
-        <div className="border-t border-slate-100 bg-slate-50/50">
-          {request.notes && (
-            <div className="px-5 pt-4 pb-0 text-sm text-slate-600">
-              <span className="font-semibold text-xs uppercase tracking-wider text-slate-400 block mb-1">
-                Piezīmes
-              </span>
-              &quot;{request.notes}&quot;
-            </div>
-          )}
-
-          <div className="p-4 space-y-3">
-            {request.responses.length === 0 ? (
-              <div className="py-8 text-center bg-white rounded-2xl border border-slate-200 border-dashed">
-                <Truck className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-                <p className="text-sm font-bold text-slate-700">Meklējam labākos pārvadātājus...</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Tiklīdz saņemsim cenas, tās parādīsies šeit.
-                </p>
-              </div>
-            ) : (
-              request.responses.map((resp) => (
-                <div
-                  key={resp.id}
-                  className={`p-4 rounded-2xl border transition-all ${
-                    resp.status === 'ACCEPTED'
-                      ? 'border-emerald-500 bg-emerald-50 shadow-sm relative overflow-hidden'
-                      : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
-                  }`}
-                >
-                  {resp.status === 'ACCEPTED' && (
-                    <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-bl-xl shrink-0 z-10 flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3" /> Izvēlēts
-                    </div>
-                  )}
-
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 bg-slate-100 border border-slate-200 rounded-full flex items-center justify-center shrink-0">
-                        <Truck className="h-5 w-5 text-slate-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                          {resp.supplier.name}
-                          {resp.supplier.rating && (
-                            <span className="flex items-center gap-0.5 text-xs bg-slate-100 rounded-full px-1.5 py-0.5 font-semibold text-slate-700 border border-slate-200">
-                              <Star className="h-3 w-3 text-amber-500 fill-amber-500" />{' '}
-                              {resp.supplier.rating.toFixed(1)}
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-xs font-medium text-slate-500 mt-1">
-                          Piegāde {resp.etaDays}d laikā
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between sm:justify-end gap-5">
-                      <div className="text-left sm:text-right">
-                        <p className="text-xl font-bold text-slate-900 leading-none">
-                          {fmtEur(resp.pricePerUnit)}
-                          <span className="text-sm font-medium text-slate-500">
-                            /{UNIT_LV[resp.unit]}
-                          </span>
-                        </p>
-                        <p className="text-xs text-slate-400 mt-1 uppercase font-semibold">
-                          Cena ar piegādi
-                        </p>
-                      </div>
-
-                      {resp.status !== 'ACCEPTED' &&
-                        (request.status === 'PENDING' || request.status === 'QUOTED') && (
-                          <Button
-                            onClick={() => handleAccept(resp.id)}
-                            disabled={accepting === resp.id}
-                            className="rounded-xl h-10 px-5 bg-black text-white hover:bg-slate-800 font-bold transition-all shadow-sm"
-                          >
-                            {accepting === resp.id ? 'Pieņem...' : 'Izvēlēties'}
-                          </Button>
-                        )}
-                    </div>
-                  </div>
-
-                  {resp.notes && (
-                    <div className="mt-3 bg-slate-50 rounded-lg p-3 text-xs text-slate-600 border border-slate-100">
-                      <span className="font-semibold block mb-0.5">Piegādātāja komentārs:</span>
-                      {resp.notes}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+    </button>
   );
 }
 
@@ -293,29 +173,19 @@ export default function QuoteRequestsPage() {
     load();
   }, [load]);
 
-  const handleAccept = async (requestId: string, responseId: string) => {
-    if (!token) return;
-    try {
-      const updated = await acceptQuoteResponse(requestId, responseId, token);
-      setRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Kļūda pieņemot piedāvājumu');
-    }
-  };
-
   const pending = requests.filter((r) => r.status === 'PENDING' || r.status === 'QUOTED').length;
   const accepted = requests.filter((r) => r.status === 'ACCEPTED').length;
 
   return (
-    <div className="w-full max-w-5xl mx-auto h-full pb-20 space-y-6 sm:space-y-8 px-4 sm:px-6 md:px-8 mt-4 sm:mt-8">
+    <div className="w-full max-w-5xl mx-auto h-full pb-20 space-y-8 px-4 sm:px-6 md:px-8 pt-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 border-b border-border/30 pb-6">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">
-            Cenu Pieprasījumi
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+            Cenu pieprasījumi
           </h1>
-          <p className="text-sm font-medium text-slate-500 mt-2 max-w-md">
-            Iegūsti labākos piedāvājumus no piegādātājiem visām vajadzībām.
+          <p className="text-[14px] font-medium text-muted-foreground mt-2 max-w-md">
+            Iegūsti labākos piedāvājumus no piegādātājiem.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -324,7 +194,7 @@ export default function QuoteRequestsPage() {
             size="sm"
             onClick={load}
             disabled={loading}
-            className="h-11 px-4 rounded-xl border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold shadow-sm"
+            className="h-10 px-4 rounded-lg border-border/60 bg-transparent hover:bg-muted/50 text-foreground font-semibold shadow-none text-[13px]"
           >
             <RefreshCw className={`h-4 w-4 sm:mr-2 ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Atjaunot</span>
@@ -332,9 +202,9 @@ export default function QuoteRequestsPage() {
           <Button
             size="sm"
             onClick={goToWizard}
-            className="h-11 px-5 rounded-xl bg-black text-white hover:bg-slate-800 font-bold shadow-md"
+            className="h-10 px-5 rounded-lg bg-foreground text-background hover:bg-foreground/90 font-semibold shadow-none text-[13px]"
           >
-            <Plus className="h-5 w-5 sm:mr-1.5" />
+            <Plus className="h-4 w-4 sm:mr-1.5" />
             <span className="hidden sm:inline">Jauns Pieprasījums</span>
             <span className="sm:hidden">Pieprasīt</span>
           </Button>
@@ -343,24 +213,24 @@ export default function QuoteRequestsPage() {
 
       {/* Stats */}
       {requests.length > 0 && !error && (
-        <div className="grid grid-cols-3 gap-3 sm:gap-5">
-          <div className="rounded-3xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm">
-            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400 mb-1">
+        <div className="flex flex-wrap gap-x-12 gap-y-5 pb-4 border-b border-border/20">
+          <div className="flex flex-col gap-0.5">
+            <p className="text-[12px] font-medium text-muted-foreground uppercase tracking-widest">
               Visi
             </p>
-            <p className="text-2xl sm:text-4xl font-bold text-slate-900">{requests.length}</p>
+            <p className="text-3xl font-medium text-foreground tracking-tight">{requests.length}</p>
           </div>
-          <div className="rounded-3xl border border-blue-100 bg-blue-50/50 p-4 sm:p-5 shadow-sm relative overflow-hidden">
-            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-blue-600/80 mb-1">
+          <div className="flex flex-col gap-0.5">
+            <p className="text-[12px] font-medium text-muted-foreground uppercase tracking-widest">
               Aktīvie
             </p>
-            <p className="text-2xl sm:text-4xl font-bold text-blue-700">{pending}</p>
+            <p className="text-3xl font-medium text-foreground tracking-tight">{pending}</p>
           </div>
-          <div className="rounded-3xl border border-emerald-100 bg-emerald-50/50 p-4 sm:p-5 shadow-sm">
-            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-emerald-600/80 mb-1">
+          <div className="flex flex-col gap-0.5">
+            <p className="text-[12px] font-medium text-muted-foreground uppercase tracking-widest">
               Izvēlētie
             </p>
-            <p className="text-2xl sm:text-4xl font-bold text-emerald-700">{accepted}</p>
+            <p className="text-3xl font-medium text-foreground tracking-tight">{accepted}</p>
           </div>
         </div>
       )}
@@ -368,41 +238,40 @@ export default function QuoteRequestsPage() {
       {loading ? (
         <PageSpinner className="h-64" />
       ) : error ? (
-        <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center shadow-sm">
-          <XCircle className="h-10 w-10 text-red-400 mx-auto mb-3" />
-          <p className="text-sm font-bold text-red-900">{error}</p>
+        <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-8 text-center shadow-sm">
+          <XCircle className="h-10 w-10 text-destructive/80 mx-auto mb-3" />
+          <p className="text-[14px] font-semibold text-destructive">{error}</p>
           <Button
             variant="outline"
-            className="mt-4 rounded-xl bg-white border-red-200 hover:bg-red-100 text-red-800 font-bold"
+            className="mt-5 rounded-lg bg-background border-destructive/30 hover:bg-destructive/10 text-destructive font-semibold h-9 px-4 text-[13px]"
             onClick={load}
           >
             Mēģināt vēlreiz
           </Button>
         </div>
       ) : requests.length === 0 ? (
-        <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-12 text-center flex flex-col items-center justify-center">
-          <div className="h-20 w-20 bg-white rounded-full shadow-sm flex items-center justify-center mb-5">
-            <Package className="h-10 w-10 text-slate-300" />
+        <div className="py-32 text-center flex flex-col items-center">
+          <div className="h-20 w-20 bg-muted/30 text-muted-foreground/30 rounded-full flex items-center justify-center mx-auto mb-6 border border-border/30">
+            <Package className="h-10 w-10" strokeWidth={1.5} />
           </div>
-          <h3 className="text-lg font-bold text-slate-900">Nav aktīvu pieprasījumu</h3>
-          <p className="mt-2 text-sm font-medium text-slate-500 max-w-sm">
-            Atlasiet materiālu, norādiet adresi un piegādes datumu — piegādātāji jūsu rajonā
-            atbildēs ar savām cenām.
+          <h2 className="text-2xl font-semibold text-foreground tracking-tight">
+            Nav neviena pieprasījuma
+          </h2>
+          <p className="text-[14.5px] text-muted-foreground mt-2 max-w-sm mx-auto">
+            Izveidojiet jaunu pieprasījumu, lai saņemtu labākos piedāvājumus.
           </p>
           <Button
-            className="mt-6 h-12 px-6 rounded-xl bg-black text-white hover:bg-slate-800 font-bold shadow-md"
             onClick={goToWizard}
+            className="mt-8 rounded-lg h-11 px-6 bg-foreground text-background font-semibold text-[14px] shadow-none hover:bg-foreground/90 mx-auto flex"
           >
-            <Plus className="h-5 w-5 mr-2" />
-            Pieprasīt Cenas
-            <ArrowRight className="h-4 w-4 ml-1.5" />
+            <Plus className="h-4 w-4 mr-2" />
+            Izveidot Pieprasījumu
           </Button>
-          <p className="mt-3 text-xs text-slate-400">Jūs tiksiet novirzīts uz materiālu katalogu</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:gap-5">
+        <div className="flex flex-col mt-4">
           {requests.map((r) => (
-            <RequestCard key={r.id} request={r} onAccept={handleAccept} />
+            <RequestCard key={r.id} request={r} />
           ))}
         </div>
       )}

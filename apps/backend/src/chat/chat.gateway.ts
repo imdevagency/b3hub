@@ -143,6 +143,51 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     void client.leave(`job:${data.jobId}`);
   }
 
+  /** Client emits this to start receiving messages for an order. */
+  @SubscribeMessage('joinOrder')
+  async handleJoinOrder(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { orderId: string },
+  ) {
+    if (!data?.orderId || typeof data.orderId !== 'string' || !/^[0-9a-f-]{36}$/i.test(data.orderId)) {
+      throw new WsException('orderId must be a valid UUID');
+    }
+
+    const userId = (client.data as Record<string, string>).userId;
+    if (!userId) throw new WsException('Not authenticated');
+
+    const order = await this.prisma.order.findUnique({
+      where: { id: data.orderId },
+      select: {
+        createdById: true,
+        items: { select: { material: { select: { supplierId: true } } } },
+      },
+    });
+    if (!order) throw new WsException('Order not found');
+
+    const isBuyer = order.createdById === userId;
+    const isSeller = order.items.some((i) => i.material?.supplierId === userId);
+
+    if (!isBuyer && !isSeller) throw new WsException('Access denied');
+
+    const room = `order:${data.orderId}`;
+    void client.join(room);
+    this.logger.debug(
+      `[WS] ${String((client.data as Record<string, string>).userId ?? 'unknown')} joined ${room}`,
+    );
+    return { ok: true, room };
+  }
+
+  /** Client emits this when navigating away from an order chat. */
+  @SubscribeMessage('leaveOrder')
+  handleLeaveOrder(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { orderId: string },
+  ) {
+    if (!data?.orderId || typeof data.orderId !== 'string' || !/^[0-9a-f-]{36}$/i.test(data.orderId)) return;
+    void client.leave(`order:${data.orderId}`);
+  }
+
   // ── Called by ChatService after persisting a message ──────────────────────
 
   broadcastMessage(
@@ -156,6 +201,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     },
   ) {
     this.server.to(`job:${jobId}`).emit('newMessage', message);
+  }
+
+  broadcastOrderMessage(
+    orderId: string,
+    message: {
+      id: string;
+      senderId: string;
+      senderName: string;
+      body: string;
+      createdAt: Date;
+    },
+  ) {
+    this.server.to(`order:${orderId}`).emit('newMessage', message);
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

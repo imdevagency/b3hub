@@ -600,6 +600,7 @@ model Order {
   payment         Payment?
   surcharges      OrderSurcharge[]
   dispute         Dispute?
+  chatMessages    ChatMessage[]    @relation("OrderChatMessages")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -819,6 +820,13 @@ model DeliveryProof {
 
   // Notes
   notes String?
+
+  // Structured checklist fields
+  loadCondition  String?  // 'FULL' | 'PARTIAL' | 'DAMAGED'
+  isPartialLoad  Boolean  @default(false)
+  hasDamage      Boolean  @default(false)
+  damageNote     String?
+  gradeConfirmed Boolean  @default(false)
 
   createdAt DateTime @default(now())
 
@@ -1408,8 +1416,11 @@ model Review {
 model ChatMessage {
   id String @id @default(cuid())
 
-  transportJob   TransportJob @relation(fields: [transportJobId], references: [id], onDelete: Cascade)
-  transportJobId String
+  transportJob   TransportJob? @relation(fields: [transportJobId], references: [id], onDelete: Cascade)
+  transportJobId String?
+
+  order   Order? @relation("OrderChatMessages", fields: [orderId], references: [id], onDelete: Cascade)
+  orderId String?
 
   sender   User   @relation(fields: [senderId], references: [id])
   senderId String
@@ -1421,6 +1432,7 @@ model ChatMessage {
   createdAt DateTime @default(now())
 
   @@index([transportJobId, createdAt])
+  @@index([orderId, createdAt])
   @@map("chat_messages")
 }
 
