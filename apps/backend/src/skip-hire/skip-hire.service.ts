@@ -313,6 +313,12 @@ export class SkipHireService {
       where: { id },
       data: { status: dto.status },
     });
+    // Release funds to carrier when order reaches terminal COMPLETED state
+    if (dto.status === SkipHireStatus.COMPLETED) {
+      this.payments.releaseSkipHireFunds(id).catch((err: Error) =>
+        this.logger.error(`Failed to release skip hire funds for order ${id}: ${err.message}`),
+      );
+    }
     if (existing.userId) {
       const label = SKIP_STATUS_LABEL[dto.status];
       if (label) {

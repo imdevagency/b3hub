@@ -19,7 +19,11 @@ export type NotificationType =
   | 'QUOTE_ACCEPTED'
   | 'SYSTEM_ALERT'
   | 'DOCUMENT_EXPIRING_SOON'
-  | 'WEIGHING_SLIP';
+  | 'WEIGHING_SLIP'
+  | 'DISPOSAL_ORDER_CREATED'
+  | 'DISPOSAL_ORDER_CONFIRMED'
+  | 'DISPOSAL_ORDER_CANCELLED'
+  | 'DISPOSAL_ORDER_COMPLETED';
 
 export interface AppNotification {
   id: string;

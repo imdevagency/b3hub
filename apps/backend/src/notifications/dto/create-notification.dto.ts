@@ -23,6 +23,7 @@ export enum NotificationType {
   INVOICE_OVERDUE = 'INVOICE_OVERDUE',   // invoice past due date
   WEIGHT_DISCREPANCY = 'WEIGHT_DISCREPANCY', // weighbridge weight differs >5% from ordered
   INVOICE_ADJUSTED = 'INVOICE_ADJUSTED', // invoice reconciled to actual weight
+  SURCHARGE_ADDED = 'SURCHARGE_ADDED',   // seller or driver added a billable surcharge
 }
 
 export class CreateNotificationDto {

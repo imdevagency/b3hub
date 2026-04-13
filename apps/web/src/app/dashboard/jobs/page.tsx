@@ -43,6 +43,7 @@ import {
   type CreateTransportJobInput,
 } from '@/lib/api';
 import { useAvailableJobs } from '@/hooks/use-available-jobs';
+import { CarrierHistoryView } from '../orders/page';
 import { API_URL } from '@/lib/api/common';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { CalendarDays, Users, CircleCheck } from 'lucide-react';
@@ -243,6 +244,7 @@ const LS_KEY = 'b3hub_web_saved_job_searches';
 export default function JobsPage() {
   const { user, token, isLoading } = useAuth();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'market' | 'history'>('market');
 
   const {
     jobs: apiJobs,
@@ -510,347 +512,381 @@ export default function JobsPage() {
         }
       />
 
-      {/* Collapsible filter panel */}
-      {panelOpen && (
-        <Card className="p-5 space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* From */}
-            <div className="space-y-2">
-              <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 ml-1">
-                Iekraušanas vieta
-              </Label>
-              <div className="flex bg-muted/60 border border-transparent hover:bg-muted/80 transition-colors rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-ring/20 focus-within:border-border focus-within:bg-background items-center relative">
-                <div className="pl-4 pr-1 flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-foreground"></div>
+      {/* Tab switcher */}
+      <div className="flex gap-1 bg-muted rounded-xl p-1">
+        <button
+          onClick={() => setActiveTab('market')}
+          className={`flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition-colors ${
+            activeTab === 'market'
+              ? 'bg-white shadow-sm text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Darbu Tirgus
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition-colors ${
+            activeTab === 'history'
+              ? 'bg-white shadow-sm text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Mani Darbi
+        </button>
+      </div>
+
+      {activeTab === 'history' && <CarrierHistoryView token={token!} />}
+
+      {activeTab === 'market' && (
+        <>
+          {/* Collapsible filter panel */}
+          {panelOpen && (
+            <Card className="p-5 space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* From */}
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 ml-1">
+                    Iekraušanas vieta
+                  </Label>
+                  <div className="flex bg-muted/60 border border-transparent hover:bg-muted/80 transition-colors rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-ring/20 focus-within:border-border focus-within:bg-background items-center relative">
+                    <div className="pl-4 pr-1 flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-foreground"></div>
+                    </div>
+                    <input
+                      type="text"
+                      value={draft.fromLocation}
+                      onChange={(e) => setDraft((d) => ({ ...d, fromLocation: e.target.value }))}
+                      placeholder="Pilsēta vai pasta indekss..."
+                      className="flex-1 bg-transparent px-2 py-3.5 text-[15px] outline-none placeholder:text-muted-foreground font-medium"
+                    />
+                    <div className="flex items-center border-l border-border/60 pr-2">
+                      <div className="relative flex items-center">
+                        <select
+                          value={draft.fromRadius}
+                          onChange={(e) =>
+                            setDraft((d) => ({ ...d, fromRadius: Number(e.target.value) }))
+                          }
+                          className="appearance-none bg-transparent pl-4 pr-8 py-3.5 text-sm font-semibold outline-none cursor-pointer text-foreground"
+                        >
+                          <option value={0}>+ 0 km</option>
+                          {RADIUS_OPTIONS.map((r) => (
+                            <option key={r} value={r}>
+                              + {r} km
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="h-4 w-4 absolute right-3 pointer-events-none text-muted-foreground" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <input
-                  type="text"
-                  value={draft.fromLocation}
-                  onChange={(e) => setDraft((d) => ({ ...d, fromLocation: e.target.value }))}
-                  placeholder="Pilsēta vai pasta indekss..."
-                  className="flex-1 bg-transparent px-2 py-3.5 text-[15px] outline-none placeholder:text-muted-foreground font-medium"
-                />
-                <div className="flex items-center border-l border-border/60 pr-2">
-                  <div className="relative flex items-center">
-                    <select
-                      value={draft.fromRadius}
-                      onChange={(e) =>
-                        setDraft((d) => ({ ...d, fromRadius: Number(e.target.value) }))
-                      }
-                      className="appearance-none bg-transparent pl-4 pr-8 py-3.5 text-sm font-semibold outline-none cursor-pointer text-foreground"
-                    >
-                      <option value={0}>+ 0 km</option>
-                      {RADIUS_OPTIONS.map((r) => (
-                        <option key={r} value={r}>
-                          + {r} km
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="h-4 w-4 absolute right-3 pointer-events-none text-muted-foreground" />
+
+                {/* To */}
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 ml-1">
+                    Izkraušanas vieta
+                  </Label>
+                  <div className="flex bg-muted/60 border border-transparent hover:bg-muted/80 transition-colors rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-ring/20 focus-within:border-border focus-within:bg-background items-center relative">
+                    <div className="pl-4 pr-1 flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-[1px] bg-foreground"></div>
+                    </div>
+                    <input
+                      type="text"
+                      value={draft.toLocation}
+                      onChange={(e) => setDraft((d) => ({ ...d, toLocation: e.target.value }))}
+                      placeholder="Pilsēta vai pasta indekss..."
+                      className="flex-1 bg-transparent px-2 py-3.5 text-[15px] outline-none placeholder:text-muted-foreground font-medium"
+                    />
+                    <div className="flex items-center border-l border-border/60 pr-2">
+                      <div className="relative flex items-center">
+                        <select
+                          value={draft.toRadius}
+                          onChange={(e) =>
+                            setDraft((d) => ({ ...d, toRadius: Number(e.target.value) }))
+                          }
+                          className="appearance-none bg-transparent pl-4 pr-8 py-3.5 text-sm font-semibold outline-none cursor-pointer text-foreground"
+                        >
+                          <option value={0}>+ 0 km</option>
+                          {RADIUS_OPTIONS.map((r) => (
+                            <option key={r} value={r}>
+                              + {r} km
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="h-4 w-4 absolute right-3 pointer-events-none text-muted-foreground" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* To */}
-            <div className="space-y-2">
-              <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 ml-1">
-                Izkraušanas vieta
-              </Label>
-              <div className="flex bg-muted/60 border border-transparent hover:bg-muted/80 transition-colors rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-ring/20 focus-within:border-border focus-within:bg-background items-center relative">
-                <div className="pl-4 pr-1 flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-[1px] bg-foreground"></div>
-                </div>
-                <input
-                  type="text"
-                  value={draft.toLocation}
-                  onChange={(e) => setDraft((d) => ({ ...d, toLocation: e.target.value }))}
-                  placeholder="Pilsēta vai pasta indekss..."
-                  className="flex-1 bg-transparent px-2 py-3.5 text-[15px] outline-none placeholder:text-muted-foreground font-medium"
-                />
-                <div className="flex items-center border-l border-border/60 pr-2">
-                  <div className="relative flex items-center">
-                    <select
-                      value={draft.toRadius}
-                      onChange={(e) =>
-                        setDraft((d) => ({ ...d, toRadius: Number(e.target.value) }))
-                      }
-                      className="appearance-none bg-transparent pl-4 pr-8 py-3.5 text-sm font-semibold outline-none cursor-pointer text-foreground"
-                    >
-                      <option value={0}>+ 0 km</option>
-                      {RADIUS_OPTIONS.map((r) => (
-                        <option key={r} value={r}>
-                          + {r} km
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="h-4 w-4 absolute right-3 pointer-events-none text-muted-foreground" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex flex-wrap items-center gap-3 pt-1 border-t">
-            <Button variant="outline" size="sm" onClick={handleReset}>
-              <X className="h-3.5 w-3.5 mr-1" />
-              Atiestatīt
-            </Button>
-            <Button size="sm" onClick={handleApply}>
-              Lietot filtru
-            </Button>
-            <div className="flex-1" />
-            {!showSaveInput ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const parts = [];
-                  if (draft.fromLocation) parts.push(draft.fromLocation);
-                  if (draft.toLocation) parts.push('→ ' + draft.toLocation);
-                  setSaveName(parts.join(' '));
-                  setShowSaveInput(true);
-                }}
-              >
-                <Bookmark className="h-3.5 w-3.5 mr-1.5" />
-                Saglabāt meklēšanu
-              </Button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Input
-                  value={saveName}
-                  onChange={(e) => setSaveName(e.target.value)}
-                  placeholder="Piem. Rīga → Jūrmala 50km"
-                  className="h-8 w-52 text-sm"
-                  onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-                  autoFocus
-                />
-                <Button size="sm" onClick={handleSave} disabled={!saveName.trim()}>
-                  Saglabāt
+              {/* Actions */}
+              <div className="flex flex-wrap items-center gap-3 pt-1 border-t">
+                <Button variant="outline" size="sm" onClick={handleReset}>
+                  <X className="h-3.5 w-3.5 mr-1" />
+                  Atiestatīt
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setShowSaveInput(false);
-                    setSaveName('');
-                  }}
-                >
-                  Atcelt
+                <Button size="sm" onClick={handleApply}>
+                  Lietot filtru
                 </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Save success toast */}
-          {saveSuccess && (
-            <p className="text-sm text-primary font-medium flex items-center gap-1.5">
-              <BookmarkCheck className="h-4 w-4" />
-              Meklēšana saglabāta!
-            </p>
-          )}
-
-          {/* Saved searches */}
-          {savedSearches.length > 0 && (
-            <div className="pt-2 border-t space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Saglabātās meklēšanas
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {savedSearches.map((s) => (
-                  <div
-                    key={s.id}
-                    className="flex items-center gap-1 bg-muted rounded-full pl-3 pr-1 py-1 border"
+                <div className="flex-1" />
+                {!showSaveInput ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const parts = [];
+                      if (draft.fromLocation) parts.push(draft.fromLocation);
+                      if (draft.toLocation) parts.push('→ ' + draft.toLocation);
+                      setSaveName(parts.join(' '));
+                      setShowSaveInput(true);
+                    }}
                   >
+                    <Bookmark className="h-3.5 w-3.5 mr-1.5" />
+                    Saglabāt meklēšanu
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={saveName}
+                      onChange={(e) => setSaveName(e.target.value)}
+                      placeholder="Piem. Rīga → Jūrmala 50km"
+                      className="h-8 w-52 text-sm"
+                      onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+                      autoFocus
+                    />
+                    <Button size="sm" onClick={handleSave} disabled={!saveName.trim()}>
+                      Saglabāt
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowSaveInput(false);
+                        setSaveName('');
+                      }}
+                    >
+                      Atcelt
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Save success toast */}
+              {saveSuccess && (
+                <p className="text-sm text-primary font-medium flex items-center gap-1.5">
+                  <BookmarkCheck className="h-4 w-4" />
+                  Meklēšana saglabāta!
+                </p>
+              )}
+
+              {/* Saved searches */}
+              {savedSearches.length > 0 && (
+                <div className="pt-2 border-t space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Saglabātās meklēšanas
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {savedSearches.map((s) => (
+                      <div
+                        key={s.id}
+                        className="flex items-center gap-1 bg-muted rounded-full pl-3 pr-1 py-1 border"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleApplySaved(s)}
+                          className="text-xs font-semibold text-foreground hover:text-primary transition-colors"
+                        >
+                          {s.name}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSavedSearches((prev) => prev.filter((x) => x.id !== s.id))
+                          }
+                          className="h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors ml-0.5"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Card>
+          )}
+
+          {/* Active filter pill */}
+          {activeFilter && !panelOpen && (
+            <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-4 py-2.5">
+              <span className="text-xs font-bold text-primary">Aktīvs filtrs:</span>
+              <span className="text-xs font-medium text-primary/80 flex-1">{filterLabel()}</span>
+              <button
+                type="button"
+                onClick={handleReset}
+                className="text-xs font-semibold text-primary bg-primary/15 hover:bg-primary/25 rounded px-2 py-0.5 transition-colors flex items-center gap-1"
+              >
+                <X className="h-3 w-3" />
+                Notīrīt
+              </button>
+            </div>
+          )}
+
+          {/* ── Single-column Feed ───────────────────────── */}
+          <div className="max-w-3xl mx-auto w-full">
+            <div className="flex flex-col gap-4 w-full">
+              {/* "Drive wherever you want" banner */}
+              {!activeFilter && !panelOpen && (
+                <div className="flex gap-4 bg-muted/40 border-none rounded-2xl p-5 shadow-none">
+                  <MapPin className="h-6 w-6 text-foreground shrink-0 mt-0.5" />
+                  <div className="flex-1 space-y-1">
+                    <p className="font-semibold tracking-tight text-foreground">
+                      Braukā kur vēlies
+                    </p>
+                    <p className="text-xs font-medium text-muted-foreground leading-relaxed">
+                      Iestati rādiusu, lai redzētu tikai tos maršrutus, kas ietilpst tavā darba
+                      zonā.
+                    </p>
                     <button
                       type="button"
-                      onClick={() => handleApplySaved(s)}
-                      className="text-xs font-semibold text-foreground hover:text-primary transition-colors"
+                      onClick={() => setPanelOpen(true)}
+                      className="mt-2 text-xs font-bold text-foreground hover:text-foreground/70 transition-colors uppercase tracking-widest inline-flex items-center"
                     >
-                      {s.name}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSavedSearches((prev) => prev.filter((x) => x.id !== s.id))}
-                      className="h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors ml-0.5"
-                    >
-                      <X className="h-3 w-3" />
+                      Iestatīt filtru →
                     </button>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </Card>
-      )}
+                </div>
+              )}
 
-      {/* Active filter pill */}
-      {activeFilter && !panelOpen && (
-        <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-4 py-2.5">
-          <span className="text-xs font-bold text-primary">Aktīvs filtrs:</span>
-          <span className="text-xs font-medium text-primary/80 flex-1">{filterLabel()}</span>
-          <button
-            type="button"
-            onClick={handleReset}
-            className="text-xs font-semibold text-primary bg-primary/15 hover:bg-primary/25 rounded px-2 py-0.5 transition-colors flex items-center gap-1"
-          >
-            <X className="h-3 w-3" />
-            Notīrīt
-          </button>
-        </div>
-      )}
-
-      {/* ── Single-column Feed ───────────────────────── */}
-      <div className="max-w-3xl mx-auto w-full">
-        <div className="flex flex-col gap-4 w-full">
-          {/* "Drive wherever you want" banner */}
-          {!activeFilter && !panelOpen && (
-            <div className="flex gap-4 bg-muted/40 border-none rounded-2xl p-5 shadow-none">
-              <MapPin className="h-6 w-6 text-foreground shrink-0 mt-0.5" />
-              <div className="flex-1 space-y-1">
-                <p className="font-semibold tracking-tight text-foreground">Braukā kur vēlies</p>
-                <p className="text-xs font-medium text-muted-foreground leading-relaxed">
-                  Iestati rādiusu, lai redzētu tikai tos maršrutus, kas ietilpst tavā darba zonā.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setPanelOpen(true)}
-                  className="mt-2 text-xs font-bold text-foreground hover:text-foreground/70 transition-colors uppercase tracking-widest inline-flex items-center"
-                >
-                  Iestatīt filtru →
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Job cards */}
-          {loadingJobs ? (
-            <PageSpinner />
-          ) : jobError ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
-              <AlertTriangle className="h-10 w-10 text-muted-foreground" />
-              <p className="text-base font-semibold text-foreground">Kļūda ielādējot darbus</p>
-              <p className="text-sm text-muted-foreground">{jobError}</p>
-              <Button variant="outline" size="sm" onClick={handleRefresh}>
-                Mēģināt vēlreiz
-              </Button>
-            </div>
-          ) : filteredJobs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
-              <Search className="h-10 w-10 text-muted-foreground" />
-              <p className="text-base font-semibold text-foreground">Nav atrasts neviens darbs</p>
-              <p className="text-sm text-muted-foreground">Mēģiniet mainīt filtra iestatījumus</p>
-              <Button variant="outline" size="sm" onClick={handleReset}>
-                Notīrīt filtru
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3 pb-4">
-              {filteredJobs.map((job) => (
-                <div
-                  key={job.id}
-                  className="group cursor-pointer relative overflow-hidden rounded-2xl bg-card p-5 transition-all hover:bg-muted/30 ring-1 ring-black/6 shadow-sm hover:ring-black/12 hover:shadow-md"
-                >
-                  {/* PRICE & META TOP ROW */}
-                  <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <h3 className="text-2xl font-semibold tracking-tight text-foreground">
-                        {job.priceTotal.toFixed(2)} {job.currency}
-                      </h3>
-                      <div className="flex flex-wrap items-center gap-1.5 mt-1 text-sm text-muted-foreground/80">
-                        <span>{job.distanceKm} km</span>
-                        <span>•</span>
-                        <span>
-                          {job.weightTonnes}t {job.payload}
-                        </span>
-                        {job.pricePerTonne > 0 && (
-                          <>
+              {/* Job cards */}
+              {loadingJobs ? (
+                <PageSpinner />
+              ) : jobError ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
+                  <AlertTriangle className="h-10 w-10 text-muted-foreground" />
+                  <p className="text-base font-semibold text-foreground">Kļūda ielādējot darbus</p>
+                  <p className="text-sm text-muted-foreground">{jobError}</p>
+                  <Button variant="outline" size="sm" onClick={handleRefresh}>
+                    Mēģināt vēlreiz
+                  </Button>
+                </div>
+              ) : filteredJobs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
+                  <Search className="h-10 w-10 text-muted-foreground" />
+                  <p className="text-base font-semibold text-foreground">
+                    Nav atrasts neviens darbs
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Mēģiniet mainīt filtra iestatījumus
+                  </p>
+                  <Button variant="outline" size="sm" onClick={handleReset}>
+                    Notīrīt filtru
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 pb-4">
+                  {filteredJobs.map((job) => (
+                    <div
+                      key={job.id}
+                      className="group cursor-pointer relative overflow-hidden rounded-2xl bg-card p-5 transition-all hover:bg-muted/30 ring-1 ring-black/6 shadow-sm hover:ring-black/12 hover:shadow-md"
+                    >
+                      {/* PRICE & META TOP ROW */}
+                      <div className="flex justify-between items-start mb-6">
+                        <div>
+                          <h3 className="text-2xl font-semibold tracking-tight text-foreground">
+                            {job.priceTotal.toFixed(2)} {job.currency}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1 text-sm text-muted-foreground/80">
+                            <span>{job.distanceKm} km</span>
                             <span>•</span>
                             <span>
-                              {job.pricePerTonne.toFixed(2)} {job.currency}/t
+                              {job.weightTonnes}t {job.payload}
                             </span>
-                          </>
+                            {job.pricePerTonne > 0 && (
+                              <>
+                                <span>•</span>
+                                <span>
+                                  {job.pricePerTonne.toFixed(2)} {job.currency}/t
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center bg-muted/50 text-muted-foreground px-3 py-1.5 rounded-full text-xs font-medium">
+                          {job.vehicleType}
+                        </div>
+                      </div>
+
+                      {/* ROUTE TIMELINE */}
+                      <div className="relative mt-2 mb-6 ml-1">
+                        {/* The connecting vertical line */}
+                        <div className="absolute left-[3.5px] top-4 bottom-4 w-px bg-foreground/20" />
+
+                        {/* Pickup */}
+                        <div className="relative flex gap-4 mb-5">
+                          <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-foreground z-10" />
+                          <div>
+                            <p className="font-medium text-foreground text-[15px] leading-tight">
+                              {job.fromCity}
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-0.5">
+                              {job.date} • {job.time}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Delivery */}
+                        <div className="relative flex gap-4">
+                          <div className="mt-1.5 h-2 w-2 shrink-0 bg-foreground z-10" />
+                          <div>
+                            <p className="font-medium text-foreground text-[15px] leading-tight">
+                              {job.toCity}
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1 pr-4">
+                              {job.toAddress}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ACTION FOOTER */}
+                      <div className="pt-2 flex gap-3 border-t border-border/40 mt-2">
+                        {user?.canTransport && user?.isCompany ? (
+                          // Company carrier — dispatcher assigns job to a specific driver + vehicle
+                          <Button
+                            className="w-full rounded-xl h-11.5 mt-4 text-[15px] font-medium bg-foreground text-background hover:bg-foreground/90 transition-all shadow-none"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDispatch(job);
+                            }}
+                          >
+                            Plānot darbu
+                          </Button>
+                        ) : (
+                          user?.canTransport &&
+                          !user?.isCompany && (
+                            // Independent owner-operator — can self-accept directly from web
+                            <Button
+                              className="w-full rounded-xl h-11.5 mt-4 text-[15px] font-medium bg-foreground text-background hover:bg-foreground/90 transition-all shadow-none"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAccept(job.id);
+                              }}
+                            >
+                              Pieņemt
+                            </Button>
+                          )
                         )}
                       </div>
-                      {job.buyerOfferedRate != null && job.buyerOfferedRate > 0 && (
-                        <div className="inline-flex items-center gap-1 mt-1.5 bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                          Piedāvā €{job.buyerOfferedRate.toFixed(2)}
-                        </div>
-                      )}
                     </div>
-                    <div className="flex items-center bg-muted/50 text-muted-foreground px-3 py-1.5 rounded-full text-xs font-medium">
-                      {job.vehicleType}
-                    </div>
-                  </div>
-
-                  {/* ROUTE TIMELINE */}
-                  <div className="relative mt-2 mb-6 ml-1">
-                    {/* The connecting vertical line */}
-                    <div className="absolute left-[3.5px] top-4 bottom-4 w-px bg-foreground/20" />
-
-                    {/* Pickup */}
-                    <div className="relative flex gap-4 mb-5">
-                      <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-foreground z-10" />
-                      <div>
-                        <p className="font-medium text-foreground text-[15px] leading-tight">
-                          {job.fromCity}
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                          {job.date} • {job.time}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Delivery */}
-                    <div className="relative flex gap-4">
-                      <div className="mt-1.5 h-2 w-2 shrink-0 bg-foreground z-10" />
-                      <div>
-                        <p className="font-medium text-foreground text-[15px] leading-tight">
-                          {job.toCity}
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1 pr-4">
-                          {job.toAddress}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ACTION FOOTER */}
-                  <div className="pt-2 flex gap-3 border-t border-border/40 mt-2">
-                    {user?.canTransport && user?.isCompany ? (
-                      // Company carrier — dispatcher assigns job to a specific driver + vehicle
-                      <Button
-                        className="w-full rounded-xl h-11.5 mt-4 text-[15px] font-medium bg-foreground text-background hover:bg-foreground/90 transition-all shadow-none"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openDispatch(job);
-                        }}
-                      >
-                        Plānot darbu
-                      </Button>
-                    ) : (
-                      user?.canTransport &&
-                      !user?.isCompany && (
-                        // Independent owner-operator — can self-accept directly from web
-                        <Button
-                          className="w-full rounded-xl h-11.5 mt-4 text-[15px] font-medium bg-foreground text-background hover:bg-foreground/90 transition-all shadow-none"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAccept(job.id);
-                          }}
-                        >
-                          Pieņemt
-                        </Button>
-                      )
-                    )}
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
 
       {/* ── Dispatch Sheet ─────────────────────────────────────────────────── */}
       <Sheet open={!!dispatchJob} onOpenChange={(o) => !o && setDispatchJob(null)}>

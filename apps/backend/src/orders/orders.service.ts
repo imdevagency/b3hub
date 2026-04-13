@@ -412,6 +412,8 @@ export class OrdersService {
         deliveryCity: orderData.deliveryCity,
         deliveryState: orderData.deliveryState ?? '',
         deliveryPostal: orderData.deliveryPostal ?? '',
+        deliveryLat: orderData.deliveryLat ?? null,
+        deliveryLng: orderData.deliveryLng ?? null,
         deliveryDate: orderData.deliveryDate
           ? new Date(orderData.deliveryDate)
           : undefined,
@@ -478,16 +480,6 @@ export class OrdersService {
           })),
         })
         .catch(() => null);
-    }
-
-    // Auto-create transport job (fire-and-forget, non-fatal)
-    if (orderData.orderType === OrderType.MATERIAL && items.length > 0) {
-      this.spawnTransportJob(order.id, items, orderData, total).catch((err) => {
-        this.logger.error(
-          `Failed to auto-create transport job for order ${order.id}:`,
-          err,
-        );
-      });
     }
 
     // Notify sellers (fire-and-forget)
@@ -876,6 +868,17 @@ export class OrdersService {
           err,
         );
       }
+    }
+
+    // Spawn transport job(s) when seller confirms (MATERIAL orders only).
+    // Transport jobs appear on the driver board only after the supplier is ready to load.
+    if (status === OrderStatus.CONFIRMED && order.orderType === OrderType.MATERIAL) {
+      this.spawnTransportJobFromOrder(id).catch((err) => {
+        this.logger.error(
+          `spawnTransportJobFromOrder failed for order ${id}:`,
+          err,
+        );
+      });
     }
 
     // Capture payment when seller confirms the order (fire-and-forget, non-fatal).
@@ -1342,6 +1345,38 @@ export class OrdersService {
     return this.prisma.order.findUniqueOrThrow({ where: { id } });
   }
 
+  /**
+   * Buyer explicitly confirms they received the goods, transitioning the order
+   * from DELIVERED → COMPLETED and triggering seller/driver fund release.
+   * Blocked if an open dispute is in progress.
+   */
+  async confirmReceipt(id: string, currentUser: RequestingUser) {
+    const order = await this.findOne(id, currentUser);
+
+    if (order.createdById !== currentUser.userId && currentUser.userType !== 'ADMIN') {
+      throw new ForbiddenException('Only the buyer who placed this order can confirm receipt');
+    }
+
+    if (order.status !== OrderStatus.DELIVERED) {
+      throw new BadRequestException(
+        `Cannot confirm receipt for an order in status ${order.status}`,
+      );
+    }
+
+    // Block if there's an open dispute — must be resolved first
+    const openDispute = await this.prisma.dispute.findFirst({
+      where: { orderId: id, status: { in: ['OPEN', 'UNDER_REVIEW'] } },
+      select: { id: true },
+    });
+    if (openDispute) {
+      throw new BadRequestException(
+        'Cannot confirm receipt while an open dispute is pending. Resolve the dispute first.',
+      );
+    }
+
+    return this.updateStatus(id, OrderStatus.COMPLETED);
+  }
+
   async cancel(id: string, currentUser: RequestingUser) {
     const order = await this.findOne(id, currentUser);
 
@@ -1511,8 +1546,9 @@ export class OrdersService {
     const { userId, canSell, canTransport, companyId } = currentUser;
 
     // ── Always compute buyer section ──────────────────────────────────────────
-    const [activeOrders, awaitingDelivery, skipHireOrders, documents] =
+    const [activeOrders, awaitingDelivery, totalMatOrders, skipHireOrders, transportJobs, documents] =
       await Promise.all([
+        // Active = orders being processed (not yet dispatched)
         this.prisma.order.count({
           where: {
             createdById: userId,
@@ -1525,17 +1561,20 @@ export class OrdersService {
             },
           },
         }),
+        // Awaiting delivery = confirmed by seller, truck en-route but not yet arrived
         this.prisma.order.count({
-          where: { createdById: userId, status: OrderStatus.DELIVERED },
+          where: { createdById: userId, status: OrderStatus.CONFIRMED },
         }),
+        this.prisma.order.count({ where: { createdById: userId } }),
         this.prisma.skipHireOrder.count({ where: { userId } }),
+        this.prisma.transportJob.count({ where: { requestedById: userId } }),
         this.prisma.document.count({ where: { ownerId: userId } }),
       ]);
 
     const buyer = {
       activeOrders,
       awaitingDelivery,
-      myOrders: skipHireOrders,
+      myOrders: totalMatOrders + skipHireOrders + transportJobs,
       documents,
     };
 
@@ -1675,84 +1714,97 @@ export class OrdersService {
    * Pickup address = first item's supplier company address.
    * All jobs are immediately AVAILABLE on the driver job board.
    */
-  private async spawnTransportJob(
-    orderId: string,
-    items: CreateOrderDto['items'],
-    orderData: Omit<CreateOrderDto, 'items'>,
-    orderTotal: number,
-  ): Promise<void> {
-    const firstMaterial = await this.prisma.material.findUnique({
-      where: { id: items[0].materialId },
+  /**
+   * Spawns transport job(s) for a MATERIAL order using persisted order data.
+   * Called when the order transitions to CONFIRMED (seller has loaded/accepted),
+   * so the job appears on the driver board only after the supplier is ready.
+   *
+   * Unlike `spawnTransportJob`, this reads everything it needs from the DB so
+   * it can be called outside the original creation flow.
+   */
+  private async spawnTransportJobFromOrder(orderId: string): Promise<void> {
+    // Guard: skip if transport jobs already exist for this order
+    const existing = await this.prisma.transportJob.findFirst({
+      where: { orderId },
+      select: { id: true },
+    });
+    if (existing) {
+      this.logger.warn(
+        `spawnTransportJobFromOrder: jobs already exist for order ${orderId}, skipping`,
+      );
+      return;
+    }
+
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
       include: {
-        supplier: {
+        items: {
           select: {
-            name: true,
-            street: true,
-            city: true,
-            state: true,
-            postalCode: true,
-            lat: true,
-            lng: true,
+            quantity: true,
+            material: {
+              select: {
+                id: true,
+                name: true,
+                supplier: {
+                  select: {
+                    name: true,
+                    street: true,
+                    city: true,
+                    state: true,
+                    postalCode: true,
+                    lat: true,
+                    lng: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
     });
 
-    if (!firstMaterial?.supplier) {
+    if (!order || order.orderType !== OrderType.MATERIAL || order.items.length === 0) return;
+
+    const firstItem = order.items[0];
+    if (!firstItem.material?.supplier) {
       this.logger.warn(
-        `Could not find supplier for material ${items[0].materialId} — transport job skipped`,
+        `spawnTransportJobFromOrder: no supplier found for order ${orderId} — transport job skipped`,
       );
       return;
     }
 
-    const totalWeight = items.reduce((sum, item) => sum + item.quantity, 0);
-    const cargoType = firstMaterial.name;
-    const baseDate = orderData.deliveryDate
-      ? new Date(orderData.deliveryDate)
-      : new Date();
+    const supplier = firstItem.material.supplier;
+    const totalWeight = order.items.reduce((sum, i) => sum + i.quantity, 0);
+    const cargoType = firstItem.material.name;
+    const baseDate = order.deliveryDate ? new Date(order.deliveryDate) : new Date();
 
-    const truckCount = Math.max(1, orderData.truckCount ?? 1);
-    const intervalMs = (orderData.truckIntervalMinutes ?? 60) * 60 * 1000;
-    // Distribute weight equally across trucks
+    const truckCount = Math.max(1, order.truckCount ?? 1);
+    const intervalMs = (order.truckIntervalMinutes ?? 60) * 60 * 1000;
     const weightPerTruck = totalWeight / truckCount;
 
-    // Calculate distance and driver rate from coordinates when available.
-    // Fallback to the buyer-provided deliveryFee divided by trucks.
-    const DELIVERY_RATE_EUR_PER_KM = 1.2;
+    // Calculate straight-line distance using haversine if both ends have coordinates
     let distanceKm: number | null = null;
-    const suppLat = firstMaterial.supplier.lat;
-    const suppLng = firstMaterial.supplier.lng;
     if (
-      suppLat != null &&
-      suppLng != null &&
-      orderData.deliveryLat != null &&
-      orderData.deliveryLng != null
+      supplier.lat != null &&
+      supplier.lng != null &&
+      order.deliveryLat != null &&
+      order.deliveryLng != null
     ) {
-      const R = 6371;
-      const dLat =
-        ((orderData.deliveryLat - suppLat) * Math.PI) / 180;
-      const dLng =
-        ((orderData.deliveryLng - suppLng) * Math.PI) / 180;
+      const R = 6371; // Earth radius in km
+      const dLat = ((order.deliveryLat - supplier.lat) * Math.PI) / 180;
+      const dLng = ((order.deliveryLng - supplier.lng) * Math.PI) / 180;
       const a =
         Math.sin(dLat / 2) ** 2 +
-        Math.cos((suppLat * Math.PI) / 180) *
-          Math.cos((orderData.deliveryLat * Math.PI) / 180) *
+        Math.cos((supplier.lat * Math.PI) / 180) *
+          Math.cos((order.deliveryLat * Math.PI) / 180) *
           Math.sin(dLng / 2) ** 2;
-      distanceKm = Math.round(
-        R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)),
-      );
+      distanceKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
-    const calculatedFee =
-      distanceKm != null
-        ? Math.round(distanceKm * DELIVERY_RATE_EUR_PER_KM * 100) / 100
-        : 0;
-    // Use buyer-supplied fee when it's non-zero; otherwise fall back to
-    // the haversine estimate so drivers never see €0 on the job board.
-    const effectiveFee =
-      (orderData.deliveryFee ?? 0) > 0
-        ? orderData.deliveryFee!
-        : calculatedFee;
+
+    const effectiveFee = (order.deliveryFee ?? 0) > 0 ? order.deliveryFee : 0;
     const driverRate = effectiveFee / truckCount;
+    // pricePerTonne = driver rate for this truck ÷ tonnes per truck
+    const pricePerTonne = weightPerTruck > 0 ? driverRate / weightPerTruck : null;
 
     for (let i = 0; i < truckCount; i++) {
       const jobNumber = this.generateTransportJobNumber();
@@ -1763,41 +1815,36 @@ export class OrdersService {
           jobNumber,
           jobType: TransportJobType.MATERIAL_DELIVERY,
           orderId,
-          pickupAddress: firstMaterial.supplier.street,
-          pickupCity: firstMaterial.supplier.city,
-          pickupState: firstMaterial.supplier.state ?? '',
-          pickupPostal: firstMaterial.supplier.postalCode ?? '',
+          pickupAddress: supplier.street,
+          pickupCity: supplier.city,
+          pickupState: supplier.state ?? '',
+          pickupPostal: supplier.postalCode ?? '',
           pickupDate,
-          deliveryAddress: orderData.deliveryAddress,
-          deliveryCity: orderData.deliveryCity,
-          deliveryState: orderData.deliveryState ?? '',
-          deliveryPostal: orderData.deliveryPostal ?? '',
+          deliveryAddress: order.deliveryAddress,
+          deliveryCity: order.deliveryCity,
+          deliveryState: order.deliveryState ?? '',
+          deliveryPostal: order.deliveryPostal ?? '',
           deliveryDate: pickupDate,
           cargoType,
           cargoWeight: weightPerTruck,
           rate: driverRate,
+          pricePerTonne: pricePerTonne ?? undefined,
           currency: 'EUR',
           status: TransportJobStatus.AVAILABLE,
           ...(truckCount > 1 ? { truckIndex: i + 1 } : {}),
-          // Geo coordinates for map display and radius filtering
-          ...(suppLat != null && suppLng != null
-            ? { pickupLat: suppLat, pickupLng: suppLng }
+          ...(supplier.lat != null && supplier.lng != null
+            ? { pickupLat: supplier.lat, pickupLng: supplier.lng }
             : {}),
-          ...(orderData.deliveryLat != null && orderData.deliveryLng != null
-            ? {
-                deliveryLat: orderData.deliveryLat,
-                deliveryLng: orderData.deliveryLng,
-              }
+          ...(order.deliveryLat != null && order.deliveryLng != null
+            ? { deliveryLat: order.deliveryLat, deliveryLng: order.deliveryLng }
             : {}),
           ...(distanceKm != null ? { distanceKm } : {}),
         },
       });
 
       this.logger.log(
-        `Transport job ${jobNumber} created for order ${orderId} — truck ${
-          i + 1
-        }/${truckCount}` +
-          ` (pickup: ${firstMaterial.supplier.city} → delivery: ${orderData.deliveryCity}` +
+        `Transport job ${jobNumber} spawned on CONFIRMED for order ${orderId} — truck ${i + 1}/${truckCount}` +
+          ` (pickup: ${supplier.city} → delivery: ${order.deliveryCity}` +
           (truckCount > 1 ? `, departure: ${pickupDate.toISOString()}` : '') +
           `)`,
       );
@@ -1845,6 +1892,7 @@ export class OrdersService {
         city: true,
         state: true,
         postalCode: true,
+        coordinates: true,
       },
     });
 
@@ -1858,6 +1906,9 @@ export class OrdersService {
     const deliveryCity = center.city;
     const deliveryState = center.state ?? '';
     const deliveryPostal = center.postalCode ?? '';
+    const centerCoords = center.coordinates as { lat?: number; lng?: number } | null;
+    const deliveryLat = centerCoords?.lat ?? null;
+    const deliveryLng = centerCoords?.lng ?? null;
 
     const job = await this.prisma.transportJob.create({
       data: {
@@ -1875,6 +1926,8 @@ export class OrdersService {
         deliveryCity,
         deliveryState,
         deliveryPostal,
+        deliveryLat,
+        deliveryLng,
         deliveryDate: pickupDate,
         cargoType: dto.wasteType,
         cargoWeight: totalWeight,
@@ -2055,6 +2108,17 @@ export class OrdersService {
       });
       const newTotal = order.total + (allBillable._sum.amount ?? 0);
       await this.payments.updatePaymentIntentAmount(order.id, newTotal);
+
+      // Notify buyer that the order amount has changed
+      this.notifications
+        .create({
+          userId: order.createdById,
+          type: NotificationType.SURCHARGE_ADDED,
+          title: '⚠️ Pasūtījuma summa mainīta',
+          message: `Pasūtījumam #${order.orderNumber} pievienota papildu maksa: ${dto.label} — €${dto.amount.toFixed(2)}.`,
+          data: { orderId: order.id, surchargeId: surcharge.id },
+        })
+        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
     }
 
     return surcharge;
@@ -2358,6 +2422,8 @@ export class OrdersService {
         siteContactName: dto.siteContactName,
         siteContactPhone: dto.siteContactPhone,
         projectId: dto.projectId,
+        deliveryLat: dto.deliveryLat ?? null,
+        deliveryLng: dto.deliveryLng ?? null,
         itemsSnapshot: dto.items as object,
         intervalDays: dto.intervalDays,
         nextRunAt,
@@ -2479,6 +2545,8 @@ export class OrdersService {
           siteContactName: schedule.siteContactName ?? undefined,
           siteContactPhone: schedule.siteContactPhone ?? undefined,
           projectId: schedule.projectId ?? undefined,
+          deliveryLat: schedule.deliveryLat ?? undefined,
+          deliveryLng: schedule.deliveryLng ?? undefined,
           items: items.map((i) => ({
             materialId: i.materialId,
             quantity: i.quantity,

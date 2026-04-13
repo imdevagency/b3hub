@@ -1,24 +1,144 @@
 /**
  * Chat page — /dashboard/chat
  * Conversation list sidebar + message thread view for in-app messaging.
+ * Supports both transport-job chat and material-order chat.
  */
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useChat } from '@/lib/use-chat';
 import { getMyTransportJobs, type ApiTransportJob } from '@/lib/api';
+import { getMyOrders, type ApiOrder } from '@/lib/api/orders';
+import { getOrderChatMessages, sendOrderChatMessage, type ChatMessage } from '@/lib/api/chat';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Send, Wifi, WifiOff } from 'lucide-react';
+import { MessageSquare, Send, Wifi, WifiOff, Truck, Package } from 'lucide-react';
+
+type ConversationType = 'job' | 'order';
+
+// ── Order chat thread (HTTP polling — no WS room for orders yet) ──────────────
+
+function OrderChatThread({
+  orderId,
+  token,
+  userId,
+}: {
+  orderId: string;
+  token: string;
+  userId: string;
+}) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const load = useCallback(() => {
+    getOrderChatMessages(orderId, token)
+      .then(setMessages)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [orderId, token]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Poll every 8 s for new messages
+  useEffect(() => {
+    const id = setInterval(load, 8000);
+    return () => clearInterval(id);
+  }, [load]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+    const text = input;
+    setInput('');
+    setSending(true);
+    try {
+      const msg = await sendOrderChatMessage(orderId, text, token);
+      setMessages((prev) => [...prev, msg]);
+    } catch {
+      setInput(text);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {loading ? (
+          <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+            Ielādē ziņojumus...
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+            Nav ziņojumu. Uzsāciet sarunu ar piegādātāju.
+          </div>
+        ) : (
+          messages.map((msg) => {
+            const isMe = msg.senderId === userId;
+            return (
+              <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                <div
+                  className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${isMe ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted rounded-bl-sm'}`}
+                >
+                  {!isMe && (
+                    <p className="text-xs font-semibold mb-1 opacity-70">{msg.senderName}</p>
+                  )}
+                  <p className="leading-relaxed">{msg.body}</p>
+                  <p className="text-xs mt-1 opacity-60 text-right">
+                    {new Date(msg.createdAt).toLocaleTimeString('lv-LV', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+              </div>
+            );
+          })
+        )}
+        <div ref={bottomRef} />
+      </div>
+      <div className="flex items-center gap-2 p-3 border-t border-border">
+        <input
+          className="flex-1 bg-muted rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground"
+          placeholder="Rakstiet ziņojumu piegādātājam..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
+          disabled={sending}
+        />
+        <Button size="icon" onClick={handleSend} disabled={!input.trim() || sending}>
+          <Send className="h-4 w-4" />
+        </Button>
+      </div>
+    </>
+  );
+}
+
+// ── Main page ──────────────────────────────────────────────────────────────────
 
 export default function ChatPage() {
   const { user, token } = useAuth();
   const [jobs, setJobs] = useState<ApiTransportJob[]>([]);
+  const [orders, setOrders] = useState<ApiOrder[]>([]);
+  const [convType, setConvType] = useState<ConversationType>('job');
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Load transport jobs for job selector
   useEffect(() => {
     if (!token) return;
     getMyTransportJobs(token)
@@ -39,15 +159,23 @@ export default function ChatPage() {
         if (active.length > 0) setSelectedJobId(active[0].id);
       })
       .catch(() => {});
+
+    getMyOrders(token)
+      .then((data) => {
+        const active = data.filter((o) =>
+          ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'DELIVERED'].includes(o.status),
+        );
+        setOrders(active);
+      })
+      .catch(() => {});
   }, [token]);
 
   const { messages, loading, connected, sending, sendMessage } = useChat({
-    jobId: selectedJobId ?? '',
+    jobId: convType === 'job' ? (selectedJobId ?? '') : '',
     token,
     currentUser: user ? { id: user.id, firstName: user.firstName, lastName: user.lastName } : null,
   });
 
-  // Auto-scroll on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -64,34 +192,74 @@ export default function ChatPage() {
   };
 
   const selectedJob = jobs.find((j) => j.id === selectedJobId);
+  const selectedOrder = orders.find((o) => o.id === selectedOrderId);
 
   return (
     <div className="flex h-[calc(100vh-4rem)] gap-4 p-6 overflow-hidden">
-      {/* Job list */}
+      {/* Sidebar */}
       <div className="w-64 shrink-0 flex flex-col gap-2">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-          Transporta Darbi
-        </h2>
-        {jobs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nav aktīvu darbu</p>
-        ) : (
-          jobs.map((job) => (
+        {/* Type toggle */}
+        <div className="flex gap-1 bg-muted/50 rounded-xl p-1 mb-2">
+          {(
+            [
+              ['job', 'Transports', Truck],
+              ['order', 'Pasūtījumi', Package],
+            ] as const
+          ).map(([type, label, Icon]) => (
             <button
-              key={job.id}
-              onClick={() => setSelectedJobId(job.id)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm border transition-colors ${
-                selectedJobId === job.id
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-card border-border hover:bg-muted'
-              }`}
+              key={type}
+              onClick={() => setConvType(type)}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${convType === type ? 'bg-background shadow-xs text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
             >
-              <p className="font-medium truncate">
-                {job.pickupAddress?.split(',')[0] ?? 'Pickup'} →{' '}
-                {job.deliveryAddress?.split(',')[0] ?? 'Delivery'}
-              </p>
-              <p className="text-xs opacity-70 mt-0.5">{job.status}</p>
+              <Icon className="h-3.5 w-3.5" />
+              {label}
             </button>
-          ))
+          ))}
+        </div>
+
+        {convType === 'job' ? (
+          <>
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+              Transporta Darbi
+            </h2>
+            {jobs.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nav aktīvu darbu</p>
+            ) : (
+              jobs.map((job) => (
+                <button
+                  key={job.id}
+                  onClick={() => setSelectedJobId(job.id)}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm border transition-colors ${selectedJobId === job.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border hover:bg-muted'}`}
+                >
+                  <p className="font-medium truncate">
+                    {job.pickupAddress?.split(',')[0] ?? 'Pickup'} →{' '}
+                    {job.deliveryAddress?.split(',')[0] ?? 'Delivery'}
+                  </p>
+                  <p className="text-xs opacity-70 mt-0.5">{job.status}</p>
+                </button>
+              ))
+            )}
+          </>
+        ) : (
+          <>
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+              Materiālu Pasūtījumi
+            </h2>
+            {orders.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nav aktīvu pasūtījumu</p>
+            ) : (
+              orders.map((order) => (
+                <button
+                  key={order.id}
+                  onClick={() => setSelectedOrderId(order.id)}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm border transition-colors ${selectedOrderId === order.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border hover:bg-muted'}`}
+                >
+                  <p className="font-medium truncate">#{order.orderNumber}</p>
+                  <p className="text-xs opacity-70 mt-0.5">{order.status}</p>
+                </button>
+              ))
+            )}
+          </>
         )}
       </div>
 
@@ -101,91 +269,101 @@ export default function ChatPage() {
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
           <MessageSquare className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">
-            {selectedJob
-              ? `${selectedJob.pickupAddress?.split(',')[0] ?? ''} → ${selectedJob.deliveryAddress?.split(',')[0] ?? ''}`
-              : 'Izvēlieties darbu'}
+            {convType === 'job'
+              ? selectedJob
+                ? `${selectedJob.pickupAddress?.split(',')[0] ?? ''} → ${selectedJob.deliveryAddress?.split(',')[0] ?? ''}`
+                : 'Izvēlieties darbu'
+              : selectedOrder
+                ? `Pasūtījums #${selectedOrder.orderNumber}`
+                : 'Izvēlieties pasūtījumu'}
           </span>
-          <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
-            {connected ? (
-              <>
-                <Wifi className="h-3 w-3 text-green-500" /> Savienots
-              </>
-            ) : (
-              <>
-                <WifiOff className="h-3 w-3 text-red-400" /> Nesavienots
-              </>
-            )}
-          </div>
+          {convType === 'job' && (
+            <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
+              {connected ? (
+                <>
+                  <Wifi className="h-3 w-3 text-green-500" /> Savienots
+                </>
+              ) : (
+                <>
+                  <WifiOff className="h-3 w-3 text-red-400" /> Nesavienots
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {!selectedJobId ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-              Izvēlieties transporta darbu, lai sāktu čatu
-            </div>
-          ) : loading ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-              Ielādē ziņojumus...
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-              Šajā darbā vēl nav ziņojumu
-            </div>
-          ) : (
-            messages.map((msg) => {
-              const isMe = msg.senderId === user?.id;
-              return (
-                <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                  <div
-                    className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${
-                      isMe
-                        ? 'bg-primary text-primary-foreground rounded-br-sm'
-                        : 'bg-muted rounded-bl-sm'
-                    }`}
-                  >
-                    {!isMe && (
-                      <p className="text-xs font-semibold mb-1 opacity-70">{msg.senderName}</p>
-                    )}
-                    <p className="leading-relaxed">{msg.body}</p>
-                    <p className={`text-xs mt-1 opacity-60 text-right`}>
-                      {new Date(msg.createdAt).toLocaleTimeString('lv-LV', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  </div>
-                </div>
-              );
-            })
-          )}
-          <div ref={bottomRef} />
-        </div>
-
-        {/* Input */}
-        {selectedJobId && (
-          <div className="flex items-center gap-2 p-3 border-t border-border">
-            <input
-              className="flex-1 bg-muted rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground"
-              placeholder="Rakstiet ziņojumu..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              disabled={!connected}
-            />
-            <Button
-              size="icon"
-              onClick={handleSend}
-              disabled={!input.trim() || !connected || sending}
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+        {convType === 'order' && selectedOrderId && token && user ? (
+          <OrderChatThread orderId={selectedOrderId} token={token} userId={user.id} />
+        ) : convType === 'order' ? (
+          <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+            Izvēlieties pasūtījumu, lai sāktu čatu
           </div>
+        ) : (
+          <>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {!selectedJobId ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                  Izvēlieties transporta darbu, lai sāktu čatu
+                </div>
+              ) : loading ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                  Ielādē ziņojumus...
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                  Šajā darbā vēl nav ziņojumu
+                </div>
+              ) : (
+                messages.map((msg) => {
+                  const isMe = msg.senderId === user?.id;
+                  return (
+                    <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                      <div
+                        className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${isMe ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted rounded-bl-sm'}`}
+                      >
+                        {!isMe && (
+                          <p className="text-xs font-semibold mb-1 opacity-70">{msg.senderName}</p>
+                        )}
+                        <p className="leading-relaxed">{msg.body}</p>
+                        <p className="text-xs mt-1 opacity-60 text-right">
+                          {new Date(msg.createdAt).toLocaleTimeString('lv-LV', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={bottomRef} />
+            </div>
+            {selectedJobId && (
+              <div className="flex items-center gap-2 p-3 border-t border-border">
+                <input
+                  className="flex-1 bg-muted rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground"
+                  placeholder="Rakstiet ziņojumu..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  disabled={!connected}
+                />
+                <Button
+                  size="icon"
+                  onClick={handleSend}
+                  disabled={!input.trim() || !connected || sending}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

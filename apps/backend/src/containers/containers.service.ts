@@ -19,6 +19,15 @@ import {
   PaymentStatus,
   Prisma,
 } from '@prisma/client';
+
+/** Maps ContainerOrderStatus transitions → parent Order.status */
+const CONTAINER_TO_ORDER_STATUS: Partial<Record<ContainerOrderStatus, OrderStatus>> = {
+  [ContainerOrderStatus.DELIVERED]: OrderStatus.CONFIRMED,
+  [ContainerOrderStatus.IN_USE]: OrderStatus.IN_PROGRESS,
+  [ContainerOrderStatus.PICKED_UP]: OrderStatus.DELIVERED,
+  [ContainerOrderStatus.COMPLETED]: OrderStatus.COMPLETED,
+  [ContainerOrderStatus.CANCELLED]: OrderStatus.CANCELLED,
+};
 import { CreateContainerDto } from './dto/create-container.dto';
 import { UpdateContainerDto } from './dto/update-container.dto';
 import { QueryContainersDto } from './dto/query-containers.dto';
@@ -198,6 +207,8 @@ export class ContainersService {
         deliveryCity: dto.deliveryCity,
         deliveryState: '',
         deliveryPostal: '',
+        deliveryLat: dto.deliveryLat ?? null,
+        deliveryLng: dto.deliveryLng ?? null,
         deliveryDate: new Date(dto.startDate),
         subtotal,
         tax,
@@ -315,15 +326,28 @@ export class ContainersService {
       ContainerOrderStatus.PICKED_UP,
     ];
 
-    const updated = await this.prisma.containerOrder.update({
-      where: { id },
-      data: {
-        status: dto.status,
-        ...(terminalStatuses.includes(dto.status) && {
-          actualEndDate: new Date(),
-        }),
-      },
-    });
+    const parentOrderStatus = CONTAINER_TO_ORDER_STATUS[dto.status];
+
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.containerOrder.update({
+        where: { id },
+        data: {
+          status: dto.status,
+          ...(terminalStatuses.includes(dto.status) && {
+            actualEndDate: new Date(),
+          }),
+        },
+      }),
+      // Sync parent Order.status so dashboards and queries reflect the current rental state
+      ...(parentOrderStatus
+        ? [
+            this.prisma.order.update({
+              where: { id: containerOrder.orderId },
+              data: { status: parentOrderStatus },
+            }),
+          ]
+        : []),
+    ]);
 
     // Free up the container when the rental ends
     if (terminalStatuses.includes(dto.status)) {

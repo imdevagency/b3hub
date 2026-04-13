@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -21,6 +21,8 @@ import {
   FileText,
   Plus,
   Trash2,
+  HardHat,
+  Truck,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { PageSpinner } from '@/components/ui/page-spinner';
@@ -315,37 +317,85 @@ function EditProjectSheet({
   );
 }
 
-// ─── Assign orders dialog ─────────────────────────────────────────────────────
+// ─── Orders dialog (new order + assign existing) ─────────────────────────────
 
-function AssignOrdersDialog({
+type OrderDialogTab = 'new' | 'existing';
+
+const NEW_ORDER_SERVICES = [
+  {
+    id: 'materials',
+    label: 'Materiāli',
+    description: 'Smiltis, grants, šķembas un betons',
+    icon: HardHat,
+    colorCls: 'bg-amber-50 text-amber-700 border-amber-200 hover:border-amber-400',
+    getHref: (addr: string) =>
+      `/dashboard/catalog${addr ? `?address=${encodeURIComponent(addr)}` : ''}`,
+  },
+  {
+    id: 'skip',
+    label: 'Konteineri',
+    description: 'Skip-hire piegāde un izvešana',
+    icon: Package,
+    colorCls: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:border-emerald-400',
+    getHref: (addr: string) =>
+      `/dashboard/order/skip-hire${addr ? `?address=${encodeURIComponent(addr)}` : ''}`,
+  },
+  {
+    id: 'disposal',
+    label: 'Utilizācija',
+    description: 'Atkritumu izvešana bez konteinera',
+    icon: Trash2,
+    colorCls: 'bg-red-50 text-red-700 border-red-200 hover:border-red-400',
+    getHref: (addr: string) =>
+      `/dashboard/order/disposal${addr ? `?address=${encodeURIComponent(addr)}` : ''}`,
+  },
+  {
+    id: 'transport',
+    label: 'Transports',
+    description: 'Kravas pārvadāšana no A uz B',
+    icon: Truck,
+    colorCls: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:border-indigo-400',
+    getHref: (addr: string) =>
+      `/dashboard/order/transport${addr ? `?address=${encodeURIComponent(addr)}` : ''}`,
+  },
+] as const;
+
+function OrdersDialog({
   open,
   onClose,
   token,
   projectId,
   alreadyAssigned,
+  siteAddress,
   onAssigned,
 }: {
   open: boolean;
   onClose: () => void;
   token: string;
   projectId: string;
-  alreadyAssigned: Set<string>;
+  alreadyAssigned: string[];
+  siteAddress?: string | null;
   onAssigned: () => void;
 }) {
+  const router = useRouter();
+  const [tab, setTab] = useState<OrderDialogTab>('new');
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
 
+  const alreadySet = useMemo(() => new Set(alreadyAssigned), [alreadyAssigned]);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open || tab !== 'existing') return;
     setLoading(true);
     getMyOrders(token)
-      .then((data) => setOrders(data.filter((o) => !alreadyAssigned.has(o.id))))
+      .then((data) => setOrders(data.filter((o) => !alreadySet.has(o.id))))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [open, token, alreadyAssigned]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, tab, token]);
 
   const filtered = orders.filter(
     (o) =>
@@ -378,76 +428,138 @@ function AssignOrdersDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Pievienot pasūtījumus projektam</DialogTitle>
+          <DialogTitle>Pasūtījumi</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <Input
-            placeholder="Meklēt pēc numura vai adreses..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-10"
-          />
-          {loading ? (
-            <div className="py-8 flex items-center justify-center">
-              <div className="h-6 w-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-            </div>
-          ) : filtered.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">
-              {orders.length === 0 ? 'Nav nepiešķirtu pasūtījumu' : 'Nekas neatbilst meklēšanai'}
-            </p>
-          ) : (
-            <div className="max-h-72 overflow-y-auto space-y-1.5">
-              {filtered.map((order) => {
-                const isSelected = selected.has(order.id);
-                const statusMeta = ORDER_STATUS_LABELS[order.status] ?? {
-                  label: order.status,
-                  variant: 'outline' as const,
-                };
+
+        {/* Tab switcher */}
+        <div className="flex gap-1 p-1 bg-muted rounded-xl">
+          {(['new', 'existing'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`flex-1 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                tab === t
+                  ? 'bg-background shadow-sm text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {t === 'new' ? 'Jauns pasūtījums' : 'Pievienot esošu'}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'new' ? (
+          <div className="space-y-3">
+            {siteAddress && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5 px-1">
+                <MapPin className="h-3.5 w-3.5 shrink-0" />
+                Adrese tiks aizpildīta iepriekš:{' '}
+                <span className="font-medium text-foreground truncate">{siteAddress}</span>
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              {NEW_ORDER_SERVICES.map((svc) => {
+                const Icon = svc.icon;
                 return (
                   <button
-                    key={order.id}
-                    onClick={() => toggle(order.id)}
-                    className={`w-full text-left flex items-center gap-3 p-3 rounded-xl border transition-colors ${
-                      isSelected
-                        ? 'bg-primary/5 border-primary/30'
-                        : 'border-transparent hover:bg-muted/50'
-                    }`}
+                    key={svc.id}
+                    onClick={() => {
+                      router.push(svc.getHref(siteAddress ?? ''));
+                      onClose();
+                    }}
+                    className={`flex flex-col items-start gap-2 p-4 rounded-xl border-2 text-left transition-all hover:scale-[1.02] active:scale-[0.98] ${svc.colorCls}`}
                   >
-                    <div
-                      className={`h-5 w-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
-                        isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/30'
-                      }`}
-                    >
-                      {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
+                    <Icon className="h-5 w-5" />
+                    <div>
+                      <p className="text-sm font-semibold">{svc.label}</p>
+                      <p className="text-xs opacity-70 mt-0.5 leading-snug">{svc.description}</p>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold">{order.orderNumber}</span>
-                        <Badge
-                          variant={statusMeta.variant}
-                          className="text-[10px] h-4 px-1.5 rounded-full"
-                        >
-                          {statusMeta.label}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">
-                        {order.deliveryAddress}
-                      </p>
-                    </div>
-                    <span className="text-sm font-bold shrink-0">{fmtMoney(order.total)}</span>
                   </button>
                 );
               })}
             </div>
-          )}
-          <Button
-            className="w-full h-11 rounded-xl font-semibold"
-            disabled={selected.size === 0 || saving}
-            onClick={handleAssign}
-          >
-            {saving ? 'Pievieno...' : `Pievienot ${selected.size > 0 ? `(${selected.size})` : ''}`}
-          </Button>
-        </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <Input
+              placeholder="Meklēt pēc numura vai adreses..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-10"
+            />
+            {loading ? (
+              <div className="py-8 flex items-center justify-center">
+                <div className="h-6 w-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-6 space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  {orders.length === 0
+                    ? 'Nav nepiešķirtu pasūtījumu'
+                    : 'Nekas neatbilst meklēšanai'}
+                </p>
+                {orders.length === 0 && (
+                  <Button variant="outline" size="sm" onClick={() => setTab('new')}>
+                    Izveidot jaunu pasūtījumu
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="max-h-64 overflow-y-auto space-y-1.5">
+                {filtered.map((order) => {
+                  const isSelected = selected.has(order.id);
+                  const statusMeta = ORDER_STATUS_LABELS[order.status] ?? {
+                    label: order.status,
+                    variant: 'outline' as const,
+                  };
+                  return (
+                    <button
+                      key={order.id}
+                      onClick={() => toggle(order.id)}
+                      className={`w-full text-left flex items-center gap-3 p-3 rounded-xl border transition-colors ${
+                        isSelected
+                          ? 'bg-primary/5 border-primary/30'
+                          : 'border-transparent hover:bg-muted/50'
+                      }`}
+                    >
+                      <div
+                        className={`h-5 w-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+                          isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/30'
+                        }`}
+                      >
+                        {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold">{order.orderNumber}</span>
+                          <Badge
+                            variant={statusMeta.variant}
+                            className="text-[10px] h-4 px-1.5 rounded-full"
+                          >
+                            {statusMeta.label}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                          {order.deliveryAddress}
+                        </p>
+                      </div>
+                      <span className="text-sm font-bold shrink-0">{fmtMoney(order.total)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <Button
+              className="w-full h-11 rounded-xl font-semibold"
+              disabled={selected.size === 0 || saving}
+              onClick={handleAssign}
+            >
+              {saving
+                ? 'Pievieno...'
+                : `Pievienot ${selected.size > 0 ? `(${selected.size})` : ''}`}
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -597,7 +709,7 @@ export default function ProjectDetailPage() {
   if (loading || !project) return <PageSpinner />;
 
   const meta = STATUS_META[project.status];
-  const alreadyAssigned = new Set(project.orders.map((o) => o.id));
+  const alreadyAssigned = project.orders.map((o) => o.id);
   const isNegativeMargin = project.grossMargin < 0;
 
   return (
@@ -881,12 +993,13 @@ export default function ProjectDetailPage() {
       )}
 
       {token && (
-        <AssignOrdersDialog
+        <OrdersDialog
           open={assignOpen}
           onClose={() => setAssignOpen(false)}
           token={token}
           projectId={id}
           alreadyAssigned={alreadyAssigned}
+          siteAddress={project.siteAddress}
           onAssigned={load}
         />
       )}

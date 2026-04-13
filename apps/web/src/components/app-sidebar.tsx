@@ -35,6 +35,7 @@ import {
   Receipt,
   Search,
   Settings,
+  ScrollText,
   ShieldCheck,
   Star,
   Truck,
@@ -100,7 +101,6 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       icon: FolderKanban,
       items: [
         { label: 'Pasūtīt Materiālus', href: '/dashboard/catalog', icon: Package },
-        { label: 'Cenu Pieprasījumi', href: '/dashboard/quote-requests', icon: FileQuestion },
         { label: 'Ietvarlīgumi', href: '/dashboard/framework-contracts', icon: FolderKanban },
       ],
     },
@@ -148,7 +148,6 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       items: [
         { label: 'Sākumlapa', href: '/dashboard/transporter', icon: LayoutDashboard },
         { label: 'Darbu Tirgus', href: '/dashboard/jobs', icon: Briefcase },
-        { label: 'Mani Darbi', href: '/dashboard/transport-history', icon: ClipboardList },
         { label: 'Grafiks', href: '/dashboard/schedule', icon: Calendar },
         { label: 'Piegāžu Grafiks', href: '/dashboard/deliveries', icon: CalendarDays },
         { label: 'Utilizācijas Centri', href: '/dashboard/recycling-centers', icon: Recycle },
@@ -431,7 +430,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     };
 
     if (activeMode === 'CARRIER') {
-      map['/dashboard/transport-history'] = badgeCounts.activeJobs;
+      map['/dashboard/jobs'] = badgeCounts.activeJobs;
     }
 
     if (badgeCounts.openDisputes > 0) {
@@ -716,6 +715,42 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Link href="/dashboard/admin/support">
                     <MessageSquare className="size-4 shrink-0" />
                     <span>Atbalsts</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Materiālu katalogs"
+                  isActive={isRouteActive('/dashboard/admin/materials')}
+                >
+                  <Link href="/dashboard/admin/materials">
+                    <Package className="size-4 shrink-0" />
+                    <span>Materiāli</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Audita žurnāls"
+                  isActive={isRouteActive('/dashboard/admin/audit-logs')}
+                >
+                  <Link href="/dashboard/admin/audit-logs">
+                    <ScrollText className="size-4 shrink-0" />
+                    <span>Audita žurnāls</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Maksājumu rinda"
+                  isActive={isRouteActive('/dashboard/admin/payments')}
+                >
+                  <Link href="/dashboard/admin/payments">
+                    <Banknote className="size-4 shrink-0" />
+                    <span>Maksājumi</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

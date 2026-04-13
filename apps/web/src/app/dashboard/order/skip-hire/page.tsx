@@ -8,7 +8,18 @@ import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
-import { MapPin, CalendarDays, Link2, ChevronDown, ChevronUp } from 'lucide-react';
+import Link from 'next/link';
+import {
+  MapPin,
+  CalendarDays,
+  Link2,
+  ChevronDown,
+  ChevronUp,
+  RotateCcw,
+  Clock,
+} from 'lucide-react';
+import { SKIP_STATUS, SKIP_SIZE_LABEL } from '@/lib/status-config';
+import { fmtDate } from '@/lib/format';
 import { WizardShell } from '@/components/order/WizardShell';
 
 // Import steps and types
@@ -22,6 +33,7 @@ import {
   mapWasteCategory,
   mapSkipSize,
   getMyOrders,
+  getMySkipHireOrders,
   linkSkipOrder,
   type SkipHireOrder,
   type ApiOrder,
@@ -32,10 +44,37 @@ import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
 
 const DEFAULT_CENTER = { lat: 56.9496, lng: 24.1052 };
 
+function skipSizeToWizardId(size: string): string {
+  const map: Record<string, string> = {
+    MINI: 'mini',
+    MIDI: 'midi',
+    BUILDERS: 'builders',
+    LARGE: 'large',
+  };
+  return map[size] ?? size.toLowerCase();
+}
+
+function wasteCategoryToWizardId(cat: string): string {
+  const map: Record<string, string> = {
+    MIXED: 'mixed',
+    GREEN_GARDEN: 'green',
+    CONCRETE_RUBBLE: 'concrete',
+    WOOD: 'wood',
+    METAL_SCRAP: 'metal',
+    ELECTRONICS_WEEE: 'electronics',
+  };
+  return map[cat] ?? cat.toLowerCase();
+}
+
 function SkipHireOrderPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { token, user } = useAuth();
+
+  const [activeTab, setActiveTab] = useState<'order' | 'history'>('order');
+  const [historyOrders, setHistoryOrders] = useState<SkipHireOrder[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState('');
 
   const [step, setStep] = useState(1);
   const [confirmedOrder, setConfirmedOrder] = useState<SkipHireOrder | null>(null);
@@ -66,6 +105,17 @@ function SkipHireOrderPageInner() {
   const [matOrdersLoading, setMatOrdersLoading] = useState(false);
   const [linkedMaterialOrderId, setLinkedMaterialOrderId] = useState<string | null>(null);
   const [showMatLink, setShowMatLink] = useState(false);
+
+  // Load history when tab switches to history
+  useEffect(() => {
+    if (activeTab !== 'history' || !token) return;
+    setHistoryLoading(true);
+    setHistoryError('');
+    getMySkipHireOrders(token)
+      .then(setHistoryOrders)
+      .catch(() => setHistoryError('Neizdevās ielādēt pasūtījumus'))
+      .finally(() => setHistoryLoading(false));
+  }, [activeTab, token]);
 
   // If URL has address pre-filled and step 1 is complete, start at step 2.
   useEffect(() => {
@@ -272,7 +322,7 @@ function SkipHireOrderPageInner() {
     setShowMatLink(false);
   };
 
-  if (confirmedOrder) {
+  if (confirmedOrder && activeTab === 'order') {
     return (
       <div className="mx-auto max-w-3xl pt-8">
         <OrderConfirmation
@@ -292,7 +342,9 @@ function SkipHireOrderPageInner() {
 
   return (
     <>
-      <div className="absolute inset-0 bg-[#e5e3df] z-0">
+      <div
+        className={`absolute inset-0 bg-[#e5e3df] z-0 ${activeTab === 'history' ? 'hidden' : ''}`}
+      >
         <div ref={mapDivRef} className="absolute inset-0" />
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
           {address && (
@@ -312,11 +364,104 @@ function SkipHireOrderPageInner() {
       <WizardShell
         className="w-full lg:w-115 flex-1 min-h-0 lg:flex-none z-20 relative lg:absolute lg:top-4 lg:bottom-4 lg:left-4 lg:rounded-2xl lg:shadow-2xl border-t lg:border-none flex flex-col bg-white"
         title="Konteinera Noma"
-        step={step}
+        step={activeTab === 'history' ? 0 : step}
         totalSteps={4}
         onBack={() => router.push('/dashboard/order')}
+        headerSlot={
+          <div className="flex gap-1 bg-muted rounded-xl p-1">
+            <button
+              onClick={() => setActiveTab('order')}
+              className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'order' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              Pasūtīt
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'history' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              Vēsture
+            </button>
+          </div>
+        }
       >
-        {step === 1 && (
+        {/* History list */}
+        {activeTab === 'history' && (
+          <div className="space-y-4">
+            {historyLoading && (
+              <div className="py-8 text-center text-muted-foreground text-sm">Ielādē...</div>
+            )}
+            {historyError && (
+              <div className="py-8 text-center text-destructive text-sm">{historyError}</div>
+            )}
+            {!historyLoading && !historyError && historyOrders.length === 0 && (
+              <div className="flex flex-col items-center gap-3 py-12 text-center">
+                <Clock className="h-10 w-10 text-muted-foreground/50" />
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-foreground">Nav pasūtījumu vēstures</p>
+                  <p className="text-xs text-muted-foreground">
+                    Pasūtīt savu pirmo konteineru augstāk
+                  </p>
+                </div>
+              </div>
+            )}
+            {!historyLoading &&
+              historyOrders.map((o) => {
+                const st = SKIP_STATUS[o.status] ?? {
+                  label: o.status,
+                  bg: '#f3f4f6',
+                  text: '#374151',
+                };
+                return (
+                  <div
+                    key={o.id}
+                    className="bg-muted/50 rounded-xl border border-border/60 p-4 space-y-3"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <span className="font-mono text-xs font-semibold text-muted-foreground uppercase">
+                          #{o.orderNumber}
+                        </span>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {fmtDate(o.createdAt)}
+                        </p>
+                      </div>
+                      <div
+                        className="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                        style={{ backgroundColor: st.bg, color: st.text }}
+                      >
+                        {st.label}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">
+                        {SKIP_SIZE_LABEL[o.skipSize] ?? o.skipSize}
+                      </p>
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {o.wasteCategory.replace(/_/g, ' ').toLowerCase()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <MapPin className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{o.location}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-sm">€{o.price}</span>
+                      <Link
+                        href={`/dashboard/order/skip-hire?size=${skipSizeToWizardId(o.skipSize)}&waste=${wasteCategoryToWizardId(o.wasteCategory)}`}
+                        onClick={() => setActiveTab('order')}
+                        className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        Pasūtīt vēlreiz
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        )}
+        {/* Wizard steps */}
+        {activeTab === 'order' && step === 1 && (
           <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
             <Step1Container
               size={size}
@@ -328,7 +473,7 @@ function SkipHireOrderPageInner() {
           </div>
         )}
 
-        {step === 2 && (
+        {activeTab === 'order' && step === 2 && (
           <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
             <Step2Address
               value={address}
@@ -341,7 +486,7 @@ function SkipHireOrderPageInner() {
           </div>
         )}
 
-        {step === 3 && (
+        {activeTab === 'order' && step === 3 && (
           <div className="animate-in fade-in slide-in-from-bottom-2 pb-6 relative overflow-visible">
             <Step3DateOffers
               size={size}
@@ -363,7 +508,7 @@ function SkipHireOrderPageInner() {
           </div>
         )}
 
-        {step === 4 && (
+        {activeTab === 'order' && step === 4 && (
           <div className="animate-in fade-in slide-in-from-bottom-2 pb-6 space-y-4">
             {/* Link to material order */}
             <div className="space-y-2">

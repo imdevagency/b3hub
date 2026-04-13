@@ -127,7 +127,11 @@ function PositionCard({
   const remaining = Math.max(0, position.agreedQty - position.consumedQty);
 
   return (
-    <Card className="rounded-2xl bg-white ring-1 ring-black/5 shadow-sm border-0 relative overflow-hidden">
+    <Card
+      className={`rounded-2xl bg-white ring-1 shadow-sm border-0 relative overflow-hidden ${
+        pct >= 90 ? 'ring-red-300' : pct >= 70 ? 'ring-amber-200' : 'ring-black/5'
+      }`}
+    >
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="min-w-0">
@@ -228,10 +232,19 @@ function ReleaseCallOffDialog({
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [qtyError, setQtyError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     const q = parseFloat(qty);
-    if (!q || q <= 0) return;
+    if (!q || q <= 0) {
+      setQtyError('Daudzumam jābūt lielākam par 0');
+      return;
+    }
+    if (q > remaining) {
+      setQtyError(`Maksimālais atlikums: ${remaining.toFixed(2)} ${position?.unit}`);
+      return;
+    }
+    setQtyError(null);
     setSaving(true);
     try {
       await onSubmit(q, date, notes);
@@ -268,10 +281,16 @@ function ReleaseCallOffDialog({
                 className="mt-1"
                 placeholder={`Max ${remaining.toFixed(1)}`}
                 value={qty}
-                onChange={(e) => setQty(e.target.value)}
-                min={0}
+                onChange={(e) => {
+                  setQty(e.target.value);
+                  setQtyError(null);
+                }}
+                min={0.01}
                 max={remaining}
               />
+              {qtyError && (
+                <p className="text-xs text-destructive mt-1.5 font-medium">{qtyError}</p>
+              )}
             </div>
 
             <div>
@@ -315,7 +334,7 @@ function ReleaseCallOffDialog({
 export default function BuyerProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [contract, setContract] = useState<ApiFrameworkContract | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -388,6 +407,8 @@ export default function BuyerProjectDetailPage() {
 
   const meta = STATUS_META[contract.status];
   const isDraft = contract.status === 'DRAFT';
+  // OWNER and MANAGER can always release; MEMBER/DRIVER need the explicit perm flag.
+  const canRelease = user?.permReleaseCallOffs !== false;
 
   return (
     <div className="w-full h-full pb-20 space-y-8">
@@ -438,11 +459,33 @@ export default function BuyerProjectDetailPage() {
             <p className="text-sm font-semibold text-amber-800">Projekts ir melnrakstā</p>
             <p className="text-xs text-amber-700 mt-0.5">
               Lai varētu izlaist pasūtījumus pret šī projekta pozīcijām, aktivizējiet to ar pogu
-              augstāk. Jūusu piegādātājs rēķinsūs pec aktivizācijas.
+              augstāk. Jūsu piegādātājs rēķinās pēc aktivĪzācijas.
             </p>
           </div>
         </div>
       )}
+
+      {/* Expiry warning */}
+      {!isDraft &&
+        contract.endDate &&
+        (() => {
+          const daysLeft = Math.ceil(
+            (new Date(contract.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+          );
+          if (daysLeft > 30 || daysLeft < 0) return null;
+          return (
+            <div className="rounded-xl bg-red-50 border border-red-200 px-5 py-3 text-sm">
+              <span className="font-semibold text-red-800">
+                {daysLeft <= 0
+                  ? 'Projekts ir beidzies!'
+                  : `⚠️ Projekts beidzas pēc ${daysLeft} dienām`}
+              </span>
+              {daysLeft > 0 && (
+                <span className="text-red-700 ml-2">— veiciet atlikušos pasūtījumus laikus.</span>
+              )}
+            </div>
+          );
+        })()}
 
       {/* summary card */}
       <Card className="rounded-2xl bg-white ring-1 ring-black/5 shadow-sm border-0">
@@ -482,8 +525,8 @@ export default function BuyerProjectDetailPage() {
             <PositionCard
               key={pos.id}
               position={pos}
-              disabled={isDraft}
-              onRelease={isDraft ? () => {} : setReleasePos}
+              disabled={isDraft || !canRelease}
+              onRelease={isDraft || !canRelease ? () => {} : setReleasePos}
             />
           ))}
         </div>

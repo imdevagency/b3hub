@@ -4,8 +4,8 @@
  */
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { Plus, RefreshCw, Layers, Calendar, Package, CheckCircle2 } from 'lucide-react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { Plus, RefreshCw, Layers, Calendar, Package, CheckCircle2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -28,10 +28,13 @@ import {
   getFrameworkContracts,
   createFrameworkContract,
   activateFrameworkContract,
+  getMaterials,
   type ApiFrameworkContract,
+  type ApiMaterial,
   type FrameworkContractStatus,
   type FrameworkPositionType,
 } from '@/lib/api';
+import { AddressAutocomplete, type PlaceAddress } from '@/components/ui/AddressAutocomplete';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -162,6 +165,8 @@ function ContractCard({
 interface NewPosition {
   positionType: FrameworkPositionType;
   materialName: string;
+  materialId?: string;
+  supplierId?: string;
   unit: string;
   agreedQty: string;
   unitPrice: string;
@@ -178,6 +183,96 @@ const emptyPosition = (): NewPosition => ({
   pickupAddress: '',
   deliveryAddress: '',
 });
+
+// ─── Material catalog search combobox ──────────────────────────────────────────────
+
+function MaterialSearchInput({
+  token,
+  value,
+  onChange,
+  onMaterialSelect,
+}: {
+  token: string;
+  value: string;
+  onChange: (name: string) => void;
+  onMaterialSelect: (m: ApiMaterial | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [fetching, setFetching] = useState(false);
+  const [results, setResults] = useState<ApiMaterial[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (value.length < 2) {
+      setResults([]);
+      return;
+    }
+    setFetching(true);
+    const t = setTimeout(() => {
+      getMaterials(token, { search: value })
+        .then(setResults)
+        .catch(() => setResults([]))
+        .finally(() => setFetching(false));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [value, token]);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <div className="relative">
+        <Input
+          placeholder="Materiāls (meklēt katalogā vai rakstīt)"
+          className="bg-background border-none shadow-sm h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary/30 text-[15px] pr-8"
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            onMaterialSelect(null);
+            setOpen(true);
+          }}
+          onFocus={() => {
+            if (results.length > 0) setOpen(true);
+          }}
+        />
+        {fetching && (
+          <Loader2 className="absolute right-3 top-3.5 h-4 w-4 animate-spin text-muted-foreground pointer-events-none" />
+        )}
+      </div>
+      {open && results.length > 0 && (
+        <div className="absolute z-9999 top-full mt-1 left-0 right-0 bg-white border border-gray-100 rounded-xl shadow-2xl overflow-hidden max-h-52 overflow-y-auto">
+          {results.slice(0, 8).map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                onChange(m.name);
+                onMaterialSelect(m);
+                setOpen(false);
+              }}
+              className="w-full text-left px-3 py-2.5 hover:bg-muted/60 flex items-center justify-between gap-3 border-b border-gray-50 last:border-0 transition-colors"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">{m.name}</p>
+                <p className="text-xs text-muted-foreground">{m.supplier.name}</p>
+              </div>
+              <span className="text-xs font-bold shrink-0 text-muted-foreground">
+                €{m.basePrice.toFixed(2)}/{m.unit}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function CreateContractDialog({
   open,
@@ -199,10 +294,21 @@ function CreateContractDialog({
   const [endDate, setEndDate] = useState('');
   const [notes, setNotes] = useState('');
   const [positions, setPositions] = useState<NewPosition[]>([emptyPosition()]);
+  const { token } = useAuth();
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     if (!title.trim()) return;
+    // Validate each position has a qty >= 0.01
+    for (let i = 0; i < positions.length; i++) {
+      const qty = parseFloat(positions[i].agreedQty);
+      if (!positions[i].agreedQty.trim() || isNaN(qty) || qty < 0.01) {
+        setFormError(`Pozīcijai ${i + 1} ir jānorāda daudzums (min 0.01)`);
+        return;
+      }
+    }
+    setFormError(null);
     setSaving(true);
     try {
       await onCreate({ title, startDate, endDate, notes, positions });
@@ -219,6 +325,10 @@ function CreateContractDialog({
 
   const updatePos = (i: number, field: keyof NewPosition, value: string) => {
     setPositions((prev) => prev.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
+  };
+
+  const mergePos = (i: number, fields: Partial<NewPosition>) => {
+    setPositions((prev) => prev.map((p, idx) => (idx === i ? { ...p, ...fields } : p)));
   };
 
   const inputClasses =
@@ -333,15 +443,43 @@ function CreateContractDialog({
                     </SelectContent>
                   </Select>
 
+                  {/* Material — catalog search for MATERIAL_DELIVERY, free text for others */}
+                  {pos.positionType === 'MATERIAL_DELIVERY' ? (
+                    <MaterialSearchInput
+                      token={token ?? ''}
+                      value={pos.materialName}
+                      onChange={(name) =>
+                        mergePos(i, {
+                          materialName: name,
+                          materialId: undefined,
+                          supplierId: undefined,
+                        })
+                      }
+                      onMaterialSelect={(m) => {
+                        if (m)
+                          mergePos(i, {
+                            materialName: m.name,
+                            materialId: m.id,
+                            supplierId: m.supplierId,
+                            unit: m.unit,
+                            unitPrice: String(m.basePrice),
+                          });
+                      }}
+                    />
+                  ) : (
+                    <Input
+                      placeholder={
+                        pos.positionType === 'WASTE_DISPOSAL'
+                          ? 'Atkritumu veids'
+                          : 'Kravas apraksts'
+                      }
+                      className="bg-background border-none shadow-sm h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary/30 text-[15px]"
+                      value={pos.materialName}
+                      onChange={(e) => updatePos(i, 'materialName', e.target.value)}
+                    />
+                  )}
+
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="col-span-1">
-                      <Input
-                        placeholder="Materiāls"
-                        className="bg-background border-none shadow-sm h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary/30 text-[15px]"
-                        value={pos.materialName}
-                        onChange={(e) => updatePos(i, 'materialName', e.target.value)}
-                      />
-                    </div>
                     <div>
                       <Input
                         placeholder="Vienība (t, m³)"
@@ -354,35 +492,49 @@ function CreateContractDialog({
                       <Input
                         type="number"
                         placeholder="Daudzums"
+                        min="0.01"
+                        step="0.01"
                         className="bg-background border-none shadow-sm h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary/30 text-[15px]"
                         value={pos.agreedQty}
-                        onChange={(e) => updatePos(i, 'agreedQty', e.target.value)}
+                        onChange={(e) => {
+                          updatePos(i, 'agreedQty', e.target.value);
+                          setFormError(null);
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        type="number"
+                        placeholder="Cena/vienību (€)"
+                        min="0"
+                        step="0.01"
+                        className="bg-background border-none shadow-sm h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary/30 text-[15px] font-medium"
+                        value={pos.unitPrice}
+                        onChange={(e) => updatePos(i, 'unitPrice', e.target.value)}
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <Input
-                      placeholder="No (adrese)"
-                      className="bg-background border-none shadow-sm h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary/30 text-[15px]"
+                    <AddressAutocomplete
                       value={pos.pickupAddress}
-                      onChange={(e) => updatePos(i, 'pickupAddress', e.target.value)}
+                      onChange={(v) => updatePos(i, 'pickupAddress', v)}
+                      onSelect={(place: PlaceAddress) =>
+                        updatePos(i, 'pickupAddress', place.address)
+                      }
+                      placeholder="No (iekraušanas adrese)"
+                      className="bg-background border border-border/30 h-12 rounded-xl text-[15px]"
                     />
-                    <Input
-                      placeholder="Uz (adrese)"
-                      className="bg-background border-none shadow-sm h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary/30 text-[15px]"
+                    <AddressAutocomplete
                       value={pos.deliveryAddress}
-                      onChange={(e) => updatePos(i, 'deliveryAddress', e.target.value)}
+                      onChange={(v) => updatePos(i, 'deliveryAddress', v)}
+                      onSelect={(place: PlaceAddress) =>
+                        updatePos(i, 'deliveryAddress', place.address)
+                      }
+                      placeholder="Uz (piegādes adrese)"
+                      className="bg-background border border-border/30 h-12 rounded-xl text-[15px]"
                     />
                   </div>
-
-                  <Input
-                    type="number"
-                    placeholder="Cena par vienību (€)"
-                    className="bg-background border-none shadow-sm h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary/30 font-medium text-[15px]"
-                    value={pos.unitPrice}
-                    onChange={(e) => updatePos(i, 'unitPrice', e.target.value)}
-                  />
                 </div>
               ))}
             </div>
@@ -390,7 +542,10 @@ function CreateContractDialog({
         </div>
 
         {/* Fixed Footer with Uber-like button */}
-        <div className="absolute bottom-0 left-0 right-0 p-5 bg-background/90 backdrop-blur-xl border-t border-border/50">
+        <div className="absolute bottom-0 left-0 right-0 p-5 bg-background/90 backdrop-blur-xl border-t border-border/50 space-y-2">
+          {formError && (
+            <p className="text-sm text-destructive font-medium text-center">{formError}</p>
+          )}
           <Button
             className="w-full h-14 rounded-2xl text-[16px] font-semibold bg-foreground hover:bg-foreground/90 text-background shadow-lg transition-all"
             onClick={handleSubmit}
@@ -461,7 +616,7 @@ export default function FrameworkContractsPage() {
           positionType: p.positionType,
           materialName: p.materialName,
           unit: p.unit,
-          agreedQty: parseFloat(p.agreedQty) || 0,
+          agreedQty: parseFloat(p.agreedQty),
           unitPrice: parseFloat(p.unitPrice) || 0,
           pickupAddress: p.pickupAddress || undefined,
           deliveryAddress: p.deliveryAddress || undefined,

@@ -12,6 +12,7 @@ import { PaymentsService } from '../payments/payments.service';
 import { CreateDisputeDto } from './dto/create-dispute.dto';
 import { UpdateDisputeDto } from './dto/update-dispute.dto';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
+import { OrderStatus } from '@prisma/client';
 
 @Injectable()
 export class DisputesService {
@@ -197,14 +198,66 @@ export class DisputesService {
 
     this.logger.log(`Dispute ${id} updated to status ${dto.status} by admin ${currentUser.userId}`);
 
-    // When admin resolves in buyer's favour → trigger a Stripe refund
+    // When admin resolves in buyer's favour → refund buyer + cancel the order.
+    // Cancelling the order is critical: it prevents the auto-complete cron from
+    // picking up the DELIVERED order 24h later and calling releaseFunds() on an
+    // already-refunded payment (which would attempt a double transfer to the seller).
     if (dto.status === 'RESOLVED') {
+      // 1. Cancel the order — releases buyer credit and prevents further processing
+      await this.prisma.order
+        .update({
+          where: { id: updated.order.id },
+          data: { status: OrderStatus.CANCELLED },
+        })
+        .catch((err) =>
+          this.logger.error(
+            `Failed to cancel order ${updated.order.id} after dispute RESOLVED: ${(err as Error).message}`,
+          ),
+        );
+
+      // 2. Release buyer credit exposure
+      const order = await this.prisma.order.findUnique({
+        where: { id: updated.order.id },
+        select: { total: true, createdById: true },
+      });
+      if (order?.total) {
+        this.prisma.$executeRaw`
+          UPDATE buyer_profiles
+          SET "creditUsed" = GREATEST(0, "creditUsed" - ${Number(order.total)})
+          WHERE "userId" = ${order.createdById}
+        `.catch((err) =>
+          this.logger.error(
+            `Failed to release credit after dispute RESOLVED for order ${updated.order.id}: ${(err as Error).message}`,
+          ),
+        );
+      }
+
+      // 3. Void/refund the Stripe PaymentIntent
       this.payments
         .voidOrRefund(updated.order.id)
         .catch((err) =>
+          this.logger.error(`voidOrRefund failed after dispute RESOLVED for order ${updated.order.id}: ${(err as Error).message}`),
+        );
+    }
+
+    // When admin rejects the dispute (seller/driver win) → immediately release funds
+    // and complete the order instead of waiting for the 24h auto-complete cron.
+    if (dto.status === 'REJECTED') {
+      await this.prisma.order
+        .update({
+          where: { id: updated.order.id },
+          data: { status: OrderStatus.COMPLETED },
+        })
+        .catch((err) =>
           this.logger.error(
-            `voidOrRefund failed after dispute RESOLVED for order ${updated.order.id}: ${(err as Error).message}`,
+            `Failed to complete order ${updated.order.id} after dispute REJECTED: ${(err as Error).message}`,
           ),
+        );
+
+      this.payments
+        .releaseFunds(updated.order.id)
+        .catch((err) =>
+          this.logger.error(`releaseFunds failed after dispute REJECTED for order ${updated.order.id}: ${(err as Error).message}`),
         );
     }
 

@@ -3,6 +3,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
   Min,
 } from 'class-validator';
 
@@ -27,6 +28,18 @@ export class CreateCallOffDto {
   @IsOptional()
   pickupCity?: string;
 
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  pickupLat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  pickupLng?: number;
+
   /** Override delivery address from position default */
   @IsString()
   @IsOptional()
@@ -35,6 +48,18 @@ export class CreateCallOffDto {
   @IsString()
   @IsOptional()
   deliveryCity?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  deliveryLat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  deliveryLng?: number;
 
   @IsString()
   @IsOptional()

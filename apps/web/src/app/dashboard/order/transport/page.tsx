@@ -52,6 +52,15 @@ const VEHICLE_OPTIONS: {
   { type: 'BOX_TRUCK', label: 'Kravas furgons', sub: 'līdz 3.5 t · 20 m³', fromPrice: 79 },
 ];
 
+/** Returns the best-fit vehicle type for the given cargo weight (tonnes). */
+function deriveVehicleFromWeight(weightT: number): TransportVehicleType {
+  if (weightT <= 0) return 'TIPPER_LARGE';
+  if (weightT <= 3.5) return 'BOX_TRUCK';
+  if (weightT <= 5) return 'TIPPER_SMALL';
+  if (weightT <= 15) return 'TIPPER_LARGE';
+  return 'ARTICULATED_TIPPER';
+}
+
 export default function TransportOrderPage() {
   const router = useRouter();
   const { token, user } = useAuth();
@@ -73,14 +82,20 @@ export default function TransportOrderPage() {
   const [dropoffLng, setDropoffLng] = useState<number>();
 
   const [vehicleType, setVehicleType] = useState<TransportVehicleType>('TIPPER_LARGE');
+  const [vehicleManuallyChosen, setVehicleManuallyChosen] = useState(false);
   const [loadDescription, setLoadDescription] = useState('');
   const [estimatedWeight, setEstimatedWeight] = useState<number>(20);
-  const [buyerOfferedRate, setBuyerOfferedRate] = useState<string>('');
-
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
   const [siteContactName, setSiteContactName] = useState('');
   const [siteContactPhone, setSiteContactPhone] = useState('');
+
+  // Auto-derive vehicle type from cargo weight unless user has manually chosen
+  useEffect(() => {
+    if (!vehicleManuallyChosen) {
+      setVehicleType(deriveVehicleFromWeight(estimatedWeight));
+    }
+  }, [estimatedWeight, vehicleManuallyChosen]);
 
   // Pre-fill contact from authenticated user profile
   useEffect(() => {
@@ -296,7 +311,6 @@ export default function TransportOrderPage() {
           notes,
           siteContactName: siteContactName || undefined,
           siteContactPhone: siteContactPhone || undefined,
-          buyerOfferedRate: buyerOfferedRate ? parseFloat(buyerOfferedRate) : undefined,
         },
         token,
       );
@@ -443,16 +457,44 @@ export default function TransportOrderPage() {
               <div className="space-y-4">
                 <div>
                   <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                    Kravas svars (tonnās)
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0.1}
+                    step={0.1}
+                    className="rounded-xl border-2 py-6 text-lg focus-visible:ring-0 focus-visible:border-black outline-none"
+                    value={estimatedWeight || ''}
+                    onChange={(e) => {
+                      const w = parseFloat(e.target.value) || 0;
+                      setEstimatedWeight(w);
+                      setVehicleManuallyChosen(false); // re-enable auto-suggest on weight change
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                     Tehnikas veids
                   </Label>
+                  {!vehicleManuallyChosen && estimatedWeight > 0 && (
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Ieteikts pēc svara — varat mainīt manuāli
+                    </p>
+                  )}
                   <div className="flex flex-col gap-2">
                     {VEHICLE_OPTIONS.map((v) => {
                       const isSel = vehicleType === v.type;
+                      const isSuggested =
+                        estimatedWeight > 0 && deriveVehicleFromWeight(estimatedWeight) === v.type;
                       return (
                         <button
                           key={v.type}
                           type="button"
-                          onClick={() => setVehicleType(v.type)}
+                          onClick={() => {
+                            setVehicleType(v.type);
+                            setVehicleManuallyChosen(true);
+                          }}
                           className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all ${
                             isSel
                               ? 'border-black bg-black/5'
@@ -470,6 +512,11 @@ export default function TransportOrderPage() {
                             </p>
                             <p className="text-xs text-muted-foreground">{v.sub}</p>
                           </div>
+                          {isSuggested && !vehicleManuallyChosen && (
+                            <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded-full shrink-0">
+                              Ieteikts
+                            </span>
+                          )}
                           <p
                             className={`text-sm font-bold shrink-0 ${isSel ? 'text-black' : 'text-muted-foreground'}`}
                           >
@@ -480,20 +527,6 @@ export default function TransportOrderPage() {
                       );
                     })}
                   </div>
-                </div>
-
-                <div>
-                  <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
-                    Kravas svars (tonnās)
-                  </Label>
-                  <Input
-                    type="number"
-                    min={0.1}
-                    step={0.1}
-                    className="rounded-xl border-2 py-6 text-lg focus-visible:ring-0 focus-visible:border-black outline-none"
-                    value={estimatedWeight || ''}
-                    onChange={(e) => setEstimatedWeight(parseFloat(e.target.value) || 0)}
-                  />
                 </div>
                 <div>
                   <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
@@ -506,29 +539,6 @@ export default function TransportOrderPage() {
                     value={loadDescription}
                     onChange={(e) => setLoadDescription(e.target.value)}
                   />
-                </div>
-
-                {/* Optional buyer-offered rate (reverse auction) */}
-                <div className="rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/60 p-4 space-y-2">
-                  <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                    Ieteiktā transporta maksa (neobligāts)
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Piedāvājiet transporta maksu — šoferiem ar šo summu tiks prioritizēts jūsu
-                    pasūtījums.
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min={0}
-                      step={0.01}
-                      placeholder="piem. 85.00"
-                      className="rounded-xl border-2 py-5 text-[15px] focus-visible:ring-0 focus-visible:border-amber-500 outline-none"
-                      value={buyerOfferedRate}
-                      onChange={(e) => setBuyerOfferedRate(e.target.value)}
-                    />
-                    <span className="text-sm font-medium text-muted-foreground shrink-0">€</span>
-                  </div>
                 </div>
               </div>
             </div>

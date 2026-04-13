@@ -123,6 +123,12 @@ export class OrdersController {
     return this.ordersService.cancel(id, user);
   }
 
+  /** POST /orders/:id/confirm-receipt — buyer confirms they received the goods → COMPLETED */
+  @Post(':id/confirm-receipt')
+  confirmReceipt(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+    return this.ordersService.confirmReceipt(id, user);
+  }
+
   /** POST /orders/:id/seller-cancel — seller cancels after confirmation */
   @Post(':id/seller-cancel')
   sellerCancel(

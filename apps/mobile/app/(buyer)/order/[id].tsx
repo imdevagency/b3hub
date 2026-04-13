@@ -261,6 +261,35 @@ export default function OrderDetailScreen() {
     ]);
   };
 
+  const handleConfirmReceipt = () => {
+    haptics.medium();
+    Alert.alert(
+      'Apstiprināt saņemšanu?',
+      'Apstiprinot saņemšanu, pasūtījums tiks slēgts un maksājums tiks izmaksāts piegādātājam.',
+      [
+        { text: 'Nē', style: 'cancel' },
+        {
+          text: 'Apstiprināt',
+          onPress: async () => {
+            if (!token || !order) return;
+            setActionLoading(true);
+            try {
+              const updated = await api.orders.confirmReceipt(order.id, token);
+              setOrder(updated);
+              haptics.success();
+              Alert.alert('✅ Apstiprināts', 'Pasūtījums veiksmīgi pabeigts. Paldies!');
+            } catch (err: unknown) {
+              haptics.error();
+              Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās apstiprināt');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   if (loading) {
     return (
       <ScreenContainer bg="#ffffff">
@@ -891,6 +920,23 @@ export default function OrderDetailScreen() {
             >
               <CalendarDays size={14} color="#374151" />
               <Text style={s.amendBtnText}>Labot pasūtījumu</Text>
+            </TouchableOpacity>
+          )}
+          {order.status === 'DELIVERED' && (
+            <TouchableOpacity
+              style={[s.confirmReceiptBtn, actionLoading && { opacity: 0.5 }]}
+              onPress={handleConfirmReceipt}
+              disabled={actionLoading}
+              activeOpacity={0.85}
+            >
+              {actionLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <CheckCircle size={16} color="#fff" />
+                  <Text style={s.confirmReceiptBtnText}>Apstiprināt saņemšanu</Text>
+                </>
+              )}
             </TouchableOpacity>
           )}
           {order.status === 'DELIVERED' && (
@@ -1530,6 +1576,17 @@ const s = StyleSheet.create({
     gap: 8,
   },
   reorderBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+
+  confirmReceiptBtn: {
+    backgroundColor: '#16a34a',
+    borderRadius: 999,
+    paddingVertical: 15,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  confirmReceiptBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
 
   alreadyRated: {
     flexDirection: 'row',

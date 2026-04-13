@@ -177,6 +177,18 @@ export class CreateOrderScheduleDto {
   @IsString()
   projectId?: string;
 
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  deliveryLat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  deliveryLng?: number;
+
   /** Items snapshot: [{materialId, quantity, unit}] */
   @IsArray()
   items: { materialId: string; quantity: number; unit: string }[];

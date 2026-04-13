@@ -41,6 +41,8 @@ interface DeliveryForm {
   notes: string;
   siteContactName: string;
   siteContactPhone: string;
+  deliveryLat?: number;
+  deliveryLng?: number;
 }
 
 export default function CheckoutPage() {
@@ -66,6 +68,8 @@ export default function CheckoutPage() {
     notes: '',
     siteContactName: '',
     siteContactPhone: '',
+    deliveryLat: undefined,
+    deliveryLng: undefined,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -101,6 +105,8 @@ export default function CheckoutPage() {
       address: place.address,
       city: place.city || f.city,
       postal: place.postal || f.postal,
+      deliveryLat: place.lat,
+      deliveryLng: place.lng,
     }));
   };
 
@@ -145,6 +151,8 @@ export default function CheckoutPage() {
           deliveryCity: form.city,
           deliveryPostal: form.postal || '0000',
           deliveryDate: form.date || undefined,
+          deliveryLat: form.deliveryLat,
+          deliveryLng: form.deliveryLng,
           notes: form.notes || undefined,
           siteContactName: form.siteContactName || undefined,
           siteContactPhone: form.siteContactPhone || undefined,

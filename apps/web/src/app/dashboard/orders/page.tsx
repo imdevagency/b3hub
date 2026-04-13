@@ -40,6 +40,7 @@ import {
   RefreshCw,
   RotateCcw,
   Search,
+  Star,
   Trash2,
   Truck,
   User,
@@ -820,6 +821,14 @@ export function SupplierView({ token }: { token: string }) {
   );
 }
 
+// ── Latvian labels for transport job types ───────────────────────────────────
+const JOB_TYPE_LABELS: Record<string, string> = {
+  WASTE_COLLECTION: 'Atkritumu izvešana',
+  TRANSPORT: 'Kravas pārvadājums',
+  SKIP_DELIVERY: 'Konteinera piegāde',
+  SKIP_COLLECTION: 'Konteinera izvešana',
+};
+
 // ── BUYER view ─────────────────────────────────────────────────────────────────
 
 function BuyerView({ token }: { token: string }) {
@@ -1121,12 +1130,27 @@ function BuyerView({ token }: { token: string }) {
                     </Link>
                   </div>
                 )}
+
+                {/* Post-delivery review nudge */}
+                {o.status === 'DELIVERED' && (
+                  <div className="mt-3 pt-3 border-t border-border/40 flex items-center justify-between gap-3">
+                    <p className="text-xs text-muted-foreground">Kā pagāja piegāde?</p>
+                    <Link
+                      href="/dashboard/reviews"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Star className="size-3 fill-amber-500 text-amber-500" />
+                      Atstāt atsauksmi
+                    </Link>
+                  </div>
+                )}
               </Link>
             );
           })}
         </div>
       )}
-      {/* Transport requests tab */}
+      {/* Transport requests tab — includes WASTE_COLLECTION (disposal) and TRANSPORT (freight) */}
       {!loading &&
         tab === 'transport' &&
         (transportRequests.length === 0 ? (
@@ -1135,17 +1159,19 @@ function BuyerView({ token }: { token: string }) {
               <Truck className="h-10 w-10 text-muted-foreground/60" />
             </div>
             <div className="space-y-1.5">
-              <p className="text-base font-bold text-foreground">Nav transporta pieprasījumu</p>
+              <p className="text-base font-bold text-foreground">
+                Nav transporta vai utilizācijas pieprasījumu
+              </p>
               <p className="text-sm text-muted-foreground max-w-xs">
-                Jums vēl nav neviena transporta pieprasījuma. Pasūtiet pārvadājumu.
+                Pasūtiet kravas pārvadājumu vai atkritumu izvešanu.
               </p>
             </div>
             <Link
-              href="/dashboard/order/transport"
+              href="/dashboard/order"
               className="mt-2 inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full px-6 py-3 text-sm transition-all"
             >
               <Truck className="h-4 w-4" />
-              Pasūtīt pārvadājumu
+              Pasūtīt pakalpojumu
             </Link>
           </div>
         ) : (
@@ -1170,8 +1196,8 @@ function BuyerView({ token }: { token: string }) {
                       <span className="font-mono text-[13px] font-semibold tracking-tight text-muted-foreground uppercase">
                         #{j.jobNumber}
                       </span>
-                      <span className="text-[13px] font-medium text-foreground capitalize">
-                        {j.jobType?.replace(/_/g, ' ').toLowerCase()}
+                      <span className="text-[13px] font-medium text-foreground">
+                        {JOB_TYPE_LABELS[j.jobType ?? ''] ?? j.jobType?.replace(/_/g, ' ')}
                       </span>
                     </div>
                     <StatusBadgeHex cfg={st} />

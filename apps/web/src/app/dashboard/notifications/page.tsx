@@ -17,6 +17,7 @@ import {
   MessageSquare,
   FileText,
   Scale,
+  Recycle,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';
@@ -34,20 +35,24 @@ import {
 // ─── Notification icon + color map ───────────────────────────────────────────
 
 const TYPE_META: Record<NotificationType, { icon: React.ElementType }> = {
-    ORDER_CREATED: { icon: Package },
-    ORDER_CONFIRMED: { icon: CheckCheck },
-    ORDER_CANCELLED: { icon: XCircle },
-    ORDER_DELIVERED: { icon: CheckCheck },
-    TRANSPORT_ASSIGNED: { icon: Truck },
-    TRANSPORT_STARTED: { icon: Truck },
-    TRANSPORT_COMPLETED: { icon: Truck },
-    PAYMENT_RECEIVED: { icon: CreditCard },
-    QUOTE_RECEIVED: { icon: MessageSquare },
-    QUOTE_ACCEPTED: { icon: CheckCheck },
-    SYSTEM_ALERT: { icon: AlertCircle },
-    DOCUMENT_EXPIRING_SOON: { icon: FileText },
-    WEIGHING_SLIP: { icon: Scale },
-  };
+  ORDER_CREATED: { icon: Package },
+  ORDER_CONFIRMED: { icon: CheckCheck },
+  ORDER_CANCELLED: { icon: XCircle },
+  ORDER_DELIVERED: { icon: CheckCheck },
+  TRANSPORT_ASSIGNED: { icon: Truck },
+  TRANSPORT_STARTED: { icon: Truck },
+  TRANSPORT_COMPLETED: { icon: Truck },
+  PAYMENT_RECEIVED: { icon: CreditCard },
+  QUOTE_RECEIVED: { icon: MessageSquare },
+  QUOTE_ACCEPTED: { icon: CheckCheck },
+  SYSTEM_ALERT: { icon: AlertCircle },
+  DOCUMENT_EXPIRING_SOON: { icon: FileText },
+  WEIGHING_SLIP: { icon: Scale },
+  DISPOSAL_ORDER_CREATED: { icon: Recycle },
+  DISPOSAL_ORDER_CONFIRMED: { icon: Recycle },
+  DISPOSAL_ORDER_CANCELLED: { icon: XCircle },
+  DISPOSAL_ORDER_COMPLETED: { icon: Recycle },
+};
 
 function fmtRelative(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -119,9 +124,7 @@ function NotifRow({ n, onMarkRead }: { n: AppNotification; onMarkRead: (id: stri
             >
               {cleanTitle}
             </p>
-            {!n.isRead && (
-              <span className="shrink-0 h-2 w-2 rounded-full bg-blue-600" />
-            )}
+            {!n.isRead && <span className="shrink-0 h-2 w-2 rounded-full bg-blue-600" />}
           </div>
           <span className="text-xs font-medium text-gray-400 shrink-0">
             {fmtRelative(n.createdAt)}

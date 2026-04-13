@@ -29,3 +29,31 @@ export async function getCompanyReviews(companyId: string, token: string): Promi
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+export interface CreateReviewInput {
+  rating: number;
+  comment?: string;
+  orderId?: string;
+  skipOrderId?: string;
+}
+
+export async function createReview(input: CreateReviewInput, token: string): Promise<Review> {
+  return apiFetch<Review>('/reviews', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function getReviewStatus(
+  token: string,
+  orderId?: string,
+  skipOrderId?: string,
+): Promise<{ reviewed: boolean }> {
+  const params = new URLSearchParams();
+  if (orderId) params.set('orderId', orderId);
+  if (skipOrderId) params.set('skipOrderId', skipOrderId);
+  return apiFetch<{ reviewed: boolean }>(`/reviews/status?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

@@ -568,6 +568,8 @@ model Order {
   deliveryCity    String
   deliveryState   String
   deliveryPostal  String
+  deliveryLat     Float?   // GPS latitude of delivery site — used for route distance & driver matching
+  deliveryLng     Float?   // GPS longitude of delivery site
   deliveryDate    DateTime?
   deliveryWindow  String? // e.g., "8:00-12:00"
 
@@ -785,6 +787,7 @@ model TransportJob {
   chatMessages        ChatMessage[]
   exceptions          TransportJobException[]
   invoices            Invoice[]
+  surcharges          OrderSurcharge[]        @relation("JobSurcharges")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1573,8 +1576,12 @@ model ProjectSite {
 model OrderSurcharge {
   id    String @id @default(cuid())
 
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  orderId String
+  // Linked to an Order (regular material/freight job) OR a TransportJob (call-off job — no parent order)
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId String?
+
+  transportJob   TransportJob? @relation("JobSurcharges", fields: [transportJobId], references: [id], onDelete: Cascade)
+  transportJobId String?
 
   type     SurchargeType
   label    String         // Human-readable description shown on invoice
@@ -1585,6 +1592,7 @@ model OrderSurcharge {
   createdAt DateTime @default(now())
 
   @@index([orderId])
+  @@index([transportJobId])
   @@map("order_surcharges")
 }
 
@@ -1676,6 +1684,9 @@ model OrderSchedule {
   itemsSnapshot   Json     // Array of {materialId, quantity, unit}
 
   // Recurrence
+  deliveryLat   Float?
+  deliveryLng   Float?
+
   intervalDays  Int      // 1 = daily, 7 = weekly, 14 = fortnightly, 30 = monthly
   nextRunAt     DateTime // next time the cron will fire a new order
   endsAt        DateTime? // optional end date; null = indefinite

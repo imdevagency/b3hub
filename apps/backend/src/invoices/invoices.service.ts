@@ -14,6 +14,7 @@ import { OrderStatus, PaymentMethod, PaymentStatus, Prisma } from '@prisma/clien
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import PDFDocument from 'pdfkit';
+import { PaymentsService } from '../payments/payments.service';
 
 type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PAID' | 'OVERDUE' | 'CANCELLED';
 
@@ -76,6 +77,7 @@ export class InvoicesService {
     private emailService: EmailService,
     private notifications: NotificationsService,
     private configService: ConfigService,
+    private payments: PaymentsService,
   ) {
     const key = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (key) {
@@ -191,7 +193,6 @@ export class InvoicesService {
       'Apmaksas termiņš',
       'Apmaksas datums',
       'Statuss',
-      'Apraksts',
       'Starpsumma (EUR)',
       'PVN (EUR)',
       'Kopā (EUR)',
@@ -206,7 +207,6 @@ export class InvoicesService {
       escape(inv.dueDate ? inv.dueDate.toISOString().slice(0, 10) : null),
       escape(inv.paidDate ? inv.paidDate.toISOString().slice(0, 10) : null),
       escape(inv.paymentStatus),
-      escape(inv.description),
       escape(inv.subtotal != null ? Number(inv.subtotal).toFixed(2) : null),
       escape(inv.tax != null ? Number(inv.tax).toFixed(2) : null),
       escape(inv.total != null ? Number(inv.total).toFixed(2) : null),
@@ -250,6 +250,23 @@ export class InvoicesService {
         where: { id: invoice.orderId },
         data: { paymentStatus: PaymentStatus.PAID },
       });
+
+      // If the order is already COMPLETED (auto-complete ran before buyer paid),
+      // trigger the payout now — funds were deferred because the invoice wasn't
+      // PAID yet when releaseFunds() first fired.
+      const order = await this.prisma.order.findUnique({
+        where: { id: invoice.orderId },
+        select: { status: true },
+      });
+      if (order?.status === OrderStatus.COMPLETED) {
+        this.payments
+          .releaseFunds(invoice.orderId)
+          .catch((err) =>
+            this.logger.error(
+              `markAsPaid: releaseFunds failed after late payment on order ${invoice.orderId}: ${(err as Error).message}`,
+            ),
+          );
+      }
     }
 
     // Release the credit that was reserved when the order was placed.

@@ -5,6 +5,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { updateProfile, changePassword } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,9 @@ import {
   EyeOff,
   BadgeCheck,
   DollarSign,
+  Building2,
+  Users,
+  ArrowRight,
 } from 'lucide-react';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -448,6 +452,41 @@ export default function SettingsPage() {
                 </span>
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Company & Team quick links ────────────────────────── */}
+      {user?.userType !== 'ADMIN' && (
+        <Card className="shadow-none">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-base">Uzņēmums & Komanda</CardTitle>
+            </div>
+            <CardDescription>Pārvaldiet uzņēmuma profilu un dalībniekus.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            <Link
+              href="/dashboard/company"
+              className="flex items-center justify-between rounded-lg border border-border px-4 py-3 text-sm hover:bg-muted/50 transition-colors group"
+            >
+              <div className="flex items-center gap-2.5">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">Uzņēmuma profils</span>
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+            </Link>
+            <Link
+              href="/dashboard/company/team"
+              className="flex items-center justify-between rounded-lg border border-border px-4 py-3 text-sm hover:bg-muted/50 transition-colors group"
+            >
+              <div className="flex items-center gap-2.5">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">Komanda & Atļaujas</span>
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+            </Link>
           </CardContent>
         </Card>
       )}

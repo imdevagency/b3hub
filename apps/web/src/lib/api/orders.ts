@@ -25,6 +25,7 @@ export interface ApiOrderItem {
 export interface ApiOrder {
   id: string;
   orderNumber: string;
+  orderType?: string;
   status: string;
   items: ApiOrderItem[];
   deliveryAddress: string;
@@ -78,6 +79,8 @@ export interface CreateCartOrderInput {
   deliveryCity: string;
   deliveryPostal: string;
   deliveryDate?: string;
+  deliveryLat?: number;
+  deliveryLng?: number;
   notes?: string;
   siteContactName?: string;
   siteContactPhone?: string;
@@ -117,6 +120,13 @@ export async function confirmOrder(id: string, token: string): Promise<ApiOrder>
 
 export async function cancelOrder(id: string, token: string): Promise<ApiOrder> {
   return apiFetch<ApiOrder>(`/orders/${id}/cancel`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function confirmReceipt(id: string, token: string): Promise<ApiOrder> {
+  return apiFetch<ApiOrder>(`/orders/${id}/confirm-receipt`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -201,6 +211,8 @@ export async function createCartOrder(
       deliveryState: '',
       deliveryPostal: input.deliveryPostal,
       deliveryDate: input.deliveryDate,
+      deliveryLat: input.deliveryLat,
+      deliveryLng: input.deliveryLng,
       deliveryFee: 0,
       notes: input.notes,
       siteContactName: input.siteContactName,

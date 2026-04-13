@@ -137,12 +137,23 @@ export async function adminUpdateUser(
   });
 }
 
+export interface AdminMonthlyTrend {
+  month: string; // 'YYYY-MM'
+  orders: number;
+  gmv: number;
+}
+
 export interface AdminStats {
   totalUsers: number;
   totalOrders: number;
   pendingApplications: number;
   activeJobs: number;
   totalCompanies: number;
+  gmvAllTime: number;
+  gmv30d: number;
+  commissionEst30d: number;
+  openDisputes: number;
+  monthlyTrends: AdminMonthlyTrend[];
 }
 
 export async function getAdminStats(token: string): Promise<AdminStats> {
@@ -191,6 +202,7 @@ export interface AdminTransportJob {
   cargoType: string;
   cargoWeight: number | null;
   rate: number;
+  pricePerTonne: number | null;
   currency: string;
   pickupCity: string;
   deliveryCity: string;
@@ -207,6 +219,18 @@ export interface AdminTransportJob {
 export async function adminGetTransportJobs(token: string): Promise<AdminTransportJob[]> {
   return apiFetch<AdminTransportJob[]>('/admin/jobs', {
     headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminUpdateJobRate(
+  jobId: string,
+  data: { rate?: number; pricePerTonne?: number; note?: string },
+  token: string,
+): Promise<{ id: string; jobNumber: string; rate: number; pricePerTonne: number | null; status: string }> {
+  return apiFetch(`/admin/jobs/${jobId}/rate`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
   });
 }
 
@@ -243,5 +267,95 @@ export async function adminUpdateCompany(
     method: 'PATCH',
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(data),
+  });
+}
+
+// ─── Audit Logs ──────────────────────────────────────────────────────────────
+
+export interface AdminAuditLog {
+  id: string;
+  adminId: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+  note: string | null;
+  createdAt: string;
+  admin: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+  };
+}
+
+export async function adminGetAuditLogs(token: string, limit = 200): Promise<AdminAuditLog[]> {
+  return apiFetch<AdminAuditLog[]>(`/admin/audit-logs?limit=${limit}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ─── Admin Materials ──────────────────────────────────────────────────────────
+
+export interface AdminMaterial {
+  id: string;
+  name: string;
+  category: string;
+  subCategory: string | null;
+  basePrice: number;
+  unit: string;
+  currency: string;
+  inStock: boolean;
+  stockQty: number | null;
+  active: boolean;
+  isRecycled: boolean;
+  createdAt: string;
+  supplier: { id: string; name: string; verified: boolean };
+  _count: { orderItems: number };
+}
+
+export async function adminGetMaterials(token: string): Promise<AdminMaterial[]> {
+  return apiFetch<AdminMaterial[]>('/admin/materials', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminSetMaterialActive(
+  id: string,
+  active: boolean,
+  token: string,
+): Promise<{ id: string; name: string; active: boolean }> {
+  return apiFetch(`/admin/materials/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ active }),
+  });
+}
+
+// ─── Payment queue ────────────────────────────────────────────────────────────
+
+export interface AdminPayment {
+  id: string;
+  amount: number;
+  sellerPayout: number | null;
+  driverPayout: number | null;
+  platformFee: number | null;
+  status: string;
+  currency: string;
+  stripePaymentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  order: {
+    id: string;
+    orderNumber: string;
+    status: string;
+    buyer: { id: string; name: string };
+  } | null;
+}
+
+export async function adminGetPayments(token: string): Promise<AdminPayment[]> {
+  return apiFetch('/admin/payments', {
+    headers: { Authorization: `Bearer ${token}` },
   });
 }

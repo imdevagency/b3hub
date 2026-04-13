@@ -850,11 +850,19 @@ export class TransportJobsService {
       );
     }
 
+    // Resolve driver's carrier company so carrierId is set on the job —
+    // required for carrier earnings analytics to work correctly.
+    const driverUser = await this.prisma.user.findUnique({
+      where: { id: driverId },
+      select: { companyId: true },
+    });
+    const carrierId = driverUser?.companyId ?? null;
+
     // Atomic conditional update: only succeeds if job is still AVAILABLE.
     // Prevents two drivers racing to accept the same job (last-writer-wins race).
     const { count } = await this.prisma.transportJob.updateMany({
       where: { id, status: TransportJobStatus.AVAILABLE },
-      data: { status: TransportJobStatus.ACCEPTED, driverId },
+      data: { status: TransportJobStatus.ACCEPTED, driverId, carrierId },
     });
     if (count === 0) {
       throw new BadRequestException('Job is no longer available');
@@ -1322,7 +1330,7 @@ export class TransportJobsService {
   ) {
     const driver = await this.prisma.user.findUnique({
       where: { id: driverId },
-      select: { id: true, firstName: true, lastName: true, email: true, canTransport: true },
+      select: { id: true, firstName: true, lastName: true, email: true, canTransport: true, companyId: true },
     });
     if (!driver || !driver.canTransport) {
       throw new BadRequestException('User is not a valid driver');
@@ -1396,6 +1404,7 @@ export class TransportJobsService {
       where: { id },
       data: {
         driverId,
+        carrierId: driver.companyId ?? null,
         vehicleId: vehicleId ?? null,
         status: TransportJobStatus.ACCEPTED,
       },
@@ -1542,9 +1551,29 @@ export class TransportJobsService {
     if (orderId) {
       const orderForNotify = await this.prisma.order.findUnique({
         where: { id: orderId },
-        select: { createdById: true, orderNumber: true },
+        select: {
+          createdById: true,
+          orderNumber: true,
+          items: {
+            select: { material: { select: { supplier: { select: { id: true } } } } },
+          },
+        },
       });
       const buyerId = orderForNotify?.createdById;
+
+      // Resolve unique supplier company IDs and their user accounts for push notifications
+      const supplierCompanyIds = [
+        ...new Set(orderForNotify?.items.map((i) => i.material.supplier.id) ?? []),
+      ];
+      const getSupplierUserIds = async () => {
+        if (supplierCompanyIds.length === 0) return [];
+        const users = await this.prisma.user.findMany({
+          where: { companyId: { in: supplierCompanyIds } },
+          select: { id: true },
+        });
+        return users.map((u) => u.id);
+      };
+
       if (buyerId) {
         const orderNum = orderForNotify?.orderNumber ?? updatedJob.jobNumber;
         const driverName = updatedJob.driver
@@ -1552,6 +1581,19 @@ export class TransportJobsService {
           : 'Šoferis';
 
         if (dto.status === TransportJobStatus.EN_ROUTE_PICKUP) {
+          // ── Notify seller: a driver has accepted and will arrive at the quarry ──
+          const truckPlate = updatedJob.vehicle?.licensePlate;
+          const truckInfo = truckPlate ? ` • ${truckPlate}` : '';
+          getSupplierUserIds().then((sellerIds) => {
+            if (sellerIds.length === 0) return;
+            return this.notifications.createForMany(sellerIds, {
+              type: NotificationType.SYSTEM_ALERT,
+              title: '🚛 Šoferis pieņēmis darbu',
+              message: `${driverName} dodas uz iekraušanas vietu${truckInfo} • ${orderNum}. Sagatavojiet iekraušanu.`,
+              data: { jobId: updatedJob.id, orderId, driverName, licensePlate: truckPlate ?? null },
+            });
+          }).catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+
           this.notifications
             .create({
               userId: buyerId,
@@ -1561,6 +1603,17 @@ export class TransportJobsService {
               data: { jobId: updatedJob.id },
             })
             .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+        } else if (dto.status === TransportJobStatus.AT_PICKUP) {
+          // ── Notify seller: driver has arrived at the quarry ───────────────
+          getSupplierUserIds().then((sellerIds) => {
+            if (sellerIds.length === 0) return;
+            return this.notifications.createForMany(sellerIds, {
+              type: NotificationType.SYSTEM_ALERT,
+              title: '🚛 Šoferis ir ieradies',
+              message: `${driverName} ir ieradies iekraušanas vietā • ${orderNum}. Lūdzu apstipriniet iekraušanu.`,
+              data: { jobId: updatedJob.id, orderId },
+            });
+          }).catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
         } else if (dto.status === TransportJobStatus.LOADED) {
           this.notifications
             .create({
@@ -1604,6 +1657,17 @@ export class TransportJobsService {
               data: { jobId: updatedJob.id },
             })
             .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+
+          // ── Notify seller: their order has been delivered, payout pending ──
+          getSupplierUserIds().then((sellerIds) => {
+            if (sellerIds.length === 0) return;
+            return this.notifications.createForMany(sellerIds, {
+              type: NotificationType.TRANSPORT_COMPLETED,
+              title: '✅ Pasūtījums piegādāts',
+              message: `Pasūtījums ${orderNum} ir piegādāts. Maksājums tiks izmaksāts pēc apstiprināšanas.`,
+              data: { jobId: updatedJob.id, orderId },
+            });
+          }).catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
         }
       }
     }
@@ -1877,7 +1941,7 @@ export class TransportJobsService {
         }
       }
     } else if (job.requestedById) {
-      // Standalone disposal / freight job (no linked Order): notify the requester
+      // Standalone disposal / freight / call-off job (no linked Order): notify the requester
       this.notifications
         .create({
           userId: job.requestedById,
@@ -1889,6 +1953,12 @@ export class TransportJobsService {
         .catch((err) =>
           this.logger.error(err instanceof Error ? err.message : String(err)),
         );
+
+      // If the invoice is already PAID (buyer paid upfront via Payment Link),
+      // trigger driver payout now — releaseFundsForJob will skip if not yet paid.
+      this.payments.releaseFundsForJob(id).catch((err: Error) =>
+        this.logger.warn(`releaseFundsForJob on delivery failed for standalone job ${id}: ${err.message}`),
+      );
     }
 
     return delivered;
@@ -2241,15 +2311,16 @@ export class TransportJobsService {
   ) {
     const job = await this.prisma.transportJob.findUnique({
       where: { id: jobId },
-      select: { id: true, jobNumber: true, driverId: true, orderId: true, status: true },
+      select: { id: true, jobNumber: true, driverId: true, orderId: true, status: true, frameworkContractId: true, requestedById: true },
     });
     if (!job) throw new NotFoundException('Transport job not found');
     if (job.driverId !== driverId) {
       throw new ForbiddenException('Only the assigned driver can add surcharges');
     }
-    if (!job.orderId) {
+    if (!job.orderId && !job.frameworkContractId && !job.requestedById) {
+      // Edge case: orphaned job with no order and no requester — reject to avoid silent data loss
       throw new BadRequestException(
-        'Surcharges can only be added to order-linked transport jobs',
+        'Cannot add a surcharge to a job with no associated order or requester',
       );
     }
     const nonEditableStatuses: TransportJobStatus[] = [
@@ -2271,15 +2342,78 @@ export class TransportJobsService {
       [SurchargeType.OTHER]: 'Cita piemaksa',
     };
 
-    return this.prisma.orderSurcharge.create({
+    const isBillable = dto.billable ?? true;
+
+    // For order-linked jobs: tie to the order. For call-off jobs: tie directly to the transport job.
+    const surcharge = await this.prisma.orderSurcharge.create({
       data: {
-        orderId: job.orderId,
+        ...(job.orderId
+          ? { orderId: job.orderId }
+          : { transportJobId: job.id }),
         type: dto.type,
         label: dto.label ?? SURCHARGE_LABELS[dto.type] ?? dto.type,
         amount: dto.amount,
-        billable: dto.billable ?? true,
+        billable: isBillable,
       },
     });
+
+    // ── Update PaymentIntent so the card charge reflects the new total ────────
+    if (isBillable && job.orderId) {
+      const allBillable = await this.prisma.orderSurcharge.aggregate({
+        where: { orderId: job.orderId, billable: true },
+        _sum: { amount: true },
+      });
+      const order = await this.prisma.order.findUnique({
+        where: { id: job.orderId },
+        select: { total: true, createdById: true, orderNumber: true },
+      });
+      if (order) {
+        const newTotal = Number(order.total) + (allBillable._sum.amount ?? 0);
+        this.payments.updatePaymentIntentAmount(job.orderId, newTotal).catch((err) =>
+          this.logger.error(
+            `addSurcharge: failed to update PaymentIntent for order ${job.orderId}: ${(err as Error).message}`,
+          ),
+        );
+
+        // ── Notify buyer so they aren't surprised by a higher charge ─────────
+        if (order.createdById) {
+          const surchargeLabel = surcharge.label;
+          const amount = surcharge.amount.toFixed(2);
+          this.notifications
+            .create({
+              userId: order.createdById,
+              type: NotificationType.SURCHARGE_ADDED,
+              title: '📋 Piemaksa pievienota pasūtījumam',
+              message: `${surchargeLabel}: +€${amount} tika pievienots pasūtījumam #${job.jobNumber} (${order.orderNumber ?? job.orderId})`,
+              data: { jobId: job.id, orderId: job.orderId },
+            })
+            .catch((err) =>
+              this.logger.error(
+                `addSurcharge: failed to notify buyer for order ${job.orderId}: ${(err as Error).message}`,
+              ),
+            );
+        }
+      }
+    } else if (isBillable && job.requestedById) {
+      // Call-off job: notify the requester about the surcharge (no PaymentIntent to update)
+      const surchargeLabel = surcharge.label;
+      const amount = surcharge.amount.toFixed(2);
+      this.notifications
+        .create({
+          userId: job.requestedById,
+          type: NotificationType.SURCHARGE_ADDED,
+          title: '📋 Piemaksa pievienota darba uzdevumam',
+          message: `${surchargeLabel}: +€${amount} tika pievienots darba uzdevumam #${job.jobNumber}`,
+          data: { jobId: job.id },
+        })
+        .catch((err) =>
+          this.logger.error(
+            `addSurcharge: failed to notify requester for job ${job.id}: ${(err as Error).message}`,
+          ),
+        );
+    }
+
+    return surcharge;
   }
 
   @Cron(CronExpression.EVERY_HOUR)
@@ -2306,9 +2440,18 @@ export class TransportJobsService {
         id: true,
         jobNumber: true,
         driverId: true,
+        driver: { select: { firstName: true, lastName: true } },
         requestedById: true,
         orderId: true,
-        order: { select: { createdById: true } },
+        order: {
+          select: {
+            createdById: true,
+            orderNumber: true,
+            items: {
+              select: { material: { select: { supplier: { select: { id: true } } } } },
+            },
+          },
+        },
       },
     });
 
@@ -2327,6 +2470,11 @@ export class TransportJobsService {
           ),
         );
 
+      const driverName = job.driver
+        ? `${job.driver.firstName} ${job.driver.lastName}`
+        : 'Piešķirtais vadītājs';
+      const orderNum = job.order?.orderNumber ?? job.jobNumber;
+
       // Notify the order creator (buyer) that the job needs a new driver
       const notifyIds = new Set<string>();
       if (job.requestedById) notifyIds.add(job.requestedById);
@@ -2337,10 +2485,41 @@ export class TransportJobsService {
           .createForMany(Array.from(notifyIds), {
             type: NotificationType.SYSTEM_ALERT,
             title: '⚠️ Transporta darbs — vadītājs neieradās',
-            message: `Darbs #${job.jobNumber}: piešķirtais vadītājs nav sācis darbu. Darbs ir atkal pieejams citiem vadītājiem.`,
+            message: `Darbs #${job.jobNumber}: ${driverName} nav sācis darbu. Darbs ir atkal pieejams citiem vadītājiem.`,
             data: { jobId: job.id },
           })
           .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+      }
+
+      // Notify the seller (quarry) — they were told the driver was coming and
+      // may be holding a loading slot. Cancel the loading preparation.
+      if (job.orderId && job.order?.items && job.order.items.length > 0) {
+        const supplierCompanyIds = [
+          ...new Set(
+            job.order.items
+              .map((i) => i.material?.supplier?.id)
+              .filter((id): id is string => id != null),
+          ),
+        ];
+        if (supplierCompanyIds.length > 0) {
+          const sellerUsers = await this.prisma.user.findMany({
+            where: { companyId: { in: supplierCompanyIds } },
+            select: { id: true },
+          });
+          if (sellerUsers.length > 0) {
+            this.notifications
+              .createForMany(
+                sellerUsers.map((u) => u.id),
+                {
+                  type: NotificationType.SYSTEM_ALERT,
+                  title: '⚠️ Vadītājs neieradās',
+                  message: `${driverName} nav ieradies iekraušanai • ${orderNum}. Darbs piešķirts citam vadītājam. Sagatavojieties citam piegādes laikam.`,
+                  data: { jobId: job.id, orderId: job.orderId },
+                },
+              )
+              .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+          }
+        }
       }
 
       this.logger.warn(

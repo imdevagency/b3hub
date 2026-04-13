@@ -115,8 +115,12 @@ export interface CreateCallOffInput {
   deliveryDate?: string;
   pickupAddress?: string;
   pickupCity?: string;
+  pickupLat?: number;
+  pickupLng?: number;
   deliveryAddress?: string;
   deliveryCity?: string;
+  deliveryLat?: number;
+  deliveryLng?: number;
   notes?: string;
 }
 

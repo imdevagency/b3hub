@@ -36,3 +36,21 @@ export async function sendChatMessage(
     body: JSON.stringify({ body }),
   });
 }
+
+export async function getOrderChatMessages(orderId: string, token: string): Promise<ChatMessage[]> {
+  return apiFetch<ChatMessage[]>(`/chat/order/${orderId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function sendOrderChatMessage(
+  orderId: string,
+  body: string,
+  token: string,
+): Promise<ChatMessage> {
+  return apiFetch<ChatMessage>(`/chat/order/${orderId}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ body }),
+  });
+}

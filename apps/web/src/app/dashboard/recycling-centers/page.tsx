@@ -5,9 +5,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { getRecyclingCenters, getMyRecyclingCenters } from '@/lib/api';
-import { Building2, MapPin, Recycle } from 'lucide-react';
+import { Building2, MapPin, Recycle, Truck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 
 interface RecyclingCenterCompany {
@@ -52,6 +54,7 @@ const WASTE_TYPE_LABELS: Record<string, string> = {
 
 export default function RecyclingCentersPage() {
   const { user, token } = useAuth();
+  const router = useRouter();
   const [centers, setCenters] = useState<RecyclingCenter[]>([]);
   const [mineCenters, setMineCenters] = useState<RecyclingCenter[]>([]);
   const [loading, setLoading] = useState(true);
@@ -179,7 +182,7 @@ export default function RecyclingCentersPage() {
 
               {/* Waste types */}
               {center.acceptedWasteTypes.length > 0 && (
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1 mb-3">
                   {center.acceptedWasteTypes.slice(0, 4).map((type) => (
                     <span key={type} className="text-xs bg-muted px-2 py-0.5 rounded-full">
                       {WASTE_TYPE_LABELS[type] ?? type}
@@ -191,6 +194,16 @@ export default function RecyclingCentersPage() {
                     </span>
                   )}
                 </div>
+              )}
+
+              {center.active && (
+                <Button
+                  size="sm"
+                  className="w-full h-8 text-xs"
+                  onClick={() => router.push('/dashboard/order/disposal')}
+                >
+                  <Truck className="h-3.5 w-3.5 mr-1.5" /> Pasūtīt izvešanu
+                </Button>
               )}
             </div>
           ))}

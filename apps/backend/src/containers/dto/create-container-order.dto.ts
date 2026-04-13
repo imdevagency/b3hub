@@ -5,6 +5,8 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  Max,
+  Min,
 } from 'class-validator';
 import { WastePurpose, WasteType } from '@prisma/client';
 
@@ -38,6 +40,18 @@ export class CreateContainerOrderDto {
 
   @IsString()
   deliveryCity!: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  deliveryLat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  deliveryLng?: number;
 
   @IsOptional()
   @IsString()

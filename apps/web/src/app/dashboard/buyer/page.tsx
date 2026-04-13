@@ -17,6 +17,8 @@ import {
   MessageSquare,
   FolderKanban,
   Receipt,
+  Truck,
+  Recycle,
 } from 'lucide-react';
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
@@ -98,6 +100,18 @@ export default function BuyerDashboardPage() {
       description: 'Rezervēt atkritumu konteineru savai darba vai mājas vietai',
       icon: Trash2,
       href: '/dashboard/order/skip-hire',
+    },
+    {
+      label: 'Utilizācija',
+      description: 'Atkritumu izvešana bez konteinera — kravas auto iebrauc un aizved',
+      icon: Recycle,
+      href: '/dashboard/order/disposal',
+    },
+    {
+      label: 'Kravas Transports',
+      description: 'Jebkuras kravas pārvadāšana no punkta A uz punktu B',
+      icon: Truck,
+      href: '/dashboard/order/transport',
     },
     {
       label: 'Projekti',

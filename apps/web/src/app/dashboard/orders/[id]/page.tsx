@@ -15,7 +15,7 @@ const TrackingMap = dynamic(() => import('@/components/tracking/TrackingMap'), {
   ssr: false,
   loading: () => <div className="rounded-2xl bg-slate-100 animate-pulse" style={{ height: 360 }} />,
 });
-import { getOrder, type ApiOrder } from '@/lib/api/orders';
+import { getOrder, confirmReceipt, type ApiOrder } from '@/lib/api/orders';
 import {
   getTransportJob,
   getTransportJobLocation,
@@ -38,6 +38,7 @@ import { ORDER_STATUS } from '@/lib/status-config';
 import {
   AlertTriangle,
   ArrowLeft,
+  CheckCircle,
   Clock,
   CreditCard,
   MessageSquare,
@@ -48,6 +49,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageSpinner } from '@/components/ui/page-spinner';
+import { SurchargePanel } from '@/components/orders/surcharge-panel';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -84,7 +86,7 @@ const JOB_STATUS_CFG: Record<TransportJobStatus, { label: string; bg: string; te
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   const [order, setOrder] = useState<ApiOrder | null>(null);
   const [job, setJob] = useState<ApiTransportJob | null>(null);
@@ -104,6 +106,10 @@ export default function OrderDetailPage() {
   const [disputeDetails, setDisputeDetails] = useState('');
   const [disputeLoading, setDisputeLoading] = useState(false);
   const [disputeError, setDisputeError] = useState<string | null>(null);
+
+  // Confirm receipt state
+  const [confirmReceiptLoading, setConfirmReceiptLoading] = useState(false);
+  const [confirmReceiptError, setConfirmReceiptError] = useState<string | null>(null);
 
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -164,6 +170,22 @@ export default function OrderDetailPage() {
       if (pollTimer.current) clearInterval(pollTimer.current);
     };
   }, [job, pollLocation]);
+
+  const handleConfirmReceipt = async () => {
+    if (!token || !order) return;
+    setConfirmReceiptLoading(true);
+    setConfirmReceiptError(null);
+    try {
+      const updated = await confirmReceipt(order.id, token);
+      setOrder(updated);
+    } catch (err: unknown) {
+      setConfirmReceiptError(
+        err instanceof Error ? err.message : 'Neizdevās apstiprināt saņemšanu',
+      );
+    } finally {
+      setConfirmReceiptLoading(false);
+    }
+  };
 
   if (loading) {
     return <PageSpinner className="min-h-[60vh]" />;
@@ -290,6 +312,14 @@ export default function OrderDetailPage() {
               </div>
             ))}
           </div>
+        )}
+        {/* Sellers and admins can add adjustment surcharges (e.g. partial delivery deductions) */}
+        {token && (user?.canSell || user?.userType === 'ADMIN') && order.status !== 'CANCELLED' && (
+          <SurchargePanel
+            orderId={order.id}
+            token={token}
+            initialSurcharges={order.surcharges ?? []}
+          />
         )}
       </div>
 
@@ -482,6 +512,34 @@ export default function OrderDetailPage() {
               </p>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── Confirm Receipt ── */}
+      {order.status === 'DELIVERED' && (
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <h2 className="text-sm font-semibold text-green-800">Apstiprināt saņemšanu</h2>
+          </div>
+          <p className="text-sm text-green-700">
+            Pasūtījums ir piegādāts. Apstipriniet saņemšanu, lai slēgtu pasūtījumu un izmaksātu
+            maksājumu piegādātājam.
+          </p>
+          {confirmReceiptError && <p className="text-sm text-red-600">{confirmReceiptError}</p>}
+          <Button
+            onClick={handleConfirmReceipt}
+            disabled={confirmReceiptLoading || !!existingDispute}
+            className="bg-green-700 hover:bg-green-800 text-white"
+          >
+            <CheckCircle className="h-4 w-4 mr-1.5" />
+            {confirmReceiptLoading ? 'Apstiprina...' : 'Apstiprināt saņemšanu'}
+          </Button>
+          {existingDispute && (
+            <p className="text-xs text-amber-700">
+              Saņemšanu nevar apstiprināt, kamēr ir atvērta sūdzība.
+            </p>
+          )}
         </div>
       )}
 

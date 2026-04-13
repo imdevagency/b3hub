@@ -1,17 +1,184 @@
 /**
  * Admin transport jobs page — /dashboard/admin/jobs
- * Platform-wide view of all transport jobs with status filtering, carrier/driver details, and exception alerts.
+ * Platform-wide view of all transport jobs with status filtering, carrier/driver details,
+ * exception alerts, and rate override panel.
  */
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { adminGetTransportJobs, type AdminTransportJob } from '@/lib/api/admin';
+import { adminGetTransportJobs, adminUpdateJobRate, type AdminTransportJob } from '@/lib/api/admin';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Truck, Search, AlertTriangle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { RefreshCw, Truck, Search, AlertTriangle, Pencil, X } from 'lucide-react';
+
+// ── Rate override panel ───────────────────────────────────────────────────────
+
+const BLOCKED_FOR_RATE = new Set(['COMPLETED', 'CANCELLED']);
+
+function RatePanel({
+  job,
+  token,
+  onClose,
+  onSaved,
+}: {
+  job: AdminTransportJob;
+  token: string;
+  onClose: () => void;
+  onSaved: (jobId: string, rate: number, pricePerTonne: number | null) => void;
+}) {
+  const [rate, setRate] = useState(String(job.rate));
+  const [pricePerTonne, setPricePerTonne] = useState(
+    job.pricePerTonne != null ? String(job.pricePerTonne) : '',
+  );
+  const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const rateRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    rateRef.current?.focus();
+  }, []);
+
+  const isBlocked = BLOCKED_FOR_RATE.has(job.status);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (isBlocked) return;
+    const rateNum = parseFloat(rate);
+    if (isNaN(rateNum) || rateNum < 0) {
+      setError('Ievadiet derīgu likmi (≥ 0).');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      const payload: { rate?: number; pricePerTonne?: number; note?: string } = { rate: rateNum };
+      const ptNum = parseFloat(pricePerTonne);
+      if (!isNaN(ptNum) && ptNum >= 0) payload.pricePerTonne = ptNum;
+      if (note.trim()) payload.note = note.trim();
+      const updated = await adminUpdateJobRate(job.id, payload, token);
+      onSaved(job.id, updated.rate, updated.pricePerTonne ?? null);
+      onClose();
+    } catch (err) {
+      setError((err as Error).message || 'Neizdevās saglabāt. Mēģiniet vēlreiz.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-background border border-border rounded-2xl w-full max-w-md shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <div>
+            <p className="font-semibold text-foreground">Labot darba likmi</p>
+            <p className="text-xs text-muted-foreground font-mono mt-0.5">{job.jobNumber}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {isBlocked ? (
+          <div className="px-5 py-6 text-sm text-muted-foreground">
+            <AlertTriangle className="h-5 w-5 text-amber-500 mb-2" />
+            Darbs ir statusā <strong>{job.status}</strong> — likmes korekcija nav atļauta, jo
+            izmaksa var jau būt notikusi.
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
+            {/* Current */}
+            <div className="rounded-xl bg-muted/40 px-4 py-3 text-sm space-y-1">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Pašreizējā likme</span>
+                <span className="font-semibold tabular-nums">
+                  {job.rate.toLocaleString('lv-LV', { style: 'currency', currency: job.currency })}
+                </span>
+              </div>
+              {job.pricePerTonne != null && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Cena / tonna</span>
+                  <span className="font-semibold tabular-nums">
+                    {job.pricePerTonne.toLocaleString('lv-LV', {
+                      style: 'currency',
+                      currency: job.currency,
+                    })}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* New rate */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Jaunā likme ({job.currency}) *
+              </label>
+              <Input
+                ref={rateRef}
+                type="number"
+                min={0}
+                step="0.01"
+                value={rate}
+                onChange={(e) => setRate(e.target.value)}
+                required
+              />
+            </div>
+
+            {/* Price per tonne */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Jaunā cena / tonna ({job.currency}) — neobligāts
+              </label>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={pricePerTonne}
+                onChange={(e) => setPricePerTonne(e.target.value)}
+                placeholder="Atstāt tukšu, lai nemainītu"
+              />
+            </div>
+
+            {/* Note */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Pamatojums (ierakstīts audita žurnālā) *
+              </label>
+              <Textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={2}
+                placeholder="Korekcijas iemesls..."
+                required
+              />
+            </div>
+
+            {error && <p className="text-xs text-destructive">{error}</p>}
+
+            <div className="flex gap-2 pt-1">
+              <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
+                Atcelt
+              </Button>
+              <Button type="submit" className="flex-1" disabled={saving}>
+                {saving ? <RefreshCw className="h-4 w-4 animate-spin mr-1.5" /> : null}
+                Saglabāt
+              </Button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ── Status badge ─────────────────────────────────────────────────────────────
 
@@ -70,6 +237,7 @@ export default function AdminJobsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<JobFilter>('ALL');
+  const [rateJob, setRateJob] = useState<AdminTransportJob | null>(null);
 
   useEffect(() => {
     if (!isLoading && (!user || user.userType !== 'ADMIN')) {
@@ -112,6 +280,10 @@ export default function AdminJobsPage() {
 
   const openExceptionCount = jobs.filter((j) => j.exceptions.length > 0).length;
 
+  function handleRateSaved(jobId: string, rate: number, pricePerTonne: number | null) {
+    setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, rate, pricePerTonne } : j)));
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32">
@@ -122,6 +294,15 @@ export default function AdminJobsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Rate override panel (modal) */}
+      {rateJob && token && (
+        <RatePanel
+          job={rateJob}
+          token={token}
+          onClose={() => setRateJob(null)}
+          onSaved={handleRateSaved}
+        />
+      )}
       <PageHeader
         title="Transporta Darbi"
         description={`${jobs.length} darbi platformā`}
@@ -282,8 +463,39 @@ export default function AdminJobsPage() {
                         <span className="text-gray-300 text-xs">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                      {j.rate.toLocaleString('lv-LV', { style: 'currency', currency: j.currency })}
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-2 group/rate">
+                        <div className="text-right">
+                          <p className="font-semibold text-gray-900">
+                            {j.rate.toLocaleString('lv-LV', {
+                              style: 'currency',
+                              currency: j.currency,
+                            })}
+                          </p>
+                          {j.pricePerTonne != null && (
+                            <p className="text-[11px] text-muted-foreground">
+                              {j.pricePerTonne.toLocaleString('lv-LV', {
+                                style: 'currency',
+                                currency: j.currency,
+                              })}
+                              /t
+                            </p>
+                          )}
+                        </div>
+                        {!BLOCKED_FOR_RATE.has(j.status) && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRateJob(j);
+                            }}
+                            title="Labot likmi"
+                            className="opacity-0 group-hover/rate:opacity-100 transition-opacity p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-center">
                       {j.exceptions.length > 0 ? (

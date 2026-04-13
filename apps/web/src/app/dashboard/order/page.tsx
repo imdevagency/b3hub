@@ -5,7 +5,7 @@
 'use client';
 
 import Link from 'next/link';
-import { FileText, HardHat, Package, Trash2, Truck } from 'lucide-react';
+import { HardHat, Package, Trash2, Truck } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 
 const SERVICES = [
@@ -44,15 +44,6 @@ const SERVICES = [
     basePath: '/dashboard/order/transport',
     color: 'text-indigo-700',
     bgColor: 'bg-indigo-500/10',
-  },
-  {
-    id: 'rfq',
-    title: 'Cenu aptauja',
-    description: 'Aprakstiet vajadzību — piegādātāji piedāvā cenu; jūs izvēlaties labāko',
-    icon: FileText,
-    basePath: '/dashboard/catalog',
-    color: 'text-violet-700',
-    bgColor: 'bg-violet-500/10',
   },
 ];
 

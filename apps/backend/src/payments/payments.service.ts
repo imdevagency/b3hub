@@ -9,7 +9,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import { PaymentStatus, SkipHireStatus } from '@prisma/client';
+import { DisputeReason, DisputeStatus, PaymentMethod, PaymentStatus, SkipHireStatus } from '@prisma/client';
 import { RequestingUser } from '../common/types/requesting-user.interface';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
@@ -409,6 +409,19 @@ export class PaymentsService {
     });
 
     if (!payment || !payment.stripePaymentId) {
+      // INVOICE / SEPA orders never create a Payment record — they pay via
+      // Stripe Payment Link, which funds the platform balance directly.
+      // Route to the dedicated invoice-payout path instead of silently returning.
+      const orderMethod = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        select: { paymentMethod: true, paymentStatus: true },
+      });
+      if (
+        orderMethod?.paymentMethod === 'INVOICE' ||
+        orderMethod?.paymentMethod === 'SEPA'
+      ) {
+        return this.releaseInvoiceOrderFunds(orderId);
+      }
       this.logger.warn(`releaseFunds: no payment record for order ${orderId}`);
       return;
     }
@@ -444,13 +457,21 @@ export class PaymentsService {
               },
             },
           },
+          // Rate fields needed to calculate driver payout
+          take: 1,
+        },
+        surcharges: {
+          where: { billable: true },
+          select: { amount: true },
         },
       },
     });
 
     if (!order) throw new BadRequestException('Order not found');
 
-    const totalCents = Math.round(Number(order.total) * 100);
+    // Total charged to buyer = base order total + all billable surcharges
+    const surchargeTotal = order.surcharges.reduce((s, c) => s + Number(c.amount), 0);
+    const totalCents = Math.round((Number(order.total) + surchargeTotal) * 100);
     // Use the highest commissionRate among suppliers on this order, defaulting to 10%
     const supplierRates = order.items.map(
       (i) => i.material.supplier.commissionRate ?? 10,
@@ -467,8 +488,32 @@ export class PaymentsService {
       (deliveredJob?.driver as any)?.driverProfile?.stripeConnectId ??
       null;
 
-    const DRIVER_SHARE_PERCENT = driverConnectId ? 0.2 : 0;
-    const driverCents = Math.round(payoutCents * DRIVER_SHARE_PERCENT);
+    // ── Driver payout — use agreed job rate, not a flat percentage ────────────
+    // Priority: pricePerTonne × actualWeight > flat rate > fallback 20% of payoutCents
+    let driverCents = 0;
+    if (driverConnectId && deliveredJob) {
+      const job = deliveredJob as typeof deliveredJob & {
+        rate: number;
+        pricePerTonne: number | null;
+        actualWeightKg: number | null;
+      };
+      if (job.pricePerTonne != null && job.actualWeightKg != null && job.actualWeightKg > 0) {
+        // Per-tonne pricing: pricePerTonne × actual tonnes
+        const actualTonnes = job.actualWeightKg / 1000;
+        driverCents = Math.round(job.pricePerTonne * actualTonnes * 100);
+      } else if (job.rate && job.rate > 0) {
+        // Flat rate for the whole job
+        driverCents = Math.round(job.rate * 100);
+      } else {
+        // No rate set — fall back to 20% of post-commission payout (legacy behaviour)
+        driverCents = Math.round(payoutCents * 0.2);
+        this.logger.warn(
+          `releaseFunds: transport job ${deliveredJob.id} has no rate/pricePerTonne — falling back to 20% share for order ${orderId}`,
+        );
+      }
+      // Cap driver payout so it never exceeds the post-commission pool
+      driverCents = Math.min(driverCents, payoutCents);
+    }
     const sellerCents = payoutCents - driverCents;
 
     // Stripe requires a transfer group to link transfers to a PaymentIntent
@@ -649,6 +694,230 @@ export class PaymentsService {
     }
 
     // Notify driver that the job is fully closed and their payout is en route
+    const driverUserId = deliveredJob?.driver?.id;
+    if (driverUserId && driverCents > 0) {
+      this.notifications
+        .create({
+          userId: driverUserId,
+          type: NotificationType.TRANSPORT_COMPLETED,
+          title: 'Darbs pabeigts — izmaksa ceļā',
+          message: `Piegāde ir apstiprināta. Jūsu atalgojums tiek pārskaitīts uz jūsu Stripe kontu.`,
+          data: { orderId },
+        })
+        .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
+    }
+  }
+
+  /**
+   * Release seller and driver payouts for orders paid via INVOICE or SEPA.
+   * These orders pay via Stripe Payment Link → funds land in platform balance.
+   * We transfer out from that balance (no source_transaction needed).
+   * Called from releaseFunds() when no Payment record is found.
+   */
+  private async releaseInvoiceOrderFunds(orderId: string): Promise<void> {
+    if (!this.stripe) return;
+
+    // Guard: already released
+    const existingOrder = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: { paymentStatus: true },
+    });
+    if (existingOrder?.paymentStatus === 'RELEASED') return;
+
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        invoices: {
+          where: { paymentStatus: PaymentStatus.PAID },
+          orderBy: { paidDate: 'desc' },
+          take: 1,
+        },
+        items: {
+          include: {
+            material: {
+              include: {
+                supplier: { select: { id: true, stripeConnectId: true, commissionRate: true } },
+              },
+            },
+          },
+        },
+        transportJobs: {
+          where: { status: 'DELIVERED' },
+          orderBy: { updatedAt: 'desc' },
+          include: {
+            driver: {
+              select: {
+                id: true,
+                companyId: true,
+                company: { select: { stripeConnectId: true } },
+                driverProfile: { select: { stripeConnectId: true } },
+              },
+            },
+          },
+          take: 1,
+        },
+        surcharges: {
+          where: { billable: true },
+          select: { amount: true },
+        },
+      },
+    });
+
+    if (!order) {
+      this.logger.warn(`releaseInvoiceOrderFunds: order ${orderId} not found`);
+      return;
+    }
+
+    const invoice = order.invoices[0];
+    if (!invoice) {
+      this.logger.warn(
+        `releaseInvoiceOrderFunds: no paid invoice for order ${orderId} — payout deferred until invoice is paid`,
+      );
+      return;
+    }
+
+    // Use invoice total as source of truth; fallback to order total + surcharges
+    const surchargeTotal = order.surcharges.reduce((s, c) => s + Number(c.amount), 0);
+    const totalCents = Math.round(
+      (invoice.total > 0 ? invoice.total : Number(order.total) + surchargeTotal) * 100,
+    );
+
+    const supplierRates = order.items.map(
+      (i) => i.material.supplier.commissionRate ?? 10,
+    );
+    const commissionPct = Math.max(...(supplierRates.length ? supplierRates : [10])) / 100;
+    const platformFeeCents = Math.round(totalCents * commissionPct);
+    const payoutCents = totalCents - platformFeeCents;
+
+    const deliveredJob = order.transportJobs?.[0];
+    const driverConnectId =
+      deliveredJob?.driver?.company?.stripeConnectId ??
+      (deliveredJob?.driver as any)?.driverProfile?.stripeConnectId ??
+      null;
+
+    let driverCents = 0;
+    if (driverConnectId && deliveredJob) {
+      const job = deliveredJob as typeof deliveredJob & {
+        rate: number;
+        pricePerTonne: number | null;
+        actualWeightKg: number | null;
+      };
+      if (job.pricePerTonne != null && job.actualWeightKg != null && job.actualWeightKg > 0) {
+        driverCents = Math.round((job.pricePerTonne * job.actualWeightKg) / 1000 * 100);
+      } else if (job.rate && job.rate > 0) {
+        driverCents = Math.round(job.rate * 100);
+      } else {
+        driverCents = Math.round(payoutCents * 0.2);
+        this.logger.warn(
+          `releaseInvoiceOrderFunds: job ${deliveredJob.id} has no rate — falling back to 20% for order ${orderId}`,
+        );
+      }
+      driverCents = Math.min(driverCents, payoutCents);
+    }
+    const sellerCents = payoutCents - driverCents;
+
+    const transferGroup = `order_${orderId}`;
+    const currency = order.currency.toLowerCase();
+
+    const supplierIds = [...new Set(order.items.map((i) => i.material.supplier.id))];
+    const perSupplierCents = Math.round(sellerCents / (supplierIds.length || 1));
+
+    for (const supplierId of supplierIds) {
+      const supplierItem = order.items.find((i) => i.material.supplier.id === supplierId);
+      const supplierConnectId = supplierItem?.material.supplier.stripeConnectId;
+      if (!supplierConnectId) {
+        this.logger.error(
+          `releaseInvoiceOrderFunds: supplier ${supplierId} has no Connect account — manual payout required for order ${orderId}`,
+        );
+        const admins = await this.prisma.user.findMany({ where: { userType: 'ADMIN' }, select: { id: true } });
+        if (admins.length > 0) {
+          await this.notifications
+            .createForMany(admins.map((a) => a.id), {
+              type: NotificationType.SYSTEM_ALERT,
+              title: '🚨 Piegādātāja izmaksa izlaista',
+              message: `Rēķins pasūtījumam ${orderId}: piegādātājam ${supplierId} nav Stripe Connect konta. Nepieciešama manuāla iejaukšanās.`,
+              data: { orderId, supplierId },
+            })
+            .catch((e) => this.logger.error(`Failed to notify admins: ${(e as Error).message}`));
+        }
+        continue;
+      }
+      try {
+        await this.stripe.transfers.create({
+          amount: perSupplierCents,
+          currency,
+          destination: supplierConnectId,
+          transfer_group: transferGroup,
+          metadata: { orderId, supplierId, source: 'invoice' },
+        });
+      } catch (err) {
+        this.logger.error(
+          `releaseInvoiceOrderFunds: seller transfer failed for order ${orderId}: ${(err as Error).message}`,
+        );
+        throw err;
+      }
+    }
+
+    if (driverConnectId && driverCents > 0) {
+      try {
+        await this.stripe.transfers.create({
+          amount: driverCents,
+          currency,
+          destination: driverConnectId,
+          transfer_group: transferGroup,
+          metadata: { orderId, driverId: deliveredJob?.driverId ?? '', source: 'invoice' },
+        });
+      } catch (err) {
+        this.logger.error(
+          `releaseInvoiceOrderFunds: driver transfer failed for order ${orderId}: ${(err as Error).message}`,
+        );
+        const admins = await this.prisma.user.findMany({ where: { userType: 'ADMIN' }, select: { id: true } });
+        if (admins.length > 0) {
+          await this.notifications
+            .createForMany(admins.map((a) => a.id), {
+              type: NotificationType.SYSTEM_ALERT,
+              title: '🚨 Vadītāja izmaksa neizdevās',
+              message: `Rēķins pasūtījumam ${orderId}: vadītāja Stripe izmaksa neizdevās — ${(err as Error).message}. Nepieciešama manuāla izmaksa vadītājam ${deliveredJob?.driverId ?? 'nezināms'}.`,
+              data: { orderId, driverId: deliveredJob?.driverId ?? null },
+            })
+            .catch((notifErr) =>
+              this.logger.error(`Failed to notify admins: ${(notifErr as Error).message}`),
+            );
+        }
+      }
+    } else if (!driverConnectId && driverCents > 0) {
+      this.logger.error(
+        `releaseInvoiceOrderFunds: driver ${deliveredJob?.driverId} has no Connect account — skipping driver transfer for order ${orderId}`,
+      );
+    }
+
+    // Mark the order paymentStatus as RELEASED
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: { paymentStatus: 'RELEASED' },
+    });
+
+    this.logger.log(
+      `releaseInvoiceOrderFunds: payouts complete for order ${orderId} — seller €${(sellerCents / 100).toFixed(2)}, driver €${(driverCents / 100).toFixed(2)}, platform fee €${(platformFeeCents / 100).toFixed(2)}`,
+    );
+
+    // Notify seller
+    const sellerUserIds = await this.prisma.user.findMany({
+      where: { companyId: { in: supplierIds }, company: { isNot: null } },
+      select: { id: true },
+    });
+    if (sellerUserIds.length > 0) {
+      this.notifications
+        .createForMany(sellerUserIds.map((u) => u.id), {
+          type: NotificationType.PAYMENT_RECEIVED,
+          title: 'Maksājums saņemts',
+          message: `Līdzekļi par pasūtījumu #${orderId.slice(-6).toUpperCase()} ir izmaksāti uz jūsu Stripe kontu.`,
+          data: { orderId },
+        })
+        .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
+    }
+
+    // Notify driver
     const driverUserId = deliveredJob?.driver?.id;
     if (driverUserId && driverCents > 0) {
       this.notifications
@@ -877,17 +1146,50 @@ export class PaymentsService {
             .catch((err) => this.logger.error(`Webhook DB sync failed for order ${orderId} paymentStatus CAPTURED`, err));
         }
         if (skipHireOrderId) {
-          await this.prisma.skipHireOrder
+          const confirmedSkip = await this.prisma.skipHireOrder
             .update({
               where: { id: skipHireOrderId },
               data: {
                 paymentStatus: 'CAPTURED',
                 status: SkipHireStatus.CONFIRMED,
               },
+              select: {
+                id: true,
+                orderNumber: true,
+                location: true,
+                deliveryDate: true,
+                skipSize: true,
+                carrierId: true,
+              },
             })
-            .catch((err) =>
-              this.logger.error(`Webhook: failed to confirm skip-hire order ${skipHireOrderId}`, err),
-            );
+            .catch((err) => {
+              this.logger.error(`Webhook: failed to confirm skip-hire order ${skipHireOrderId}`, err);
+              return null;
+            });
+
+          // Notify all users of the assigned carrier company
+          if (confirmedSkip?.carrierId) {
+            const carrierUsers = await this.prisma.user
+              .findMany({
+                where: { companyId: confirmedSkip.carrierId },
+                select: { id: true },
+              })
+              .catch(() => [] as { id: string }[]);
+
+            if (carrierUsers.length > 0) {
+              const deliveryDay = confirmedSkip.deliveryDate
+                .toISOString()
+                .split('T')[0];
+              this.notifications
+                .createForMany(carrierUsers.map((u) => u.id), {
+                  type: NotificationType.ORDER_CONFIRMED,
+                  title: '📦 Jauns konteinera pasūtījums',
+                  message: `Pasūtījums #${confirmedSkip.orderNumber} apmaksāts. Piegāde: ${confirmedSkip.location}, ${deliveryDay}.`,
+                  data: { skipOrderId: confirmedSkip.id },
+                })
+                .catch(() => null);
+            }
+          }
         }
         break;
       }
@@ -1051,6 +1353,21 @@ export class PaymentsService {
                   err,
                 ),
               );
+
+            // If the order is already COMPLETED (auto-complete ran before buyer paid),
+            // trigger the payout now — it was deferred because the invoice wasn't
+            // PAID yet when releaseFunds() first ran.
+            const completedOrder = await this.prisma.order.findUnique({
+              where: { id: orderId },
+              select: { status: true, paymentStatus: true },
+            });
+            if (completedOrder?.status === 'COMPLETED') {
+              this.releaseInvoiceOrderFunds(orderId).catch((err) =>
+                this.logger.error(
+                  `checkout.session.completed: late releaseInvoiceOrderFunds failed for order ${orderId}: ${(err as Error).message}`,
+                ),
+              );
+            }
           } else if (transportJobId) {
             // Standalone disposal / freight job paid — trigger driver payout
             this.releaseFundsForJob(transportJobId).catch((err) =>
@@ -1092,6 +1409,7 @@ export class PaymentsService {
         createdById: true,
         status: true,
         internalNotes: true,
+        dispute: { select: { id: true } },
       },
     });
 
@@ -1106,6 +1424,16 @@ export class PaymentsService {
       throw new BadRequestException('Only delivered orders can be disputed');
     }
 
+    if (order.dispute) {
+      throw new BadRequestException('A dispute is already open for this order');
+    }
+
+    // Map the incoming reason string to the DisputeReason enum (default OTHER for unknown values)
+    const disputeReason: DisputeReason =
+      Object.values(DisputeReason).includes(reason as DisputeReason)
+        ? (reason as DisputeReason)
+        : DisputeReason.OTHER;
+
     const disputeEntry =
       `[DISPUTE ${new Date().toISOString()}] Reason: ${reason}` +
       (details ? `\nDetails: ${details}` : '');
@@ -1114,12 +1442,22 @@ export class PaymentsService {
       ? `${order.internalNotes}\n\n${disputeEntry}`
       : disputeEntry;
 
-    // Mark order as IN_PROGRESS (dispute hold) so it cannot be auto-completed
-    // and releaseFunds cannot be triggered while the dispute is open
-    await this.prisma.order.update({
-      where: { id: orderId },
-      data: { internalNotes: updatedNotes, status: 'IN_PROGRESS' },
-    });
+    // Create a Dispute record + move order to IN_PROGRESS in a transaction
+    await this.prisma.$transaction([
+      this.prisma.dispute.create({
+        data: {
+          orderId,
+          reason: disputeReason,
+          description: details ?? reason,
+          status: DisputeStatus.OPEN,
+          raisedById: user.userId,
+        },
+      }),
+      this.prisma.order.update({
+        where: { id: orderId },
+        data: { internalNotes: updatedNotes, status: 'IN_PROGRESS' },
+      }),
+    ]);
 
     // Notify all admin users
     const admins = await this.prisma.user.findMany({
@@ -1194,10 +1532,20 @@ export class PaymentsService {
 
     if (resolution === 'release') {
       // Reject dispute — release funds to seller/driver
-      await this.prisma.order.update({
-        where: { id: orderId },
-        data: { status: 'COMPLETED', internalNotes: updatedNotes },
-      });
+      await this.prisma.$transaction([
+        this.prisma.order.update({
+          where: { id: orderId },
+          data: { status: 'COMPLETED', internalNotes: updatedNotes },
+        }),
+        this.prisma.dispute.updateMany({
+          where: { orderId, status: { in: [DisputeStatus.OPEN, DisputeStatus.UNDER_REVIEW] } },
+          data: {
+            status: DisputeStatus.REJECTED,
+            resolution: adminNote ?? 'Dispute rejected — delivery confirmed.',
+            resolvedAt: new Date(),
+          },
+        }),
+      ]);
       await this.releaseFunds(orderId);
       this.logger.log(
         `Dispute RELEASED for order ${order.orderNumber} by admin ${admin.userId}`,
@@ -1214,10 +1562,20 @@ export class PaymentsService {
         .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
     } else {
       // Uphold dispute — refund buyer, cancel order
-      await this.prisma.order.update({
-        where: { id: orderId },
-        data: { status: 'CANCELLED', internalNotes: updatedNotes },
-      });
+      await this.prisma.$transaction([
+        this.prisma.order.update({
+          where: { id: orderId },
+          data: { status: 'CANCELLED', internalNotes: updatedNotes },
+        }),
+        this.prisma.dispute.updateMany({
+          where: { orderId, status: { in: [DisputeStatus.OPEN, DisputeStatus.UNDER_REVIEW] } },
+          data: {
+            status: DisputeStatus.RESOLVED,
+            resolution: adminNote ?? 'Dispute upheld — refund issued.',
+            resolvedAt: new Date(),
+          },
+        }),
+      ]);
       await this.voidOrRefund(orderId);
       this.logger.log(
         `Dispute REFUNDED for order ${order.orderNumber} by admin ${admin.userId}`,
@@ -1577,6 +1935,67 @@ export class PaymentsService {
       };
     } catch {
       return { available: 0, pending: 0, currency: 'EUR', onboarded: false };
+    }
+  }
+
+  /**
+   * Release funds to the carrier once a skip hire order reaches COMPLETED.
+   * Platform takes a flat 15% commission; remainder is transferred to the
+   * carrier's Stripe Connect account.
+   * Safe to call multiple times — idempotent on stripePayoutId.
+   */
+  async releaseSkipHireFunds(skipOrderId: string): Promise<void> {
+    const order = await this.prisma.skipHireOrder.findUnique({
+      where: { id: skipOrderId },
+      include: {
+        carrier: { select: { stripeConnectId: true, name: true } },
+      },
+    });
+
+    if (!order) {
+      this.logger.warn(`releaseSkipHireFunds: skip order ${skipOrderId} not found`);
+      return;
+    }
+    if (!order.stripePaymentId) {
+      this.logger.warn(`releaseSkipHireFunds: skip order ${skipOrderId} has no stripePaymentId — manual payout required`);
+      return;
+    }
+    if (!order.carrierId || !order.carrier?.stripeConnectId) {
+      this.logger.warn(
+        `releaseSkipHireFunds: carrier for skip order ${skipOrderId} has no Stripe Connect account — manual payout required`,
+      );
+      return;
+    }
+    if (!this.stripe) {
+      this.logger.warn(`releaseSkipHireFunds: Stripe not configured — skipping for skip order ${skipOrderId}`);
+      return;
+    }
+
+    const PLATFORM_COMMISSION = 0.15; // 15%
+    const totalCents = Math.round(order.price * 100);
+    const platformFeeCents = Math.round(totalCents * PLATFORM_COMMISSION);
+    const payoutCents = totalCents - platformFeeCents;
+
+    try {
+      await this.stripe.transfers.create({
+        amount: payoutCents,
+        currency: order.currency.toLowerCase(),
+        destination: order.carrier.stripeConnectId,
+        source_transaction: order.stripePaymentId,
+        metadata: {
+          skipHireOrderId: order.id,
+          orderNumber: order.orderNumber,
+          type: 'skip_hire_payout',
+        },
+      });
+      this.logger.log(
+        `releaseSkipHireFunds: transferred ${payoutCents / 100} ${order.currency} to carrier ${order.carrier.name} for skip order ${order.orderNumber}`,
+      );
+    } catch (err) {
+      this.logger.error(
+        `releaseSkipHireFunds: Stripe transfer failed for skip order ${skipOrderId}: ${(err as Error).message}`,
+      );
+      // Non-fatal — log for manual reconciliation rather than crashing the status update
     }
   }
 }

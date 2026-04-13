@@ -268,6 +268,12 @@ export const ordersApi = {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
+    confirmReceipt: (id: string, token: string) =>
+      apiFetch<ApiOrder>(`/orders/${id}/confirm-receipt`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
     sellerCancel: (id: string, reason: string, token: string) =>
       apiFetch<ApiOrder>(`/orders/${id}/seller-cancel`, {
         method: 'POST',

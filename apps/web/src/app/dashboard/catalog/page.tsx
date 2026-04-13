@@ -30,10 +30,13 @@ import {
   createCartOrder,
   createQuoteRequest,
   getMaterialOffers,
+  getMyQuoteRequests,
   type MaterialCategory,
   type MaterialUnit,
   type SupplierOffer,
+  type QuoteRequest,
 } from '@/lib/api';
+import { fmtDate } from '@/lib/format';
 import {
   ArrowRight,
   CalendarDays,
@@ -46,10 +49,13 @@ import {
   Package,
   Plus,
   ReceiptText,
+  RefreshCw,
   Search,
   Send,
   Star,
   Truck,
+  Archive,
+  XCircle,
   Mountain,
   MountainSnow,
   Box,
@@ -61,6 +67,8 @@ import {
   Layers,
   Zap,
   AlertTriangle,
+  User,
+  Phone,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
@@ -207,7 +215,14 @@ function CategoryCard({ category, onClick }: { category: MaterialCategory; onCli
 
 // ── Wizard overlay ─────────────────────────────────────────────────────────────
 
-type WizardStep = 'specs' | 'where' | 'when' | 'offers' | 'rfq-sent' | 'order-confirmed';
+type WizardStep =
+  | 'specs'
+  | 'where'
+  | 'when'
+  | 'contact'
+  | 'offers'
+  | 'rfq-sent'
+  | 'order-confirmed';
 
 interface WizardState {
   category: MaterialCategory;
@@ -223,25 +238,32 @@ interface WizardState {
   notes: string;
   truckCount: number;
   truckIntervalMinutes: number;
+  siteContactName: string;
+  siteContactPhone: string;
 }
 
 function WizardInline({
   initialCategory,
   token,
   onClose,
+  onRfqSent,
 }: {
   initialCategory: MaterialCategory;
   token: string;
   onClose: () => void;
+  onRfqSent?: () => void;
 }) {
   const meta = CATEGORY_META[initialCategory];
+  const { user: authUser } = useAuth();
+
   const stepIndex: Record<WizardStep, number> = {
     specs: 0,
     where: 1,
     when: 2,
-    offers: 3,
-    'rfq-sent': 3,
-    'order-confirmed': 3,
+    contact: 3,
+    offers: 4,
+    'rfq-sent': 4,
+    'order-confirmed': 4,
   };
 
   const [step, setStep] = useState<WizardStep>('specs');
@@ -257,7 +279,22 @@ function WizardInline({
     notes: '',
     truckCount: 1,
     truckIntervalMinutes: 30,
+    siteContactName: '',
+    siteContactPhone: '',
   });
+
+  // Pre-fill contact from user profile
+  useEffect(() => {
+    if (!authUser) return;
+    const fullName = `${authUser.firstName ?? ''} ${authUser.lastName ?? ''}`.trim();
+    if (fullName || authUser.phone) {
+      patch({
+        siteContactName: fullName || form.siteContactName,
+        siteContactPhone: authUser.phone ?? form.siteContactPhone,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser]);
 
   const [offers, setOffers] = useState<SupplierOffer[]>([]);
   const [offersLoading, setOffersLoading] = useState(false);
@@ -382,8 +419,8 @@ function WizardInline({
           deliveryPostal: form.postal,
           deliveryDate: form.deliveryDate || undefined,
           notes: form.notes || undefined,
-          siteContactName: '',
-          siteContactPhone: '',
+          siteContactName: form.siteContactName || undefined,
+          siteContactPhone: form.siteContactPhone || undefined,
           items: [
             {
               materialId: offer.id,
@@ -456,7 +493,7 @@ function WizardInline({
       <WizardShell
         className="w-full lg:w-115 flex-1 min-h-0 lg:flex-none z-20 relative lg:absolute lg:top-4 lg:bottom-4 lg:left-4 lg:rounded-2xl lg:shadow-2xl border-t lg:border-none flex flex-col bg-white"
         step={stepIndex[step] + 1}
-        totalSteps={4}
+        totalSteps={5}
         title={
           step === 'rfq-sent'
             ? 'Pieprasījums nosūtīts'
@@ -648,13 +685,77 @@ function WizardInline({
               onTruckCountChange={(n) => patch({ truckCount: n })}
               truckIntervalMinutes={form.truckIntervalMinutes}
               onTruckIntervalChange={(n) => patch({ truckIntervalMinutes: n })}
-              onNext={goToOffers}
+              onNext={() => setStep('contact')}
               onBack={() => setStep('where')}
             />
           </div>
         )}
 
-        {/* Step 4: Offers */}
+        {/* Step 4: Contact */}
+        {step === 'contact' && (
+          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+            <div>
+              <h2 className="text-lg font-bold">Objekta kontaktpersona</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Šoferis ar šo personu sazināsies piegādes dienā
+              </p>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-semibold text-foreground flex items-center gap-1.5 mb-1.5">
+                  <User className="size-3.5" /> Vārds, uzvārds
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Jānis Bērziņš"
+                  value={form.siteContactName}
+                  onChange={(e) => patch({ siteContactName: e.target.value })}
+                  className="rounded-xl"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-foreground flex items-center gap-1.5 mb-1.5">
+                  <Phone className="size-3.5" /> Tālrunis
+                </label>
+                <Input
+                  type="tel"
+                  placeholder="+371 20 000 000"
+                  value={form.siteContactPhone}
+                  onChange={(e) => patch({ siteContactPhone: e.target.value })}
+                  className="rounded-xl"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-foreground mb-1.5 block">
+                  Papildus piezīmes (neobligāti)
+                </label>
+                <textarea
+                  placeholder="Piekļuves kodi, instrukcijas šoferim..."
+                  value={form.notes}
+                  onChange={(e) => patch({ notes: e.target.value })}
+                  rows={2}
+                  className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-foreground/10"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setStep('when')}
+                className="flex-1 rounded-xl border py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Atpakaļ
+              </button>
+              <button
+                onClick={goToOffers}
+                className="flex-2 rounded-xl bg-primary py-3 text-sm font-bold text-white hover:bg-primary/90 transition-colors"
+              >
+                Skatīt piedāvājumus
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 5: Offers */}
         {step === 'offers' && (
           <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
             {offersLoading ? (
@@ -731,10 +832,7 @@ function WizardInline({
               paziņojumu.
             </p>
             <div className="w-full space-y-3 pt-2">
-              <Button
-                onClick={() => (window.location.href = '/dashboard/quote-requests')}
-                className="w-full rounded-2xl h-12 font-bold"
-              >
+              <Button onClick={() => onRfqSent?.()} className="w-full rounded-2xl h-12 font-bold">
                 <ReceiptText className="size-4 mr-1.5" /> Skatīt pieprasījumus
               </Button>
               <Button
@@ -976,6 +1074,60 @@ function RFQPanel({
   );
 }
 
+// ── RFQ status config ──────────────────────────────────────────────────────────
+
+const RFQ_STATUS_CFG: Record<string, { label: string; icon: React.ElementType; dot: string }> = {
+  PENDING: { label: 'Meklē piedāvājumus', icon: Clock, dot: 'bg-amber-400' },
+  QUOTED: { label: 'Saņemti piedāvājumi', icon: Truck, dot: 'bg-blue-500' },
+  ACCEPTED: { label: 'Apstiprināts', icon: CheckCircle2, dot: 'bg-green-500' },
+  CANCELLED: { label: 'Atcelts', icon: XCircle, dot: 'bg-gray-300' },
+  EXPIRED: { label: 'Beidzies', icon: Archive, dot: 'bg-gray-300' },
+};
+
+function RfqCard({ req, onClick }: { req: QuoteRequest; onClick: () => void }) {
+  const cfg = RFQ_STATUS_CFG[req.status] ?? RFQ_STATUS_CFG.PENDING;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full text-left rounded-2xl border border-border/40 bg-card hover:border-border/70 hover:bg-muted/10 transition-all p-5 flex flex-col sm:flex-row sm:items-center gap-4 group"
+    >
+      <div className="flex items-center gap-4 flex-1 min-w-0">
+        <div className="h-11 w-11 shrink-0 flex items-center justify-center rounded-xl bg-muted">
+          <Package className="h-5 w-5 text-foreground" strokeWidth={1.5} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[15px] font-semibold text-foreground truncate">
+            {req.materialName || CATEGORY_LABELS[req.materialCategory]}
+          </p>
+          <p className="text-[13px] text-muted-foreground mt-0.5">
+            {req.quantity} <span className="uppercase">{SHARED_UNIT_SHORT[req.unit]}</span>
+            {' · '}
+            {CATEGORY_LABELS[req.materialCategory]}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0">
+        <div className="flex flex-col items-end gap-1.5">
+          <div className="flex items-center gap-1.5">
+            <span className={`h-2 w-2 rounded-full shrink-0 ${cfg.dot}`} />
+            <span className="text-[12px] font-bold text-foreground uppercase tracking-wide">
+              {cfg.label}
+            </span>
+          </div>
+          {req.responses.length > 0 && (
+            <span className="text-[12px] font-semibold text-muted-foreground">
+              {req.responses.length} piedāvājum{req.responses.length === 1 ? 's' : 'i'}
+            </span>
+          )}
+          <span className="text-[11px] text-muted-foreground/60">{fmtDate(req.createdAt)}</span>
+        </div>
+        <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground/60 transition-colors shrink-0" />
+      </div>
+    </button>
+  );
+}
+
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 const ALL_CATEGORIES = Object.keys(CATEGORY_META) as MaterialCategory[];
@@ -986,10 +1138,39 @@ export default function CatalogPage() {
 
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<MaterialCategory | null>(null);
+  const [activeTab, setActiveTab] = useState<'catalog' | 'requests'>('catalog');
+
+  // RFQ list state
+  const [rfqList, setRfqList] = useState<QuoteRequest[]>([]);
+  const [rfqLoading, setRfqLoading] = useState(false);
+  const [rfqError, setRfqError] = useState<string | null>(null);
+  const [rfqLoaded, setRfqLoaded] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !token) router.push('/');
   }, [token, isLoading, router]);
+
+  const loadRfqs = useCallback(async () => {
+    if (!token) return;
+    setRfqLoading(true);
+    setRfqError(null);
+    try {
+      const data = await getMyQuoteRequests(token);
+      setRfqList(data);
+      setRfqLoaded(true);
+    } catch (e: unknown) {
+      setRfqError(e instanceof Error ? e.message : 'Kļūda ielādējot datus');
+    } finally {
+      setRfqLoading(false);
+    }
+  }, [token]);
+
+  // Pre-load RFQ count when requests tab is first opened
+  useEffect(() => {
+    if (activeTab === 'requests' && !rfqLoaded) {
+      loadRfqs();
+    }
+  }, [activeTab, rfqLoaded, loadRfqs]);
 
   const filteredCategories = ALL_CATEGORIES.filter((c) => {
     if (!search.trim()) return true;
@@ -1002,6 +1183,10 @@ export default function CatalogPage() {
     );
   });
 
+  const pendingCount = rfqList.filter(
+    (r) => r.status === 'PENDING' || r.status === 'QUOTED',
+  ).length;
+
   if (activeCategory && token) {
     return (
       <div className="pb-12 max-w-350 mx-auto w-full">
@@ -1009,6 +1194,11 @@ export default function CatalogPage() {
           initialCategory={activeCategory}
           token={token}
           onClose={() => setActiveCategory(null)}
+          onRfqSent={() => {
+            setActiveCategory(null);
+            setActiveTab('requests');
+            loadRfqs();
+          }}
         />
       </div>
     );
@@ -1016,32 +1206,141 @@ export default function CatalogPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-24 max-w-350 mx-auto w-full">
-      <PageHeader
-        title="Ko jums nepieciešams?"
-        description="Izvēlieties materiāla veidu — jūs saņemsiet cenas no tuvākajiem piegādātājiem."
-        action={
-          <div className="relative w-full sm:w-[320px]">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Meklēt..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-background w-full"
-            />
+      {activeTab === 'catalog' ? (
+        <PageHeader
+          title="Ko jums nepieciešams?"
+          description="Izvēlieties materiāla veidu — jūs saņemsiet cenas no tuvākajiem piegādātājiem."
+          action={
+            <div className="relative w-full sm:w-[320px]">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Meklēt..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 bg-background w-full"
+              />
+            </div>
+          }
+        />
+      ) : (
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border/30 pb-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Cenu Pieprasījumi</h1>
+            <p className="text-[14px] text-muted-foreground mt-1">
+              Jūsu nosūtītie pieprasījumi piegādātājiem.
+            </p>
           </div>
-        }
-      />
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadRfqs}
+              disabled={rfqLoading}
+              className="h-10 px-4 rounded-lg border-border/60 bg-transparent font-semibold text-[13px]"
+            >
+              <RefreshCw className={`h-4 w-4 sm:mr-2 ${rfqLoading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Atjaunot</span>
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setActiveTab('catalog')}
+              className="h-10 px-5 rounded-lg bg-foreground text-background font-semibold text-[13px]"
+            >
+              <Plus className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Jauns Pieprasījums</span>
+              <span className="sm:hidden">Jauns</span>
+            </Button>
+          </div>
+        </div>
+      )}
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 xl:gap-8 mt-4">
-        {filteredCategories.map((cat) => (
-          <CategoryCard key={cat} category={cat} onClick={() => setActiveCategory(cat)} />
-        ))}
-        {filteredCategories.length === 0 && (
-          <div className="col-span-full py-12 text-center text-muted-foreground">
-            Nav atrasta neviena kategorija
-          </div>
-        )}
+      {/* Tab switcher */}
+      <div className="flex gap-1 p-1 bg-muted/40 rounded-xl w-fit">
+        <button
+          onClick={() => setActiveTab('catalog')}
+          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+            activeTab === 'catalog'
+              ? 'bg-white shadow-sm text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Pasūtīt
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('requests');
+          }}
+          className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+            activeTab === 'requests'
+              ? 'bg-white shadow-sm text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Mani pieprasījumi
+          {pendingCount > 0 && (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-black px-1.5 text-[10px] font-bold text-white">
+              {pendingCount}
+            </span>
+          )}
+        </button>
       </div>
+
+      {/* Catalog tab */}
+      {activeTab === 'catalog' && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 xl:gap-8">
+          {filteredCategories.map((cat) => (
+            <CategoryCard key={cat} category={cat} onClick={() => setActiveCategory(cat)} />
+          ))}
+          {filteredCategories.length === 0 && (
+            <div className="col-span-full py-12 text-center text-muted-foreground">
+              Nav atrasta neviena kategorija
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Requests tab */}
+      {activeTab === 'requests' && (
+        <div className="flex flex-col gap-3">
+          {rfqLoading ? (
+            <div className="py-20 flex flex-col items-center gap-3">
+              <Loader2 className="size-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : rfqError ? (
+            <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-8 text-center">
+              <XCircle className="h-9 w-9 text-destructive/80 mx-auto mb-3" />
+              <p className="text-sm font-semibold text-destructive">{rfqError}</p>
+              <Button variant="outline" className="mt-4 rounded-lg" onClick={loadRfqs}>
+                Mēģināt vēlreiz
+              </Button>
+            </div>
+          ) : rfqList.length === 0 ? (
+            <div className="py-28 text-center flex flex-col items-center">
+              <div className="h-16 w-16 bg-muted/30 rounded-full flex items-center justify-center mb-5">
+                <Package className="h-8 w-8 text-muted-foreground/40" strokeWidth={1.5} />
+              </div>
+              <h2 className="text-xl font-semibold tracking-tight">Nav neviena pieprasījuma</h2>
+              <p className="text-[14px] text-muted-foreground mt-1.5 max-w-xs">
+                Izvēlieties materiālu katalogā un nosūtiet pieprasījumu piegādātājiem.
+              </p>
+              <Button
+                onClick={() => setActiveTab('catalog')}
+                className="mt-6 rounded-xl h-11 px-6 font-semibold"
+              >
+                <Plus className="h-4 w-4 mr-2" /> Atvērt katalogu
+              </Button>
+            </div>
+          ) : (
+            rfqList.map((r) => (
+              <RfqCard
+                key={r.id}
+                req={r}
+                onClick={() => router.push(`/dashboard/quote-requests/${r.id}`)}
+              />
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }

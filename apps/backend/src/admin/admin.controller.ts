@@ -25,6 +25,10 @@ class UpdateJobRateDto {
   @IsOptional() @IsString() note?: string;
 }
 
+class UpdateMaterialDto {
+  @IsBoolean() active!: boolean;
+}
+
 import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Admin')
@@ -85,8 +89,8 @@ export class AdminController {
 
   /** GET /admin/audit-logs — recent admin mutations for compliance review */
   @Get('audit-logs')
-  getAuditLogs() {
-    return this.service.getAuditLogs();
+  getAuditLogs(@Query('limit') limit?: string) {
+    return this.service.getAuditLogs(limit ? Math.min(Number(limit), 500) : 200);
   }
 
   /**
@@ -101,5 +105,27 @@ export class AdminController {
     @CurrentUser() admin: RequestingUser,
   ) {
     return this.service.updateJobRate(id, body, admin.userId);
+  }
+
+  /** GET /admin/materials — all material listings */
+  @Get('materials')
+  getMaterials() {
+    return this.service.getMaterials();
+  }
+
+  /** PATCH /admin/materials/:id — toggle active flag */
+  @Patch('materials/:id')
+  setMaterialActive(
+    @Param('id') id: string,
+    @Body() body: UpdateMaterialDto,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.setMaterialActive(id, body.active, admin.userId);
+  }
+
+  /** GET /admin/payments — full payment pipeline (last 500) */
+  @Get('payments')
+  getPaymentQueue() {
+    return this.service.getPaymentQueue();
   }
 }
