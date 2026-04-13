@@ -177,19 +177,18 @@ export interface AdminOrder {
   createdAt: string;
   buyer: {
     id: string;
-    firstName: string;
-    lastName: string;
+    name: string;
     email?: string;
-    company: { id: string; name: string } | null;
   };
   items: { id: string }[];
   transportJobs: { id: string; status: string }[];
 }
 
 export async function adminGetOrders(token: string): Promise<AdminOrder[]> {
-  return apiFetch<AdminOrder[]>('/admin/orders', {
+  const res = await apiFetch<{ data: AdminOrder[] }>('/admin/orders', {
     headers: { Authorization: `Bearer ${token}` },
   });
+  return res.data;
 }
 
 // ─── Admin Transport Jobs ───────────────────────────────────────────────────
@@ -217,9 +216,10 @@ export interface AdminTransportJob {
 }
 
 export async function adminGetTransportJobs(token: string): Promise<AdminTransportJob[]> {
-  return apiFetch<AdminTransportJob[]>('/admin/jobs', {
+  const res = await apiFetch<{ data: AdminTransportJob[] }>('/admin/jobs', {
     headers: { Authorization: `Bearer ${token}` },
   });
+  return res.data;
 }
 
 export async function adminUpdateJobRate(

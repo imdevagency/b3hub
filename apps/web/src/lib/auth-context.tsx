@@ -20,6 +20,12 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 function normalizeUserModes(user: User): User {
+  // Admins have no buyer/supplier/carrier roles — they operate exclusively in the admin panel.
+  // This check must run BEFORE the early-return so backend-supplied modes are overridden.
+  if (user.userType === 'ADMIN') {
+    return { ...user, availableModes: [] };
+  }
+
   if (Array.isArray(user.availableModes) && user.availableModes.length > 0) {
     return user;
   }
@@ -27,9 +33,9 @@ function normalizeUserModes(user: User): User {
   const modes: Array<'BUYER' | 'SUPPLIER' | 'CARRIER'> = [];
   const isPureTransportIndividual = !!user.canTransport && !user.canSell && !user.isCompany;
 
-  if (user.userType === 'ADMIN' || !isPureTransportIndividual) modes.push('BUYER');
-  if (user.userType === 'ADMIN' || !!user.canSell) modes.push('SUPPLIER');
-  if (user.userType === 'ADMIN' || !!user.canTransport) modes.push('CARRIER');
+  if (!isPureTransportIndividual) modes.push('BUYER');
+  if (!!user.canSell) modes.push('SUPPLIER');
+  if (!!user.canTransport) modes.push('CARRIER');
 
   return {
     ...user,

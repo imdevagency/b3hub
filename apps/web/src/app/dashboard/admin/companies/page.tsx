@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { adminGetCompanies, adminUpdateCompany, type AdminCompany } from '@/lib/api/admin';
@@ -275,8 +275,8 @@ export default function AdminCompaniesPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filtered.map((c) => (
-                  <>
-                    <tr key={c.id} className="hover:bg-gray-50 transition-colors">
+                  <React.Fragment key={c.id}>
+                    <tr className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3">
                         <div>
                           <p className="font-semibold text-gray-900">{c.name}</p>
@@ -370,7 +370,7 @@ export default function AdminCompaniesPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>

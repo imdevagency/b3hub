@@ -34,7 +34,7 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
     [user],
   );
 
-  const [activeMode, setActiveModeState] = useState<Mode>(availableModes[0]);
+  const [activeMode, setActiveModeState] = useState<Mode>(availableModes[0] ?? 'BUYER');
 
   // Hydrate from localStorage once mounted
   useEffect(() => {
@@ -44,7 +44,7 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setActiveModeState(stored);
       } else {
-        setActiveModeState(availableModes[0]);
+        setActiveModeState(availableModes[0] ?? 'BUYER');
       }
     } catch {
       /* ignore */

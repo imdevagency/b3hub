@@ -98,10 +98,8 @@ export default function AdminOrdersPage() {
     if (!q) return true;
     return (
       o.orderNumber.toLowerCase().includes(q) ||
-      o.buyer.firstName.toLowerCase().includes(q) ||
-      o.buyer.lastName.toLowerCase().includes(q) ||
+      o.buyer.name.toLowerCase().includes(q) ||
       (o.buyer.email ?? '').toLowerCase().includes(q) ||
-      (o.buyer.company?.name ?? '').toLowerCase().includes(q) ||
       o.deliveryCity.toLowerCase().includes(q)
     );
   });
@@ -209,11 +207,9 @@ export default function AdminOrdersPage() {
                     <td className="px-4 py-3 font-mono text-xs text-gray-500">{o.orderNumber}</td>
                     <td className="px-4 py-3">
                       <div>
-                        <p className="font-semibold text-gray-900">
-                          {o.buyer.firstName} {o.buyer.lastName}
-                        </p>
-                        {o.buyer.company && (
-                          <p className="text-xs text-muted-foreground">{o.buyer.company.name}</p>
+                        <p className="font-semibold text-gray-900">{o.buyer.name}</p>
+                        {o.buyer.email && (
+                          <p className="text-xs text-muted-foreground">{o.buyer.email}</p>
                         )}
                       </div>
                     </td>

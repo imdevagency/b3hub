@@ -239,6 +239,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   );
 
   const navSections = React.useMemo(() => {
+    if (user?.userType === 'ADMIN') return [];
     const base = ROLE_NAV[activeMode];
     let sections: NavSection[] = base.map((section) => ({
       ...section,
@@ -478,7 +479,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">B3Hub</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {MODE_LABEL[activeMode]}
+                    {user?.userType === 'ADMIN' ? 'Administrācija' : MODE_LABEL[activeMode]}
                   </span>
                 </div>
               </Link>
@@ -508,9 +509,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Primary CTA */}
+        {/* Primary CTA — hidden for admins */}
         <div className="px-3 pt-4 pb-3 group-data-[collapsible=icon]:hidden">
-          {activeMode === 'BUYER' && (
+          {user?.userType !== 'ADMIN' && activeMode === 'BUYER' && (
             <SidebarMenuButton
               asChild
               className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground w-full justify-center shadow font-semibold h-10"
@@ -521,7 +522,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </Link>
             </SidebarMenuButton>
           )}
-          {activeMode === 'SUPPLIER' && (
+          {user?.userType !== 'ADMIN' && activeMode === 'SUPPLIER' && (
             <SidebarMenuButton
               asChild
               className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground w-full justify-center shadow font-semibold h-10"
@@ -532,7 +533,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </Link>
             </SidebarMenuButton>
           )}
-          {activeMode === 'CARRIER' && (
+          {user?.userType !== 'ADMIN' && activeMode === 'CARRIER' && (
             <SidebarMenuButton
               asChild
               className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground w-full justify-center shadow font-semibold h-10"
@@ -545,35 +546,36 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           )}
         </div>
 
-        {/* Role nav sections */}
-        {navSections.map((section) => (
-          <SidebarGroup key={section.id} className="pt-2">
-            <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-muted-foreground/60 tracking-wider pb-1">
-              {section.label}
-            </SidebarGroupLabel>
-            <SidebarMenu>
-              {section.items.map((item) => {
-                const isActive = isRouteActive(item.href);
-                return (
-                  <SidebarMenuItem key={item.label}>
-                    <SidebarMenuButton
-                      asChild
-                      tooltip={item.label}
-                      isActive={isActive}
-                      className="font-medium text-muted-foreground hover:text-foreground"
-                    >
-                      <Link href={item.href}>
-                        <item.icon className="size-4 shrink-0" />
-                        <span>{item.label}</span>
-                        {renderBadge(itemBadgeCountByHref[item.href] ?? 0)}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroup>
-        ))}
+        {/* Role nav sections — hidden for admins */}
+        {user?.userType !== 'ADMIN' &&
+          navSections.map((section) => (
+            <SidebarGroup key={section.id} className="pt-2">
+              <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-muted-foreground/60 tracking-wider pb-1">
+                {section.label}
+              </SidebarGroupLabel>
+              <SidebarMenu>
+                {section.items.map((item) => {
+                  const isActive = isRouteActive(item.href);
+                  return (
+                    <SidebarMenuItem key={item.label}>
+                      <SidebarMenuButton
+                        asChild
+                        tooltip={item.label}
+                        isActive={isActive}
+                        className="font-medium text-muted-foreground hover:text-foreground"
+                      >
+                        <Link href={item.href}>
+                          <item.icon className="size-4 shrink-0" />
+                          <span>{item.label}</span>
+                          {renderBadge(itemBadgeCountByHref[item.href] ?? 0)}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroup>
+          ))}
 
         {/* Saziņa — always visible for non-admin */}
         {user?.userType !== 'ADMIN' && (

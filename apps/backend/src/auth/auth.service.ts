@@ -320,16 +320,19 @@ export class AuthService {
     }
 
     // Compute available dashboard modes server-side — single source of truth
+    // Admins operate exclusively in the admin panel — no buyer/supplier/carrier modes
+    if (user.userType === 'ADMIN') {
+      return { ...user, availableModes: [] };
+    }
+
     const modes: string[] = [];
-    const isAdmin = user.userType === 'ADMIN';
     const isTransport = user.canTransport;
     // A pure-transport individual (driver with no company/sell) doesn't get buyer mode
     const isPureTransportIndividual =
       isTransport && !user.canSell && !user.isCompany;
-    if (isAdmin || (user.userType === 'BUYER' && !isPureTransportIndividual))
-      modes.push('BUYER');
-    if (isAdmin || user.canSell) modes.push('SUPPLIER');
-    if (isAdmin || isTransport) modes.push('CARRIER');
+    if (user.userType === 'BUYER' && !isPureTransportIndividual) modes.push('BUYER');
+    if (user.canSell) modes.push('SUPPLIER');
+    if (isTransport) modes.push('CARRIER');
 
     return { ...user, availableModes: modes.length > 0 ? modes : ['BUYER'] };
   }

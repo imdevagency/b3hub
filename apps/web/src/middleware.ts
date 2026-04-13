@@ -65,6 +65,16 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // Admin users → only allowed in /dashboard/admin; redirect everything else
+  if (!pathname.startsWith(ADMIN_PATH_PREFIX)) {
+    const payload = decodeJwtPayload(token);
+    if (payload?.userType === 'ADMIN') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/dashboard/admin';
+      return NextResponse.redirect(url);
+    }
+  }
+
   return NextResponse.next();
 }
 
