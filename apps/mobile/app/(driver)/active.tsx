@@ -10,7 +10,11 @@ import {
   Linking,
   Platform,
   Image,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -150,6 +154,55 @@ export default function ActiveJobScreen() {
   const [surchargeType, setSurchargeType] = React.useState<string>('WAITING_TIME');
   const [surchargeAmount, setSurchargeAmount] = React.useState('');
   const [surchargeSubmitting, setSurchargeSubmitting] = React.useState(false);
+
+  // ── Offline queue ────────────────────────────────────────────────
+  const [isOffline, setIsOffline] = React.useState(false);
+
+  const flushOfflineQueue = useCallback(async () => {
+    if (!token) return;
+    try {
+      const raw = await AsyncStorage.getItem('b3hub_offline_queue');
+      if (!raw) return;
+      const queue: Array<{ jobId: string; nextStatus: JobStatus; timestamp: number }> =
+        JSON.parse(raw);
+      if (queue.length === 0) return;
+      const remaining: typeof queue = [];
+      for (const item of queue) {
+        try {
+          const updated = await api.transportJobs.updateStatus(item.jobId, item.nextStatus, token);
+          if (item.jobId === job?.id) setJob(updated);
+          haptics.success();
+        } catch {
+          remaining.push(item);
+        }
+      }
+      if (remaining.length === 0) {
+        await AsyncStorage.removeItem('b3hub_offline_queue');
+      } else {
+        await AsyncStorage.setItem('b3hub_offline_queue', JSON.stringify(remaining));
+      }
+    } catch {
+      // silently ignore storage errors
+    }
+  }, [token, job?.id]);
+
+  // Monitor connectivity; flush queue when back online
+  useEffect(() => {
+    const unsub = NetInfo.addEventListener((state) => {
+      const online = state.isConnected === true && state.isInternetReachable !== false;
+      setIsOffline(!online);
+      if (online) flushOfflineQueue();
+    });
+    return () => unsub();
+  }, [flushOfflineQueue]);
+
+  // Also flush when app comes back to foreground
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s: AppStateStatus) => {
+      if (s === 'active') flushOfflineQueue();
+    });
+    return () => sub.remove();
+  }, [flushOfflineQueue]);
 
   const handleTakePickupPhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -405,7 +458,15 @@ export default function ActiveJobScreen() {
   // ── Background tracking — starts once job id is known ─────────
   useEffect(() => {
     if (!job?.id) return;
-    startLocationTracking(job.id).catch(() => {});
+    startLocationTracking(job.id).catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('denied')) {
+        Alert.alert(
+          'GPS atļauja nepieciešama',
+          'Lai izsekotu piegādi, lūdzu atļaujiet atrašanās vietas piekļuvi fonā lietotnēs iestatījumos.',
+        );
+      }
+    });
     return () => {
       stopLocationTracking().catch(() => {});
     };
@@ -558,11 +619,27 @@ export default function ActiveJobScreen() {
             setJob(updated);
             haptics.success();
           } catch (err: unknown) {
-            haptics.error();
-            Alert.alert(
-              'Kļūda',
-              err instanceof Error ? err.message : 'Neizdevās atjaunināt statusu',
-            );
+            // If offline, queue the status update for later
+            const netState = await NetInfo.fetch();
+            const online = netState.isConnected === true && netState.isInternetReachable !== false;
+            if (!online) {
+              try {
+                const raw = await AsyncStorage.getItem('b3hub_offline_queue');
+                const queue = raw ? JSON.parse(raw) : [];
+                queue.push({ jobId: job.id, nextStatus, timestamp: Date.now() });
+                await AsyncStorage.setItem('b3hub_offline_queue', JSON.stringify(queue));
+                haptics.warning();
+                toast.info('Offline — statuss tiks atjaunināts, kad atjaunosies savienojums');
+              } catch {
+                // silently ignore storage errors
+              }
+            } else {
+              haptics.error();
+              Alert.alert(
+                'Kļūda',
+                err instanceof Error ? err.message : 'Neizdevās atjaunināt statusu',
+              );
+            }
           }
         },
       },
@@ -853,6 +930,16 @@ export default function ActiveJobScreen() {
               />
             ))}
           </View>
+
+          {/* Offline banner */}
+          {isOffline && (
+            <View style={styles.offlineBanner}>
+              <AlertCircle size={14} color="#92400e" />
+              <Text style={styles.offlineBannerText}>
+                Offline — izmaiņas tiks saglabātas un sūtītas, kad atjaunosies savienojums
+              </Text>
+            </View>
+          )}
 
           {/* Primary Action Button */}
           <View style={styles.actionRow}>
@@ -1630,6 +1717,24 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#374151',
+  },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fef3c7',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+  offlineBannerText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#92400e',
+    fontFamily: 'Inter_500Medium',
   },
   // Progress stepper
   stepperRow: {

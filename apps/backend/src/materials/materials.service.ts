@@ -355,15 +355,20 @@ export class MaterialsService {
           : null;
       // ETA: simple model — 60 km/h average laden speed + 1.5 h loading/unloading buffer
       const etaHours = distanceKm != null ? Math.round(distanceKm / 60 + 1.5) : null;
+      // Time-of-day awareness: if placing an order after 14:00 local (EET UTC+2/+3),
+      // a "same-day" delivery is no longer feasible even if distance is short.
+      const nowHourUtc = new Date().getUTCHours();
+      const nowHourLocal = (nowHourUtc + 2) % 24; // EET (UTC+2 winter, close enough)
+      const tooLateForToday = nowHourLocal >= 14;
       const etaLabel =
         etaHours == null
           ? 'Rīt'
-          : etaHours <= 3
+          : etaHours <= 3 && !tooLateForToday
           ? `~${etaHours} h`
-          : etaHours <= 8
+          : etaHours <= 8 && !tooLateForToday
           ? 'Šodien'
           : 'Rīt';
-      const etaDays = etaHours == null || etaHours > 8 ? 2 : 1;
+      const etaDays = etaHours == null || etaHours > 8 || tooLateForToday ? 2 : 1;
       return {
         ...m,
         supplier: supplierPublic,

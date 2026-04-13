@@ -3,10 +3,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Euro, TrendingUp, Clock, CheckCircle2, XCircle, ArrowUpRight, Search } from 'lucide-react';
+import {
+  Euro,
+  TrendingUp,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  ArrowUpRight,
+  Search,
+  Zap,
+} from 'lucide-react';
 
 import { useAuth } from '@/lib/auth-context';
-import { adminGetPayments, type AdminPayment } from '@/lib/api/admin';
+import { adminGetPayments, adminReleasePayment, type AdminPayment } from '@/lib/api/admin';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -111,6 +120,7 @@ export default function AdminPaymentsPage() {
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [releasing, setReleasing] = useState<string | null>(null);
 
   useEffect(() => {
     if (isLoading) return;
@@ -163,6 +173,22 @@ export default function AdminPaymentsPage() {
       return true;
     });
   }, [payments, statusFilter, search]);
+
+  const handleRelease = async (paymentId: string) => {
+    if (!token || releasing) return;
+    if (!confirm('Izmaksāt pārdevējam? Šo darbību nevar atsaukt.')) return;
+    setReleasing(paymentId);
+    try {
+      await adminReleasePayment(paymentId, token);
+      setPayments((prev) =>
+        prev.map((p) => (p.id === paymentId ? { ...p, status: 'RELEASED' } : p)),
+      );
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Izmaksa neizdevās');
+    } finally {
+      setReleasing(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -328,15 +354,28 @@ export default function AdminPaymentsPage() {
                       {fmtDate(p.createdAt)}
                     </td>
                     <td className="px-4 py-3">
-                      {p.order?.id && (
-                        <Link
-                          href={`/dashboard/admin/orders/${p.order.id}`}
-                          className="text-muted-foreground hover:text-foreground transition-colors"
-                          title="Atvērt pasūtījumu"
-                        >
-                          <ArrowUpRight className="h-4 w-4" />
-                        </Link>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {p.status === 'CAPTURED' && p.order?.id && (
+                          <button
+                            onClick={() => handleRelease(p.id)}
+                            disabled={releasing === p.id}
+                            className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold px-2.5 py-1.5 transition-colors"
+                            title="Izmaksāt pārdevējam"
+                          >
+                            <Zap className="h-3 w-3" />
+                            {releasing === p.id ? 'Apstrādā…' : 'Izmaksāt'}
+                          </button>
+                        )}
+                        {p.order?.id && (
+                          <Link
+                            href={`/dashboard/admin/orders/${p.order.id}`}
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                            title="Atvērt pasūtījumu"
+                          >
+                            <ArrowUpRight className="h-4 w-4" />
+                          </Link>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

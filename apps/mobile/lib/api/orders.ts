@@ -159,6 +159,7 @@ export interface ApiOrder {
       lastName: string;
       phone: string | null;
       avatar: string | null;
+      driverProfile?: { rating: number | null; completedJobs: number } | null;
     } | null;
     vehicle: { id: string; licensePlate: string; vehicleType: string } | null;
     deliveryProof?: {

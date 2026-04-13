@@ -469,6 +469,31 @@ export default function OrderDetailScreen() {
                 <Text style={s.driverName}>
                   {driver.firstName} {driver.lastName}
                 </Text>
+                {/* Driver rating & completed jobs */}
+                {(driver as any).driverProfile?.rating != null ? (
+                  <View style={s.driverRatingRow}>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star
+                        key={n}
+                        size={11}
+                        color={
+                          n <= Math.round((driver as any).driverProfile.rating)
+                            ? '#f59e0b'
+                            : '#d1d5db'
+                        }
+                        fill={
+                          n <= Math.round((driver as any).driverProfile.rating) ? '#f59e0b' : 'none'
+                        }
+                      />
+                    ))}
+                    <Text style={s.driverRatingText}>
+                      {((driver as any).driverProfile.rating as number).toFixed(1)}
+                      {(driver as any).driverProfile.completedJobs > 0
+                        ? ` · ${(driver as any).driverProfile.completedJobs} pieg.`
+                        : ''}
+                    </Text>
+                  </View>
+                ) : null}
                 {driver.phone ? <Text style={s.driverPhone}>{driver.phone}</Text> : null}
                 {vehicle ? (
                   <Text style={s.driverPlate}>
@@ -1416,6 +1441,8 @@ const s = StyleSheet.create({
   },
   driverAvatarInitials: { fontSize: 15, fontWeight: '700', color: '#fff' },
   driverName: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  driverRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 },
+  driverRatingText: { fontSize: 11, color: '#6b7280', marginLeft: 3 },
   driverPhone: { fontSize: 12, color: '#6b7280', marginTop: 1 },
   driverPlate: { fontSize: 11, color: '#9ca3af', marginTop: 2, fontFamily: 'monospace' },
   callBtn: {

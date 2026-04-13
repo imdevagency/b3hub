@@ -168,7 +168,6 @@ export class TransportJobsService {
       },
     },
     truckIndex: true,
-    truckCount: true,
   } as const;
 
   private statusSortOrder: Record<TransportJobStatus, number> = {

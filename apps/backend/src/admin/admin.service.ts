@@ -7,12 +7,16 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { PaymentsService } from '../payments/payments.service';
 
 @Injectable()
 export class AdminService {
   private readonly logger = new Logger(AdminService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly paymentsService: PaymentsService,
+  ) {}
 
   private userSelect = {
     id: true,
@@ -501,5 +505,234 @@ export class AdminService {
       take: 500,
     });
     return payments;
+  }
+
+  /**
+   * PATCH /admin/payments/:id/release
+   * Manually trigger fund release for a CAPTURED payment.
+   * Used when automatic release didn't fire (e.g. Stripe webhook missed).
+   */
+  async releasePayment(paymentId: string, adminId: string) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+      select: { id: true, status: true, orderId: true, order: { select: { orderNumber: true } } },
+    });
+    if (!payment) throw new NotFoundException('Payment not found');
+    if (payment.status === 'RELEASED')
+      throw new BadRequestException('Payment already released');
+    if (payment.status !== 'CAPTURED')
+      throw new BadRequestException(`Cannot release payment in status ${payment.status}`);
+    if (!payment.orderId)
+      throw new BadRequestException('Payment has no linked order — manual Stripe transfer required');
+
+    this.logger.log(`Admin ${adminId} manually releasing payment ${paymentId} for order ${payment.orderId}`);
+    await this.paymentsService.releaseFunds(payment.orderId);
+    await this.prisma.adminAuditLog.create({
+      data: {
+        adminId,
+        action: 'RELEASE_PAYMENT',
+        entityType: 'Payment',
+        entityId: paymentId,
+        note: `Manual release triggered for order ${payment.order?.orderNumber ?? payment.orderId}`,
+      },
+    });
+    return { ok: true, paymentId };
+  }
+
+  /**
+   * GET /admin/sla
+   * Orders stuck in PENDING or CONFIRMED for more than the SLA threshold (hours).
+   * Default thresholds: PENDING > 4h, CONFIRMED > 24h.
+   */
+  async getSlaOrders() {
+    const now = new Date();
+    const pendingThreshold = new Date(now.getTime() - 4 * 60 * 60 * 1000);   // 4 hours
+    const confirmedThreshold = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours
+
+    const orders = await this.prisma.order.findMany({
+      where: {
+        OR: [
+          { status: 'PENDING', updatedAt: { lt: pendingThreshold } },
+          { status: 'CONFIRMED', updatedAt: { lt: confirmedThreshold } },
+        ],
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        orderType: true,
+        total: true,
+        currency: true,
+        deliveryCity: true,
+        createdAt: true,
+        updatedAt: true,
+        buyer: { select: { id: true, name: true, email: true } },
+        transportJobs: { select: { id: true, status: true } },
+      },
+      orderBy: { updatedAt: 'asc' }, // oldest first — highest urgency
+    });
+
+    return orders.map((o) => ({
+      ...o,
+      ageHours: Math.floor((now.getTime() - new Date(o.updatedAt).getTime()) / 3_600_000),
+    }));
+  }
+
+  /**
+   * GET /admin/supplier-performance
+   * Per-supplier metrics: order count, acceptance rate, dispute rate, GMV.
+   */
+  async getSupplierPerformance() {
+    const suppliers = await this.prisma.company.findMany({
+      where: { companyType: { in: ['SUPPLIER', 'HYBRID', 'RECYCLER'] } },
+      select: {
+        id: true,
+        name: true,
+        city: true,
+        verified: true,
+        commissionRate: true,
+        createdAt: true,
+        orders: {
+          select: {
+            id: true,
+            status: true,
+            total: true,
+            paymentStatus: true,
+            dispute: { select: { id: true, status: true } },
+          },
+        },
+        materials: {
+          select: { id: true, active: true },
+        },
+      },
+    });
+
+    return suppliers.map((s) => {
+      const total = s.orders.length;
+      const completed = s.orders.filter((o) => o.status === 'COMPLETED').length;
+      const cancelled = s.orders.filter((o) => o.status === 'CANCELLED').length;
+      const gmv = s.orders
+        .filter((o) => ['COMPLETED', 'IN_PROGRESS', 'DELIVERED'].includes(o.status))
+        .reduce((sum, o) => sum + (o.total ?? 0), 0);
+      const allDisputes = s.orders.filter((o) => o.dispute != null).map((o) => o.dispute!);
+      const openDisputes = allDisputes.filter((d) =>
+        ['OPEN', 'UNDER_REVIEW'].includes(d.status),
+      ).length;
+      const disputeRate = total > 0 ? Math.round((allDisputes.length / total) * 100) : 0;
+      const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+      const activeMaterials = s.materials.filter((m) => m.active).length;
+
+      return {
+        id: s.id,
+        name: s.name,
+        city: s.city,
+        verified: s.verified,
+        commissionRate: s.commissionRate,
+        createdAt: s.createdAt,
+        totalOrders: total,
+        completedOrders: completed,
+        cancelledOrders: cancelled,
+        completionRate,
+        gmv,
+        openDisputes,
+        disputeRate,
+        activeMaterials,
+      };
+    });
+  }
+
+  /** GET /admin/surcharges — surcharges pending admin approval */
+  async getPendingSurcharges() {
+    return this.prisma.orderSurcharge.findMany({
+      where: { approvalStatus: 'PENDING' },
+      select: {
+        id: true,
+        type: true,
+        label: true,
+        amount: true,
+        currency: true,
+        billable: true,
+        approvalStatus: true,
+        createdAt: true,
+        order: {
+          select: {
+            id: true,
+            orderNumber: true,
+            buyer: { select: { id: true, name: true } },
+          },
+        },
+        transportJob: {
+          select: {
+            id: true,
+            jobNumber: true,
+            driver: { select: { id: true, firstName: true, lastName: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  /** PATCH /admin/surcharges/:id/approve */
+  async approveSurcharge(surchargeId: string, adminId: string) {
+    const surcharge = await this.prisma.orderSurcharge.findUnique({
+      where: { id: surchargeId },
+    });
+    if (!surcharge) throw new NotFoundException('Surcharge not found');
+    if (surcharge.approvalStatus !== 'PENDING')
+      throw new BadRequestException('Surcharge is not pending approval');
+
+    const updated = await this.prisma.orderSurcharge.update({
+      where: { id: surchargeId },
+      data: {
+        approvalStatus: 'APPROVED',
+        approvedByAdminId: adminId,
+        approvedAt: new Date(),
+      },
+    });
+
+    await this.prisma.adminAuditLog.create({
+      data: {
+        adminId,
+        action: 'APPROVE_SURCHARGE',
+        entityType: 'OrderSurcharge',
+        entityId: surchargeId,
+        note: `Approved surcharge: ${surcharge.label} €${surcharge.amount}`,
+      },
+    });
+
+    return updated;
+  }
+
+  /** PATCH /admin/surcharges/:id/reject */
+  async rejectSurcharge(surchargeId: string, note: string, adminId: string) {
+    const surcharge = await this.prisma.orderSurcharge.findUnique({
+      where: { id: surchargeId },
+    });
+    if (!surcharge) throw new NotFoundException('Surcharge not found');
+    if (surcharge.approvalStatus !== 'PENDING')
+      throw new BadRequestException('Surcharge is not pending approval');
+
+    const updated = await this.prisma.orderSurcharge.update({
+      where: { id: surchargeId },
+      data: {
+        approvalStatus: 'REJECTED',
+        approvedByAdminId: adminId,
+        approvedAt: new Date(),
+        rejectionNote: note || 'Noraidīts bez piezīmes',
+      },
+    });
+
+    await this.prisma.adminAuditLog.create({
+      data: {
+        adminId,
+        action: 'REJECT_SURCHARGE',
+        entityType: 'OrderSurcharge',
+        entityId: surchargeId,
+        note: `Rejected surcharge: ${surcharge.label} €${surcharge.amount}. Reason: ${note}`,
+      },
+    });
+
+    return updated;
   }
 }

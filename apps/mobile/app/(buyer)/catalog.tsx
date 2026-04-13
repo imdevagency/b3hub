@@ -6,6 +6,10 @@ import {
   StyleSheet,
   TextInput,
   RefreshControl,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
@@ -28,6 +32,7 @@ import {
   FolderOpen,
   ChevronRight,
   MapPin,
+  Calculator,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -163,6 +168,10 @@ export default function CatalogScreen() {
     quantity: number;
     unit: string;
   } | null>(null);
+  const [calcVisible, setCalcVisible] = useState(false);
+  const [calcArea, setCalcArea] = useState('');
+  const [calcDepth, setCalcDepth] = useState('');
+  const [calcDensity, setCalcDensity] = useState('1.6');
 
   const DRAFT_KEY = '@b3hub_wizard_draft';
   const DRAFT_MAX_AGE_MS = 48 * 60 * 60 * 1000;
@@ -352,7 +361,13 @@ export default function CatalogScreen() {
       </View>
 
       {/* ── Filter chips ── */}
-      <View style={s.chipRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={s.chipScroll}
+        contentContainerStyle={s.chipRow}
+        keyboardShouldPersistTaps="handled"
+      >
         <TouchableOpacity
           style={[s.chip, filterMode === 'ALL' && s.chipActive]}
           onPress={() => {
@@ -389,7 +404,156 @@ export default function CatalogScreen() {
             {nearMeLoading ? '...' : 'Tuvumā'}
           </Text>
         </TouchableOpacity>
-      </View>
+        <TouchableOpacity
+          style={s.chip}
+          onPress={() => {
+            haptics.light();
+            setCalcVisible(true);
+          }}
+          activeOpacity={0.8}
+        >
+          <Calculator size={13} color="#7c3aed" />
+          <Text style={[s.chipText, { color: '#7c3aed' }]}>Kalkulators</Text>
+        </TouchableOpacity>
+      </ScrollView>
+
+      {/* ── Material quantity calculator modal ── */}
+      <Modal
+        visible={calcVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCalcVisible(false)}
+      >
+        <KeyboardAvoidingView
+          style={s.calcOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View style={s.calcSheet}>
+            <View style={s.calcHeader}>
+              <Calculator size={16} color="#7c3aed" />
+              <Text style={s.calcTitle}>Daudzuma kalkulators</Text>
+              <TouchableOpacity hitSlop={12} onPress={() => setCalcVisible(false)}>
+                <X size={18} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+            <Text style={s.calcSubtitle}>
+              Ievadiet laukumu un dziļumu, lai aprēķinātu nepieciešamos tonnus.
+            </Text>
+
+            <View style={s.calcRow}>
+              <View style={s.calcField}>
+                <Text style={s.calcLabel}>Laukums (m²)</Text>
+                <TextInput
+                  style={s.calcInput}
+                  value={calcArea}
+                  onChangeText={setCalcArea}
+                  keyboardType="decimal-pad"
+                  placeholder="piem., 120"
+                  placeholderTextColor="#9ca3af"
+                />
+              </View>
+              <View style={s.calcField}>
+                <Text style={s.calcLabel}>Dziļums (cm)</Text>
+                <TextInput
+                  style={s.calcInput}
+                  value={calcDepth}
+                  onChangeText={setCalcDepth}
+                  keyboardType="decimal-pad"
+                  placeholder="piem., 15"
+                  placeholderTextColor="#9ca3af"
+                />
+              </View>
+            </View>
+
+            <View style={s.calcDensityRow}>
+              <Text style={s.calcLabel}>Blīvums (t/m³)</Text>
+              <View style={s.calcDensityChips}>
+                {[
+                  { label: 'Grants 1.6', val: '1.6' },
+                  { label: 'Smiltis 1.4', val: '1.4' },
+                  { label: 'Šķembas 1.7', val: '1.7' },
+                  { label: 'Augsne 1.5', val: '1.5' },
+                ].map((d) => (
+                  <TouchableOpacity
+                    key={d.val}
+                    style={[s.densityChip, calcDensity === d.val && s.densityChipActive]}
+                    onPress={() => {
+                      haptics.light();
+                      setCalcDensity(d.val);
+                    }}
+                  >
+                    <Text
+                      style={[s.densityChipText, calcDensity === d.val && s.densityChipTextActive]}
+                    >
+                      {d.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TextInput
+                style={[s.calcInput, { marginTop: 6 }]}
+                value={calcDensity}
+                onChangeText={setCalcDensity}
+                keyboardType="decimal-pad"
+                placeholder="1.6"
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
+
+            {/* Result */}
+            {(() => {
+              const area = parseFloat(calcArea.replace(',', '.'));
+              const depth = parseFloat(calcDepth.replace(',', '.'));
+              const density = parseFloat(calcDensity.replace(',', '.'));
+              if (
+                !isNaN(area) &&
+                !isNaN(depth) &&
+                !isNaN(density) &&
+                area > 0 &&
+                depth > 0 &&
+                density > 0
+              ) {
+                const volumeM3 = area * (depth / 100);
+                const tonnes = volumeM3 * density;
+                const trucks17 = Math.ceil(tonnes / 17);
+                const trucks26 = Math.ceil(tonnes / 26);
+                return (
+                  <View style={s.calcResult}>
+                    <View style={s.calcResultMain}>
+                      <Text style={s.calcResultTonnes}>{tonnes.toFixed(1)} t</Text>
+                      <Text style={s.calcResultLabel}>nepieciešamo materiālu</Text>
+                    </View>
+                    <View style={s.calcResultMeta}>
+                      <Text style={s.calcResultMetaText}>≈ {volumeM3.toFixed(1)} m³</Text>
+                      <Text style={s.calcResultMetaText}>
+                        · {trucks17} mašīna (17t) vai {trucks26} mašīna (26t)
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={s.calcOrderBtn}
+                      onPress={() => {
+                        haptics.medium();
+                        setCalcVisible(false);
+                        router.push({
+                          pathname: '/order-request-new',
+                          params: { prefilledQty: String(Math.ceil(tonnes)) },
+                        } as any);
+                      }}
+                    >
+                      <Text style={s.calcOrderBtnText}>Pasūtīt {Math.ceil(tonnes)} t</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              }
+              return (
+                <View style={s.calcResultEmpty}>
+                  <Text style={s.calcResultEmptyText}>Ievadiet laukumu un dziļumu</Text>
+                </View>
+              );
+            })()}
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* ── Project context banner ── */}
       {projectId ? (
@@ -486,11 +650,14 @@ const s = StyleSheet.create({
     paddingBottom: 4,
     backgroundColor: '#f9fafb',
   },
+  chipScroll: {
+    paddingTop: 8,
+    paddingBottom: 2,
+  },
   chipRow: {
     flexDirection: 'row',
     gap: 8,
     paddingHorizontal: 16,
-    paddingTop: 8,
     paddingBottom: 2,
   },
   chip: {
@@ -713,5 +880,139 @@ const s = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     color: '#16a34a',
+  },
+  // ── Calculator modal styles ────────────────────────────────────
+  calcOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  calcSheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 36,
+    gap: 16,
+  },
+  calcHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  calcTitle: {
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  calcSubtitle: {
+    fontSize: 13,
+    color: '#6b7280',
+    lineHeight: 18,
+    marginTop: -8,
+  },
+  calcRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  calcField: {
+    flex: 1,
+    gap: 6,
+  },
+  calcLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  calcInput: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: '#111827',
+  },
+  calcDensityRow: {
+    gap: 6,
+  },
+  calcDensityChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  densityChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  densityChipActive: {
+    backgroundColor: '#7c3aed',
+    borderColor: '#7c3aed',
+  },
+  densityChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  densityChipTextActive: {
+    color: '#fff',
+  },
+  calcResult: {
+    backgroundColor: '#f5f3ff',
+    borderRadius: 14,
+    padding: 16,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#ede9fe',
+  },
+  calcResultMain: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+  },
+  calcResultTonnes: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#7c3aed',
+  },
+  calcResultLabel: {
+    fontSize: 13,
+    color: '#6b7280',
+  },
+  calcResultMeta: {
+    gap: 2,
+  },
+  calcResultMetaText: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  calcOrderBtn: {
+    backgroundColor: '#7c3aed',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  calcOrderBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  calcResultEmpty: {
+    padding: 16,
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderRadius: 14,
+  },
+  calcResultEmptyText: {
+    fontSize: 13,
+    color: '#9ca3af',
   },
 });

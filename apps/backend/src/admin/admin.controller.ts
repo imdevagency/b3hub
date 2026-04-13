@@ -13,6 +13,10 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { PagePaginationDto } from '../common/dto/pagination.dto';
 
+class RejectSurchargeDto {
+  @IsOptional() @IsString() note?: string;
+}
+
 class UpdateCompanyDto {
   @IsOptional() @IsBoolean() verified?: boolean;
   @IsOptional() @IsBoolean() payoutEnabled?: boolean;
@@ -127,5 +131,54 @@ export class AdminController {
   @Get('payments')
   getPaymentQueue() {
     return this.service.getPaymentQueue();
+  }
+
+  /**
+   * PATCH /admin/payments/:id/release
+   * Manually trigger fund release for a captured payment that wasn't auto-released.
+   */
+  @Patch('payments/:id/release')
+  releasePayment(
+    @Param('id') id: string,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.releasePayment(id, admin.userId);
+  }
+
+  /** GET /admin/sla — orders breaching SLA thresholds (PENDING >4h, CONFIRMED >24h) */
+  @Get('sla')
+  getSlaOrders() {
+    return this.service.getSlaOrders();
+  }
+
+  /** GET /admin/supplier-performance — per-supplier metrics for quality control */
+  @Get('supplier-performance')
+  getSupplierPerformance() {
+    return this.service.getSupplierPerformance();
+  }
+
+  /** GET /admin/surcharges — surcharges pending admin approval */
+  @Get('surcharges')
+  getPendingSurcharges() {
+    return this.service.getPendingSurcharges();
+  }
+
+  /** PATCH /admin/surcharges/:id/approve */
+  @Patch('surcharges/:id/approve')
+  approveSurcharge(
+    @Param('id') id: string,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.approveSurcharge(id, admin.userId);
+  }
+
+  /** PATCH /admin/surcharges/:id/reject */
+  @Patch('surcharges/:id/reject')
+  rejectSurcharge(
+    @Param('id') id: string,
+    @Body() body: RejectSurchargeDto,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.rejectSurcharge(id, body.note ?? '', admin.userId);
   }
 }

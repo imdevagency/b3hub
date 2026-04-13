@@ -359,3 +359,114 @@ export async function adminGetPayments(token: string): Promise<AdminPayment[]> {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+export async function adminReleasePayment(
+  paymentId: string,
+  token: string,
+): Promise<{ ok: boolean; paymentId: string }> {
+  return apiFetch(`/admin/payments/${paymentId}/release`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ─── SLA Monitor ─────────────────────────────────────────────────────────────
+
+export interface SlaOrder {
+  id: string;
+  orderNumber: string;
+  status: 'PENDING' | 'CONFIRMED';
+  orderType: string;
+  total: number;
+  currency: string;
+  deliveryCity: string;
+  createdAt: string;
+  updatedAt: string;
+  ageHours: number;
+  buyer: { id: string; name: string; email?: string } | null;
+  transportJobs: { id: string; status: string }[];
+}
+
+export async function adminGetSlaOrders(token: string): Promise<SlaOrder[]> {
+  return apiFetch<SlaOrder[]>('/admin/sla', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ─── Supplier Performance ─────────────────────────────────────────────────────
+
+export interface SupplierPerformance {
+  id: string;
+  name: string;
+  city: string;
+  verified: boolean;
+  commissionRate: number;
+  createdAt: string;
+  totalOrders: number;
+  completedOrders: number;
+  cancelledOrders: number;
+  completionRate: number;
+  gmv: number;
+  openDisputes: number;
+  disputeRate: number;
+  activeMaterials: number;
+}
+
+export async function adminGetSupplierPerformance(
+  token: string,
+): Promise<SupplierPerformance[]> {
+  return apiFetch<SupplierPerformance[]>('/admin/supplier-performance', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ─── Surcharge Approvals ──────────────────────────────────────────────────────
+
+export interface AdminSurcharge {
+  id: string;
+  type: string;
+  label: string;
+  amount: number;
+  currency: string;
+  billable: boolean;
+  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+  order: {
+    id: string;
+    orderNumber: string;
+    buyer: { id: string; name: string } | null;
+  } | null;
+  transportJob: {
+    id: string;
+    jobNumber: string;
+    driver: { id: string; firstName: string; lastName: string } | null;
+  } | null;
+}
+
+export async function adminGetPendingSurcharges(token: string): Promise<AdminSurcharge[]> {
+  return apiFetch<AdminSurcharge[]>('/admin/surcharges', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminApproveSurcharge(
+  surchargeId: string,
+  token: string,
+): Promise<{ id: string }> {
+  return apiFetch(`/admin/surcharges/${surchargeId}/approve`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminRejectSurcharge(
+  surchargeId: string,
+  note: string,
+  token: string,
+): Promise<{ id: string }> {
+  return apiFetch(`/admin/surcharges/${surchargeId}/reject`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ note }),
+  });
+}

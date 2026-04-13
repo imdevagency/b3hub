@@ -20,6 +20,14 @@ import {
   DollarSign,
   ChevronDown,
   ChevronUp,
+  Info,
+  X,
+  Building2,
+  Mail,
+  Phone,
+  Calendar,
+  ShieldCheck,
+  ShieldOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
@@ -75,6 +83,234 @@ function ToggleBtn({
   );
 }
 
+// ── User Detail Drawer ────────────────────────────────────────────────────────
+
+const CAPABILITY_INFO: {
+  key: 'canSell' | 'canTransport' | 'canSkipHire';
+  label: string;
+  description: string;
+  icon: React.ElementType;
+}[] = [
+  {
+    key: 'canSell',
+    label: 'Pārdevējs (Sell)',
+    description: 'Var publicēt materiālus un saņemt ienākošos pasūtījumus.',
+    icon: Package,
+  },
+  {
+    key: 'canTransport',
+    label: 'Pārvadātājs (Carrier)',
+    description: 'Var pieņemt un izpildīt transporta darbus kā vadītājs vai uzņēmums.',
+    icon: Truck,
+  },
+  {
+    key: 'canSkipHire',
+    label: 'Konteineri (Skip Hire)',
+    description: 'Var pārvaldīt konteinerus, plasēt un savākt konteineru pasūtījumus.',
+    icon: SkipForward,
+  },
+];
+
+function UserDrawer({
+  user: u,
+  updating,
+  onClose,
+  onToggle,
+  onToggleStatus,
+}: {
+  user: AdminUser;
+  updating: string | null;
+  onClose: () => void;
+  onToggle: (field: 'canSell' | 'canTransport' | 'canSkipHire', value: boolean) => void;
+  onToggleStatus: () => void;
+}) {
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
+      {/* Panel */}
+      <div className="fixed inset-y-0 right-0 w-96 z-50 flex flex-col bg-white shadow-2xl border-l border-border overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+          <div>
+            <p className="font-bold text-lg text-foreground">
+              {u.firstName} {u.lastName}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              ID: <span className="font-mono">{u.id.slice(0, 8)}…</span>
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <X className="h-5 w-5 text-muted-foreground" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 px-5 py-4 space-y-6">
+          {/* Identity */}
+          <section>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+              Kontaktinformācija
+            </h3>
+            <div className="space-y-2">
+              {u.email && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="break-all">{u.email}</span>
+                  {u.emailVerified ? (
+                    <ShieldCheck className="h-4 w-4 text-green-500 shrink-0" title="Verificēts" />
+                  ) : (
+                    <ShieldOff className="h-4 w-4 text-amber-400 shrink-0" title="Nav verificēts" />
+                  )}
+                </div>
+              )}
+              {u.phone && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span>{u.phone}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 text-sm">
+                <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-muted-foreground">
+                  Reģistrēts: {new Date(u.createdAt).toLocaleDateString('lv-LV')}
+                </span>
+              </div>
+            </div>
+          </section>
+
+          {/* Company */}
+          {u.company && (
+            <section>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                Uzņēmums
+              </h3>
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/30 border border-border">
+                <Building2 className="h-5 w-5 text-muted-foreground shrink-0" />
+                <div>
+                  <p className="font-semibold text-sm">{u.company.name}</p>
+                  {u.companyRole && (
+                    <p className="text-xs text-muted-foreground">{u.companyRole}</p>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Account status */}
+          <section>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+              Konta statuss
+            </h3>
+            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border">
+              <span className="text-sm font-medium">
+                {u.status === 'ACTIVE' ? 'Aktīvs' : u.status}
+              </span>
+              <button
+                onClick={onToggleStatus}
+                disabled={updating === u.id + 'status' || u.userType === 'ADMIN'}
+                className={`inline-flex items-center gap-1.5 text-sm font-semibold rounded-full px-3 py-1.5 transition-colors ${
+                  u.status === 'ACTIVE'
+                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                    : 'bg-red-100 text-red-700 hover:bg-red-200'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {u.status === 'ACTIVE' ? (
+                  <>
+                    <CheckCircle className="h-3.5 w-3.5" /> Aktīvs — klikšķint lai apturētu
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-3.5 w-3.5" /> {u.status} — klikšķint lai aktivizētu
+                  </>
+                )}
+              </button>
+            </div>
+          </section>
+
+          {/* Capabilities */}
+          <section>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+              Atļaujas
+            </h3>
+            <div className="space-y-3">
+              {CAPABILITY_INFO.map(({ key, label, description, icon: Icon }) => (
+                <div
+                  key={key}
+                  className={`flex items-start justify-between gap-3 p-3 rounded-xl border transition-colors ${
+                    u[key] ? 'border-green-200 bg-green-50/50' : 'border-border bg-muted/20'
+                  }`}
+                >
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <Icon
+                      className={`h-5 w-5 mt-0.5 shrink-0 ${
+                        u[key] ? 'text-green-600' : 'text-muted-foreground'
+                      }`}
+                    />
+                    <div>
+                      <p
+                        className={`text-sm font-semibold ${
+                          u[key] ? 'text-green-800' : 'text-foreground'
+                        }`}
+                      >
+                        {label}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                        {description}
+                      </p>
+                    </div>
+                  </div>
+                  <ToggleBtn
+                    value={u[key]}
+                    disabled={updating === u.id + key}
+                    onToggle={() => onToggle(key, u[key])}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Credit info */}
+          {u.buyerProfile && (
+            <section>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                Kredīts
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-xl border border-border bg-muted/20">
+                  <p className="text-xs text-muted-foreground">Limits</p>
+                  <p className="font-bold text-foreground mt-0.5">
+                    {u.buyerProfile.creditLimit != null
+                      ? `€${u.buyerProfile.creditLimit.toLocaleString()}`
+                      : '—'}
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl border border-border bg-muted/20">
+                  <p className="text-xs text-muted-foreground">Izlietots</p>
+                  <p className="font-bold text-foreground mt-0.5">
+                    €{(u.buyerProfile.creditUsed ?? 0).toLocaleString()}
+                  </p>
+                </div>
+                {u.buyerProfile.paymentTerms && (
+                  <div className="col-span-2 p-3 rounded-xl border border-border bg-muted/20">
+                    <p className="text-xs text-muted-foreground">Termiņš</p>
+                    <p className="font-bold text-foreground mt-0.5">
+                      {u.buyerProfile.paymentTerms}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function AdminUsersPage() {
@@ -88,6 +324,7 @@ export default function AdminUsersPage() {
   const [creditEdits, setCreditEdits] = useState<
     Record<string, { creditLimit: string; paymentTerms: string }>
   >({});
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
 
   useEffect(() => {
     if (!isLoading && (!user || user.userType !== 'ADMIN')) {
@@ -119,6 +356,7 @@ export default function AdminUsersPage() {
     try {
       const updated = await adminUpdateUser(userId, { [field]: !currentValue }, token);
       setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+      setSelectedUser((prev) => (prev?.id === updated.id ? updated : prev));
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : 'Neizdevās atjaunināt');
     } finally {
@@ -133,6 +371,7 @@ export default function AdminUsersPage() {
     try {
       const updated = await adminUpdateUser(u.id, { status: next }, token);
       setUsers((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+      setSelectedUser((prev) => (prev?.id === updated.id ? updated : prev));
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : 'Neizdevās atjaunināt');
     } finally {
@@ -278,6 +517,7 @@ export default function AdminUsersPage() {
                   <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
                     Kredīts
                   </th>
+                  <th className="px-4 py-3 w-10" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -369,6 +609,15 @@ export default function AdminUsersPage() {
                           )}
                         </button>
                       </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => setSelectedUser(u)}
+                          className="p-1.5 rounded-full hover:bg-gray-100 text-muted-foreground hover:text-foreground transition-colors"
+                          title="Skatīt detaļas"
+                        >
+                          <Info className="h-4 w-4" />
+                        </button>
+                      </td>
                     </tr>
                     {expandedCredit.has(u.id) && (
                       <tr className="bg-blue-50/50">
@@ -439,6 +688,17 @@ export default function AdminUsersPage() {
           </div>
         )}
       </div>
+
+      {/* User Detail Drawer */}
+      {selectedUser && (
+        <UserDrawer
+          user={selectedUser}
+          updating={updating}
+          onClose={() => setSelectedUser(null)}
+          onToggle={(field, currentValue) => toggle(selectedUser.id, field, currentValue)}
+          onToggleStatus={() => toggleStatus(selectedUser)}
+        />
+      )}
     </div>
   );
 }

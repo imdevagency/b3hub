@@ -488,24 +488,22 @@ export default function JobsPage() {
         description={`Pieejamie transporta darbi · ${filteredJobs.length} rezultāti`}
         action={
           <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-1.5" />
-              Izveidot Darbu
-            </Button>
+            {user?.isCompany &&
+              (user?.companyRole === 'OWNER' || user?.companyRole === 'MANAGER') && (
+                <Button size="sm" onClick={() => setCreateOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Izveidot Darbu
+                </Button>
+              )}
             <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
               <RefreshCw className={`h-4 w-4 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
               Atjaunot
             </Button>
-            <Button variant={panelOpen ? 'default' : 'outline'} size="sm" onClick={togglePanel}>
+            <Button variant={activeFilter ? 'default' : 'outline'} size="sm" onClick={togglePanel}>
               <SlidersHorizontal className="h-4 w-4 mr-1.5" />
               Filtri
-              {activeFilter && !panelOpen && (
-                <span className="ml-1.5 h-2 w-2 rounded-full bg-primary/70 inline-block" />
-              )}
-              {panelOpen ? (
-                <ChevronUp className="h-4 w-4 ml-1.5" />
-              ) : (
-                <ChevronDown className="h-4 w-4 ml-1.5" />
+              {activeFilter && (
+                <span className="ml-1.5 h-2 w-2 rounded-full bg-primary-foreground inline-block" />
               )}
             </Button>
           </div>
@@ -540,10 +538,26 @@ export default function JobsPage() {
 
       {activeTab === 'market' && (
         <>
-          {/* Collapsible filter panel */}
-          {panelOpen && (
-            <Card className="p-5 space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Slide-over filter panel */}
+          <Sheet
+            open={panelOpen}
+            onOpenChange={(open) => {
+              if (open) togglePanel();
+              else setPanelOpen(false);
+            }}
+          >
+            <SheetContent
+              side="right"
+              className="w-full sm:max-w-[400px] p-0 flex flex-col h-full bg-background border-l shadow-2xl"
+            >
+              <SheetHeader className="px-6 py-5 border-b">
+                <SheetTitle className="text-base font-bold flex items-center gap-2">
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Meklēšanas filtri
+                </SheetTitle>
+              </SheetHeader>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {/* From */}
                 <div className="space-y-2">
                   <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 ml-1">
@@ -557,7 +571,7 @@ export default function JobsPage() {
                       type="text"
                       value={draft.fromLocation}
                       onChange={(e) => setDraft((d) => ({ ...d, fromLocation: e.target.value }))}
-                      placeholder="Pilsēta vai pasta indekss..."
+                      placeholder="Pilsēta, adrese..."
                       className="flex-1 bg-transparent px-2 py-3.5 text-[15px] outline-none placeholder:text-muted-foreground font-medium"
                     />
                     <div className="flex items-center border-l border-border/60 pr-2">
@@ -567,16 +581,16 @@ export default function JobsPage() {
                           onChange={(e) =>
                             setDraft((d) => ({ ...d, fromRadius: Number(e.target.value) }))
                           }
-                          className="appearance-none bg-transparent pl-4 pr-8 py-3.5 text-sm font-semibold outline-none cursor-pointer text-foreground"
+                          className="appearance-none bg-transparent pl-3 pr-7 py-3.5 text-sm font-semibold outline-none cursor-pointer text-foreground"
                         >
                           <option value={0}>+ 0 km</option>
-                          {RADIUS_OPTIONS.map((r) => (
+                          {[25, 50, 100, 150, 200].map((r) => (
                             <option key={r} value={r}>
                               + {r} km
                             </option>
                           ))}
                         </select>
-                        <ChevronDown className="h-4 w-4 absolute right-3 pointer-events-none text-muted-foreground" />
+                        <ChevronDown className="h-4 w-4 absolute right-2 pointer-events-none text-muted-foreground" />
                       </div>
                     </div>
                   </div>
@@ -595,7 +609,7 @@ export default function JobsPage() {
                       type="text"
                       value={draft.toLocation}
                       onChange={(e) => setDraft((d) => ({ ...d, toLocation: e.target.value }))}
-                      placeholder="Pilsēta vai pasta indekss..."
+                      placeholder="Pilsēta, adrese..."
                       className="flex-1 bg-transparent px-2 py-3.5 text-[15px] outline-none placeholder:text-muted-foreground font-medium"
                     />
                     <div className="flex items-center border-l border-border/60 pr-2">
@@ -605,117 +619,130 @@ export default function JobsPage() {
                           onChange={(e) =>
                             setDraft((d) => ({ ...d, toRadius: Number(e.target.value) }))
                           }
-                          className="appearance-none bg-transparent pl-4 pr-8 py-3.5 text-sm font-semibold outline-none cursor-pointer text-foreground"
+                          className="appearance-none bg-transparent pl-3 pr-7 py-3.5 text-sm font-semibold outline-none cursor-pointer text-foreground"
                         >
                           <option value={0}>+ 0 km</option>
-                          {RADIUS_OPTIONS.map((r) => (
+                          {[25, 50, 100, 150, 200].map((r) => (
                             <option key={r} value={r}>
                               + {r} km
                             </option>
                           ))}
                         </select>
-                        <ChevronDown className="h-4 w-4 absolute right-3 pointer-events-none text-muted-foreground" />
+                        <ChevronDown className="h-4 w-4 absolute right-2 pointer-events-none text-muted-foreground" />
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Actions */}
-              <div className="flex flex-wrap items-center gap-3 pt-1 border-t">
-                <Button variant="outline" size="sm" onClick={handleReset}>
-                  <X className="h-3.5 w-3.5 mr-1" />
-                  Atiestatīt
-                </Button>
-                <Button size="sm" onClick={handleApply}>
-                  Lietot filtru
-                </Button>
-                <div className="flex-1" />
-                {!showSaveInput ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const parts = [];
-                      if (draft.fromLocation) parts.push(draft.fromLocation);
-                      if (draft.toLocation) parts.push('→ ' + draft.toLocation);
-                      setSaveName(parts.join(' '));
-                      setShowSaveInput(true);
-                    }}
-                  >
-                    <Bookmark className="h-3.5 w-3.5 mr-1.5" />
-                    Saglabāt meklēšanu
-                  </Button>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={saveName}
-                      onChange={(e) => setSaveName(e.target.value)}
-                      placeholder="Piem. Rīga → Jūrmala 50km"
-                      className="h-8 w-52 text-sm"
-                      onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-                      autoFocus
-                    />
-                    <Button size="sm" onClick={handleSave} disabled={!saveName.trim()}>
-                      Saglabāt
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setShowSaveInput(false);
-                        setSaveName('');
-                      }}
-                    >
-                      Atcelt
-                    </Button>
+                {/* Saved searches */}
+                {savedSearches.length > 0 && (
+                  <div className="pt-6 border-t mt-4 space-y-3">
+                    <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Saglabātās meklēšanas
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {savedSearches.map((s) => (
+                        <div
+                          key={s.id}
+                          className="flex items-center gap-1 bg-muted rounded-full pl-3 pr-1 py-1 border"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleApplySaved(s)}
+                            className="text-xs font-medium text-foreground hover:text-primary transition-colors text-left"
+                          >
+                            {s.name}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSavedSearches((prev) => prev.filter((x) => x.id !== s.id))
+                            }
+                            className="h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors ml-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
+
+                {/* Save search section */}
+                <div className="pt-4 space-y-3">
+                  {!showSaveInput ? (
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        const parts = [];
+                        if (draft.fromLocation) parts.push(draft.fromLocation);
+                        if (draft.toLocation) parts.push('→ ' + draft.toLocation);
+                        setSaveName(parts.join(' '));
+                        setShowSaveInput(true);
+                      }}
+                    >
+                      <Bookmark className="h-4 w-4 mr-2" />
+                      Saglabāt kā sagatavi
+                    </Button>
+                  ) : (
+                    <div className="flex flex-col gap-2 p-3 bg-muted/30 rounded-xl border border-border/50">
+                      <Input
+                        value={saveName}
+                        onChange={(e) => setSaveName(e.target.value)}
+                        placeholder="Piem. Rīga → Jūrmala"
+                        className="h-9 text-sm bg-background"
+                        onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          className="flex-1 h-9"
+                          onClick={handleSave}
+                          disabled={!saveName.trim()}
+                        >
+                          Saglabāt
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="flex-1 h-9"
+                          onClick={() => {
+                            setShowSaveInput(false);
+                            setSaveName('');
+                          }}
+                        >
+                          Atcelt
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {saveSuccess && (
+                    <p className="text-sm text-emerald-600 dark:text-emerald-500 font-medium flex items-center gap-1.5 pt-1">
+                      <BookmarkCheck className="h-4 w-4" />
+                      Meklēšana saglabāta!
+                    </p>
+                  )}
+                </div>
               </div>
 
-              {/* Save success toast */}
-              {saveSuccess && (
-                <p className="text-sm text-primary font-medium flex items-center gap-1.5">
-                  <BookmarkCheck className="h-4 w-4" />
-                  Meklēšana saglabāta!
-                </p>
-              )}
-
-              {/* Saved searches */}
-              {savedSearches.length > 0 && (
-                <div className="pt-2 border-t space-y-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Saglabātās meklēšanas
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {savedSearches.map((s) => (
-                      <div
-                        key={s.id}
-                        className="flex items-center gap-1 bg-muted rounded-full pl-3 pr-1 py-1 border"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => handleApplySaved(s)}
-                          className="text-xs font-semibold text-foreground hover:text-primary transition-colors"
-                        >
-                          {s.name}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSavedSearches((prev) => prev.filter((x) => x.id !== s.id))
-                          }
-                          className="h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors ml-0.5"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </Card>
-          )}
+              {/* Bottom Actions */}
+              <div className="p-6 border-t bg-muted/10 grid grid-cols-2 gap-3 mt-auto">
+                <Button variant="outline" className="w-full" onClick={handleReset}>
+                  Notīrīt
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    handleApply();
+                    setPanelOpen(false);
+                  }}
+                >
+                  Pielietot
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
 
           {/* Active filter pill */}
           {activeFilter && !panelOpen && (

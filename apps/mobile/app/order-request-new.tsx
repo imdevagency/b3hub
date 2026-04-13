@@ -702,6 +702,22 @@ export default function OrderRequestWizard() {
           {isAsap && <Check size={18} color="#111827" />}
         </TouchableOpacity>
 
+        {/* Earliest delivery hint — time-of-day aware (14:00 EET cutoff) */}
+        {(() => {
+          const nowHourLocal = (new Date().getUTCHours() + 2) % 24;
+          const canDeliverToday = nowHourLocal < 14;
+          return (
+            <View style={s.etaHintRow}>
+              <Clock size={13} color={canDeliverToday ? '#059669' : '#6b7280'} />
+              <Text style={[s.etaHintText, { color: canDeliverToday ? '#059669' : '#6b7280' }]}>
+                {canDeliverToday
+                  ? 'Ātrākā piegāde: Šodien (~2–4 h)'
+                  : 'Ātrākā piegāde: Rīt (pasūtot šodien)'}
+              </Text>
+            </View>
+          );
+        })()}
+
         <RNCalendar
           minDate={todayISO}
           current={deliveryDate || todayISO}
@@ -1194,6 +1210,8 @@ export default function OrderRequestWizard() {
         onCancel={goBack}
         initialText={params.prefillAddress}
         contextLabel="Izkraušanas vieta"
+        pricePreviewCategory={selectedCategory}
+        pricePreviewQuantity={quantity}
       />
     );
   }
@@ -1874,6 +1892,18 @@ const s = StyleSheet.create({
     marginTop: 8,
   },
   hintText: { fontSize: 13, color: '#4b5563', lineHeight: 18, fontFamily: 'Inter_500Medium' },
+  etaHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  etaHintText: { fontSize: 13, fontFamily: 'Inter_500Medium' },
 
   // ── Calculator ──
   calcWrap: {

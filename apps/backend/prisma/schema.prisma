@@ -1589,10 +1589,17 @@ model OrderSurcharge {
   currency String         @default("EUR")
   billable Boolean        @default(true) // false = internal cost record only
 
+  // Admin approval — PENDING until reviewed; APPROVED charges proceed to billing; REJECTED are voided
+  approvalStatus  String   @default("APPROVED") // 'PENDING' | 'APPROVED' | 'REJECTED'
+  approvedByAdminId String?
+  approvedAt        DateTime?
+  rejectionNote     String?
+
   createdAt DateTime @default(now())
 
   @@index([orderId])
   @@index([transportJobId])
+  @@index([approvalStatus])
   @@map("order_surcharges")
 }
 

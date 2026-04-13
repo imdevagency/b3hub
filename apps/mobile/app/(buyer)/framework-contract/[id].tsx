@@ -6,6 +6,8 @@
 
 import React, { useCallback, useState } from 'react';
 import {
+  Modal,
+  Pressable,
   View,
   ScrollView,
   StyleSheet,
@@ -14,6 +16,7 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
+import { Calendar as RNCalendar } from 'react-native-calendars';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import {
@@ -205,6 +208,7 @@ export default function FrameworkContractDetailScreen() {
     return date.toISOString().split('T')[0];
   });
   const [callOffNotes, setCallOffNotes] = useState('');
+  const [datePickerFor, setDatePickerFor] = useState<'pickup' | 'delivery' | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(
@@ -585,24 +589,62 @@ export default function FrameworkContractDetailScreen() {
           />
 
           <Text style={s.fieldLabel}>Iekraušanas datums *</Text>
-          <TextInput
-            style={s.input}
-            value={pickupDate}
-            onChangeText={setPickupDate}
-            placeholder="GGGG-MM-DD"
-            placeholderTextColor="#9ca3af"
-            keyboardType="numbers-and-punctuation"
-          />
+          <Pressable style={s.dateBtn} onPress={() => setDatePickerFor('pickup')}>
+            <Calendar size={15} color="#6b7280" />
+            <Text style={s.dateBtnText}>{pickupDate}</Text>
+          </Pressable>
 
           <Text style={s.fieldLabel}>Piegādes datums *</Text>
-          <TextInput
-            style={s.input}
-            value={deliveryDate}
-            onChangeText={setDeliveryDate}
-            placeholder="GGGG-MM-DD"
-            placeholderTextColor="#9ca3af"
-            keyboardType="numbers-and-punctuation"
-          />
+          <Pressable style={s.dateBtn} onPress={() => setDatePickerFor('delivery')}>
+            <Calendar size={15} color="#6b7280" />
+            <Text style={s.dateBtnText}>{deliveryDate}</Text>
+          </Pressable>
+
+          {/* Date picker modal */}
+          <Modal
+            visible={datePickerFor !== null}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setDatePickerFor(null)}
+          >
+            <Pressable style={s.dateModalOverlay} onPress={() => setDatePickerFor(null)}>
+              <Pressable style={s.dateModalCard} onPress={(e) => e.stopPropagation()}>
+                <Text style={s.dateModalTitle}>
+                  {datePickerFor === 'pickup' ? 'Iekraušanas datums' : 'Piegādes datums'}
+                </Text>
+                <RNCalendar
+                  minDate={new Date().toISOString().split('T')[0]}
+                  current={datePickerFor === 'pickup' ? pickupDate : deliveryDate}
+                  markedDates={{
+                    [datePickerFor === 'pickup' ? pickupDate : deliveryDate]: {
+                      selected: true,
+                      selectedColor: '#111827',
+                      selectedTextColor: '#fff',
+                    },
+                  }}
+                  onDayPress={(day: { dateString: string }) => {
+                    if (datePickerFor === 'pickup') setPickupDate(day.dateString);
+                    else setDeliveryDate(day.dateString);
+                    setDatePickerFor(null);
+                  }}
+                  theme={{
+                    calendarBackground: '#ffffff',
+                    selectedDayBackgroundColor: '#111827',
+                    selectedDayTextColor: '#ffffff',
+                    todayTextColor: '#6b7280',
+                    dayTextColor: '#111827',
+                    textDisabledColor: '#d1d5db',
+                    arrowColor: '#111827',
+                    monthTextColor: '#111827',
+                    textDayFontWeight: '500',
+                    textMonthFontWeight: '700',
+                    textDayHeaderFontWeight: '600',
+                  }}
+                  enableSwipeMonths
+                />
+              </Pressable>
+            </Pressable>
+          </Modal>
 
           <Text style={s.fieldLabel}>Piezīmes</Text>
           <TextInput
@@ -708,6 +750,40 @@ const s = StyleSheet.create({
     paddingTop: 12,
   },
   submitBtnSpacing: { marginTop: 20 },
+  dateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 4,
+  },
+  dateBtnText: { fontSize: 15, color: '#111827', fontFamily: 'Inter_500Medium' },
+  dateModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  dateModalCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 16,
+    width: '100%',
+    maxWidth: 380,
+  },
+  dateModalTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
   draftBanner: {
     flexDirection: 'row',
     alignItems: 'center',

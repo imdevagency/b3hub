@@ -31,12 +31,24 @@ import {
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { MapPin, Search, X, Navigation, CheckCircle, Star, Map, ChevronRight } from 'lucide-react-native';
+import {
+  MapPin,
+  Search,
+  X,
+  Navigation,
+  CheckCircle,
+  Star,
+  Map,
+  ChevronRight,
+  Clock,
+  Tag,
+  TrendingDown,
+} from 'lucide-react-native';
 import { useGeocode } from '@/components/map';
 import type { GeocodeSuggestion } from '@/components/map';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import type { SavedAddress } from '@/lib/api';
+import type { SavedAddress, SupplierOffer, MaterialCategory } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -58,6 +70,9 @@ type Props = {
   contextLabel?: string;
   contextIcon?: 'from' | 'to';
   contextAddress?: PickedAddress | null;
+  /** When provided, a live price preview is fetched after picking an address */
+  pricePreviewCategory?: MaterialCategory;
+  pricePreviewQuantity?: number;
 };
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -81,6 +96,8 @@ export function InlineAddressStep({
   contextLabel = 'Izvēlēties vietu',
   contextIcon,
   contextAddress,
+  pricePreviewCategory,
+  pricePreviewQuantity,
 }: Props) {
   const mapRef = useRef<MapView>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -100,6 +117,43 @@ export function InlineAddressStep({
   const [resolving, setResolving] = useState(false);
   const [locating, setLocating] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+
+  // ── Live price preview ─────────────────────────────────────────────────────
+  const [previewOffers, setPreviewOffers] = useState<SupplierOffer[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const previewAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (!pricePreviewCategory || pricePreviewQuantity == null || !token || !picked) {
+      setPreviewOffers([]);
+      return;
+    }
+    // Cancel any in-flight preview fetch
+    previewAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    previewAbortRef.current = ctrl;
+    setPreviewLoading(true);
+    api.materials
+      .getOffers(
+        {
+          category: pricePreviewCategory,
+          quantity: pricePreviewQuantity,
+          lat: picked.lat,
+          lng: picked.lng,
+        },
+        token,
+      )
+      .then((offers) => {
+        if (ctrl.signal.aborted) return;
+        // Show top 3 cheapest
+        setPreviewOffers(offers.slice(0, 3));
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!ctrl.signal.aborted) setPreviewLoading(false);
+      });
+    return () => ctrl.abort();
+  }, [picked?.lat, picked?.lng, pricePreviewCategory, pricePreviewQuantity, token]);
 
   useEffect(() => {
     if (!token) return;
@@ -304,12 +358,16 @@ export function InlineAddressStep({
         >
           {pin && <Marker coordinate={pin} draggable onDragEnd={handleMarkerDragEnd} />}
         </MapView>
-        
+
         {/* Floating cross circular button top-right */}
         <SafeAreaView style={s.floatingHeader}>
           <View style={s.floatingHeaderContent}>
-            <View style={{flex: 1}} />
-            <TouchableOpacity style={s.mapXBtn} onPress={() => setMode('SEARCH')} activeOpacity={0.8}>
+            <View style={{ flex: 1 }} />
+            <TouchableOpacity
+              style={s.mapXBtn}
+              onPress={() => setMode('SEARCH')}
+              activeOpacity={0.8}
+            >
               <X size={24} color="#111827" />
             </TouchableOpacity>
           </View>
@@ -328,9 +386,58 @@ export function InlineAddressStep({
               </Text>
             </View>
           </View>
-          <TouchableOpacity 
-            style={[s.ctaBtn, resolving || locating ? s.ctaBtnDisabled : {}]} 
-            onPress={handleConfirmDone} 
+          {/* Live price preview strip */}
+          {pricePreviewCategory && pricePreviewQuantity != null && (
+            <View style={s.previewWrap}>
+              {previewLoading ? (
+                <View style={s.previewLoading}>
+                  <ActivityIndicator size="small" color="#6b7280" />
+                  <Text style={s.previewLoadingText}>Rēķina cenas jūsu adresei…</Text>
+                </View>
+              ) : previewOffers.length > 0 ? (
+                <>
+                  <View style={s.previewHeader}>
+                    <TrendingDown size={13} color="#059669" />
+                    <Text style={s.previewHeaderText}>
+                      {previewOffers.length} piegādātājs{previewOffers.length > 1 ? 'i' : ''}{' '}
+                      pieejams
+                    </Text>
+                  </View>
+                  {previewOffers.map((offer) => (
+                    <View key={offer.id} style={s.previewRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.previewSupplier} numberOfLines={1}>
+                          {offer.supplier.name}
+                        </Text>
+                        <View style={s.previewMeta}>
+                          {offer.distanceKm != null && (
+                            <>
+                              <Text style={s.previewMetaText}>{offer.distanceKm} km</Text>
+                              <Text style={s.previewMetaDot}>·</Text>
+                            </>
+                          )}
+                          <Clock size={10} color="#6b7280" />
+                          <Text style={s.previewMetaText}>
+                            {offer.etaLabel ?? `${offer.etaDays}d`}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={s.previewPriceCol}>
+                        <Text style={s.previewPrice}>€{offer.totalPrice.toFixed(2)}</Text>
+                        <Text style={s.previewUnit}>
+                          €{offer.effectiveUnitPrice.toFixed(2)}/{offer.unit.toLowerCase()}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </>
+              ) : null}
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={[s.ctaBtn, resolving || locating ? s.ctaBtnDisabled : {}]}
+            onPress={handleConfirmDone}
             disabled={resolving || locating || !picked}
             activeOpacity={0.88}
           >
@@ -372,14 +479,24 @@ export function InlineAddressStep({
             returnKeyType="search"
           />
           {query.length > 0 && (
-            <TouchableOpacity style={s.searchClearBtn} onPress={() => { setQuery(''); setSuggestions([]); setShowSugs(false); }}>
+            <TouchableOpacity
+              style={s.searchClearBtn}
+              onPress={() => {
+                setQuery('');
+                setSuggestions([]);
+                setShowSugs(false);
+              }}
+            >
               <X size={18} color="#6B7280" />
             </TouchableOpacity>
           )}
         </View>
 
-        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
-          
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          style={{ flex: 1 }}
+        >
           {/* Action Buttons */}
           <TouchableOpacity style={s.actionRow} onPress={handleGPS} activeOpacity={0.7}>
             <View style={s.actionIconWrap}>
@@ -402,10 +519,18 @@ export function InlineAddressStep({
           {showSugs && suggestions.length > 0 ? (
             <View>
               {suggestions.map((sg, i) => (
-                <TouchableOpacity key={sg.id} style={s.savedPlaceRow} onPress={() => handleSuggestionSelect(sg)}>
+                <TouchableOpacity
+                  key={sg.id}
+                  style={s.savedPlaceRow}
+                  onPress={() => handleSuggestionSelect(sg)}
+                >
                   <View style={{ flex: 1 }}>
-                    <Text style={s.savedPlaceTitle} numberOfLines={1}>{sg.place_name}</Text>
-                    <Text style={s.savedPlaceSub} numberOfLines={1}>{sg.place_name}</Text>
+                    <Text style={s.savedPlaceTitle} numberOfLines={1}>
+                      {sg.place_name}
+                    </Text>
+                    <Text style={s.savedPlaceSub} numberOfLines={1}>
+                      {sg.place_name}
+                    </Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -414,10 +539,19 @@ export function InlineAddressStep({
             <View style={{ marginTop: 8 }}>
               <Text style={s.sectionHeader}>Manas vietas</Text>
               {savedAddresses.map((addr) => (
-                <TouchableOpacity key={addr.id} style={s.savedPlaceRow} onPress={() => handleSavedAddressPick(addr)} activeOpacity={0.7}>
+                <TouchableOpacity
+                  key={addr.id}
+                  style={s.savedPlaceRow}
+                  onPress={() => handleSavedAddressPick(addr)}
+                  activeOpacity={0.7}
+                >
                   <View style={{ flex: 1 }}>
-                    <Text style={s.savedPlaceTitle} numberOfLines={1}>{addr.label}</Text>
-                    <Text style={s.savedPlaceSub} numberOfLines={1}>{addr.address}</Text>
+                    <Text style={s.savedPlaceTitle} numberOfLines={1}>
+                      {addr.label}
+                    </Text>
+                    <Text style={s.savedPlaceSub} numberOfLines={1}>
+                      {addr.address}
+                    </Text>
                   </View>
                   <ChevronRight size={20} color="#D1D5DB" />
                 </TouchableOpacity>
@@ -427,7 +561,6 @@ export function InlineAddressStep({
               )}
             </View>
           )}
-
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -441,7 +574,7 @@ const s = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  
+
   // ── MAP MODE ──
   mapFullscreen: {
     flex: 1,
@@ -486,6 +619,7 @@ const s = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: -4 },
     elevation: 8,
+    maxHeight: '65%',
   },
   panelTitle: {
     fontSize: 20,
@@ -529,7 +663,81 @@ const s = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // ── SEARCH MODE ──
+  // ── Live price preview ──
+  previewWrap: {
+    backgroundColor: '#f0fdf4',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 14,
+    gap: 8,
+  },
+  previewLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  previewLoadingText: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontFamily: 'Inter_500Medium',
+  },
+  previewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 4,
+  },
+  previewHeaderText: {
+    fontSize: 12,
+    color: '#059669',
+    fontFamily: 'Inter_600SemiBold',
+  },
+  previewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 5,
+    borderTopWidth: 1,
+    borderTopColor: '#dcfce7',
+    gap: 8,
+  },
+  previewSupplier: {
+    fontSize: 13,
+    color: '#111827',
+    fontFamily: 'Inter_500Medium',
+  },
+  previewMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 1,
+  },
+  previewMetaText: {
+    fontSize: 11,
+    color: '#6b7280',
+    fontFamily: 'Inter_400Regular',
+  },
+  previewMetaDot: {
+    fontSize: 11,
+    color: '#9ca3af',
+  },
+  previewPriceCol: {
+    alignItems: 'flex-end',
+  },
+  previewPrice: {
+    fontSize: 14,
+    color: '#059669',
+    fontFamily: 'Inter_700Bold',
+  },
+  previewUnit: {
+    fontSize: 11,
+    color: '#6b7280',
+    fontFamily: 'Inter_400Regular',
+  },
+
+  // \u2500\u2500 SEARCH MODE \u2500\u2500
   searchSafeArea: {
     flex: 1,
   },
@@ -628,5 +836,5 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     fontFamily: 'Inter_400Regular',
     marginTop: 10,
-  }
+  },
 });

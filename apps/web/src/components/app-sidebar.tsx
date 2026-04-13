@@ -21,6 +21,7 @@ import {
   CalendarDays,
   Car,
   ClipboardList,
+  Clock,
   FileQuestion,
   FolderKanban,
   FolderOpen,
@@ -753,6 +754,42 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Link href="/dashboard/admin/payments">
                     <Banknote className="size-4 shrink-0" />
                     <span>Maksājumi</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="SLA monitors"
+                  isActive={isRouteActive('/dashboard/admin/sla')}
+                >
+                  <Link href="/dashboard/admin/sla">
+                    <Clock className="size-4 shrink-0" />
+                    <span>SLA monitors</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Piemaksu apstiprināšana"
+                  isActive={isRouteActive('/dashboard/admin/surcharges')}
+                >
+                  <Link href="/dashboard/admin/surcharges">
+                    <Receipt className="size-4 shrink-0" />
+                    <span>Piemaksas</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Piegādātāju veiktspēja"
+                  isActive={isRouteActive('/dashboard/admin/suppliers')}
+                >
+                  <Link href="/dashboard/admin/suppliers">
+                    <BarChart3 className="size-4 shrink-0" />
+                    <span>Piegādātāji</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

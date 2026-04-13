@@ -728,6 +728,13 @@ export class OrdersService {
                 firstName: true,
                 lastName: true,
                 phone: true,
+                avatar: true,
+                driverProfile: {
+                  select: {
+                    rating: true,
+                    completedJobs: true,
+                  },
+                },
               },
             },
             vehicle: {
