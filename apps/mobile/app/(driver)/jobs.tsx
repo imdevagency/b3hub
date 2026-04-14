@@ -600,7 +600,7 @@ export default function JobsScreen() {
     Alert.alert(t.jobSearch.searchSaved);
   };
 
-  const handleApplySaved = (s: SavedSearch) => {
+  const handleApplySaved = async (s: SavedSearch) => {
     const f: SearchFilter = {
       fromLocation: s.fromLocation,
       fromRadius: s.fromRadius,
@@ -608,7 +608,23 @@ export default function JobsScreen() {
       toRadius: s.toRadius,
     };
     setDraft(f);
-    setActiveFilter(f);
+    // Re-geocode so lat/lng are fresh (saved searches only store text labels)
+    setGeocoding(true);
+    try {
+      const [resolvedFrom, resolvedTo] = await Promise.all([
+        f.fromLocation.trim() ? geocodeLocation(f.fromLocation) : Promise.resolve(null),
+        f.toLocation.trim() ? geocodeLocation(f.toLocation) : Promise.resolve(null),
+      ]);
+      setActiveFilter({
+        ...f,
+        fromLat: resolvedFrom?.lat,
+        fromLng: resolvedFrom?.lng,
+        toLat: resolvedTo?.lat,
+        toLng: resolvedTo?.lng,
+      });
+    } finally {
+      setGeocoding(false);
+    }
     setPanelOpen(false);
   };
 

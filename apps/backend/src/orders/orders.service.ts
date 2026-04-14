@@ -1831,7 +1831,9 @@ export class OrdersService {
           deliveryCity: order.deliveryCity,
           deliveryState: order.deliveryState ?? '',
           deliveryPostal: order.deliveryPostal ?? '',
-          deliveryDate: pickupDate,
+          deliveryDate: distanceKm != null
+            ? new Date(pickupDate.getTime() + Math.ceil(distanceKm / 60 + 1.5) * 3_600_000)
+            : new Date(pickupDate.getTime() + 4 * 3_600_000),
           cargoType,
           cargoWeight: weightPerTruck,
           rate: driverRate,
@@ -1935,7 +1937,7 @@ export class OrdersService {
         deliveryPostal,
         deliveryLat,
         deliveryLng,
-        deliveryDate: pickupDate,
+        deliveryDate: new Date(pickupDate.getTime() + 4 * 3_600_000),
         cargoType: dto.wasteType,
         cargoWeight: totalWeight,
         cargoVolume: truck.volume * dto.truckCount,
@@ -2014,7 +2016,7 @@ export class OrdersService {
         deliveryCity: dto.dropoffCity,
         deliveryState: dto.dropoffState ?? '',
         deliveryPostal: dto.dropoffPostal ?? '',
-        deliveryDate: pickupDate,
+        deliveryDate: new Date(pickupDate.getTime() + 4 * 3_600_000),
         deliveryLat: dto.dropoffLat ?? null,
         deliveryLng: dto.dropoffLng ?? null,
         cargoType: dto.loadDescription,

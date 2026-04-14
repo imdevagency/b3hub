@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
+import { MapsService } from '../maps/maps.service';
 import { RequestingUser } from '../common/types/requesting-user.interface';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { InviteMemberDto } from './dto/invite-member.dto';
@@ -36,6 +37,8 @@ const COMPANY_SELECT = {
   state: true,
   postalCode: true,
   country: true,
+  lat: true,
+  lng: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -59,7 +62,10 @@ const MEMBER_SELECT = {
 export class CompanyService {
   private readonly logger = new Logger(CompanyService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly maps: MapsService,
+  ) {}
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -105,6 +111,31 @@ export class CompanyService {
     const companyId = this.assertHasCompany(currentUser);
     this.assertIsOwnerOrManager(currentUser);
 
+    // Resolve coordinates: use explicit lat/lng from DTO if provided,
+    // otherwise auto-geocode when any address field changes.
+    let resolvedLat: number | undefined = dto.lat;
+    let resolvedLng: number | undefined = dto.lng;
+    const addressChanged = dto.street !== undefined || dto.city !== undefined || dto.postalCode !== undefined;
+    if (resolvedLat == null && resolvedLng == null && addressChanged) {
+      const existing = await this.prisma.company.findUnique({
+        where: { id: companyId },
+        select: { street: true, city: true, postalCode: true, country: true },
+      });
+      const street = dto.street ?? existing?.street ?? '';
+      const city = dto.city ?? existing?.city ?? '';
+      const postal = dto.postalCode ?? existing?.postalCode ?? '';
+      const country = existing?.country ?? 'LV';
+      if (city) {
+        const addressStr = [street, city, postal, country].filter(Boolean).join(', ');
+        const coords = await this.maps.forwardGeocode(addressStr);
+        if (coords) {
+          resolvedLat = coords.lat;
+          resolvedLng = coords.lng;
+          this.logger.log(`Auto-geocoded company ${companyId}: ${addressStr} → ${coords.lat},${coords.lng}`);
+        }
+      }
+    }
+
     return this.prisma.company.update({
       where: { id: companyId },
       data: {
@@ -119,6 +150,8 @@ export class CompanyService {
         ...(dto.state !== undefined && { state: dto.state }),
         ...(dto.postalCode !== undefined && { postalCode: dto.postalCode }),
         ...(dto.logo !== undefined && { logo: dto.logo }),
+        ...(resolvedLat !== undefined && { lat: resolvedLat }),
+        ...(resolvedLng !== undefined && { lng: resolvedLng }),
       },
       select: COMPANY_SELECT,
     });

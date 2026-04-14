@@ -123,6 +123,29 @@ export class MapsService {
     }
   }
 
+  /** Forward geocode — convert a free-text address string into lat/lng. */
+  async forwardGeocode(address: string): Promise<{ lat: number; lng: number } | null> {
+    const apiKey = this.getApiKey();
+    if (!apiKey) return null;
+    try {
+      const url =
+        `https://maps.googleapis.com/maps/api/geocode/json` +
+        `?address=${encodeURIComponent(address)}` +
+        `&language=lv&region=lv` +
+        `&key=${apiKey}`;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const data = await res.json() as {
+        results?: Array<{ geometry: { location: { lat: number; lng: number } } }>;
+      };
+      const loc = data.results?.[0]?.geometry?.location;
+      return loc ?? null;
+    } catch (e) {
+      this.logger.warn('Forward geocode failed', e);
+      return null;
+    }
+  }
+
   /** Proxy Google Geocoding API — reverse geocode (lat/lng → address string). */
   async reverseGeocode(lat: number, lng: number): Promise<string> {
     const apiKey = this.getApiKey();

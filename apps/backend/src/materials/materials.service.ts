@@ -108,7 +108,9 @@ export class MaterialsService {
       filteredItems = rawItems.filter((m) => {
         const sLat = m.supplier.lat;
         const sLng = m.supplier.lng;
-        if (sLat == null || sLng == null) return true; // supplier has no coords → keep
+        // Exclude suppliers with no coordinates when buyer has provided a location —
+        // we cannot verify they are within range, so they should not appear in geo-filtered results.
+        if (sLat == null || sLng == null) return false;
         const R = 6371;
         const dLat = ((lat - sLat) * Math.PI) / 180;
         const dLng = ((lng - sLng) * Math.PI) / 180;
@@ -129,7 +131,9 @@ export class MaterialsService {
       return { ...m, supplier: supplierPublic };
     });
 
-    return { items, total, limit: Math.min(limit, 100), skip, hasMore: skip + items.length < total };
+    // Use filtered count for pagination so hasMore is accurate
+    const filteredTotal = lat != null && lng != null ? filteredItems.length : total;
+    return { items, total: filteredTotal, limit: Math.min(limit, 100), skip, hasMore: skip + items.length < filteredTotal };
   }
 
   async findOne(id: string) {
