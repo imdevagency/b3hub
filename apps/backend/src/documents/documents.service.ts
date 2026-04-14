@@ -254,6 +254,56 @@ export class DocumentsService {
   }
 
   /**
+   * Upload a user-provided file (base64 → Buffer already decoded by controller),
+   * store it in Supabase Storage, and create a Document record.
+   * Used for compliance documents: driver licences, insurance certs, custom CMRs, etc.
+   */
+  async uploadDocument(
+    userId: string,
+    fileBuffer: Buffer,
+    params: {
+      mimeType: string;
+      fileName: string;
+      type: string;
+      title: string;
+      orderId?: string;
+      transportJobId?: string;
+      expiresAt?: string;
+      notes?: string;
+    },
+  ) {
+    const ext = params.fileName.split('.').pop() ?? 'bin';
+    const storagePath = `uploads/${userId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    await this.supabase.uploadFile('documents', storagePath, fileBuffer);
+    const fileUrl = this.supabase.getPublicUrl('documents', storagePath);
+
+    const links: Array<{ entityType: DocumentEntityType; entityId: string; role: DocumentLinkRole }> = [];
+    if (params.orderId)
+      links.push({ entityType: DocumentEntityType.ORDER, entityId: params.orderId, role: DocumentLinkRole.PRIMARY });
+    if (params.transportJobId)
+      links.push({ entityType: DocumentEntityType.TRANSPORT_JOB, entityId: params.transportJobId, role: DocumentLinkRole.PRIMARY });
+
+    return this.prisma.document.create({
+      data: {
+        title: params.title,
+        type: params.type as DocumentType,
+        status: DocumentStatus.ISSUED,
+        fileUrl,
+        mimeType: params.mimeType,
+        fileSize: fileBuffer.length,
+        ownerId: userId,
+        orderId: params.orderId,
+        transportJobId: params.transportJobId,
+        expiresAt: params.expiresAt ? new Date(params.expiresAt) : undefined,
+        notes: params.notes,
+        isGenerated: false,
+        links: links.length ? { create: links } : undefined,
+      },
+      include: { links: true },
+    });
+  }
+
+  /**
    * Auto-generate invoice document records when an Invoice is created.
    * Called internally by OrdersService or InvoicesService.
    */
@@ -302,18 +352,32 @@ export class DocumentsService {
     weight: number,
     unit: string,
     pdfUrl?: string,
+    orderNumber?: string,
   ) {
+    let resolvedPdfUrl = pdfUrl;
+    if (!resolvedPdfUrl) {
+      try {
+        const pdfBuffer = await this.buildWeighingSlipPdf({ weight, unit, orderId, orderNumber });
+        const storagePath = `weighing-slips/${orderId}_${Date.now()}.pdf`;
+        await this.supabase.uploadFile('documents', storagePath, pdfBuffer);
+        resolvedPdfUrl = this.supabase.getPublicUrl('documents', storagePath);
+      } catch (err) {
+        this.logger.warn(
+          `Weighing slip PDF failed for order ${orderId}: ${(err as Error).message}`,
+        );
+      }
+    }
     return this.prisma.document.create({
       data: {
-        title: `Weighing Slip — ${weight} ${unit}`,
+        title: `Svēršanas lapa — ${weight} ${unit}${orderNumber ? ` · #${orderNumber}` : ''}`,
         type: DocumentType.WEIGHING_SLIP,
         status: DocumentStatus.ISSUED,
-        fileUrl: pdfUrl,
+        fileUrl: resolvedPdfUrl,
         mimeType: 'application/pdf',
         orderId,
         ownerId,
         isGenerated: true,
-        notes: `Confirmed weight: ${weight} ${unit}`,
+        notes: `Svars: ${weight} ${unit}${orderNumber ? ` · Pasūtījums #${orderNumber}` : ''}`,
         links: {
           create: {
             entityType: DocumentEntityType.ORDER,
@@ -322,6 +386,96 @@ export class DocumentsService {
           },
         },
       },
+    });
+  }
+
+  /** Build a weighing slip PDF buffer. */
+  private buildWeighingSlipPdf(params: {
+    weight: number;
+    unit: string;
+    orderId: string;
+    orderNumber?: string;
+  }): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      const chunks: Buffer[] = [];
+      doc.on('data', (c: Buffer) => chunks.push(c));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      const slipNumber = `WS${Date.now().toString(36).toUpperCase()}`;
+      const dateStr = new Date().toLocaleDateString('lv-LV');
+
+      // ── Header ────────────────────────────────────────────────────────────
+      doc
+        .fontSize(22)
+        .font('Helvetica-Bold')
+        .text('B3Hub', 50, 50)
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text('b3hub.lv  |  support@b3hub.lv', 50, 76);
+
+      doc
+        .fontSize(19)
+        .font('Helvetica-Bold')
+        .fillColor('#111827')
+        .text('SVĒRŠANAS LAPA', 0, 50, { align: 'right' });
+
+      doc
+        .fontSize(10)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text(`#${slipNumber}`, 0, 74, { align: 'right' });
+
+      doc.moveTo(50, 100).lineTo(545, 100).strokeColor('#e5e7eb').stroke();
+
+      // ── Details ───────────────────────────────────────────────────────────
+      doc.fillColor('#111827').fontSize(10).font('Helvetica');
+      const y = 116;
+      const label = (text: string, row: number) => doc.text(text, 50, y + row * 22);
+      const value = (text: string, row: number) => doc.text(text, 220, y + row * 22);
+
+      label('Datums:', 0);
+      value(dateStr, 0);
+
+      if (params.orderNumber) {
+        label('Pasūtījuma Nr.:', 1);
+        value(`#${params.orderNumber}`, 1);
+      }
+
+      const weightRow = params.orderNumber ? 2 : 1;
+      label('Svars:', weightRow);
+      doc
+        .fontSize(16)
+        .font('Helvetica-Bold')
+        .text(`${params.weight} ${params.unit}`, 220, y + weightRow * 22);
+
+      doc
+        .moveTo(50, y + (weightRow + 2) * 22)
+        .lineTo(545, y + (weightRow + 2) * 22)
+        .strokeColor('#e5e7eb')
+        .stroke();
+
+      doc
+        .fontSize(11)
+        .font('Helvetica-Bold')
+        .fillColor('#16a34a')
+        .text('APSTIPRINĀTS ✓', 50, y + (weightRow + 2) * 22 + 12)
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text(`Apstiprināts B3Hub platformā · ${dateStr}`, 50, y + (weightRow + 2) * 22 + 30);
+
+      doc
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#9ca3af')
+        .text('B3Hub SIA  |  Rīga, Latvija  |  support@b3hub.lv  |  b3hub.lv', 50, 750, {
+          align: 'center',
+        });
+
+      doc.end();
     });
   }
 
@@ -510,6 +664,12 @@ export class DocumentsService {
     orderId?: string;
     transportJobId?: string;
     ownerId: string;
+    /** Additional owner (e.g. the driver) who should also receive a copy. */
+    driverOwnerId?: string;
+    /** Seller/supplier owner who should also receive a copy. */
+    sellerOwnerId?: string;
+    /** Initial document status — defaults to ISSUED. Pass SIGNED when delivery proof is captured. */
+    initialStatus?: DocumentStatus;
     jobNumber: string;
     pickupAddress?: string;
     pickupCity: string;
@@ -539,44 +699,89 @@ export class DocumentsService {
       // Fall through — still create the document record without a file URL
     }
 
-    return this.prisma.document.create({
+    const noteData = {
+      title: `Pavadzīme / CMR — ${params.jobNumber}`,
+      type: DocumentType.DELIVERY_NOTE,
+      status: params.initialStatus ?? DocumentStatus.ISSUED,
+      fileUrl,
+      mimeType: 'application/pdf',
+      orderId: params.orderId,
+      transportJobId: params.transportJobId,
+      isGenerated: true,
+      notes: `${params.pickupCity} → ${params.deliveryCity}${
+        params.driverName ? ` · Šoferis: ${params.driverName}` : ''
+      }`,
+    };
+
+    const linkEntries = [
+      ...(params.orderId
+        ? [
+            {
+              entityType: DocumentEntityType.ORDER,
+              entityId: params.orderId,
+              role: DocumentLinkRole.RELATED,
+            },
+          ]
+        : []),
+      ...(params.transportJobId
+        ? [
+            {
+              entityType: DocumentEntityType.TRANSPORT_JOB,
+              entityId: params.transportJobId,
+              role: DocumentLinkRole.PRIMARY,
+            },
+          ]
+        : []),
+    ];
+
+    // Create the buyer's document record
+    const buyerDoc = await this.prisma.document.create({
       data: {
-        title: `Pavadzīme / CMR — ${params.jobNumber}`,
-        type: DocumentType.DELIVERY_NOTE,
-        status: DocumentStatus.ISSUED,
-        fileUrl,
-        mimeType: 'application/pdf',
-        orderId: params.orderId,
-        transportJobId: params.transportJobId,
+        ...noteData,
         ownerId: params.ownerId,
-        isGenerated: true,
-        notes: `${params.pickupCity} → ${params.deliveryCity}${
-          params.driverName ? ` · Šoferis: ${params.driverName}` : ''
-        }`,
-        links: {
-          create: [
-            ...(params.orderId
-              ? [
-                  {
-                    entityType: DocumentEntityType.ORDER,
-                    entityId: params.orderId,
-                    role: DocumentLinkRole.RELATED,
-                  },
-                ]
-              : []),
-            ...(params.transportJobId
-              ? [
-                  {
-                    entityType: DocumentEntityType.TRANSPORT_JOB,
-                    entityId: params.transportJobId,
-                    role: DocumentLinkRole.PRIMARY,
-                  },
-                ]
-              : []),
-          ],
-        },
+        links: linkEntries.length ? { create: linkEntries } : undefined,
       },
     });
+
+    // Create a copy for the driver so they can also view/download the CMR
+    if (params.driverOwnerId && params.driverOwnerId !== params.ownerId) {
+      this.prisma.document
+        .create({
+          data: {
+            ...noteData,
+            ownerId: params.driverOwnerId,
+            links: linkEntries.length ? { create: linkEntries } : undefined,
+          },
+        })
+        .catch((err) =>
+          this.logger.warn(
+            `Driver CMR copy failed for job ${params.jobNumber}: ${(err as Error).message}`,
+          ),
+        );
+    }
+
+    // Create a copy for the seller/supplier
+    if (
+      params.sellerOwnerId &&
+      params.sellerOwnerId !== params.ownerId &&
+      params.sellerOwnerId !== params.driverOwnerId
+    ) {
+      this.prisma.document
+        .create({
+          data: {
+            ...noteData,
+            ownerId: params.sellerOwnerId,
+            links: linkEntries.length ? { create: linkEntries } : undefined,
+          },
+        })
+        .catch((err) =>
+          this.logger.warn(
+            `Seller CMR copy failed for job ${params.jobNumber}: ${(err as Error).message}`,
+          ),
+        );
+    }
+
+    return buyerDoc;
   }
 
   /** Build a CMR / delivery note PDF buffer. */

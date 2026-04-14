@@ -11,7 +11,7 @@ export type DocumentType =
   | 'CMR_NOTE'
   | 'CONTRACT';
 
-export type DocumentStatus = 'DRAFT' | 'ISSUED' | 'EXPIRED' | 'ARCHIVED';
+export type DocumentStatus = 'DRAFT' | 'ISSUED' | 'SIGNED' | 'EXPIRED' | 'ARCHIVED';
 
 export interface ApiDocument {
   id: string;
@@ -32,13 +32,41 @@ export interface ApiDocument {
 export const documentsApi = {
   documents: {
     getByOrder: (orderId: string, token: string) =>
-      apiFetch<ApiDocument[]>(`/documents?orderId=${orderId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }),
+      apiFetch<{ documents: ApiDocument[]; total: number }>(
+        `/documents?orderId=${orderId}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      ).then((res) => res.documents),
 
-    getAll: (token: string) =>
-      apiFetch<ApiDocument[]>('/documents', {
+    getAll: (token: string, params?: { type?: DocumentType; search?: string }) => {
+      const qs = new URLSearchParams();
+      if (params?.type) qs.set('type', params.type);
+      if (params?.search) qs.set('search', params.search);
+      const query = qs.toString() ? `?${qs}` : '';
+      return apiFetch<{ documents: ApiDocument[]; total: number }>(
+        `/documents${query}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      ).then((res) => res.documents);
+    },
+
+    /** Upload a user-provided file as base64 for compliance documents. */
+    upload: (
+      params: {
+        fileBase64: string;
+        mimeType: string;
+        fileName: string;
+        type: DocumentType | 'OTHER';
+        title: string;
+        orderId?: string;
+        transportJobId?: string;
+        expiresAt?: string;
+        notes?: string;
+      },
+      token: string,
+    ) =>
+      apiFetch<ApiDocument>('/documents/upload', {
+        method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(params),
       }),
   },
 

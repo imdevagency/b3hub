@@ -24,6 +24,9 @@ export default function HomePage() {
     <>
       <Navbar />
       <main className="bg-background w-full overflow-hidden">
+        {/* BRAND GRADIENT STRIP */}
+        <div className="h-1.5 w-full bg-gradient-to-r from-b3-buyer via-b3-transport to-b3-quarry" />
+
         {/* ── 1. HERO ── */}
         <Hero
           eyebrow="Latvija & Baltija"
@@ -48,21 +51,24 @@ export default function HomePage() {
             </>
           }
         >
-          <div className="w-full h-125 md:h-187.5 bg-muted relative overflow-hidden self-center">
-            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1541888086925-920a0b4111eb?q=80&w=2670&auto=format&fit=crop')] bg-cover bg-center grayscale contrast-125 hover:scale-105 transition-transform duration-[2s]" />
-            <div className="absolute inset-0 bg-black/10" />
+          <div className="w-full h-125 md:h-187.5 bg-muted relative overflow-hidden self-center rounded-2xl md:rounded-3xl border border-border shadow-2xl">
+            <div className="absolute inset-0 bg-gradient-to-tr from-b3-buyer/40 via-b3-transport/20 to-b3-quarry/40 z-10 mix-blend-color" />
+            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1541888086925-920a0b4111eb?q=80&w=2670&auto=format&fit=crop')] bg-cover bg-center grayscale-[0.8] contrast-125 hover:scale-105 transition-transform duration-[4s] z-0" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent z-10" />
           </div>
         </Hero>
 
         {/* ── 2. WHO IS THIS FOR ── */}
-        <Container as="section" className="py-24 border-t border-border">
-          <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-16">
+        <Container as="section" className="py-24 border-t border-border relative">
+          <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-16 relative z-10">
             Kas izmanto B3Hub
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
             {/* Buyers */}
-            <div className="border border-border p-10 flex flex-col gap-8 justify-between group hover:border-foreground/30 transition-colors">
-              <HardHat className="w-10 h-10 text-foreground" strokeWidth={1.5} />
+            <div className="border-t-4 border-b3-buyer bg-background shadow-sm border-border p-10 flex flex-col gap-8 justify-between group hover:border-b3-buyer/50 transition-colors">
+              <div className="p-4 bg-b3-buyer/10 w-fit rounded-full">
+                <HardHat className="w-10 h-10 text-b3-buyer" strokeWidth={1.5} />
+              </div>
               <div className="flex flex-col gap-4">
                 <h3 className="text-2xl font-medium tracking-tight">Būvnieki & Pasūtītāji</h3>
                 <p className="text-muted-foreground font-light leading-relaxed">
@@ -71,25 +77,27 @@ export default function HomePage() {
                 </p>
                 <Link
                   href="/buvniekiem"
-                  className="flex items-center text-sm font-bold tracking-wide uppercase gap-2 group-hover:gap-3 transition-all mt-2"
+                  className="flex items-center text-sm font-bold tracking-wide uppercase text-b3-buyer gap-2 group-hover:gap-3 transition-all mt-2"
                 >
                   Uzzināt vairāk <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
             </div>
 
-            {/* Drivers — inverted */}
-            <div className="bg-foreground text-background p-10 flex flex-col gap-8 justify-between">
-              <Truck className="w-10 h-10 text-background/50" strokeWidth={1.5} />
+            {/* Drivers */}
+            <div className="border-t-4 border-b3-transport bg-background shadow-sm border-border p-10 flex flex-col gap-8 justify-between group hover:border-b3-transport/50 transition-colors">
+              <div className="p-4 bg-b3-transport/10 w-fit rounded-full">
+                <Truck className="w-10 h-10 text-b3-transport" strokeWidth={1.5} />
+              </div>
               <div className="flex flex-col gap-4">
                 <h3 className="text-2xl font-medium tracking-tight">Šoferi & Pārvadātāji</h3>
-                <p className="text-background/60 font-light leading-relaxed">
+                <p className="text-muted-foreground font-light leading-relaxed">
                   Saņem maršrutus tieši telefonā. Pārskats par paveiktajiem reisiem, izpeļņu un
                   dokumentiem — bez papīriem un zvaniem dispečeram.
                 </p>
                 <Link
                   href="/parvadatajiem"
-                  className="flex items-center text-sm font-bold tracking-wide uppercase text-background gap-2 hover:gap-3 transition-all mt-2"
+                  className="flex items-center text-sm font-bold tracking-wide uppercase text-b3-transport gap-2 hover:gap-3 transition-all mt-2"
                 >
                   Sākt braukt <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -97,8 +105,10 @@ export default function HomePage() {
             </div>
 
             {/* Suppliers */}
-            <div className="border border-border p-10 flex flex-col gap-8 justify-between group hover:border-foreground/30 transition-colors">
-              <Pickaxe className="w-10 h-10 text-foreground" strokeWidth={1.5} />
+            <div className="border-t-4 border-b3-quarry bg-background shadow-sm border-border p-10 flex flex-col gap-8 justify-between group hover:border-b3-quarry/50 transition-colors">
+              <div className="p-4 bg-b3-quarry/10 w-fit rounded-full">
+                <Pickaxe className="w-10 h-10 text-b3-quarry" strokeWidth={1.5} />
+              </div>
               <div className="flex flex-col gap-4">
                 <h3 className="text-2xl font-medium tracking-tight">Karjeri & Piegādātāji</h3>
                 <p className="text-muted-foreground font-light leading-relaxed">
@@ -107,7 +117,7 @@ export default function HomePage() {
                 </p>
                 <Link
                   href="/karjeriem"
-                  className="flex items-center text-sm font-bold tracking-wide uppercase gap-2 group-hover:gap-3 transition-all mt-2"
+                  className="flex items-center text-sm font-bold tracking-wide uppercase text-b3-quarry gap-2 group-hover:gap-3 transition-all mt-2"
                 >
                   Pievienoties tīklam <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -247,7 +257,9 @@ export default function HomePage() {
             ].map(({ role, price, note, items, featured }) => (
               <div
                 key={role}
-                className={`md:px-12 first:pl-0 last:pr-0 py-8 md:py-0 flex flex-col gap-6 ${featured ? 'md:relative' : ''}`}
+                className={`md:px-12 first:pl-0 last:pr-0 py-8 md:py-0 flex flex-col gap-6 ${
+                  featured ? 'md:relative' : ''
+                }`}
               >
                 <div>
                   <p className="text-xs font-bold tracking-widest uppercase text-muted-foreground mb-3">

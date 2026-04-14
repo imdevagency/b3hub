@@ -11,6 +11,7 @@ import {
   Param,
   Query,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { DocumentsService } from './documents.service';
 import { QueryDocumentsDto } from './dto/query-documents.dto';
@@ -96,5 +97,48 @@ export class DocumentsController {
     @CurrentUser() user: RequestingUser,
   ) {
     return this.documentsService.removeLink(user.userId, id, linkId);
+  }
+
+  /**
+   * POST /api/v1/documents/upload
+   * Upload a compliance document as a base64-encoded file.
+   * Accepts JSON body: { fileBase64, mimeType, fileName, type, title, orderId?, transportJobId?, expiresAt?, notes? }
+   * Decodes the base64, uploads to Supabase Storage, and creates a Document record.
+   */
+  @Post('upload')
+  async upload(
+    @CurrentUser() user: RequestingUser,
+    @Body()
+    body: {
+      fileBase64: string;
+      mimeType: string;
+      fileName: string;
+      type: string;
+      title: string;
+      orderId?: string;
+      transportJobId?: string;
+      expiresAt?: string;
+      notes?: string;
+    },
+  ) {
+    if (!body.fileBase64 || !body.mimeType || !body.type || !body.title) {
+      throw new BadRequestException('fileBase64, mimeType, type, and title are required');
+    }
+    // Strip data-URI prefix if present (e.g. "data:application/pdf;base64,...")
+    const base64Data = body.fileBase64.replace(/^data:[^;]+;base64,/, '');
+    const fileBuffer = Buffer.from(base64Data, 'base64');
+    if (fileBuffer.length === 0) {
+      throw new BadRequestException('fileBase64 is empty or invalid');
+    }
+    return this.documentsService.uploadDocument(user.userId, fileBuffer, {
+      mimeType: body.mimeType,
+      fileName: body.fileName,
+      type: body.type,
+      title: body.title,
+      orderId: body.orderId,
+      transportJobId: body.transportJobId,
+      expiresAt: body.expiresAt,
+      notes: body.notes,
+    });
   }
 }

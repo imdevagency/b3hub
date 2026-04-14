@@ -15,6 +15,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   DocumentType,
+  DocumentStatus,
   SurchargeType,
   TransportExceptionStatus,
   TransportJobStatus,
@@ -1496,12 +1497,12 @@ export class TransportJobsService {
       // Fetch order owner (createdById = buyer user)
       const order = await this.prisma.order.findUnique({
         where: { id: orderId },
-        select: { createdById: true },
+        select: { createdById: true, orderNumber: true },
       });
       if (order?.createdById) {
         const weight = dto.weightKg ?? updatedJob.cargoWeight;
         this.documents
-          .generateWeighingSlip(orderId, order.createdById, weight ?? 0, 't')
+          .generateWeighingSlip(orderId, order.createdById, weight ?? 0, 't', undefined, order.orderNumber)
           .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
       }
 
@@ -1678,8 +1679,30 @@ export class TransportJobsService {
     if (dto.status === TransportJobStatus.DELIVERED && orderId) {
       const order2 = await this.prisma.order.findUnique({
         where: { id: orderId },
-        select: { createdById: true },
+        select: {
+          createdById: true,
+          items: {
+            take: 1,
+            select: {
+              material: {
+                select: {
+                  supplier: {
+                    select: {
+                      users: {
+                        where: { companyRole: 'OWNER' },
+                        select: { id: true },
+                        take: 1,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       });
+      const sellerOwnerId2 =
+        order2?.items[0]?.material?.supplier?.users[0]?.id;
       if (order2?.createdById) {
         const driver = updatedJob.driver;
         this.documents
@@ -1687,6 +1710,9 @@ export class TransportJobsService {
             orderId,
             transportJobId: updatedJob.id,
             ownerId: order2.createdById,
+            driverOwnerId: updatedJob.driverId ?? undefined,
+            sellerOwnerId: sellerOwnerId2,
+            initialStatus: DocumentStatus.SIGNED,
             jobNumber: updatedJob.jobNumber,
             pickupCity: updatedJob.pickupCity,
             deliveryCity: updatedJob.deliveryCity,
@@ -1850,7 +1876,7 @@ export class TransportJobsService {
       data: {
         transportJobId: id,
         recipientName: dto.recipientName?.trim() || 'Confirmed',
-        recipientSignature: 'CONFIRMED',
+        recipientSignature: dto.signatureSvg ?? 'CONFIRMED',
         driverSignature: 'CONFIRMED',
         photos: dto.photos ?? [],
         notes: dto.notes,
@@ -1875,8 +1901,31 @@ export class TransportJobsService {
     if (job.orderId) {
       const order = await this.prisma.order.findUnique({
         where: { id: job.orderId },
-        select: { createdById: true, status: true },
+        select: {
+          createdById: true,
+          status: true,
+          items: {
+            take: 1,
+            select: {
+              material: {
+                select: {
+                  supplier: {
+                    select: {
+                      users: {
+                        where: { companyRole: 'OWNER' },
+                        select: { id: true },
+                        take: 1,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       });
+      const sellerOwnerId =
+        order?.items[0]?.material?.supplier?.users[0]?.id;
       if (order?.createdById) {
         const driver = delivered.driver;
         this.documents
@@ -1884,6 +1933,9 @@ export class TransportJobsService {
             orderId: job.orderId,
             transportJobId: id,
             ownerId: order.createdById,
+            driverOwnerId: job.driverId ?? undefined,
+            sellerOwnerId,
+            initialStatus: DocumentStatus.SIGNED,
             jobNumber: delivered.jobNumber,
             pickupAddress: delivered.pickupAddress ?? undefined,
             pickupCity: delivered.pickupCity,
@@ -2042,7 +2094,7 @@ export class TransportJobsService {
     if (job.orderId) {
       const order = await this.prisma.order.findUnique({
         where: { id: job.orderId },
-        select: { createdById: true },
+        select: { createdById: true, orderNumber: true },
       });
       if (order?.createdById) {
         const weight = weightKg ?? job.cargoWeight;
@@ -2052,6 +2104,8 @@ export class TransportJobsService {
             order.createdById,
             weight ?? 0,
             't',
+            undefined,
+            order.orderNumber,
           )
           .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
       }
