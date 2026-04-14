@@ -5,22 +5,22 @@ import { cn } from '@/lib/utils';
 import { colors } from '@/lib/theme';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center rounded-md font-medium transition-colors disabled:opacity-50',
+  'inline-flex items-center justify-center rounded-full font-medium transition-colors disabled:opacity-50',
   {
     variants: {
       variant: {
         default: 'bg-gray-900 active:bg-gray-800',
         destructive: 'bg-red-500 active:bg-red-600',
-        outline: 'border border-gray-300 bg-transparent active:bg-gray-100',
+        outline: 'border-2 border-gray-200 bg-transparent active:bg-gray-100',
         secondary: 'bg-gray-100 active:bg-gray-200',
         ghost: 'active:bg-gray-100',
         link: 'underline-offset-4 active:underline',
       },
       size: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-9 rounded-md px-3',
-        lg: 'h-11 rounded-md px-8',
-        icon: 'h-10 w-10',
+        default: 'h-12 px-6 py-3',
+        sm: 'h-10 px-4',
+        lg: 'h-14 px-8',
+        icon: 'h-12 w-12',
       },
     },
     defaultVariants: {
@@ -81,8 +81,9 @@ Button.displayName = 'Button';
 
 const btnStyles = StyleSheet.create({
   label: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     textAlign: 'center',
   },
 });

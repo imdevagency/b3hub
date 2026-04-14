@@ -91,10 +91,10 @@ const s = {
   switchSub: 'text-[13px] text-[#6b7280] mt-0.5',
 
   // Actions
-  primaryBtn: 'bg-[#111827] rounded-xl py-4 items-center mt-6 shadow-sm active:opacity-90',
+  primaryBtn: 'bg-[#111827] rounded-full py-4 items-center mt-6 shadow-sm active:opacity-90',
   primaryBtnText: 'text-white font-bold text-[16px]',
   deleteBtn:
-    'flex-row items-center justify-center gap-2 mt-6 py-4 bg-[#fee2e2] rounded-xl active:opacity-90 border border-red-100',
+    'flex-row items-center justify-center gap-2 mt-6 py-4 bg-[#fee2e2] rounded-full active:opacity-90 border border-red-100',
   deleteBtnText: 'text-[#dc2626] font-bold text-[15px]',
 };
 

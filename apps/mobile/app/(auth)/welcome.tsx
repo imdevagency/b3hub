@@ -1,12 +1,13 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Text } from '@/components/ui/text';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Package, MapPin, FileText } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+
+const { width } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -16,109 +17,74 @@ export default function WelcomeScreen() {
     <ScreenContainer standalone bg="#000" topInset={0}>
       <StatusBar style="light" />
 
-      {/* Main Content Area */}
-      <View
-        className="flex-1 px-base pb-2xl justify-between"
-        style={{ paddingTop: insets.top + 80 }}
-      >
-        {/* Top: Logo / Branding */}
-        <View>
-          <View className="w-16 h-16 bg-white rounded-xl items-center justify-center mb-xl">
-            <Text
-              className="text-3xl text-black"
-              style={{ fontFamily: 'Inter_700Bold', fontWeight: '700' }}
-            >
-              B3
-            </Text>
-          </View>
-
+      <View className="flex-1 justify-between" style={{ paddingTop: insets.top + 20 }}>
+        {/* Top half: Logo */}
+        <View className="px-6 pt-10">
           <Text
-            className="text-4xl text-white mb-md"
+            className="text-white text-3xl tracking-tighter"
             style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}
           >
-            Būvē ātrāk.
+            B3
           </Text>
-          <Text
-            className="text-xl text-text-disabled"
-            style={{ fontFamily: 'Inter_500Medium', fontWeight: '500' }}
-          >
-            Viss tavai būvei.{'\n'}Materiāli un transports vienā lietotnē.
-          </Text>
-
-          {/* Feature bullets */}
-          <View style={styles.featureList}>
-            {(
-              [
-                { Icon: Package, text: 'Materiāli, transports, konteineri — vienā vietā' },
-                { Icon: MapPin, text: 'GPS izsekošana reāllaikā' },
-                { Icon: FileText, text: 'Dokumenti automātiski — bez papīriem' },
-              ] as const
-            ).map(({ Icon, text }) => (
-              <View key={text} style={styles.featureRow}>
-                <Icon size={18} color="#9ca3af" strokeWidth={1.5} />
-                <Text style={styles.featureText}>{text}</Text>
-              </View>
-            ))}
-          </View>
         </View>
 
-        {/* Bottom: Action Area */}
-        <View className="w-full gap-y-base" style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
-          <TouchableOpacity
-            className="w-full h-14 bg-white rounded-xl items-center justify-center flex-row"
-            activeOpacity={0.8}
-            onPress={() => {
-              haptics.light();
-              router.push('/(auth)/register');
-            }}
+        {/* Bottom half: Value prop & actions */}
+        <View className="px-6 pb-8" style={{ paddingBottom: Math.max(insets.bottom + 16, 40) }}>
+          <Text
+            className="text-white text-[56px] leading-[60px] tracking-tight mb-4"
+            style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}
           >
-            <Text
-              className="text-lg text-black"
-              style={{ fontFamily: 'Inter_700Bold', fontWeight: '700' }}
-            >
-              Sākt
-            </Text>
-          </TouchableOpacity>
+            Būvē{'\n'}ātrāk.
+          </Text>
 
-          <TouchableOpacity
-            className="w-full h-14 items-center justify-center"
-            activeOpacity={0.8}
-            onPress={() => {
-              haptics.light();
-              router.push('/(auth)/login');
-            }}
+          <Text
+            className="text-gray-400 text-lg leading-relaxed mb-10"
+            style={{ fontFamily: 'Inter_500Medium', fontWeight: '500' }}
           >
-            <Text className="text-lg text-text-disabled">
-              Jau ir konts?{' '}
+            Materiāli, transports un atkritumi{'\n'}vienā viegli lietojamā lietotnē.
+          </Text>
+
+          <View className="gap-y-4">
+            <TouchableOpacity
+              className="w-full h-14 bg-white rounded-full items-center justify-center flex-row"
+              activeOpacity={0.9}
+              onPress={() => {
+                haptics.light();
+                router.push('/(auth)/register');
+              }}
+            >
               <Text
-                className="text-white underline"
-                style={{ fontFamily: 'Inter_700Bold', fontWeight: '700' }}
+                className="text-black text-lg"
+                style={{ fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}
               >
-                Pierakstīties
+                Sākt
               </Text>
-            </Text>
-          </TouchableOpacity>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="w-full h-14 items-center justify-center"
+              activeOpacity={0.8}
+              onPress={() => {
+                haptics.light();
+                router.push('/(auth)/login');
+              }}
+            >
+              <Text
+                className="text-gray-400 text-base"
+                style={{ fontFamily: 'Inter_500Medium', fontWeight: '500' }}
+              >
+                Jau ir konts?{' '}
+                <Text
+                  className="text-white"
+                  style={{ fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}
+                >
+                  Pierakstīties
+                </Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  featureList: {
-    marginTop: 36,
-    gap: 16,
-  },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  featureText: {
-    fontSize: 15,
-    color: '#9ca3af',
-    fontFamily: 'Inter_400Regular',
-    flex: 1,
-    lineHeight: 22,
-  },
-});

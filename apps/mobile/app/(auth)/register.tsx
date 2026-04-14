@@ -573,7 +573,7 @@ const s = StyleSheet.create({
   primaryBtn: {
     backgroundColor: '#000',
     height: 56,
-    borderRadius: 16,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },

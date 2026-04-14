@@ -144,8 +144,12 @@ export default function LoginScreen() {
             />
             {errors.password && <Text style={s.err}>{errors.password.message}</Text>}
           </View>
-          
-          <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')} activeOpacity={0.7} style={s.forgotWrap}>
+
+          <TouchableOpacity
+            onPress={() => router.push('/(auth)/forgot-password')}
+            activeOpacity={0.7}
+            style={s.forgotWrap}
+          >
             <Text style={s.forgotText}>Aizmirsāt paroli?</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -165,7 +169,6 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
         </View>
-
       </KeyboardAvoidingView>
     </ScreenContainer>
   );
@@ -189,7 +192,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
   },
-  
+
   // Hero
   heroTitle: {
     fontSize: 32,
@@ -242,13 +245,13 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ef4444',
   },
-  err: { 
-    color: '#ef4444', 
-    fontSize: 13, 
+  err: {
+    color: '#ef4444',
+    fontSize: 13,
     marginTop: 6,
     marginLeft: 4,
   },
-  
+
   forgotWrap: {
     alignSelf: 'flex-start',
     paddingVertical: 8,
@@ -267,10 +270,10 @@ const s = StyleSheet.create({
     padding: 16,
     marginBottom: 24,
   },
-  apiErrText: { 
-    color: '#b91c1c', 
-    fontSize: 14, 
-    fontWeight: '500' 
+  apiErrText: {
+    color: '#b91c1c',
+    fontSize: 14,
+    fontWeight: '500',
   },
 
   // Footer
@@ -282,7 +285,7 @@ const s = StyleSheet.create({
   primaryBtn: {
     backgroundColor: '#000',
     height: 56,
-    borderRadius: 16,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },

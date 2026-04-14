@@ -210,7 +210,7 @@ const s = StyleSheet.create({
   inputError: { borderColor: '#f87171' },
   primaryBtn: {
     backgroundColor: '#111827',
-    borderRadius: 14,
+    borderRadius: 100,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,

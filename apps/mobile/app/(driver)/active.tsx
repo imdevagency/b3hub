@@ -1920,7 +1920,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     paddingHorizontal: 24,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 100,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.1,
