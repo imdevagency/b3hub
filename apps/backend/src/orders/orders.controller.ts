@@ -16,7 +16,7 @@ import {
   BadRequestException,
   Res,
 } from '@nestjs/common';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto, CreateOrderScheduleDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -24,6 +24,8 @@ import { CreateDisposalOrderDto } from './dto/create-disposal-order.dto';
 import { CreateFreightOrderDto } from './dto/create-freight-order.dto';
 import { CreateSurchargeDto } from './dto/create-surcharge.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtOrApiKeyGuard } from '../auth/guards/jwt-or-api-key.guard';
+import { RequireScope, RequireScopeGuard } from '../auth/guards/require-scope.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { OrderStatus } from '@prisma/client';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
@@ -32,7 +34,7 @@ import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Orders')
 @Controller('orders')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtOrApiKeyGuard)
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
@@ -83,18 +85,21 @@ export class OrdersController {
   }
 
   @Get()
+  @UseGuards(RequireScopeGuard)
+  @RequireScope('orders:read')
   findAll(
     @CurrentUser() user: RequestingUser,
     @Query('status') status?: string,
     @Query('limit') limit: string = '20',
     @Query('skip') skip: string = '0',
+    @Query('updatedSince') updatedSince?: string,
   ) {
     if (status !== undefined && !Object.values(OrderStatus).includes(status as OrderStatus)) {
       throw new BadRequestException(`status must be one of: ${Object.values(OrderStatus).join(', ')}`);
     }
     const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
     const skipNum = Math.max(parseInt(skip, 10) || 0, 0);
-    return this.ordersService.findAll(user, status as OrderStatus | undefined, limitNum, skipNum);
+    return this.ordersService.findAll(user, status as OrderStatus | undefined, limitNum, skipNum, updatedSince);
   }
 
   /** GET /orders/schedules — list caller's recurring schedules (must be before :id) */

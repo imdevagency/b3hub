@@ -106,10 +106,12 @@ export class InvoicesService {
     companyId?: string,
     page = 1,
     limit = 20,
+    updatedSince?: string,
   ) {
     const skip = (page - 1) * limit;
     const where = {
       order: this.buyerAccess(userId, companyId),
+      ...(updatedSince ? { updatedAt: { gte: new Date(updatedSince) } } : {}),
     };
     const [invoices, total] = await Promise.all([
       this.prisma.invoice.findMany({

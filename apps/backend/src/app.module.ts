@@ -46,6 +46,7 @@ import { HealthModule } from './health/health.module';
 import { SavedAddressesModule } from './saved-addresses/saved-addresses.module';
 import { DisputesModule } from './disputes/disputes.module';
 import { SupportModule } from './support/support.module';
+import { ApiKeysModule } from './api-keys/api-keys.module';
 
 @Module({
   imports: [
@@ -97,6 +98,7 @@ import { SupportModule } from './support/support.module';
     SavedAddressesModule,
     DisputesModule,
     SupportModule,
+    ApiKeysModule,
   ],
   controllers: [AppController],
   providers: [

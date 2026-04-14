@@ -7,5 +7,6 @@ import { MapsService } from './maps.service';
   imports: [ConfigModule],
   controllers: [MapsController],
   providers: [MapsService],
+  exports: [MapsService],
 })
 export class MapsModule {}

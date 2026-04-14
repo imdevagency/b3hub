@@ -511,17 +511,21 @@ export class TransportJobsService {
   }
 
   // ── Available jobs (job board) ─────────────────────────────────
-  async findAvailable(limit: number = 20, skip: number = 0) {
+  async findAvailable(limit: number = 20, skip: number = 0, updatedSince?: string) {
+    const baseWhere = {
+      status: TransportJobStatus.AVAILABLE,
+      ...(updatedSince ? { updatedAt: { gte: new Date(updatedSince) } } : {}),
+    };
     const [jobs, total] = await Promise.all([
       this.prisma.transportJob.findMany({
-        where: { status: TransportJobStatus.AVAILABLE },
+        where: baseWhere,
         select: this.jobSelect,
         orderBy: { pickupDate: 'asc' },
         take: limit,
         skip,
       }),
       this.prisma.transportJob.count({
-        where: { status: TransportJobStatus.AVAILABLE },
+        where: baseWhere,
       }),
     ]);
 

@@ -16,7 +16,7 @@ import {
   UseGuards,
   Res,
 } from '@nestjs/common';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { TransportJobsService } from './transport-jobs.service';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { CreateTransportJobDto } from './dto/create-transport-job.dto';
@@ -33,6 +33,8 @@ import {
 import { IsBoolean, IsEnum, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtOrApiKeyGuard } from '../auth/guards/jwt-or-api-key.guard';
+import { RequireScope, RequireScopeGuard } from '../auth/guards/require-scope.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { ReviewsService } from '../reviews/reviews.service';
@@ -81,7 +83,7 @@ import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Transport Jobs')
 @Controller('transport-jobs')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtOrApiKeyGuard)
 export class TransportJobsController {
   constructor(
     private readonly service: TransportJobsService,
@@ -111,8 +113,13 @@ export class TransportJobsController {
    * Returns all AVAILABLE jobs for the job board with pagination.
    */
   @Get()
-  findAvailable(@Query() pagination: PaginationDto) {
-    return this.service.findAvailable(pagination.limit ?? 20, pagination.skip ?? 0);
+  @UseGuards(RequireScopeGuard)
+  @RequireScope('transport:read')
+  findAvailable(
+    @Query() pagination: PaginationDto,
+    @Query('updatedSince') updatedSince?: string,
+  ) {
+    return this.service.findAvailable(pagination.limit ?? 20, pagination.skip ?? 0, updatedSince);
   }
 
   /** GET /transport-jobs/export/csv — download driver's completed jobs as CSV */

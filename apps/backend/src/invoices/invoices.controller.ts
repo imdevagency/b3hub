@@ -17,6 +17,8 @@ import {
 import type { Response } from 'express';
 import { InvoicesService } from './invoices.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtOrApiKeyGuard } from '../auth/guards/jwt-or-api-key.guard';
+import { RequireScope, RequireScopeGuard } from '../auth/guards/require-scope.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { PagePaginationDto } from '../common/dto/pagination.dto';
@@ -34,15 +36,18 @@ import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Invoices')
 @Controller('invoices')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtOrApiKeyGuard)
 export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
 
   /** GET /invoices?page=1&limit=20 — my invoices */
   @Get()
+  @UseGuards(RequireScopeGuard)
+  @RequireScope('invoices:read')
   getMyInvoices(
     @CurrentUser() user: RequestingUser,
     @Query() pagination: PagePaginationDto,
+    @Query('updatedSince') updatedSince?: string,
   ) {
     if (!canViewFinancials(user)) {
       throw new ForbiddenException(
@@ -55,6 +60,7 @@ export class InvoicesController {
       user.companyId,
       pagination.page ?? 1,
       pagination.limit ?? 20,
+      updatedSince,
     );
   }
 

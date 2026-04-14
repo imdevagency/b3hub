@@ -537,8 +537,12 @@ export class OrdersService {
     status?: OrderStatus,
     limit: number = 20,
     skip: number = 0,
+    updatedSince?: string,
   ) {
-    const where = this.buildOrderWhere(currentUser, status);
+    const where = {
+      ...this.buildOrderWhere(currentUser, status),
+      ...(updatedSince ? { updatedAt: { gte: new Date(updatedSince) } } : {}),
+    };
 
     // Execute count and data queries in parallel
     const [data, total] = await Promise.all([
