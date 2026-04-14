@@ -33,6 +33,7 @@ import { useMode } from '@/lib/mode-context';
 import {
   ArrowRight,
   CheckCircle,
+  Download,
   Link2,
   Package,
   Phone,
@@ -1283,11 +1284,37 @@ export default function OrdersPage() {
   const { user, token } = useRequireAuth();
   const { activeMode } = useMode();
   const router = useRouter();
+  const [csvLoading, setCsvLoading] = useState(false);
 
   useEffect(() => {
     if (activeMode === 'SUPPLIER') router.replace('/dashboard/incoming-orders');
     else if (activeMode === 'CARRIER') router.replace('/dashboard/transport-history');
   }, [activeMode, router]);
+
+  async function handleExportCsv() {
+    if (!token) return;
+    setCsvLoading(true);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+      const endpoint = activeMode === 'CARRIER' ? 'transport-jobs/export/csv' : 'orders/export/csv';
+      const res = await fetch(`${API_URL}/${endpoint}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const prefix = activeMode === 'CARRIER' ? 'earnings' : 'orders';
+      a.download = `${prefix}-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silent — user can retry
+    } finally {
+      setCsvLoading(false);
+    }
+  }
 
   if (!token || !user) {
     return <div className="p-8 text-center text-muted-foreground text-sm">Ielādē...</div>;
@@ -1307,9 +1334,21 @@ export default function OrdersPage() {
   return (
     <div className="w-full h-full pb-20 space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">{title}</h1>
-        <p className="text-muted-foreground mt-2 text-sm sm:text-base max-w-xl">{subtitle}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">{title}</h1>
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base max-w-xl">{subtitle}</p>
+        </div>
+        {!isSupplier && (
+          <button
+            onClick={handleExportCsv}
+            disabled={csvLoading}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-border hover:bg-muted/60 transition-colors disabled:opacity-50 shrink-0"
+          >
+            <Download className="h-4 w-4" />
+            {csvLoading ? 'Eksportē...' : 'CSV'}
+          </button>
+        )}
       </div>
 
       {/* Role-aware content */}

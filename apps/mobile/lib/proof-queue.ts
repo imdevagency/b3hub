@@ -14,6 +14,11 @@ export interface QueuedProof {
   recipientName?: string;
   notes?: string;
   photos?: string[];
+  loadCondition?: 'FULL' | 'PARTIAL' | 'DAMAGED';
+  hasDamage?: boolean;
+  damageNote?: string;
+  gradeConfirmed?: boolean;
+  signatureSvg?: string;
   queuedAt: string;
 }
 
@@ -67,6 +72,12 @@ export async function flushProofQueue(): Promise<{ flushed: number; failed: numb
           recipientName: item.recipientName,
           notes: item.notes,
           photos: item.photos,
+          loadCondition: item.loadCondition,
+          isPartialLoad: item.loadCondition === 'PARTIAL',
+          hasDamage: item.hasDamage,
+          damageNote: item.damageNote,
+          gradeConfirmed: item.gradeConfirmed,
+          signatureSvg: item.signatureSvg,
         }),
       });
       await removeFromQueue(item.id);

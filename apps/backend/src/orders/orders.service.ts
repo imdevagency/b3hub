@@ -2609,4 +2609,105 @@ export class OrdersService {
       }
     }
   }
+
+  /** Export the requesting user's orders as a UTF-8 CSV string. */
+  async exportCsv(currentUser: RequestingUser): Promise<string> {
+    const where = this.buildOrderWhere(currentUser);
+
+    const orders = await this.prisma.order.findMany({
+      where,
+      select: {
+        orderNumber: true,
+        status: true,
+        orderType: true,
+        deliveryAddress: true,
+        deliveryCity: true,
+        deliveryDate: true,
+        total: true,
+        currency: true,
+        createdAt: true,
+        buyer: { select: { name: true } },
+        items: {
+          select: {
+            quantity: true,
+            unit: true,
+            unitPrice: true,
+            total: true,
+            material: { select: { name: true, category: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10000,
+    });
+
+    const esc = (v: string | number | null | undefined) => {
+      if (v == null) return '';
+      const s = String(v);
+      return s.includes(',') || s.includes('"') || s.includes('\n')
+        ? `"${s.replace(/"/g, '""')}"`
+        : s;
+    };
+
+    const headers = [
+      'Pasūtījuma numurs',
+      'Statuss',
+      'Tips',
+      'Klients',
+      'Piegādes adrese',
+      'Pilsēta',
+      'Piegādes datums',
+      'Materiāls',
+      'Kategorija',
+      'Daudzums',
+      'Vienība',
+      'Cena/vienība (EUR)',
+      'Rinda kopā (EUR)',
+      'Pasūtījums kopā (EUR)',
+      'Valūta',
+      'Izveidots',
+    ];
+
+    const rows: string[] = [];
+    for (const o of orders) {
+      if (o.items.length === 0) {
+        rows.push([
+          esc(o.orderNumber),
+          esc(o.status),
+          esc(o.orderType),
+          esc(o.buyer?.name),
+          esc(o.deliveryAddress),
+          esc(o.deliveryCity),
+          esc(o.deliveryDate ? o.deliveryDate.toISOString().slice(0, 10) : null),
+          '', '', '', '', '', '',
+          esc(o.total != null ? Number(o.total).toFixed(2) : null),
+          esc(o.currency),
+          esc(o.createdAt.toISOString().slice(0, 10)),
+        ].join(','));
+      } else {
+        for (const item of o.items) {
+          rows.push([
+            esc(o.orderNumber),
+            esc(o.status),
+            esc(o.orderType),
+            esc(o.buyer?.name),
+            esc(o.deliveryAddress),
+            esc(o.deliveryCity),
+            esc(o.deliveryDate ? o.deliveryDate.toISOString().slice(0, 10) : null),
+            esc(item.material?.name),
+            esc(item.material?.category),
+            esc(item.quantity),
+            esc(item.unit),
+            esc(item.unitPrice != null ? Number(item.unitPrice).toFixed(2) : null),
+            esc(item.total != null ? Number(item.total).toFixed(2) : null),
+            esc(o.total != null ? Number(o.total).toFixed(2) : null),
+            esc(o.currency),
+            esc(o.createdAt.toISOString().slice(0, 10)),
+          ].join(','));
+        }
+      }
+    }
+
+    return [headers.join(','), ...rows].join('\r\n');
+  }
 }

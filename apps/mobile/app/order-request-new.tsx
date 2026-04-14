@@ -22,6 +22,7 @@ import {
   TextInput,
   Image,
   Alert,
+  Linking,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
@@ -210,6 +211,33 @@ export default function OrderRequestWizard() {
   );
   const [quantity, setQuantity] = useState(TRUCK_OPTIONS[0].capacity);
   const [notes, setNotes] = useState('');
+
+  // ── Volume calculator modal ──
+  const [calcOpen, setCalcOpen] = useState(false);
+  const [calcLength, setCalcLength] = useState('');
+  const [calcWidth, setCalcWidth] = useState('');
+  const [calcDepth, setCalcDepth] = useState('');
+
+  const calcM3 = (() => {
+    const l = parseFloat(calcLength);
+    const w = parseFloat(calcWidth);
+    const d = parseFloat(calcDepth);
+    if (isNaN(l) || isNaN(w) || isNaN(d) || l <= 0 || w <= 0 || d <= 0) return null;
+    return parseFloat((l * w * (d / 100)).toFixed(2));
+  })();
+
+  const calcTonnes =
+    calcM3 != null ? parseFloat((calcM3 * (MATERIAL_DENSITY[category] ?? 1.7)).toFixed(1)) : null;
+
+  function applyCalc() {
+    if (calcM3 == null) return;
+    if (orderType === 'BY_VOLUME') {
+      setQuantity(calcM3);
+    } else {
+      setQuantity(calcTonnes ?? calcM3);
+    }
+    setCalcOpen(false);
+  }
 
   // ── Structured specs (new pickers) ──
   const [selectedFraction, setSelectedFraction] = useState<string>(
@@ -655,6 +683,27 @@ export default function OrderRequestWizard() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Calculator link */}
+      <TouchableOpacity
+        onPress={() => setCalcOpen(true)}
+        style={{
+          alignSelf: 'center',
+          marginTop: -20,
+          marginBottom: 24,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+        }}
+        activeOpacity={0.7}
+      >
+        <Text style={{ fontSize: 13, color: '#6b7280', fontFamily: 'Inter_500Medium' }}>
+          Nezini daudzumu?
+        </Text>
+        <Text style={{ fontSize: 13, color: '#2563eb', fontFamily: 'Inter_600SemiBold' }}>
+          Izmantot kalkulatoru
+        </Text>
+      </TouchableOpacity>
 
       {/* Notes */}
       <View style={s.field}>
@@ -1342,6 +1391,143 @@ export default function OrderRequestWizard() {
           </TouchableOpacity>
         ))}
       </BottomSheet>
+
+      {/* ── Volume / Weight Calculator ── */}
+      <BottomSheet
+        visible={calcOpen}
+        onClose={() => setCalcOpen(false)}
+        title="Daudzuma kalkulators"
+        subtitle="Ievadiet platības izmērus, lai aprēķinātu nepieciešamo daudzumu"
+        scrollable={false}
+      >
+        <View style={{ gap: 14, paddingBottom: 8 }}>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: '#6b7280',
+                  fontFamily: 'Inter_500Medium',
+                  marginBottom: 4,
+                }}
+              >
+                Garums (m)
+              </Text>
+              <TextInput
+                style={[s.textInput, { marginTop: 0 }]}
+                value={calcLength}
+                onChangeText={setCalcLength}
+                placeholder="piem. 10"
+                placeholderTextColor="#9ca3af"
+                keyboardType="decimal-pad"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: '#6b7280',
+                  fontFamily: 'Inter_500Medium',
+                  marginBottom: 4,
+                }}
+              >
+                Platums (m)
+              </Text>
+              <TextInput
+                style={[s.textInput, { marginTop: 0 }]}
+                value={calcWidth}
+                onChangeText={setCalcWidth}
+                placeholder="piem. 5"
+                placeholderTextColor="#9ca3af"
+                keyboardType="decimal-pad"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: '#6b7280',
+                  fontFamily: 'Inter_500Medium',
+                  marginBottom: 4,
+                }}
+              >
+                Dziļums (cm)
+              </Text>
+              <TextInput
+                style={[s.textInput, { marginTop: 0 }]}
+                value={calcDepth}
+                onChangeText={setCalcDepth}
+                placeholder="piem. 20"
+                placeholderTextColor="#9ca3af"
+                keyboardType="decimal-pad"
+              />
+            </View>
+          </View>
+
+          {calcM3 != null && (
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: '#eff6ff',
+                  borderRadius: 12,
+                  padding: 14,
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 22, fontFamily: 'Inter_700Bold', color: '#1d4ed8' }}>
+                  {calcM3}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: '#3b82f6',
+                    fontFamily: 'Inter_500Medium',
+                    marginTop: 2,
+                  }}
+                >
+                  m³
+                </Text>
+              </View>
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: '#f0fdf4',
+                  borderRadius: 12,
+                  padding: 14,
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 22, fontFamily: 'Inter_700Bold', color: '#16a34a' }}>
+                  {calcTonnes}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: '#22c55e',
+                    fontFamily: 'Inter_500Medium',
+                    marginTop: 2,
+                  }}
+                >
+                  tonnas ({MATERIAL_DENSITY[category] ?? 1.7} t/m³)
+                </Text>
+              </View>
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={[s.nextBtn, calcM3 == null && { backgroundColor: '#e5e7eb' }]}
+            onPress={applyCalc}
+            disabled={calcM3 == null}
+            activeOpacity={0.85}
+          >
+            <Text style={[s.nextBtnTxt, calcM3 == null && { color: '#9ca3af' }]}>
+              Izmantot{' '}
+              {orderType === 'BY_VOLUME' ? `${calcM3 ?? '—'} m³` : `${calcTonnes ?? '—'} t`}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
     </>
   );
 }
@@ -1524,6 +1710,62 @@ function OfferCard({
               </View>
             ))}
           </View>
+        </View>
+      )}
+
+      {/* Quality grade + certificate documents */}
+      {(offer.quality || (offer.certificates && offer.certificates.length > 0)) && (
+        <View style={{ marginTop: 8, gap: 6 }}>
+          {!!offer.quality && (
+            <View
+              style={{
+                alignSelf: 'flex-start',
+                backgroundColor: '#DCFCE7',
+                borderRadius: 6,
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+              }}
+            >
+              <Text style={{ fontSize: 11, color: '#15803D', fontFamily: 'Inter_600SemiBold' }}>
+                {offer.quality}
+              </Text>
+            </View>
+          )}
+          {offer.certificates && offer.certificates.length > 0 && (
+            <View>
+              <Text
+                style={{
+                  fontSize: 11,
+                  color: '#9CA3AF',
+                  fontFamily: 'Inter_600SemiBold',
+                  marginBottom: 4,
+                }}
+              >
+                DOKUMENTI
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {offer.certificates.map((url, i) => (
+                  <TouchableOpacity
+                    key={url}
+                    onPress={() => Linking.openURL(url)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 4,
+                      backgroundColor: '#EFF6FF',
+                      borderRadius: 6,
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                    }}
+                  >
+                    <Text style={{ fontSize: 11, color: '#2563EB', fontFamily: 'Inter_500Medium' }}>
+                      PDF {i + 1}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
         </View>
       )}
 

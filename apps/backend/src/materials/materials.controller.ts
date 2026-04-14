@@ -25,6 +25,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { IsIn, IsNotEmpty, IsString } from 'class-validator';
+import { IsOptional } from 'class-validator';
 
 /** Checks that the authenticated user has canSell=true (or is ADMIN) */
 function assertCanSell(user: RequestingUser) {
@@ -34,6 +35,7 @@ function assertCanSell(user: RequestingUser) {
 }
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+const ALLOWED_DOC_TYPES = ['application/pdf'] as const;
 
 class UploadMaterialImageDto {
   @IsString()
@@ -41,6 +43,15 @@ class UploadMaterialImageDto {
   base64: string;
 
   @IsIn(ALLOWED_IMAGE_TYPES)
+  mimeType: string;
+}
+
+class UploadMaterialDocDto {
+  @IsString()
+  @IsNotEmpty()
+  base64: string;
+
+  @IsIn(ALLOWED_DOC_TYPES)
   mimeType: string;
 }
 
@@ -147,6 +158,36 @@ export class MaterialsController {
   ) {
     assertCanSell(user);
     return this.materialsService.uploadMaterialImage(id, dto.base64, dto.mimeType, user);
+  }
+
+  /**
+   * POST /materials/:id/upload-document
+   * Upload a specification / CE-certificate PDF to Supabase Storage.
+   * Returns the updated certificates array for the material.
+   * Body: { base64: string; mimeType: 'application/pdf' }
+   */
+  @Post(':id/upload-document')
+  uploadDocument(
+    @Param('id') id: string,
+    @Body() dto: UploadMaterialDocDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    assertCanSell(user);
+    return this.materialsService.uploadMaterialDocument(id, dto.base64, dto.mimeType, user);
+  }
+
+  /**
+   * DELETE /materials/:id/documents?url=<encoded-url>
+   * Remove a document URL from the material's certificates array.
+   */
+  @Delete(':id/documents')
+  removeDocument(
+    @Param('id') id: string,
+    @Query('url') url: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    assertCanSell(user);
+    return this.materialsService.removeMaterialDocument(id, url, user);
   }
 
   // ── Availability blocks ────────────────────────────────────────────────────

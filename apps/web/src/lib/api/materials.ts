@@ -25,6 +25,7 @@ export interface ApiMaterial {
   isRecycled: boolean;
   quality?: string;
   images: string[];
+  certificates?: string[];
   supplierId: string;
   supplier: {
     id: string;
@@ -154,6 +155,33 @@ export async function uploadMaterialImage(
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ base64, mimeType }),
   });
+}
+
+export async function uploadMaterialDocument(
+  id: string,
+  base64: string,
+  mimeType: string,
+  token: string,
+): Promise<{ certificates: string[] }> {
+  return apiFetch<{ certificates: string[] }>(`/materials/${id}/upload-document`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ base64, mimeType }),
+  });
+}
+
+export async function removeMaterialDocument(
+  id: string,
+  url: string,
+  token: string,
+): Promise<{ certificates: string[] }> {
+  return apiFetch<{ certificates: string[] }>(
+    `/materials/${id}/documents?url=${encodeURIComponent(url)}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
 }
 
 // ─── Price tiers ────────────────────────────────────────────────────────────

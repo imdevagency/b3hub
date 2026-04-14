@@ -15,6 +15,8 @@ import {
   getMaterialTiers,
   setMaterialTiers,
   uploadMaterialImage,
+  uploadMaterialDocument,
+  removeMaterialDocument,
   getMaterialAvailability,
   addMaterialAvailabilityBlock,
   removeMaterialAvailabilityBlock,
@@ -37,6 +39,7 @@ import {
   X,
   AlertTriangle,
   ImagePlus,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageSpinner } from '@/components/ui/page-spinner';
@@ -163,12 +166,15 @@ function MaterialFormModal({
   const [error, setError] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [certs, setCerts] = useState<string[]>([]);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
 
   // Update form when editing changes or sheet opens
   useEffect(() => {
     if (open) {
       setForm(editing ? materialToForm(editing) : EMPTY_FORM);
       setImages(editing?.images ?? []);
+      setCerts(editing?.certificates ?? []);
       setError('');
     }
   }, [open, editing]);
@@ -205,6 +211,37 @@ function MaterialFormModal({
     reader.readAsDataURL(file);
     // reset input so same file can be re-selected
     e.target.value = '';
+  }
+
+  async function handleDocChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !editing?.id) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      const base64 = dataUrl.split(',')[1];
+      setUploadingDoc(true);
+      try {
+        const result = await uploadMaterialDocument(editing.id, base64, 'application/pdf', token);
+        setCerts(result.certificates);
+      } catch {
+        setError('Neizdevās augšupielādēt dokumentu.');
+      } finally {
+        setUploadingDoc(false);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }
+
+  async function handleDocRemove(url: string) {
+    if (!editing?.id) return;
+    try {
+      const result = await removeMaterialDocument(editing.id, url, token);
+      setCerts(result.certificates);
+    } catch {
+      setError('Neizdevās dzēst dokumentu.');
+    }
   }
 
   async function handleSubmit(e?: React.FormEvent) {
@@ -469,6 +506,71 @@ function MaterialFormModal({
                 ) : (
                   <p className="text-xs text-muted-foreground self-center">
                     Saglabājiet materiālu, lai pievienotu bildes.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Specification / certificate documents */}
+            <div>
+              <Label className="text-sm font-medium ml-1">
+                Specifikācijas un sertifikāti (PDF)
+              </Label>
+              <div className="mt-2 space-y-2">
+                {certs.map((url, i) => {
+                  const filename = url.split('/').pop() ?? `Dokuments ${i + 1}`;
+                  return (
+                    <div
+                      key={url}
+                      className="flex items-center gap-3 bg-muted/40 rounded-xl px-3 py-2.5"
+                    >
+                      <FileText className="size-4 text-muted-foreground shrink-0" />
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 text-sm text-primary truncate hover:underline"
+                      >
+                        {filename}
+                      </a>
+                      {editing?.id && (
+                        <button
+                          type="button"
+                          onClick={() => handleDocRemove(url)}
+                          className="text-muted-foreground hover:text-destructive transition-colors"
+                          aria-label="Dzēst dokumentu"
+                        >
+                          <X className="size-4" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+                {editing?.id ? (
+                  <label
+                    className={`flex items-center gap-3 rounded-xl border-2 border-dashed border-border bg-muted/40 px-4 py-3 cursor-pointer hover:bg-muted/70 transition-colors ${
+                      uploadingDoc ? 'opacity-50 pointer-events-none' : ''
+                    }`}
+                  >
+                    {uploadingDoc ? (
+                      <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                    ) : (
+                      <FileText className="size-4 text-muted-foreground" />
+                    )}
+                    <span className="text-sm text-muted-foreground">
+                      {uploadingDoc ? 'Augšupielādē...' : 'Pievienot PDF dokumentu'}
+                    </span>
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      className="sr-only"
+                      onChange={handleDocChange}
+                      disabled={uploadingDoc}
+                    />
+                  </label>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Saglabājiet materiālu, lai pievienotu dokumentus.
                   </p>
                 )}
               </div>

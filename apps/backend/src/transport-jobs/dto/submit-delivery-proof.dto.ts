@@ -33,4 +33,9 @@ export class SubmitDeliveryProofDto {
   @IsBoolean()
   @IsOptional()
   gradeConfirmed?: boolean;
+
+  /** SVG path data of the recipient signature, serialized as a minimal SVG string */
+  @IsString()
+  @IsOptional()
+  signatureSvg?: string;
 }

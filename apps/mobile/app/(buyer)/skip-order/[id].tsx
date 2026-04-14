@@ -159,7 +159,17 @@ export default function SkipOrderDetailScreen() {
     setTimeout(() => setRefreshing(false), 1000);
   };
   const [showRating, setShowRating] = useState(false);
+  const [alreadyRated, setAlreadyRated] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+
+  useEffect(() => {
+    if (order && token && (order.status === 'COLLECTED' || order.status === 'COMPLETED')) {
+      api.reviews
+        .status({ skipOrderId: order.id }, token)
+        .then(({ reviewed }) => setAlreadyRated(reviewed))
+        .catch(() => {});
+    }
+  }, [order?.id, order?.status, token]);
 
   useEffect(() => {
     if (error) {
@@ -180,7 +190,7 @@ export default function SkipOrderDetailScreen() {
   if (!order) return null;
 
   const status = t.skipHire.status[order.status] ?? t.skipHire.status.PENDING;
-  const canRate = order.status === 'COLLECTED' || order.status === 'COMPLETED';
+  const canRate = (order.status === 'COLLECTED' || order.status === 'COMPLETED') && !alreadyRated;
   const canCancel = order.status === 'PENDING' || order.status === 'CONFIRMED';
 
   const handleCancel = () => {
@@ -244,13 +254,13 @@ export default function SkipOrderDetailScreen() {
       >
         {/* ── Status timeline ── */}
         <View style={s.section}>
-          <Text style={ [s.sectionTitle, { marginBottom: 12 }] }>Statuss</Text>
+          <Text style={[s.sectionTitle, { marginBottom: 12 }]}>Statuss</Text>
           <StatusTimeline status={order.status} />
         </View>
 
         {/* ── Order details ── */}
         <View style={s.section}>
-          <Text style={ [s.sectionTitle, { marginBottom: 12 }] }>Pasūtījuma informācija</Text>
+          <Text style={[s.sectionTitle, { marginBottom: 12 }]}>Pasūtījuma informācija</Text>
           <View style={s.card}>
             <Row label="Piegādes vieta" value={order.location} icon={MapPin} />
             <Row
@@ -292,7 +302,7 @@ export default function SkipOrderDetailScreen() {
         {/* ── Contact ── */}
         {(order.contactName || order.contactEmail || order.contactPhone) && (
           <View style={s.section}>
-            <Text style={ [s.sectionTitle, { marginBottom: 12 }] }>Kontaktpersona</Text>
+            <Text style={[s.sectionTitle, { marginBottom: 12 }]}>Kontaktpersona</Text>
             <View style={s.card}>
               <Row label="Vārds" value={order.contactName} icon={User} />
               <Row label="E-pasts" value={order.contactEmail} icon={Mail} />
@@ -320,7 +330,7 @@ export default function SkipOrderDetailScreen() {
         {/* ── Support contact (fallback when no operator contact set) ── */}
         {!order.contactName && !order.contactEmail && !order.contactPhone && (
           <View style={s.section}>
-            <Text style={ [s.sectionTitle, { marginBottom: 12 }] }>Palīdzība</Text>
+            <Text style={[s.sectionTitle, { marginBottom: 12 }]}>Palīdzība</Text>
             <View style={s.card}>
               <TouchableOpacity
                 style={s.row}
@@ -394,6 +404,7 @@ export default function SkipOrderDetailScreen() {
           onClose={() => setShowRating(false)}
           onSuccess={() => {
             setShowRating(false);
+            setAlreadyRated(true);
             // Refresh order state
             api.skipHire
               .getById(id, token)
@@ -457,7 +468,6 @@ const s = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 10,
     paddingVertical: 12,
-    
   },
   rowLabel: { fontSize: 13, color: '#9ca3af', marginBottom: 4 },
   rowValue: { fontSize: 15, fontWeight: '600', color: '#111827' },

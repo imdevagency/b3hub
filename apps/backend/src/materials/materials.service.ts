@@ -486,6 +486,64 @@ export class MaterialsService {
     return { images: updated.images };
   }
 
+  /**
+   * Upload a specification/certificate PDF to Supabase Storage and append the
+   * URL to the material's certificates array.
+   */
+  async uploadMaterialDocument(
+    materialId: string,
+    base64: string,
+    mimeType: string,
+    currentUser: { userType: string; companyId?: string },
+  ): Promise<{ certificates: string[] }> {
+    const material = await this.findOne(materialId);
+    if (currentUser.userType !== 'ADMIN' && material.supplierId !== currentUser.companyId) {
+      throw new ForbiddenException('You do not own this material');
+    }
+
+    if (!this.supabase) {
+      throw new BadRequestException('File storage is not configured');
+    }
+
+    const raw = base64.includes(',') ? base64.split(',')[1] : base64;
+    const buffer = Buffer.from(raw, 'base64');
+    const path = `material-docs/${materialId}/${Date.now()}.pdf`;
+
+    await this.supabase.uploadFile('material-docs', path, buffer);
+    const docUrl = this.supabase.getPublicUrl('material-docs', path);
+
+    const updated = await this.prisma.material.update({
+      where: { id: materialId },
+      data: { certificates: { push: docUrl } },
+      select: { certificates: true },
+    });
+
+    this.logger.log(`Material ${materialId} document uploaded: ${docUrl}`);
+    return { certificates: updated.certificates };
+  }
+
+  /**
+   * Remove a document URL from the material's certificates array.
+   */
+  async removeMaterialDocument(
+    materialId: string,
+    url: string,
+    currentUser: { userType: string; companyId?: string },
+  ): Promise<{ certificates: string[] }> {
+    const material = await this.findOne(materialId);
+    if (currentUser.userType !== 'ADMIN' && material.supplierId !== currentUser.companyId) {
+      throw new ForbiddenException('You do not own this material');
+    }
+
+    const updated = await this.prisma.material.update({
+      where: { id: materialId },
+      data: { certificates: material.certificates.filter((c) => c !== url) },
+      select: { certificates: true },
+    });
+
+    return { certificates: updated.certificates };
+  }
+
   // ── Availability blocks ────────────────────────────────────────────────────
 
   async getAvailabilityBlocks(materialId: string) {

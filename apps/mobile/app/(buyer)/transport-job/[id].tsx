@@ -203,6 +203,19 @@ export default function TransportJobDetailScreen() {
   const [ratingComment, setRatingComment] = useState('');
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [ratingLoading, setRatingLoading] = useState(false);
+
+  // Check on load whether this job was already rated (survives re-entry)
+  useEffect(() => {
+    if (job && token && job.status === 'DELIVERED' && !ratingSubmitted) {
+      api.reviews
+        .status({ transportJobId: job.id }, token)
+        .then(({ reviewed }) => {
+          if (reviewed) setRatingSubmitted(true);
+        })
+        .catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job?.id, job?.status, token]);
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [etaMin, setEtaMin] = useState<number | null>(null);
 
@@ -330,102 +343,100 @@ export default function TransportJobDetailScreen() {
     <ScreenContainer topInset={0} bg="#f9fafb">
       {isActive ? (
         <View>
-    {/* ── MAP SECTION ── */}
-      <View style={{ height: MAP_H, backgroundColor: '#e5e7eb' }}>
-        <BaseMap
-          cameraRef={cameraRef}
-          center={pickup ? [pickup.lng, pickup.lat] : [24.1052, 56.9496]}
-          zoom={12}
-          style={{ flex: 1 }}
-          rotateEnabled={false}
-          pitchEnabled={false}
-          onMapReady={() => setMapReady(true)}
-        >
-          {route && (
-            <RouteLayer id="job-route" coordinates={route.coords} color="#111827" width={4} />
-          )}
-          {pickup && (
-            <Marker
-              coordinate={{ latitude: pickup.lat, longitude: pickup.lng }}
-              anchor={{ x: 0.5, y: 1 }}
+          {/* ── MAP SECTION ── */}
+          <View style={{ height: MAP_H, backgroundColor: '#e5e7eb' }}>
+            <BaseMap
+              cameraRef={cameraRef}
+              center={pickup ? [pickup.lng, pickup.lat] : [24.1052, 56.9496]}
+              zoom={12}
+              style={{ flex: 1 }}
+              rotateEnabled={false}
+              pitchEnabled={false}
+              onMapReady={() => setMapReady(true)}
             >
-              <View style={s.pinPickup}>
-                <MapPin size={16} color="#fff" strokeWidth={2.5} />
-              </View>
-            </Marker>
-          )}
-          {delivery && (
-            <Marker
-              coordinate={{ latitude: delivery.lat, longitude: delivery.lng }}
-              anchor={{ x: 0.5, y: 1 }}
+              {route && (
+                <RouteLayer id="job-route" coordinates={route.coords} color="#111827" width={4} />
+              )}
+              {pickup && (
+                <Marker
+                  coordinate={{ latitude: pickup.lat, longitude: pickup.lng }}
+                  anchor={{ x: 0.5, y: 1 }}
+                >
+                  <View style={s.pinPickup}>
+                    <MapPin size={16} color="#fff" strokeWidth={2.5} />
+                  </View>
+                </Marker>
+              )}
+              {delivery && (
+                <Marker
+                  coordinate={{ latitude: delivery.lat, longitude: delivery.lng }}
+                  anchor={{ x: 0.5, y: 1 }}
+                >
+                  <View style={s.pinDelivery}>
+                    <Navigation size={14} color="#fff" strokeWidth={2.5} />
+                  </View>
+                </Marker>
+              )}
+              {/* Live driver marker — animates smoothly via animateMarkerToCoordinate */}
+              {driverLocation && Marker && (
+                <Marker
+                  ref={driverMarkerRef}
+                  coordinate={{ latitude: driverLocation.lat, longitude: driverLocation.lng }}
+                  anchor={{ x: 0.5, y: 0.5 }}
+                  tracksViewChanges={false}
+                >
+                  <View style={s.pinDriver}>
+                    <Truck size={13} color="#fff" strokeWidth={2.5} />
+                  </View>
+                </Marker>
+              )}
+            </BaseMap>
+
+            {/* Floating back button */}
+            <TouchableOpacity
+              style={[s.mapBackBtn, { top: insets.top + 12 }]}
+              onPress={() => {
+                haptics.light();
+                router.back();
+              }}
+              activeOpacity={0.8}
+              hitSlop={12}
             >
-              <View style={s.pinDelivery}>
-                <Navigation size={14} color="#fff" strokeWidth={2.5} />
+              <ArrowLeft size={20} color="#111827" strokeWidth={2} />
+            </TouchableOpacity>
+
+            {/* Floating status + type pill */}
+            {!loading && job && st && (
+              <View style={s.mapStatusPill}>
+                <Icon size={13} color={st.color} strokeWidth={2} />
+                <Text style={[s.mapStatusText, { color: st.color }]}>{st.label}</Text>
+                {ACTIVE_STATUSES.has(job.status) && <View style={s.liveDot} />}
               </View>
-            </Marker>
-          )}
-          {/* Live driver marker — animates smoothly via animateMarkerToCoordinate */}
-          {driverLocation && Marker && (
-            <Marker
-              ref={driverMarkerRef}
-              coordinate={{ latitude: driverLocation.lat, longitude: driverLocation.lng }}
-              anchor={{ x: 0.5, y: 0.5 }}
-              tracksViewChanges={false}
-            >
-              <View style={s.pinDriver}>
-                <Truck size={13} color="#fff" strokeWidth={2.5} />
+            )}
+
+            {/* Distance badge */}
+            {route && (
+              <View style={s.distBadge}>
+                <Text style={s.distText}>
+                  {route.distanceKm.toFixed(0)} km · {route.durationLabel}
+                </Text>
               </View>
-            </Marker>
-          )}
-        </BaseMap>
-
-        {/* Floating back button */}
-        <TouchableOpacity
-          style={[s.mapBackBtn, { top: insets.top + 12 }]}
-          onPress={() => {
-            haptics.light();
-            router.back();
-          }}
-          activeOpacity={0.8}
-          hitSlop={12}
-        >
-          <ArrowLeft size={20} color="#111827" strokeWidth={2} />
-        </TouchableOpacity>
-
-        {/* Floating status + type pill */}
-        {!loading && job && st && (
-          <View style={s.mapStatusPill}>
-            <Icon size={13} color={st.color} strokeWidth={2} />
-            <Text style={[s.mapStatusText, { color: st.color }]}>{st.label}</Text>
-            {ACTIVE_STATUSES.has(job.status) && <View style={s.liveDot} />}
+            )}
+            {/* Live driver distance chip */}
+            {driverLocation && delivery && (
+              <View style={s.driverBadge}>
+                <View style={s.driverLiveDot} />
+                <Text style={s.driverBadgeText}>
+                  {etaMin != null
+                    ? `Pienāks ~${etaMin} min`
+                    : `Šoferis ~${haversineKm(driverLocation.lat, driverLocation.lng, delivery.lat, delivery.lng).toFixed(0)} km`}
+                </Text>
+              </View>
+            )}
           </View>
-        )}
-
-        {/* Distance badge */}
-        {route && (
-          <View style={s.distBadge}>
-            <Text style={s.distText}>
-              {route.distanceKm.toFixed(0)} km · {route.durationLabel}
-            </Text>
-          </View>
-        )}
-        {/* Live driver distance chip */}
-        {driverLocation && delivery && (
-          <View style={s.driverBadge}>
-            <View style={s.driverLiveDot} />
-            <Text style={s.driverBadgeText}>
-              {etaMin != null
-                ? `Pienāks ~${etaMin} min`
-                : `Šoferis ~${haversineKm(driverLocation.lat, driverLocation.lng, delivery.lat, delivery.lng).toFixed(0)} km`}
-            </Text>
-          </View>
-        )}
-      </View>
-
-
         </View>
       ) : (
-        <ScreenHeader 
+        <ScreenHeader
           title={job?.jobNumber || 'Pasūtījums'}
           rightAction={st && <StatusPill label={st.label} bg={st.bg} color={st.color} />}
         />

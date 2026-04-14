@@ -52,6 +52,10 @@ export interface SupplierOffer {
   stockQty?: number | null;
   /** Product photos from Supabase Storage */
   images?: string[];
+  /** Quality grade text (e.g. "A klase") */
+  quality?: string | null;
+  /** Specification / certificate PDF URLs */
+  certificates?: string[];
   supplier: {
     id: string;
     name: string;

@@ -9,11 +9,37 @@
  * fallback (straight-line or original order) so the map never hard-crashes.
  */
 
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 
 const GOOGLE_KEY = getGoogleMapsPublicKey();
 const DIRECTIONS_BASE = 'https://maps.googleapis.com/maps/api/directions/json';
 const GEOCODING_BASE = 'https://maps.googleapis.com/maps/api/geocode/json';
+
+/**
+ * When the Google Maps key has an iOS/Android application restriction, HTTP API
+ * calls (Directions, Geocoding, Places) must include the platform identification
+ * headers — otherwise Google returns REQUEST_DENIED.
+ *
+ * Adding these headers lets the restricted key work for both SDK and HTTP calls
+ * without needing a separate unrestricted key.
+ */
+function platformKeyHeaders(): Record<string, string> {
+  if (Platform.OS === 'ios') {
+    const bundleId =
+      (Constants.expoConfig?.ios as { bundleIdentifier?: string } | undefined)?.bundleIdentifier ??
+      'lv.b3hub.app';
+    return { 'X-Ios-Bundle-Identifier': bundleId };
+  }
+  if (Platform.OS === 'android') {
+    const pkg =
+      (Constants.expoConfig?.android as { package?: string } | undefined)?.package ??
+      'lv.b3hub.app';
+    return { 'X-Android-Package': pkg };
+  }
+  return {};
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -114,7 +140,7 @@ export async function fetchRoute(origin: Stop, destination: Stop): Promise<Route
       `&destination=${destination.lat},${destination.lng}` +
       `&mode=driving&language=lv&key=${GOOGLE_KEY}`;
 
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: platformKeyHeaders() });
     if (!res.ok) return fallback;
 
     const data = (await res.json()) as {
@@ -183,7 +209,7 @@ export async function optimizeRoute(stops: Stop[]): Promise<OptimizedRoute> {
       `&waypoints=${encodeURIComponent(waypointStr)}` +
       `&mode=driving&key=${GOOGLE_KEY}`;
 
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: platformKeyHeaders() });
     if (!res.ok) return fallback;
 
     const data = (await res.json()) as {
@@ -237,7 +263,7 @@ export async function geocodeLocation(
     const url =
       `${GEOCODING_BASE}?address=${encodeURIComponent(text.trim())}` +
       `&region=lv&key=${GOOGLE_KEY}`;
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: platformKeyHeaders() });
     if (!res.ok) return null;
     const data = (await res.json()) as {
       status?: string;

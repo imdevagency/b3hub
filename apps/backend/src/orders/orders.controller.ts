@@ -14,7 +14,9 @@ import {
   UseGuards,
   Query,
   BadRequestException,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto, CreateOrderScheduleDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -58,6 +60,21 @@ export class OrdersController {
     @CurrentUser() user: RequestingUser,
   ) {
     return this.ordersService.createFreightOrder(dto, user.userId);
+  }
+
+  /** GET /orders/export/csv — download all accessible orders as CSV */
+  @Get('export/csv')
+  async exportCsv(
+    @CurrentUser() user: RequestingUser,
+    @Res() res: Response,
+  ) {
+    const csv = await this.ordersService.exportCsv(user);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="orders-${new Date().toISOString().slice(0, 10)}.csv"`,
+    );
+    res.end('\uFEFF' + csv);
   }
 
   @Get('stats')

@@ -2610,4 +2610,75 @@ export class TransportJobsService {
       }
     }
   }
+
+  /** Export the driver's completed jobs as a UTF-8 CSV string for accounting. */
+  async exportEarningsCsv(driverId: string): Promise<string> {
+    const jobs = await this.prisma.transportJob.findMany({
+      where: { driverId, status: 'DELIVERED' },
+      select: {
+        jobNumber: true,
+        pickupCity: true,
+        deliveryCity: true,
+        pickupDate: true,
+        deliveryDate: true,
+        distanceKm: true,
+        cargoWeight: true,
+        actualWeightKg: true,
+        rate: true,
+        currency: true,
+        jobType: true,
+        vehicle: { select: { licensePlate: true, vehicleType: true } },
+        order: { select: { orderNumber: true } },
+        updatedAt: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 10000,
+    });
+
+    const esc = (v: string | number | null | undefined) => {
+      if (v == null) return '';
+      const s = String(v);
+      return s.includes(',') || s.includes('"') || s.includes('\n')
+        ? `"${s.replace(/"/g, '""')}"`
+        : s;
+    };
+
+    const headers = [
+      'Darba numurs',
+      'Pasūtījuma numurs',
+      'Tips',
+      'No (pilsēta)',
+      'Uz (pilsēta)',
+      'Uzkāšanas datums',
+      'Piegādes datums',
+      'Atstātums (km)',
+      'Kravas svars (t)',
+      'Fakt. svars (kg)',
+      'Likme (EUR)',
+      'Valūta',
+      'Transportlīdzeklis',
+      'Numura zīme',
+      'Pabeigts',
+    ];
+
+    const rows = jobs.map((j) => [
+      esc(j.jobNumber),
+      esc(j.order?.orderNumber),
+      esc(j.jobType),
+      esc(j.pickupCity),
+      esc(j.deliveryCity),
+      esc(j.pickupDate ? j.pickupDate.toISOString().slice(0, 10) : null),
+      esc(j.deliveryDate ? j.deliveryDate.toISOString().slice(0, 10) : null),
+      esc(j.distanceKm != null ? Number(j.distanceKm).toFixed(1) : null),
+      esc(j.cargoWeight != null ? Number(j.cargoWeight).toFixed(2) : null),
+      esc(j.actualWeightKg),
+      esc(j.rate != null ? Number(j.rate).toFixed(2) : null),
+      esc(j.currency),
+      esc(j.vehicle?.vehicleType),
+      esc(j.vehicle?.licensePlate),
+      esc(j.updatedAt.toISOString().slice(0, 10)),
+    ].join(','));
+
+    return [headers.join(','), ...rows].join('\r\n');
+  }
 }

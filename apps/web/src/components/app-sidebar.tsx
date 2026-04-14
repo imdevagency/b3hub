@@ -793,6 +793,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Platformas dokumentācija"
+                  isActive={isRouteActive('/dashboard/admin/documentation')}
+                >
+                  <Link href="/dashboard/admin/documentation">
+                    <FileQuestion className="size-4 shrink-0" />
+                    <span>Dokumentācija</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>
         )}

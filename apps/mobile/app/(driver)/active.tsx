@@ -512,6 +512,9 @@ export default function ActiveJobScreen() {
   // ── Navigate — Schüttflix-style app picker ────────────────────────────────
   //   Shows Waze / Google Maps / Apple Maps action sheet.
   //   Always uses coordinates (not address text) for precision.
+  const NAV_PREF_KEY = '@b3hub_driver_nav_app';
+  type NavApp = 'waze' | 'google' | 'apple';
+
   const handleNavigate = () => {
     const isHeadingToPickup = currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP';
 
@@ -522,7 +525,6 @@ export default function ActiveJobScreen() {
       : `${job.deliveryAddress}, ${job.deliveryCity}`;
 
     if (lat == null || lng == null) {
-      // Coords missing — fall back to address search in Google Maps web
       const encoded = encodeURIComponent(label);
       Linking.openURL(
         `https://www.google.com/maps/dir/?api=1&destination=${encoded}&travelmode=driving`,
@@ -543,28 +545,34 @@ export default function ActiveJobScreen() {
     const googleFallback = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
     const appleUrl = `maps://?daddr=${lat},${lng}&dirflg=d`;
 
-    const options: { text: string; onPress: () => void }[] = [
-      {
-        text: 'Waze',
-        onPress: () => openUrl(wazeUrl, googleFallback),
-      },
-      {
-        text: 'Google Maps',
-        onPress: () => openUrl(googleUrlNative, googleFallback),
-      },
-    ];
+    const launch = (app: NavApp) => {
+      AsyncStorage.setItem(NAV_PREF_KEY, app);
+      if (app === 'waze') openUrl(wazeUrl, googleFallback);
+      else if (app === 'apple') openUrl(appleUrl, googleFallback);
+      else openUrl(googleUrlNative, googleFallback);
+    };
 
-    if (Platform.OS === 'ios') {
-      options.push({
-        text: 'Apple Maps',
-        onPress: () => openUrl(appleUrl, googleFallback),
-      });
-    }
+    // If driver has a saved preference, launch immediately — no picker
+    AsyncStorage.getItem(NAV_PREF_KEY).then((saved) => {
+      if (saved === 'waze' || saved === 'google' || (saved === 'apple' && Platform.OS === 'ios')) {
+        launch(saved as NavApp);
+        return;
+      }
 
-    Alert.alert('Atvērt navigāciju', label, [
-      ...options.map((o) => ({ text: o.text, onPress: o.onPress })),
-      { text: 'Atcelt', style: 'cancel' as const },
-    ]);
+      // First time — show picker and remember choice
+      const options: { text: string; onPress: () => void }[] = [
+        { text: 'Waze', onPress: () => launch('waze') },
+        { text: 'Google Maps', onPress: () => launch('google') },
+      ];
+      if (Platform.OS === 'ios') {
+        options.push({ text: 'Apple Maps', onPress: () => launch('apple') });
+      }
+
+      Alert.alert('Atvērt navigāciju', label, [
+        ...options.map((o) => ({ text: o.text, onPress: o.onPress })),
+        { text: 'Atcelt', style: 'cancel' as const },
+      ]);
+    });
   };
 
   const handleCall = (phone: string | null | undefined, name?: string | null) => {

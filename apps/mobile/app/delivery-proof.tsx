@@ -90,6 +90,17 @@ export default function DeliveryProofScreen() {
     setLiveStroke('');
   };
 
+  /** Serialize the strokes array into a minimal SVG string for backend storage. */
+  const buildSignatureSvg = (strokePaths: string[]): string | undefined => {
+    if (strokePaths.length === 0) return undefined;
+    const pathEls = strokePaths
+      .map(
+        (d) => `<path d="${d}" stroke="#111" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+      )
+      .join('');
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${padWidth}" height="${PAD_HEIGHT}">${pathEls}</svg>`;
+  };
+
   // ── Photo picker ────────────────────────────────────────────────────────────
   const pickImage = async (fromCamera: boolean) => {
     if (photos.length >= 3) {
@@ -154,6 +165,7 @@ export default function DeliveryProofScreen() {
           hasDamage,
           damageNote: hasDamage && damageNote.trim() ? damageNote.trim() : undefined,
           gradeConfirmed,
+          signatureSvg: buildSignatureSvg(strokes),
         },
         token,
       );
@@ -177,6 +189,11 @@ export default function DeliveryProofScreen() {
           recipientName: recipientName.trim() || undefined,
           notes: notes.trim() || undefined,
           photos: photos.length > 0 ? photos : undefined,
+          loadCondition,
+          hasDamage,
+          damageNote: hasDamage && damageNote.trim() ? damageNote.trim() : undefined,
+          gradeConfirmed,
+          signatureSvg: buildSignatureSvg(strokes),
         });
         haptics.success();
         Alert.alert(

@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Clock,
   CheckCircle,
+  Download,
   Truck,
   Package,
   BarChart3,
@@ -203,6 +204,7 @@ export default function EarningsPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [setupLoading, setSetupLoading] = useState(false);
+  const [csvLoading, setCsvLoading] = useState(false);
 
   // Role detection
   const isSupplier = Boolean(user?.canSell);
@@ -212,6 +214,30 @@ export default function EarningsPage() {
     if (!user) return;
     if (!isSupplier && !isCarrier) router.push('/dashboard');
   }, [user, isSupplier, isCarrier, router]);
+
+  const handleExportCsv = async () => {
+    if (!token) return;
+    setCsvLoading(true);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+      const endpoint = isCarrier ? 'transport-jobs/export/csv' : 'orders/export/csv';
+      const res = await fetch(`${API_URL}/${endpoint}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${isCarrier ? 'earnings' : 'orders'}-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      /* silent */
+    } finally {
+      setCsvLoading(false);
+    }
+  };
 
   // Amount extractor based on role
   const getAmount = (p: EarningEntry): number =>
@@ -266,16 +292,28 @@ export default function EarningsPage() {
             : 'Transporta darbu ienākumu pārskats'
         }
         action={
-          <Button
-            variant="outline"
-            className="rounded-full bg-muted/40 border-0 hover:bg-muted/80 shadow-none px-4"
-            size="sm"
-            onClick={() => load(true)}
-            disabled={refreshing}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Atjaunināt
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="rounded-full bg-muted/40 border-0 hover:bg-muted/80 shadow-none px-4"
+              size="sm"
+              onClick={handleExportCsv}
+              disabled={csvLoading}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {csvLoading ? 'Eksportē...' : 'CSV'}
+            </Button>
+            <Button
+              variant="outline"
+              className="rounded-full bg-muted/40 border-0 hover:bg-muted/80 shadow-none px-4"
+              size="sm"
+              onClick={() => load(true)}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Atjaunināt
+            </Button>
+          </div>
         }
       />
 

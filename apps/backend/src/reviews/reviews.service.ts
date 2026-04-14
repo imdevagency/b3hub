@@ -193,6 +193,7 @@ export class ReviewsService {
     userId: string,
     orderId?: string,
     skipOrderId?: string,
+    transportJobId?: string,
   ) {
     if (orderId) {
       const r = await this.prisma.review.findUnique({ where: { orderId } });
@@ -200,6 +201,10 @@ export class ReviewsService {
     }
     if (skipOrderId) {
       const r = await this.prisma.review.findUnique({ where: { skipOrderId } });
+      return { reviewed: !!r && r.reviewerId === userId };
+    }
+    if (transportJobId) {
+      const r = await this.prisma.review.findUnique({ where: { transportJobId } });
       return { reviewed: !!r && r.reviewerId === userId };
     }
     return { reviewed: false };

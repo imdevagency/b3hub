@@ -263,6 +263,8 @@ export const transportApi = {
         hasDamage?: boolean;
         damageNote?: string;
         gradeConfirmed?: boolean;
+        /** SVG path data of recipient signature */
+        signatureSvg?: string;
       },
       token: string,
     ) =>

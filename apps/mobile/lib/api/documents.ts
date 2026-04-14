@@ -59,8 +59,11 @@ export const documentsApi = {
         body: JSON.stringify(dto),
       }),
 
-    /** Check whether the user already reviewed an order. */
-    status: (params: { orderId?: string; skipOrderId?: string }, token: string) => {
+    /** Check whether the user already reviewed an order or transport job. */
+    status: (
+      params: { orderId?: string; skipOrderId?: string; transportJobId?: string },
+      token: string,
+    ) => {
       const qs = new URLSearchParams(
         Object.fromEntries(
           Object.entries(params).filter(([, v]) => v != null) as [string, string][],

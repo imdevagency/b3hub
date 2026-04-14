@@ -14,7 +14,9 @@ import {
   Body,
   Query,
   UseGuards,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { TransportJobsService } from './transport-jobs.service';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { CreateTransportJobDto } from './dto/create-transport-job.dto';
@@ -111,6 +113,21 @@ export class TransportJobsController {
   @Get()
   findAvailable(@Query() pagination: PaginationDto) {
     return this.service.findAvailable(pagination.limit ?? 20, pagination.skip ?? 0);
+  }
+
+  /** GET /transport-jobs/export/csv — download driver's completed jobs as CSV */
+  @Get('export/csv')
+  async exportEarningsCsv(
+    @CurrentUser() user: RequestingUser,
+    @Res() res: Response,
+  ) {
+    const csv = await this.service.exportEarningsCsv(user.userId);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="earnings-${new Date().toISOString().slice(0, 10)}.csv"`,
+    );
+    res.end('\uFEFF' + csv);
   }
 
   /**

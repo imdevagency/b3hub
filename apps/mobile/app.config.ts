@@ -113,6 +113,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         NSPhotoLibraryUsageDescription:
           'B3Hub var piekļūt jūsu foto bibliotēkai, lai atlasītu piegādes pierādījuma attēlus.',
         UIBackgroundModes: ['location', 'fetch'],
+        // Required for Linking.canOpenURL() to work with third-party navigation apps.
+        // Without this, iOS always returns false and navigation falls back to web URLs.
+        LSApplicationQueriesSchemes: ['waze', 'comgooglemaps', 'maps'],
       },
     },
     android: {
