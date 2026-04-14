@@ -12,7 +12,7 @@ const benefits = [
   {
     icon: Scale,
     title: 'Digitālā svara zīme',
-    body: 'Svara dati no svērtuvēm tieši platformā. Svara zīme tiek ģenerēta automātiski UN elektroniski parakstīta brīdī, kad šoferis apstiprina piegādi.',
+    body: 'Svara dati no svērtuvēm tieši platformā. Svara zīme tiek ģenerēta automātiski brīdī, kad šoferis apstiprina piegādi.',
   },
   {
     icon: FileText,

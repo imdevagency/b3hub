@@ -43,8 +43,14 @@ export interface InvoiceListResponse {
 
 // ─── Functions ─────────────────────────────────────────────────────────────
 
-export async function getMyInvoices(token: string, page = 1): Promise<InvoiceListResponse> {
-  return apiFetch<InvoiceListResponse>(`/invoices?page=${page}&limit=20`, {
+export async function getMyInvoices(
+  token: string,
+  page = 1,
+  status?: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED',
+): Promise<InvoiceListResponse> {
+  const qs = new URLSearchParams({ page: String(page), limit: '20' });
+  if (status) qs.set('status', status);
+  return apiFetch<InvoiceListResponse>(`/invoices?${qs}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 }

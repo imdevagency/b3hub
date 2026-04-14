@@ -70,7 +70,11 @@ export default function InvoicesPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await getMyInvoices(token, page);
+      const res = await getMyInvoices(
+        token,
+        page,
+        statusFilter === 'ALL' ? undefined : statusFilter,
+      );
       setInvoices(res.data);
       setTotal(res.meta.total);
     } catch {
@@ -78,11 +82,16 @@ export default function InvoicesPage() {
     } finally {
       setLoading(false);
     }
-  }, [token, page]);
+  }, [token, page, statusFilter]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // Reset to page 1 whenever the filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
 
   async function handlePay(invoiceId: string) {
     if (!token) return;
@@ -99,10 +108,8 @@ export default function InvoicesPage() {
 
   const totalPages = Math.ceil(total / limit);
 
-  const filteredInvoices =
-    statusFilter === 'ALL'
-      ? invoices
-      : invoices.filter((inv) => inv.paymentStatus === statusFilter);
+  // invoices is already filtered server-side
+  const filteredInvoices = invoices;
 
   return (
     <div className="flex flex-col gap-6">
@@ -147,10 +154,8 @@ export default function InvoicesPage() {
             }`}
           >
             {label}
-            {key !== 'ALL' && (
-              <span className="ml-1.5 tabular-nums">
-                ({invoices.filter((inv) => inv.paymentStatus === key).length})
-              </span>
+            {key !== 'ALL' && statusFilter === key && total > 0 && (
+              <span className="ml-1.5 tabular-nums">({total})</span>
             )}
           </button>
         ))}
@@ -193,7 +198,7 @@ export default function InvoicesPage() {
                 <tr className="border-b bg-muted/30 text-xs text-muted-foreground uppercase tracking-wide">
                   <th className="text-left px-5 py-3 font-medium">Rēķins</th>
                   <th className="text-left px-5 py-3 font-medium">Pasūtījums</th>
-                  <th className="text-left px-5 py-3 font-medium">Apmaksas terņš</th>
+                  <th className="text-left px-5 py-3 font-medium">Apmaksas termiņš</th>
                   <th className="text-right px-5 py-3 font-medium">Summa</th>
                   <th className="text-center px-5 py-3 font-medium">Statuss</th>
                   <th className="px-5 py-3" />
@@ -231,9 +236,7 @@ export default function InvoicesPage() {
                             <Ticket className="size-3.5" />
                             {inv.advanceForContract.contractNumber}
                           </Link>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            Lauka avansa rēķins
-                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">Avansa rēķins</p>
                         </div>
                       ) : (
                         <div>

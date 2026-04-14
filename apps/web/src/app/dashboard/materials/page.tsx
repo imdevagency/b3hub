@@ -108,6 +108,7 @@ interface MaterialFormValues {
   unit: MaterialUnit;
   minOrder: string;
   maxOrder: string;
+  deliveryRadiusKm: string;
   stockQty: string;
   inStock: boolean;
   isRecycled: boolean;
@@ -123,6 +124,7 @@ const EMPTY_FORM: MaterialFormValues = {
   unit: 'TONNE',
   minOrder: '',
   maxOrder: '',
+  deliveryRadiusKm: '100',
   stockQty: '',
   inStock: true,
   isRecycled: false,
@@ -139,6 +141,7 @@ function materialToForm(m: ApiMaterial): MaterialFormValues {
     unit: m.unit,
     minOrder: m.minOrder ? String(m.minOrder) : '',
     maxOrder: m.maxOrder ? String(m.maxOrder) : '',
+    deliveryRadiusKm: m.deliveryRadiusKm != null ? String(m.deliveryRadiusKm) : '100',
     stockQty: m.stockQty != null ? String(m.stockQty) : '',
     inStock: m.inStock,
     isRecycled: m.isRecycled,
@@ -270,6 +273,7 @@ function MaterialFormModal({
           unit: form.unit,
           minOrder: form.minOrder ? parseFloat(form.minOrder) : undefined,
           maxOrder: form.maxOrder ? parseFloat(form.maxOrder) : undefined,
+          deliveryRadiusKm: form.deliveryRadiusKm ? parseInt(form.deliveryRadiusKm, 10) : undefined,
           stockQty: form.stockQty !== '' ? parseFloat(form.stockQty) : null,
           inStock: form.inStock,
           isRecycled: form.isRecycled,
@@ -286,6 +290,7 @@ function MaterialFormModal({
           unit: form.unit,
           minOrder: form.minOrder ? parseFloat(form.minOrder) : undefined,
           maxOrder: form.maxOrder ? parseFloat(form.maxOrder) : undefined,
+          deliveryRadiusKm: form.deliveryRadiusKm ? parseInt(form.deliveryRadiusKm, 10) : undefined,
           inStock: form.inStock,
           isRecycled: form.isRecycled,
           quality: form.quality.trim() || undefined,
@@ -448,6 +453,24 @@ function MaterialFormModal({
                   className={inputClasses}
                 />
               </div>
+            </div>
+
+            {/* Delivery radius */}
+            <div>
+              <Label className="text-sm font-medium ml-1">Piegādes rādiuss (km)</Label>
+              <Input
+                type="number"
+                min="10"
+                max="2000"
+                step="10"
+                placeholder="100"
+                value={form.deliveryRadiusKm}
+                onChange={set('deliveryRadiusKm')}
+                className={inputClasses}
+              />
+              <p className="text-xs text-muted-foreground mt-1 ml-1">
+                Pircēji ārpus šī rādiusa neredzēs šo piedāvājumu.
+              </p>
             </div>
 
             {/* Description */}

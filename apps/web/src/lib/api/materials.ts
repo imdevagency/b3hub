@@ -22,6 +22,7 @@ export interface ApiMaterial {
   stockQty?: number | null;
   minOrder?: number;
   maxOrder?: number;
+  deliveryRadiusKm?: number | null;
   isRecycled: boolean;
   quality?: string;
   images: string[];
@@ -48,6 +49,7 @@ export interface CreateMaterialInput {
   stockQty?: number;
   minOrder?: number;
   maxOrder?: number;
+  deliveryRadiusKm?: number;
   isRecycled?: boolean;
   quality?: string;
   supplierId: string;
@@ -64,6 +66,7 @@ export interface UpdateMaterialInput {
   stockQty?: number | null;
   minOrder?: number;
   maxOrder?: number;
+  deliveryRadiusKm?: number;
   isRecycled?: boolean;
   quality?: string;
 }

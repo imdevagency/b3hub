@@ -65,6 +65,12 @@ export class CreateMaterialDto {
   maxOrder?: number;
 
   @IsOptional()
+  @IsNumber()
+  @Min(10)
+  @Max(2000)
+  deliveryRadiusKm?: number;
+
+  @IsOptional()
   @IsBoolean()
   isRecycled?: boolean;
 

@@ -258,6 +258,23 @@ export class OrdersService {
         createdOrders.push(order);
       }
     } catch (err) {
+      // Cancel any orders that were already committed to the DB during the loop so
+      // the buyer doesn't end up with a live order they don't know about (their
+      // overall request failed from their perspective). Do this before rolling back
+      // credit so the ordering of side-effects is: cancel DB records → restore credit.
+      if (createdOrders.length > 0) {
+        await this.prisma.order
+          .updateMany({
+            where: { id: { in: createdOrders.map((o) => o.id) } },
+            data: { status: OrderStatus.CANCELLED },
+          })
+          .catch((cancelErr) =>
+            this.logger.error(
+              `CRITICAL: failed to cancel ${createdOrders.length} orphaned order(s) after multi-supplier creation failure. IDs: ${createdOrders.map((o) => o.id).join(', ')}. Cancel error: ${(cancelErr as Error).message}. Original error: ${(err as Error).message}`,
+            ),
+          );
+      }
+
       // Rollback the credit increment so the buyer isn't charged for a failed order.
       if (buyerProfile?.creditLimit != null) {
         await this.prisma.$executeRaw`
@@ -2581,12 +2598,20 @@ export class OrdersService {
           })),
         };
 
-        const order = await this.create(dto, requestingUser);
-        // Link order back to schedule
-        await this.prisma.order.update({
-          where: { id: (order as any).id },
-          data: { scheduleId: schedule.id },
-        });
+        const created = await this.create(dto, requestingUser);
+        // Link order(s) back to schedule.
+        // When the cart contains items from multiple suppliers, create() returns
+        // { orders: [...] } instead of a plain order object. Handle both shapes.
+        const orderIds: string[] =
+          'orders' in (created as any)
+            ? (created as any).orders.map((o: { id: string }) => o.id)
+            : [(created as any).id as string];
+        for (const orderId of orderIds) {
+          await this.prisma.order.update({
+            where: { id: orderId },
+            data: { scheduleId: schedule.id },
+          });
+        }
 
         // Advance nextRunAt
         const nextRun = new Date(

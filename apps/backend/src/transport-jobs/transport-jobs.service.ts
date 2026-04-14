@@ -419,20 +419,28 @@ export class TransportJobsService {
     );
     if (!invoice) return;
 
-    // Only reconcile tonne-based orders — weight cannot be converted to M3/PIECE/LOAD
-    const firstItem = order.items[0];
-    if (firstItem.unit !== 'TONNE') return;
+    // Only reconcile tonne-based order items — weight cannot be converted to M3/PIECE/LOAD.
+    // A cart may contain mixed-unit items (e.g. 5 m³ gravel + 10t sand); only the TONNE
+    // items are eligible for weight reconciliation.
+    const tonneItems = order.items.filter((i) => i.unit === 'TONNE');
+    if (tonneItems.length === 0) return;
 
     // Convert actual weight to tonnes (same unit as order quantity)
     const actualTonnes = actualWeightKg / 1000;
-    const orderedTonnes = Number(firstItem.quantity);
+    const orderedTonnes = tonneItems.reduce((sum, i) => sum + Number(i.quantity), 0);
 
     // Skip if within 1% tolerance
     const diff = Math.abs(actualTonnes - orderedTonnes);
     if (orderedTonnes === 0 || diff / orderedTonnes < 0.01) return;
 
-    // Recalculate totals based on actual weight; derive tax rate from original order
-    const unitPrice = Number(firstItem.unitPrice);
+    // Recalculate totals based on actual weight; derive tax rate from original order.
+    // Use a weighted-average unit price across all TONNE items so mixed-unit carts
+    // are reconciled correctly (e.g. different grades of aggregate at different prices).
+    const unitPrice =
+      orderedTonnes > 0
+        ? tonneItems.reduce((sum, i) => sum + Number(i.unitPrice) * Number(i.quantity), 0) /
+          orderedTonnes
+        : Number(tonneItems[0].unitPrice);
     const actualSubtotal = Math.round(actualTonnes * unitPrice * 100) / 100;
     const storedSubtotal = Number(order.subtotal);
     const taxRate =
@@ -2220,9 +2228,48 @@ export class TransportJobsService {
               }),
             ]);
 
-            // Sync Stripe PaymentIntent to reduced amount (fire-and-forget from here,
-            // but awaited inside the method so any Stripe error is logged properly)
-            await this.payments.updatePaymentIntentAmount(order.id, newTotal);
+            // Also update the linked pending invoice so it matches the adjusted order
+            // total. Without this the buyer's invoice shows the original amount while
+            // the order reflects the reduced charge — a real-world accounting mismatch.
+            const pendingInvoice = await this.prisma.invoice.findFirst({
+              where: { orderId: order.id, paymentStatus: 'PENDING' },
+              select: { id: true },
+            });
+            if (pendingInvoice) {
+              await this.prisma.invoice.update({
+                where: { id: pendingInvoice.id },
+                data: { subtotal: newSubtotal, tax: newTax, total: newTotal },
+              });
+
+              // Sync Stripe PaymentIntent to reduced amount (fire-and-forget from here,
+              // but awaited inside the method so any Stripe error is logged properly)
+              await this.payments.updatePaymentIntentAmount(order.id, newTotal);
+            } else {
+              // Invoice already captured — cannot be adjusted automatically.
+              // Alert admins so they can issue a manual Stripe refund.
+              const capturedInvoice = await this.prisma.invoice.findFirst({
+                where: { orderId: order.id, paymentStatus: 'CAPTURED' },
+                select: { id: true },
+              });
+              if (capturedInvoice) {
+                const refundAmount = Math.round((Number(order.total) - newTotal) * 100) / 100;
+                this.prisma.user
+                  .findMany({ where: { userType: 'ADMIN' }, select: { id: true } })
+                  .then((admins) => {
+                    if (admins.length === 0) return;
+                    return this.notifications.createForMany(
+                      admins.map((a) => a.id),
+                      {
+                        type: NotificationType.SYSTEM_ALERT,
+                        title: '⚠️ Daļēja piegāde — manuāla atmaksa nepieciešama',
+                        message: `Pasūtījums #${order.orderNumber ?? order.id}: piegādāts ${dto.actualQuantity} no ${totalPlannedQty} (${Math.round(ratio * 100)}%). Rēķins ${capturedInvoice.id} jau iekasēts. Atmaksa aptuveni €${refundAmount.toFixed(2)}. Nepieciešama manuāla korekcija Stripe Dashboard.`,
+                        data: { orderId: order.id, invoiceId: capturedInvoice.id, refundAmount },
+                      },
+                    );
+                  })
+                  .catch(() => null);
+              }
+            }
           }
         }
       } catch (err) {
@@ -2232,6 +2279,74 @@ export class TransportJobsService {
           `reportException PARTIAL_DELIVERY: failed to adjust order total for job ${id} / order ${job.order?.id}: ${(err as Error).message}`,
         );
       }
+    }
+
+    // ── DRIVER_NO_SHOW: immediately re-queue the job so a new driver can claim it ──
+    // Without this, the job sits stuck for up to 1 hour until the stale-jobs cron runs.
+    const reQueueableStatuses: TransportJobStatus[] = [
+      TransportJobStatus.ASSIGNED,
+      TransportJobStatus.ACCEPTED,
+      TransportJobStatus.EN_ROUTE_PICKUP,
+      TransportJobStatus.AT_PICKUP,
+    ];
+    if (dto.type === 'DRIVER_NO_SHOW' && reQueueableStatuses.includes(job.status)) {
+      const prevDriverId = job.driverId;
+      await this.prisma.transportJob.update({
+        where: { id },
+        data: {
+          status: TransportJobStatus.AVAILABLE,
+          driverId: null,
+          vehicleId: null,
+          offeredToDriverId: null,
+          offerExpiresAt: null,
+          // Add the no-show driver to declinedDriverIds so they are not re-offered
+          ...(prevDriverId ? { declinedDriverIds: { push: prevDriverId } } : {}),
+        },
+      });
+      if (prevDriverId) {
+        this.notifications
+          .create({
+            userId: prevDriverId,
+            type: NotificationType.SYSTEM_ALERT,
+            title: 'Darba piešķiršana atcelta',
+            message: `Neierašanās reģistrēta — ${job.jobNumber}. Jūsu piešķiršana ir noņemta.`,
+            data: { jobId: id },
+          })
+          .catch(() => null);
+      }
+      this.logger.warn(
+        `reportException DRIVER_NO_SHOW: job ${job.jobNumber} (${id}) reset to AVAILABLE immediately`,
+      );
+    }
+
+    // ── WRONG_MATERIAL / REJECTED_DELIVERY: escalate to admins ───────────────
+    // These exceptions indicate the delivery cannot proceed without manual intervention
+    // (wrong goods loaded, or buyer at the site refuses to accept delivery).
+    // Ops must investigate and arrange a re-delivery or refund.
+    if (dto.type === 'WRONG_MATERIAL' || dto.type === 'REJECTED_DELIVERY') {
+      this.prisma.user
+        .findMany({ where: { userType: 'ADMIN' }, select: { id: true } })
+        .then((admins) => {
+          if (admins.length === 0) return;
+          const labelMap: Record<string, string> = {
+            WRONG_MATERIAL: 'Nepareizs materiāls iekrauts',
+            REJECTED_DELIVERY: 'Piegāde noraidīta objektā',
+          };
+          return this.notifications.createForMany(
+            admins.map((a) => a.id),
+            {
+              type: NotificationType.SYSTEM_ALERT,
+              title: `🚨 ${labelMap[dto.type]}`,
+              message: `Darbs ${job.jobNumber} (${job.pickupCity} → ${job.deliveryCity}): ${dto.notes ?? '—'}. Manuāla iejaukšanās nepieciešama.`,
+              data: { jobId: id, exceptionId: ex.id, exceptionType: dto.type },
+            },
+          );
+        })
+        .catch((err) =>
+          this.logger.error(
+            `reportException ${dto.type}: admin escalation failed for job ${id}: ${(err as Error).message}`,
+          ),
+        );
     }
 
     const actorName =
@@ -2422,15 +2537,39 @@ export class TransportJobsService {
       });
       const order = await this.prisma.order.findUnique({
         where: { id: job.orderId },
-        select: { total: true, createdById: true, orderNumber: true },
+        select: { total: true, createdById: true, orderNumber: true, paymentStatus: true },
       });
       if (order) {
         const newTotal = Number(order.total) + (allBillable._sum.amount ?? 0);
-        this.payments.updatePaymentIntentAmount(job.orderId, newTotal).catch((err) =>
-          this.logger.error(
-            `addSurcharge: failed to update PaymentIntent for order ${job.orderId}: ${(err as Error).message}`,
-          ),
-        );
+
+        if (order.paymentStatus === 'CAPTURED') {
+          // Payment already captured — Stripe refuses amount increases on captured intents.
+          // Log loudly and alert admins so the surcharge can be collected manually.
+          this.logger.warn(
+            `addSurcharge: order ${job.orderId} payment is CAPTURED; surcharge ${surcharge.id} (€${surcharge.amount}) requires manual collection`,
+          );
+          this.prisma.user
+            .findMany({ where: { userType: 'ADMIN' }, select: { id: true } })
+            .then((admins) => {
+              if (admins.length === 0) return;
+              return this.notifications.createForMany(
+                admins.map((a) => a.id),
+                {
+                  type: NotificationType.SYSTEM_ALERT,
+                  title: '⚠️ Piemaksa prasa manuālu iekasēšanu',
+                  message: `Pasūtījumam #${order.orderNumber ?? job.orderId} tika pievienota piemaksa "${surcharge.label}" €${Number(surcharge.amount).toFixed(2)}, taču maksājums jau ir iekasēts. Piemaksas ID: ${surcharge.id}. Nepieciešama manuāla iekasēšana vai rēķins.`,
+                  data: { orderId: job.orderId, surchargeId: surcharge.id, amount: surcharge.amount },
+                },
+              );
+            })
+            .catch(() => null);
+        } else {
+          this.payments.updatePaymentIntentAmount(job.orderId, newTotal).catch((err) =>
+            this.logger.error(
+              `addSurcharge: failed to update PaymentIntent for order ${job.orderId}: ${(err as Error).message}`,
+            ),
+          );
+        }
 
         // ── Notify buyer so they aren't surprised by a higher charge ─────────
         if (order.createdById) {

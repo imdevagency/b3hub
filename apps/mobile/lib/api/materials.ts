@@ -14,6 +14,8 @@ export interface ApiMaterial {
   unit: MaterialUnit;
   basePrice: number;
   minOrder?: number | null;
+  maxOrder?: number | null;
+  deliveryRadiusKm?: number | null;
   inStock: boolean;
   isRecycled: boolean;
   /** Quantity currently in stock (null = unlimited / not tracked) */

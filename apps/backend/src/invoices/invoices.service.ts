@@ -51,29 +51,37 @@ type InvoiceWithRelationsExtended = Prisma.InvoiceGetPayload<{
   };
 }>;
 
+function computePaymentStatus(
+  ps: PaymentStatus,
+  dueDate: Date,
+): 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED' {
+  if (ps === PaymentStatus.PAID) return 'PAID';
+  if (ps === PaymentStatus.REFUNDED) return 'CANCELLED';
+  // Any unpaid invoice past its due date is OVERDUE
+  if (
+    (ps === PaymentStatus.PENDING ||
+      ps === PaymentStatus.FAILED ||
+      ps === PaymentStatus.PARTIALLY_PAID) &&
+    dueDate < new Date()
+  )
+    return 'OVERDUE';
+  return 'PENDING';
+}
+
 function mapPaymentStatus(ps: PaymentStatus): InvoiceStatus {
   switch (ps) {
     case PaymentStatus.PAID:
       return 'PAID';
-    case PaymentStatus.FAILED:
-      return 'OVERDUE';
     case PaymentStatus.REFUNDED:
       return 'CANCELLED';
     default:
-      return 'ISSUED'; // PENDING, PARTIALLY_PAID
+      return 'ISSUED';
   }
 }
 
 function mapInvoice(inv: InvoiceWithRelations) {
   const status = mapPaymentStatus(inv.paymentStatus);
-  const paymentStatus =
-    status === 'PAID'
-      ? 'PAID'
-      : status === 'OVERDUE'
-        ? 'OVERDUE'
-        : status === 'CANCELLED'
-          ? 'CANCELLED'
-          : 'PENDING';
+  const paymentStatus = computePaymentStatus(inv.paymentStatus, inv.dueDate);
   return {
     ...inv,
     paymentStatus,
@@ -86,14 +94,7 @@ function mapInvoice(inv: InvoiceWithRelations) {
 
 function mapInvoiceExtended(inv: InvoiceWithRelationsExtended) {
   const status = mapPaymentStatus(inv.paymentStatus);
-  const paymentStatus =
-    status === 'PAID'
-      ? 'PAID'
-      : status === 'OVERDUE'
-        ? 'OVERDUE'
-        : status === 'CANCELLED'
-          ? 'CANCELLED'
-          : 'PENDING';
+  const paymentStatus = computePaymentStatus(inv.paymentStatus, inv.dueDate);
   return {
     ...inv,
     paymentStatus,
@@ -146,19 +147,40 @@ export class InvoicesService {
     page = 1,
     limit = 20,
     updatedSince?: string,
+    status?: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED',
   ) {
     const skip = (page - 1) * limit;
     const sinceFilter = updatedSince ? { updatedAt: { gte: new Date(updatedSince) } } : {};
+    const now = new Date();
+
+    // Translate the UI status filter into a Prisma where clause
+    let statusFilter: Prisma.InvoiceWhereInput = {};
+    if (status === 'PAID') {
+      statusFilter = { paymentStatus: PaymentStatus.PAID };
+    } else if (status === 'CANCELLED') {
+      statusFilter = { paymentStatus: PaymentStatus.REFUNDED };
+    } else if (status === 'OVERDUE') {
+      statusFilter = {
+        paymentStatus: { in: [PaymentStatus.PENDING, PaymentStatus.FAILED, PaymentStatus.PARTIALLY_PAID] },
+        dueDate: { lt: now },
+      };
+    } else if (status === 'PENDING') {
+      statusFilter = {
+        paymentStatus: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED, PaymentStatus.CAPTURED] },
+        dueDate: { gte: now },
+      };
+    }
 
     // Order-based invoices (existing)
     const orderWhere = {
       order: this.buyerAccess(userId, companyId),
       ...sinceFilter,
+      ...statusFilter,
     };
 
     // Advance invoices for B3 Fields (new — buyer company scoped)
     const advanceWhere: Prisma.InvoiceWhereInput | null = companyId
-      ? { buyerCompanyId: companyId, advanceForContractId: { not: null }, ...sinceFilter }
+      ? { buyerCompanyId: companyId, advanceForContractId: { not: null }, ...sinceFilter, ...statusFilter }
       : null;
 
     const combinedWhere: Prisma.InvoiceWhereInput = advanceWhere

@@ -118,7 +118,7 @@ export default function KarjeriemPage() {
                     Ieņēmumi
                   </p>
                   <p className="text-2xl font-bold tracking-tight">€156</p>
-                  <p className="text-xs text-muted-foreground">pēc B3Hub komisijas</p>
+                  <p className="text-xs text-muted-foreground">kopā no pasūtījuma</p>
                 </div>
               </div>
 

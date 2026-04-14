@@ -11,7 +11,6 @@ const earnings = [
   { type: 'Vietējais reiss (< 50 km)', rate: '€85–€140 / reiss' },
   { type: 'Reģionālais reiss (50–150 km)', rate: '€160–€280 / reiss' },
   { type: 'Skip hire piegāde', rate: '€65–€95 / piegāde' },
-  { type: 'Bulk nedēļa (5+ reisi)', rate: 'Bonuss līdz €200' },
 ];
 
 const journey = [
@@ -24,8 +23,8 @@ const journey = [
   {
     step: '02',
     title: 'Brauc',
-    body: 'Iebūvēta navigācija uz iekraušanu un izkraušanu. Visi norādījumi vienā ekrānā.',
-    features: ['GPS maršruts lietotnes iekšā', 'Sazināšanās ar pasūtītāju tieši'],
+    body: 'Lietotne parāda maršrutu uz iekraušanu un izkraušanu. Visi norādījumi vienā ekrānā.',
+    features: ['Maršruts un navigācija ar vienu pieskārienu', 'Saziņāšanās ar pasūtītāju tieši'],
   },
   {
     step: '03',
@@ -239,11 +238,11 @@ export default function ParvadatajemPage() {
               <div className="md:col-span-2 bg-foreground text-background p-8 flex flex-col justify-between overflow-hidden relative">
                 <div className="z-10 max-w-sm">
                   <h3 className="text-2xl font-bold tracking-tight mb-2">
-                    GPS navigācija lietotnē
+                    Maršruta norādījumi lietotnē
                   </h3>
                   <p className="text-background/70 font-light text-lg">
-                    Iebūvēts maršruts no karjera līdz objektam. Pasūtītājs redz tavu atrašanās vietu
-                    reāllaikā — bez zvaniem.
+                    Maršruts no karjera līdz objektam redzams lietotnē. Pasūtītājs redz tavu
+                    atrašanās vietu reāllaikā — bez zvaniem.
                   </p>
                 </div>
                 <div className="absolute right-0 bottom-0 top-0 w-1/2 bg-linear-to-l from-background/20 to-transparent items-center justify-end pr-8 hidden md:flex">

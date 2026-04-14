@@ -280,6 +280,7 @@ export class MaterialsService {
         ...(params.quantity
           ? {
               OR: [{ minOrder: null }, { minOrder: { lte: params.quantity } }],
+              AND: [{ OR: [{ maxOrder: null }, { maxOrder: { gte: params.quantity } }] }],
             }
           : {}),
       },

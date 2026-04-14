@@ -16,8 +16,8 @@ const benefits = [
   },
   {
     icon: Route,
-    title: 'Maršruts un navigācija iekļauta',
-    body: 'Pēc darba pieņemšanas lietotne uzreiz piedāvā navigāciju uz iekraušanas punktu. Visi norādījumi vienā ekrānā.',
+    title: 'Maršruts un norādījumi lietotnē',
+    body: 'Pēc darba pieņemšanas lietotne parāda maršrutu uz iekraušanas punktu un var atvērt navigāciju ar vienu pieskārienu. Visi norādījumi vienā ekrānā.',
   },
   {
     icon: Truck,
@@ -164,7 +164,7 @@ export default function DispetsPage() {
                 {
                   step: '03',
                   title: 'Brauc uz karjeru',
-                  body: 'Navigācija iebūvēta. Karjers saņem paziņojumu par ierašanos.',
+                  body: 'Maršruts redzams lietotnē. Karjers saņem paziņojumu par ierašanos.',
                 },
                 {
                   step: '04',
@@ -194,7 +194,7 @@ export default function DispetsPage() {
         <Container as="section" className="py-24 border-b border-border">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:divide-x divide-border">
             {[
-              { value: '< 2 min', label: 'Laiks no piedāvājuma līdz pieņemšanai' },
+              { value: '1 klikšķis', label: 'Lai pieņemtu vai atteiktu piegādes darbu' },
               { value: '1 darba diena', label: 'Izmaksa pēc piegādes apstiprināšanas' },
               { value: '0', label: 'Dispečeru vai starppersonu nepieciešamība' },
             ].map(({ value, label }) => (

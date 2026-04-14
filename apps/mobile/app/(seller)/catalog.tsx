@@ -74,6 +74,7 @@ interface ListingForm {
   unit: MaterialUnit;
   basePrice: string;
   minOrder: string;
+  deliveryRadiusKm: string;
   inStock: boolean;
   isRecycled: boolean;
 }
@@ -85,6 +86,7 @@ const BLANK_FORM: ListingForm = {
   unit: 'TONNE',
   basePrice: '',
   minOrder: '',
+  deliveryRadiusKm: '100',
   inStock: true,
   isRecycled: false,
 };
@@ -515,6 +517,8 @@ function ListingModal({
           unit: initial.unit ?? 'TONNE',
           basePrice: initial.basePrice != null ? String(initial.basePrice) : '',
           minOrder: initial.minOrder != null ? String(initial.minOrder) : '',
+          deliveryRadiusKm:
+            initial.deliveryRadiusKm != null ? String(initial.deliveryRadiusKm) : '100',
           inStock: initial.inStock ?? true,
           isRecycled: initial.isRecycled ?? false,
         });
@@ -655,6 +659,18 @@ function ListingModal({
               value={form.minOrder}
               onChangeText={set('minOrder')}
               keyboardType="decimal-pad"
+            />
+          </View>
+
+          <View style={s.formGroup}>
+            <Text style={s.label}>Piegādes rādiuss (km)</Text>
+            <TextInput
+              style={s.input}
+              placeholder="100"
+              placeholderTextColor="#9ca3af"
+              value={form.deliveryRadiusKm}
+              onChangeText={set('deliveryRadiusKm')}
+              keyboardType="number-pad"
             />
           </View>
 
@@ -885,6 +901,7 @@ export default function SellerCatalog() {
       unit: form.unit,
       basePrice: parseFloat(form.basePrice),
       minOrder: form.minOrder ? parseFloat(form.minOrder) : undefined,
+      deliveryRadiusKm: form.deliveryRadiusKm ? parseInt(form.deliveryRadiusKm, 10) : undefined,
       inStock: form.inStock,
       isRecycled: form.isRecycled,
     };

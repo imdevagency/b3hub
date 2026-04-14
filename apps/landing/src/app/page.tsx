@@ -288,9 +288,9 @@ export default function HomePage() {
               {/* Stats */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 sm:gap-0 sm:divide-x divide-border flex-1">
                 {[
-                  { value: '1.5M+', label: 'Pārvietotās tonnas' },
-                  { value: '240+', label: 'Aktīvie transportlīdzekļi' },
-                  { value: '48h', label: 'Vidējais pirmā pasūtījuma laiks' },
+                  { value: '100%', label: 'Automātiski ģenerēti dokumenti' },
+                  { value: '0', label: 'Papīra CMR nepieciešams' },
+                  { value: '1 DG', label: 'Šoferu izmaksa pēc piegādes' },
                 ].map(({ value, label }) => (
                   <div key={label} className="sm:px-12 first:pl-0 last:pr-0">
                     <p className="text-6xl md:text-7xl font-medium tracking-tighter leading-none">
@@ -309,35 +309,29 @@ export default function HomePage() {
                   Mobilā aplikācija
                 </p>
                 <p className="text-base text-muted-foreground font-light max-w-xs">
-                  Pieejama iOS un Android. Bezmaksas šoferiem un pasūtītājiem.
+                  iOS un Android. Pieejama drīzumā.
                 </p>
                 <div className="flex flex-col sm:flex-row lg:flex-col gap-3 mt-2">
-                  <a
-                    href="https://apps.apple.com/app/b3hub"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-3 bg-foreground text-background hover:bg-foreground/90 transition-colors px-5 py-3.5"
-                    aria-label="Lejupielādēt App Store"
+                  <div
+                    className="inline-flex items-center gap-3 bg-foreground/30 text-background/50 px-5 py-3.5 cursor-not-allowed select-none"
+                    aria-label="App Store — drīzumā"
                   >
                     <AppIcon ios={true} />
                     <div className="flex flex-col leading-tight">
-                      <span className="text-background/50 text-xs">Lejupielādēt</span>
+                      <span className="text-background/40 text-xs">Drīzumā</span>
                       <span className="text-sm font-medium">App Store</span>
                     </div>
-                  </a>
-                  <a
-                    href="https://play.google.com/store/apps/details?id=com.b3hub"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-3 bg-foreground text-background hover:bg-foreground/90 transition-colors px-5 py-3.5"
-                    aria-label="Lejupielādēt Google Play"
+                  </div>
+                  <div
+                    className="inline-flex items-center gap-3 bg-foreground/30 text-background/50 px-5 py-3.5 cursor-not-allowed select-none"
+                    aria-label="Google Play — drīzumā"
                   >
                     <AppIcon ios={false} />
                     <div className="flex flex-col leading-tight">
-                      <span className="text-background/50 text-xs">Lejupielādēt</span>
+                      <span className="text-background/40 text-xs">Drīzumā</span>
                       <span className="text-sm font-medium">Google Play</span>
                     </div>
-                  </a>
+                  </div>
                 </div>
               </div>
             </div>

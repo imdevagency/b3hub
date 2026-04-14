@@ -22,7 +22,7 @@ const benefits = [
   {
     icon: LayoutGrid,
     title: 'ERP & grāmatvedības eksports',
-    body: 'Eksportē rēķinus un maksājumus CSV vai XML formātā integrācijai ar 1C, Merko, vai jebkuru grāmatvedības risinājumu.',
+    body: 'Eksportē rēķinus un pasūtījumus CSV formātā integrācijai ar jebkuru grāmatvedības risinājumu.',
   },
   {
     icon: Download,

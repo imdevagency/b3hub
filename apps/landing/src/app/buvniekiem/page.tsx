@@ -173,9 +173,9 @@ export default function BuvnieckiemPage() {
 
               {/* Feature 3: Small Square */}
               <div className="bg-muted/30 border border-border p-8 flex flex-col justify-between text-center">
-                <h3 className="text-6xl font-black tracking-tighter mb-2 mt-auto">240+</h3>
+                <h3 className="text-3xl font-bold tracking-tight mb-3 mt-auto">Katalogs</h3>
                 <p className="text-muted-foreground font-light">
-                  Karjeru un piegādātāju vienā pārskatāmā katalogā.
+                  Karjeru un piegādātāju cenas un pieejamība vienā vietā.
                 </p>
               </div>
 
@@ -186,7 +186,8 @@ export default function BuvnieckiemPage() {
                     Vienots apkopots rēķins
                   </h3>
                   <p className="text-background/70 font-light text-lg">
-                    Saņem vienu strukturētu rēķinu par visām mēneša piegādēm, integrētu tavā ERP.
+                    Saņem vienu strukturētu rēķinu par visām mēneša piegādēm, eksportējamu jebkurai
+                    grāmatvedībai.
                   </p>
                 </div>
                 {/* Decorative element */}

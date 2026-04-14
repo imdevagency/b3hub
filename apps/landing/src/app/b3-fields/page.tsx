@@ -77,7 +77,7 @@ export default function B3FieldsPage() {
           subtitle="Paņem materiālus vai nodod atkritumus ar juridiski derīgu sertifikātu. Viss vienā lietotnē."
           actions={
             <>
-              <CTAButton href={`${APP_URL}/locations`} variant="primary" size="lg">
+              <CTAButton href="#locations" variant="primary" size="lg">
                 Apskatīt lokācijas
               </CTAButton>
               <CTAButton href={`${APP_URL}/register`} variant="outline" size="lg">
@@ -156,7 +156,7 @@ export default function B3FieldsPage() {
                 },
                 {
                   q: 'Vai piekabe jāatgriež tajā pašā vietā?',
-                  a: 'Nē. Piekabi var atgriezt jebkurā no 6 B3 Field punktiem visā Latvijā. Platforma atgriešanu apstrādā automātiski.',
+                  a: 'Atgriešanas nosacījumi tiek apstiprināti rezervācijas brīdī. Sazinieties ar mums, lai noskaidrotu atgriešanas opcijas savai konkrētajai rezervācijai.',
                 },
               ] as { q: string; a: string }[]
             ).map(({ q, a }) => (

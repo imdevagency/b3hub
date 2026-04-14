@@ -21,7 +21,7 @@ const benefits = [
   },
   {
     icon: Package,
-    title: '30+ materiālu kategorijas',
+    title: 'Plašs materiālu klāsts',
     body: 'Granīts, dolomīts, smiltis, grants, augsne, betona situmi, betons un vairāk. Katram materiālam frakcionālās specifikācijas.',
   },
   {
@@ -93,7 +93,7 @@ export default function KatalogsPage() {
               Bez zvaniem.
             </>
           }
-          subtitle="240+ piegādātāju, reālās cenas, pieejamības kalkulators. No izvēles līdz pasūtīšanai — zem 3 minūtēm."
+          subtitle="Reālās cenas tieši no piegādātājiem, pieejamības kalkulators. No izvēles līdz pasūtīšanai — ātri."
           actions={
             <CTAButton href={`${APP_URL}/register`} variant="primary" size="lg">
               Atvērt katalogu
@@ -177,9 +177,9 @@ export default function KatalogsPage() {
           <Container className="py-24">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:divide-x divide-border">
               {[
-                { value: '240+', label: 'Aktīvie piegādātāji' },
-                { value: '30+', label: 'Materiālu kategorijas' },
-                { value: '< 3 min', label: 'No izvēles līdz pasūtīšanai' },
+                { value: 'Reāllaikā', label: 'Cenas tieši no piegādātājiem' },
+                { value: 'Dažādi', label: 'Materiālu veidi un frakcijas' },
+                { value: 'Digitāli', label: 'Pasūtīšana no izvēles līdz apstiprinājumam' },
               ].map(({ value, label }) => (
                 <div key={label} className="md:px-12 first:pl-0 last:pr-0 py-8 md:py-0">
                   <p className="text-6xl font-bold tracking-tighter leading-none">{value}</p>

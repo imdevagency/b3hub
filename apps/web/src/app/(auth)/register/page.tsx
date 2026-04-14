@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -68,9 +68,21 @@ type FormData = z.infer<typeof schema>;
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setAuth } = useAuth();
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
+
+  // Map landing-page role params to internal RegistrationRole values
+  const ROLE_PARAM_MAP: Record<string, FormData['userType']> = {
+    driver: 'CARRIER',
+    carrier: 'CARRIER',
+    seller: 'SUPPLIER',
+    supplier: 'SUPPLIER',
+    buyer: 'BUYER',
+  };
+  const roleParam = searchParams.get('role')?.toLowerCase() ?? '';
+  const initialUserType: FormData['userType'] = ROLE_PARAM_MAP[roleParam] ?? 'BUYER';
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -79,7 +91,7 @@ export default function RegisterPage() {
       lastName: '',
       email: '',
       phone: '',
-      userType: 'BUYER',
+      userType: initialUserType,
       isCompany: true,
       password: '',
       confirmPassword: '',
