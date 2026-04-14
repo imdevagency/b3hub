@@ -17,6 +17,7 @@ import {
   Loader2,
   Receipt,
   RefreshCw,
+  Ticket,
 } from 'lucide-react';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { fmtDate } from '@/lib/format';
@@ -221,13 +222,32 @@ export default function InvoicesPage() {
                       </p>
                     </td>
                     <td className="px-5 py-3.5">
-                      <Link
-                        href={`/dashboard/orders/${inv.orderId}`}
-                        className="font-medium text-red-600 hover:underline flex items-center gap-1"
-                      >
-                        {inv.order.orderNumber}
-                      </Link>
-                      <p className="text-xs text-muted-foreground mt-0.5">{inv.order.status}</p>
+                      {inv.advanceForContract ? (
+                        <div>
+                          <Link
+                            href={`/dashboard/framework-contracts/${inv.advanceForContract.id}`}
+                            className="font-medium text-amber-600 hover:underline flex items-center gap-1.5"
+                          >
+                            <Ticket className="size-3.5" />
+                            {inv.advanceForContract.contractNumber}
+                          </Link>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Lauka avansa rēķins
+                          </p>
+                        </div>
+                      ) : (
+                        <div>
+                          <Link
+                            href={`/dashboard/orders/${inv.orderId}`}
+                            className="font-medium text-red-600 hover:underline flex items-center gap-1"
+                          >
+                            {inv.order?.orderNumber ?? '—'}
+                          </Link>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {inv.order?.status}
+                          </p>
+                        </div>
+                      )}
                     </td>
                     <td className="px-5 py-3.5">
                       <span
@@ -284,12 +304,22 @@ export default function InvoicesPage() {
                 <div className="text-sm space-y-1">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Pasūtījums</span>
-                    <Link
-                      href={`/dashboard/orders/${inv.orderId}`}
-                      className="text-red-600 font-medium hover:underline"
-                    >
-                      {inv.order.orderNumber}
-                    </Link>
+                    {inv.advanceForContract ? (
+                      <Link
+                        href={`/dashboard/framework-contracts/${inv.advanceForContract.id}`}
+                        className="text-amber-600 font-medium hover:underline flex items-center gap-1"
+                      >
+                        <Ticket className="size-3" />
+                        {inv.advanceForContract.contractNumber}
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/dashboard/orders/${inv.orderId}`}
+                        className="text-red-600 font-medium hover:underline"
+                      >
+                        {inv.order?.orderNumber ?? '—'}
+                      </Link>
+                    )}
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Termiņš</span>

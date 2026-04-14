@@ -55,6 +55,10 @@ export interface ApiFrameworkContract {
   positions: ApiFrameworkPosition[];
   recentCallOffs: ApiFrameworkCallOff[];
   createdAt: string;
+  // Field pass extensions
+  isFieldContract?: boolean;
+  prepaidBalance?: number;
+  prepaidUsed?: number;
 }
 
 export interface CreateFrameworkContractInput {

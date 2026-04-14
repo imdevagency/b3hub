@@ -56,6 +56,16 @@ export interface ApiOrder {
   invoiceDueDate?: string | null;
   surcharges?: ApiOrderSurcharge[];
   createdAt: string;
+  fieldPasses?: {
+    id: string;
+    passNumber: string;
+    vehiclePlate: string;
+    driverName: string | null;
+    validFrom: string;
+    validTo: string;
+    status: string;
+    fileUrl: string | null;
+  }[];
   linkedSkipOrder?: {
     id: string;
     orderNumber: string;

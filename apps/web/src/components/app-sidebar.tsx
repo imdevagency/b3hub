@@ -39,6 +39,7 @@ import {
   ScrollText,
   ShieldCheck,
   Star,
+  Ticket,
   Truck,
   Users,
 } from 'lucide-react';
@@ -103,6 +104,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       items: [
         { label: 'Pasūtīt Materiālus', href: '/dashboard/catalog', icon: Package },
         { label: 'Ietvarlīgumi', href: '/dashboard/framework-contracts', icon: FolderKanban },
+        { label: 'Caurlaides', href: '/dashboard/field-passes', icon: Ticket },
       ],
     },
     {
@@ -802,6 +804,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Link href="/dashboard/admin/documentation">
                     <FileQuestion className="size-4 shrink-0" />
                     <span>Dokumentācija</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="B3 Lauka caurlaides"
+                  isActive={isRouteActive('/dashboard/admin/field-passes')}
+                >
+                  <Link href="/dashboard/admin/field-passes">
+                    <Ticket className="size-4 shrink-0" />
+                    <span>Lauka caurlaides</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

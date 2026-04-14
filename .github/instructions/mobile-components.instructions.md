@@ -650,9 +650,13 @@ _No props interface — check source file._
 | Prop | Type | |
 |------|------|---|
 | `title` | `string` | optional |
-| `accentColor` | `string` | **required** |
-| `onMenuPress` | `() => void` | **required** |
+| `accentColor` | `string` | optional |
+| `onMenuPress` | `() => void` | optional |
 | `unreadCount` | `number` | optional |
+| `leftElement` | `React.ReactNode` | optional |
+| `centerElement` | `React.ReactNode` | optional |
+| `rightElement` | `React.ReactNode` | optional |
+| `transparent` | `boolean` | optional |
 
 **Exports:** `RoleSheet`, `TopBar`
 

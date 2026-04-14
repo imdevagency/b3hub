@@ -19,6 +19,7 @@ import { CreateFrameworkContractDto } from './dto/create-contract.dto';
 import { CreatePositionDto } from './dto/add-position.dto';
 import { UpdateFrameworkContractDto } from './dto/update-contract.dto';
 import { CreateCallOffDto } from './dto/create-calloff.dto';
+import { CreateAdvanceInvoiceDto } from './dto/create-advance-invoice.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
@@ -138,5 +139,41 @@ export class FrameworkContractsController {
       user.userId,
       user.companyId,
     );
+  }
+
+  /** POST /framework-contracts/:id/advance-invoice — request advance payment invoice (B3 Fields) */
+  @Post(':id/advance-invoice')
+  createAdvanceInvoice(
+    @Param('id') id: string,
+    @Body() dto: CreateAdvanceInvoiceDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    if (!user.companyId) throw new ForbiddenException('Company account required');
+    return this.service.createAdvanceInvoice(
+      id,
+      dto.amount,
+      dto.notes,
+      user.userId,
+      user.companyId,
+    );
+  }
+
+  /** GET /framework-contracts/:id/advance-invoices — list advance invoices for a field contract */
+  @Get(':id/advance-invoices')
+  getAdvanceInvoices(
+    @Param('id') contractId: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.service.getAdvanceInvoices(contractId, user.companyId!);
+  }
+
+  /** PATCH /framework-contracts/advance-invoices/:invoiceId/mark-paid — admin marks advance invoice paid */
+  @Patch('advance-invoices/:invoiceId/mark-paid')
+  markAdvancePaid(
+    @Param('invoiceId') invoiceId: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    if (user.userType !== 'ADMIN') throw new ForbiddenException('Admin only');
+    return this.service.markAdvancePaid(invoiceId);
   }
 }

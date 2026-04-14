@@ -759,6 +759,19 @@ export class OrdersService {
         },
         invoices: true,
         surcharges: true,
+        fieldPasses: {
+          select: {
+            id: true,
+            passNumber: true,
+            vehiclePlate: true,
+            driverName: true,
+            validFrom: true,
+            validTo: true,
+            status: true,
+            fileUrl: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
         linkedSkipOrder: {
           select: {
             id: true,

@@ -698,4 +698,125 @@ export class FrameworkContractsService {
       updatedAt: c.updatedAt,
     };
   }
+
+  /**
+   * Returns all advance invoices for a field contract (buyer view).
+   */
+  async getAdvanceInvoices(contractId: string, companyId: string) {
+    const contract = await this.prisma.frameworkContract.findUnique({
+      where: { id: contractId },
+      select: { id: true, buyerId: true, isFieldContract: true },
+    });
+    if (!contract) throw new NotFoundException('Contract not found');
+    if (contract.buyerId !== companyId) throw new ForbiddenException('Access denied');
+    if (!contract.isFieldContract) throw new BadRequestException('Not a field contract');
+
+    return this.prisma.invoice.findMany({
+      where: { advanceForContractId: contractId },
+      select: {
+        id: true,
+        invoiceNumber: true,
+        subtotal: true,
+        tax: true,
+        total: true,
+        paymentStatus: true,
+        dueDate: true,
+        paidDate: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // ── B3 Fields: advance invoice ────────────────────────────────────────────
+
+  /**
+   * Creates an advance invoice for a field contract.
+   * When the invoice is paid, admin manually calls markAdvancePaid() to top up the balance.
+   */
+  async createAdvanceInvoice(
+    contractId: string,
+    amount: number,
+    notes: string | undefined,
+    requestingUserId: string,
+    companyId: string,
+  ) {
+    const contract = await this.prisma.frameworkContract.findUnique({
+      where: { id: contractId },
+      select: { id: true, contractNumber: true, title: true, buyerId: true, status: true, isFieldContract: true },
+    });
+    if (!contract) throw new NotFoundException('Contract not found');
+    if (!contract.isFieldContract) {
+      throw new BadRequestException('Only field contracts support advance invoices');
+    }
+    if (contract.buyerId !== companyId) {
+      throw new ForbiddenException('Contract does not belong to your company');
+    }
+    if (contract.status !== FrameworkContractStatus.ACTIVE) {
+      throw new BadRequestException('Contract must be ACTIVE');
+    }
+
+    const TAX_RATE = 0.21;
+    const subtotal = Math.round(amount * 100) / 100;
+    const tax = Math.round(subtotal * TAX_RATE * 100) / 100;
+    const total = Math.round((subtotal + tax) * 100) / 100;
+
+    const year = new Date().getFullYear();
+    const count = await this.prisma.invoice.count();
+    const invoiceNumber = `ADV-${year}-${String(count + 1).padStart(5, '0')}`;
+
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 14); // net 14 days
+
+    const invoice = await this.prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        advanceForContractId: contractId,
+        buyerCompanyId: companyId,
+        subtotal,
+        tax,
+        total,
+        currency: 'EUR',
+        dueDate,
+        paymentStatus: 'PENDING',
+        // Notes stored in pdfUrl field temporarily until we add a notes field to Invoice
+      },
+    });
+
+    this.logger.log(
+      `Advance invoice ${invoiceNumber} created for contract ${contract.contractNumber} — €${total}`,
+    );
+
+    return invoice;
+  }
+
+  /**
+   * Admin-only: marks an advance invoice as paid and increments the contract prepaidBalance.
+   */
+  async markAdvancePaid(invoiceId: string) {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      select: { id: true, subtotal: true, paymentStatus: true, advanceForContractId: true },
+    });
+    if (!invoice) throw new NotFoundException('Invoice not found');
+    if (!invoice.advanceForContractId) {
+      throw new BadRequestException('Not an advance invoice');
+    }
+    if (invoice.paymentStatus === 'PAID') {
+      throw new BadRequestException('Invoice already paid');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.invoice.update({
+        where: { id: invoiceId },
+        data: { paymentStatus: 'PAID', paidDate: new Date() },
+      }),
+      this.prisma.frameworkContract.update({
+        where: { id: invoice.advanceForContractId },
+        data: { prepaidBalance: { increment: invoice.subtotal } },
+      }),
+    ]);
+
+    return { success: true, credited: invoice.subtotal };
+  }
 }

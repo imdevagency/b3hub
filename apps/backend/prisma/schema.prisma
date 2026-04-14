@@ -271,6 +271,12 @@ enum FrameworkContractStatus {
   CANCELLED
 }
 
+enum FieldPassStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
 enum ProjectStatus {
   PLANNING
   ACTIVE
@@ -397,6 +403,7 @@ model User {
   raisedDisputes              Dispute[]               @relation("UserDisputes")
   supportThread               SupportThread?
   supportMessages             SupportMessage[]
+  fieldPasses                 FieldPass[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -462,6 +469,8 @@ model Company {
   supplierFrameworkContracts FrameworkContract[]   @relation("SupplierFrameworkContracts")
   projects                   Project[]
   apiKeys                    ApiKey[]
+  fieldPasses                FieldPass[]
+  advanceInvoices            Invoice[]             @relation("BuyerInvoices")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -619,6 +628,7 @@ model Order {
   surcharges      OrderSurcharge[]
   dispute         Dispute?
   chatMessages    ChatMessage[]    @relation("OrderChatMessages")
+  fieldPasses     FieldPass[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1051,6 +1061,14 @@ model Invoice {
   transportJob   TransportJob? @relation(fields: [transportJobId], references: [id])
   transportJobId String?
 
+  // B3 Fields — advance payment invoice linked to a field contract
+  advanceForContract   FrameworkContract? @relation("AdvanceInvoices", fields: [advanceForContractId], references: [id])
+  advanceForContractId String?
+
+  // Buyer — who this invoice belongs to (set for advance invoices; derived from order for order invoices)
+  buyerCompany   Company? @relation("BuyerInvoices", fields: [buyerCompanyId], references: [id])
+  buyerCompanyId String?
+
   // Amounts
   subtotal Float
   tax      Float
@@ -1475,8 +1493,15 @@ model FrameworkContract {
   endDate   DateTime?
   notes     String?
 
+  // B3 Fields — site access contract
+  isFieldContract Boolean @default(false)  // true = waste disposal / site entry agreement
+  prepaidBalance  Float   @default(0)      // total advance payments received (EUR)
+  prepaidUsed     Float   @default(0)      // consumed by issued field passes (EUR)
+
   positions   FrameworkPosition[]
   callOffJobs TransportJob[]
+  fieldPasses FieldPass[]
+  advanceInvoices Invoice[]         @relation("AdvanceInvoices")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1814,4 +1839,92 @@ model ApiKey {
   @@index([companyId])
   @@index([keyHash])
   @@map("api_keys")
+}
+
+// ── B3 Fields — Site Access Passes ─────────────────────────────────────────────────────
+
+model FieldPass {
+  id         String @id @default(cuid())
+  passNumber String @unique // FP-2026-00001, auto-generated
+
+  // Ownership
+  company     Company @relation(fields: [companyId], references: [id])
+  companyId   String
+  createdBy   User    @relation(fields: [createdById], references: [id])
+  createdById String
+
+  // Contract link — must be ACTIVE isFieldContract=true
+  contract   FrameworkContract @relation(fields: [contractId], references: [id])
+  contractId String
+
+  // Vehicle
+  vehiclePlate String   // plate number of the truck
+  driverName   String?  // optional driver name to print on pass
+
+  // Validity window
+  validFrom DateTime
+  validTo   DateTime
+
+  // Waste / load details
+  wasteClassCode   String? // e.g. 17 05 04 (EWC waste code)
+  wasteDescription String? // free-text description
+  unloadingPoint   String? // area/zone on site (e.g. "Sekcija A")
+  estimatedTonnes  Float?  // expected load weight
+
+  // Status & document
+  status  FieldPassStatus @default(ACTIVE)
+  fileUrl String?          // generated PDF stored in Supabase
+
+  // Optional link to a B3Hub order (if material purchase triggered the pass)
+  order   Order?  @relation(fields: [orderId], references: [id])
+  orderId String?
+
+  revokedReason String?
+  revokedAt     DateTime?
+
+  // Actual weight recorded by gate operator after vehicle weighing
+  actualNetTonnes Float?
+
+  weighingSlips WeighingSlip[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([contractId])
+  @@index([status])
+  @@index([validFrom, validTo])
+  @@map("field_passes")
+}
+
+// ── B3 Fields — Weighing Slips (gate records) ───────────────────────────────
+
+model WeighingSlip {
+  id         String @id @default(cuid())
+  slipNumber String @unique // WS-YYYY-NNNNN
+
+  fieldPass   FieldPass @relation(fields: [fieldPassId], references: [id])
+  fieldPassId String
+
+  // Weight in tonnes (recorded by gate operator at weigh bridge)
+  grossTonnes Float  // incoming gross weight
+  tareTonnes  Float  // tare (empty vehicle) weight
+  netTonnes   Float  // actual waste/material — gross - tare
+
+  vehiclePlate String  // may differ from pass if substituted
+  operatorName String? // gate operator who entered the data
+
+  notes   String?
+  fileUrl String? // optional weighing slip PDF
+
+  voidedAt     DateTime? // set when this slip is invalidated
+  voidedReason String?
+
+  recordedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([fieldPassId])
+  @@index([slipNumber])
+  @@map("weighing_slips")
 }

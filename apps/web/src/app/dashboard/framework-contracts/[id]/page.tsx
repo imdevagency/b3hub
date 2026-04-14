@@ -11,6 +11,7 @@ import {
   getFrameworkContract,
   createFrameworkCallOff,
   activateFrameworkContract,
+  createAdvanceInvoice,
   type ApiFrameworkContract,
   type ApiFrameworkPosition,
   type ApiFrameworkCallOff,
@@ -34,6 +35,9 @@ import {
   Package,
   CalendarDays,
   Plus,
+  Wallet,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { fmtDate } from '@/lib/format';
@@ -340,6 +344,12 @@ export default function BuyerProjectDetailPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [activating, setActivating] = useState(false);
   const [releasePos, setReleasePos] = useState<ApiFrameworkPosition | null>(null);
+  const [advanceOpen, setAdvanceOpen] = useState(false);
+  const [advanceAmount, setAdvanceAmount] = useState('');
+  const [advanceNotes, setAdvanceNotes] = useState('');
+  const [advanceSaving, setAdvanceSaving] = useState(false);
+  const [advanceError, setAdvanceError] = useState<string | null>(null);
+  const [advanceSent, setAdvanceSent] = useState(false);
 
   const load = useCallback(
     async (showRefresh = false) => {
@@ -376,6 +386,24 @@ export default function BuyerProjectDetailPage() {
       token,
     );
     await load();
+  };
+
+  const handleAdvanceInvoice = async () => {
+    if (!token || !contract || !advanceAmount) return;
+    const amount = parseFloat(advanceAmount);
+    if (!amount || amount <= 0) return;
+    setAdvanceSaving(true);
+    setAdvanceError(null);
+    try {
+      await createAdvanceInvoice(contract.id, amount, advanceNotes || undefined, token);
+      setAdvanceSent(true);
+      setAdvanceAmount('');
+      setAdvanceNotes('');
+    } catch (err) {
+      setAdvanceError(err instanceof Error ? err.message : 'Kļūda');
+    } finally {
+      setAdvanceSaving(false);
+    }
   };
 
   const handleActivate = async () => {
@@ -532,6 +560,80 @@ export default function BuyerProjectDetailPage() {
         </div>
       </section>
 
+      {/* Field contract balance + advance invoice */}
+      {contract.isFieldContract && (
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4 mt-8">
+            Lauka piekļuves bilance
+          </h2>
+          <Card className="rounded-2xl bg-white ring-1 ring-black/5 shadow-sm border-0">
+            <CardContent className="p-6">
+              {(() => {
+                const balance = contract.prepaidBalance ?? 0;
+                const used = contract.prepaidUsed ?? 0;
+                const available = balance - used;
+                const pct = balance > 0 ? Math.min(100, (used / balance) * 100) : 0;
+                return (
+                  <>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Wallet className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Priekšapmaksas bilance</span>
+                      </div>
+                      <span
+                        className={`text-sm font-bold ${
+                          available <= 0 ? 'text-destructive' : 'text-emerald-600'
+                        }`}
+                      >
+                        {available <= 0 ? 'Izsmelita' : `€${available.toFixed(2)} pieejams`}
+                      </span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-muted overflow-hidden mb-3">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          pct >= 90
+                            ? 'bg-destructive'
+                            : pct >= 60
+                              ? 'bg-amber-500'
+                              : 'bg-emerald-500'
+                        }`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground mb-4">
+                      <span>Izmantots: €{used.toFixed(2)}</span>
+                      <span>Kopā ielādēts: €{balance.toFixed(2)}</span>
+                    </div>
+
+                    {available <= 5 && (
+                      <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                        <span>
+                          Bilance tuvojas nullei. Pieprasiet papildinājumu, lai turpinātu izveidot
+                          caurlaides.
+                        </span>
+                      </div>
+                    )}
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setAdvanceSent(false);
+                        setAdvanceOpen(true);
+                      }}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1.5" />
+                      Pieprasīt papildinājumu
+                    </Button>
+                  </>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </section>
+      )}
+
       {/* recent call-offs summary */}
       {contract.recentCallOffs.length > 0 && (
         <section>
@@ -554,6 +656,101 @@ export default function BuyerProjectDetailPage() {
         onClose={() => setReleasePos(null)}
         onSubmit={handleRelease}
       />
+
+      {/* Advance invoice sheet */}
+      <Sheet
+        open={advanceOpen}
+        onOpenChange={(o) => {
+          if (!o) {
+            setAdvanceOpen(false);
+            setAdvanceError(null);
+          }
+        }}
+      >
+        <SheetContent className="sm:max-w-md w-[90vw]">
+          <SheetHeader>
+            <SheetTitle>Pieprasīt priekšapmaksas papildinājumu</SheetTitle>
+          </SheetHeader>
+
+          {advanceSent ? (
+            <div className="mt-8 flex flex-col items-center gap-3 text-center">
+              <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+              <p className="font-semibold">Pieprasījums nosūtīts!</p>
+              <p className="text-sm text-muted-foreground">
+                Administrators pārskatīs un apstiprinās maksājumu. Bilance tiks atjaunināta pēc
+                apstiprinājuma.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => {
+                  setAdvanceOpen(false);
+                  setAdvanceSent(false);
+                }}
+              >
+                Aizvērt
+              </Button>
+            </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              <div className="rounded-lg bg-muted p-3 text-sm">
+                <p className="font-medium">
+                  {contract?.contractNumber} — {contract?.title}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Pašreizējā bilance: €
+                  {((contract?.prepaidBalance ?? 0) - (contract?.prepaidUsed ?? 0)).toFixed(2)}
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Summa (€) *</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={advanceAmount}
+                  onChange={(e) => setAdvanceAmount(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Piezīmes</Label>
+                <Textarea
+                  rows={2}
+                  placeholder="Papildinformācija..."
+                  value={advanceNotes}
+                  onChange={(e) => setAdvanceNotes(e.target.value)}
+                />
+              </div>
+
+              {advanceError && (
+                <p className="text-sm text-destructive rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+                  {advanceError}
+                </p>
+              )}
+
+              <div className="flex justify-end gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  onClick={() => setAdvanceOpen(false)}
+                  disabled={advanceSaving}
+                >
+                  Atcelt
+                </Button>
+                <Button
+                  onClick={handleAdvanceInvoice}
+                  disabled={advanceSaving || !advanceAmount || parseFloat(advanceAmount) <= 0}
+                >
+                  {advanceSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Nosūtīt pieprasījumu
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

@@ -33,6 +33,24 @@ type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
   };
 }>;
 
+type InvoiceWithRelationsExtended = Prisma.InvoiceGetPayload<{
+  include: {
+    order: {
+      select: {
+        id: true;
+        orderNumber: true;
+        orderType: true;
+        status: true;
+        deliveryAddress: true;
+        deliveryCity: true;
+      };
+    };
+    advanceForContract: {
+      select: { id: true; contractNumber: true; title: true };
+    };
+  };
+}>;
+
 function mapPaymentStatus(ps: PaymentStatus): InvoiceStatus {
   switch (ps) {
     case PaymentStatus.PAID:
@@ -48,7 +66,6 @@ function mapPaymentStatus(ps: PaymentStatus): InvoiceStatus {
 
 function mapInvoice(inv: InvoiceWithRelations) {
   const status = mapPaymentStatus(inv.paymentStatus);
-  // Normalize to the frontend PaymentStatus union: PENDING | PAID | OVERDUE | CANCELLED
   const paymentStatus =
     status === 'PAID'
       ? 'PAID'
@@ -56,14 +73,36 @@ function mapInvoice(inv: InvoiceWithRelations) {
         ? 'OVERDUE'
         : status === 'CANCELLED'
           ? 'CANCELLED'
-          : 'PENDING'; // ISSUED → PENDING
+          : 'PENDING';
   return {
     ...inv,
-    paymentStatus, // override raw DB enum with normalised frontend value
+    paymentStatus,
     status,
     vatAmount: inv.tax,
     issuedAt: inv.createdAt.toISOString(),
     paidAt: inv.paidDate?.toISOString() ?? null,
+  };
+}
+
+function mapInvoiceExtended(inv: InvoiceWithRelationsExtended) {
+  const status = mapPaymentStatus(inv.paymentStatus);
+  const paymentStatus =
+    status === 'PAID'
+      ? 'PAID'
+      : status === 'OVERDUE'
+        ? 'OVERDUE'
+        : status === 'CANCELLED'
+          ? 'CANCELLED'
+          : 'PENDING';
+  return {
+    ...inv,
+    paymentStatus,
+    status,
+    vatAmount: inv.tax,
+    issuedAt: inv.createdAt.toISOString(),
+    paidAt: inv.paidDate?.toISOString() ?? null,
+    // B3 Fields: non-null when this is an advance invoice
+    advanceForContract: inv.advanceForContract ?? null,
   };
 }
 
@@ -99,7 +138,7 @@ export class InvoicesService {
 
   /**
    * Get invoices visible to the requesting user.
-   * A user can see invoices for orders where they are the buyer.
+   * Includes both order-based invoices and B3 Fields advance invoices.
    */
   async getMyInvoices(
     userId: string,
@@ -109,13 +148,26 @@ export class InvoicesService {
     updatedSince?: string,
   ) {
     const skip = (page - 1) * limit;
-    const where = {
+    const sinceFilter = updatedSince ? { updatedAt: { gte: new Date(updatedSince) } } : {};
+
+    // Order-based invoices (existing)
+    const orderWhere = {
       order: this.buyerAccess(userId, companyId),
-      ...(updatedSince ? { updatedAt: { gte: new Date(updatedSince) } } : {}),
+      ...sinceFilter,
     };
+
+    // Advance invoices for B3 Fields (new — buyer company scoped)
+    const advanceWhere: Prisma.InvoiceWhereInput | null = companyId
+      ? { buyerCompanyId: companyId, advanceForContractId: { not: null }, ...sinceFilter }
+      : null;
+
+    const combinedWhere: Prisma.InvoiceWhereInput = advanceWhere
+      ? { OR: [orderWhere, advanceWhere] }
+      : orderWhere;
+
     const [invoices, total] = await Promise.all([
       this.prisma.invoice.findMany({
-        where,
+        where: combinedWhere,
         include: {
           order: {
             select: {
@@ -125,14 +177,21 @@ export class InvoicesService {
               status: true,
             },
           },
+          advanceForContract: {
+            select: {
+              id: true,
+              contractNumber: true,
+              title: true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
       }),
-      this.prisma.invoice.count({ where }),
+      this.prisma.invoice.count({ where: combinedWhere }),
     ]);
-    return { data: invoices.map(mapInvoice), meta: { page, limit, total } };
+    return { data: invoices.map(mapInvoiceExtended), meta: { page, limit, total } };
   }
 
   async getById(invoiceId: string, userId: string, companyId?: string) {

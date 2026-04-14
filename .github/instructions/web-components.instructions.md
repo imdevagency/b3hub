@@ -360,6 +360,20 @@ Wrap page sections that may throw.
 
 ---
 
+#### `action-list-item` — `@/components/ui/action-list-item`
+
+| Prop | Type | |
+|------|------|---|
+| `label` | `string` | **required** |
+| `description` | `string` | **required** |
+| `icon` | `LucideIcon` | **required** |
+| `href` | `string` | **required** |
+| `primary` | `boolean` | optional |
+
+**Exports:** `ActionListItem`
+
+---
+
 #### `avatar` — `@/components/ui/avatar`
 
 ---

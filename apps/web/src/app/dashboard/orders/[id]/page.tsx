@@ -41,9 +41,11 @@ import {
   CheckCircle,
   Clock,
   CreditCard,
+  ExternalLink,
   MessageSquare,
   Package,
   Phone,
+  Ticket,
   Truck,
   User,
 } from 'lucide-react';
@@ -674,6 +676,82 @@ export default function OrderDetailPage() {
             >
               Izveidot jaunu pasūtījumu
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Field passes ── */}
+      {order.fieldPasses && order.fieldPasses.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <Ticket className="h-4 w-4 text-amber-500" />
+            <h2 className="text-sm font-semibold text-slate-700">Lauka caurlaides</h2>
+            <span className="ml-auto text-xs text-slate-400">
+              {order.fieldPasses.length} caurl.
+            </span>
+          </div>
+          <div className="space-y-2">
+            {order.fieldPasses.map((pass) => {
+              const statusCfg =
+                pass.status === 'ACTIVE'
+                  ? {
+                      label: 'Aktīva',
+                      bg: 'bg-green-50',
+                      text: 'text-green-700',
+                      border: 'border-green-200',
+                    }
+                  : pass.status === 'REVOKED'
+                    ? {
+                        label: 'Atsaukta',
+                        bg: 'bg-red-50',
+                        text: 'text-red-700',
+                        border: 'border-red-200',
+                      }
+                    : {
+                        label: 'Beigusies',
+                        bg: 'bg-slate-50',
+                        text: 'text-slate-500',
+                        border: 'border-slate-200',
+                      };
+              return (
+                <div
+                  key={pass.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 truncate">
+                      {pass.passNumber}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {pass.vehiclePlate}
+                      {pass.driverName ? ` · ${pass.driverName}` : ''}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {new Date(pass.validFrom).toLocaleDateString('lv-LV')} –{' '}
+                      {new Date(pass.validTo).toLocaleDateString('lv-LV')}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
+                    >
+                      {statusCfg.label}
+                    </span>
+                    {pass.fileUrl && (
+                      <a
+                        href={pass.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-slate-400 hover:text-slate-600"
+                        title="Lejupielādēt PDF"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

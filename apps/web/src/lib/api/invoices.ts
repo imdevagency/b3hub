@@ -11,7 +11,7 @@ export type PaymentStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
 export interface ApiInvoice {
   id: string;
   invoiceNumber: string;
-  orderId: string;
+  orderId?: string | null;
   subtotal: number;
   tax: number;
   total: number;
@@ -22,12 +22,18 @@ export interface ApiInvoice {
   pdfUrl?: string;
   createdAt: string;
   updatedAt: string;
-  order: {
+  order?: {
     id: string;
     orderNumber: string;
     orderType: string;
     status: string;
-  };
+  } | null;
+  /** Present when this is an advance invoice for a field contract */
+  advanceForContract?: {
+    id: string;
+    contractNumber: string;
+    title: string;
+  } | null;
 }
 
 export interface InvoiceListResponse {

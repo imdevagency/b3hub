@@ -29,4 +29,4 @@ export * from './projects';
 export * from './saved-addresses';
 export * from './disputes';
 export * from './support';
-
+export * from './field-passes';

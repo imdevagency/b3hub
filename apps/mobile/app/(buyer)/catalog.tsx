@@ -173,10 +173,23 @@ export default function CatalogScreen() {
   const [calcDepth, setCalcDepth] = useState('');
   const [calcDensity, setCalcDensity] = useState('1.6');
 
+  // ── Live pricing from last known delivery address ─────────────────────────
+  const [savedDelivery, setSavedDelivery] = useState<{
+    lat: number;
+    lng: number;
+    address: string;
+  } | null>(null);
+  const [liveData, setLiveData] = useState<
+    Record<string, { minPrice: number | null; supplierCount: number }>
+  >({});
+  const [livePricesLoading, setLivePricesLoading] = useState(false);
+  const liveDataKeyRef = React.useRef<string>('');
+
+  const LAST_DELIVERY_KEY = '@b3hub_last_delivery';
   const DRAFT_KEY = '@b3hub_wizard_draft';
   const DRAFT_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 
-  // Check for a saved draft on every focus
+  // Check for a saved draft on every focus; also read the last delivery address
   useFocusEffect(
     useCallback(() => {
       AsyncStorage.getItem(DRAFT_KEY)
@@ -196,6 +209,18 @@ export default function CatalogScreen() {
           } catch {
             setResumeDraft(null);
           }
+        })
+        .catch(() => {});
+
+      AsyncStorage.getItem(LAST_DELIVERY_KEY)
+        .then((raw) => {
+          if (!raw) return;
+          try {
+            const d = JSON.parse(raw);
+            if (d?.lat && d?.lng && d?.address) {
+              setSavedDelivery({ lat: d.lat, lng: d.lng, address: d.address });
+            }
+          } catch {}
         })
         .catch(() => {});
     }, []),
@@ -261,6 +286,48 @@ export default function CatalogScreen() {
       .catch(() => {})
       .finally(() => setRefreshing(false));
   }, [token, nearMeCoords]);
+
+  // Fetch live per-category prices whenever the effective delivery location changes
+  const STANDARD_QTY = 26; // standard truck load for price comparison
+  React.useEffect(() => {
+    if (!token) return;
+    const loc = nearMeCoords || savedDelivery;
+    if (!loc) {
+      liveDataKeyRef.current = '';
+      setLiveData({});
+      return;
+    }
+    const key = `${loc.lat.toFixed(4)},${loc.lng.toFixed(4)}`;
+    if (liveDataKeyRef.current === key) return; // same location, skip refetch
+    liveDataKeyRef.current = key;
+    setLivePricesLoading(true);
+    Promise.all(
+      DISPLAY_ORDER.map(async (category) => {
+        try {
+          const offers = await api.materials.getOffers(
+            { category, quantity: STANDARD_QTY, lat: loc.lat, lng: loc.lng },
+            token,
+          );
+          const prices = offers.map((o) => o.effectiveUnitPrice).filter((p) => p > 0);
+          return {
+            category,
+            minPrice: prices.length > 0 ? Math.min(...prices) : null,
+            supplierCount: offers.length,
+          };
+        } catch {
+          return { category, minPrice: null, supplierCount: 0 };
+        }
+      }),
+    )
+      .then((results) => {
+        const map: Record<string, { minPrice: number | null; supplierCount: number }> = {};
+        for (const r of results) {
+          map[r.category] = { minPrice: r.minPrice, supplierCount: r.supplierCount };
+        }
+        setLiveData(map);
+      })
+      .finally(() => setLivePricesLoading(false));
+  }, [token, savedDelivery, nearMeCoords]);
 
   // Per-category: unique supplier count + recycled flag + lowest base price
   const categoryData = useMemo(() => {
@@ -597,6 +664,20 @@ export default function CatalogScreen() {
         </View>
       )}
 
+      {/* ── Live pricing banner ── */}
+      {(savedDelivery || nearMeCoords) && !loading && (
+        <View style={s.livePriceBanner}>
+          <MapPin size={12} color="#2563eb" />
+          {livePricesLoading ? (
+            <Text style={s.livePriceBannerText}>Aprēķina cenas jūsu adresei…</Text>
+          ) : (
+            <Text style={s.livePriceBannerText} numberOfLines={1}>
+              {nearMe ? 'Cenas jūsu tuvumā' : `Cenas adresei: ${savedDelivery?.address ?? ''}`}
+            </Text>
+          )}
+        </View>
+      )}
+
       {/* ── Category list ── */}
       {loading ? (
         <View style={s.skeletonWrap}>
@@ -613,17 +694,18 @@ export default function CatalogScreen() {
           data={visibleCategories}
           keyExtractor={(cat) => cat}
           renderItem={({ item: cat }) => {
-            const data = categoryData[cat] ?? {
+            const staticData = categoryData[cat] ?? {
               supplierCount: 0,
               hasRecycled: false,
               minPrice: null,
             };
+            const live = liveData[cat];
             return (
               <CategoryCard
                 category={cat}
-                hasRecycled={data.hasRecycled}
-                supplierCount={data.supplierCount}
-                minPrice={data.minPrice}
+                hasRecycled={staticData.hasRecycled}
+                supplierCount={live ? live.supplierCount : staticData.supplierCount}
+                minPrice={live ? live.minPrice : staticData.minPrice}
                 onPress={() => handleCategoryPress(cat)}
               />
             );
@@ -696,6 +778,26 @@ const s = StyleSheet.create({
   },
   chipTextBlue: {
     color: '#2563eb',
+  },
+  livePriceBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginHorizontal: 16,
+    marginTop: 6,
+    marginBottom: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#eff6ff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  livePriceBannerText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#1d4ed8',
+    fontWeight: '500',
   },
   searchBox: {
     flexDirection: 'row',

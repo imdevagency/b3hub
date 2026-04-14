@@ -23,6 +23,7 @@ export * from './saved-addresses';
 
 export * from './company';
 export * from './projects';
+export * from './field-passes';
 // Re-export the helper for consumers that need it directly
 export { apiFetch } from './common';
 
@@ -42,6 +43,7 @@ import { companyApi } from './company';
 import { paymentsApi } from './payments';
 import { projectsApi } from './projects';
 import { savedAddressesApi } from './saved-addresses';
+import { fieldPassesApi } from './field-passes';
 
 // ─── Assembled api object ─────────────────────────────────────────────────
 /**
@@ -89,4 +91,7 @@ export const api = {
 
   // ── Saved addresses ──────────────────────────────────────────────────
   savedAddresses: savedAddressesApi,
+
+  // ── Field Passes & Weighing Slips ─────────────────────────────────────
+  ...fieldPassesApi,
 };

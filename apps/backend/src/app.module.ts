@@ -47,6 +47,8 @@ import { SavedAddressesModule } from './saved-addresses/saved-addresses.module';
 import { DisputesModule } from './disputes/disputes.module';
 import { SupportModule } from './support/support.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
+import { FieldPassesModule } from './field-passes/field-passes.module';
+import { WeighingSlipsModule } from './weighing-slips/weighing-slips.module';
 
 @Module({
   imports: [
@@ -99,6 +101,8 @@ import { ApiKeysModule } from './api-keys/api-keys.module';
     DisputesModule,
     SupportModule,
     ApiKeysModule,
+    FieldPassesModule,
+    WeighingSlipsModule,
   ],
   controllers: [AppController],
   providers: [

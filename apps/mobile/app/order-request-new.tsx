@@ -3,11 +3,11 @@
  *
  * Buyer material order wizard — matches web CATALOGUE → SPECS → WHERE → WHEN → OFFERS/RFQ flow.
  *
- *  Catalog page selects a category, then:
- *  Step 1 – SPECS   : free-form material name (pre-filled), quantity, unit, optional notes
- *  Step 2 – WHERE   : delivery address picker
+ *  Catalog page selects a category, then (location-first — Schüttflix style):
+ *  Step 1 – WHERE   : delivery address picker (first, so offers show real prices for that site)
+ *  Step 2 – SPECS   : material type, fraction, order type, truck, quantity
  *  Step 3 – WHEN    : preferred delivery date
- *  Step 4 – OFFERS  : instant supplier offers → buyer picks one → order placed;
+ *  Step 4 – OFFERS  : instant supplier offers sorted by price/distance → buyer picks one;
  *                     OR no offers → send RFQ (quote request)
  */
 
@@ -83,7 +83,7 @@ type SubmitResult = 'order' | 'rfq';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const STEPS: Step[] = ['specs', 'address', 'when', 'offers'];
+const STEPS: Step[] = ['address', 'specs', 'when', 'offers'];
 
 /** Category-specific default unit; all others default to TONNE. */
 const CATEGORY_DEFAULT_UNIT: Partial<Record<string, MaterialUnit>> = {
@@ -91,8 +91,8 @@ const CATEGORY_DEFAULT_UNIT: Partial<Record<string, MaterialUnit>> = {
 };
 
 const STEP_TITLES: Record<Step, string> = {
-  specs: 'Ko pasūtīt?',
   address: 'Kur piegādāt?',
+  specs: 'Ko pasūtīt?',
   when: 'Kad piegādāt?',
   offers: 'Piedāvājumi',
 };
@@ -357,6 +357,12 @@ export default function OrderRequestWizard() {
     submitted,
   ]);
 
+  // ── Persist last delivery address for catalog live pricing ──
+  useEffect(() => {
+    if (!pickedAddress) return;
+    AsyncStorage.setItem('@b3hub_last_delivery', JSON.stringify(pickedAddress)).catch(() => {});
+  }, [pickedAddress]);
+
   // ── Quantity quick-values ──
   const stepAmt = 1;
 
@@ -409,7 +415,7 @@ export default function OrderRequestWizard() {
       return;
     }
     if (stepIndex === 0) {
-      const hasDraft = notes.trim() !== '';
+      const hasDraft = notes.trim() !== '' || pickedAddress !== null;
       if (hasDraft) {
         Alert.alert('Iziet no pasūtīšanas?', 'Ievadītie dati tiks zaudēti.', [
           { text: 'Turpināt', style: 'cancel' },
@@ -544,10 +550,10 @@ export default function OrderRequestWizard() {
 
   // ── CTA config ──
   const canProceed =
-    step === 'specs'
-      ? quantity > 0
-      : step === 'address'
-        ? !!pickedAddress
+    step === 'address'
+      ? !!pickedAddress
+      : step === 'specs'
+        ? quantity > 0
         : step === 'when'
           ? true
           : !offersLoading && !submitting && !submitted;
