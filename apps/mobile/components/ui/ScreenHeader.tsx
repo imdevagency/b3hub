@@ -59,6 +59,8 @@ export function ScreenHeader({ title, rightAction, onBack, showBack }: ScreenHea
             style={styles.backButton}
             hitSlop={8}
             activeOpacity={0.6}
+            accessibilityLabel="Atpakaļ"
+            accessibilityRole="button"
           >
             <ChevronLeft size={24} color="#111827" />
           </TouchableOpacity>

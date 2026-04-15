@@ -517,6 +517,15 @@ export class ProjectsService {
       }[];
       transportJobs: { distanceKm: number | null; vehicle: { vehicleType: string } | null }[];
     }[];
+    frameworkContracts: {
+      id: string;
+      contractNumber: string;
+      title: string;
+      status: string;
+      startDate: Date | null;
+      endDate: Date | null;
+      supplier: { id: string; name: string } | null;
+    }[];
   }) {
     const allJobs = p.orders.flatMap((o) => o.transportJobs);
     const financials = this.computeFinancials(

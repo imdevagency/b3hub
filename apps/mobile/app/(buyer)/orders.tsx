@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -127,6 +127,8 @@ export default function OrdersScreen() {
     return filtered.filter((i) => i.kind === kindFilter);
   }, [filtered, kindFilter]);
 
+  const [searchFocused, setSearchFocused] = useState(false);
+
   const handleFilterChange = (key: FilterKey) => {
     haptics.light();
     setFilter(key);
@@ -138,7 +140,7 @@ export default function OrdersScreen() {
     setShowTypePicker(true);
   };
 
-  const renderItem = ({ item }: { item: any }) => {
+  const renderItem = useCallback(({ item }: { item: any }) => {
     // UnifiedOrder structure: { kind, data, ... }
     switch (item.kind) {
       case 'material':
@@ -154,7 +156,7 @@ export default function OrdersScreen() {
       default:
         return null;
     }
-  };
+  }, []);
 
   return (
     <ScreenContainer bg="#ffffff">
@@ -170,43 +172,11 @@ export default function OrdersScreen() {
                 haptics.light();
                 router.push('/(buyer)/schedules' as any);
               }}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: '#ffffff',
-                alignItems: 'center',
-                justifyContent: 'center',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.08,
-                shadowRadius: 8,
-                elevation: 2,
-                borderWidth: 1,
-                borderColor: '#F9FAFB',
-              }}
+              style={s.headerBtn}
             >
               <Calendar size={22} color="#111827" />
             </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={handleNewOrder}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: '#ffffff',
-                alignItems: 'center',
-                justifyContent: 'center',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.08,
-                shadowRadius: 8,
-                elevation: 2,
-                borderWidth: 1,
-                borderColor: '#F9FAFB',
-              }}
-            >
+            <TouchableOpacity activeOpacity={0.8} onPress={handleNewOrder} style={s.headerBtn}>
               <Plus size={24} color="#111827" />
             </TouchableOpacity>
           </View>
@@ -309,8 +279,12 @@ export default function OrdersScreen() {
       )}
 
       {/* ── Search ───────────────────────────────────────────── */}
-      <View style={s.searchRow}>
-        <Search size={16} color="#9ca3af" style={{ marginRight: 8 }} />
+      <View style={[s.searchRow, searchFocused && s.searchRowFocused]}>
+        <Search
+          size={16}
+          color={searchFocused ? '#00A878' : '#9ca3af'}
+          style={{ marginRight: 8 }}
+        />
         <TextInput
           style={s.searchInput}
           placeholder="Meklēt pēc adreses, materiāla..."
@@ -321,6 +295,8 @@ export default function OrdersScreen() {
           clearButtonMode="never"
           autoCorrect={false}
           autoCapitalize="none"
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setSearchFocused(false)}
         />
         {query.length > 0 && (
           <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
@@ -549,7 +525,7 @@ const DRIVER_TRANSIT_STATUSES = new Set([
   'AT_DELIVERY',
 ]);
 
-function MaterialOrderCard({ order }: { order: any }) {
+const MaterialOrderCard = React.memo(function MaterialOrderCard({ order }: { order: any }) {
   const router = useRouter();
   const statusColors = getStatusColors(order.status);
   const itemsCount = order.items?.length || 0;
@@ -655,9 +631,9 @@ function MaterialOrderCard({ order }: { order: any }) {
       </View>
     </TouchableOpacity>
   );
-}
+});
 
-function DisposalOrderCard({ req }: { req: any }) {
+const DisposalOrderCard = React.memo(function DisposalOrderCard({ req }: { req: any }) {
   const router = useRouter();
   const statusColors = getStatusColors(req.status);
 
@@ -709,9 +685,9 @@ function DisposalOrderCard({ req }: { req: any }) {
       </View>
     </TouchableOpacity>
   );
-}
+});
 
-function TransportRequestCard({ req }: { req: any }) {
+const TransportRequestCard = React.memo(function TransportRequestCard({ req }: { req: any }) {
   const router = useRouter();
   const statusColors = getStatusColors(req.status);
 
@@ -759,9 +735,9 @@ function TransportRequestCard({ req }: { req: any }) {
       </View>
     </TouchableOpacity>
   );
-}
+});
 
-function RfqCard({ rfq }: { rfq: any }) {
+const RfqCard = React.memo(function RfqCard({ rfq }: { rfq: any }) {
   const router = useRouter();
   const statusColors = getStatusColors(rfq.status);
 
@@ -812,9 +788,9 @@ function RfqCard({ rfq }: { rfq: any }) {
       </View>
     </TouchableOpacity>
   );
-}
+});
 
-function SkipOrderCard({ order }: { order: any }) {
+const SkipOrderCard = React.memo(function SkipOrderCard({ order }: { order: any }) {
   const router = useRouter();
   const statusColors = getStatusColors(order.status);
 
@@ -870,7 +846,7 @@ function SkipOrderCard({ order }: { order: any }) {
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -915,6 +891,21 @@ function formatStatus(status: string) {
 // ── Styles ────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F9FAFB',
+  },
   filterContainer: {
     paddingTop: 12,
     backgroundColor: '#ffffff',
@@ -936,8 +927,8 @@ const s = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   typeChipActive: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
+    backgroundColor: '#00A878',
+    borderColor: '#00A878',
   },
   typeChipText: {
     fontSize: 13,
@@ -980,6 +971,12 @@ const s = StyleSheet.create({
     paddingVertical: 9,
     backgroundColor: '#f3f4f6',
     borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  searchRowFocused: {
+    borderColor: '#00A878',
+    backgroundColor: '#fff',
   },
   searchInput: {
     flex: 1,
@@ -994,8 +991,8 @@ const s = StyleSheet.create({
     backgroundColor: '#f9fafb',
   },
   chipActive: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
+    backgroundColor: '#00A878',
+    borderColor: '#00A878',
   },
   chipText: {
     fontSize: 14,
@@ -1032,7 +1029,7 @@ const s = StyleSheet.create({
   card: {
     backgroundColor: '#ffffff',
     borderRadius: 20,
-    padding: 20,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -1171,7 +1168,7 @@ const s = StyleSheet.create({
   emptyIcon: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: 999,
     backgroundColor: '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center',

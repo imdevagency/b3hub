@@ -223,6 +223,8 @@ export function TopBar({
           hitSlop={10}
           style={transparent ? styles.floatingBtn : styles.sideBtn}
           activeOpacity={0.7}
+          accessibilityLabel="Izvēlne"
+          accessibilityRole="button"
         >
           <Menu size={24} color={accentColor} />
         </TouchableOpacity>
@@ -263,6 +265,10 @@ export function TopBar({
           hitSlop={10}
           style={transparent ? styles.floatingBtn : styles.sideBtn}
           activeOpacity={0.7}
+          accessibilityLabel={
+            unreadCount > 0 ? `Paziņojumi, ${unreadCount} nelastīti` : 'Paziņojumi'
+          }
+          accessibilityRole="button"
         >
           <View>
             <Bell size={22} color={accentColor} />
@@ -356,9 +362,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -2,
     right: -2,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: '#ef4444',
     borderWidth: 2,
     borderColor: '#ffffff',

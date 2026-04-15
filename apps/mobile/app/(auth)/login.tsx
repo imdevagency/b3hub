@@ -63,7 +63,7 @@ export default function LoginScreen() {
     <ScreenContainer standalone bg="#fff" topInset={0}>
       <StatusBar style="dark" />
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         {/* Minimal Header */}
@@ -85,6 +85,14 @@ export default function LoginScreen() {
           {apiError && (
             <View style={s.apiErrBox}>
               <Text style={s.apiErrText}>{apiError}</Text>
+              <TouchableOpacity
+                onPress={() => setApiError(null)}
+                hitSlop={8}
+                accessibilityLabel="Aizvērt kļūdu"
+                accessibilityRole="button"
+              >
+                <Text style={s.apiErrDismiss}>×</Text>
+              </TouchableOpacity>
             </View>
           )}
 
@@ -269,11 +277,23 @@ const s = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
   },
   apiErrText: {
     color: '#b91c1c',
     fontSize: 14,
     fontWeight: '500',
+    flex: 1,
+  },
+  apiErrDismiss: {
+    color: '#b91c1c',
+    fontSize: 20,
+    lineHeight: 20,
+    fontWeight: '700',
+    paddingLeft: 4,
   },
 
   // Footer

@@ -336,6 +336,20 @@ export const transportApi = {
         body: JSON.stringify(dto),
       }),
 
+    reportDelay: (
+      id: string,
+      dto: { estimatedDelayMinutes: number; reason?: string },
+      token: string,
+    ) =>
+      apiFetch<{ jobId: string; reported: boolean }>(
+        `/transport-jobs/${id}/report-delay`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: JSON.stringify(dto),
+        },
+      ),
+
     resolveException: (
       id: string,
       exceptionId: string,

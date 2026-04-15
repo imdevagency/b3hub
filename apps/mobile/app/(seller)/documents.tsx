@@ -224,7 +224,7 @@ export default function SellerDocuments() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => load(true)}
-            tintColor="#111827"
+            tintColor="#00A878"
           />
         }
       >

@@ -159,6 +159,7 @@ export default function CatalogScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const [filterMode, setFilterMode] = useState<'ALL' | 'RECYCLED'>('ALL');
   const [nearMe, setNearMe] = useState(false);
   const [nearMeCoords, setNearMeCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -299,34 +300,40 @@ export default function CatalogScreen() {
     }
     const key = `${loc.lat.toFixed(4)},${loc.lng.toFixed(4)}`;
     if (liveDataKeyRef.current === key) return; // same location, skip refetch
-    liveDataKeyRef.current = key;
-    setLivePricesLoading(true);
-    Promise.all(
-      DISPLAY_ORDER.map(async (category) => {
-        try {
-          const offers = await api.materials.getOffers(
-            { category, quantity: STANDARD_QTY, lat: loc.lat, lng: loc.lng },
-            token,
-          );
-          const prices = offers.map((o) => o.effectiveUnitPrice).filter((p) => p > 0);
-          return {
-            category,
-            minPrice: prices.length > 0 ? Math.min(...prices) : null,
-            supplierCount: offers.length,
-          };
-        } catch {
-          return { category, minPrice: null, supplierCount: 0 };
-        }
-      }),
-    )
-      .then((results) => {
-        const map: Record<string, { minPrice: number | null; supplierCount: number }> = {};
-        for (const r of results) {
-          map[r.category] = { minPrice: r.minPrice, supplierCount: r.supplierCount };
-        }
-        setLiveData(map);
-      })
-      .finally(() => setLivePricesLoading(false));
+
+    // Debounce: wait 400ms after location stops changing before firing 10 API calls
+    const timerId = setTimeout(() => {
+      liveDataKeyRef.current = key;
+      setLivePricesLoading(true);
+      Promise.all(
+        DISPLAY_ORDER.map(async (category) => {
+          try {
+            const offers = await api.materials.getOffers(
+              { category, quantity: STANDARD_QTY, lat: loc.lat, lng: loc.lng },
+              token,
+            );
+            const prices = offers.map((o) => o.effectiveUnitPrice).filter((p) => p > 0);
+            return {
+              category,
+              minPrice: prices.length > 0 ? Math.min(...prices) : null,
+              supplierCount: offers.length,
+            };
+          } catch {
+            return { category, minPrice: null, supplierCount: 0 };
+          }
+        }),
+      )
+        .then((results) => {
+          const map: Record<string, { minPrice: number | null; supplierCount: number }> = {};
+          for (const r of results) {
+            map[r.category] = { minPrice: r.minPrice, supplierCount: r.supplierCount };
+          }
+          setLiveData(map);
+        })
+        .finally(() => setLivePricesLoading(false));
+    }, 400);
+
+    return () => clearTimeout(timerId);
   }, [token, savedDelivery, nearMeCoords]);
 
   // Per-category: unique supplier count + recycled flag + lowest base price
@@ -401,8 +408,8 @@ export default function CatalogScreen() {
     <ScreenContainer bg="#f9fafb">
       {/* ── Search bar ── */}
       <View style={s.topBar}>
-        <View style={s.searchBox}>
-          <Search size={16} color="#9ca3af" />
+        <View style={[s.searchBox, searchFocused && s.searchBoxFocused]}>
+          <Search size={16} color={searchFocused ? '#00A878' : '#9ca3af'} />
           <TextInput
             style={s.searchInput}
             placeholder="Meklēt kategoriju..."
@@ -412,6 +419,8 @@ export default function CatalogScreen() {
             returnKeyType="search"
             autoCorrect={false}
             autoCapitalize="none"
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
           />
           {query.length > 0 && (
             <TouchableOpacity
@@ -715,7 +724,7 @@ export default function CatalogScreen() {
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#111827" />
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#00A878" />
           }
         />
       )}
@@ -746,7 +755,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 7,
     borderRadius: 20,
     backgroundColor: '#f3f4f6',
@@ -754,8 +763,8 @@ const s = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   chipActive: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
+    backgroundColor: '#00A878',
+    borderColor: '#00A878',
   },
   chipActiveGreen: {
     backgroundColor: '#16a34a',
@@ -804,14 +813,20 @@ const s = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     gap: 8,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
+  },
+  searchBoxFocused: {
+    borderColor: '#00A878',
+    shadowOpacity: 0.12,
   },
   searchInput: {
     flex: 1,
@@ -843,7 +858,7 @@ const s = StyleSheet.create({
     gap: 10,
     marginHorizontal: 16,
     marginTop: 8,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     backgroundColor: '#f0fdf4',
     borderRadius: 10,
@@ -903,7 +918,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1097,7 +1112,7 @@ const s = StyleSheet.create({
   },
   calcOrderBtn: {
     backgroundColor: '#7c3aed',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 4,

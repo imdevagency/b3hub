@@ -24,6 +24,8 @@ export enum NotificationType {
   WEIGHT_DISCREPANCY = 'WEIGHT_DISCREPANCY', // weighbridge weight differs >5% from ordered
   INVOICE_ADJUSTED = 'INVOICE_ADJUSTED', // invoice reconciled to actual weight
   SURCHARGE_ADDED = 'SURCHARGE_ADDED',   // seller or driver added a billable surcharge
+  DRIVER_DELAY = 'DRIVER_DELAY',         // driver reported they are running late
+  PAYOUT_PENDING = 'PAYOUT_PENDING',     // carrier needs to complete Stripe Connect onboarding
 }
 
 export class CreateNotificationDto {

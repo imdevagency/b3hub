@@ -197,7 +197,7 @@ export default function RfqDetailScreen() {
               setRefreshing(true);
               load(false);
             }}
-            tintColor="#111827"
+            tintColor="#00A878"
           />
         }
       >

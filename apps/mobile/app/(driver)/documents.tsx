@@ -261,7 +261,7 @@ export default function DriverDocumentsScreen() {
         contentContainerStyle={filtered.length === 0 ? s.listEmpty : s.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00A878" />
         }
       >
         {filtered.length === 0 ? (

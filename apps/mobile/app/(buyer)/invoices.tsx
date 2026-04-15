@@ -198,7 +198,7 @@ function InvoiceModal({
 
         {/* Download PDF CTA */}
         <TouchableOpacity
-          style={m.downloadBtn}
+          style={[m.downloadBtn, downloading && m.downloadBtnDisabled]}
           onPress={onDownload}
           disabled={downloading}
           activeOpacity={0.85}
@@ -367,7 +367,7 @@ export default function InvoicesScreen() {
         contentContainerStyle={visible.length === 0 ? s.listEmpty : s.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00A878" />
         }
       >
         {visible.length === 0 ? (
@@ -559,8 +559,8 @@ const m = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 10,
     backgroundColor: '#eff6ff',
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 14,
+    padding: 16,
   },
   payInfoText: { flex: 1, fontSize: 13, color: '#1d4ed8', lineHeight: 18 },
   downloadBtn: {
@@ -572,6 +572,9 @@ const m = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     marginTop: 12,
     gap: 8,
+  },
+  downloadBtnDisabled: {
+    opacity: 0.45,
   },
   downloadBtnText: { color: '#111827', fontWeight: '600', fontSize: 15 },
 });

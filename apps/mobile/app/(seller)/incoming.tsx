@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
+  FlatList,
   TouchableOpacity,
   StyleSheet,
   Alert,
@@ -132,6 +133,13 @@ function getMinimalStatus(status: OrderStatus) {
 }
 
 // ── LoadingDock — seller confirms driver has loaded ───────────────────────────
+const CHECKLIST = [
+  'Auto atrodas pareizājā vietā',
+  'Svars sakrīt ar pasūtījumu',
+  'Materiāls ir pareizs',
+  'Vadītājs ir klāt',
+];
+
 function LoadingModal({
   order,
   visible,
@@ -145,12 +153,6 @@ function LoadingModal({
   onConfirm: (weightKg?: number) => void;
   confirming?: boolean;
 }) {
-  const CHECKLIST = [
-    'Auto atrodas pareizājā vietā',
-    'Svars sakrīt ar pasūtījumu',
-    'Materiāls ir pareizs',
-    'Vadītājs ir klāt',
-  ];
   const [weight, setWeight] = useState('');
   const [checkedItems, setCheckedItems] = useState<boolean[]>(CHECKLIST.map(() => false));
 
@@ -453,13 +455,16 @@ export default function IncomingScreen() {
   const [batchSelectedIds, setBatchSelectedIds] = useState<Set<string>>(new Set());
   const [batchConfirming, setBatchConfirming] = useState(false);
 
-  const toggleBatchSelect = (id: string) =>
-    setBatchSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const toggleBatchSelect = useCallback(
+    (id: string) =>
+      setBatchSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      }),
+    [],
+  );
 
   const toggleBatchMode = () => {
     setBatchMode((b) => !b);
@@ -551,7 +556,7 @@ export default function IncomingScreen() {
     if (sellerNewOrder) {
       fetchOrders(true);
     }
-  }, [sellerNewOrder]);
+  }, [sellerNewOrder, fetchOrders]);
 
   const handleConfirm = async (id: string) => {
     if (!token) return;
@@ -619,8 +624,10 @@ export default function IncomingScreen() {
   };
 
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('ALL');
-  const visibleOrders =
-    filterStatus === 'ALL' ? orders : orders.filter((o) => o.status === filterStatus);
+  const visibleOrders = useMemo(
+    () => (filterStatus === 'ALL' ? orders : orders.filter((o) => o.status === filterStatus)),
+    [filterStatus, orders],
+  );
 
   const STATUS_FILTERS: { key: FilterStatus; label: string }[] = [
     { key: 'ALL', label: 'Visi' },
@@ -630,6 +637,32 @@ export default function IncomingScreen() {
     { key: 'DISPATCHED', label: 'Piegādē' },
     { key: 'CANCELLED', label: 'Atcelti' },
   ];
+
+  const renderOrderItem = useCallback(
+    ({ item: order }: { item: IncomingOrder }) => (
+      <OrderCard
+        order={order}
+        onConfirm={handleConfirm}
+        onReject={handleReject}
+        onStartLoading={handleStartLoading}
+        actioning={actioning}
+        onPress={() => router.push(`/(seller)/order/${order.id}` as any)}
+        batchMode={batchMode}
+        isSelected={batchSelectedIds.has(order.id)}
+        onToggleSelect={() => toggleBatchSelect(order.id)}
+      />
+    ),
+    [
+      handleConfirm,
+      handleReject,
+      handleStartLoading,
+      actioning,
+      batchMode,
+      batchSelectedIds,
+      toggleBatchSelect,
+      router,
+    ],
+  );
 
   if (fetching && !refreshing) {
     return (
@@ -705,7 +738,7 @@ export default function IncomingScreen() {
             <RefreshControl
               refreshing={quotesLoading}
               onRefresh={fetchQuotes}
-              tintColor="#111827"
+              tintColor="#00A878"
             />
           }
         >
@@ -727,7 +760,10 @@ export default function IncomingScreen() {
                 activeOpacity={0.8}
                 onPress={() => {
                   haptics.light();
-                  router.push('/(seller)/quotes' as any);
+                  router.push({
+                    pathname: '/(seller)/quotes',
+                    params: { highlight: req.id },
+                  } as any);
                 }}
               >
                 <View style={styles.quoteCardTop}>
@@ -797,7 +833,10 @@ export default function IncomingScreen() {
             </View>
           )}
 
-          <ScrollView
+          <FlatList
+            data={visibleOrders}
+            keyExtractor={(item) => item.id}
+            renderItem={renderOrderItem}
             contentContainerStyle={[
               styles.list,
               visibleOrders.length === 0 && { flexGrow: 1, justifyContent: 'center' },
@@ -809,11 +848,10 @@ export default function IncomingScreen() {
                   setRefreshing(true);
                   fetchOrders(true);
                 }}
-                tintColor="#111827"
+                tintColor="#00A878"
               />
             }
-          >
-            {visibleOrders.length === 0 ? (
+            ListEmptyComponent={
               <EmptyState
                 icon={<Inbox size={32} color="#9ca3af" />}
                 title={orders.length === 0 ? 'Nav pasūtījumu' : 'Nav atrasts'}
@@ -834,23 +872,8 @@ export default function IncomingScreen() {
                   ) : undefined
                 }
               />
-            ) : (
-              visibleOrders.map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  onConfirm={handleConfirm}
-                  onReject={handleReject}
-                  onStartLoading={handleStartLoading}
-                  actioning={actioning}
-                  onPress={() => router.push(`/(seller)/order/${order.id}` as any)}
-                  batchMode={batchMode}
-                  isSelected={batchSelectedIds.has(order.id)}
-                  onToggleSelect={() => toggleBatchSelect(order.id)}
-                />
-              ))
-            )}
-          </ScrollView>
+            }
+          />
         </>
       )}
       {batchMode && batchSelectedIds.size > 0 && (
@@ -895,7 +918,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     gap: 6,
   },
-  filterPillActive: { backgroundColor: '#111827' },
+  filterPillActive: { backgroundColor: '#00A878' },
   filterPillText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
   filterPillTextActive: { color: '#ffffff' },
   filterBadge: {
@@ -918,7 +941,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     padding: 12,
     backgroundColor: '#eff6ff',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#bfdbfe',
     flexDirection: 'row',
@@ -987,7 +1010,7 @@ const styles = StyleSheet.create({
   btnOutline: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
@@ -996,7 +1019,7 @@ const styles = StyleSheet.create({
   btnSolid: {
     flex: 2,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#111827',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1005,7 +1028,7 @@ const styles = StyleSheet.create({
   btnPrimaryFlex: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#111827',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1022,7 +1045,7 @@ const styles = StyleSheet.create({
   emptyIconWrap: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: 999,
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1041,7 +1064,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     backgroundColor: '#111827',
-    borderRadius: 12,
+    borderRadius: 14,
   },
   emptyCtaText: { fontSize: 15, fontWeight: '600', color: '#ffffff' },
 
@@ -1075,7 +1098,7 @@ const styles = StyleSheet.create({
   batchBarText: { color: '#f9fafb', fontSize: 15, fontWeight: '600' },
   batchBarBtn: {
     backgroundColor: '#ffffff',
-    borderRadius: 20,
+    borderRadius: 999,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },

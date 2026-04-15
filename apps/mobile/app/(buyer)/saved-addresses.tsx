@@ -265,7 +265,7 @@ export default function SavedAddressesScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => load(true)}
-            tintColor="#111827"
+            tintColor="#00A878"
           />
         }
       >

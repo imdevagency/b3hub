@@ -283,7 +283,7 @@ function DocsTab() {
               setRefreshing(true);
               load(true);
             }}
-            tintColor="#111827"
+            tintColor="#00A878"
           />
         }
       >
@@ -601,7 +601,7 @@ function InvoicesTab() {
               setRefreshing(true);
               load(true);
             }}
-            tintColor="#111827"
+            tintColor="#00A878"
           />
         }
       >

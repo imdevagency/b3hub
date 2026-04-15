@@ -71,7 +71,7 @@ export default function SellerHomeScreen() {
         setMaterialCount(null);
       }
     },
-    [token, toast, user?.company?.id],
+    [token, toast, user?.company?.id, user?.id],
   );
 
   useFocusEffect(
@@ -108,7 +108,7 @@ export default function SellerHomeScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingBottom: TAB_H + insets.bottom + 32,
-          paddingHorizontal: 24,
+          paddingHorizontal: 16,
           paddingTop: 16,
         }}
         showsVerticalScrollIndicator={false}
@@ -116,7 +116,7 @@ export default function SellerHomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadData(true)}
-            tintColor="#111827"
+            tintColor="#00A878"
           />
         }
       >
@@ -125,8 +125,8 @@ export default function SellerHomeScreen() {
           <View
             style={{
               backgroundColor: '#000000',
-              borderRadius: 24,
-              padding: 24,
+              borderRadius: 20,
+              padding: 16,
               marginBottom: 24,
             }}
           >
@@ -220,8 +220,8 @@ export default function SellerHomeScreen() {
             }}
             style={[
               {
-                borderRadius: 24,
-                padding: 24,
+                borderRadius: 20,
+                padding: 16,
                 minHeight: 160,
                 justifyContent: 'space-between',
               },
@@ -288,7 +288,7 @@ export default function SellerHomeScreen() {
                       style={{
                         width: 48,
                         height: 48,
-                        borderRadius: 24,
+                        borderRadius: 999,
                         alignItems: 'center',
                         justifyContent: 'center',
                         backgroundColor: 'rgba(255,255,255,0.1)',
@@ -359,7 +359,7 @@ export default function SellerHomeScreen() {
                       style={{
                         width: 48,
                         height: 48,
-                        borderRadius: 24,
+                        borderRadius: 999,
                         backgroundColor: '#f3f4f6',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -502,9 +502,9 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 8,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,

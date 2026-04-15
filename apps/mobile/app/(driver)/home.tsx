@@ -71,13 +71,14 @@ export default function DriverHomeScreen() {
         accuracy: Location.Accuracy.Balanced,
       });
       // Small timeout to ensure map is ready
-      setTimeout(() => {
+      const timerId = setTimeout(() => {
         cameraRef.current?.setCamera({
           centerCoordinate: [loc.coords.longitude, loc.coords.latitude],
           zoomLevel: 14,
           animationDuration: 1000,
         });
       }, 500);
+      return () => clearTimeout(timerId);
     })();
   }, []);
 
@@ -254,11 +255,13 @@ export default function DriverHomeScreen() {
 
       {/* 3. Bottom Sheet Card — Slide-up panel styling */}
       <View style={[s.bottomSheet, { height: BOTTOM_PANEL_H }]}>
+        {/* Drag handle affordance */}
+        <View style={s.dragHandle} />
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: bottomInset + 10 }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#111827" />
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#00A878" />
           }
         >
           {/* Greeting / User Context */}
@@ -436,7 +439,7 @@ const s = StyleSheet.create({
   roundBtn: {
     width: 46,
     height: 46,
-    borderRadius: 23,
+    borderRadius: 999,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
@@ -449,7 +452,7 @@ const s = StyleSheet.create({
   avatarFill: {
     width: '100%',
     height: '100%',
-    borderRadius: 23,
+    borderRadius: 999,
     backgroundColor: '#111827',
     alignItems: 'center',
     justifyContent: 'center',
@@ -475,7 +478,7 @@ const s = StyleSheet.create({
     backgroundColor: '#fff',
     paddingHorizontal: 18,
     paddingVertical: 12,
-    borderRadius: 30,
+    borderRadius: 999,
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 6,
@@ -496,20 +499,28 @@ const s = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    paddingHorizontal: 24,
-    paddingTop: 28,
+    paddingHorizontal: 20,
+    paddingTop: 12,
     shadowColor: '#000',
     shadowOpacity: 0.15,
     shadowRadius: 25,
     shadowOffset: { width: 0, height: -6 },
     elevation: 20,
   },
+  dragHandle: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#e5e7eb',
+    marginBottom: 16,
+  },
   sheetHeader: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 24 },
   greetingLabel: { fontSize: 20, color: '#6b7280', fontWeight: '500' },
   greetingName: { fontSize: 20, color: '#111827', fontWeight: '800', marginLeft: 6 },
 
   // Stats Grid
-  statsContainer: { flexDirection: 'row', marginBottom: 28 },
+  statsContainer: { flexDirection: 'row', marginBottom: 24 },
   statBox: { flex: 1 },
   statValue: {
     fontSize: 26,
@@ -533,7 +544,7 @@ const s = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 10,
     elevation: 8,
-    marginBottom: 32,
+    marginBottom: 24,
   },
   primaryActionActive: { backgroundColor: '#059669' },
   primaryActionText: { color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: 0.5 },
@@ -545,8 +556,8 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     backgroundColor: '#f9fafb',
-    borderRadius: 16,
-    padding: 14,
+    borderRadius: 14,
+    padding: 16,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#e5e7eb',
@@ -563,7 +574,7 @@ const s = StyleSheet.create({
   vehiclePromptSub: { fontSize: 12, color: '#6b7280' },
 
   // Quick Actions
-  quickGrid: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 12 },
+  quickGrid: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16 },
   quickItem: { alignItems: 'center', gap: 8 },
   quickIcon: {},
   quickLabel: { fontSize: 12, color: '#4b5563', fontWeight: '500' },
@@ -590,9 +601,9 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#f9fafb',
     borderRadius: 14,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    marginBottom: 8,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },

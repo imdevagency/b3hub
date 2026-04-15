@@ -10,6 +10,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  ConflictException,
   InternalServerErrorException,
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -114,6 +115,31 @@ export class OrdersService {
       });
       if (!project || project.companyId !== buyerCompanyId) {
         throw new ForbiddenException('Project does not belong to your company');
+      }
+    }
+
+    // Duplicate guard: block orders placed to the same project + delivery address
+    // within 10 minutes — protects against two site managers accidentally double-ordering.
+    if (orderData.projectId && orderData.deliveryAddress) {
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60_000);
+      const recentDuplicate = await this.prisma.order.findFirst({
+        where: {
+          companyId: buyerCompanyId,
+          projectId: orderData.projectId,
+          deliveryAddress: orderData.deliveryAddress,
+          createdAt: { gte: tenMinutesAgo },
+          status: { notIn: ['CANCELLED'] },
+        },
+        select: { id: true, orderNumber: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (recentDuplicate) {
+        const minutesAgo = Math.floor(
+          (Date.now() - recentDuplicate.createdAt.getTime()) / 60_000,
+        );
+        throw new ConflictException(
+          `Possible duplicate order: order ${recentDuplicate.orderNumber} was placed for the same project and delivery address ${minutesAgo} minute(s) ago. If intentional, wait 10 minutes or contact your team.`,
+        );
       }
     }
 

@@ -35,7 +35,7 @@ const STATUS_CONFIG: Record<ProjectStatus, { label: string; bg: string; color: s
 function SpendBar({ pct }: { pct: number | null }) {
   if (pct === null) return null;
   const clamped = Math.min(Math.max(pct, 0), 100);
-  const color = clamped > 90 ? '#ef4444' : clamped > 70 ? '#f59e0b' : '#22c55e';
+  const color = clamped > 90 ? colors.danger : clamped > 70 ? colors.warning : colors.success;
   return (
     <View style={styles.barTrack}>
       <View style={[styles.barFill, { width: `${clamped}%` as any, backgroundColor: color }]} />
@@ -238,8 +238,8 @@ export default function ProjectsScreen() {
 
 const styles = StyleSheet.create({
   headerBar: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.base,
     paddingBottom: spacing.sm,
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -255,9 +255,9 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   list: {
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.base,
     paddingBottom: spacing.xl,
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   emptyContainer: {
     flex: 1,
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.bgCard,
     borderRadius: radius.lg,
-    padding: spacing.md,
+    padding: spacing.base,
     borderWidth: 1,
     borderColor: colors.border,
     gap: spacing.xs,
@@ -340,9 +340,9 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   barTrack: {
-    height: 4,
+    height: 6,
     backgroundColor: colors.border,
-    borderRadius: 2,
+    borderRadius: 3,
     overflow: 'hidden',
   },
   barFill: {

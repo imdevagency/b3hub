@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -190,7 +190,7 @@ export default function HomeScreen() {
     eta?: string;
   };
 
-  const activeItem: ActiveItem | null = (() => {
+  const activeItem: ActiveItem | null = useMemo(() => {
     const mat = orders.find((o) => ACTIVE_STATUSES.has(o.status));
     if (mat) {
       const trackingJob = mat.transportJobs?.find((j: any) => TJ_ACTIVE_STATUSES.has(j.status));
@@ -241,12 +241,15 @@ export default function HomeScreen() {
         kind: 'transport',
       };
     return null;
-  })();
+  }, [orders, skipOrders, transportOrders]);
 
-  const activeCount =
-    orders.filter((o) => ACTIVE_STATUSES.has(o.status)).length +
-    skipOrders.filter((o) => SKIP_ACTIVE_STATUSES.has(o.status)).length +
-    transportOrders.filter((o) => TJ_ACTIVE_STATUSES.has(o.status)).length;
+  const activeCount = useMemo(
+    () =>
+      orders.filter((o) => ACTIVE_STATUSES.has(o.status)).length +
+      skipOrders.filter((o) => SKIP_ACTIVE_STATUSES.has(o.status)).length +
+      transportOrders.filter((o) => TJ_ACTIVE_STATUSES.has(o.status)).length,
+    [orders, skipOrders, transportOrders],
+  );
 
   const getRecentItems = () => {
     const items: any[] = [];
@@ -289,7 +292,7 @@ export default function HomeScreen() {
     items.sort((a, b) => new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime());
     return items.slice(0, 5);
   };
-  const recentOrders = getRecentItems();
+  const recentOrders = useMemo(() => getRecentItems(), [orders, skipOrders, transportOrders]);
 
   const isNewUser = recentOrders.length === 0 && activeCount === 0;
 
@@ -341,7 +344,7 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadData(true)}
-            tintColor="#111827"
+            tintColor="#00A878"
           />
         }
       >
@@ -611,7 +614,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#374151',
-    borderRadius: 22,
+    borderRadius: 999,
   },
   activeDot: { width: 10, height: 10, borderRadius: 5 },
   pulseRing: {
@@ -643,10 +646,10 @@ const s = StyleSheet.create({
 
   newUserHero: {
     marginHorizontal: 20,
-    marginBottom: 28,
+    marginBottom: 24,
     backgroundColor: '#111827',
-    borderRadius: 24,
-    padding: 24,
+    borderRadius: 20,
+    padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
@@ -739,7 +742,7 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingRight: 20,
-    marginBottom: 8,
+    marginBottom: 16,
     marginTop: 12,
   },
   seeAllLink: {
@@ -823,10 +826,10 @@ const s = StyleSheet.create({
   // ── Active hero card (replaces the compact pill) ──────────────────────
   activeHero: {
     marginHorizontal: 20,
-    marginBottom: 28,
+    marginBottom: 24,
     backgroundColor: '#111827',
-    borderRadius: 24,
-    padding: 24,
+    borderRadius: 20,
+    padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.14,
@@ -895,9 +898,9 @@ const s = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 24,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: '#FFFBEB',
-    borderRadius: 16,
+    borderRadius: 14,
   },
   profileNudgeText: {
     flex: 1,
@@ -908,7 +911,7 @@ const s = StyleSheet.create({
   avatarBtn: {
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: 999,
     backgroundColor: '#111827',
     alignItems: 'center',
     justifyContent: 'center',

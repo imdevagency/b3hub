@@ -116,12 +116,23 @@ export function BottomSheet({
           {title ? <Text style={s.title}>{title}</Text> : null}
           {subtitle ? <Text style={s.subtitle}>{subtitle}</Text> : null}
         </View>
-        <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <TouchableOpacity
+          onPress={onClose}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityLabel="Aizvērt"
+          accessibilityRole="button"
+        >
           <X size={20} color="#6b7280" />
         </TouchableOpacity>
       </View>
     ) : (
-      <TouchableOpacity style={s.closeCorner} onPress={onClose} hitSlop={12}>
+      <TouchableOpacity
+        style={s.closeCorner}
+        onPress={onClose}
+        hitSlop={12}
+        accessibilityLabel="Aizvērt"
+        accessibilityRole="button"
+      >
         <X size={20} color="#9ca3af" />
       </TouchableOpacity>
     );
@@ -136,7 +147,13 @@ export function BottomSheet({
     >
       {/* Backdrop — fades independently */}
       <Animated.View style={[s.backdrop, { opacity: backdropOpacity }]}>
-        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+          accessibilityLabel="Aizvērt lapu"
+          accessibilityRole="button"
+        />
       </Animated.View>
 
       {/* Sheet — slides up from bottom */}

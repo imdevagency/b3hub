@@ -33,7 +33,9 @@ export function EmptyState({ icon, title, subtitle, action }: EmptyStateProps) {
   return (
     <View style={styles.wrap}>
       {icon && <View style={styles.iconWrap}>{icon}</View>}
-      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.title} numberOfLines={3}>
+        {title}
+      </Text>
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       {action ?? null}
     </View>

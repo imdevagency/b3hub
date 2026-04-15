@@ -155,6 +155,12 @@ export default function ActiveJobScreen() {
   const [surchargeAmount, setSurchargeAmount] = React.useState('');
   const [surchargeSubmitting, setSurchargeSubmitting] = React.useState(false);
 
+  // ── Delay report sheet ───────────────────────────────────────
+  const [delaySheetVisible, setDelaySheetVisible] = React.useState(false);
+  const [delayMinutes, setDelayMinutes] = React.useState('30');
+  const [delayReason, setDelayReason] = React.useState('');
+  const [delaySubmitting, setDelaySubmitting] = React.useState(false);
+
   // ── Offline queue ────────────────────────────────────────────────
   const [isOffline, setIsOffline] = React.useState(false);
 
@@ -708,6 +714,33 @@ export default function ActiveJobScreen() {
     }
   };
 
+  const handleReportDelay = async () => {
+    if (!token || !job) return;
+    const mins = parseInt(delayMinutes, 10);
+    if (isNaN(mins) || mins < 1 || mins > 480) {
+      Alert.alert('Kļūda', 'Ievadiet kavēšanās laiku (1–480 minūtes).');
+      return;
+    }
+    setDelaySubmitting(true);
+    try {
+      await api.transportJobs.reportDelay(
+        job.id,
+        { estimatedDelayMinutes: mins, reason: delayReason.trim() || undefined },
+        token,
+      );
+      toast.success('Pasūtītājs informēts par kavēšanos');
+      setDelaySheetVisible(false);
+      setDelayMinutes('30');
+      setDelayReason('');
+      haptics.success();
+    } catch (err: unknown) {
+      haptics.error();
+      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās nosūtīt paziņojumu');
+    } finally {
+      setDelaySubmitting(false);
+    }
+  };
+
   return (
     <ScreenContainer bg="transparent" topInset={0} style={{ flex: 1 }} noAnimation>
       {/* ── Absolutely Positioned Map Layer ── */}
@@ -1041,6 +1074,18 @@ export default function ActiveJobScreen() {
             </TouchableOpacity>
             {job.status !== 'DELIVERED' && job.status !== 'CANCELLED' && (
               <TouchableOpacity
+                style={[styles.reportProblemBtn, { borderColor: '#d97706', marginTop: 0 }]}
+                onPress={() => setDelaySheetVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Clock size={16} color="#d97706" />
+                <Text style={[styles.reportProblemText, { color: '#d97706' }]}>
+                  Ziņot par kavēšanos
+                </Text>
+              </TouchableOpacity>
+            )}
+            {job.status !== 'DELIVERED' && job.status !== 'CANCELLED' && (
+              <TouchableOpacity
                 style={styles.addSurchargeBtn}
                 onPress={() => setSurchargeSheetVisible(true)}
                 activeOpacity={0.8}
@@ -1234,6 +1279,48 @@ export default function ActiveJobScreen() {
           >
             <Text style={styles.surchargeSubmitText}>
               {surchargeSubmitting ? 'Saglabā...' : 'Pievienot papildu maksu'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* ── Delay Report Sheet ── */}
+      <BottomSheet
+        visible={delaySheetVisible}
+        onClose={() => setDelaySheetVisible(false)}
+        title="Ziņot par kavēšanos"
+        subtitle="Pasūtītājs saņems paziņojumu"
+      >
+        <View style={{ gap: 14, paddingBottom: 32 }}>
+          <View>
+            <Text style={styles.surchargeLabel}>Kavēšanās laiks (minūtes)</Text>
+            <TextInput
+              style={styles.surchargeInput}
+              keyboardType="numeric"
+              value={delayMinutes}
+              onChangeText={setDelayMinutes}
+              placeholder="30"
+              returnKeyType="done"
+            />
+          </View>
+          <View>
+            <Text style={styles.surchargeLabel}>Iemesls (neobligāti)</Text>
+            <TextInput
+              style={[styles.surchargeInput, { height: 72, textAlignVertical: 'top' }]}
+              value={delayReason}
+              onChangeText={setDelayReason}
+              placeholder="Satiksme, tehniskas problēmas..."
+              multiline
+            />
+          </View>
+          <TouchableOpacity
+            style={[styles.surchargeSubmitBtn, { backgroundColor: '#d97706' }]}
+            onPress={handleReportDelay}
+            disabled={delaySubmitting}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.surchargeSubmitText}>
+              {delaySubmitting ? 'Sūta...' : 'Nosūtīt paziņojumu'}
             </Text>
           </TouchableOpacity>
         </View>

@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   FileText,
   ChevronDown,
@@ -265,10 +265,11 @@ interface RequestCardProps {
   request: OpenQuoteRequest;
   myCompanyId: string | undefined;
   onRespond: (req: OpenQuoteRequest) => void;
+  autoExpand?: boolean;
 }
 
-function RequestCard({ request, myCompanyId, onRespond }: RequestCardProps) {
-  const [expanded, setExpanded] = useState(false);
+function RequestCard({ request, myCompanyId, onRespond, autoExpand = false }: RequestCardProps) {
+  const [expanded, setExpanded] = useState(autoExpand);
 
   const alreadyResponded =
     !!myCompanyId && request.responses.some((r) => r.supplierId === myCompanyId);
@@ -429,6 +430,7 @@ function MyResponseRow({ item }: { item: MyQuoteResponse }) {
 
 export default function SellerQuotesScreen() {
   const { user, token } = useAuth();
+  const { highlight } = useLocalSearchParams<{ highlight?: string }>();
   const [requests, setRequests] = useState<OpenQuoteRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -559,7 +561,7 @@ export default function SellerQuotesScreen() {
               myResponses.length === 0 && { flexGrow: 1, justifyContent: 'center' },
             ]}
             refreshControl={
-              <RefreshControl refreshing={myRefreshing} onRefresh={onRefresh} tintColor="#111827" />
+              <RefreshControl refreshing={myRefreshing} onRefresh={onRefresh} tintColor="#00A878" />
             }
           >
             {myResponses.length === 0 ? (
@@ -643,7 +645,7 @@ export default function SellerQuotesScreen() {
                 requests.length === 0 && { flexGrow: 1, justifyContent: 'center' },
               ]}
               refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00A878" />
               }
               keyboardShouldPersistTaps="handled"
             >
@@ -684,6 +686,7 @@ export default function SellerQuotesScreen() {
                     request={req}
                     myCompanyId={myCompanyId}
                     onRespond={handleRespond}
+                    autoExpand={req.id === highlight}
                   />
                 ))
               )}

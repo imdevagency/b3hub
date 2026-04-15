@@ -32,7 +32,9 @@ export function StatusPill({ label, bg, color, size = 'md' }: StatusPillProps) {
   const textStyle = size === 'sm' ? styles.textSm : styles.textMd;
   return (
     <View style={[styles.pill, pillStyle, { backgroundColor: bg }]}>
-      <Text style={[styles.text, textStyle, { color }]}>{label}</Text>
+      <Text style={[styles.text, textStyle, { color }]} numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   );
 }

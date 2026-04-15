@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 
 import {
   View,
@@ -260,7 +260,7 @@ function SaveSearchModal({
 }
 
 // ── Job card ──────────────────────────────────────────────────────────────────
-function JobCard({
+const JobCard = React.memo(function JobCard({
   job,
   onAccept,
   tourMode = false,
@@ -445,7 +445,7 @@ function JobCard({
       </Swipeable>
     </View>
   );
-}
+});
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function JobsScreen() {
@@ -501,9 +501,11 @@ export default function JobsScreen() {
   // Today's earnings summary
   useEffect(() => {
     if (!token) return;
+    const controller = new AbortController();
     api.transportJobs
       .myJobs(token)
       .then((jobs) => {
+        if (controller.signal.aborted) return;
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
         let earnings = 0;
@@ -520,6 +522,7 @@ export default function JobsScreen() {
         setTodayStats({ earnings, completed });
       })
       .catch(() => {});
+    return () => controller.abort();
   }, [token]);
   // Load saved searches on mount
   useEffect(() => {
@@ -548,7 +551,7 @@ export default function JobsScreen() {
     AsyncStorage.setItem(ASYNC_KEY, JSON.stringify(savedSearches));
   }, [savedSearches]);
 
-  const filteredJobs = filterJobs(allJobs, activeFilter);
+  const filteredJobs = useMemo(() => filterJobs(allJobs, activeFilter), [allJobs, activeFilter]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -633,11 +636,14 @@ export default function JobsScreen() {
     setPanelOpen((v) => !v);
   };
 
-  const handleAcceptPressed = (jobId: string) => {
-    const job = filteredJobs.find((j) => j.id === jobId) ?? allJobs.find((j) => j.id === jobId);
-    if (!job) return;
-    setAcceptSheetJob(job);
-  };
+  const handleAcceptPressed = useCallback(
+    (jobId: string) => {
+      const job = filteredJobs.find((j) => j.id === jobId) ?? allJobs.find((j) => j.id === jobId);
+      if (!job) return;
+      setAcceptSheetJob(job);
+    },
+    [filteredJobs, allJobs],
+  );
 
   const handleConfirmAccept = async () => {
     if (!acceptSheetJob || !token || accepting) return;
@@ -730,6 +736,19 @@ export default function JobsScreen() {
     }
   };
 
+  const renderJobItem = useCallback(
+    ({ item }: { item: TransportJob }) => <JobCard job={item} onAccept={handleAcceptPressed} />,
+    [handleAcceptPressed],
+  );
+
+  const nearbyForSheet = useMemo(
+    () =>
+      acceptSheetJob
+        ? nearbyJobs(acceptSheetJob.toLat, acceptSheetJob.toLng, allJobs, acceptSheetJob.id)
+        : [],
+    [acceptSheetJob, allJobs],
+  );
+
   if (loading) {
     return (
       <ScreenContainer bg="#f2f2f7">
@@ -821,7 +840,7 @@ export default function JobsScreen() {
                   title={`${job.fromCity} → ${job.toCity}`}
                   description={`€${job.priceTotal.toFixed(0)} · ${job.weightTonnes}t · ${Math.round(job.distanceKm)} km`}
                   pinColor="#111827"
-                  onCalloutPress={() => handleAcceptPressed(job)}
+                  onCalloutPress={() => handleAcceptPressed(job.id)}
                 />
               ))}
           </MapView>
@@ -874,10 +893,10 @@ export default function JobsScreen() {
           style={{ flex: 1 }}
           data={filteredJobs}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <JobCard job={item} onAccept={handleAcceptPressed} />}
+          renderItem={renderJobItem}
           contentContainerStyle={styles.list}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00A878" />
           }
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={
@@ -935,11 +954,7 @@ export default function JobsScreen() {
       <AcceptBottomSheet
         visible={!!acceptSheetJob}
         job={acceptSheetJob}
-        nearby={
-          acceptSheetJob
-            ? nearbyJobs(acceptSheetJob.toLat, acceptSheetJob.toLng, allJobs, acceptSheetJob.id)
-            : []
-        }
+        nearby={nearbyForSheet}
         onConfirm={handleConfirmAccept}
         loading={accepting}
         onDecline={handleDeclineOffer}
@@ -1060,7 +1075,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
     borderRadius: 20,
-    padding: 24,
+    padding: 16,
     overflow: 'hidden',
   },
   cardSelected: {
@@ -1077,7 +1092,7 @@ const styles = StyleSheet.create({
   tourCheckEmpty: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: 999,
     borderWidth: 2,
     borderColor: '#d1d5db',
     backgroundColor: '#ffffff',
@@ -1110,7 +1125,7 @@ const styles = StyleSheet.create({
   modalInput: {
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
@@ -1121,7 +1136,7 @@ const styles = StyleSheet.create({
   modalCancel: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
   },
@@ -1129,7 +1144,7 @@ const styles = StyleSheet.create({
   modalSave: {
     flex: 2,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#111827',
     alignItems: 'center',
   },
@@ -1139,7 +1154,7 @@ const styles = StyleSheet.create({
   // ── Accept Bottom Sheet ────────────────────────────────────────
   sheetJobCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 16,
     gap: 12,
     borderWidth: 1,

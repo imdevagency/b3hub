@@ -184,7 +184,7 @@ export default function SchedulesScreen() {
                 setRefreshing(true);
                 load(true);
               }}
-              tintColor="#111827"
+              tintColor="#00A878"
             />
           }
         >

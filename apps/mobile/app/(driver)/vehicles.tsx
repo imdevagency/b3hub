@@ -437,7 +437,7 @@ export default function VehiclesScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => load(true)}
-            tintColor="#111827"
+            tintColor="#00A878"
           />
         }
         ListEmptyComponent={

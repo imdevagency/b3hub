@@ -69,11 +69,11 @@ export default function DriverLayout() {
                       <View
                         style={{
                           position: 'absolute',
-                          top: -3,
-                          right: -5,
-                          width: 9,
-                          height: 9,
-                          borderRadius: 5,
+                          top: -4,
+                          right: -6,
+                          width: 12,
+                          height: 12,
+                          borderRadius: 6,
                           backgroundColor: '#059669',
                           borderWidth: 2,
                           borderColor: '#ffffff',

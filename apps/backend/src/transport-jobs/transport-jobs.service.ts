@@ -1856,6 +1856,67 @@ export class TransportJobsService {
     return job;
   }
 
+  // ── Report delivery delay — driver notifies buyer of expected late arrival ──
+  async reportDelay(
+    id: string,
+    driverId: string,
+    dto: { estimatedDelayMinutes: number; reason?: string },
+  ) {
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        driverId: true,
+        jobNumber: true,
+        status: true,
+        requestedById: true,
+        driver: { select: { firstName: true, lastName: true } },
+        order: { select: { createdById: true, orderNumber: true } },
+      },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+    if (job.driverId !== driverId) throw new ForbiddenException('This is not your job');
+
+    const activeStatuses: TransportJobStatus[] = [
+      TransportJobStatus.EN_ROUTE_PICKUP,
+      TransportJobStatus.AT_PICKUP,
+      TransportJobStatus.LOADED,
+      TransportJobStatus.EN_ROUTE_DELIVERY,
+      TransportJobStatus.AT_DELIVERY,
+    ];
+    if (!activeStatuses.includes(job.status as TransportJobStatus)) {
+      throw new BadRequestException('Can only report delay on an active in-progress job');
+    }
+
+    const driverName = job.driver
+      ? `${job.driver.firstName} ${job.driver.lastName}`
+      : 'Šoferis';
+    const mins = dto.estimatedDelayMinutes;
+    const delayText =
+      mins >= 60
+        ? `~${Math.floor(mins / 60)} st ${mins % 60} min`
+        : `~${mins} min`;
+    const reasonText = dto.reason ? `. Iemesls: ${dto.reason}` : '';
+    const refText = job.order?.orderNumber ?? job.jobNumber;
+
+    const buyerUserId = job.order?.createdById ?? job.requestedById;
+    if (buyerUserId) {
+      this.notifications
+        .create({
+          userId: buyerUserId,
+          type: NotificationType.DRIVER_DELAY,
+          title: '⏱ Šoferis kavējas',
+          message: `${driverName} kavēsies ${delayText} (${refText})${reasonText}`,
+          data: { jobId: id },
+        })
+        .catch((err) =>
+          this.logger.error(err instanceof Error ? err.message : String(err)),
+        );
+    }
+
+    return { jobId: id, reported: true };
+  }
+
   // ── Submit delivery proof (transitions job → DELIVERED) ──────
   async submitDeliveryProof(
     id: string,
@@ -2022,6 +2083,39 @@ export class TransportJobsService {
       this.payments.releaseFundsForJob(id).catch((err: Error) =>
         this.logger.warn(`releaseFundsForJob on delivery failed for standalone job ${id}: ${err.message}`),
       );
+    }
+
+    // Payout nudge: if the carrier hasn't completed Stripe Connect onboarding,
+    // notify the driver so they know to finish setup before funds can be released.
+    if (job.driverId) {
+      (async () => {
+        try {
+          const driverUser = await this.prisma.user.findUnique({
+            where: { id: job.driverId! },
+            select: {
+              id: true,
+              company: { select: { payoutEnabled: true, stripeConnectId: true } },
+            },
+          });
+          if (driverUser?.company && !driverUser.company.payoutEnabled) {
+            this.notifications
+              .create({
+                userId: job.driverId!,
+                type: NotificationType.PAYOUT_PENDING,
+                title: '💳 Pabeidziet Stripe reģistrāciju',
+                message: `Darbs ${delivered.jobNumber} ir pabeigts, bet jūsu uzņēmums vēl nav aktivizējis izmaksas. Dodieties uz iestatījumiem, lai pabeigtu Stripe Connect iestatīšanu.`,
+                data: { jobId: id },
+              })
+              .catch((err) =>
+                this.logger.error(err instanceof Error ? err.message : String(err)),
+              );
+          }
+        } catch (err) {
+          this.logger.warn(
+            `payoutNudge: failed to check carrier payout status for job ${id}: ${(err as Error).message}`,
+          );
+        }
+      })();
     }
 
     return delivered;

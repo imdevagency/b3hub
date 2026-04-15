@@ -30,6 +30,7 @@ import {
   ReportTransportExceptionDto,
   ResolveTransportExceptionDto,
 } from './dto/report-exception.dto';
+import { ReportDelayDto } from './dto/report-delay.dto';
 import { IsBoolean, IsEnum, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -476,6 +477,19 @@ export class TransportJobsController {
   @Get(':id/exceptions')
   listExceptions(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.service.listExceptions(id, user);
+  }
+
+  /**
+   * POST /transport-jobs/:id/report-delay
+   * Driver signals they are running late; sends push notification to the buyer.
+   */
+  @Post(':id/report-delay')
+  reportDelay(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+    @Body() dto: ReportDelayDto,
+  ) {
+    return this.service.reportDelay(id, user.userId, dto);
   }
 
   /**

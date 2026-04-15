@@ -475,7 +475,7 @@ const bs = StyleSheet.create({
   modeBtnText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
   modeBtnTextActive: { color: '#fff' },
   hint: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
-  previewBox: { backgroundColor: '#f9fafb', borderRadius: 10, padding: 12, gap: 6 },
+  previewBox: { backgroundColor: '#f9fafb', borderRadius: 14, padding: 16, gap: 6 },
   previewTitle: { fontSize: 11, fontWeight: '700', color: '#9ca3af', marginBottom: 2 },
   previewRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   previewName: { fontSize: 13, color: '#374151', flex: 1, paddingRight: 8 },
@@ -993,7 +993,7 @@ export default function SellerCatalog() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => load(true)}
-              tintColor="#111827"
+              tintColor="#00A878"
             />
           }
         >
@@ -1101,7 +1101,7 @@ const s = StyleSheet.create({
     backgroundColor: '#111827',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 30,
+    borderRadius: 999,
   },
   addBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 14 },
 
@@ -1136,7 +1136,7 @@ const s = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 18,
+    paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
@@ -1147,7 +1147,7 @@ const s = StyleSheet.create({
   iconBox: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1191,7 +1191,7 @@ const s = StyleSheet.create({
   emptyIconWrap: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: 999,
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1210,7 +1210,7 @@ const s = StyleSheet.create({
     backgroundColor: '#111827',
     paddingHorizontal: 24,
     paddingVertical: 14,
-    borderRadius: 30,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1241,7 +1241,7 @@ const s = StyleSheet.create({
   },
   input: {
     backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
@@ -1251,7 +1251,7 @@ const s = StyleSheet.create({
   textArea: { minHeight: 100, textAlignVertical: 'top' },
   pickerBtn: {
     backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
     flexDirection: 'row',
