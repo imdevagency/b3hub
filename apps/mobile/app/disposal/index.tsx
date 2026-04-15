@@ -9,6 +9,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Calendar, LocaleConfig } from 'react-native-calendars';
 import {
   View,
   Text,
@@ -48,6 +49,17 @@ import type { WasteType, DisposalTruckType } from '@/lib/api';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
+
+
+LocaleConfig.locales['lv'] = {
+  monthNames: ['Janvāris','Februāris','Marts','Aprīlis','Maijs','Jūnijs','Jūlijs','Augusts','Septembris','Oktobris','Novembris','Decembris'],
+  monthNamesShort: ['Jan.','Feb.','Mar.','Apr.','Mai','Jūn.','Jūl.','Aug.','Sep.','Okt.','Nov.','Dec.'],
+  dayNames: ['Svētdiena','Pirmdiena','Otrdiena','Trešdiena','Ceturtdiena','Piektdiena','Sestdiena'],
+  dayNamesShort: ['Sv','P','O','T','C','Pk','S'],
+  today: 'Šodien'
+};
+LocaleConfig.defaultLocale = 'lv';
+
 import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
 import { useToast } from '@/components/ui/Toast';
 
@@ -544,18 +556,18 @@ export default function DisposalWizard() {
                     <View style={{ marginRight: 16 }}>
                       <WasteIcon
                         size={24}
-                        color={isSel ? '#111827' : '#6b7280'}
+                        color={isSel ? '#ffffff' : '#6b7280'}
                         strokeWidth={1.5}
                       />
                     </View>
 
                     <View style={s.wasteInfo}>
-                      <Text style={[s.wasteLabel, isSel && { color: '#000' }]}>{opt.label}</Text>
-                      <Text style={[s.wasteDesc, isSel && { color: '#4b5563' }]}>{opt.desc}</Text>
+                      <Text style={[s.wasteLabel, isSel && { color: '#ffffff' }]}>{opt.label}</Text>
+                      <Text style={[s.wasteDesc, isSel && { color: '#9ca3af' }]}>{opt.desc}</Text>
                     </View>
 
                     <View style={[s.checkboxOuter, isSel && s.checkboxOuterSel]}>
-                      {isSel && <Check size={14} color="#fff" strokeWidth={3} />}
+                      {isSel && <Check size={14} color="#111827" strokeWidth={3} />}
                     </View>
                   </TouchableOpacity>
                 );
@@ -667,9 +679,9 @@ export default function DisposalWizard() {
                   ≈ {activeTruck.capacity * numTrucks} t · ≈ {activeTruck.volume * numTrucks} m³
                 </Text>
               </View>
-              <View style={[s.liveStatRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
-                <Text style={s.liveStatLabel}>Cena</Text>
-                <Text style={[s.liveStatValue, { color: '#111827', fontWeight: '700' }]}>
+              <View style={[s.liveStatRow, { borderBottomWidth: 0 }]}>
+                <Text style={s.liveStatLabel}>Kopējā cena (no)</Text>
+                <Text style={[s.liveStatValue, { fontSize: 18, fontWeight: '800' }]}>
                   no €{activeTruck.fromPrice * numTrucks}
                 </Text>
               </View>
@@ -688,10 +700,9 @@ export default function DisposalWizard() {
               style={[
                 s.uberInput,
                 {
-                  backgroundColor: '#fff',
+                  backgroundColor: '#f3f4f6',
                   borderRadius: 16,
-                  borderWidth: 1.5,
-                  borderColor: '#f3f4f6',
+                  borderWidth: 0,
                   paddingHorizontal: 16,
                   marginBottom: 4,
                 },
@@ -716,10 +727,9 @@ export default function DisposalWizard() {
                 s.uberInput,
                 s.uberInputMulti,
                 {
-                  backgroundColor: '#fff',
+                  backgroundColor: '#f3f4f6',
                   borderRadius: 16,
-                  borderWidth: 1.5,
-                  borderColor: '#f3f4f6',
+                  borderWidth: 0,
                   paddingHorizontal: 16,
                 },
               ]}
@@ -741,51 +751,42 @@ export default function DisposalWizard() {
             showsVerticalScrollIndicator={false}
           >
             <Text style={s.sectionLabel}>Savākšanas datums</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginBottom: 12 }}
-            >
-              {/* ASAP / today chip */}
-              {(() => {
-                const isSel = toISO(date) === toISO(today);
-                return (
-                  <TouchableOpacity
-                    key="today"
-                    style={[s.dayChip, s.dayChipAsap, isSel && s.dayChipActive]}
-                    onPress={() => setDate(new Date(today))}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[s.dayDow, isSel && s.dayActive]}>🔴</Text>
-                    <Text style={[s.dayNum, isSel && s.dayActive]}>Šodien</Text>
-                    <Text style={[s.dayMon, isSel && s.dayActiveSub]}>steidzami</Text>
-                  </TouchableOpacity>
-                );
-              })()}
-              {Array.from({ length: 14 }, (_, i) => {
-                const d = addDays(today, i + 1);
-                const isSel = toISO(d) === toISO(date);
-                return (
-                  <TouchableOpacity
-                    key={i}
-                    style={[s.dayChip, isSel && s.dayChipActive]}
-                    onPress={() => setDate(d)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[s.dayDow, isSel && s.dayActive]}>
-                      {d.toLocaleDateString('lv-LV', { weekday: 'short' })}
-                    </Text>
-                    <Text style={[s.dayNum, isSel && s.dayActive]}>{d.getDate()}</Text>
-                    <Text style={[s.dayMon, isSel && s.dayActiveSub]}>
-                      {d.toLocaleDateString('lv-LV', { month: 'short' })}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+            <View style={{ marginBottom: 16, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E7EB' }}>
+              <Calendar
+                current={date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+                onDayPress={(day: any) => {
+                  setDate(new Date(day.dateString));
+                }}
+                markedDates={{
+                  [date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]]: { selected: true, selectedColor: '#111827' }
+                }}
+                theme={{
+                  calendarBackground: '#ffffff',
+                  textSectionTitleColor: '#6B7280',
+                  selectedDayBackgroundColor: '#111827',
+                  selectedDayTextColor: '#ffffff',
+                  todayTextColor: '#2563EB',
+                  dayTextColor: '#111827',
+                  textDisabledColor: '#D1D5DB',
+                  dotColor: '#2563EB',
+                  selectedDotColor: '#ffffff',
+                  arrowColor: '#111827',
+                  monthTextColor: '#111827',
+                  textDayFontFamily: 'Geist-Medium',
+                  textMonthFontFamily: 'Geist-SemiBold',
+                  textDayHeaderFontFamily: 'Geist-Medium',
+                  textDayFontSize: 15,
+                  textMonthFontSize: 16,
+                  textDayHeaderFontSize: 13
+                }}
+                minDate={new Date().toISOString().split('T')[0]}
+                firstDay={1}
+                enableSwipeMonths={true}
+              />
+            </View>
 
             {/* Pickup window */}
-            <Text style={[s.sectionLabel, { marginTop: 4 }]}>Vēlamais savākšanas laiks</Text>
+            <Text style={s.sectionLabel}>Vēlamais savākšanas laiks</Text>
             <View style={s.windowRow}>
               {(
                 [
@@ -944,9 +945,8 @@ const s = StyleSheet.create({
   addressCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+    backgroundColor: '#f3f4f6',
+    borderWidth: 0,
     borderRadius: 12,
     padding: 16,
   },
@@ -970,15 +970,13 @@ const s = StyleSheet.create({
   wasteRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#f3f4f6',
     borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: '#f3f4f6',
+    borderWidth: 0,
     padding: 16,
   },
   wasteRowSel: {
-    borderColor: '#000',
-    backgroundColor: '#fafafa',
+    backgroundColor: '#111827',
   },
   wasteInfo: {
     flex: 1,
@@ -1003,11 +1001,11 @@ const s = StyleSheet.create({
     borderColor: '#d1d5db',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
   },
   checkboxOuterSel: {
-    backgroundColor: '#000',
-    borderColor: '#000',
+    backgroundColor: '#ffffff',
+    borderColor: '#ffffff',
   },
 
   // Volume list styles
@@ -1018,21 +1016,19 @@ const s = StyleSheet.create({
   volRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#f3f4f6',
     borderRadius: 16,
     padding: 16,
-    borderWidth: 2,
-    borderColor: '#f3f4f6',
+    borderWidth: 0,
   },
   volRowSel: {
-    borderColor: '#111827',
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#111827',
   },
   volRowIconBadge: {
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
@@ -1048,7 +1044,7 @@ const s = StyleSheet.create({
     lineHeight: 22,
   },
   volRowLabelSel: {
-    color: '#111827',
+    color: '#ffffff',
   },
   volRowSub: {
     fontSize: 13,
@@ -1056,7 +1052,7 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   volRowSubSel: {
-    color: '#4b5563',
+    color: '#9ca3af',
   },
   volRowPrice: {
     fontSize: 16,
@@ -1064,7 +1060,7 @@ const s = StyleSheet.create({
     color: '#374151',
   },
   volRowPriceSel: {
-    color: '#111827',
+    color: '#ffffff',
   },
 
   // Hazard
@@ -1085,10 +1081,9 @@ const s = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 24,
-    borderWidth: 1.5,
-    borderColor: '#f3f4f6',
+    borderWidth: 0,
     marginRight: 10,
-    backgroundColor: '#fff',
+    backgroundColor: '#f3f4f6',
     minWidth: 70,
   },
   dayChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
@@ -1098,20 +1093,19 @@ const s = StyleSheet.create({
   dayMon: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
   dayActive: { color: '#fff' },
   dayActiveSub: { color: '#d1d5db' },
-  windowRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
+  windowRow: { flexDirection: 'row', gap: 8, marginBottom: 24 },
   windowChip: {
     flex: 1,
-    paddingVertical: 9,
-    paddingHorizontal: 4,
+    paddingVertical: 14,
+    paddingHorizontal: 6,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#f9fafb',
+    borderWidth: 0,
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
   },
-  windowChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  windowChipText: { fontSize: 12, color: '#6b7280', fontWeight: '500', textAlign: 'center' },
-  windowChipTextActive: { color: '#fff' },
+  windowChipActive: { backgroundColor: '#000000' },
+  windowChipText: { fontSize: 14, color: '#374151', fontWeight: '600', textAlign: 'center' },
+  windowChipTextActive: { color: '#ffffff' },
 
   // Save address toggle
   saveAddrRow: {
@@ -1120,19 +1114,18 @@ const s = StyleSheet.create({
     gap: 12,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#f3f4f6',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderWidth: 0,
     marginBottom: 12,
   },
   saveAddrCheck: {
     width: 22,
     height: 22,
     borderRadius: 6,
-    borderWidth: 1.5,
+    borderWidth: 0,
     borderColor: '#d1d5db',
-    backgroundColor: '#fff',
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1142,27 +1135,23 @@ const s = StyleSheet.create({
 
   // Summary card
   summaryCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: '#f3f4f6',
-    overflow: 'hidden',
-    padding: 16,
+    backgroundColor: 'transparent',
+    paddingVertical: 12,
   },
   addressRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 12,
+    marginVertical: 4,
     paddingBottom: 16,
-    borderBottomWidth: 1.5,
-    borderBottomColor: '#f3f4f6',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   addressValue: { flex: 1, fontSize: 15, color: '#111827', fontWeight: '600', lineHeight: 22 },
   detailRow: {
-    paddingVertical: 12,
-    borderBottomWidth: 1.5,
-    borderBottomColor: '#f3f4f6',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1180,10 +1169,9 @@ const s = StyleSheet.create({
   uberInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#f3f4f6',
     borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: '#f3f4f6',
+    borderWidth: 0,
     paddingHorizontal: 16,
     marginBottom: 12,
   },
@@ -1210,17 +1198,16 @@ const s = StyleSheet.create({
   truckTypeCard: {
     flex: 1,
     borderRadius: 14,
-    borderWidth: 2,
-    borderColor: '#f3f4f6',
-    backgroundColor: '#fff',
+    borderWidth: 0,
+    backgroundColor: '#f3f4f6',
     overflow: 'hidden',
   },
-  truckTypeCardSel: { borderColor: '#111827', backgroundColor: '#111827' },
+  truckTypeCardSel: { backgroundColor: '#111827' },
   truckIllZone: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#f3f4f6',
   },
   truckIllZoneSel: { backgroundColor: '#1f2937' },
   truckTypeName: {
@@ -1243,26 +1230,24 @@ const s = StyleSheet.create({
 
   // ── Count stepper ────────────────────────────────────────────
   countCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f3f4f6',
     borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: '#f3f4f6',
+    borderWidth: 0,
     overflow: 'hidden',
-    marginBottom: 14,
+    marginBottom: 24,
   },
   heroIllZone: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    backgroundColor: '#f9fafb',
-    borderBottomWidth: 1.5,
-    borderBottomColor: '#f3f4f6',
+    paddingVertical: 20,
+    backgroundColor: 'transparent',
+    borderBottomWidth: 0,
   },
   stepperRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingBottom: 20,
     paddingHorizontal: 20,
   },
   stepperBtn: {
@@ -1273,7 +1258,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepperBtnDim: { backgroundColor: '#e5e7eb' },
+  stepperBtnDim: { opacity: 0.3 },
   stepperBtnText: {
     fontSize: 26,
     fontWeight: '300',
@@ -1294,22 +1279,18 @@ const s = StyleSheet.create({
 
   // ── Live stats ───────────────────────────────────────────────
   liveStats: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: '#f3f4f6',
-    padding: 14,
-    marginBottom: 16,
+    backgroundColor: 'transparent',
+    marginBottom: 24,
   },
   liveStatRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#E5E7EB',
   },
-  liveStatLabel: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
+  liveStatLabel: { fontSize: 15, color: '#6b7280', fontWeight: '500' },
   liveStatValue: {
     fontSize: 14,
     color: '#374151',

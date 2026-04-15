@@ -468,6 +468,40 @@ export default function TransportJobDetailScreen() {
             {st && <StatusPill label={st.label} bg={st.bg} color={st.color} />}
           </View>
 
+          {/* Driver card */}
+          {job.driver && (
+            <View style={s.card}>
+              <Text style={s.cardTitle}>Pārvadātājs</Text>
+              <View style={s.driverRow}>
+                <View style={s.driverAvatar}>
+                  <User size={20} color="#374151" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.driverName}>
+                    {job.driver.firstName} {job.driver.lastName}
+                  </Text>
+                  {job.vehicle && (
+                    <Text style={s.driverSub}>
+                      {job.vehicle.vehicleType} · {job.vehicle.licensePlate}
+                    </Text>
+                  )}
+                </View>
+                {job.driver.phone && (
+                  <TouchableOpacity
+                    style={s.callBtn}
+                    onPress={() => {
+                      haptics.light();
+                      Linking.openURL(`tel:${job.driver!.phone}`);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Phone size={14} color="#111827" strokeWidth={2} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          )}
+
           {/* Progress stepper */}
           {job.status !== 'CANCELLED' && (
             <View style={s.card}>
@@ -557,41 +591,6 @@ export default function TransportJobDetailScreen() {
               />
             )}
           </View>
-
-          {/* Driver card */}
-          {job.driver && (
-            <View style={s.card}>
-              <Text style={s.cardTitle}>Pārvadātājs</Text>
-              <View style={s.driverRow}>
-                <View style={s.driverAvatar}>
-                  <User size={20} color="#374151" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.driverName}>
-                    {job.driver.firstName} {job.driver.lastName}
-                  </Text>
-                  {job.vehicle && (
-                    <Text style={s.driverSub}>
-                      {job.vehicle.vehicleType} · {job.vehicle.licensePlate}
-                    </Text>
-                  )}
-                </View>
-                {job.driver.phone && (
-                  <TouchableOpacity
-                    style={s.callBtn}
-                    onPress={() => {
-                      haptics.light();
-                      Linking.openURL(`tel:${job.driver!.phone}`);
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Phone size={14} color="#fff" strokeWidth={2} />
-                    <Text style={s.callBtnText}>Zvanīt</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          )}
 
           {/* Site contact card */}
           {(job.order?.siteContactName || job.order?.siteContactPhone) && (
@@ -887,19 +886,15 @@ const s = StyleSheet.create({
     elevation: 6,
   },
 
-  // Content
-  scroll: { paddingHorizontal: 16, paddingTop: 12, gap: 12 },
+  scroll: { backgroundColor: '#fff' },
 
   jobHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
   },
   jobNumber: { fontSize: 18, fontWeight: '700', color: '#111827' },
   jobType: { fontSize: 13, color: '#6b7280', marginTop: 2 },
@@ -916,14 +911,11 @@ const s = StyleSheet.create({
 
   card: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-    gap: 12,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+    gap: 16,
   },
   cardTitle: {
     fontSize: 11,

@@ -279,13 +279,15 @@ export default function ProjectDetailScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Budžets</Text>
             <View style={styles.sectionCard}>
-              <View style={styles.budgetAmounts}>
-                <Text style={styles.metaLabel}>Plānots: {formatEur(project.budgetAmount)}</Text>
-                <Text style={styles.metaLabel}>
-                  Izmantots: {formatEur(project.materialCosts + project.pendingCosts)}
-                </Text>
+              <View style={styles.sectionCardContent}>
+                <View style={styles.budgetAmounts}>
+                  <Text style={styles.metaLabel}>Plānots: {formatEur(project.budgetAmount)}</Text>
+                  <Text style={styles.metaLabel}>
+                    Izmantots: {formatEur(project.materialCosts + project.pendingCosts)}
+                  </Text>
+                </View>
+                <SpendBar pct={project.budgetUsedPct} />
               </View>
-              <SpendBar pct={project.budgetUsedPct} />
             </View>
           </View>
         ) : null}
@@ -296,34 +298,29 @@ export default function ProjectDetailScreen() {
           <View style={styles.sectionCard}>
             {project.clientName ? (
               <View style={styles.infoRow}>
-                <User size={14} color={colors.textMuted} />
                 <Text style={styles.infoLabel}>Klients</Text>
                 <Text style={styles.infoValue}>{project.clientName}</Text>
               </View>
             ) : null}
             {project.siteAddress ? (
               <View style={styles.infoRow}>
-                <MapPin size={14} color={colors.textMuted} />
                 <Text style={styles.infoLabel}>Atrašanās vieta</Text>
                 <Text style={styles.infoValue}>{project.siteAddress}</Text>
               </View>
             ) : null}
             {project.startDate ? (
               <View style={styles.infoRow}>
-                <Calendar size={14} color={colors.textMuted} />
                 <Text style={styles.infoLabel}>Sākums</Text>
                 <Text style={styles.infoValue}>{formatDate(project.startDate)}</Text>
               </View>
             ) : null}
             {project.endDate ? (
               <View style={styles.infoRow}>
-                <Calendar size={14} color={colors.textMuted} />
                 <Text style={styles.infoLabel}>Beigas</Text>
                 <Text style={styles.infoValue}>{formatDate(project.endDate)}</Text>
               </View>
             ) : null}
             <View style={styles.infoRow}>
-              <Building2 size={14} color={colors.textMuted} />
               <Text style={styles.infoLabel}>Izveidots</Text>
               <Text style={styles.infoValue}>
                 {project.createdBy.firstName} {project.createdBy.lastName}
@@ -527,9 +524,10 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   pageHeader: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-    gap: spacing.xs,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 20,
+    gap: 8,
   },
   titleRow: {
     flexDirection: 'row',
@@ -538,10 +536,12 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   pageTitle: {
-    fontSize: fontSizes.xl,
-    fontWeight: '700',
-    color: colors.textPrimary,
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#111827',
     flex: 1,
+    letterSpacing: -0.5,
+    flexShrink: 1,
   },
   description: {
     fontSize: fontSizes.sm,
@@ -551,47 +551,65 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-    marginBottom: spacing.md,
+    paddingHorizontal: 16,
+    gap: 12,
+    marginBottom: 24,
   },
   statCard: {
     flex: 1,
-    minWidth: '45%',
-    backgroundColor: colors.bgCard,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+    minWidth: '40%',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
     gap: 4,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   statCardValue: {
-    fontSize: fontSizes.lg,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#000000',
+    letterSpacing: -0.5,
   },
   statCardLabel: {
-    fontSize: fontSizes.xs,
-    color: colors.textMuted,
-  },
-  section: {
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.md,
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: fontSizes.sm,
+    fontSize: 12,
+    color: '#6b7280',
     fontWeight: '600',
-    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    marginTop: 4,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12,
+    marginTop: 16,
+    paddingHorizontal: 20,
   },
   sectionCard: {
-    backgroundColor: colors.bgCard,
-    borderRadius: radius.lg,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    marginHorizontal: 16,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.sm,
+    borderColor: '#f3f4f6',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  sectionCardContent: {
+    padding: 16,
   },
   budgetAmounts: {
     flexDirection: 'row',
@@ -624,23 +642,30 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   infoLabel: {
-    fontSize: fontSizes.sm,
-    color: colors.textMuted,
-    width: 120,
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
+    flexShrink: 0,
   },
   infoValue: {
-    fontSize: fontSizes.sm,
-    color: colors.textPrimary,
-    fontWeight: '500',
+    fontSize: 15,
+    color: '#111827',
+    fontWeight: '600',
+    textAlign: 'right',
     flex: 1,
+    paddingLeft: 12,
   },
   orderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   orderLeft: {
     flex: 1,
@@ -651,55 +676,62 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   orderNumber: {
-    fontSize: fontSizes.sm,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    letterSpacing: -0.2,
   },
   orderMeta: {
-    fontSize: fontSizes.xs,
-    color: colors.textMuted,
+    fontSize: 13,
+    color: '#6b7280',
+    fontWeight: '500',
   },
   orderTotal: {
-    fontSize: fontSizes.sm,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#000000',
+    letterSpacing: -0.4,
   },
   divider: {
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: '#f3f4f6',
   },
   emptyOrders: {
-    fontSize: fontSizes.sm,
-    color: colors.textMuted,
+    fontSize: 14,
+    color: '#9ca3af',
     textAlign: 'center',
-    paddingVertical: spacing.sm,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
   },
   pill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    flexShrink: 0,
   },
   pillText: {
-    fontSize: fontSizes.xs,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 20,
   },
   sectionAction: {
     padding: 4,
   },
   addSiteForm: {
-    backgroundColor: colors.bgCard,
-    borderRadius: radius.lg,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#e5e7eb',
     borderStyle: 'dashed',
-    padding: spacing.md,
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
+    padding: 16,
+    gap: 10,
+    marginHorizontal: 16,
+    marginBottom: 12,
   },
   formInput: {
     backgroundColor: '#f9fafb',
@@ -744,20 +776,24 @@ const styles = StyleSheet.create({
   siteRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing.sm,
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   siteInfo: {
     flex: 1,
     gap: 2,
   },
   siteLabel: {
-    fontSize: fontSizes.sm,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    letterSpacing: -0.2,
   },
   siteAddress: {
-    fontSize: fontSizes.xs,
-    color: colors.textMuted,
+    fontSize: 14,
+    color: '#6b7280',
+    marginTop: 2,
   },
   removeBtn: {
     padding: 4,
@@ -765,20 +801,24 @@ const styles = StyleSheet.create({
   },
   docRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   docInfo: {
     flex: 1,
     gap: 2,
   },
   docTitle: {
-    fontSize: fontSizes.sm,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    letterSpacing: -0.2,
   },
   docDate: {
-    fontSize: fontSizes.xs,
-    color: colors.textMuted,
+    fontSize: 13,
+    color: '#6b7280',
+    marginTop: 2,
   },
 });

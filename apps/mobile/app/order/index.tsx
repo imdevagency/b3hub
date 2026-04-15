@@ -20,6 +20,7 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
+import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import {

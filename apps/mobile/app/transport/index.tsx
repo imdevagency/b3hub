@@ -666,7 +666,7 @@ export default function TransportWizard() {
               {currentVehiclePrice && (
                 <DetailRow
                   label="Aptuvenā cena"
-                  highlight
+                  
                   value={
                     route && currentVehicle
                       ? `~€${Math.round(

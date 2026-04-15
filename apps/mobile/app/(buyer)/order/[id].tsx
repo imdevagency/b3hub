@@ -1305,12 +1305,9 @@ const s = StyleSheet.create({
   // ── Horizontal status stepper ──────────────────────────────────
   stepperCard: {
     backgroundColor: '#fff',
-    borderRadius: 14,
     padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
   },
   stepperWrap: { position: 'relative', paddingBottom: 4 },
   stepperTrack: {
@@ -1375,11 +1372,9 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#eff6ff',
-    borderRadius: 16,
     padding: 16,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    marginBottom: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#bfdbfe',
   },
   liveTrackLeft: {
     flexDirection: 'row',
@@ -1413,12 +1408,10 @@ const s = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
   },
   driverCard: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 14,
-    padding: 14,
-    gap: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: '#111827',
+    backgroundColor: '#fff',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
   },
   driverCardRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   driverTitle: {

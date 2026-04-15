@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import {
   Plus,
   Package,
@@ -31,7 +30,7 @@ import {
 } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { lv } from 'date-fns/locale';
-import { useOrders, type FilterKey } from '@/lib/use-orders';
+import { useOrders } from '@/lib/use-orders';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -63,17 +62,16 @@ import type { ApiTransportJob } from '@/lib/api';
 export default function OrdersScreen() {
   const router = useRouter();
   const {
-    filtered,
     unified,
     loading,
     refreshing,
     onRefresh: refresh,
-    filter,
-    setFilter,
     query,
     setQuery,
     error,
   } = useOrders();
+
+  const [activeTab, setActiveTab] = useState<'active' | 'done'>('active');
 
   const { token } = useAuth();
   const [showTypePicker, setShowTypePicker] = useState(false);
@@ -104,15 +102,20 @@ export default function OrdersScreen() {
 
   const showCo2Banner = !loading && deliveredJobCount > 0;
 
+  const tabFiltered = React.useMemo(
+    () => (activeTab === 'active' ? unified.filter((i) => i.isActive) : unified.filter((i) => !i.isActive)),
+    [unified, activeTab],
+  );
+
   const kindCounts = React.useMemo(
     () => ({
-      all: filtered.length,
-      material: filtered.filter((i) => i.kind === 'material').length,
-      logistics: filtered.filter((i) => i.kind === 'transport' || i.kind === 'disposal').length,
-      skip: filtered.filter((i) => i.kind === 'skip').length,
-      rfq: filtered.filter((i) => i.kind === 'rfq').length,
+      all: tabFiltered.length,
+      material: tabFiltered.filter((i) => i.kind === 'material').length,
+      logistics: tabFiltered.filter((i) => i.kind === 'transport' || i.kind === 'disposal').length,
+      skip: tabFiltered.filter((i) => i.kind === 'skip').length,
+      rfq: tabFiltered.filter((i) => i.kind === 'rfq').length,
     }),
-    [filtered],
+    [tabFiltered],
   );
 
   const hasMultipleKinds = React.useMemo(() => {
@@ -121,17 +124,37 @@ export default function OrdersScreen() {
   }, [unified]);
 
   const displayItems = React.useMemo(() => {
-    if (kindFilter === 'all') return filtered;
+    let base = tabFiltered;
+    if (query.trim().length >= 2) {
+      const q = query.trim().toLowerCase();
+      // inline search since we're bypassing useOrders' filtered
+      base = base.filter((i) => {
+        const d = i.data as any;
+        const parts: string[] = [];
+        if (d.orderNumber) parts.push(d.orderNumber);
+        if (d.jobNumber) parts.push(d.jobNumber);
+        if (d.deliveryAddress) parts.push(d.deliveryAddress);
+        if (d.pickupAddress) parts.push(d.pickupAddress);
+        if (d.dropoffAddress) parts.push(d.dropoffAddress);
+        if (d.material?.name) parts.push(d.material.name);
+        if (d.title) parts.push(d.title);
+        if (d.supplier?.name) parts.push(d.supplier.name);
+        if (d.buyer?.name) parts.push(d.buyer.name);
+        return parts.join(' ').toLowerCase().includes(q);
+      });
+    }
+    if (kindFilter === 'all') return base;
     if (kindFilter === 'logistics')
-      return filtered.filter((i) => i.kind === 'transport' || i.kind === 'disposal');
-    return filtered.filter((i) => i.kind === kindFilter);
-  }, [filtered, kindFilter]);
+      return base.filter((i) => i.kind === 'transport' || i.kind === 'disposal');
+    return base.filter((i) => i.kind === kindFilter);
+  }, [tabFiltered, kindFilter, query]);
 
   const [searchFocused, setSearchFocused] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
 
-  const handleFilterChange = (key: FilterKey) => {
+  const handleTabChange = (tab: 'active' | 'done') => {
     haptics.light();
-    setFilter(key);
+    setActiveTab(tab);
     setKindFilter('all');
   };
 
@@ -160,150 +183,99 @@ export default function OrdersScreen() {
 
   return (
     <ScreenContainer bg="#ffffff">
-      {/* ── Header ───────────────────────────────────────────── */}
-      <ScreenHeader
-        title="Pasūtījumi"
-        onBack={null}
-        rightAction={
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => {
-                haptics.light();
-                router.push('/(buyer)/schedules' as any);
-              }}
-              style={s.headerBtn}
-            >
-              <Calendar size={22} color="#111827" />
-            </TouchableOpacity>
-            <TouchableOpacity activeOpacity={0.8} onPress={handleNewOrder} style={s.headerBtn}>
-              <Plus size={24} color="#111827" />
-            </TouchableOpacity>
-          </View>
-        }
-      />
-
-      {/* ── Filters ──────────────────────────────────────────── */}
-      <View style={s.filterContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={s.filterContent}
-        >
-          <FilterChip
-            label="Visi"
-            active={filter === 'ALL'}
-            onPress={() => handleFilterChange('ALL')}
-          />
-          <FilterChip
-            label="Aktīvie"
-            active={filter === 'ACTIVE'}
-            onPress={() => handleFilterChange('ACTIVE')}
-          />
-          <FilterChip
-            label="Pabeigtie"
-            active={filter === 'DONE'}
-            onPress={() => handleFilterChange('DONE')}
-          />
-          <FilterChip
-            label="Atceltie"
-            active={filter === 'CANCELLED'}
-            onPress={() => handleFilterChange('CANCELLED')}
-          />
-        </ScrollView>
+      {/* ── Uber Header ──────────────────────────────────────── */}
+      <View style={s.uberHeader}>
+        <Text style={s.uberTitle}>Pasūtījumi</Text>
+        <View style={s.headerActions}>
+          <TouchableOpacity
+            style={s.headerRoundBtn}
+            activeOpacity={0.8}
+            onPress={() => {
+              haptics.light();
+              setShowSearch((v) => !v);
+            }}
+          >
+            <Search size={20} color={showSearch ? '#00A878' : '#111827'} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={s.headerRoundBtn}
+            activeOpacity={0.8}
+            onPress={() => {
+              haptics.light();
+              router.push('/(buyer)/schedules' as any);
+            }}
+          >
+            <Calendar size={20} color="#111827" />
+          </TouchableOpacity>
+          <TouchableOpacity style={s.headerRoundBtn} activeOpacity={0.8} onPress={handleNewOrder}>
+            <Plus size={22} color="#111827" />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* ── Type Filters ─────────────────────────────────────── */}
-      {hasMultipleKinds && (
-        <View style={s.typeFilterContainer}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={s.filterContent}
+      {/* ── Segmented Control ────────────────────────────────── */}
+      <View style={s.segmentWrap}>
+        <View style={s.segmentTrack}>
+          <TouchableOpacity
+            style={[s.segmentBtn, activeTab === 'active' && s.segmentBtnActive]}
+            onPress={() => handleTabChange('active')}
+            activeOpacity={0.8}
           >
-            <TypeChip
-              label="Visi"
-              count={kindCounts.all}
-              active={kindFilter === 'all'}
-              onPress={() => {
-                haptics.light();
-                setKindFilter('all');
-              }}
+            <Text style={[s.segmentText, activeTab === 'active' && s.segmentTextActive]}>
+              Aktīvie
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.segmentBtn, activeTab === 'done' && s.segmentBtnActive]}
+            onPress={() => handleTabChange('done')}
+            activeOpacity={0.8}
+          >
+            <Text style={[s.segmentText, activeTab === 'done' && s.segmentTextActive]}>
+              Vēsture
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* ── Collapsible search + type filters ────────────────── */}
+      {showSearch && (
+        <View style={s.collapsibleFilters}>
+          <View style={[s.searchRow, searchFocused && s.searchRowFocused]}>
+            <Search size={16} color={searchFocused ? '#00A878' : '#9ca3af'} style={{ marginRight: 8 }} />
+            <TextInput
+              style={s.searchInput}
+              placeholder="Meklēt pēc adreses, materiāla..."
+              placeholderTextColor="#9ca3af"
+              value={query}
+              onChangeText={setQuery}
+              returnKeyType="search"
+              clearButtonMode="never"
+              autoCorrect={false}
+              autoCapitalize="none"
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
             />
-            {kindCounts.material > 0 && (
-              <TypeChip
-                label="Materiāli"
-                count={kindCounts.material}
-                active={kindFilter === 'material'}
-                onPress={() => {
-                  haptics.light();
-                  setKindFilter('material');
-                }}
-              />
+            {query.length > 0 && (
+              <TouchableOpacity onPress={() => { haptics.light(); setQuery(''); }} hitSlop={8}>
+                <X size={16} color="#9ca3af" />
+              </TouchableOpacity>
             )}
-            {kindCounts.logistics > 0 && (
-              <TypeChip
-                label="Transports"
-                count={kindCounts.logistics}
-                active={kindFilter === 'logistics'}
-                onPress={() => {
-                  haptics.light();
-                  setKindFilter('logistics');
-                }}
-              />
-            )}
-            {kindCounts.skip > 0 && (
-              <TypeChip
-                label="Konteineri"
-                count={kindCounts.skip}
-                active={kindFilter === 'skip'}
-                onPress={() => {
-                  haptics.light();
-                  setKindFilter('skip');
-                }}
-              />
-            )}
-            {kindCounts.rfq > 0 && (
-              <TypeChip
-                label="RFQ"
-                count={kindCounts.rfq}
-                active={kindFilter === 'rfq'}
-                onPress={() => {
-                  haptics.light();
-                  setKindFilter('rfq');
-                }}
-              />
-            )}
-          </ScrollView>
+          </View>
+          {hasMultipleKinds && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={s.typeScrollContent}
+            >
+              <TypeChip label="Visi" count={kindCounts.all} active={kindFilter === 'all'} onPress={() => { haptics.light(); setKindFilter('all'); }} />
+              {kindCounts.material > 0 && <TypeChip label="Materiāli" count={kindCounts.material} active={kindFilter === 'material'} onPress={() => { haptics.light(); setKindFilter('material'); }} />}
+              {kindCounts.logistics > 0 && <TypeChip label="Transports" count={kindCounts.logistics} active={kindFilter === 'logistics'} onPress={() => { haptics.light(); setKindFilter('logistics'); }} />}
+              {kindCounts.skip > 0 && <TypeChip label="Konteineri" count={kindCounts.skip} active={kindFilter === 'skip'} onPress={() => { haptics.light(); setKindFilter('skip'); }} />}
+              {kindCounts.rfq > 0 && <TypeChip label="RFQ" count={kindCounts.rfq} active={kindFilter === 'rfq'} onPress={() => { haptics.light(); setKindFilter('rfq'); }} />}
+            </ScrollView>
+          )}
         </View>
       )}
-
-      {/* ── Search ───────────────────────────────────────────── */}
-      <View style={[s.searchRow, searchFocused && s.searchRowFocused]}>
-        <Search
-          size={16}
-          color={searchFocused ? '#00A878' : '#9ca3af'}
-          style={{ marginRight: 8 }}
-        />
-        <TextInput
-          style={s.searchInput}
-          placeholder="Meklēt pēc adreses, materiāla..."
-          placeholderTextColor="#9ca3af"
-          value={query}
-          onChangeText={setQuery}
-          returnKeyType="search"
-          clearButtonMode="never"
-          autoCorrect={false}
-          autoCapitalize="none"
-          onFocus={() => setSearchFocused(true)}
-          onBlur={() => setSearchFocused(false)}
-        />
-        {query.length > 0 && (
-          <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
-            <X size={16} color="#9ca3af" />
-          </TouchableOpacity>
-        )}
-      </View>
 
       {/* ── List ─────────────────────────────────────────────── */}
       <FlatList
@@ -470,26 +442,6 @@ export default function OrdersScreen() {
 }
 
 // ── Components ────────────────────────────────────────────────
-
-function FilterChip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      style={[s.chip, active && s.chipActive]}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <Text style={[s.chipText, active && s.chipTextActive]}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
 
 function TypeChip({
   label,
@@ -903,29 +855,98 @@ function formatStatus(status: string) {
 // ── Styles ────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  headerBtn: {
+  uberHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+    backgroundColor: '#fff',
+  },
+  uberTitle: {
+    fontSize: 32,
+    fontFamily: 'Inter_800ExtraBold',
+    fontWeight: '800',
+    color: '#000',
+    letterSpacing: -0.5,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  headerRoundBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#F9FAFB',
   },
-  filterContainer: {
-    paddingTop: 12,
-    backgroundColor: '#ffffff',
+  segmentWrap: {
+    paddingHorizontal: 16,
     paddingBottom: 12,
+    backgroundColor: '#fff',
   },
-  typeFilterContainer: {
+  segmentTrack: {
+    flexDirection: 'row',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 10,
+    padding: 3,
+  },
+  segmentBtn: {
+    flex: 1,
+    paddingVertical: 7,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentBtnActive: {
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  segmentText: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#6b7280',
+  },
+  segmentTextActive: {
+    color: '#111827',
+  },
+  collapsibleFilters: {
+    backgroundColor: '#fff',
     paddingBottom: 8,
-    backgroundColor: '#ffffff',
+  },
+  typeScrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    gap: 8,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  searchRowFocused: {
+    borderColor: '#00A878',
+    backgroundColor: '#fff',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#111827',
+    paddingVertical: 0,
   },
   typeChip: {
     flexDirection: 'row',
@@ -974,47 +995,6 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 8,
   },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-  },
-  searchRowFocused: {
-    borderColor: '#00A878',
-    backgroundColor: '#fff',
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: '#111827',
-    paddingVertical: 0,
-  },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f9fafb',
-  },
-  chipActive: {
-    backgroundColor: '#00A878',
-    borderColor: '#00A878',
-  },
-  chipText: {
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#4b5563',
-  },
-  chipTextActive: {
-    color: '#ffffff',
-  },
-
   co2Banner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1033,29 +1013,28 @@ const s = StyleSheet.create({
 
   list: {
     padding: 16,
-    gap: 16,
+    gap: 12,
     paddingBottom: 100,
   },
 
   // Cards
   card: {
     backgroundColor: '#ffffff',
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: '#F9FAFB',
-    marginBottom: 4, // Spacing handled by gap in FlatList usually, but gap not always supported on older RN
+    borderColor: '#f3f4f6',
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 6,
   },
   typeRow: {
     flexDirection: 'row',
@@ -1077,11 +1056,11 @@ const s = StyleSheet.create({
     fontFamily: 'Inter_700Bold',
   },
   cardTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontFamily: 'Inter_700Bold',
     color: '#111827',
-    marginBottom: 12,
-    lineHeight: 24,
+    marginBottom: 6,
+    lineHeight: 22,
   },
   cardMeta: {
     gap: 8,
@@ -1101,10 +1080,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    marginTop: 10,
   },
   price: {
     fontSize: 18,
