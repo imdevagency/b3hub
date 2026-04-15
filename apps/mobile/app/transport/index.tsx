@@ -9,6 +9,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Bookmark, Check, Weight } from 'lucide-react-native';
@@ -593,51 +594,40 @@ export default function TransportWizard() {
             showsVerticalScrollIndicator={false}
           >
             <Text style={s.sectionLabel}>Pārvadāšanas datums</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginBottom: 12 }}
-            >
-              {/* ASAP / today chip */}
-              {(() => {
-                const today = new Date();
-                const iso = today.toISOString().split('T')[0];
-                const active = selectedDay === iso;
-                return (
-                  <TouchableOpacity
-                    key="today"
-                    style={[s.dayChip, s.dayChipAsap, active && s.dayChipActive]}
-                    onPress={() => {
-                      setSelectedDay(iso);
-                      setRequestedDate(iso);
-                    }}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[s.dayDow, active && s.dayActive]}>🔴</Text>
-                    <Text style={[s.dayNum, active && s.dayActive]}>Šodien</Text>
-                    <Text style={[s.dayMon, active && s.dayActiveSub]}>steidzami</Text>
-                  </TouchableOpacity>
-                );
-              })()}
-              {DAY_OPTIONS.map((d) => {
-                const active = selectedDay === d.iso;
-                return (
-                  <TouchableOpacity
-                    key={d.iso}
-                    style={[s.dayChip, active && s.dayChipActive]}
-                    onPress={() => {
-                      setSelectedDay(d.iso);
-                      setRequestedDate(d.iso);
-                    }}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[s.dayDow, active && s.dayActive]}>{d.dow}</Text>
-                    <Text style={[s.dayNum, active && s.dayActive]}>{d.day}</Text>
-                    <Text style={[s.dayMon, active && s.dayActiveSub]}>{d.mon}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+            <View style={{ marginBottom: 16, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E7EB' }}>
+              <Calendar
+                current={selectedDay || new Date().toISOString().split('T')[0]}
+                onDayPress={(day: any) => {
+                  setSelectedDay(day.dateString);
+                  setRequestedDate(day.dateString);
+                }}
+                markedDates={{
+                  [selectedDay || new Date().toISOString().split('T')[0]]: { selected: true, selectedColor: '#111827' }
+                }}
+                theme={{
+                  calendarBackground: '#ffffff',
+                  textSectionTitleColor: '#6B7280',
+                  selectedDayBackgroundColor: '#111827',
+                  selectedDayTextColor: '#ffffff',
+                  todayTextColor: '#2563EB',
+                  dayTextColor: '#111827',
+                  textDisabledColor: '#D1D5DB',
+                  dotColor: '#2563EB',
+                  selectedDotColor: '#ffffff',
+                  arrowColor: '#111827',
+                  monthTextColor: '#111827',
+                  textDayFontFamily: 'Geist-Medium',
+                  textMonthFontFamily: 'Geist-SemiBold',
+                  textDayHeaderFontFamily: 'Geist-Medium',
+                  textDayFontSize: 15,
+                  textMonthFontSize: 16,
+                  textDayHeaderFontSize: 13
+                }}
+                minDate={new Date().toISOString().split('T')[0]}
+                firstDay={1}
+                enableSwipeMonths={true}
+              />
+            </View>
 
             {/* Pickup window */}
             <Text style={[s.sectionLabel, { marginTop: 4 }]}>Vēlamais iekraušanas laiks</Text>
