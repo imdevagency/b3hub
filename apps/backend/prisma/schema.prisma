@@ -1498,6 +1498,10 @@ model FrameworkContract {
   prepaidBalance  Float   @default(0)      // total advance payments received (EUR)
   prepaidUsed     Float   @default(0)      // consumed by issued field passes (EUR)
 
+  // Optional link to a Project (P&L roll-up)
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId String?
+
   positions   FrameworkPosition[]
   callOffJobs TransportJob[]
   fieldPasses FieldPass[]
@@ -1559,6 +1563,9 @@ model Project {
 
   // Tagged orders (costs)
   orders Order[]
+
+  // Linked framework contracts
+  frameworkContracts FrameworkContract[]
 
   // Delivery / loading sites
   sites ProjectSite[]

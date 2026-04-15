@@ -21,7 +21,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Stack, useRouter, useFocusEffect } from 'expo-router';
+import { Stack, useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import {
   api,
@@ -120,6 +120,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 export default function FrameworkContractsScreen() {
   const { token, user } = useAuth();
   const router = useRouter();
+  const { newProjectId } = useLocalSearchParams<{ newProjectId?: string }>();
 
   const canManageContracts =
     user?.companyRole === 'OWNER' || user?.companyRole === 'MANAGER' || !!user?.permCreateContracts;
@@ -128,14 +129,14 @@ export default function FrameworkContractsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const [createVisible, setCreateVisible] = useState(false);
+  const [createVisible, setCreateVisible] = useState(!!newProjectId);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState('');
   const [notes, setNotes] = useState('');
-
-  // Positions state
+  // Project linkage — pre-filled if navigated from project detail
+  const [linkedProjectId] = useState<string | undefined>(newProjectId || undefined);
   const [positions, setPositions] = useState<PositionDraft[]>([]);
   const [addingPos, setAddingPos] = useState(false);
   const [posType, setPosType] = useState<FrameworkPositionType>('MATERIAL_DELIVERY');
@@ -295,6 +296,7 @@ export default function FrameworkContractsScreen() {
           startDate,
           endDate: endDate.trim() || undefined,
           notes: notes.trim() || undefined,
+          projectId: linkedProjectId,
         },
         token,
       );

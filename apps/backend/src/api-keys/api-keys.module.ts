@@ -12,6 +12,6 @@ import { RequireScopeGuard } from '../auth/guards/require-scope.guard';
   imports: [PrismaModule, AuthModule],
   controllers: [ApiKeysController],
   providers: [ApiKeysService, JwtAuthGuard, JwtOrApiKeyGuard, RequireScopeGuard],
-  exports: [ApiKeysService, JwtOrApiKeyGuard, RequireScopeGuard],
+  exports: [ApiKeysService, JwtAuthGuard, JwtOrApiKeyGuard, RequireScopeGuard],
 })
 export class ApiKeysModule {}

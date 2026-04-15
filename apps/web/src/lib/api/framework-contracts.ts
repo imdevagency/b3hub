@@ -54,6 +54,7 @@ export interface ApiFrameworkContract {
   totalCallOffs: number;
   positions: ApiFrameworkPosition[];
   recentCallOffs: ApiFrameworkCallOff[];
+  projectId?: string | null;
   createdAt: string;
   // Field pass extensions
   isFieldContract?: boolean;
@@ -67,6 +68,7 @@ export interface CreateFrameworkContractInput {
   endDate?: string;
   notes?: string;
   supplierId?: string;
+  projectId?: string;
   positions: {
     positionType: FrameworkPositionType;
     materialName: string;
@@ -150,6 +152,7 @@ export async function createFrameworkContract(
     endDate: data.endDate,
     notes: data.notes,
     supplierId: data.supplierId,
+    projectId: data.projectId,
     positions: data.positions.map((position) => ({
       positionType: position.positionType,
       description: position.materialName,

@@ -36,6 +36,7 @@ import {
   FileText,
   Trash2,
   X,
+  Handshake,
 } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -345,6 +346,50 @@ export default function ProjectDetailScreen() {
                     order={order}
                     onPress={() => router.push(`/(buyer)/order/${order.id}` as any)}
                   />
+                </React.Fragment>
+              ))
+            )}
+          </View>
+        </View>
+
+        {/* Framework Contracts */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>
+              Bāzes līgumi ({project.frameworkContracts.length})
+            </Text>
+            <TouchableOpacity
+              onPress={() =>
+                router.push({
+                  pathname: '/(buyer)/framework-contracts',
+                  params: { newProjectId: project.id },
+                } as any)
+              }
+              style={styles.sectionAction}
+              activeOpacity={0.7}
+            >
+              <Plus size={16} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.sectionCard}>
+            {project.frameworkContracts.length === 0 ? (
+              <Text style={styles.emptyOrders}>Nav piesaistītu bāzes līgumu</Text>
+            ) : (
+              project.frameworkContracts.map((fc, idx) => (
+                <React.Fragment key={fc.id}>
+                  {idx > 0 ? <View style={styles.divider} /> : null}
+                  <TouchableOpacity
+                    style={styles.orderRow}
+                    activeOpacity={0.75}
+                    onPress={() => router.push(`/(buyer)/framework-contract/${fc.id}` as any)}
+                  >
+                    <Handshake size={14} color={colors.textMuted} />
+                    <View style={styles.orderLeft}>
+                      <Text style={styles.orderNumber}>{fc.contractNumber}</Text>
+                      <Text style={styles.orderMeta}>{fc.title}</Text>
+                    </View>
+                    <ChevronRight size={16} color={colors.textMuted} />
+                  </TouchableOpacity>
                 </React.Fragment>
               ))
             )}

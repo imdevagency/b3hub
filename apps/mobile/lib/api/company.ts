@@ -87,6 +87,7 @@ export interface ApiFrameworkContract {
   totalProgressPct: number;
   positions: ApiFrameworkPosition[];
   recentCallOffs: ApiFrameworkCallOff[];
+  projectId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -96,6 +97,7 @@ export interface CreateFrameworkContractInput {
   startDate: string;
   endDate?: string;
   notes?: string;
+  projectId?: string;
   positions?: {
     positionType: FrameworkPositionType;
     description: string;

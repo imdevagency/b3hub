@@ -66,6 +66,10 @@ export class CreateFrameworkContractDto {
   @IsOptional()
   supplierId?: string;
 
+  @IsString()
+  @IsOptional()
+  projectId?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreatePositionDto)

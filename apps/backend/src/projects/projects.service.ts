@@ -119,6 +119,18 @@ export class ProjectsService {
           },
           orderBy: { createdAt: 'desc' },
         },
+        frameworkContracts: {
+          select: {
+            id: true,
+            contractNumber: true,
+            title: true,
+            status: true,
+            startDate: true,
+            endDate: true,
+            supplier: { select: { id: true, name: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     });
 
@@ -527,6 +539,7 @@ export class ProjectsService {
       createdBy: p.createdBy,
       orders: p.orders.map(({ transportJobs: _tj, ...rest }) => rest),
       orderCount: p.orders.length,
+      frameworkContracts: p.frameworkContracts,
       ...financials,
     };
   }

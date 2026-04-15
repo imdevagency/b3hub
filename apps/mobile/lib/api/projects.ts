@@ -49,6 +49,15 @@ export interface ApiProject extends ApiProjectFinancials {
 export interface ApiProjectDetail extends ApiProject {
   createdBy: { id: string; firstName: string; lastName: string; email: string | null };
   orders: ApiProjectOrder[];
+  frameworkContracts: {
+    id: string;
+    contractNumber: string;
+    title: string;
+    status: string;
+    startDate: string;
+    endDate: string | null;
+    supplier: { id: string; name: string } | null;
+  }[];
 }
 
 export interface CreateProjectInput {

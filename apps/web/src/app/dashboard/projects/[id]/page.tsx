@@ -23,7 +23,9 @@ import {
   Trash2,
   HardHat,
   Truck,
+  Handshake,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -976,6 +978,49 @@ export default function ProjectDetailPage() {
                     </a>
                   )}
                 </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Framework Contracts */}
+      <Card className="rounded-2xl border-0 shadow-sm ring-1 ring-black/5">
+        <CardHeader className="pb-0">
+          <CardTitle className="text-base font-semibold flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Handshake className="h-4 w-4 text-muted-foreground" />
+              Bāzes līgumi
+            </span>
+            <Button size="sm" variant="ghost" asChild>
+              <Link href={`/dashboard/framework-contracts?newProjectId=${id}`}>
+                <Plus className="h-4 w-4 mr-1" /> Jauns
+              </Link>
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-3">
+          {(project.frameworkContracts ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Nav piesaistītu bāzes līgumu
+            </p>
+          ) : (
+            <div className="divide-y divide-border/50">
+              {(project.frameworkContracts ?? []).map((fc) => (
+                <Link
+                  key={fc.id}
+                  href={`/dashboard/framework-contracts/${fc.id}`}
+                  className="flex items-center gap-3 py-3 hover:bg-muted/30 rounded-xl px-2 transition-colors"
+                >
+                  <Handshake className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{fc.title}</p>
+                    <p className="text-xs text-muted-foreground">{fc.contractNumber}</p>
+                  </div>
+                  <Badge variant="outline" className="shrink-0">
+                    {fc.status}
+                  </Badge>
+                </Link>
               ))}
             </div>
           )}
