@@ -21,7 +21,6 @@ import { useRouter } from 'expo-router';
 import { useToast } from '@/components/ui/Toast';
 import { t } from '@/lib/translations';
 import {
-  ArrowLeft,
   Bell,
   Globe,
   HelpCircle,

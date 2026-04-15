@@ -6,29 +6,16 @@ import {
   StyleSheet,
   Animated,
   ScrollView,
-  Dimensions,
-  Platform,
   RefreshControl,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiOrder, SkipHireOrder, ApiTransportJob } from '@/lib/api';
-import {
-  HardHat,
-  Trash2,
-  Truck,
-  Package,
-  ChevronRight,
-  Bell,
-  AlertCircle,
-} from 'lucide-react-native';
+import { HardHat, Trash2, Truck, Package, ChevronRight, AlertCircle } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
-import { useMode } from '@/lib/mode-context';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { TopBar } from '@/components/ui/TopBar';
-import { ModeSwitcher } from '@/components/ui/ModeSwitcher';
 // Guard: expo-linear-gradient requires a native build (not available in Expo Go)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let LinearGradient: React.ComponentType<any>;
@@ -112,15 +99,21 @@ const SERVICES = [
   },
 ];
 
-// ── Helpers ───────────────────────────────────────────────────────────────
-
 // ── Screen ────────────────────────────────────────────────────────────────
+
+type ActiveItem = {
+  id: string;
+  num: string;
+  sub: string;
+  status: string;
+  dotColor: string;
+  kind: 'mat' | 'skip' | 'transport';
+  eta?: string;
+};
 
 export default function HomeScreen() {
   const { user, token } = useAuth();
-  const { isMultiRole } = useMode();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
 
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [skipOrders, setSkipOrders] = useState<SkipHireOrder[]>([]);
@@ -159,13 +152,16 @@ export default function HomeScreen() {
         }),
         api.skipHire.myOrders(token).catch(() => [] as SkipHireOrder[]),
         api.transportJobs.myRequests(token).catch(() => [] as ApiTransportJob[]),
-      ]).then(([mats, skips, reqs]) => {
-        setOrders(mats as ApiOrder[]);
-        setSkipOrders(skips as SkipHireOrder[]);
-        setTransportOrders(reqs as ApiTransportJob[]);
-        setLoading(false);
-        setRefreshing(false);
-      });
+      ])
+        .then(([mats, skips, reqs]) => {
+          setOrders(mats as ApiOrder[]);
+          setSkipOrders(skips as SkipHireOrder[]);
+          setTransportOrders(reqs as ApiTransportJob[]);
+        })
+        .finally(() => {
+          setLoading(false);
+          setRefreshing(false);
+        });
       api.notifications
         .unreadCount(token)
         .then((res) => setUnreadCount(res.count))
@@ -179,16 +175,6 @@ export default function HomeScreen() {
       loadData(false);
     }, [loadData]),
   );
-
-  type ActiveItem = {
-    id: string;
-    num: string;
-    sub: string;
-    status: string;
-    dotColor: string;
-    kind: 'mat' | 'skip' | 'transport';
-    eta?: string;
-  };
 
   const activeItem: ActiveItem | null = useMemo(() => {
     const mat = orders.find((o) => ACTIVE_STATUSES.has(o.status));
@@ -313,7 +299,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScreenContainer topInset={insets.top} bg="#ffffff">
+    <ScreenContainer bg="#ffffff">
       <TopBar
         title=""
         transparent={true}
@@ -333,8 +319,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         }
       />
-
-      {isMultiRole && <ModeSwitcher />}
 
       <ScrollView
         style={{ flex: 1 }}

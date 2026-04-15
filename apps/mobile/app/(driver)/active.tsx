@@ -188,9 +188,9 @@ export default function ActiveJobScreen() {
         await AsyncStorage.setItem('b3hub_offline_queue', JSON.stringify(remaining));
       }
     } catch {
-      // silently ignore storage errors
+      toast.error('Neizdevās apstrādāt rindā esošos statusa atjauninājumus');
     }
-  }, [token, job?.id]);
+  }, [token, job?.id, toast]);
 
   // Monitor connectivity; flush queue when back online
   useEffect(() => {
@@ -645,7 +645,7 @@ export default function ActiveJobScreen() {
                 haptics.warning();
                 toast.info('Offline — statuss tiks atjaunināts, kad atjaunosies savienojums');
               } catch {
-                // silently ignore storage errors
+                toast.error('Neizdevās saglabāt statusu rindā — lūdzu mēģiniet vēlreiz');
               }
             } else {
               haptics.error();

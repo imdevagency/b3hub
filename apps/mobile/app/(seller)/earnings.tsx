@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiOrder } from '@/lib/api';
@@ -358,6 +359,7 @@ export default function SellerEarningsScreen() {
   if (loading && !refreshing) {
     return (
       <ScreenContainer bg="white">
+        <ScreenHeader title="Ienākumi" />
         <View style={{ padding: 24, gap: 20 }}>
           <Skeleton style={{ height: 48, width: 128, alignSelf: 'center', borderRadius: 8 }} />
           <Skeleton style={{ height: 160, width: '100%', borderRadius: 16 }} />
@@ -369,6 +371,7 @@ export default function SellerEarningsScreen() {
 
   return (
     <ScreenContainer bg="white">
+      <ScreenHeader title="Ienākumi" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}

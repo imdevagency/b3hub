@@ -24,7 +24,6 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { haptics } from '@/lib/haptics';
-import { SELLER_ORDER_STATUS } from '@/lib/materials';
 import { useToast } from '@/components/ui/Toast';
 import { api, type ApiOrder, type OpenQuoteRequest } from '@/lib/api';
 import { useLiveUpdates } from '@/lib/use-live-updates';
@@ -35,7 +34,6 @@ import {
   CheckSquare2,
   MapPin,
   Inbox,
-  AlertCircle,
   Clock,
   Phone,
   FileText,

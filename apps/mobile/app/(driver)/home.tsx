@@ -5,14 +5,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  Platform,
   ActivityIndicator,
   ScrollView,
   RefreshControl,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiTransportJob, ApiVehicle } from '@/lib/api';
@@ -20,16 +18,7 @@ import { BaseMap, PinLayer } from '@/components/map';
 import { TopBar } from '@/components/ui/TopBar';
 import type { CameraRefHandle } from '@/components/map';
 import * as Location from 'expo-location';
-import {
-  Bell,
-  Wallet,
-  Trash2,
-  ChevronRight,
-  User,
-  ListFilter,
-  Truck,
-  ArrowRight,
-} from 'lucide-react-native';
+import { Wallet, Trash2, ChevronRight, User, Truck, ArrowRight } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 

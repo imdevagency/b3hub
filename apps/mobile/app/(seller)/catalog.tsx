@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useFocusEffect } from 'expo-router';
 import {
   Plus,
@@ -943,17 +944,29 @@ export default function SellerCatalog() {
 
   return (
     <ScreenContainer bg="white">
-      {/* Header actions */}
-      <View
-        style={{
-          paddingHorizontal: 16,
-          paddingVertical: 10,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        {materials.length > 0 ? (
+      <ScreenHeader
+        title="Mans katalogs"
+        rightAction={
+          <TouchableOpacity style={s.addBtn} onPress={openNew} activeOpacity={0.8}>
+            <Plus size={20} color="#fff" />
+            <Text style={s.addBtnText}>Pievienot</Text>
+          </TouchableOpacity>
+        }
+      />
+
+      {!loading && materials.length > 0 && (
+        <View
+          style={{
+            paddingHorizontal: 20,
+            marginBottom: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <View style={s.countChip}>
+            <Text style={s.countChipText}>{materials.length} materiāli</Text>
+          </View>
           <TouchableOpacity
             style={[s.selectBtn, bulkMode && s.selectBtnActive]}
             onPress={toggleBulkMode}
@@ -962,20 +975,6 @@ export default function SellerCatalog() {
             {bulkMode ? <X size={15} color="#6b7280" /> : <CheckSquare size={15} color="#374151" />}
             <Text style={s.selectBtnText}>{bulkMode ? 'Atcelt' : 'Atlasīt'}</Text>
           </TouchableOpacity>
-        ) : (
-          <View />
-        )}
-        <TouchableOpacity style={s.addBtn} onPress={openNew} activeOpacity={0.8}>
-          <Plus size={20} color="#fff" />
-          <Text style={s.addBtnText}>Pievienot</Text>
-        </TouchableOpacity>
-      </View>
-
-      {!loading && materials.length > 0 && (
-        <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
-          <View style={s.countChip}>
-            <Text style={s.countChipText}>{materials.length} materiāli</Text>
-          </View>
         </View>
       )}
 

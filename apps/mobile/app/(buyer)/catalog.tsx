@@ -11,11 +11,13 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Text } from '@/components/ui/text';
 import {
   Layers,
@@ -150,6 +152,7 @@ function CategoryCard({
 // ── Screen ─────────────────────────────────────────────────────────────────
 
 export default function CatalogScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { token } = useAuth();
   const params = useLocalSearchParams<{ projectId?: string }>();
@@ -405,8 +408,9 @@ export default function CatalogScreen() {
   };
 
   return (
-    <ScreenContainer bg="#f9fafb">
-      {/* ── Search bar ── */}
+    <ScreenContainer bg="#ffffff">
+      <ScreenHeader title="Katalogs" />
+      {/* ── Header & Search ── */}
       <View style={s.topBar}>
         <View style={[s.searchBox, searchFocused && s.searchBoxFocused]}>
           <Search size={16} color={searchFocused ? '#00A878' : '#9ca3af'} />
@@ -737,42 +741,39 @@ export default function CatalogScreen() {
 const s = StyleSheet.create({
   topBar: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 4,
-    backgroundColor: '#f9fafb',
+    paddingTop: 16,
+    paddingBottom: 16,
+    backgroundColor: '#fff',
   },
   chipScroll: {
-    paddingTop: 8,
-    paddingBottom: 2,
+    backgroundColor: '#fff',
+    flexGrow: 0,
   },
   chipRow: {
     flexDirection: 'row',
     gap: 8,
     paddingHorizontal: 16,
-    paddingBottom: 2,
+    paddingBottom: 12,
+    alignItems: 'center',
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    justifyContent: 'center',
+    gap: 6,
     paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f1f5f9',
   },
   chipActive: {
-    backgroundColor: '#00A878',
-    borderColor: '#00A878',
+    backgroundColor: '#0f172a',
   },
   chipActiveGreen: {
     backgroundColor: '#16a34a',
-    borderColor: '#16a34a',
   },
   chipActiveBlue: {
     backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
   },
   chipText: {
     fontSize: 13,
@@ -811,22 +812,17 @@ const s = StyleSheet.create({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 14,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 8,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: 'transparent',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
   },
   searchBoxFocused: {
-    borderColor: '#00A878',
-    shadowOpacity: 0.12,
+    borderColor: '#cbd5e1',
+    backgroundColor: '#fff',
   },
   searchInput: {
     flex: 1,
@@ -918,27 +914,24 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 14,
+    borderRadius: 0, // Uber-like minimalism, keeping it flat or just a subtle border
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
     minHeight: 88,
   },
   catStrip: {
-    width: 4,
-    alignSelf: 'stretch',
+    display: 'none', // Remove the colored strip
   },
   catIconWrap: {
     width: 48,
     height: 48,
-    borderRadius: 12,
+    borderRadius: 24, // Circle icons
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 12,
-    marginRight: 12,
+    marginLeft: 16,
+    marginRight: 16,
+    backgroundColor: '#f8fafc', // Subtle background instead of heavy colors
   },
   catBody: {
     flex: 1,
