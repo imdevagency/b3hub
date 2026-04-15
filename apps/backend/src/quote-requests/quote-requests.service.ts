@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { withCronLock } from '../common/utils/cron-lock.util';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
 import { EmailService } from '../email/email.service';
@@ -345,7 +346,7 @@ export class QuoteRequestsService {
           message: `Pircējs pieņēma jūsu piedāvājumu par pieprasījumu #${req.requestNumber}.`,
           data: { requestId, orderId: order.id },
         })
-        .catch(() => null);
+        .catch((err) => this.logger.warn('Quote accepted supplier notification failed', (err as Error).message));
     }
 
     // Notify buyer — order pending; they need to pay to proceed
@@ -357,9 +358,7 @@ export class QuoteRequestsService {
         message: `Piedāvājums #${req.requestNumber} pieņemts. Apmaksājiet pasūtījumu, lai meistars varētu to apstiprināt.`,
         data: { orderId: order.id },
       })
-      .catch(() => null);
-
-    // Spawn a transport job so drivers see this order on the job board
+        .catch((err) => this.logger.warn('Quote accepted buyer notification failed', (err as Error).message));
     try {
       const supplier = await this.prisma.company.findUnique({
         where: { id: response.supplierId },
@@ -481,7 +480,7 @@ export class QuoteRequestsService {
         message: `Saņemts jauns piedāvājums par pieprasījumu #${req.requestNumber}.`,
         data: { requestId },
       })
-      .catch(() => null);
+      .catch((err) => this.logger.warn('Quote received buyer notification failed', (err as Error).message));
 
     return resp;
   }
@@ -564,6 +563,7 @@ export class QuoteRequestsService {
    */
   @Cron(CronExpression.EVERY_HOUR)
   async expireStaleQuotes(): Promise<void> {
+    await withCronLock(this.prisma, 'expireStaleQuotes', async () => {
     const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1_000); // 7 days ago
     const expiredRequests = await this.prisma.quoteRequest.updateMany({
       where: {
@@ -588,6 +588,7 @@ export class QuoteRequestsService {
           `${expiredResponses.count} quote responses → EXPIRED`,
       );
     }
+    }, this.logger);
   }
 
   // ─── Helpers ─────────────────────────────────────────────────

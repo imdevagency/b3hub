@@ -157,8 +157,8 @@ export class AuthService {
     );
 
     // Send welcome + verification emails (non-blocking)
-    this.email.sendEmailVerification(email, firstName ?? email, rawVerifyToken).catch(() => null);
-    this.email.sendWelcome(email, firstName ?? email).catch(() => null);
+    this.email.sendEmailVerification(email, firstName ?? email, rawVerifyToken).catch((err) => this.logger.warn('sendEmailVerification failed', (err as Error).message));
+    this.email.sendWelcome(email, firstName ?? email).catch((err) => this.logger.warn('sendWelcome failed', (err as Error).message));
 
     const { rawToken: refreshToken } = await this.issueRefreshToken(user.id);
 
@@ -386,7 +386,7 @@ export class AuthService {
 
     this.email
       .sendEmailVerification(user.email ?? '', user.firstName ?? '', rawToken)
-      .catch(() => null);
+      .catch((err) => this.logger.warn('sendEmailVerification (resend) failed', (err as Error).message));
 
     return { ok: true };
   }
@@ -441,7 +441,7 @@ export class AuthService {
     // Send password reset email
     this.email
       .sendPasswordReset(user.email ?? '', user.firstName ?? '', rawToken)
-      .catch(() => null);
+      .catch((err) => this.logger.warn('sendPasswordReset failed', (err as Error).message));
 
     // Surface raw token only when explicitly enabled — never in production
     const exposeDevToken =

@@ -62,7 +62,13 @@
         }
       ],
       "expo-secure-store",
-      "@stripe/stripe-react-native"
+      "@stripe/stripe-react-native",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

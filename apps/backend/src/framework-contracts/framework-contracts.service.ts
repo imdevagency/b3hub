@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { withCronLock } from '../common/utils/cron-lock.util';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
 import {
@@ -83,6 +84,7 @@ export class FrameworkContractsService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async expireContracts(): Promise<void> {
+    await withCronLock(this.prisma, 'expireContracts', async () => {
     const now = new Date();
     const expired = await this.prisma.frameworkContract.findMany({
       where: {
@@ -137,9 +139,10 @@ export class FrameworkContractsService {
             message: `Ietvarlīgums ${contract.contractNumber} ir beidzies. Lūdzu, atjauniniet vai noslēdziet jaunu līgumu.`,
             data: { contractId: contract.id },
           })
-          .catch(() => null);
+          .catch((err) => this.logger.warn('Notification (contract expired) failed', (err as Error).message));
       }
     }
+    }, this.logger);
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

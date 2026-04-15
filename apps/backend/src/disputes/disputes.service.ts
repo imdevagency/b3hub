@@ -80,7 +80,7 @@ export class DisputesService {
 
     // Alert all admins so they can review promptly
     this.prisma.user
-      .findMany({ where: { userType: 'ADMIN' }, select: { id: true } })
+      .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
       .then((admins) =>
         Promise.all(
           admins.map((admin) =>
@@ -92,7 +92,7 @@ export class DisputesService {
                 message: `Pirćējs iesniedzis strīdu par pasūtījumu #${dispute.order.orderNumber}. Iemesls: ${dto.reason}.`,
                 data: { orderId: dto.orderId, disputeId: dispute.id },
               })
-              .catch(() => null),
+              .catch((err) => this.logger.warn('Admin dispute-filed notification failed', (err as Error).message)),
           ),
         ),
       )
@@ -275,7 +275,7 @@ export class DisputesService {
               : `Jūsu strīds par pasūtījumu #${updated.order.orderNumber} tika noraidīts.${resolutionText}`,
           data: { orderId: updated.order.id, disputeId: id },
         })
-        .catch(() => null);
+        .catch((err) => this.logger.warn('Dispute resolution buyer notification failed', (err as Error).message));
     }
 
     return updated;

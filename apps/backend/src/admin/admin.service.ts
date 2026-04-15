@@ -108,11 +108,11 @@ export class AdminService {
         where: { id },
         select: this.userSelect,
       });
-      this.logAdminAction(adminId, 'UPDATE_USER', 'User', id, user, data).catch(() => null);
+      this.logAdminAction(adminId, 'UPDATE_USER', 'User', id, user, data).catch((err) => this.logger.error('logAdminAction failed', (err as Error).message));
       return result;
     }
 
-    this.logAdminAction(adminId, 'UPDATE_USER', 'User', id, user, data).catch(() => null);
+    this.logAdminAction(adminId, 'UPDATE_USER', 'User', id, user, data).catch((err) => this.logger.error('logAdminAction failed', (err as Error).message));
     return updatedUser;
   }
 
@@ -231,7 +231,7 @@ export class AdminService {
         _count: { select: { users: true, orders: true } },
       },
     });
-    this.logAdminAction(adminId, 'UPDATE_COMPANY', 'Company', id, company, data).catch(() => null);
+    this.logAdminAction(adminId, 'UPDATE_COMPANY', 'Company', id, company, data).catch((err) => this.logger.error('logAdminAction failed', (err as Error).message));
     return result;
   }
 

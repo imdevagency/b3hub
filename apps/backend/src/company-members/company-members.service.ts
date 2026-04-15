@@ -147,7 +147,7 @@ export class CompanyMembersService {
       where: { id: companyId },
       select: { name: true },
     });
-    this.email.sendWelcome(dto.email, dto.firstName).catch(() => null);
+    this.email.sendWelcome(dto.email, dto.firstName).catch((err) => this.logger.warn('sendWelcome (member invite) failed', (err as Error).message));
 
     return { member, isNew: true, tempPassword };
   }

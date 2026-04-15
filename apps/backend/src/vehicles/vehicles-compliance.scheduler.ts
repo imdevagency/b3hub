@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { withCronLock } from '../common/utils/cron-lock.util';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
 
@@ -22,6 +23,7 @@ export class VehiclesComplianceScheduler {
 
   @Cron('0 8 * * *', { name: 'vehicles-compliance-expiry-check' })
   async handleExpiryCheck() {
+    await withCronLock(this.prisma, 'vehicles-compliance-expiry-check', async () => {
     this.logger.log('Starting vehicle compliance expiry check');
 
     const now = new Date();
@@ -113,5 +115,6 @@ export class VehiclesComplianceScheduler {
     this.logger.log(
       `Vehicle compliance check complete: ${sent} alert(s) sent, ${expiring.length} vehicle(s) checked`,
     );
+    }, this.logger);
   }
 }

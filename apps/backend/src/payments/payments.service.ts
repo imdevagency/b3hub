@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { withCronLock } from '../common/utils/cron-lock.util';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { DisputeReason, DisputeStatus, PaymentMethod, PaymentStatus, SkipHireStatus } from '@prisma/client';
@@ -325,6 +326,7 @@ export class PaymentsService {
       const admins = await this.prisma.user.findMany({
         where: { userType: 'ADMIN' },
         select: { id: true },
+        take: 50,
       });
       if (admins.length > 0) {
         await this.notifications
@@ -555,6 +557,7 @@ export class PaymentsService {
         const admins = await this.prisma.user.findMany({
           where: { userType: 'ADMIN' },
           select: { id: true },
+          take: 50,
         });
         if (admins.length > 0) {
           await this.notifications
@@ -610,6 +613,7 @@ export class PaymentsService {
         const admins = await this.prisma.user.findMany({
           where: { userType: 'ADMIN' },
           select: { id: true },
+          take: 50,
         });
         if (admins.length > 0) {
           await this.notifications
@@ -635,6 +639,7 @@ export class PaymentsService {
       const admins = await this.prisma.user.findMany({
         where: { userType: 'ADMIN' },
         select: { id: true },
+        take: 50,
       });
       if (admins.length > 0) {
         await this.notifications
@@ -829,7 +834,7 @@ export class PaymentsService {
         this.logger.error(
           `releaseInvoiceOrderFunds: supplier ${supplierId} has no Connect account — manual payout required for order ${orderId}`,
         );
-        const admins = await this.prisma.user.findMany({ where: { userType: 'ADMIN' }, select: { id: true } });
+        const admins = await this.prisma.user.findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 });
         if (admins.length > 0) {
           await this.notifications
             .createForMany(admins.map((a) => a.id), {
@@ -871,7 +876,7 @@ export class PaymentsService {
         this.logger.error(
           `releaseInvoiceOrderFunds: driver transfer failed for order ${orderId}: ${(err as Error).message}`,
         );
-        const admins = await this.prisma.user.findMany({ where: { userType: 'ADMIN' }, select: { id: true } });
+        const admins = await this.prisma.user.findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 });
         if (admins.length > 0) {
           await this.notifications
             .createForMany(admins.map((a) => a.id), {
@@ -1005,6 +1010,7 @@ export class PaymentsService {
       const admins = await this.prisma.user.findMany({
         where: { userType: 'ADMIN' },
         select: { id: true },
+        take: 50,
       });
       if (admins.length > 0) {
         await this.notifications
@@ -1040,6 +1046,7 @@ export class PaymentsService {
       const admins = await this.prisma.user.findMany({
         where: { userType: 'ADMIN' },
         select: { id: true },
+        take: 50,
       });
       if (admins.length > 0) {
         await this.notifications
@@ -1187,7 +1194,7 @@ export class PaymentsService {
                   message: `Pasūtījums #${confirmedSkip.orderNumber} apmaksāts. Piegāde: ${confirmedSkip.location}, ${deliveryDay}.`,
                   data: { skipOrderId: confirmedSkip.id },
                 })
-                .catch(() => null);
+                .catch((err) => this.logger.warn('Notification (skip order confirmed) failed', (err as Error).message));
             }
           }
         }
@@ -1300,6 +1307,7 @@ export class PaymentsService {
           const admins = await this.prisma.user.findMany({
             where: { userType: 'ADMIN' },
             select: { id: true },
+            take: 50,
           });
           if (admins.length > 0) {
             await this.notifications
@@ -1463,6 +1471,7 @@ export class PaymentsService {
     const admins = await this.prisma.user.findMany({
       where: { userType: 'ADMIN' },
       select: { id: true },
+      take: 50,
     });
 
     await this.notifications.createForMany(
@@ -1605,6 +1614,7 @@ export class PaymentsService {
    */
   @Cron(CronExpression.EVERY_6_HOURS)
   async warnExpiringAuthorizations(): Promise<void> {
+    await withCronLock(this.prisma, 'warnExpiringAuthorizations', async () => {
     if (!this.stripe) return;
 
     const now = new Date();
@@ -1672,6 +1682,7 @@ export class PaymentsService {
         `warnExpiringAuthorizations: ${atRisk.length} order(s) at risk of expired Stripe authorization`,
       );
     }
+    }, this.logger);
   }
 
   /**

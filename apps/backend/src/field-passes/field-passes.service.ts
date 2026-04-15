@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { withCronLock } from '../common/utils/cron-lock.util';
 import { SupabaseService } from '../supabase/supabase.service';
 import { FieldPassStatus, FrameworkContractStatus } from '@prisma/client';
 import { CreateFieldPassDto } from './dto/create-field-pass.dto';
@@ -215,6 +216,7 @@ export class FieldPassesService {
 
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async expireStale() {
+    await withCronLock(this.prisma, 'fieldPassExpireStale', async () => {
     const result = await this.prisma.fieldPass.updateMany({
       where: {
         status: FieldPassStatus.ACTIVE,
@@ -225,6 +227,7 @@ export class FieldPassesService {
     if (result.count > 0) {
       this.logger.log(`Auto-expired ${result.count} field pass(es)`);
     }
+    }, this.logger);
   }
 
   // ── PDF generation ──────────────────────────────────────────────────────────

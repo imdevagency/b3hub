@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { withCronLock } from '../common/utils/cron-lock.util';
 import {
   DocumentType,
   DocumentStatus,
@@ -482,7 +483,7 @@ export class TransportJobsService {
         message: `Pasūtījums #${order.orderNumber}: faktiskais svars ${actualTonnes.toFixed(2)} t (pasūtīts ${orderedTonnes.toFixed(2)} t, starpība ${delta} t). Rēķins ${direction}. Jauna summa: €${(actualTotal + deliveryFee).toFixed(2)}.`,
         data: { orderId, invoiceId: invoice.id },
       })
-      .catch(() => null);
+      .catch((err) => this.logger.warn('Invoice reconcile buyer notification failed', (err as Error).message));
 
     // Sync Stripe PaymentIntent to the new total so the buyer is charged
     // the correct amount based on actual delivered weight.
@@ -933,6 +934,7 @@ export class TransportJobsService {
   // ── Auto-dispatch cron — run every 30 s ───────────────────────
   @Cron('*/30 * * * * *')
   async runAutoDispatch() {
+    await withCronLock(this.prisma, 'runAutoDispatch', async () => {
     const now = new Date();
     const jobs = await this.prisma.transportJob.findMany({
       where: {
@@ -965,6 +967,7 @@ export class TransportJobsService {
         ),
       );
     }
+    }, this.logger);
   }
 
   private async dispatchToNextDriver(job: {
@@ -1516,7 +1519,7 @@ export class TransportJobsService {
 
       // Reconcile invoice if actual weight differs from the ordered quantity
       if (dto.weightKg) {
-        this.reconcileInvoiceWeight(orderId, dto.weightKg).catch(() => null);
+        this.reconcileInvoiceWeight(orderId, dto.weightKg).catch((err) => this.logger.warn('reconcileInvoiceWeight failed', (err as Error).message));
       }
 
       // Weigh-bridge discrepancy alert: notify buyer if >5% difference
@@ -2348,7 +2351,7 @@ export class TransportJobsService {
               if (capturedInvoice) {
                 const refundAmount = Math.round((Number(order.total) - newTotal) * 100) / 100;
                 this.prisma.user
-                  .findMany({ where: { userType: 'ADMIN' }, select: { id: true } })
+                  .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
                   .then((admins) => {
                     if (admins.length === 0) return;
                     return this.notifications.createForMany(
@@ -2361,7 +2364,7 @@ export class TransportJobsService {
                       },
                     );
                   })
-                  .catch(() => null);
+                  .catch((err) => this.logger.warn('Partial delivery admin notification failed', (err as Error).message));
               }
             }
           }
@@ -2406,7 +2409,7 @@ export class TransportJobsService {
             message: `Neierašanās reģistrēta — ${job.jobNumber}. Jūsu piešķiršana ir noņemta.`,
             data: { jobId: id },
           })
-          .catch(() => null);
+          .catch((err) => this.logger.warn('Driver no-show notification failed', (err as Error).message));
       }
       this.logger.warn(
         `reportException DRIVER_NO_SHOW: job ${job.jobNumber} (${id}) reset to AVAILABLE immediately`,
@@ -2419,7 +2422,7 @@ export class TransportJobsService {
     // Ops must investigate and arrange a re-delivery or refund.
     if (dto.type === 'WRONG_MATERIAL' || dto.type === 'REJECTED_DELIVERY') {
       this.prisma.user
-        .findMany({ where: { userType: 'ADMIN' }, select: { id: true } })
+        .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
         .then((admins) => {
           if (admins.length === 0) return;
           const labelMap: Record<string, string> = {
@@ -2643,7 +2646,7 @@ export class TransportJobsService {
             `addSurcharge: order ${job.orderId} payment is CAPTURED; surcharge ${surcharge.id} (€${surcharge.amount}) requires manual collection`,
           );
           this.prisma.user
-            .findMany({ where: { userType: 'ADMIN' }, select: { id: true } })
+            .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
             .then((admins) => {
               if (admins.length === 0) return;
               return this.notifications.createForMany(
@@ -2656,7 +2659,7 @@ export class TransportJobsService {
                 },
               );
             })
-            .catch(() => null);
+            .catch((err) => this.logger.warn('Surcharge admin notification failed', (err as Error).message));
         } else {
           this.payments.updatePaymentIntentAmount(job.orderId, newTotal).catch((err) =>
             this.logger.error(
@@ -2708,6 +2711,7 @@ export class TransportJobsService {
 
   @Cron(CronExpression.EVERY_HOUR)
   async releaseStaleAcceptedJobs(): Promise<void> {
+    await withCronLock(this.prisma, 'releaseStaleAcceptedJobs', async () => {
     const now = new Date();
     const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
 
@@ -2816,6 +2820,7 @@ export class TransportJobsService {
         `releaseStaleAcceptedJobs: job ${job.jobNumber} (${job.id}) reset to AVAILABLE — driver ${job.driverId} did not start`,
       );
     }
+    }, this.logger);
   }
 
   /**
@@ -2828,6 +2833,7 @@ export class TransportJobsService {
    */
   @Cron(CronExpression.EVERY_HOUR)
   async alertJobsWithNoDriver(): Promise<void> {
+    await withCronLock(this.prisma, 'alertJobsWithNoDriver', async () => {
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
@@ -2877,6 +2883,7 @@ export class TransportJobsService {
         const admins = await this.prisma.user.findMany({
           where: { userType: 'ADMIN' },
           select: { id: true },
+          take: 50,
         });
         if (admins.length > 0) {
           this.notifications
@@ -2900,6 +2907,7 @@ export class TransportJobsService {
         );
       }
     }
+    }, this.logger);
   }
 
   /** Export the driver's completed jobs as a UTF-8 CSV string for accounting. */

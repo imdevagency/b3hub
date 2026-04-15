@@ -253,6 +253,7 @@ enum NotificationType {
   DOCUMENT_EXPIRING_SOON
   DRIVER_NEARBY
   WEIGHING_SLIP
+  PAYOUT_PENDING         // carrier needs to complete Stripe Connect onboarding
 }
 
 enum QuoteRequestStatus {
@@ -429,7 +430,7 @@ model Company {
   city       String
   state      String
   postalCode String
-  country    String @default("DE")
+  country    String @default("LV")
 
   // Business info
   description String?
@@ -517,6 +518,8 @@ model Material {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([supplierId])
+  @@index([active, category])
   @@map("materials")
 }
 
@@ -635,6 +638,10 @@ model Order {
 
   @@index([projectId])
   @@index([scheduleId])
+  @@index([buyerId])
+  @@index([createdById])
+  @@index([status])
+  @@index([status, createdAt])
   @@map("orders")
 }
 
@@ -803,6 +810,11 @@ model TransportJob {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([driverId])
+  @@index([carrierId])
+  @@index([orderId])
+  @@index([status])
+  @@index([status, pickupDate])
   @@map("transport_jobs")
 }
 
@@ -1047,6 +1059,8 @@ model Notification {
 
   createdAt DateTime @default(now())
 
+  @@index([userId])
+  @@index([userId, read])
   @@map("notifications")
 }
 

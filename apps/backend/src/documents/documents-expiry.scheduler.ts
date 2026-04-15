@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { DocumentStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { withCronLock } from '../common/utils/cron-lock.util';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
 
@@ -22,6 +23,7 @@ export class DocumentsExpiryScheduler {
 
   @Cron('0 8 * * *', { name: 'documents-expiry-check' })
   async handleExpiryCheck() {
+    await withCronLock(this.prisma, 'documents-expiry-check', async () => {
     this.logger.log('Starting document expiry check');
 
     const now = new Date();
@@ -84,5 +86,6 @@ export class DocumentsExpiryScheduler {
     this.logger.log(
       `Document expiry check complete: ${sent} alert(s) sent, ${expiring.length} docs checked`,
     );
+    }, this.logger);
   }
 }

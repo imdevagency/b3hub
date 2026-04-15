@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { withCronLock } from '../common/utils/cron-lock.util';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
 import { PaymentsService } from '../payments/payments.service';
@@ -138,7 +139,7 @@ export class SkipHireService {
           message: `Pasūtījums #${orderNumber} reģistrēts. Lūdzu, apmaksājiet pasūtījumu, lai apstiprinātu rezervāciju.`,
           data: { orderId: order.id },
         })
-        .catch(() => null);
+        .catch((err) => this.logger.warn('Notification create failed (ORDER_CREATED)', (err as Error).message));
     }
     return { ...order, clientSecret };
   }
@@ -330,7 +331,7 @@ export class SkipHireService {
             message: `Konteinera pasūtījums #${existing.orderNumber}: ${label.toLowerCase()}.`,
             data: { orderId: id },
           })
-          .catch(() => null);
+          .catch((err) => this.logger.warn('Notification create failed (ORDER_CONFIRMED)', (err as Error).message));
       }
     }
     return updated;
@@ -360,7 +361,7 @@ export class SkipHireService {
           message: `Konteinera pasūtījums #${order.orderNumber} ir atcelts.`,
           data: { orderId: id },
         })
-        .catch(() => null);
+        .catch((err) => this.logger.warn('Notification create failed (SYSTEM_ALERT cancel)', (err as Error).message));
     }
     return updated;
   }
@@ -454,7 +455,7 @@ export class SkipHireService {
             message: `Konteinera pasūtījums #${order.orderNumber}: ${label.toLowerCase()}.`,
             data: { orderId: id },
           })
-          .catch(() => null);
+          .catch((err) => this.logger.warn('Notification create failed (ORDER_DELIVERED)', (err as Error).message));
       }
     }
     return updated;
@@ -481,6 +482,7 @@ export class SkipHireService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_8AM)
   async autoCancelStalePendingSkipOrders(): Promise<void> {
+    await withCronLock(this.prisma, 'autoCancelStalePendingSkipOrders', async () => {
     const now = new Date();
 
     const stale = await this.prisma.skipHireOrder.findMany({
@@ -515,7 +517,7 @@ export class SkipHireService {
               message: `Pasūtījums #${order.orderNumber} tika automātiski atcelts, jo neviens pārvadātājs neapstiprināja rezervāciju līdz piegādes datumam.`,
               data: { orderId: order.id },
             })
-            .catch(() => null);
+            .catch((err) => this.logger.warn('Notification create failed (ORDER_CANCELLED auto)', (err as Error).message));
         }
       } catch (err) {
         this.logger.error(
@@ -527,5 +529,6 @@ export class SkipHireService {
     this.logger.log(
       `autoCancelStalePendingSkipOrders: cancelled ${stale.length} stale PENDING skip hire order(s)`,
     );
+    }, this.logger);
   }
 }

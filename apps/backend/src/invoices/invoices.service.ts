@@ -7,6 +7,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { withCronLock } from '../common/utils/cron-lock.util';
 import { EmailService } from '../email/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
@@ -857,6 +858,7 @@ export class InvoicesService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_8AM)
   async markOverdueInvoices(): Promise<void> {
+    await withCronLock(this.prisma, 'markOverdueInvoices', async () => {
     const now = new Date();
     const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
 
@@ -897,7 +899,7 @@ export class InvoicesService {
             message: `Rēķins #${inv.invoiceNumber} par pasūtījumu #${inv.order?.orderNumber} ir nokavēts. Lūdzu, samaksājiet pēc iespējas ātrāk.`,
             data: { invoiceId: inv.id, orderId: inv.orderId },
           })
-          .catch(() => null);
+          .catch((err) => this.logger.warn('Notification (invoice overdue) failed', (err as Error).message));
 
         const buyer = await this.prisma.user.findUnique({
           where: { id: buyerId },
@@ -977,5 +979,6 @@ export class InvoicesService {
         `markOverdueInvoices: ${overdue.length} marked overdue, ${dueSoon.length} reminders sent`,
       );
     }
+    }, this.logger);
   }
 }

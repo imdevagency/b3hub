@@ -3,6 +3,7 @@
  * Sets up the Navigation stack, AuthProvider, and global font loading.
  * Entry point for all mobile screens.
  */
+import * as Sentry from '@sentry/react-native';
 import '../global.css';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -83,7 +84,16 @@ try {
 
 const STRIPE_PK = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '';
 
-export default function RootLayout() {
+// ── Sentry: init once at module level — captures unhandled errors globally ────
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  environment: process.env.APP_VARIANT ?? 'production',
+  tracesSampleRate: process.env.APP_VARIANT === 'development' ? 1.0 : 0.2,
+  // Only send events in production; suppress noise in dev Expo Go builds
+  enabled: process.env.APP_VARIANT !== 'development',
+});
+
+export default Sentry.wrap(function RootLayout() {
   const notifListener = useRef<{ remove(): void } | null>(null);
 
   const [fontsLoaded] = useFonts({
@@ -188,4 +198,4 @@ export default function RootLayout() {
       </GestureHandlerRootView>
     </ErrorBoundary>
   );
-}
+});

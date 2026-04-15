@@ -678,7 +678,11 @@ const DisposalOrderCard = React.memo(function DisposalOrderCard({ req }: { req: 
       </View>
 
       <View style={s.cardFooter}>
-        <Text style={s.price}>{req.rate != null ? `€${req.rate}` : '—'}</Text>
+        {req.rate != null ? (
+          <Text style={s.price}>€{req.rate}</Text>
+        ) : (
+          <Text style={[s.price, { color: '#94a3b8', fontSize: 13, alignSelf: 'center', fontFamily: 'Inter_600SemiBold' }]}>Tiks precizēts</Text>
+        )}
         <View style={s.chevronBox}>
           <ChevronRight size={18} color="#94a3b8" />
         </View>
@@ -728,7 +732,11 @@ const TransportRequestCard = React.memo(function TransportRequestCard({ req }: {
 
       {/* Spacer to align footer height if needed, or remove if content adjusts */}
       <View style={s.cardFooter}>
-        <Text style={s.price}>{req.rate != null && req.rate > 0 ? `no €${req.rate}` : '—'}</Text>
+        {req.rate != null && req.rate > 0 ? (
+          <Text style={s.price}>no €{req.rate}</Text>
+        ) : (
+          <Text style={[s.price, { color: '#94a3b8', fontSize: 13, alignSelf: 'center', fontFamily: 'Inter_600SemiBold' }]}>Tiks precizēts</Text>
+        )}
         <View style={s.chevronBox}>
           <ChevronRight size={18} color="#94a3b8" />
         </View>
@@ -839,7 +847,11 @@ const SkipOrderCard = React.memo(function SkipOrderCard({ order }: { order: any 
       </View>
 
       <View style={s.cardFooter}>
-        <Text style={s.price}>{order.price != null ? `€${order.price.toFixed(2)}` : '—'}</Text>
+        {order.price != null ? (
+            <Text style={s.price}>€{order.price.toFixed(2)}</Text>
+          ) : (
+            <Text style={[s.price, { color: '#94a3b8', fontSize: 13, alignSelf: 'center', fontFamily: 'Inter_600SemiBold', marginBottom: 2 }]}>Gaida cenu</Text>
+          )}
         <View style={s.chevronBox}>
           <ChevronRight size={18} color="#94a3b8" />
         </View>

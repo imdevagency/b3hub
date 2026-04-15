@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { withCronLock } from '../common/utils/cron-lock.util';
 import { CreateDisposalOrderDto } from './dto/create-disposal-order.dto';
 import { CreateFreightOrderDto } from './dto/create-freight-order.dto';
 import { CreateOrderDto, CreateOrderScheduleDto } from './dto/create-order.dto';
@@ -124,7 +125,7 @@ export class OrdersService {
       const tenMinutesAgo = new Date(Date.now() - 10 * 60_000);
       const recentDuplicate = await this.prisma.order.findFirst({
         where: {
-          companyId: buyerCompanyId,
+          buyerId: buyerCompanyId,
           projectId: orderData.projectId,
           deliveryAddress: orderData.deliveryAddress,
           createdAt: { gte: tenMinutesAgo },
@@ -315,7 +316,7 @@ export class OrdersService {
           );
           // Alert admins — buyer's creditUsed may be permanently overstated
           this.prisma.user
-            .findMany({ where: { userType: 'ADMIN' }, select: { id: true } })
+            .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
             .then((admins) => {
               if (admins.length === 0) return;
               return this.notifications.createForMany(
@@ -332,7 +333,7 @@ export class OrdersService {
                 },
               );
             })
-            .catch(() => null);
+            .catch((err) => this.logger.warn('Admin credit-rollback notification failed', (err as Error).message));
         });
       }
       throw err;
@@ -387,7 +388,7 @@ export class OrdersService {
                       data: { materialId: item.materialId },
                     },
                   )
-                  .catch(() => null);
+                  .catch((err) => this.logger.warn('Out-of-stock supplier notification failed', (err as Error).message));
               }
             }
 
@@ -522,11 +523,11 @@ export class OrdersService {
             material: { name: i.material.name },
           })),
         })
-        .catch(() => null);
+        .catch((err) => this.logger.warn('sendOrderConfirmation email failed', (err as Error).message));
     }
 
     // Notify sellers (fire-and-forget)
-    this.notifyOrderSellers(order.id, order.orderNumber).catch(() => null);
+    this.notifyOrderSellers(order.id, order.orderNumber).catch((err) => this.logger.warn('notifyOrderSellers failed', (err as Error).message));
 
     return order;
       } catch (err: any) {
@@ -571,7 +572,7 @@ export class OrdersService {
           message: `Saņemts jauns pasūtījums #${orderNumber} jūsu materiāliem.`,
           data: { orderId },
         })
-        .catch(() => null);
+        .catch((err) => this.logger.warn('Seller ORDER_CREATED notification failed', (err as Error).message));
     }
   }
 
@@ -965,12 +966,13 @@ export class OrdersService {
             message: `Pasūtījums #${order.orderNumber} apstiprināts, taču maksājuma iekasēšana neizdevās. Lūdzu, sazinieties ar atbalstu vai mēģiniet atkārtoti.`,
             data: { orderId: id },
           })
-          .catch(() => null);
+          .catch((err) => this.logger.warn('Buyer payment-failed notification failed', (err as Error).message));
 
         // Alert admins for manual intervention
         const admins = await this.prisma.user.findMany({
           where: { userType: 'ADMIN' },
           select: { id: true },
+          take: 50,
         });
         if (admins.length > 0) {
           this.notifications
@@ -983,7 +985,7 @@ export class OrdersService {
                 data: { orderId: id },
               },
             )
-            .catch(() => null);
+            .catch((err2) => this.logger.warn('Admin capture-failed notification failed', (err2 as Error).message));
         }
       });
     }
@@ -1087,7 +1089,7 @@ export class OrdersService {
                 message: `Pasūtījums #${order.orderNumber} ir atcelts. Jūsu transporta darbs tika atcelts.`,
                 data: { orderId: id, jobId: job.id },
               })
-              .catch(() => null);
+              .catch((err) => this.logger.warn('Driver job-cancelled notification failed', (err as Error).message));
           }
         }
       }
@@ -1120,7 +1122,7 @@ export class OrdersService {
     if (notif) {
       this.notifications
         .create({ userId: order.createdById, ...notif, data: { orderId: id } })
-        .catch(() => null);
+        .catch((err) => this.logger.warn('Status-change notification failed', (err as Error).message));
     }
 
     // Broadcast real-time status change to subscribed clients (fire-and-forget)
@@ -1140,7 +1142,7 @@ export class OrdersService {
           orderNumber: order.orderNumber,
           status,
         })
-        .catch(() => null);
+        .catch((err) => this.logger.warn('sendOrderStatusUpdate email failed', (err as Error).message));
     }
 
     return updated;
@@ -1327,7 +1329,7 @@ export class OrdersService {
               message: `Pasūtījums ir atcelts piegādātāja dēļ. Jūsu transporta darbs ir noņemts.`,
               data: { orderId: id, jobId: job.id },
             })
-            .catch(() => null);
+            .catch((err) => this.logger.warn('sellerCancel driver notification failed', (err as Error).message));
         }
       }
     }
@@ -1366,7 +1368,7 @@ export class OrdersService {
         SET "stockQty" = "stockQty" + ${(item as any).quantity as number},
             "inStock" = true
         WHERE id = ${item.materialId} AND "stockQty" IS NOT NULL
-      `.catch(() => null);
+      `.catch((err) => this.logger.warn(`sellerCancel stock restore failed for ${item.materialId}`, (err as Error).message));
     }
 
     // Notify buyer with a seller-specific message
@@ -1378,7 +1380,7 @@ export class OrdersService {
         message: `Diemžēl piegādātājs atcēla jūsu pasūtījumu #${order.orderNumber}. Iemesls: ${reason}. Ja maksājums tika veikts, tas tiks atmaksāts.`,
         data: { orderId: id, reason },
       })
-      .catch(() => null);
+      .catch((err) => this.logger.warn('sellerCancel buyer notification failed', (err as Error).message));
 
     // If the order was already confirmed or in progress, alert admins — this is
     // a supply-chain disruption the buyer cannot self-serve around.
@@ -1387,7 +1389,7 @@ export class OrdersService {
       order.status === OrderStatus.IN_PROGRESS
     ) {
       this.prisma.user
-        .findMany({ where: { userType: 'ADMIN' }, select: { id: true } })
+        .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
         .then((admins) => {
           if (admins.length === 0) return;
           return this.notifications.createForMany(
@@ -1548,7 +1550,7 @@ export class OrdersService {
               message: `Pasūtījums #${order.orderNumber} ir atcelts. Jūsu transporta darbs tika atcelts.`,
               data: { orderId: id, jobId: job.id },
             })
-            .catch(() => null);
+            .catch((err) => this.logger.warn('Cancel driver notification failed', (err as Error).message));
         }
       }
     }
@@ -1604,7 +1606,7 @@ export class OrdersService {
         message: `Pasūtījums #${order.orderNumber} ir atcelts.`,
         data: { orderId: id },
       })
-      .catch(() => null);
+      .catch((err) => this.logger.warn('Cancel buyer notification failed', (err as Error).message));
 
     return updated;
   }
@@ -2299,6 +2301,7 @@ export class OrdersService {
    */
   @Cron(CronExpression.EVERY_HOUR)
   async autoCompleteDeliveredOrders(): Promise<void> {
+    await withCronLock(this.prisma, 'autoCompleteDeliveredOrders', async () => {
     const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1_000); // 24 hrs ago
 
     const stale = await this.prisma.order.findMany({
@@ -2361,6 +2364,7 @@ export class OrdersService {
         );
       }
     }
+    }, this.logger);
   }
 
   /**
@@ -2377,6 +2381,7 @@ export class OrdersService {
    */
   @Cron(CronExpression.EVERY_HOUR)
   async autoCancelStalePendingOrders(): Promise<void> {
+    await withCronLock(this.prisma, 'autoCancelStalePendingOrders', async () => {
     const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1_000); // 48 hrs ago
 
     const stale = await this.prisma.order.findMany({
@@ -2441,7 +2446,7 @@ export class OrdersService {
                 "inStock" = true
             WHERE id = ${item.materialId}
               AND "stockQty" IS NOT NULL
-          `.catch(() => null);
+          `.catch((err) => this.logger.warn(`autoCancelStalePendingOrders stock restore failed for ${item.materialId}`, (err as Error).message));
         }
 
         // Notify buyer
@@ -2453,7 +2458,7 @@ export class OrdersService {
             message: `Pasūtījums #${order.orderNumber} tika automātiski atcelts, jo piegādātājs 48 stundu laikā neapstiprināja pasūtījumu.`,
             data: { orderId: order.id },
           })
-          .catch(() => null);
+          .catch((err) => this.logger.warn('autoCancelStalePendingOrders buyer notification failed', (err as Error).message));
 
         this.logger.log(
           `autoCancelStalePendingOrders: order ${order.orderNumber} auto-cancelled (no seller response in 48h)`,
@@ -2466,6 +2471,7 @@ export class OrdersService {
         );
       }
     }
+    }, this.logger);
   }
 
   // ─── Recurring order schedules ─────────────────────────────────────────────
@@ -2564,6 +2570,7 @@ export class OrdersService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_6AM)
   async runScheduledOrders(): Promise<void> {
+    await withCronLock(this.prisma, 'runScheduledOrders', async () => {
     const now = new Date();
     const due = await this.prisma.orderSchedule.findMany({
       where: {
@@ -2668,16 +2675,17 @@ export class OrdersService {
             message: `Automātiskais pasūtījums neizdevās: ${(err as Error).message}. Grafiks tika apturēts — pārbaudiet savus pasūtījumu iestatījumus.`,
             data: { scheduleId: schedule.id },
           })
-          .catch(() => null);
+          .catch((err) => this.logger.warn('runScheduledOrders buyer notification failed', (err as Error).message));
         // Pause the schedule to prevent repeated failures
         this.prisma.orderSchedule
           .update({
             where: { id: schedule.id },
             data: { enabled: false },
           })
-          .catch(() => null);
+          .catch((err) => this.logger.error('runScheduledOrders schedule pause failed', (err as Error).message));
       }
     }
+    }, this.logger);
   }
 
   /** Export the requesting user's orders as a UTF-8 CSV string. */
