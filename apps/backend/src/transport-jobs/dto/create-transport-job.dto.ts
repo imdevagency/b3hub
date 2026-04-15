@@ -154,4 +154,9 @@ export class CreateTransportJobDto {
   @IsOptional()
   @IsUUID()
   orderId?: string;
+
+  // Optional project tag (disposal and standalone freight jobs)
+  @IsOptional()
+  @IsUUID()
+  projectId?: string;
 }

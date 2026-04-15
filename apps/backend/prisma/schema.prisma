@@ -799,6 +799,10 @@ model TransportJob {
   offerExpiresAt    DateTime? // offer expires at this time (45 seconds from dispatch)
   declinedDriverIds String[]  @default([]) // driver IDs who declined or timed out
 
+  // Project association (disposal and standalone freight jobs)
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId String?
+
   // Relations
   containerDeliveries ContainerOrder[]        @relation("ContainerDelivery")
   containerPickups    ContainerOrder[]        @relation("ContainerPickup")
@@ -813,6 +817,7 @@ model TransportJob {
   @@index([driverId])
   @@index([carrierId])
   @@index([orderId])
+  @@index([projectId])
   @@index([status])
   @@index([status, pickupDate])
   @@map("transport_jobs")
@@ -1577,6 +1582,9 @@ model Project {
 
   // Tagged orders (costs)
   orders Order[]
+
+  // Tagged transport & disposal jobs
+  transportJobs TransportJob[]
 
   // Linked framework contracts
   frameworkContracts FrameworkContract[]

@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (1894 lines, 46 models, 41 enums).
+Schema: `apps/backend/prisma/schema.prisma` (1960 lines, 47 models, 41 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -52,6 +52,8 @@ DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL`
 - `DisputesModule`
 - `SupportModule`
 - `ApiKeysModule`
+- `FieldPassesModule`
+- `WeighingSlipsModule`
 
 ---
 
@@ -99,7 +101,7 @@ npm run db:seed           # reseed demo data
 | `TransportExceptionStatus` | OPEN RESOLVED |
 | `VehicleType` | DUMP_TRUCK FLATBED_TRUCK SEMI_TRAILER HOOK_LIFT SKIP_LOADER TANKER VAN |
 | `VehicleStatus` | ACTIVE IN_USE MAINTENANCE INACTIVE |
-| `NotificationType` | ORDER_CREATED ORDER_CONFIRMED ORDER_CANCELLED ORDER_DELIVERED TRANSPORT_ASSIGNED TRANSPORT_STARTED TRANSPORT_COMPLETED PAYMENT_RECEIVED QUOTE_RECEIVED QUOTE_ACCEPTED SYSTEM_ALERT DOCUMENT_EXPIRING_SOON DRIVER_NEARBY WEIGHING_SLIP |
+| `NotificationType` | ORDER_CREATED ORDER_CONFIRMED ORDER_CANCELLED ORDER_DELIVERED TRANSPORT_ASSIGNED TRANSPORT_STARTED TRANSPORT_COMPLETED PAYMENT_RECEIVED QUOTE_RECEIVED QUOTE_ACCEPTED SYSTEM_ALERT DOCUMENT_EXPIRING_SOON DRIVER_NEARBY WEIGHING_SLIP PAYOUT_PENDING |
 | `QuoteRequestStatus` | PENDING QUOTED ACCEPTED CANCELLED EXPIRED |
 | `FrameworkContractStatus` | DRAFT ACTIVE COMPLETED EXPIRED CANCELLED |
 | `FieldPassStatus` | ACTIVE EXPIRED REVOKED |
@@ -134,7 +136,7 @@ npm run db:seed           # reseed demo data
 ---
 
 ### Company — `@@map("companies")`  
-**Fields:** `id`: String @id @default(cuid(), `name`: String, `legalName`: String, `registrationNum`: String? @unique, `taxId`: String?, `email`: String, `phone`: String, `website`: String?, `street`: String, `city`: String, `state`: String, `postalCode`: String, `country`: String @default("DE"), `description`: String?, `logo`: String?, `verified`: Boolean @default(false), `rating`: Float?, `stripeConnectId`: String?, `commissionRate`: Float @default(10.0), `payoutEnabled`: Boolean @default(false), `lat`: Float?, `lng`: Float?, `serviceRadiusKm`: Int?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `name`: String, `legalName`: String, `registrationNum`: String? @unique, `taxId`: String?, `email`: String, `phone`: String, `website`: String?, `street`: String, `city`: String, `state`: String, `postalCode`: String, `country`: String @default("LV"), `description`: String?, `logo`: String?, `verified`: Boolean @default(false), `rating`: Float?, `stripeConnectId`: String?, `commissionRate`: Float @default(10.0), `payoutEnabled`: Boolean @default(false), `lat`: Float?, `lng`: Float?, `serviceRadiusKm`: Int?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `companyType`: CompanyType  
 **Relations:** → User, Material, Container, Vehicle, Order, RecyclingCenter, TransportJob, QuoteResponse, CarrierPricing, CarrierServiceZone, CarrierAvailability, SkipHireOrder, Review, FrameworkContract, FrameworkContract, Project, ApiKey, FieldPass, Invoice
 
@@ -182,9 +184,9 @@ npm run db:seed           # reseed demo data
 ---
 
 ### TransportJob — `@@map("transport_jobs")`  
-**Fields:** `id`: String @id @default(cuid(), `jobNumber`: String @unique, `orderId`: String?, `pickupAddress`: String, `pickupCity`: String, `pickupState`: String, `pickupPostal`: String, `pickupDate`: DateTime, `pickupWindow`: String?, `deliveryAddress`: String, `deliveryCity`: String, `deliveryState`: String, `deliveryPostal`: String, `deliveryDate`: DateTime, `deliveryWindow`: String?, `cargoType`: String, `cargoWeight`: Float?, `cargoVolume`: Float?, `actualWeightKg`: Float?, `pickupPhotoUrl`: String?, `specialRequirements`: String?, `requiredVehicleType`: String?, `truckIndex`: Int?, `pickupLat`: Float?, `pickupLng`: Float?, `deliveryLat`: Float?, `deliveryLng`: Float?, `distanceKm`: Float?, `rate`: Float, `pricePerTonne`: Float?, `buyerOfferedRate`: Float?, `currency`: String @default("EUR"), `carrierId`: String?, `driverId`: String?, `vehicleId`: String?, `frameworkContractId`: String?, `frameworkPositionId`: String?, `requestedById`: String?, `acceptedAt`: DateTime?, `statusUpdatedAt`: DateTime?, `slaEscalatedAt`: DateTime?, `slaEscalationStage`: String?, `currentLocation`: Json?, `estimatedArrival`: DateTime?, `offeredToDriverId`: String?, `offerExpiresAt`: DateTime?, `declinedDriverIds`: String @default([]), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `jobNumber`: String @unique, `orderId`: String?, `pickupAddress`: String, `pickupCity`: String, `pickupState`: String, `pickupPostal`: String, `pickupDate`: DateTime, `pickupWindow`: String?, `deliveryAddress`: String, `deliveryCity`: String, `deliveryState`: String, `deliveryPostal`: String, `deliveryDate`: DateTime, `deliveryWindow`: String?, `cargoType`: String, `cargoWeight`: Float?, `cargoVolume`: Float?, `actualWeightKg`: Float?, `pickupPhotoUrl`: String?, `specialRequirements`: String?, `requiredVehicleType`: String?, `truckIndex`: Int?, `pickupLat`: Float?, `pickupLng`: Float?, `deliveryLat`: Float?, `deliveryLng`: Float?, `distanceKm`: Float?, `rate`: Float, `pricePerTonne`: Float?, `buyerOfferedRate`: Float?, `currency`: String @default("EUR"), `carrierId`: String?, `driverId`: String?, `vehicleId`: String?, `frameworkContractId`: String?, `frameworkPositionId`: String?, `requestedById`: String?, `acceptedAt`: DateTime?, `statusUpdatedAt`: DateTime?, `slaEscalatedAt`: DateTime?, `slaEscalationStage`: String?, `currentLocation`: Json?, `estimatedArrival`: DateTime?, `offeredToDriverId`: String?, `offerExpiresAt`: DateTime?, `declinedDriverIds`: String @default([]), `projectId`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `jobType`: TransportJobType, `requiredVehicleEnum`?: VehicleType, `status`: TransportJobStatus  
-**Relations:** → Order?, Company?, User?, Vehicle?, FrameworkContract?, FrameworkPosition?, User?, DeliveryProof?, ContainerOrder, ContainerOrder, ChatMessage, TransportJobException, Invoice, OrderSurcharge
+**Relations:** → Order?, Company?, User?, Vehicle?, FrameworkContract?, FrameworkPosition?, User?, DeliveryProof?, Project?, ContainerOrder, ContainerOrder, ChatMessage, TransportJobException, Invoice, OrderSurcharge
 
 ---
 
@@ -333,9 +335,9 @@ npm run db:seed           # reseed demo data
 ---
 
 ### FrameworkContract — `@@map("framework_contracts")`  
-**Fields:** `id`: String @id @default(cuid(), `contractNumber`: String @unique, `title`: String, `buyerId`: String, `createdById`: String, `supplierId`: String?, `startDate`: DateTime, `endDate`: DateTime?, `notes`: String?, `isFieldContract`: Boolean @default(false), `prepaidBalance`: Float @default(0), `prepaidUsed`: Float @default(0), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `contractNumber`: String @unique, `title`: String, `buyerId`: String, `createdById`: String, `supplierId`: String?, `startDate`: DateTime, `endDate`: DateTime?, `notes`: String?, `isFieldContract`: Boolean @default(false), `prepaidBalance`: Float @default(0), `prepaidUsed`: Float @default(0), `projectId`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `status`: FrameworkContractStatus (@default(DRAFT))  
-**Relations:** → Company, User, Company?, FrameworkPosition, TransportJob, FieldPass, Invoice
+**Relations:** → Company, User, Company?, Project?, FrameworkPosition, TransportJob, FieldPass, Invoice
 
 ---
 
@@ -349,7 +351,7 @@ npm run db:seed           # reseed demo data
 ### Project — `@@map("projects")`  
 **Fields:** `id`: String @id @default(cuid(), `name`: String, `description`: String?, `clientName`: String?, `siteAddress`: String?, `contractValue`: Float, `budgetAmount`: Float?, `startDate`: DateTime?, `endDate`: DateTime?, `companyId`: String, `createdById`: String, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `status`: ProjectStatus (@default(PLANNING))  
-**Relations:** → Company, User, Order, ProjectSite
+**Relations:** → Company, User, Order, TransportJob, FrameworkContract, ProjectSite
 
 ---
 
@@ -417,9 +419,15 @@ npm run db:seed           # reseed demo data
 ---
 
 ### FieldPass — `@@map("field_passes")`  
-**Fields:** `id`: String @id @default(cuid(), `passNumber`: String @unique, `companyId`: String, `createdById`: String, `contractId`: String, `vehiclePlate`: String, `driverName`: String?, `validFrom`: DateTime, `validTo`: DateTime, `wasteClassCode`: String?, `wasteDescription`: String?, `unloadingPoint`: String?, `estimatedTonnes`: Float?, `fileUrl`: String?, `orderId`: String?, `revokedReason`: String?, `revokedAt`: DateTime?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `passNumber`: String @unique, `companyId`: String, `createdById`: String, `contractId`: String, `vehiclePlate`: String, `driverName`: String?, `validFrom`: DateTime, `validTo`: DateTime, `wasteClassCode`: String?, `wasteDescription`: String?, `unloadingPoint`: String?, `estimatedTonnes`: Float?, `fileUrl`: String?, `orderId`: String?, `revokedReason`: String?, `revokedAt`: DateTime?, `actualNetTonnes`: Float?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `status`: FieldPassStatus (@default(ACTIVE))  
-**Relations:** → Company, User, FrameworkContract, Order?
+**Relations:** → Company, User, FrameworkContract, Order?, WeighingSlip
+
+---
+
+### WeighingSlip — `@@map("weighing_slips")`  
+**Fields:** `id`: String @id @default(cuid(), `slipNumber`: String @unique, `fieldPassId`: String, `grossTonnes`: Float, `tareTonnes`: Float, `netTonnes`: Float, `vehiclePlate`: String, `operatorName`: String?, `notes`: String?, `fileUrl`: String?, `voidedAt`: DateTime?, `voidedReason`: String?, `recordedAt`: DateTime @default(now(), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Relations:** → FieldPass
 
 ---
 

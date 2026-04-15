@@ -115,5 +115,12 @@ export const containersApi = {
       apiFetch<ApiWasteRecord[]>('/recycling-centers/disposal/mine', {
         headers: { Authorization: `Bearer ${token}` },
       }),
+
+    /** Check if any active centers accept a given waste type (limit=1 probe) */
+    checkAvailability: (wasteType: WasteType, token: string) =>
+      apiFetch<{ data: { id: string; name: string }[]; total: number }>(
+        `/recycling-centers?wasteType=${encodeURIComponent(wasteType)}&activeOnly=true&limit=1`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      ),
   },
 };

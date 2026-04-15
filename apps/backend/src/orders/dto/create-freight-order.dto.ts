@@ -1,4 +1,4 @@
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 
 export enum FreightVehicleType {
   TIPPER_SMALL = 'TIPPER_SMALL', // 10 t / 8 m³
@@ -79,4 +79,24 @@ export class CreateFreightOrderDto {
   @Min(0)
   @IsOptional()
   buyerOfferedRate?: number; // buyer's suggested budget, shown to drivers
+
+  @IsString()
+  @IsOptional()
+  pickupWindow?: string; // 'AM' | 'PM' | 'ANY'
+
+  @IsString()
+  @IsOptional()
+  siteContactName?: string;
+
+  @IsString()
+  @IsOptional()
+  siteContactPhone?: string;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
+
+  @IsUUID()
+  @IsOptional()
+  projectId?: string; // optional project tag for P&L roll-up
 }

@@ -167,6 +167,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - documents
 - driver-schedule
 - email
+- field-passes
 - framework-contracts
 - health
 - invoices
@@ -186,6 +187,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - transport-jobs
 - updates
 - vehicles
+- weighing-slips
 <!-- END GEN -->
 
 ### Web Pages
@@ -202,6 +204,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/admin/audit-logs
 - dashboard/admin/companies
 - dashboard/admin/disputes
+- dashboard/admin/field-passes
 - dashboard/admin/jobs
 - dashboard/admin/materials
 - dashboard/admin/orders
@@ -211,6 +214,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/admin/support
 - dashboard/admin/surcharges
 - dashboard/admin/users
+- dashboard/admin/weighing-slips
 - dashboard/analytics
 - dashboard/buyer
 - dashboard/buyer/projects
@@ -228,6 +232,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/documents
 - dashboard/driver/earnings
 - dashboard/earnings
+- dashboard/field-passes
 - dashboard/fleet
 - dashboard/fleet-management
 - dashboard/framework-contracts
@@ -280,6 +285,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (buyer)/certificates
 - (buyer)/disputes
 - (buyer)/documents
+- (buyer)/field-passes
 - (buyer)/framework-contract/[id]
 - (buyer)/framework-contracts
 - (buyer)/home

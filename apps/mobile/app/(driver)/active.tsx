@@ -2058,6 +2058,22 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     minWidth: 100,
   },
+  surchargeLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#6b7280',
+    marginBottom: 6,
+  },
+  surchargeInput: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: '#111827',
+  },
   surchargeSubmitBtn: {
     backgroundColor: '#d97706',
     borderRadius: 12,

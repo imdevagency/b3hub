@@ -27,6 +27,8 @@ export interface CreateDisposalOrderInput {
   notes?: string;
   /** Displayed price shown to buyer (fromPrice × truckCount) */
   quotedRate?: number;
+  /** Optional project tag for P&L roll-up */
+  projectId?: string;
 }
 
 export interface CreateTransportOrderInput {
@@ -51,8 +53,12 @@ export interface CreateTransportOrderInput {
   siteContactName?: string;
   siteContactPhone?: string;
   notes?: string;
+  /** Platform-calculated estimated rate (EUR, excl. VAT). Required by backend DTO. */
+  quotedRate: number;
   /** Buyer's suggested budget shown to drivers (optional) */
   buyerOfferedRate?: number;
+  /** Optional project tag for P&L roll-up */
+  projectId?: string;
 }
 
 export interface CreateMaterialOrderInput {
@@ -64,8 +70,14 @@ export interface CreateMaterialOrderInput {
   deliveryAddress: string;
   deliveryCity: string;
   deliveryPostal?: string;
+  deliveryLat?: number;
+  deliveryLng?: number;
   deliveryDate: string;
   deliveryWindow?: string;
+  deliveryFee?: number;
+  siteContactName?: string;
+  siteContactPhone?: string;
+  notes?: string;
   projectId?: string;
   /** Number of trucks to dispatch (each becomes a separate transport job). */
   truckCount?: number;

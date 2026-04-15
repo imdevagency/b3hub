@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Min,
   IsIn,
 } from 'class-validator';
@@ -80,4 +81,8 @@ export class CreateDisposalOrderDto {
   @Min(0)
   @IsOptional()
   quotedRate?: number; // EUR, incl. platform fee, excl. VAT
+
+  @IsUUID()
+  @IsOptional()
+  projectId?: string; // optional project tag for P&L roll-up
 }

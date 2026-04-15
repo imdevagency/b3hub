@@ -7,9 +7,10 @@
  *   Step 4 – Date + route summary + contact/notes
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Bookmark, Check, Weight } from 'lucide-react-native';
 import { TruckIllustration } from '@/components/ui/TruckIllustration';
 import { useTransport } from '@/lib/transport-context';
@@ -91,9 +92,31 @@ function buildDays(count = 14) {
 
 const DAY_OPTIONS = buildDays();
 
+// ── Draft persistence ────────────────────────────────────────────
+const TRANSPORT_DRAFT_KEY = '@b3hub_transport_draft';
+const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+interface TransportDraft {
+  step: Step;
+  selectedVehicle: TransportVehicleType | null;
+  activeDesc: string;
+  otherText: string;
+  weightText: string;
+  selectedDay: string;
+  pickupWindow: 'ANY' | 'AM' | 'PM';
+  siteContactName: string;
+  siteContactPhone: string;
+  notes: string;
+  offeredRateText: string;
+  pickupPicked: PickedAddress | null;
+  dropoffPicked: PickedAddress | null;
+  savedAt: number;
+}
+
 // ── Component ─────────────────────────────────────────────────────
 export default function TransportWizard() {
   const router = useRouter();
+  const { projectId } = useLocalSearchParams<{ projectId?: string }>();
   const toast = useToast();
   const {
     state,
@@ -141,6 +164,100 @@ export default function TransportWizard() {
   const currentVehicle = VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle);
   const currentVehiclePrice = currentVehicle?.fromPrice;
 
+  // ── Draft: restore from AsyncStorage on mount ──
+  const draftLoadedRef = useRef(false);
+  useEffect(() => {
+    AsyncStorage.getItem(TRANSPORT_DRAFT_KEY)
+      .then((raw) => {
+        if (!raw) {
+          draftLoadedRef.current = true;
+          return;
+        }
+        try {
+          const d: TransportDraft = JSON.parse(raw);
+          if (d.savedAt && Date.now() - d.savedAt > DRAFT_TTL_MS) {
+            AsyncStorage.removeItem(TRANSPORT_DRAFT_KEY).catch(() => {});
+            draftLoadedRef.current = true;
+            return;
+          }
+          if (d.step) setStep(d.step);
+          if (d.selectedVehicle) setSelectedVehicle(d.selectedVehicle);
+          if (d.activeDesc) setActiveDesc(d.activeDesc);
+          if (d.otherText) setOtherText(d.otherText);
+          if (d.weightText) setWeightText(d.weightText);
+          if (d.selectedDay) setSelectedDay(d.selectedDay);
+          if (d.pickupWindow) setPickupWindow(d.pickupWindow);
+          if (d.siteContactName !== undefined) setSiteContactName(d.siteContactName);
+          if (d.siteContactPhone !== undefined) setSiteContactPhone(d.siteContactPhone);
+          if (d.notes !== undefined) setNotes(d.notes);
+          if (d.offeredRateText) setOfferedRateText(d.offeredRateText);
+          if (d.pickupPicked) {
+            setPickupPicked(d.pickupPicked);
+            setPickupStop({ lat: d.pickupPicked.lat, lng: d.pickupPicked.lng });
+            setPickup(
+              d.pickupPicked.address,
+              d.pickupPicked.city ?? '',
+              d.pickupPicked.lat,
+              d.pickupPicked.lng,
+            );
+          }
+          if (d.dropoffPicked) {
+            setDropoffPicked(d.dropoffPicked);
+            setDropoffStop({ lat: d.dropoffPicked.lat, lng: d.dropoffPicked.lng });
+            setDropoff(
+              d.dropoffPicked.address,
+              d.dropoffPicked.city ?? '',
+              d.dropoffPicked.lat,
+              d.dropoffPicked.lng,
+            );
+          }
+        } catch {
+          /* ignore corrupt draft */
+        }
+        draftLoadedRef.current = true;
+      })
+      .catch(() => {
+        draftLoadedRef.current = true;
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Draft: save progressively ──
+  useEffect(() => {
+    if (!draftLoadedRef.current) return;
+    const draft: TransportDraft = {
+      step,
+      selectedVehicle,
+      activeDesc,
+      otherText,
+      weightText,
+      selectedDay,
+      pickupWindow,
+      siteContactName,
+      siteContactPhone,
+      notes,
+      offeredRateText,
+      pickupPicked,
+      dropoffPicked,
+      savedAt: Date.now(),
+    };
+    AsyncStorage.setItem(TRANSPORT_DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
+  }, [
+    step,
+    selectedVehicle,
+    activeDesc,
+    otherText,
+    weightText,
+    selectedDay,
+    pickupWindow,
+    siteContactName,
+    siteContactPhone,
+    notes,
+    offeredRateText,
+    pickupPicked,
+    dropoffPicked,
+  ]);
+
   // ── Handlers ──────────────────────────────────────────────────
   const handlePickupConfirm = useCallback(
     (p: PickedAddress) => {
@@ -172,6 +289,13 @@ export default function TransportWizard() {
     setSubmitting(true);
     try {
       const resolvedDesc = activeDesc === 'Cits' ? otherText.trim() || 'Cits' : activeDesc;
+      // quotedRate is required by the backend DTO (@IsNumber @Min(0)). Derive from
+      // the route-adjusted estimate, falling back to the vehicle base price.
+      const quotedRate = currentVehicle
+        ? route
+          ? Math.round(currentVehicle.fromPrice + route.distanceKm * currentVehicle.pricePerKm)
+          : currentVehicle.fromPrice
+        : 0;
       const job = await api.transport.create(
         {
           pickupAddress: pickupPicked?.address ?? '',
@@ -190,7 +314,9 @@ export default function TransportWizard() {
           siteContactName: siteContactName || undefined,
           siteContactPhone: siteContactPhone || undefined,
           notes: notes || undefined,
+          quotedRate,
           buyerOfferedRate: offeredRateText ? parseFloat(offeredRateText) : undefined,
+          projectId: projectId || undefined,
         },
         token,
       );
@@ -225,6 +351,7 @@ export default function TransportWizard() {
           .catch(() => {});
       }
       reset();
+      AsyncStorage.removeItem(TRANSPORT_DRAFT_KEY).catch(() => {});
       router.replace({
         pathname: '/transport/confirmation' as never,
         params: {
@@ -254,6 +381,7 @@ export default function TransportWizard() {
     pickupStop,
     dropoffStop,
     selectedVehicle,
+    route,
     activeDesc,
     otherText,
     weightText,

@@ -188,6 +188,7 @@ export default function OrderRequestWizard() {
     prefillCity?: string;
     projectId?: string;
     resumeDraft?: string;
+    prefilledQty?: string;
   }>();
 
   const [selectedCategory, setSelectedCategory] = useState<MaterialCategory>(
@@ -196,7 +197,10 @@ export default function OrderRequestWizard() {
   const category = selectedCategory; // backward-compat alias used in API calls
 
   // ── Step state ──
-  const [step, setStep] = useState<Step>('specs');
+  // Start at 'address' on fresh entry; skip it when arriving from catalog with a pre-filled address or quantity.
+  const [step, setStep] = useState<Step>(
+    params.prefillAddress || params.prefilledQty ? 'specs' : 'address',
+  );
   const stepIndex = STEPS.indexOf(step);
 
   // ── Specs step ──
@@ -209,7 +213,10 @@ export default function OrderRequestWizard() {
   const [unit, setUnit] = useState<MaterialUnit>(
     CATEGORY_DEFAULT_UNIT[(params.initialCategory as MaterialCategory) || 'GRAVEL'] ?? 'TONNE',
   );
-  const [quantity, setQuantity] = useState(TRUCK_OPTIONS[0].capacity);
+  const [quantity, setQuantity] = useState(() => {
+    const prefill = params.prefilledQty ? parseFloat(params.prefilledQty) : NaN;
+    return !isNaN(prefill) && prefill > 0 ? prefill : TRUCK_OPTIONS[0].capacity;
+  });
   const [notes, setNotes] = useState('');
 
   // ── Volume calculator modal ──
@@ -295,11 +302,18 @@ export default function OrderRequestWizard() {
         }
         try {
           const d: WizardDraft = JSON.parse(raw);
+          // Discard drafts older than 7 days — construction orders are time-sensitive.
+          const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+          if (d.savedAt && Date.now() - d.savedAt > DRAFT_TTL_MS) {
+            AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
+            draftLoadedRef.current = true;
+            return;
+          }
           setMaterialName(d.materialName || materialName);
           setUnit(d.unit || unit);
           setQuantity(d.quantity || quantity);
           setNotes(d.notes || '');
-          setStep(d.step || 'specs');
+          setStep(d.step || 'address');
           if (d.pickedAddress) setPickedAddress(d.pickedAddress);
           if (d.deliveryDate) setDeliveryDate(d.deliveryDate);
           setDeliveryWindow(d.deliveryWindow || 'ANY');
@@ -2365,6 +2379,18 @@ const s = StyleSheet.create({
     height: 1,
     backgroundColor: '#F4F5F7',
     marginHorizontal: 16,
+  },
+  nextBtn: {
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  nextBtnTxt: {
+    fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#ffffff',
   },
 });
 

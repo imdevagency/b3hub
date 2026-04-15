@@ -2007,6 +2007,7 @@ export class OrdersService {
         specialRequirements: dto.description ?? null,
         rate: dto.quotedRate ?? 0,
         currency: 'EUR',
+        projectId: dto.projectId ?? null,
         status: TransportJobStatus.AVAILABLE,
       },
     });
@@ -2089,6 +2090,7 @@ export class OrdersService {
         rate: dto.quotedRate,
         buyerOfferedRate: dto.buyerOfferedRate ?? null,
         currency: 'EUR',
+        projectId: dto.projectId ?? null,
         status: TransportJobStatus.AVAILABLE,
       },
     });

@@ -105,45 +105,28 @@ function CategoryCard({
         haptics.light();
         onPress();
       }}
-      activeOpacity={0.8}
+      activeOpacity={0.7}
     >
-      {/* Left accent strip */}
-      <View style={[s.catStrip, { backgroundColor: meta.accent }]} />
-
-      {/* Icon */}
-      <View style={[s.catIconWrap, { backgroundColor: meta.bg }]}>
-        <Icon size={24} color={meta.accent} strokeWidth={1.8} />
+      <View style={[s.catIconWrap, { backgroundColor: '#f3f4f6' }]}>
+        <Icon size={24} color="#000" strokeWidth={1.5} />
       </View>
 
-      {/* Info */}
       <View style={s.catBody}>
         <View style={s.catNameRow}>
           <Text style={s.catName}>{CATEGORY_LABELS[category]}</Text>
           {hasRecycled && (
             <View style={s.recycledBadge}>
-              <Leaf size={11} color="#16a34a" fill="#16a34a" />
               <Text style={s.recycledText}>Pārstrādāts</Text>
             </View>
           )}
         </View>
-        {description ? (
-          <Text style={s.catDesc} numberOfLines={2}>
-            {description}
-          </Text>
-        ) : null}
-        <View style={s.catMeta}>
-          {supplierCount > 0 && (
-            <Text style={s.catSupplierCount}>
-              {supplierCount} piegādātāj{supplierCount === 1 ? 's' : 'i'}
-            </Text>
-          )}
-          {minPrice != null && <Text style={s.catMinPrice}>no €{minPrice.toFixed(2)}/t</Text>}
-        </View>
+        <Text style={s.catDesc} numberOfLines={1}>
+          {supplierCount > 0 ? `${supplierCount} piegādātāji` : description}
+        </Text>
       </View>
 
-      {/* Arrow */}
       <View style={s.catRight}>
-        <ChevronRight size={16} color="#d1d5db" />
+        {minPrice != null && <Text style={s.catMinPrice}>no €{minPrice.toFixed(2)}</Text>}
       </View>
     </TouchableOpacity>
   );
@@ -409,7 +392,9 @@ export default function CatalogScreen() {
 
   return (
     <ScreenContainer bg="#ffffff">
-      <ScreenHeader title="Katalogs" />
+      <View style={s.uberHeader}>
+        <Text style={s.uberTitle}>Katalogs</Text>
+      </View>
       {/* ── Header & Search ── */}
       <View style={s.topBar}>
         <View style={[s.searchBox, searchFocused && s.searchBoxFocused]}>
@@ -459,27 +444,25 @@ export default function CatalogScreen() {
           <Text style={[s.chipText, filterMode === 'ALL' && s.chipTextActive]}>Visi</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[s.chip, filterMode === 'RECYCLED' && s.chipActiveGreen]}
+          style={[s.chip, filterMode === 'RECYCLED' && s.chipActive]}
           onPress={() => {
             haptics.light();
             setFilterMode('RECYCLED');
           }}
           activeOpacity={0.8}
         >
-          <Recycle size={13} color={filterMode === 'RECYCLED' ? '#fff' : '#16a34a'} />
-          <Text
-            style={[s.chipText, filterMode === 'RECYCLED' ? s.chipTextActive : s.chipTextGreen]}
-          >
+          <Recycle size={13} color={filterMode === 'RECYCLED' ? '#fff' : '#111827'} />
+          <Text style={[s.chipText, filterMode === 'RECYCLED' ? s.chipTextActive : undefined]}>
             Reciklēti
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[s.chip, nearMe && s.chipActiveBlue]}
+          style={[s.chip, nearMe && s.chipActive]}
           onPress={handleNearMeToggle}
           activeOpacity={0.8}
           disabled={nearMeLoading}
         >
-          <MapPin size={13} color={nearMe ? '#fff' : '#2563eb'} />
+          <MapPin size={13} color={nearMe ? '#fff' : '#111827'} />
           <Text style={[s.chipText, nearMe ? s.chipTextActive : s.chipTextBlue]}>
             {nearMeLoading ? '...' : 'Tuvumā'}
           </Text>
@@ -492,8 +475,8 @@ export default function CatalogScreen() {
           }}
           activeOpacity={0.8}
         >
-          <Calculator size={13} color="#7c3aed" />
-          <Text style={[s.chipText, { color: '#7c3aed' }]}>Kalkulators</Text>
+          <Calculator size={13} color="#111827" />
+          <Text style={[s.chipText, { color: '#111827' }]}>Kalkulators</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -510,7 +493,7 @@ export default function CatalogScreen() {
         >
           <View style={s.calcSheet}>
             <View style={s.calcHeader}>
-              <Calculator size={16} color="#7c3aed" />
+              <Calculator size={16} color="#111827" />
               <Text style={s.calcTitle}>Daudzuma kalkulators</Text>
               <TouchableOpacity hitSlop={12} onPress={() => setCalcVisible(false)}>
                 <X size={18} color="#6b7280" />
@@ -638,35 +621,31 @@ export default function CatalogScreen() {
       {/* ── Project context banner ── */}
       {projectId ? (
         <View style={s.projectBanner}>
-          <FolderOpen size={14} color="#1d4ed8" />
+          <FolderOpen size={14} color="#111827" />
           <Text style={s.projectBannerText}>Pasūtījums tiks piesaistīts projektam</Text>
         </View>
       ) : null}
 
       {/* ── Draft resume banner ── */}
       {resumeDraft && !query && (
-        <View style={s.draftBanner}>
+        <TouchableOpacity
+          style={s.draftBanner}
+          onPress={() =>
+            router.push({
+              pathname: '/order-request-new',
+              params: { resumeDraft: 'true' },
+            } as any)
+          }
+          activeOpacity={0.8}
+        >
           <View style={{ flex: 1 }}>
-            <Text style={s.draftTitle}>Nepabeigts pasūtījums</Text>
             <Text style={s.draftSub} numberOfLines={1}>
-              {resumeDraft.materialName} — {resumeDraft.quantity}{' '}
-              {UNIT_SHORT[resumeDraft.unit as keyof typeof UNIT_SHORT] ?? resumeDraft.unit}
+              <Text style={{ fontWeight: '600' }}>Nepabeigts: </Text>
+              {resumeDraft.materialName}, {resumeDraft.quantity} {UNIT_SHORT[resumeDraft.unit as keyof typeof UNIT_SHORT] ?? resumeDraft.unit}
             </Text>
           </View>
           <TouchableOpacity
-            style={s.draftBtn}
-            onPress={() =>
-              router.push({
-                pathname: '/order-request-new',
-                params: { resumeDraft: 'true' },
-              } as any)
-            }
-            activeOpacity={0.8}
-          >
-            <Text style={s.draftBtnText}>Turpināt</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            hitSlop={8}
+            hitSlop={12}
             onPress={() => {
               AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
               setResumeDraft(null);
@@ -674,22 +653,10 @@ export default function CatalogScreen() {
           >
             <X size={16} color="#6b7280" />
           </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
       )}
 
-      {/* ── Live pricing banner ── */}
-      {(savedDelivery || nearMeCoords) && !loading && (
-        <View style={s.livePriceBanner}>
-          <MapPin size={12} color="#2563eb" />
-          {livePricesLoading ? (
-            <Text style={s.livePriceBannerText}>Aprēķina cenas jūsu adresei…</Text>
-          ) : (
-            <Text style={s.livePriceBannerText} numberOfLines={1}>
-              {nearMe ? 'Cenas jūsu tuvumā' : `Cenas adresei: ${savedDelivery?.address ?? ''}`}
-            </Text>
-          )}
-        </View>
-      )}
+
 
       {/* ── Category list ── */}
       {loading ? (
@@ -739,10 +706,23 @@ export default function CatalogScreen() {
 // ── Styles ────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
+  uberHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 8,
+    backgroundColor: '#fff',
+  },
+  uberTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#000',
+    letterSpacing: -0.5,
+    lineHeight: 38,
+    paddingTop: 4,
+  },
   topBar: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingBottom: 12,
     backgroundColor: '#fff',
   },
   chipScroll: {
@@ -753,38 +733,31 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingTop: 4,
+    paddingBottom: 16,
     alignItems: 'center',
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingHorizontal: 16,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#f1f5f9',
+    gap: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 100,
+    backgroundColor: '#f3f4f6',
   },
   chipActive: {
-    backgroundColor: '#0f172a',
-  },
-  chipActiveGreen: {
-    backgroundColor: '#16a34a',
-  },
-  chipActiveBlue: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#111827',
   },
   chipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#374151',
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#111827',
   },
   chipTextActive: {
     color: '#fff',
-  },
-  chipTextGreen: {
-    color: '#16a34a',
+    fontWeight: '600',
   },
   chipTextBlue: {
     color: '#2563eb',
@@ -812,13 +785,11 @@ const s = StyleSheet.create({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#f3f4f6',
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     gap: 8,
-    borderWidth: 1,
-    borderColor: 'transparent',
   },
   searchBoxFocused: {
     borderColor: '#cbd5e1',
@@ -833,54 +804,33 @@ const s = StyleSheet.create({
   projectBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     marginHorizontal: 16,
-    marginTop: 8,
+    marginBottom: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#f3f4f6',
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
   },
   projectBannerText: {
-    fontSize: 12,
-    color: '#1d4ed8',
+    fontSize: 13,
+    color: '#111827',
     fontWeight: '500',
   },
   draftBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     marginHorizontal: 16,
-    marginTop: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#f0fdf4',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
-  },
-  draftTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#166534',
-  },
-  draftSub: {
-    fontSize: 12,
-    color: '#4b5563',
-    marginTop: 1,
-  },
-  draftBtn: {
+    marginBottom: 8,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#16a34a',
+    paddingVertical: 8,
+    backgroundColor: '#f3f4f6',
     borderRadius: 8,
   },
-  draftBtnText: {
+  draftSub: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#fff',
+    color: '#111827',
   },
   list: {
     paddingHorizontal: 16,
@@ -914,82 +864,73 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 0, // Uber-like minimalism, keeping it flat or just a subtle border
     overflow: 'hidden',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-    minHeight: 88,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
   catStrip: {
-    display: 'none', // Remove the colored strip
+    display: 'none',
   },
   catIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24, // Circle icons
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 16,
     marginRight: 16,
-    backgroundColor: '#f8fafc', // Subtle background instead of heavy colors
   },
   catBody: {
     flex: 1,
-    paddingVertical: 12,
     gap: 2,
   },
   catNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    flexWrap: 'wrap',
   },
   catName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#111827',
-    letterSpacing: -0.2,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    letterSpacing: -0.3,
   },
   catDesc: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#6b7280',
-    lineHeight: 17,
-    marginTop: 1,
+    lineHeight: 18,
+    marginTop: 2,
   },
   catMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 3,
+    marginTop: 4,
   },
   catSupplierCount: {
-    fontSize: 11,
-    color: '#9ca3af',
-    fontWeight: '500',
+    fontSize: 12,
+    color: '#6b7280',
   },
   catMinPrice: {
-    fontSize: 11,
-    color: '#00A878',
+    fontSize: 12,
+    color: '#000',
     fontWeight: '600',
   },
-
   catRight: {
-    paddingRight: 14,
-    paddingLeft: 8,
+    paddingLeft: 12,
   },
   recycledBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: '#dcfce7',
+    backgroundColor: '#f3f4f6',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: 4,
   },
   recycledText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#16a34a',
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#6b7280',
   },
   // ── Calculator modal styles ────────────────────────────────────
   calcOverlay: {
@@ -1063,8 +1004,8 @@ const s = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   densityChipActive: {
-    backgroundColor: '#7c3aed',
-    borderColor: '#7c3aed',
+    backgroundColor: '#111827',
+    borderColor: '#111827',
   },
   densityChipText: {
     fontSize: 12,
@@ -1075,12 +1016,12 @@ const s = StyleSheet.create({
     color: '#fff',
   },
   calcResult: {
-    backgroundColor: '#f5f3ff',
+    backgroundColor: '#f9fafb',
     borderRadius: 14,
     padding: 16,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#ede9fe',
+    borderColor: '#e5e7eb',
   },
   calcResultMain: {
     flexDirection: 'row',
@@ -1090,7 +1031,7 @@ const s = StyleSheet.create({
   calcResultTonnes: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#7c3aed',
+    color: '#111827',
   },
   calcResultLabel: {
     fontSize: 13,
@@ -1104,7 +1045,7 @@ const s = StyleSheet.create({
     color: '#6b7280',
   },
   calcOrderBtn: {
-    backgroundColor: '#7c3aed',
+    backgroundColor: '#111827',
     borderRadius: 14,
     paddingVertical: 12,
     alignItems: 'center',

@@ -7,7 +7,8 @@
  *   Step 4 – Date + confirm  (day chips + summary + contact)
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -16,8 +17,9 @@ import {
   StyleSheet,
   Alert,
   TextInput,
+  Linking,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   MapPin,
   Hammer,
@@ -48,6 +50,26 @@ import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
 import { useToast } from '@/components/ui/Toast';
+
+// ── Draft persistence ────────────────────────────────────────────
+const DISPOSAL_DRAFT_KEY = '@b3hub_disposal_draft';
+const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+interface DisposalDraft {
+  step: Step;
+  selectedWastes: WasteType[];
+  selectedTruckType: DisposalTruckType;
+  numTrucks: number;
+  desc: string;
+  weightText: string;
+  date: string; // ISO date string
+  pickupWindow: 'ANY' | 'AM' | 'PM';
+  contactName: string;
+  contactPhone: string;
+  notes: string;
+  picked: PickedAddress | null;
+  savedAt: number;
+}
 
 // ── Types ─────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
@@ -133,6 +155,7 @@ function toISO(d: Date): string {
 // ── Component ─────────────────────────────────────────────────────
 export default function DisposalWizard() {
   const router = useRouter();
+  const { projectId } = useLocalSearchParams<{ projectId?: string }>();
   const toast = useToast();
   const {
     state,
@@ -192,6 +215,87 @@ export default function DisposalWizard() {
 
   const activeTruck = TIPPER_TRUCKS.find((t) => t.type === selectedTruckType) ?? TIPPER_TRUCKS[0];
 
+  // ── Draft: restore from AsyncStorage on mount ──
+  const draftLoadedRef = useRef(false);
+  useEffect(() => {
+    AsyncStorage.getItem(DISPOSAL_DRAFT_KEY)
+      .then((raw) => {
+        if (!raw) {
+          draftLoadedRef.current = true;
+          return;
+        }
+        try {
+          const d: DisposalDraft = JSON.parse(raw);
+          if (d.savedAt && Date.now() - d.savedAt > DRAFT_TTL_MS) {
+            AsyncStorage.removeItem(DISPOSAL_DRAFT_KEY).catch(() => {});
+            draftLoadedRef.current = true;
+            return;
+          }
+          if (d.step) setStep(d.step);
+          if (d.selectedWastes?.length) {
+            setSelectedWastes(d.selectedWastes);
+            const resolved =
+              d.selectedWastes.length > 1 ? ('MIXED' as WasteType) : d.selectedWastes[0];
+            if (resolved) setWasteType(resolved);
+          }
+          if (d.selectedTruckType) setSelectedTruckType(d.selectedTruckType);
+          if (d.numTrucks) setNumTrucks(d.numTrucks);
+          if (d.desc) setDesc(d.desc);
+          if (d.weightText) setWeightText(d.weightText);
+          if (d.date) setDate(new Date(d.date));
+          if (d.pickupWindow) setPickupWindow(d.pickupWindow);
+          if (d.contactName !== undefined) setContactName(d.contactName);
+          if (d.contactPhone !== undefined) setContactPhone(d.contactPhone);
+          if (d.notes !== undefined) setNotes(d.notes);
+          if (d.picked) {
+            setPicked(d.picked);
+            setLocation(d.picked.address, d.picked.city ?? '', d.picked.lat, d.picked.lng);
+          }
+        } catch {
+          /* ignore corrupt draft */
+        }
+        draftLoadedRef.current = true;
+      })
+      .catch(() => {
+        draftLoadedRef.current = true;
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Draft: save progressively ──
+  useEffect(() => {
+    if (!draftLoadedRef.current) return;
+    const draft: DisposalDraft = {
+      step,
+      selectedWastes,
+      selectedTruckType,
+      numTrucks,
+      desc,
+      weightText,
+      date: date.toISOString(),
+      pickupWindow,
+      contactName,
+      contactPhone,
+      notes,
+      picked,
+      savedAt: Date.now(),
+    };
+    AsyncStorage.setItem(DISPOSAL_DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
+  }, [
+    step,
+    selectedWastes,
+    selectedTruckType,
+    numTrucks,
+    desc,
+    weightText,
+    date,
+    pickupWindow,
+    contactName,
+    contactPhone,
+    notes,
+    picked,
+  ]);
+
   // ── Handlers ──────────────────────────────────────────────────
   const handlePickConfirm = useCallback(
     (p: PickedAddress) => {
@@ -250,6 +354,7 @@ export default function DisposalWizard() {
           siteContactPhone: contactPhone || undefined,
           notes: notes || undefined,
           quotedRate: activeTruck.fromPrice * numTrucks,
+          projectId: projectId || undefined,
         },
         token,
       );
@@ -281,6 +386,7 @@ export default function DisposalWizard() {
         estimatedWeight,
         fromPrice: activeTruck.fromPrice * numTrucks,
       });
+      AsyncStorage.removeItem(DISPOSAL_DRAFT_KEY).catch(() => {});
       router.replace({
         pathname: '/disposal/confirmation' as never,
         params: {
@@ -327,7 +433,7 @@ export default function DisposalWizard() {
 
   const ctaLabel = step === 4 ? `Pasūtīt — no €${activeTruck.fromPrice * numTrucks}` : 'Turpināt';
 
-  const onCTA = useCallback(() => {
+  const onCTA = useCallback(async () => {
     if (step === 4) {
       handleSubmit();
       return;
@@ -338,16 +444,47 @@ export default function DisposalWizard() {
           'Bīstami atkritumi',
           'Azbesta, krāsu un šķidājinātāju utilizācijai nepieciešama īpaša atļauja.\n\nSazinieties ar mums tieši:',
           [
-            { text: 'Zvanīt: +371 2000 0000', onPress: () => {} },
-            { text: 'E-pasts: info@b3hub.lv', onPress: () => {} },
+            { text: 'Zvanīt: +371 2000 0000', onPress: () => Linking.openURL('tel:+37120000000') },
+            {
+              text: 'E-pasts: info@b3hub.lv',
+              onPress: () => Linking.openURL('mailto:info@b3hub.lv'),
+            },
             { text: 'Aizvert', style: 'cancel' },
           ],
         );
         return;
       }
     }
+    if (step === 3 && state.wasteType && token) {
+      setLoading(true);
+      try {
+        const result = await api.recyclingCenters.checkAvailability(state.wasteType, token);
+        if (result.total === 0) {
+          Alert.alert(
+            'Nav pieejamu šķirošanas centru',
+            'Šobrīd nav reģistrētu centru, kas pieņem šāda veida atkritumus.\n\nSazinieties ar mums:',
+            [
+              {
+                text: 'Zvanīt: +371 2000 0000',
+                onPress: () => Linking.openURL('tel:+37120000000'),
+              },
+              {
+                text: 'E-pasts: info@b3hub.lv',
+                onPress: () => Linking.openURL('mailto:info@b3hub.lv'),
+              },
+              { text: 'Aizvert', style: 'cancel' },
+            ],
+          );
+          return;
+        }
+      } catch {
+        // Fail-open: network error should not block the order flow
+      } finally {
+        setLoading(false);
+      }
+    }
     setStep((s) => (s + 1) as Step);
-  }, [step, selectedWastes, handleSubmit]);
+  }, [step, selectedWastes, handleSubmit, state.wasteType, token]);
 
   const STEP_TITLES: Record<Step, string> = {
     1: 'Kas jāizved?',
