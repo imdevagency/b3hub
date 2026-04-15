@@ -61,15 +61,7 @@ import type { ApiTransportJob } from '@/lib/api';
 
 export default function OrdersScreen() {
   const router = useRouter();
-  const {
-    unified,
-    loading,
-    refreshing,
-    onRefresh: refresh,
-    query,
-    setQuery,
-    error,
-  } = useOrders();
+  const { unified, loading, refreshing, onRefresh: refresh, query, setQuery, error } = useOrders();
 
   const [activeTab, setActiveTab] = useState<'active' | 'done'>('active');
 
@@ -103,7 +95,10 @@ export default function OrdersScreen() {
   const showCo2Banner = !loading && deliveredJobCount > 0;
 
   const tabFiltered = React.useMemo(
-    () => (activeTab === 'active' ? unified.filter((i) => i.isActive) : unified.filter((i) => !i.isActive)),
+    () =>
+      activeTab === 'active'
+        ? unified.filter((i) => i.isActive)
+        : unified.filter((i) => !i.isActive),
     [unified, activeTab],
   );
 
@@ -241,7 +236,11 @@ export default function OrdersScreen() {
       {showSearch && (
         <View style={s.collapsibleFilters}>
           <View style={[s.searchRow, searchFocused && s.searchRowFocused]}>
-            <Search size={16} color={searchFocused ? '#00A878' : '#9ca3af'} style={{ marginRight: 8 }} />
+            <Search
+              size={16}
+              color={searchFocused ? '#00A878' : '#9ca3af'}
+              style={{ marginRight: 8 }}
+            />
             <TextInput
               style={s.searchInput}
               placeholder="Meklēt pēc adreses, materiāla..."
@@ -256,7 +255,13 @@ export default function OrdersScreen() {
               onBlur={() => setSearchFocused(false)}
             />
             {query.length > 0 && (
-              <TouchableOpacity onPress={() => { haptics.light(); setQuery(''); }} hitSlop={8}>
+              <TouchableOpacity
+                onPress={() => {
+                  haptics.light();
+                  setQuery('');
+                }}
+                hitSlop={8}
+              >
                 <X size={16} color="#9ca3af" />
               </TouchableOpacity>
             )}
@@ -267,11 +272,59 @@ export default function OrdersScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={s.typeScrollContent}
             >
-              <TypeChip label="Visi" count={kindCounts.all} active={kindFilter === 'all'} onPress={() => { haptics.light(); setKindFilter('all'); }} />
-              {kindCounts.material > 0 && <TypeChip label="Materiāli" count={kindCounts.material} active={kindFilter === 'material'} onPress={() => { haptics.light(); setKindFilter('material'); }} />}
-              {kindCounts.logistics > 0 && <TypeChip label="Transports" count={kindCounts.logistics} active={kindFilter === 'logistics'} onPress={() => { haptics.light(); setKindFilter('logistics'); }} />}
-              {kindCounts.skip > 0 && <TypeChip label="Konteineri" count={kindCounts.skip} active={kindFilter === 'skip'} onPress={() => { haptics.light(); setKindFilter('skip'); }} />}
-              {kindCounts.rfq > 0 && <TypeChip label="RFQ" count={kindCounts.rfq} active={kindFilter === 'rfq'} onPress={() => { haptics.light(); setKindFilter('rfq'); }} />}
+              <TypeChip
+                label="Visi"
+                count={kindCounts.all}
+                active={kindFilter === 'all'}
+                onPress={() => {
+                  haptics.light();
+                  setKindFilter('all');
+                }}
+              />
+              {kindCounts.material > 0 && (
+                <TypeChip
+                  label="Materiāli"
+                  count={kindCounts.material}
+                  active={kindFilter === 'material'}
+                  onPress={() => {
+                    haptics.light();
+                    setKindFilter('material');
+                  }}
+                />
+              )}
+              {kindCounts.logistics > 0 && (
+                <TypeChip
+                  label="Transports"
+                  count={kindCounts.logistics}
+                  active={kindFilter === 'logistics'}
+                  onPress={() => {
+                    haptics.light();
+                    setKindFilter('logistics');
+                  }}
+                />
+              )}
+              {kindCounts.skip > 0 && (
+                <TypeChip
+                  label="Konteineri"
+                  count={kindCounts.skip}
+                  active={kindFilter === 'skip'}
+                  onPress={() => {
+                    haptics.light();
+                    setKindFilter('skip');
+                  }}
+                />
+              )}
+              {kindCounts.rfq > 0 && (
+                <TypeChip
+                  label="RFQ"
+                  count={kindCounts.rfq}
+                  active={kindFilter === 'rfq'}
+                  onPress={() => {
+                    haptics.light();
+                    setKindFilter('rfq');
+                  }}
+                />
+              )}
             </ScrollView>
           )}
         </View>
@@ -633,7 +686,19 @@ const DisposalOrderCard = React.memo(function DisposalOrderCard({ req }: { req: 
         {req.rate != null ? (
           <Text style={s.price}>€{req.rate}</Text>
         ) : (
-          <Text style={[s.price, { color: '#94a3b8', fontSize: 13, alignSelf: 'center', fontFamily: 'Inter_600SemiBold' }]}>Tiks precizēts</Text>
+          <Text
+            style={[
+              s.price,
+              {
+                color: '#94a3b8',
+                fontSize: 13,
+                alignSelf: 'center',
+                fontFamily: 'Inter_600SemiBold',
+              },
+            ]}
+          >
+            Tiks precizēts
+          </Text>
         )}
         <View style={s.chevronBox}>
           <ChevronRight size={18} color="#94a3b8" />
@@ -687,7 +752,19 @@ const TransportRequestCard = React.memo(function TransportRequestCard({ req }: {
         {req.rate != null && req.rate > 0 ? (
           <Text style={s.price}>no €{req.rate}</Text>
         ) : (
-          <Text style={[s.price, { color: '#94a3b8', fontSize: 13, alignSelf: 'center', fontFamily: 'Inter_600SemiBold' }]}>Tiks precizēts</Text>
+          <Text
+            style={[
+              s.price,
+              {
+                color: '#94a3b8',
+                fontSize: 13,
+                alignSelf: 'center',
+                fontFamily: 'Inter_600SemiBold',
+              },
+            ]}
+          >
+            Tiks precizēts
+          </Text>
         )}
         <View style={s.chevronBox}>
           <ChevronRight size={18} color="#94a3b8" />
@@ -800,10 +877,23 @@ const SkipOrderCard = React.memo(function SkipOrderCard({ order }: { order: any 
 
       <View style={s.cardFooter}>
         {order.price != null ? (
-            <Text style={s.price}>€{order.price.toFixed(2)}</Text>
-          ) : (
-            <Text style={[s.price, { color: '#94a3b8', fontSize: 13, alignSelf: 'center', fontFamily: 'Inter_600SemiBold', marginBottom: 2 }]}>Gaida cenu</Text>
-          )}
+          <Text style={s.price}>€{order.price.toFixed(2)}</Text>
+        ) : (
+          <Text
+            style={[
+              s.price,
+              {
+                color: '#94a3b8',
+                fontSize: 13,
+                alignSelf: 'center',
+                fontFamily: 'Inter_600SemiBold',
+                marginBottom: 2,
+              },
+            ]}
+          >
+            Gaida cenu
+          </Text>
+        )}
         <View style={s.chevronBox}>
           <ChevronRight size={18} color="#94a3b8" />
         </View>
