@@ -384,53 +384,39 @@ export default function OrderWizard() {
             showsVerticalScrollIndicator={false}
           >
             <Text style={s.sectionLabel}>Piegādes datums</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.dayStrip}>
-              {/* ASAP / today chip */}
-              {(() => {
-                const iso = toISO(today);
-                const active = selectedDay === iso;
-                return (
-                  <TouchableOpacity
-                    key="today"
-                    style={[s.dayChip, s.dayChipAsap, active && s.dayChipActive]}
-                    onPress={() => {
-                      setSelectedDay(iso);
-                      Alert.alert(
-                        'Steidzams pasūtījums',
-                        'Šodienas piegāde ir atkarīga no brīvas kapacitātes. Mūsu komanda sazināsies ar jums, lai apstiprinātu iespējamību.',
-                        [{ text: 'Sapratu', style: 'default' }],
-                      );
-                    }}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[s.dayDow, active && s.dayActive]}>🔴</Text>
-                    <Text style={[s.dayNum, active && s.dayActive]}>Šodien</Text>
-                    <Text style={[s.dayMon, active && s.dayActiveSub]}>steidzami</Text>
-                  </TouchableOpacity>
-                );
-              })()}
-              {Array.from({ length: 14 }, (_, i) => {
-                const d = addDays(today, i + 1);
-                const iso = toISO(d);
-                const active = selectedDay === iso;
-                return (
-                  <TouchableOpacity
-                    key={iso}
-                    style={[s.dayChip, active && s.dayChipActive]}
-                    onPress={() => setSelectedDay(iso)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[s.dayDow, active && s.dayActive]}>
-                      {d.toLocaleDateString('lv-LV', { weekday: 'short' })}
-                    </Text>
-                    <Text style={[s.dayNum, active && s.dayActive]}>{d.getDate()}</Text>
-                    <Text style={[s.dayMon, active && s.dayActiveSub]}>
-                      {d.toLocaleDateString('lv-LV', { month: 'short' })}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+            <View style={{ marginBottom: 16, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E7EB' }}>
+              <Calendar
+                current={selectedDay || new Date().toISOString().split('T')[0]}
+                onDayPress={(day: any) => {
+                  setSelectedDay(day.dateString);
+                }}
+                markedDates={{
+                  [selectedDay || new Date().toISOString().split('T')[0]]: { selected: true, selectedColor: '#111827' }
+                }}
+                theme={{
+                  calendarBackground: '#ffffff',
+                  textSectionTitleColor: '#6B7280',
+                  selectedDayBackgroundColor: '#111827',
+                  selectedDayTextColor: '#ffffff',
+                  todayTextColor: '#2563EB',
+                  dayTextColor: '#111827',
+                  textDisabledColor: '#D1D5DB',
+                  dotColor: '#2563EB',
+                  selectedDotColor: '#ffffff',
+                  arrowColor: '#111827',
+                  monthTextColor: '#111827',
+                  textDayFontFamily: 'Geist-Medium',
+                  textMonthFontFamily: 'Geist-SemiBold',
+                  textDayHeaderFontFamily: 'Geist-Medium',
+                  textDayFontSize: 15,
+                  textMonthFontSize: 16,
+                  textDayHeaderFontSize: 13
+                }}
+                minDate={new Date().toISOString().split('T')[0]}
+                firstDay={1}
+                enableSwipeMonths={true}
+              />
+            </View>
 
             {/* Delivery window */}
             <Text style={[s.sectionLabel, { marginTop: 16 }]}>Vēlamais piegādes laiks</Text>
@@ -684,12 +670,11 @@ const s = StyleSheet.create({
   addressText: { flex: 1, fontSize: 15, color: '#111827', fontWeight: '500', lineHeight: 20 },
   addressPlaceholder: { color: '#9ca3af', fontWeight: '400' },
   sectionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6b7280',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    marginBottom: 10,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginTop: 8,
+    marginBottom: 14,
   },
   dayStrip: { flexGrow: 0 },
   dayChip: {
@@ -764,12 +749,11 @@ const s = StyleSheet.create({
     fontWeight: '700',
   },
   input: {
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 0,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontSize: 15,
     color: '#111827',
   },

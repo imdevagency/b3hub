@@ -630,7 +630,7 @@ export default function TransportWizard() {
             </View>
 
             {/* Pickup window */}
-            <Text style={[s.sectionLabel, { marginTop: 4 }]}>Vēlamais iekraušanas laiks</Text>
+            <Text style={s.sectionLabel}>Vēlamais iekraušanas laiks</Text>
             <View style={s.windowRow}>
               {(
                 [
@@ -652,19 +652,38 @@ export default function TransportWizard() {
               ))}
             </View>
 
-            <Text style={s.sectionLabel}>Maršruts</Text>
-            <View style={s.summaryCard}>
+            <Text style={s.sectionLabel}>Cena un Kopsavilkums</Text>
+            <View style={s.detailCard}>
+              <DetailRow
+                label="Maršruts"
+                value={route ? `${route.distanceKm.toFixed(1)} km · ${route.durationLabel}` : '—'}
+              />
+              <DetailRow
+                label="Auto"
+                value={VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle)?.label ?? '—'}
+              />
+              <DetailRow label="Krava" value={activeDesc || '—'} />
+              {currentVehiclePrice && (
+                <DetailRow
+                  label="Aptuvenā cena"
+                  highlight
+                  value={
+                    route && currentVehicle
+                      ? `~€${Math.round(
+                          currentVehicle.fromPrice + route.distanceKm * currentVehicle.pricePerKm,
+                        )}`
+                      : `no €${currentVehiclePrice}`
+                  }
+                />
+              )}
+            </View>
+
+            <Text style={s.sectionLabel}>Sūtīšana</Text>
+            <View style={[s.summaryCard, { marginBottom: 12 }]}>
               <RouteStops
                 pickup={pickupPicked?.address ?? '—'}
                 dropoff={dropoffPicked?.address ?? '—'}
               />
-              {route && (
-                <View style={s.summaryMetaRow}>
-                  <Text style={s.summaryMetaText}>
-                    {route.distanceKm.toFixed(1)} km · {route.durationLabel}
-                  </Text>
-                </View>
-              )}
             </View>
 
             {/* Save address toggles */}
@@ -705,26 +724,7 @@ export default function TransportWizard() {
               </TouchableOpacity>
             )}
 
-            <Text style={[s.sectionLabel, { marginTop: 20 }]}>Pasūtījuma detaļas</Text>
-            <View style={s.detailCard}>
-              <DetailRow
-                label="Auto"
-                value={VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle)?.label ?? '—'}
-              />
-              <DetailRow label="Krava" value={activeDesc || '—'} />
-              {currentVehiclePrice && (
-                <DetailRow
-                  label="Orientējošā cena"
-                  value={
-                    route && currentVehicle
-                      ? `~€${Math.round(
-                          currentVehicle.fromPrice + route.distanceKm * currentVehicle.pricePerKm,
-                        )}`
-                      : `no €${currentVehiclePrice}`
-                  }
-                />
-              )}
-            </View>
+            
 
             <Text style={[s.sectionLabel, { marginTop: 20 }]}>Kontaktinformācija</Text>
             <View style={{ gap: 10, marginBottom: 8 }}>
@@ -808,20 +808,16 @@ const s = StyleSheet.create({
   pad: { padding: 20, paddingBottom: 32 },
   hint: { fontSize: 14, color: '#6b7280', marginBottom: 16, lineHeight: 20 },
   sectionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6b7280',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    marginBottom: 10,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginTop: 8,
+    marginBottom: 14,
   },
 
   routeLiteCard: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    padding: 12,
+    backgroundColor: 'transparent',
+    paddingVertical: 12,
     marginBottom: 18,
   },
   routeMeta: {
@@ -857,19 +853,18 @@ const s = StyleSheet.create({
   vehicleCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 14,
-    padding: 14,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 0,
+    borderRadius: 12,
+    padding: 16,
   },
-  vehicleCardSel: { backgroundColor: '#111827', borderColor: '#111827' },
-  vehicleLabel: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2 },
-  vehicleLabelSel: { color: '#fff' },
-  vehicleSub: { fontSize: 12, color: '#9ca3af', fontWeight: '500' },
-  vehicleSubSel: { color: '#d1d5db' },
-  vehiclePrice: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  vehiclePriceSel: { color: '#fff' },
+  vehicleCardSel: { backgroundColor: '#000000' },
+  vehicleLabel: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 2 },
+  vehicleLabelSel: { color: '#ffffff' },
+  vehicleSub: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
+  vehicleSubSel: { color: '#9ca3af' },
+  vehiclePrice: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  vehiclePriceSel: { color: '#ffffff' },
   vehicleCheckBadge: {
     width: 20,
     height: 20,
@@ -882,28 +877,26 @@ const s = StyleSheet.create({
 
   // Cargo chips
   cargoChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderWidth: 0,
     marginRight: 8,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#f3f4f6',
   },
-  cargoChipSel: { backgroundColor: '#111827', borderColor: '#111827' },
-  cargoText: { fontSize: 13, color: '#374151', fontWeight: '600' },
-  cargoTextSel: { color: '#fff' },
+  cargoChipSel: { backgroundColor: '#000000' },
+  cargoText: { fontSize: 14, color: '#374151', fontWeight: '600' },
+  cargoTextSel: { color: '#ffffff' },
 
   // Weight input
   weightRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 0,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   weightInput: { flex: 1, fontSize: 15, color: '#111827', paddingVertical: 0 },
   weightUnit: { fontSize: 13, color: '#6b7280', marginLeft: 8 },
@@ -927,29 +920,24 @@ const s = StyleSheet.create({
   dayMon: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
   dayActive: { color: '#fff' },
   dayActiveSub: { color: '#d1d5db' },
-  windowRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
+  windowRow: { flexDirection: 'row', gap: 8, marginBottom: 24 },
   windowChip: {
     flex: 1,
-    paddingVertical: 9,
-    paddingHorizontal: 4,
+    paddingVertical: 14,
+    paddingHorizontal: 6,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#f9fafb',
+    borderWidth: 0,
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
   },
-  windowChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  windowChipText: { fontSize: 12, color: '#6b7280', fontWeight: '500', textAlign: 'center' },
-  windowChipTextActive: { color: '#fff' },
+  windowChipActive: { backgroundColor: '#000000' },
+  windowChipText: { fontSize: 14, color: '#374151', fontWeight: '600', textAlign: 'center' },
+  windowChipTextActive: { color: '#ffffff' },
 
   // Summary card
   summaryCard: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    overflow: 'hidden',
-    padding: 12,
+    backgroundColor: 'transparent',
+    paddingVertical: 12,
   },
   routeStack: {
     gap: 8,
@@ -999,16 +987,12 @@ const s = StyleSheet.create({
   },
 
   detailCard: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    marginBottom: 10,
   },
   detailRow: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
     flexDirection: 'row',
     alignItems: 'center',
@@ -1016,26 +1000,25 @@ const s = StyleSheet.create({
     gap: 12,
   },
   detailLabel: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#6b7280',
-    fontWeight: '600',
+    fontWeight: '500',
   },
   detailValue: {
     flex: 1,
     textAlign: 'right',
-    fontSize: 14,
+    fontSize: 15,
     color: '#111827',
-    fontWeight: '700',
+    fontWeight: '600',
   },
 
   // Inputs
   input: {
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 0,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontSize: 15,
     color: '#111827',
   },
@@ -1045,25 +1028,12 @@ const s = StyleSheet.create({
   saveAddrRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    marginBottom: 8,
+    gap: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
   },
-  saveAddrCheck: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: '#d1d5db',
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  saveAddrCheck: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: '#d1d5db', alignItems: 'center', justifyContent: 'center' },
   saveAddrCheckActive: { backgroundColor: '#111827', borderColor: '#111827' },
   saveAddrLabel: { fontSize: 14, fontWeight: '600', color: '#111827' },
   saveAddrSub: { fontSize: 12, color: '#6b7280', marginTop: 1 },
