@@ -24,6 +24,8 @@ export * from './saved-addresses';
 export * from './company';
 export * from './projects';
 export * from './field-passes';
+export * from './analytics';
+export * from './carrier-settings';
 // Re-export the helper for consumers that need it directly
 export { apiFetch } from './common';
 
@@ -44,6 +46,8 @@ import { paymentsApi } from './payments';
 import { projectsApi } from './projects';
 import { savedAddressesApi } from './saved-addresses';
 import { fieldPassesApi } from './field-passes';
+import { analyticsApi } from './analytics';
+import { carrierSettingsApi } from './carrier-settings';
 
 // ─── Assembled api object ─────────────────────────────────────────────────
 /**
@@ -94,4 +98,10 @@ export const api = {
 
   // ── Field Passes & Weighing Slips ─────────────────────────────────────
   ...fieldPassesApi,
+
+  // ── Analytics ────────────────────────────────────────────────────────
+  analytics: analyticsApi,
+
+  // ── Carrier settings ──────────────────────────────────────────────
+  carrierSettings: carrierSettingsApi,
 };

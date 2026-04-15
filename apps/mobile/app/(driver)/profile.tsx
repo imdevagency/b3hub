@@ -36,6 +36,7 @@ import {
   Globe,
   Trash2,
   FolderOpen,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -473,6 +474,11 @@ export default function ProfileScreen() {
             icon={Trash2}
             label="Skipu flote"
             onPress={() => router.push('/(driver)/skips')}
+          />
+          <MenuItem
+            icon={SlidersHorizontal}
+            label="Pārvadātāja iestatījumi"
+            onPress={() => router.push('/(driver)/carrier-settings' as any)}
           />
           <MenuItem
             icon={Bell}

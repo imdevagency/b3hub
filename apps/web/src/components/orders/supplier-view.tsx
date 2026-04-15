@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle, Package, Phone, RefreshCw, X, Zap } from 'lucide-react';
+import { CheckCircle, Package, Phone, RefreshCw, Scale, X, Zap } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { fmtDate, fmtMoney } from '@/lib/format';
 import { ORDER_STATUS } from '@/lib/status-config';
 import { confirmOrder, cancelOrder, startLoadingOrder, sellerCancelOrder } from '@/lib/api';
+import { markJobLoadingDock } from '@/lib/api/transport';
 import { useMaterialOrders } from '@/hooks/use-material-orders';
 import { QuickStat } from './quick-stat';
 import { SurchargePanel } from './surcharge-panel';
@@ -19,6 +20,8 @@ export function SupplierView({ token }: { token: string }) {
     id: string;
     type: 'cancel' | 'startLoading' | 'sellerCancel';
   } | null>(null);
+  const [weightInput, setWeightInput] = useState<Record<string, string>>({});
+  const [weightPromptId, setWeightPromptId] = useState<string | null>(null);
 
   const handleConfirm = async (id: string) => {
     setActioning(id);
@@ -53,10 +56,21 @@ export function SupplierView({ token }: { token: string }) {
 
   const handleStartLoading = async (id: string) => {
     setPendingAction(null);
+    setWeightPromptId(null);
     setActioning(id);
     setActionError(null);
     try {
-      const updated = await startLoadingOrder(id, token);
+      const order = orders.find((o) => o.id === id);
+      const weightKg = weightInput[id] ? parseFloat(weightInput[id]) : undefined;
+      const tjId = order?.transportJobs?.[0]?.id;
+      if (tjId) {
+        try {
+          await markJobLoadingDock(tjId, token, weightKg);
+        } catch {
+          // Non-fatal: proceed even if TJ update fails
+        }
+      }
+      const updated = await startLoadingOrder(id, token, weightKg);
       setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: updated.status } : o)));
     } catch (err) {
       setActionError(
@@ -287,17 +301,60 @@ export function SupplierView({ token }: { token: string }) {
                     )}
                     {order.status === 'CONFIRMED' && (
                       <div className="flex flex-col gap-2 mt-auto">
-                        <button
-                          disabled={busy}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleStartLoading(order.id);
-                          }}
-                          className="flex items-center justify-center w-full gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                        >
-                          <Zap className="size-4" />
-                          Sākt iekraušanu
-                        </button>
+                        {weightPromptId === order.id ? (
+                          <div className="space-y-2">
+                            <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                              <Scale className="size-3.5" /> Svars kraušanā (neobligāti)
+                            </p>
+                            <div className="flex gap-2">
+                              <input
+                                type="number"
+                                placeholder="piem. 22000"
+                                value={weightInput[order.id] ?? ''}
+                                onChange={(e) =>
+                                  setWeightInput((prev) => ({
+                                    ...prev,
+                                    [order.id]: e.target.value,
+                                  }))
+                                }
+                                className="flex-1 rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-foreground/10"
+                              />
+                              <span className="self-center text-xs text-muted-foreground">kg</span>
+                            </div>
+                            <button
+                              disabled={busy}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleStartLoading(order.id);
+                              }}
+                              className="flex items-center justify-center w-full gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                            >
+                              <Zap className="size-4" />
+                              Sākt iekraušanu
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setWeightPromptId(null);
+                              }}
+                              className="text-xs text-muted-foreground hover:text-foreground text-center py-1"
+                            >
+                              Atcelt
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            disabled={busy}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setWeightPromptId(order.id);
+                            }}
+                            className="flex items-center justify-center w-full gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                          >
+                            <Zap className="size-4" />
+                            Sākt iekraušanu
+                          </button>
+                        )}
                         <button
                           disabled={busy}
                           onClick={(e) => {

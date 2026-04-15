@@ -94,6 +94,8 @@ export interface CreateCartOrderInput {
   notes?: string;
   siteContactName?: string;
   siteContactPhone?: string;
+  /** Preferred delivery time slot: AM (8–13), PM (13–18), or ANY. */
+  deliveryWindow?: 'ANY' | 'AM' | 'PM';
   /** Number of trucks to dispatch (each becomes a separate transport job). */
   truckCount?: number;
   /** Minutes between consecutive trucks when truckCount > 1. */
@@ -142,10 +144,15 @@ export async function confirmReceipt(id: string, token: string): Promise<ApiOrde
   });
 }
 
-export async function startLoadingOrder(id: string, token: string): Promise<ApiOrder> {
+export async function startLoadingOrder(
+  id: string,
+  token: string,
+  weightKg?: number,
+): Promise<ApiOrder> {
   return apiFetch<ApiOrder>(`/orders/${id}/start-loading`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: weightKg !== undefined ? JSON.stringify({ weightKg }) : undefined,
   });
 }
 

@@ -34,6 +34,7 @@ import {
   Globe,
   Package,
   Truck,
+  BarChart2,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -494,6 +495,11 @@ export default function ProfileScreen() {
 
           <Text style={[s.sectionHeader, { marginTop: 32 }]}>Atbalsts</Text>
 
+          <MenuItem
+            icon={BarChart2}
+            label="Analītika"
+            onPress={() => router.push('/(buyer)/analytics' as any)}
+          />
           <MenuItem
             icon={Bell}
             label="Paziņojumi"

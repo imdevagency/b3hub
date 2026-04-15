@@ -3,7 +3,7 @@
  */
 'use client';
 
-import { CalendarDays, Minus, Plus, Truck } from 'lucide-react';
+import { CalendarDays, Minus, Plus, Truck, Zap } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -44,6 +44,8 @@ interface Props {
   onDateChange: (date: string) => void;
   deliveryWindow?: 'ANY' | 'AM' | 'PM';
   onDeliveryWindowChange?: (window: 'ANY' | 'AM' | 'PM') => void;
+  asap?: boolean;
+  onAsapChange?: (v: boolean) => void;
   truckCount: number;
   onTruckCountChange: (n: number) => void;
   truckIntervalMinutes: number;
@@ -57,6 +59,8 @@ export function MatStep3When({
   onDateChange,
   deliveryWindow = 'ANY',
   onDeliveryWindowChange,
+  asap = false,
+  onAsapChange,
   truckCount,
   onTruckCountChange,
   truckIntervalMinutes,
@@ -88,6 +92,30 @@ export function MatStep3When({
         <p className="text-sm text-muted-foreground mt-0.5">Izvēlieties vēlamo piegādes datumu</p>
       </div>
 
+      {/* ASAP toggle */}
+      {onAsapChange && (
+        <button
+          type="button"
+          onClick={() => onAsapChange(!asap)}
+          className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
+            asap
+              ? 'bg-amber-50 border-amber-300 text-amber-800'
+              : 'bg-background border-border text-foreground hover:bg-muted'
+          }`}
+        >
+          <Zap className={`size-4 shrink-0 ${asap ? 'text-amber-600' : 'text-muted-foreground'}`} />
+          <span>
+            <span className="font-semibold">Cik drīz iespējams</span>
+            <span className="ml-1 text-muted-foreground font-normal">(datums mainīsies)</span>
+          </span>
+          {asap && (
+            <span className="ml-auto text-xs font-bold text-amber-700 bg-amber-100 rounded-full px-2 py-0.5">
+              ASAP
+            </span>
+          )}
+        </button>
+      )}
+
       {/* Delivery window */}
       {onDeliveryWindowChange && (
         <div className="space-y-2">
@@ -112,7 +140,9 @@ export function MatStep3When({
       )}
 
       {/* Calendar */}
-      <div className="rounded-2xl border overflow-hidden">
+      <div
+        className={`rounded-2xl border overflow-hidden transition-opacity ${asap ? 'opacity-40 pointer-events-none' : ''}`}
+      >
         <Calendar
           mode="single"
           selected={selected}
@@ -123,12 +153,17 @@ export function MatStep3When({
       </div>
 
       {/* Confirmed date pill */}
-      {deliveryDate && selected && (
+      {asap ? (
+        <div className="flex items-center gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+          <Zap className="size-4 text-amber-600 shrink-0" />
+          <span className="text-sm font-semibold text-amber-800">Piegāde: cik drīz iespējams</span>
+        </div>
+      ) : deliveryDate && selected ? (
         <div className="flex items-center gap-2.5 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3">
           <CalendarDays className="size-4 text-black shrink-0" />
           <span className="text-sm font-semibold text-primary">Piegāde: {fmtFull(selected)}</span>
         </div>
-      )}
+      ) : null}
 
       {/* Multi-truck staggered delivery */}
       <div className="rounded-2xl border p-4 space-y-4">
@@ -196,7 +231,7 @@ export function MatStep3When({
         </button>
         <button
           onClick={onNext}
-          disabled={!deliveryDate}
+          disabled={!deliveryDate && !asap}
           className="flex-2 rounded-xl bg-primary py-3 text-sm font-bold text-white disabled:opacity-40 hover:bg-primary/90 transition-colors"
         >
           Tālāk — kontaktinformācija

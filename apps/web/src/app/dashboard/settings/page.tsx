@@ -27,6 +27,7 @@ import {
   Building2,
   Users,
   ArrowRight,
+  MapPin,
 } from 'lucide-react';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -484,6 +485,30 @@ export default function SettingsPage() {
               <div className="flex items-center gap-2.5">
                 <Users className="h-4 w-4 text-muted-foreground" />
                 <span className="font-medium">Komanda & Atļaujas</span>
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Saved addresses quick link ──────────────────────────── */}
+      {user?.userType !== 'ADMIN' && (
+        <Card className="shadow-none">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-base">Saglabātās adreses</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Link
+              href="/dashboard/settings/saved-addresses"
+              className="flex items-center justify-between rounded-lg border border-border px-4 py-3 text-sm hover:bg-muted/50 transition-colors group"
+            >
+              <div className="flex items-center gap-2.5">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">Pārvaldīt saglabātās adreses</span>
               </div>
               <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
             </Link>

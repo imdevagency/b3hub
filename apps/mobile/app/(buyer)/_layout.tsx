@@ -91,6 +91,7 @@ export default function BuyerLayout() {
         <Tabs.Screen name="disputes" options={{ href: null }} />
         <Tabs.Screen name="schedules" options={{ href: null }} />
         <Tabs.Screen name="field-passes" options={{ href: null }} />
+        <Tabs.Screen name="analytics" options={{ href: null }} />
       </Tabs>
     </View>
   );

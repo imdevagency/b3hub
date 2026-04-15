@@ -3,7 +3,7 @@
  * Uses React Native's built-in Animated API (NOT react-native-reanimated)
  * to avoid JSI HostFunction crashes in Expo Go.
  */
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptics } from '@/lib/haptics';
@@ -19,7 +19,7 @@ export interface CtaTabConfig {
   accessibilityLabel?: string;
 }
 
-const TAB_HEIGHT = 56;
+const TAB_HEIGHT = 64;
 
 const SPRING_BASE = {
   damping: 22,
@@ -88,7 +88,7 @@ function TabItem({
       accessibilityState={isFocused ? { selected: true } : {}}
       accessibilityLabel={options.tabBarAccessibilityLabel}
     >
-      <Animated.View style={{ transform: [{ scale }] }}>
+      <Animated.View style={[styles.tabInner, { transform: [{ scale }] }]}>
         <View>
           {options.tabBarIcon?.({ focused: isFocused, color, size: 22 })}
           {!!options.tabBarBadge && (
@@ -101,6 +101,11 @@ function TabItem({
             </View>
           )}
         </View>
+        {!!options.title && (
+          <Text numberOfLines={1} style={[styles.tabLabel, { color }]}>
+            {options.title}
+          </Text>
+        )}
       </Animated.View>
     </TouchableOpacity>
   );
@@ -135,19 +140,52 @@ export function AnimatedTabBar({
 }: AnimatedTabBarProps) {
   const insets = useSafeAreaInsets();
   const bottomInset = insets.bottom;
+  const indicatorX = useRef(new Animated.Value(0)).current;
+  const [barWidth, setBarWidth] = useState(0);
+  const layoutSetRef = useRef(false);
 
-  // Guard: bail out safely if the navigator hasn't fully initialised yet
-  if (!state || !navigation || !descriptors) return null;
+  const isReady = !!(state && navigation && descriptors);
 
-  const visibleRoutes = state.routes.filter((r: Route<string>) => {
-    const descriptor = descriptors[r.key];
-    // Descriptor not yet hydrated — skip to avoid "stale" crash during cold start
-    if (!descriptor) return false;
-    const opts = descriptor.options;
-    // expo-router converts href:null → tabBarButton: () => null in descriptor options
-    if (typeof opts?.tabBarButton === 'function') return false;
-    return true;
-  });
+  const visibleRoutes = isReady
+    ? state.routes.filter((r: Route<string>) => {
+        const descriptor = descriptors[r.key];
+        // Descriptor not yet hydrated — skip to avoid "stale" crash during cold start
+        if (!descriptor) return false;
+        const opts = descriptor.options;
+        // expo-router converts href:null → tabBarButton: () => null in descriptor options
+        if (typeof opts?.tabBarButton === 'function') return false;
+        return true;
+      })
+    : [];
+
+  // CTA is inserted after the centre-left tab so it visually sits in the middle.
+  const ctaInsertIndex = ctaTab ? Math.ceil(visibleRoutes.length / 2) : -1;
+  const totalItems = visibleRoutes.length + (ctaTab ? 1 : 0);
+
+  // Slide top indicator to sit above the active tab
+  useEffect(() => {
+    if (!isReady || barWidth === 0 || visibleRoutes.length === 0) return;
+    const currentRouteName = state.routes[state.index]?.name;
+    const aliasedName = hiddenRouteAliases?.[currentRouteName] ?? null;
+    const activeVisibleIdx = visibleRoutes.findIndex((r: Route<string>) => {
+      const fullIdx = state.routes.findIndex((x: Route<string>) => x.key === r.key);
+      return aliasedName ? aliasedName === r.name : state.index === fullIdx;
+    });
+    const idx = activeVisibleIdx >= 0 ? activeVisibleIdx : 0;
+    const tabW = barWidth / (totalItems || 1);
+    // If CTA slot is inserted before this tab's visual position, shift right by one slot
+    const ctaOffset = ctaTab && ctaInsertIndex >= 0 && idx >= ctaInsertIndex ? 1 : 0;
+    const toValue = (idx + ctaOffset) * tabW;
+
+    if (!layoutSetRef.current) {
+      // First layout — snap without animation to avoid slide-in from 0
+      indicatorX.setValue(toValue);
+      layoutSetRef.current = true;
+    } else {
+      Animated.spring(indicatorX, { toValue, ...SPRING_BASE }).start();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.index, barWidth, isReady, visibleRoutes.length]);
 
   const handlePress = useCallback(
     (route: Route<string>, isFocused: boolean) => {
@@ -178,13 +216,36 @@ export function AnimatedTabBar({
     [navigation],
   );
 
-  // CTA is inserted after the centre-left tab so it visually sits in the middle.
-  const ctaInsertIndex = ctaTab ? Math.ceil(visibleRoutes.length / 2) : -1;
+  if (!isReady) return null;
 
   return (
     <View style={[styles.container, { paddingBottom: bottomInset }]}>
-      {/* Tab items — dot indicator is per-item, no sliding bar */}
-      <View style={styles.row}>
+      <View
+        style={styles.row}
+        onLayout={(e) => {
+          const w = e.nativeEvent.layout.width;
+          if (w !== barWidth) setBarWidth(w);
+        }}
+      >
+        {/* Sliding top indicator */}
+        {barWidth > 0 &&
+          (() => {
+            const tabW = barWidth / (totalItems || 1);
+            const indicatorW = tabW * 0.55;
+            const centerOffset = (tabW - indicatorW) / 2;
+            return (
+              <Animated.View
+                style={[
+                  styles.indicator,
+                  {
+                    width: indicatorW,
+                    backgroundColor: activeTint,
+                    transform: [{ translateX: Animated.add(indicatorX, centerOffset) }],
+                  },
+                ]}
+              />
+            );
+          })()}
         {visibleRoutes.map((route: Route<string>, visibleIdx: number) => {
           const fullIdx = state.routes.findIndex((r: Route<string>) => r.key === route.key);
           const currentRouteName = state.routes[state.index]?.name;
@@ -232,8 +293,28 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
+  tabInner: {
+    alignItems: 'center',
+    gap: 3,
+  },
+  tabLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.1,
+    textAlign: 'center',
+  },
+  indicator: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: 4,
+    borderBottomLeftRadius: 3,
+    borderBottomRightRadius: 3,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
   },
   badge: {
     position: 'absolute',

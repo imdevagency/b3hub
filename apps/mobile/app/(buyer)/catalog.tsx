@@ -138,8 +138,9 @@ export default function CatalogScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { token } = useAuth();
-  const params = useLocalSearchParams<{ projectId?: string }>();
+  const params = useLocalSearchParams<{ projectId?: string; schedule?: string }>();
   const projectId = params.projectId;
+  const schedule = params.schedule;
 
   const [allMaterials, setAllMaterials] = useState<ApiMaterial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -386,7 +387,11 @@ export default function CatalogScreen() {
   const handleCategoryPress = (cat: MaterialCategory) => {
     router.push({
       pathname: '/order-request-new',
-      params: { initialCategory: cat, projectId: projectId || undefined },
+      params: {
+        initialCategory: cat,
+        projectId: projectId || undefined,
+        schedule: schedule || undefined,
+      },
     });
   };
 

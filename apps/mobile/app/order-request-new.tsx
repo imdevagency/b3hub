@@ -189,6 +189,7 @@ export default function OrderRequestWizard() {
     projectId?: string;
     resumeDraft?: string;
     prefilledQty?: string;
+    schedule?: string;
   }>();
 
   const [selectedCategory, setSelectedCategory] = useState<MaterialCategory>(
@@ -266,7 +267,7 @@ export default function OrderRequestWizard() {
   const [truckCount, setTruckCount] = useState(1);
   const [truckIntervalMinutes, setTruckIntervalMinutes] = useState(60);
   // Repeat / schedule
-  const [repeatEnabled, setRepeatEnabled] = useState(false);
+  const [repeatEnabled, setRepeatEnabled] = useState(() => params.schedule === '1');
   const [repeatInterval, setRepeatInterval] = useState<7 | 14 | 30>(7);
 
   // ── Offers step ──

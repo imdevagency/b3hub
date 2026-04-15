@@ -24,6 +24,7 @@ import {
   type ApiProjectDocument,
   type ProjectStatus,
   type ApiProjectOrder,
+  type ApiOrder,
 } from '@/lib/api';
 import { formatDate, formatDateShort } from '@/lib/format';
 import {
@@ -37,6 +38,9 @@ import {
   Trash2,
   X,
   Handshake,
+  CheckCircle2,
+  Circle,
+  Link2,
 } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -130,6 +134,16 @@ function OrderRow({ order, onPress }: { order: ApiProjectOrder; onPress: () => v
 
 // ─── Screen ───────────────────────────────────────────────────────────────
 
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Melnraksts',
+  PENDING: 'Gaida',
+  CONFIRMED: 'Apstiprināts',
+  IN_PROGRESS: 'Izpildē',
+  DELIVERED: 'Piegādāts',
+  COMPLETED: 'Pabeigts',
+  CANCELLED: 'Atcelts',
+};
+
 export default function ProjectDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
@@ -144,6 +158,11 @@ export default function ProjectDetailScreen() {
   const [newSiteLabel, setNewSiteLabel] = useState('');
   const [newSiteAddress, setNewSiteAddress] = useState('');
   const [addingSite, setAddingSite] = useState(false);
+  const [showAssignPanel, setShowAssignPanel] = useState(false);
+  const [unassignedOrders, setUnassignedOrders] = useState<ApiOrder[]>([]);
+  const [loadingUnassigned, setLoadingUnassigned] = useState(false);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [assigning, setAssigning] = useState(false);
 
   const load = useCallback(
     async (silent = false) => {
@@ -213,6 +232,55 @@ export default function ProjectDetailScreen() {
             setSites((prev) => prev.filter((s) => s.id !== siteId));
           } catch {
             Alert.alert('Kļūda', 'Neizdevās dzēst darbavietu');
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleOpenAssignPanel = async () => {
+    if (!token) return;
+    setShowAssignPanel(true);
+    setLoadingUnassigned(true);
+    setSelectedOrderIds([]);
+    try {
+      const all = await api.orders.orders.myOrders(token);
+      setUnassignedOrders(all.filter((o) => !o.project));
+    } catch {
+      Alert.alert('Kļūda', 'Neizdevās ielādēt pasūtījumus');
+    } finally {
+      setLoadingUnassigned(false);
+    }
+  };
+
+  const handleAssignOrders = async () => {
+    if (!token || !id || selectedOrderIds.length === 0) return;
+    setAssigning(true);
+    try {
+      await api.projects.assignOrders(id, selectedOrderIds, token);
+      setShowAssignPanel(false);
+      setSelectedOrderIds([]);
+      load(true);
+    } catch {
+      Alert.alert('Kļūda', 'Neizdevās piesaistīt pasūtījumus');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const handleUnassignOrder = (orderId: string, orderNumber: string) => {
+    Alert.alert('Noņemt no projekta', `Noņemt pasūtījumu #${orderNumber} no šī projekta?`, [
+      { text: 'Atcelt', style: 'cancel' },
+      {
+        text: 'Noņemt',
+        style: 'destructive',
+        onPress: async () => {
+          if (!token || !id) return;
+          try {
+            await api.projects.unassignOrder(id, orderId, token);
+            load(true);
+          } catch {
+            Alert.alert('Kļūda', 'Neizdevās noņemt pasūtījumu');
           }
         },
       },
@@ -331,7 +399,72 @@ export default function ProjectDetailScreen() {
 
         {/* Orders */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Pasūtījumi ({project.orders.length})</Text>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Pasūtījumi ({project.orders.length})</Text>
+            <TouchableOpacity
+              onPress={showAssignPanel ? () => setShowAssignPanel(false) : handleOpenAssignPanel}
+              style={styles.sectionAction}
+              activeOpacity={0.7}
+            >
+              {showAssignPanel ? (
+                <X size={16} color={colors.textMuted} />
+              ) : (
+                <Link2 size={16} color={colors.textMuted} />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {showAssignPanel && (
+            <View style={styles.assignPanel}>
+              <Text style={styles.assignPanelTitle}>Piesaistīt pasūtījumus</Text>
+              {loadingUnassigned ? (
+                <Text style={styles.emptyOrders}>Ielādē...</Text>
+              ) : unassignedOrders.length === 0 ? (
+                <Text style={styles.emptyOrders}>Nav brīvu pasūtījumu</Text>
+              ) : (
+                unassignedOrders.map((o) => {
+                  const checked = selectedOrderIds.includes(o.id);
+                  return (
+                    <TouchableOpacity
+                      key={o.id}
+                      style={styles.assignRow}
+                      onPress={() =>
+                        setSelectedOrderIds((prev) =>
+                          checked ? prev.filter((x) => x !== o.id) : [...prev, o.id],
+                        )
+                      }
+                      activeOpacity={0.75}
+                    >
+                      {checked ? (
+                        <CheckCircle2 size={18} color="#111827" />
+                      ) : (
+                        <Circle size={18} color={colors.textMuted} />
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.orderNumber}>#{o.orderNumber}</Text>
+                        <Text style={styles.orderMeta}>
+                          {o.items?.[0]?.material?.name ?? '—'} · {o.status}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+              {selectedOrderIds.length > 0 && (
+                <TouchableOpacity
+                  style={[styles.saveBtn, assigning && styles.saveBtnDisabled]}
+                  onPress={handleAssignOrders}
+                  disabled={assigning}
+                  activeOpacity={0.75}
+                >
+                  <Text style={styles.saveBtnText}>
+                    {assigning ? 'Pievieno...' : `Piesaistīt (${selectedOrderIds.length})`}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           <View style={styles.sectionCard}>
             {project.orders.length === 0 ? (
               <Text style={styles.emptyOrders}>Nav piesaistītu pasūtījumu</Text>
@@ -339,10 +472,37 @@ export default function ProjectDetailScreen() {
               project.orders.map((order, idx) => (
                 <React.Fragment key={order.id}>
                   {idx > 0 ? <View style={styles.divider} /> : null}
-                  <OrderRow
-                    order={order}
-                    onPress={() => router.push(`/(buyer)/order/${order.id}` as any)}
-                  />
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <TouchableOpacity
+                      style={[styles.orderRow, { flex: 1 }]}
+                      onPress={() => router.push(`/(buyer)/order/${order.id}` as any)}
+                      activeOpacity={0.75}
+                    >
+                      <View style={styles.orderLeft}>
+                        <Text style={styles.orderNumber}>{order.orderNumber}</Text>
+                        <Text style={styles.orderMeta}>
+                          {ORDER_STATUS_LABELS[order.status] ?? order.status}
+                        </Text>
+                      </View>
+                      <View style={styles.orderRight}>
+                        <Text style={styles.orderTotal}>{formatEur(order.total)}</Text>
+                        {order.deliveryDate ? (
+                          <Text style={styles.orderMeta}>
+                            {formatDateShort(order.deliveryDate)}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <ChevronRight size={16} color={colors.textMuted} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.unassignBtn}
+                      onPress={() => handleUnassignOrder(order.id, order.orderNumber)}
+                      hitSlop={8}
+                      activeOpacity={0.7}
+                    >
+                      <X size={14} color={colors.textMuted} />
+                    </TouchableOpacity>
+                  </View>
                 </React.Fragment>
               ))
             )}
@@ -820,5 +980,36 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6b7280',
     marginTop: 2,
+  },
+  assignPanel: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    padding: 16,
+    gap: 10,
+    marginHorizontal: 16,
+    marginBottom: 12,
+  },
+  assignPanelTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#374151',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  assignRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  unassignBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 16,
   },
 });

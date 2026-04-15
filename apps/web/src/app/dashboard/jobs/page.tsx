@@ -39,6 +39,9 @@ import {
   acceptTransportJob,
   assignTransportJob,
   createTransportJob,
+  getMyTransportJobs,
+  getReturnTrips,
+  type ApiReturnTrip,
   type ApiTransportJob,
   type CreateTransportJobInput,
 } from '@/lib/api';
@@ -46,7 +49,7 @@ import { useAvailableJobs } from '@/hooks/use-available-jobs';
 import { CarrierHistoryView } from '../orders/page';
 import { API_URL } from '@/lib/api/common';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { CalendarDays, Users, CircleCheck } from 'lucide-react';
+import { CalendarDays, Users, CircleCheck, CornerDownLeft } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -291,6 +294,10 @@ export default function JobsPage() {
   const setField = (k: keyof CreateTransportJobInput, v: string | number) =>
     setCreateForm((p) => ({ ...p, [k]: v }));
 
+  // Return trips panel
+  const [returnTrips, setReturnTrips] = useState<ApiReturnTrip[]>([]);
+  const [returnTripRef, setReturnTripRef] = useState<{ city: string; jobId: string } | null>(null);
+
   // Load saved searches from localStorage
   useEffect(() => {
     if (!isLoading && user && !user.canTransport) router.replace('/dashboard');
@@ -314,6 +321,40 @@ export default function JobsPage() {
       /* ignore */
     }
   }, [savedSearches]);
+
+  // Load return trip suggestions from active/en-route jobs' delivery destinations
+  useEffect(() => {
+    if (!token || !user?.canTransport) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const myJobs = await getMyTransportJobs(token);
+        const activeJob = myJobs.find(
+          (j) =>
+            (j.status === 'EN_ROUTE_DELIVERY' || j.status === 'AT_DELIVERY') &&
+            j.deliveryLat != null &&
+            j.deliveryLng != null,
+        );
+        if (!activeJob || cancelled) return;
+        const trips = await getReturnTrips(
+          activeJob.deliveryLat!,
+          activeJob.deliveryLng!,
+          token,
+          75,
+        );
+        if (!cancelled) {
+          setReturnTrips(trips.slice(0, 5));
+          setReturnTripRef({ city: activeJob.deliveryCity, jobId: activeJob.id });
+        }
+      } catch {
+        // Non-fatal — return trips are a suggestion, not critical
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, user?.canTransport]);
 
   const filteredJobs = filterJobs(allJobs, activeFilter, geocodeCacheRef.current);
 
@@ -782,6 +823,66 @@ export default function JobsPage() {
                     >
                       Iestatīt filtru →
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Return trip suggestions ─── */}
+              {returnTrips.length > 0 && returnTripRef && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50/60 dark:border-amber-800/40 dark:bg-amber-900/10 p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <CornerDownLeft className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                      Atpakaļceļa ieteikumi — no {returnTripRef.city}
+                    </p>
+                  </div>
+                  <p className="text-xs text-amber-700/80 dark:text-amber-300/70 -mt-1">
+                    Aktīvā darba galamērķa tuvumā pieejami šādi maršruti:
+                  </p>
+                  <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+                    {returnTrips.map((rt) => (
+                      <div
+                        key={rt.id}
+                        className="shrink-0 w-56 bg-white dark:bg-card rounded-xl border border-amber-200/60 p-3 shadow-sm space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-base font-bold text-foreground">
+                            {(rt.rate ?? 0).toFixed(2)} {rt.currency}
+                          </span>
+                          <span className="text-[10px] font-semibold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded px-1.5 py-0.5">
+                            {rt.returnDistanceKm} km tuvāk
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground space-y-0.5">
+                          <p className="font-medium text-foreground truncate">
+                            {rt.pickupCity} → {rt.deliveryCity}
+                          </p>
+                          <p>
+                            {rt.distanceKm ?? '—'} km · {rt.cargoWeight ?? '—'} t {rt.cargoType}
+                          </p>
+                        </div>
+                        {user?.canTransport && !user?.isCompany && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full h-8 text-xs border-amber-300 hover:bg-amber-50"
+                            onClick={() => handleAccept(rt.id)}
+                          >
+                            Pieņemt
+                          </Button>
+                        )}
+                        {user?.canTransport && user?.isCompany && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full h-8 text-xs border-amber-300 hover:bg-amber-50"
+                            onClick={() => openDispatch(mapApiJob(rt))}
+                          >
+                            Plānot
+                          </Button>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

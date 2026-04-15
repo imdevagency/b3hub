@@ -198,9 +198,10 @@ export default function OrderDetailScreen() {
   };
 
   const DISPUTE_REASONS: { key: string; label: string }[] = [
-    { key: 'SHORT_DELIVERY', label: 'Krašana nepareiza / trūkst daudzums' },
-    { key: 'WRONG_MATERIAL', label: 'Sagadītā prece neatbilst pasūtītājai' },
-    { key: 'DAMAGE', label: 'Prece bojāta piegādes laikā' },
+    { key: 'SHORT_DELIVERY', label: 'Nepietiekams daudzums' },
+    { key: 'WRONG_MATERIAL', label: 'Nepareizs materiāls' },
+    { key: 'DAMAGE', label: 'Bojājumi piegādes laikā' },
+    { key: 'QUALITY_ISSUE', label: 'Kvālitātes problēma' },
     { key: 'NO_DELIVERY', label: 'Nav saņemta piegāde' },
     { key: 'LATE_DELIVERY', label: 'Piegāde ievērojami kavējas' },
     { key: 'OTHER', label: 'Cits jautājums' },

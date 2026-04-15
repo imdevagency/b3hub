@@ -235,6 +235,8 @@ interface WizardState {
   lat?: number;
   lng?: number;
   deliveryDate: string;
+  deliveryWindow: 'ANY' | 'AM' | 'PM';
+  asap: boolean;
   notes: string;
   truckCount: number;
   truckIntervalMinutes: number;
@@ -276,6 +278,8 @@ function WizardInline({
     city: '',
     postal: '',
     deliveryDate: '',
+    deliveryWindow: 'ANY',
+    asap: false,
     notes: '',
     truckCount: 1,
     truckIntervalMinutes: 30,
@@ -417,7 +421,12 @@ function WizardInline({
           deliveryAddress: form.address,
           deliveryCity: form.city || form.address.split(',').slice(-1)[0]?.trim() || '',
           deliveryPostal: form.postal,
-          deliveryDate: form.deliveryDate || undefined,
+          deliveryDate: form.asap ? undefined : form.deliveryDate || undefined,
+          deliveryWindow: form.asap
+            ? undefined
+            : form.deliveryWindow !== 'ANY'
+              ? form.deliveryWindow
+              : undefined,
           notes: form.notes || undefined,
           siteContactName: form.siteContactName || undefined,
           siteContactPhone: form.siteContactPhone || undefined,
@@ -681,6 +690,10 @@ function WizardInline({
             <MatStep3When
               deliveryDate={form.deliveryDate}
               onDateChange={(d) => patch({ deliveryDate: d })}
+              deliveryWindow={form.deliveryWindow}
+              onDeliveryWindowChange={(w) => patch({ deliveryWindow: w })}
+              asap={form.asap}
+              onAsapChange={(v) => patch({ asap: v, deliveryDate: v ? '' : form.deliveryDate })}
               truckCount={form.truckCount}
               onTruckCountChange={(n) => patch({ truckCount: n })}
               truckIntervalMinutes={form.truckIntervalMinutes}

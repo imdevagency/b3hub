@@ -448,3 +448,42 @@ export async function getMyTransportRequests(token: string): Promise<ApiTranspor
   });
   return Array.isArray(res.data) ? res.data : [];
 }
+
+/** Supplier/Loading dock: mark the transport job as arriving at loading dock, optionally with weight. */
+export async function markJobLoadingDock(
+  id: string,
+  token: string,
+  weightKg?: number,
+): Promise<ApiTransportJob> {
+  return apiFetch<ApiTransportJob>(`/transport-jobs/${id}/loading-dock`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: weightKg !== undefined ? JSON.stringify({ weightKg }) : undefined,
+  });
+}
+
+/** Returned by GET /transport-jobs/return-trips */
+export interface ApiReturnTrip extends ApiTransportJob {
+  returnDistanceKm: number;
+}
+
+/**
+ * GET /transport-jobs/return-trips?lat=&lng=&radiusKm=
+ * Returns AVAILABLE jobs whose pickup is within radiusKm of the given coords.
+ * Call with the delivery destination of an active job to surface backhaul opportunities.
+ */
+export async function getReturnTrips(
+  lat: number,
+  lng: number,
+  token: string,
+  radiusKm = 75,
+): Promise<ApiReturnTrip[]> {
+  const params = new URLSearchParams({
+    lat: String(lat),
+    lng: String(lng),
+    radiusKm: String(radiusKm),
+  });
+  return apiFetch<ApiReturnTrip[]>(`/transport-jobs/return-trips?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
