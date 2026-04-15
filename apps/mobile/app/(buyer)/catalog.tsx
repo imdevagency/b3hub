@@ -641,7 +641,8 @@ export default function CatalogScreen() {
           <View style={{ flex: 1 }}>
             <Text style={s.draftSub} numberOfLines={1}>
               <Text style={{ fontWeight: '600' }}>Nepabeigts: </Text>
-              {resumeDraft.materialName}, {resumeDraft.quantity} {UNIT_SHORT[resumeDraft.unit as keyof typeof UNIT_SHORT] ?? resumeDraft.unit}
+              {resumeDraft.materialName}, {resumeDraft.quantity}{' '}
+              {UNIT_SHORT[resumeDraft.unit as keyof typeof UNIT_SHORT] ?? resumeDraft.unit}
             </Text>
           </View>
           <TouchableOpacity
@@ -656,8 +657,6 @@ export default function CatalogScreen() {
         </TouchableOpacity>
       )}
 
-
-
       {/* ── Category list ── */}
       {loading ? (
         <View style={s.skeletonWrap}>
@@ -671,6 +670,7 @@ export default function CatalogScreen() {
         </View>
       ) : (
         <FlatList
+          style={{ flex: 1 }}
           data={visibleCategories}
           keyExtractor={(cat) => cat}
           renderItem={({ item: cat }) => {
@@ -728,6 +728,7 @@ const s = StyleSheet.create({
   chipScroll: {
     backgroundColor: '#fff',
     flexGrow: 0,
+    flexShrink: 0,
   },
   chipRow: {
     flexDirection: 'row',
