@@ -214,7 +214,7 @@ export default function HomeScreen() {
   );
 
   return (
-    <ScreenContainer bg="#f9fafb">
+    <ScreenContainer bg="#ffffff" topBg="#ffffff" standalone noAnimation>
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 100 }}
@@ -223,45 +223,53 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadData(true)}
-            tintColor="#000"
+            tintColor="#111827"
           />
         }
       >
-        {/* Header Section */}
-        <View className="px-5 pt-8 pb-4">
-          <Text className="text-gray-500 text-sm font-medium mb-1">
-            Reģions: <Text className="text-gray-900 font-bold">Rīga</Text>
-          </Text>
-          <Text className="text-3xl font-extrabold tracking-tight text-gray-900">
-            Sveiki{user?.firstName ? `, ${user.firstName}` : ''} 👋
-          </Text>
+        {/* Flat Minimal Header */}
+        <View className="px-5 pt-8 pb-6 flex-row justify-between items-end">
+          <View>
+            <Text className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-0.5">Laipni lūdzam</Text>
+            <Text className="text-[32px] font-bold tracking-tight text-gray-900">
+              Sveiki{user?.firstName ? `, ${user.firstName}` : ''}
+            </Text>
+          </View>
+          <View className="bg-gray-100 px-3 py-1.5 rounded-full mb-1">
+            <Text className="text-[13px] font-bold text-gray-900">Rīga</Text>
+          </View>
         </View>
 
         {/* Profile Nudge */}
         {user && (!user.phone || (user.isCompany && !user.company?.id)) && (
           <TouchableOpacity
-            className="mx-5 mb-6 bg-amber-50 p-4 rounded-2xl flex-row items-center shadow-sm"
+            className="mx-5 mb-8 bg-gray-100 p-4 rounded-[20px] flex-row items-center"
             activeOpacity={0.8}
             onPress={() => {
               haptics.light();
               router.push('/(buyer)/profile' as any);
             }}
           >
-            <AlertCircle size={20} color="#b45309" className="mr-3" />
-            <Text className="flex-1 text-sm text-amber-800 font-semibold">
-              {!user.phone
-                ? 'Pievienojiet tālruni, lai veiktu pasūtījumus'
-                : 'Pievienojiet uzņēmuma profilu, lai pilnvērtīgi lietotu platformu'}
-            </Text>
-            <ChevronRight size={16} color="#b45309" />
+            <View className="w-10 h-10 bg-amber-100 rounded-full items-center justify-center mr-3">
+               <AlertCircle size={20} color="#b45309" />
+            </View>
+            <View className="flex-1 mr-2">
+              <Text className="text-[15px] text-gray-900 font-bold mb-0.5 tracking-tight">Pabeidziet konta reģistrāciju</Text>
+              <Text className="text-[13px] text-gray-500 font-medium leading-tight">
+                {!user.phone
+                  ? 'Pievienojiet tālruni, lai veiktu pasūtījumus'
+                  : 'Pievienojiet uzņēmuma datus'}
+              </Text>
+            </View>
+            <ChevronRight size={20} color="#9ca3af" />
           </TouchableOpacity>
         )}
 
-        {/* Active Hero */}
+        {/* Tracking (Uber-style dark card) */}
         {activeItem && (
           <TouchableOpacity
-            className="mx-5 mb-8 bg-gray-900 rounded-[28px] overflow-hidden shadow-sm"
-            activeOpacity={0.92}
+            className="mx-5 mb-8 bg-[#111827] rounded-[28px] overflow-hidden"
+            activeOpacity={0.9}
             onPress={() => {
               haptics.light();
               if (activeCount > 1) return router.push('/(buyer)/orders' as any);
@@ -275,69 +283,69 @@ export default function HomeScreen() {
             }}
           >
             <View className="p-6">
-              <View className="flex-row justify-between items-center mb-4">
+              <View className="flex-row justify-between items-center mb-6">
                 <View className="flex-row items-center bg-gray-800 rounded-full px-3 py-1.5">
-                  <View className="relative w-3 h-3 items-center justify-center mr-2">
+                  <View className="relative w-2.5 h-2.5 items-center justify-center mr-2">
                     <Animated.View
                       style={{
                         transform: [{ scale: pulseAnim }],
                         backgroundColor: activeItem.dotColor,
                       }}
-                      className="absolute w-3 h-3 rounded-full opacity-40"
+                      className="absolute w-2.5 h-2.5 rounded-full opacity-50"
                     />
                     <View
                       style={{ backgroundColor: activeItem.dotColor }}
-                      className="w-2 h-2 rounded-full"
+                      className="w-1.5 h-1.5 rounded-full"
                     />
                   </View>
-                  <Text className="text-gray-300 text-xs font-bold uppercase tracking-wider">
+                  <Text className="text-gray-200 text-[11px] font-bold uppercase tracking-widest">
                     {activeCount > 1 ? `${activeCount} Aktīvi` : 'Aktīvs'}
                   </Text>
                 </View>
-                <Text className="text-gray-400 text-sm font-semibold">{activeItem.num}</Text>
+                <Text className="text-gray-400 text-[13px] font-semibold">{activeItem.num}</Text>
               </View>
 
-              <Text className="text-white text-3xl font-extrabold tracking-tight mb-2">
+              <Text className="text-white text-[28px] font-bold tracking-tight leading-tight mb-2">
                 {activeCount > 1 ? `${activeCount} pasūtījumi ceļā` : activeItem.status}
               </Text>
-              <Text className="text-gray-400 text-base font-medium mb-6 line-clamp-1">
+              <Text className="text-gray-400 text-[15px] font-medium mb-6 line-clamp-1">
                 {activeItem.sub}
               </Text>
 
-              <View className="bg-gray-800 p-4 rounded-xl flex-row items-center justify-between">
-                <Text className="text-white font-bold text-sm">Sekot līdzi</Text>
-                <ArrowRight size={18} color="#fff" />
+              <View className="bg-white/10 p-4 rounded-2xl flex-row items-center justify-between">
+                <Text className="text-white font-bold text-[15px]">Sekot līdzi</Text>
+                <ArrowRight size={20} color="#fff" />
               </View>
             </View>
           </TouchableOpacity>
         )}
 
-        {/* Services / New order prompt */}
-        <View className="px-5 mb-8">
-          <Text className="text-xl font-extrabold tracking-tight text-gray-900 mb-4">
-            Veikt jaunu pasūtījumu
+        {/* Actions Grid */}
+        <View className="px-5">
+          <Text className="text-[22px] font-bold tracking-tight text-gray-900 mb-4">
+            Ko vēlaties pasūtīt?
           </Text>
           <View className="flex-row flex-wrap justify-between">
-            {SERVICES.map((svc, i) => {
+            {SERVICES.map((svc) => {
               const Icon = svc.icon;
               return (
                 <TouchableOpacity
                   key={svc.id}
-                  className="bg-white p-4 rounded-3xl mb-3 shadow-sm border border-gray-100"
+                  className="bg-gray-100 p-4 rounded-[24px] mb-3"
                   style={{ width: '48%' }}
                   onPress={() => {
-                    haptics.medium();
+                    haptics.light();
                     router.push(svc.route as any);
                   }}
-                  activeOpacity={0.8}
+                  activeOpacity={0.7}
                 >
-                  <View className="mb-4 bg-gray-50 self-start p-3 rounded-2xl">
-                    <Icon size={28} color="#111827" strokeWidth={2} />
+                  <View className="mb-6 bg-white self-start p-3.5 rounded-full shadow-sm">
+                    <Icon size={22} color="#111827" strokeWidth={2.5} />
                   </View>
-                  <Text className="text-gray-900 font-bold text-base tracking-tight mb-1">
+                  <Text className="text-gray-900 font-bold text-[16px] tracking-tight mb-1">
                     {svc.label}
                   </Text>
-                  <Text className="text-gray-500 font-medium text-xs line-clamp-1">{svc.sub}</Text>
+                  <Text className="text-gray-500 font-medium text-[13px] line-clamp-1 leading-tight">{svc.sub}</Text>
                 </TouchableOpacity>
               );
             })}
