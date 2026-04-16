@@ -47,11 +47,9 @@ import { TJB_STATUS } from '@/lib/materials';
 import { BaseMap, RouteLayer, useRoute } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
 let Marker: any = null;
-let AnimatedRegion: any = null;
 try {
   const maps = require('react-native-maps');
   Marker = maps.Marker;
-  AnimatedRegion = maps.AnimatedRegion;
 } catch {
   /* Expo Go */
 }
@@ -219,33 +217,16 @@ export default function TransportJobDetailScreen() {
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [etaMin, setEtaMin] = useState<number | null>(null);
 
-  // Animated coordinate for smooth driver marker movement
-  const animCoord = useRef<any>(null);
-  const driverMarkerRef = useRef<any>(null);
-
   // Live driver GPS + job status via WebSocket — replaces the 10 s polling loop
   const { jobLocation: liveLocation, jobStatus: liveJobStatus } = useLiveUpdates({
     jobId: typeof id === 'string' ? id : null,
     token,
   });
 
-  // Apply live GPS updates reactively with smooth animation
+  // Apply live GPS updates reactively
   React.useEffect(() => {
     if (!liveLocation) return;
     const { lat, lng } = liveLocation;
-
-    if (!animCoord.current && AnimatedRegion) {
-      // First fix — initialise AnimatedRegion so marker appears
-      animCoord.current = new AnimatedRegion({
-        latitude: lat,
-        longitude: lng,
-        latitudeDelta: 0,
-        longitudeDelta: 0,
-      });
-    } else if (driverMarkerRef.current) {
-      // Subsequent fixes — animate smoothly via native API (1 s interpolation)
-      driverMarkerRef.current.animateMarkerToCoordinate({ latitude: lat, longitude: lng }, 1000);
-    }
 
     setDriverLocation({ lat, lng });
     if (liveLocation.estimatedArrivalMin != null) setEtaMin(liveLocation.estimatedArrivalMin);
@@ -261,7 +242,7 @@ export default function TransportJobDetailScreen() {
   // When the server pushes a job status change, reload to get full updated job object
   React.useEffect(() => {
     if (liveJobStatus) loadJob();
-  }, [liveJobStatus]);
+  }, [liveJobStatus, loadJob]);
 
   // Route between pickup and delivery
   const pickup =
@@ -340,7 +321,7 @@ export default function TransportJobDetailScreen() {
   const isActive = job ? ACTIVE_STATUSES.has(job.status) : false;
 
   return (
-    <ScreenContainer topInset={0} bg="#f9fafb">
+    <ScreenContainer standalone={!isActive} bg="#f9fafb">
       {isActive ? (
         <View>
           {/* ── MAP SECTION ── */}
@@ -377,10 +358,9 @@ export default function TransportJobDetailScreen() {
                   </View>
                 </Marker>
               )}
-              {/* Live driver marker — animates smoothly via animateMarkerToCoordinate */}
+              {/* Live driver marker */}
               {driverLocation && Marker && (
                 <Marker
-                  ref={driverMarkerRef}
                   coordinate={{ latitude: driverLocation.lat, longitude: driverLocation.lng }}
                   anchor={{ x: 0.5, y: 0.5 }}
                   tracksViewChanges={false}
@@ -424,7 +404,7 @@ export default function TransportJobDetailScreen() {
             )}
             {/* Live driver distance chip */}
             {driverLocation && delivery && (
-              <View style={s.driverBadge}>
+              <View style={[s.driverBadge, { top: insets.top + 12 }]}>
                 <View style={s.driverLiveDot} />
                 <Text style={s.driverBadgeText}>
                   {etaMin != null
@@ -482,7 +462,8 @@ export default function TransportJobDetailScreen() {
                   </Text>
                   {job.vehicle && (
                     <Text style={s.driverSub}>
-                      {job.vehicle.vehicleType} · {job.vehicle.licensePlate}
+                      {VEHICLE_LABEL[job.vehicle.vehicleType] ?? job.vehicle.vehicleType} ·{' '}
+                      {job.vehicle.licensePlate}
                     </Text>
                   )}
                 </View>
@@ -495,7 +476,7 @@ export default function TransportJobDetailScreen() {
                     }}
                     activeOpacity={0.8}
                   >
-                    <Phone size={14} color="#111827" strokeWidth={2} />
+                    <Phone size={14} color="#fff" strokeWidth={2} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -613,7 +594,7 @@ export default function TransportJobDetailScreen() {
                     style={s.callBtn}
                     onPress={() => {
                       haptics.light();
-                      Linking.openURL(`tel:${job.order!.siteContactPhone}`);
+                      Linking.openURL(`tel:${job.order?.siteContactPhone}`);
                     }}
                     activeOpacity={0.8}
                   >

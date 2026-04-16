@@ -152,6 +152,11 @@ export default function DeliveryProofScreen() {
   const handleSubmit = async () => {
     if (!token || !jobId) return;
 
+    if (strokes.length === 0 && !liveStroke) {
+      Alert.alert('Paraksts nepieciešams', 'Lūdzu parakstieties pirms iesniegšanas.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await api.transportJobs.deliveryProof(
@@ -419,9 +424,12 @@ export default function DeliveryProofScreen() {
 
         {/* Submit */}
         <TouchableOpacity
-          style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
+          style={[
+            styles.submitBtn,
+            (submitting || (strokes.length === 0 && !liveStroke)) && styles.submitBtnDisabled,
+          ]}
           onPress={handleSubmit}
-          disabled={submitting}
+          disabled={submitting || (strokes.length === 0 && !liveStroke)}
         >
           {submitting ? (
             <ActivityIndicator color="#fff" />

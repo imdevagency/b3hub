@@ -647,6 +647,31 @@ export default function JobsScreen() {
 
   const handleConfirmAccept = async () => {
     if (!acceptSheetJob || !token || accepting) return;
+
+    // Block acceptance if no vehicle registered
+    try {
+      const vehicles = await api.vehicles.getAll(token);
+      if (!Array.isArray(vehicles) || vehicles.length === 0) {
+        Alert.alert(
+          'Nav reģistrētu transportlīdzekļu',
+          'Pirms darba pieņemšanas, lūdzu pievienojiet transportlīdzekli profilā.',
+          [
+            { text: 'Atcelt', style: 'cancel' },
+            {
+              text: 'Pievienot',
+              onPress: () => {
+                setAcceptSheetJob(null);
+                router.push('/(driver)/vehicles');
+              },
+            },
+          ],
+        );
+        return;
+      }
+    } catch {
+      // If check fails, allow accept rather than blocking
+    }
+
     const job = acceptSheetJob;
     setAccepting(true);
     try {

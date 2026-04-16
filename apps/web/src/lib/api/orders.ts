@@ -100,6 +100,8 @@ export interface CreateCartOrderInput {
   truckCount?: number;
   /** Minutes between consecutive trucks when truckCount > 1. */
   truckIntervalMinutes?: number;
+  /** Assign order to a project. */
+  projectId?: string;
   items: CartOrderItem[];
 }
 
@@ -228,12 +230,14 @@ export async function createCartOrder(
       deliveryState: '',
       deliveryPostal: input.deliveryPostal,
       deliveryDate: input.deliveryDate,
+      deliveryWindow: input.deliveryWindow,
       deliveryLat: input.deliveryLat,
       deliveryLng: input.deliveryLng,
       deliveryFee: 0,
       notes: input.notes,
       siteContactName: input.siteContactName,
       siteContactPhone: input.siteContactPhone,
+      projectId: input.projectId,
       truckCount: input.truckCount ?? 1,
       truckIntervalMinutes: input.truckIntervalMinutes ?? undefined,
       items: input.items,
@@ -324,6 +328,26 @@ export async function createTransportOrder(input: CreateTransportOrderInput, tok
 export async function getOrder(id: string, token: string): Promise<ApiOrder> {
   return apiFetch<ApiOrder>(`/orders/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function updateOrder(
+  id: string,
+  body: {
+    deliveryDate?: string;
+    deliveryWindow?: string;
+    deliveryAddress?: string;
+    deliveryCity?: string;
+    notes?: string;
+    siteContactName?: string;
+    siteContactPhone?: string;
+  },
+  token: string,
+): Promise<ApiOrder> {
+  return apiFetch<ApiOrder>(`/orders/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   });
 }
 

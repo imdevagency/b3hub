@@ -191,7 +191,7 @@ function PositionSection({
 
 export default function FrameworkContractDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
 
   const [contract, setContract] = useState<ApiFrameworkContract | null>(null);
@@ -328,7 +328,9 @@ export default function FrameworkContractDetailScreen() {
 
   const status = CONTRACT_STATUS[contract.status] ?? CONTRACT_STATUS.ACTIVE;
   const overallPct = Math.min(100, contract.totalProgressPct);
-  const canRelease = contract.status === 'ACTIVE';
+  // Only allow call-off creation when contract is ACTIVE and user has permission
+  const canRelease =
+    contract.status === 'ACTIVE' && (user?.permReleaseCallOffs ?? !user?.companyRole); // solo users (no companyRole) can always release
 
   // Job costing
   const positionsWithPrice = contract.positions.filter((p) => p.unitPrice != null);

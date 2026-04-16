@@ -34,15 +34,10 @@ function BuyerLayoutContent() {
     }
   }, [user, isLoading, availableModes, router]);
 
-  if (isLoading) {
-    return (
-      <View
-        style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}
-      >
-        <ActivityIndicator size="large" color="#111827" />
-      </View>
-    );
-  }
+  // NOTE: Do NOT return early here — the <Tabs> navigator MUST always render so
+  // expo-router can provide navigation context to all tab screens (including those
+  // accessed via router.push that render before auth resolves). Show a full-screen
+  // loading overlay instead.
 
   const avatarBtn = (
     <TouchableOpacity
@@ -112,11 +107,24 @@ function BuyerLayoutContent() {
         <Tabs.Screen name="field-passes" options={{ href: null }} />
         <Tabs.Screen name="analytics" options={{ href: null }} />
       </Tabs>
+      {/* Loading overlay — rendered OVER Tabs so navigation context is always mounted */}
+      {isLoading && (
+        <View style={ls.loadingOverlay}>
+          <ActivityIndicator size="large" color="#111827" />
+        </View>
+      )}
     </View>
   );
 }
 
 const ls = StyleSheet.create({
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 999,
+  },
   avatarBtn: {
     width: 38,
     height: 38,

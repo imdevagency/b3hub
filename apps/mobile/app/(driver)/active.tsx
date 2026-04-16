@@ -52,6 +52,9 @@ import {
   AlertCircle,
   Camera,
   Plus,
+  PlusCircle,
+  FileText,
+  Clock as ClockIcon,
 } from 'lucide-react-native';
 
 // ── Status progression ────────────────────────────────────────────────────────
@@ -799,109 +802,90 @@ export default function ActiveJobScreen() {
         )}
       </View>
 
-      {/* ── Top Bar Overlay (HUD) ── */}
+      {/* ── Top Floating Pill ── */}
       <View
-        style={[styles.topOverlay, { top: Math.max(insets.top + 8, 16) }]}
+        style={[
+          styles.topOverlay,
+          { top: Math.max(insets.top + 8, 16), alignItems: 'center', justifyContent: 'center' },
+        ]}
         pointerEvents="box-none"
       >
-        <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
-          <ArrowLeft size={24} color="#000" />
+        <TouchableOpacity
+          style={[styles.iconButton, { position: 'absolute', left: 16 }]}
+          onPress={() => router.back()}
+        >
+          <ArrowLeft size={24} color="#111827" />
         </TouchableOpacity>
 
-        {job.sla?.isOverdue && (
-          <View style={styles.slaBadge}>
-            <Clock size={16} color="#dc2626" />
-            <Text style={styles.slaText}>{job.sla.overdueMinutes} min kavējas</Text>
-          </View>
-        )}
+        <View
+          style={{
+            backgroundColor: '#111827',
+            borderRadius: 20,
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            shadowColor: '#000',
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            shadowOffset: { width: 0, height: 4 },
+            elevation: 5,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>
+            {currentStatus === 'ACCEPTED' ||
+            currentStatus === 'EN_ROUTE_PICKUP' ||
+            currentStatus === 'AT_PICKUP'
+              ? 'Uz iekraušanu'
+              : 'Uz izkraušanu'}
+          </Text>
+        </View>
       </View>
 
-      {/* ── Floating Nav & Call HUD ── */}
-      <View style={styles.hudContainer} pointerEvents="box-none">
+      {/* ── Floating Nav HUD ── */}
+      <View
+        style={[styles.hudContainer, { bottom: Math.max(insets.bottom, 24) + 270 }]}
+        pointerEvents="box-none"
+      >
         <View style={styles.hudButtonGroup}>
           <TouchableOpacity style={styles.hudButton} onPress={handleNavigate} activeOpacity={0.8}>
-            <Navigation size={24} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.hudButton, { backgroundColor: '#fff' }]}
-            onPress={() => handleCall(job.order?.siteContactPhone, job.order?.siteContactName)}
-            activeOpacity={0.8}
-          >
-            <Phone size={24} color="#000" />
+            <Navigation size={22} color="#fff" strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* ── Static Bottom Card ── */}
-      <View style={[styles.staticBottomCard, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-        <View style={styles.detailsPull}>
+      {/* ── Sleek Bottom Action Card ── */}
+      <View
+        style={[
+          styles.staticBottomCard,
+          { paddingBottom: Math.max(insets.bottom, 24), paddingHorizontal: 20, paddingTop: 16 },
+        ]}
+      >
+        <View style={{ alignItems: 'center', marginBottom: 12 }}>
           <View style={styles.detailsPullHandle} />
         </View>
-        {/* ── Inline Tab Bar ── */}
-        <View style={inlineTabStyles.bar}>
-          <InlineTab
-            label="Navigācija"
-            active={activeTab === 'navigate'}
-            onPress={() => setActiveTab('navigate')}
-          />
-          <InlineTab
-            label="Detaļas"
-            active={activeTab === 'details'}
-            onPress={() => setActiveTab('details')}
-          />
-          <InlineTab
-            label="Problēmas"
-            active={activeTab === 'issues'}
-            badge={
-              openExceptions.length > 0 && activeTab !== 'issues'
-                ? openExceptions.length
-                : undefined
-            }
-            onPress={() => setActiveTab('issues')}
-          />
-        </View>
-        <View style={activeTab !== 'navigate' ? { display: 'none' } : undefined}>
-          {/* Return trips proactive chip */}
-          {returnTrips.length > 0 && (
-            <TouchableOpacity
-              style={styles.returnTripsChip}
-              onPress={() => setReturnTripsSheetVisible(true)}
-              activeOpacity={0.8}
-            >
-              <Truck size={14} color="#059669" />
-              <Text style={styles.returnTripsChipText}>
-                {returnTrips.length} atpakaļceļa {returnTrips.length === 1 ? 'kravu' : 'kravas'}{' '}
-                tuvumā
-              </Text>
-              <Text style={{ fontSize: 16, color: '#059669', fontWeight: '700' }}>›</Text>
-            </TouchableOpacity>
-          )}
 
-          {/* Minimal Uber-like Header */}
+        {/* Minimal Uber-like Current Phase & Address */}
+        <View style={{ marginBottom: 16 }}>
           <View
             style={{
               flexDirection: 'row',
-              justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: 6,
+              justifyContent: 'space-between',
+              marginBottom: 4,
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View
                 style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 5,
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
                   backgroundColor: phaseColor.text || '#000',
                 }}
               />
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: '800',
-                  color: phaseColor.text || '#000',
-                }}
-              >
+              <Text style={{ fontSize: 13, fontWeight: '700', color: phaseColor.text || '#000' }}>
                 {currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP'
                   ? 'Dodies uz iekraušanu'
                   : currentStatus === 'AT_PICKUP'
@@ -913,311 +897,309 @@ export default function ActiveJobScreen() {
                         : 'Pabeigts'}
               </Text>
             </View>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#9ca3af' }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: '#9ca3af' }}>
               #{job.jobNumber}
             </Text>
           </View>
 
-          <Text
-            style={{
-              fontSize: 26,
-              fontWeight: '800',
-              color: '#111827',
-              marginBottom: 14,
-              letterSpacing: -0.5,
-              lineHeight: 30,
-            }}
-            adjustsFontSizeToFit
-            numberOfLines={2}
-          >
-            {currentStatus === 'ACCEPTED' ||
-            currentStatus === 'EN_ROUTE_PICKUP' ||
-            currentStatus === 'AT_PICKUP'
-              ? `${job.pickupAddress}, ${job.pickupCity}`
-              : `${job.deliveryAddress}, ${job.deliveryCity}`}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 24,
+                  fontWeight: '800',
+                  color: '#111827',
+                  letterSpacing: -0.4,
+                  lineHeight: 28,
+                }}
+                numberOfLines={2}
+              >
+                {currentStatus === 'ACCEPTED' ||
+                currentStatus === 'EN_ROUTE_PICKUP' ||
+                currentStatus === 'AT_PICKUP'
+                  ? `${job.pickupAddress}, ${job.pickupCity}`
+                  : `${job.deliveryAddress}, ${job.deliveryCity}`}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: '#f3f4f6',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onPress={() => handleCall(job.order?.siteContactPhone, job.order?.siteContactName)}
+              activeOpacity={0.7}
+            >
+              <Phone size={20} color="#111827" strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+        </View>
 
-          {/* Progress stepper */}
+        {/* Primary Action Button */}
+        <View style={styles.actionRow}>
+          {nextStatus ? (
+            <TouchableOpacity style={styles.primaryButton} onPress={handleUpdateStatus}>
+              <Text style={styles.primaryButtonText}>
+                {currentStatus === 'AT_DELIVERY'
+                  ? t.deliveryProof.title
+                  : currentStatus === 'AT_PICKUP'
+                    ? 'Apstiprināt kravu'
+                    : currentStatus === 'LOADED'
+                      ? 'Dodos uz piegādi →'
+                      : currentStatus === 'EN_ROUTE_PICKUP'
+                        ? 'Esmu iekraušanas vietā →'
+                        : currentStatus === 'EN_ROUTE_DELIVERY'
+                          ? 'Esmu piegādes vietā →'
+                          : t.activeJob.status[nextStatus]}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={{ flex: 1, gap: 10 }}>
+              <View style={styles.completedBanner}>
+                <CheckCircle2 size={20} color="#365314" />
+                <Text style={styles.completedText}>Piegādāts!</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.findNextJobBtn}
+                onPress={() => router.push('/(driver)/jobs')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.findNextJobText}>Atrast nākamo darbu →</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* Return trips chip */}
+        {returnTrips.length > 0 &&
+          (currentStatus === 'EN_ROUTE_DELIVERY' || currentStatus === 'AT_DELIVERY') && (
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                backgroundColor: '#f0fdf4',
+                borderWidth: 1,
+                borderColor: '#bbf7d0',
+                borderRadius: 20,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                alignSelf: 'flex-start',
+                marginBottom: 12,
+              }}
+              onPress={() => setReturnTripsSheetVisible(true)}
+              activeOpacity={0.8}
+            >
+              <Truck size={14} color="#059669" />
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#059669' }}>
+                {returnTrips.length} atpakaļceļa krava{returnTrips.length > 1 ? 's' : ''} tuvumā
+              </Text>
+            </TouchableOpacity>
+          )}
+
+        {/* Action Row for Details & Issues */}
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              padding: 12,
+              backgroundColor: '#f3f4f6',
+              borderRadius: 12,
+              alignItems: 'center',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              gap: 6,
+            }}
+            onPress={() => setActiveTab('details')}
+          >
+            <FileText size={17} color="#374151" />
+            <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151' }}>Detaļas</Text>
+          </TouchableOpacity>
+          {(currentStatus === 'AT_PICKUP' ||
+            currentStatus === 'LOADED' ||
+            currentStatus === 'EN_ROUTE_DELIVERY' ||
+            currentStatus === 'AT_DELIVERY') && (
+            <TouchableOpacity
+              style={{
+                paddingHorizontal: 14,
+                padding: 12,
+                backgroundColor: '#fffbeb',
+                borderRadius: 12,
+                alignItems: 'center',
+                flexDirection: 'row',
+                gap: 5,
+                borderWidth: 1,
+                borderColor: '#fde68a',
+              }}
+              onPress={() => setSurchargeSheetVisible(true)}
+            >
+              <PlusCircle size={17} color="#d97706" />
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#d97706' }}>€+</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              padding: 12,
+              backgroundColor: '#fef2f2',
+              borderRadius: 12,
+              alignItems: 'center',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              gap: 6,
+            }}
+            onPress={() => setActiveTab('issues')}
+          >
+            <AlertCircle size={17} color="#b91c1c" />
+            <Text style={{ fontSize: 14, fontWeight: '600', color: '#b91c1c' }}>Problēma</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <BottomSheet
+        visible={activeTab === 'details'}
+        onClose={() => setActiveTab('navigate')}
+        title="Detaļas"
+        scrollable
+      >
+        <View style={{ padding: 20 }}>
           <View
             style={{
               flexDirection: 'row',
-              alignItems: 'center',
               justifyContent: 'space-between',
-              marginBottom: 8,
+              paddingVertical: 12,
+              borderBottomWidth: 1,
+              borderBottomColor: '#f3f4f6',
             }}
           >
+            <Text style={{ fontSize: 14, color: '#6b7280' }}>Materiāls</Text>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+              {job.cargoType}
+            </Text>
+          </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              paddingVertical: 12,
+              borderBottomWidth: 1,
+              borderBottomColor: '#f3f4f6',
+            }}
+          >
+            <Text style={{ fontSize: 14, color: '#6b7280' }}>Svars</Text>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+              {job.cargoWeight ?? '-'} t
+            </Text>
+          </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              paddingVertical: 12,
+              borderBottomWidth: 1,
+              borderBottomColor: '#f3f4f6',
+            }}
+          >
+            <Text style={{ fontSize: 14, color: '#6b7280' }}>Iekraušana</Text>
             <Text
               style={{
-                fontSize: 11,
-                color: 'rgba(255,255,255,0.5)',
-                fontWeight: '600',
-              }}
-            >
-              Solis {currentIndex + 1}/{STATUS_STEPS.length}
-            </Text>
-            <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>
-              {t.activeJob.status[currentStatus] ?? currentStatus}
-            </Text>
-          </View>
-          <View style={styles.stepperRow}>
-            {STATUS_STEPS.map((step, i) => (
-              <View
-                key={step}
-                style={[
-                  styles.stepDot,
-                  i < currentIndex ? styles.stepDotDone : null,
-                  i === currentIndex ? styles.stepDotActive : null,
-                ]}
-              />
-            ))}
-          </View>
-
-          {/* Offline banner */}
-          {isOffline && (
-            <View style={styles.offlineBanner}>
-              <AlertCircle size={14} color="#92400e" />
-              <Text style={styles.offlineBannerText}>
-                Offline — izmaiņas tiks saglabātas un sūtītas, kad atjaunosies savienojums
-              </Text>
-            </View>
-          )}
-
-          {/* Primary Action Button */}
-          <View style={styles.actionRow}>
-            {nextStatus ? (
-              <TouchableOpacity style={[styles.primaryButton]} onPress={handleUpdateStatus}>
-                <Text style={styles.primaryButtonText} className="font-bold">
-                  {currentStatus === 'AT_DELIVERY'
-                    ? t.deliveryProof.title
-                    : currentStatus === 'AT_PICKUP'
-                      ? 'Apstiprināt kravu'
-                      : currentStatus === 'LOADED'
-                        ? 'Dodos uz piegādi →'
-                        : currentStatus === 'EN_ROUTE_PICKUP'
-                          ? 'Esmu iekraušanas vietā →'
-                          : currentStatus === 'EN_ROUTE_DELIVERY'
-                            ? 'Esmu piegādes vietā →'
-                            : t.activeJob.status[nextStatus]}
-                </Text>
-                {currentStatus !== 'AT_DELIVERY' && (
-                  <Text className="font-bold" style={{ color: '#ffffff80', fontSize: 18 }}>
-                    →
-                  </Text>
-                )}
-              </TouchableOpacity>
-            ) : (
-              <View style={{ flex: 1, gap: 10 }}>
-                <View style={styles.completedBanner}>
-                  <CheckCircle2 size={20} color="#365314" />
-                  <Text style={styles.completedText}>Piegādāts!</Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.findNextJobBtn}
-                  onPress={() => router.push('/(driver)/jobs')}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.findNextJobText}>Atrast nākamo darbu →</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        </View>{' '}
-        {/* end navigate wrapper */}
-        {/* ── Details Tab (inline) ── */}
-        {activeTab === 'details' && (
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            style={{ maxHeight: 268 }}
-            contentContainerStyle={{ paddingBottom: 12 }}
-          >
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Materiāls</Text>
-              <Text style={styles.detailValue}>{job.cargoType}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Svars</Text>
-              <Text style={styles.detailValue}>{job.cargoWeight ?? '-'} t</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Cena</Text>
-              <Text style={styles.detailValue}>€{job.rate?.toFixed(2) ?? '-'}</Text>
-            </View>
-            {(() => {
-              const co2 = estimateCo2Kg(job.distanceKm, job.cargoWeight);
-              if (!co2) return null;
-              return (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>CO₂ ietekme</Text>
-                  <Text style={[styles.detailValue, { color: '#16a34a' }]}>~{formatCo2(co2)}</Text>
-                </View>
-              );
-            })()}
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Iekraušana</Text>
-              <Text style={styles.detailValue}>
-                {job.pickupAddress}, {job.pickupCity}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Izkraušana</Text>
-              <Text style={styles.detailValue}>
-                {job.deliveryAddress}, {job.deliveryCity}
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.reportProblemBtn}
-              onPress={() => setActiveTab('issues')}
-              activeOpacity={0.8}
-            >
-              <AlertCircle size={16} color="#dc2626" />
-              <Text style={styles.reportProblemText}>Ziņot par problēmu</Text>
-            </TouchableOpacity>
-            {job.status !== 'DELIVERED' && job.status !== 'CANCELLED' && (
-              <TouchableOpacity
-                style={[styles.reportProblemBtn, { borderColor: '#d97706', marginTop: 0 }]}
-                onPress={() => setDelaySheetVisible(true)}
-                activeOpacity={0.8}
-              >
-                <Clock size={16} color="#d97706" />
-                <Text style={[styles.reportProblemText, { color: '#d97706' }]}>
-                  Ziņot par kavēšanos
-                </Text>
-              </TouchableOpacity>
-            )}
-            {job.status !== 'DELIVERED' && job.status !== 'CANCELLED' && (
-              <TouchableOpacity
-                style={styles.addSurchargeBtn}
-                onPress={() => setSurchargeSheetVisible(true)}
-                activeOpacity={0.8}
-              >
-                <Plus size={16} color="#d97706" />
-                <Text style={styles.addSurchargeBtnText}>Pievienot papildu maksu</Text>
-              </TouchableOpacity>
-            )}
-          </ScrollView>
-        )}
-        {/* ── Issues Tab (inline) ── */}
-        {activeTab === 'issues' && (
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            style={{ maxHeight: 268 }}
-            contentContainerStyle={{ gap: 10, paddingBottom: 12 }}
-          >
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
-            >
-              {EXCEPTION_TYPE_OPTIONS.map((opt) => (
-                <TouchableOpacity
-                  key={opt.value}
-                  onPress={() => setExceptionType(opt.value)}
-                  style={{
-                    paddingHorizontal: 14,
-                    paddingVertical: 8,
-                    borderRadius: 20,
-                    backgroundColor: exceptionType === opt.value ? '#991b1b' : '#f9fafb',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: '600',
-                      color: exceptionType === opt.value ? '#fff' : '#374151',
-                    }}
-                  >
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <TextInput
-              style={{
-                backgroundColor: '#f9fafb',
-                borderRadius: 12,
-                padding: 14,
-                height: 80,
                 fontSize: 15,
-                borderWidth: 1,
-                borderColor: '#e5e7eb',
+                fontWeight: '600',
                 color: '#111827',
-                textAlignVertical: 'top',
+                flex: 1,
+                textAlign: 'right',
+                marginLeft: 20,
               }}
-              placeholder="Aprakstiet situāciju..."
-              placeholderTextColor="#9ca3af"
-              value={exceptionNotes}
-              onChangeText={setExceptionNotes}
-              multiline
-            />
-            {exceptionType === 'PARTIAL_DELIVERY' && (
-              <View>
-                <Text
-                  style={{ fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 }}
-                >
-                  Faktiskā piegādātā daudzums
-                </Text>
-                <TextInput
-                  style={{
-                    backgroundColor: '#f9fafb',
-                    borderRadius: 12,
-                    padding: 14,
-                    fontSize: 15,
-                    borderWidth: 1,
-                    borderColor: '#e5e7eb',
-                    color: '#111827',
-                  }}
-                  placeholder="piem. 4.5"
-                  placeholderTextColor="#9ca3af"
-                  value={exceptionActualQty}
-                  onChangeText={setExceptionActualQty}
-                  keyboardType="decimal-pad"
-                />
-              </View>
-            )}
-            {exceptions.length > 0 && (
-              <View style={{ gap: 8 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#6b7280' }}>Vēsture</Text>
-                {exceptions.map((ex) => (
-                  <View
-                    key={ex.id}
-                    style={{
-                      backgroundColor: ex.status === 'OPEN' ? '#fef2f2' : '#f0fdf4',
-                      padding: 12,
-                      borderRadius: 10,
-                      borderWidth: 1,
-                      borderColor: ex.status === 'OPEN' ? '#fecaca' : '#bbf7d0',
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: '700',
-                        color: ex.status === 'OPEN' ? '#991b1b' : '#15803d',
-                      }}
-                    >
-                      {EXCEPTION_TYPE_OPTIONS.find((o) => o.value === ex.type)?.label ?? ex.type}
-                      {' · '}
-                      {ex.status === 'OPEN' ? 'Atvērts' : 'Atrisināts'}
-                    </Text>
-                    <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>{ex.notes}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-            <TouchableOpacity
-              style={[styles.weightConfirm, reportingException && { opacity: 0.6 }]}
-              onPress={handleReportException}
-              disabled={reportingException}
             >
-              <Text style={styles.weightConfirmText}>
-                {reportingException ? 'Sūta...' : 'Ziņot dispečeram'}
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        )}
-      </View>
+              {job.pickupAddress}, {job.pickupCity}
+            </Text>
+          </View>
+          <View
+            style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12 }}
+          >
+            <Text style={{ fontSize: 14, color: '#6b7280' }}>Izkraušana</Text>
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: '600',
+                color: '#111827',
+                flex: 1,
+                textAlign: 'right',
+                marginLeft: 20,
+              }}
+            >
+              {job.deliveryAddress}, {job.deliveryCity}
+            </Text>
+          </View>
+        </View>
+      </BottomSheet>
+
+      <BottomSheet
+        visible={activeTab === 'issues'}
+        onClose={() => setActiveTab('navigate')}
+        title="Ziņot par problēmu"
+        subtitle="Ātra ziņošana dispečeram"
+        scrollable
+      >
+        <View style={{ padding: 20, paddingBottom: 40 }}>
+          <Text style={{ fontSize: 15, color: '#374151', marginBottom: 12 }}>
+            Aprakstiet situāciju:
+          </Text>
+          <TextInput
+            style={{
+              backgroundColor: '#f9fafb',
+              borderRadius: 12,
+              padding: 14,
+              height: 100,
+              fontSize: 15,
+              borderWidth: 1,
+              borderColor: '#e5e7eb',
+              color: '#111827',
+              textAlignVertical: 'top',
+            }}
+            placeholder="Kāda ir problēma?"
+            placeholderTextColor="#9ca3af"
+            value={exceptionNotes}
+            onChangeText={setExceptionNotes}
+            multiline
+          />
+          <TouchableOpacity
+            style={[styles.weightConfirm, { marginTop: 20 }]}
+            onPress={handleReportException}
+            disabled={reportingException}
+          >
+            <Text style={styles.weightConfirmText}>{reportingException ? 'Sūta...' : 'Ziņot'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              marginTop: 12,
+              backgroundColor: '#fffbeb',
+              borderWidth: 1,
+              borderColor: '#fde68a',
+              borderRadius: 12,
+              padding: 14,
+            }}
+            onPress={() => {
+              setActiveTab('navigate');
+              setDelaySheetVisible(true);
+            }}
+          >
+            <ClockIcon size={18} color="#d97706" />
+            <Text style={{ fontSize: 15, fontWeight: '700', color: '#d97706' }}>
+              Ziņot par kavēšanos
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
 
       {/* ── Surcharge Sheet ── */}
+
       <BottomSheet
         visible={surchargeSheetVisible}
         onClose={() => setSurchargeSheetVisible(false)}
@@ -1635,9 +1617,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   hudButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',

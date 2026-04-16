@@ -134,8 +134,8 @@ export async function acceptQuoteResponse(
   requestId: string,
   responseId: string,
   token: string,
-): Promise<QuoteRequest> {
-  return apiFetch<QuoteRequest>(`/quote-requests/${requestId}/accept/${responseId}`, {
+): Promise<{ id: string; orderNumber: string }> {
+  return apiFetch<{ id: string; orderNumber: string }>(`/quote-requests/${requestId}/accept/${responseId}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });

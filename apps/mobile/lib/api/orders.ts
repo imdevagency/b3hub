@@ -7,6 +7,25 @@ import type {
 
 export type { WasteType, DisposalTruckType, TransportVehicleType };
 
+export type SurchargeType =
+  | 'FUEL'
+  | 'WAITING_TIME'
+  | 'WEEKEND'
+  | 'OVERWEIGHT'
+  | 'NARROW_ACCESS'
+  | 'REMOTE_AREA'
+  | 'TOLL'
+  | 'OTHER';
+
+export interface ApiOrderSurcharge {
+  id: string;
+  type: SurchargeType;
+  label: string;
+  amount: number;
+  currency: string;
+  billable: boolean;
+  createdAt: string;
+}
 export interface CreateDisposalOrderInput {
   pickupAddress: string;
   pickupCity: string;
@@ -306,6 +325,23 @@ export const ordersApi = {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ skipHireOrderId }),
+      }),
+
+    addSurcharge: (
+      orderId: string,
+      dto: { type: SurchargeType; label: string; amount: number; billable?: boolean },
+      token: string,
+    ) =>
+      apiFetch<ApiOrderSurcharge>(`/orders/${orderId}/surcharges`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(dto),
+      }),
+
+    removeSurcharge: (orderId: string, surchargeId: string, token: string) =>
+      apiFetch<void>(`/orders/${orderId}/surcharges/${surchargeId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
       }),
   },
 

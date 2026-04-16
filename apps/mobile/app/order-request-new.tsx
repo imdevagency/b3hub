@@ -579,7 +579,7 @@ export default function OrderRequestWizard() {
   const ctaLabel = submitted
     ? submitted === 'rfq'
       ? 'Skatīt pieprasījumu'
-      : 'Skatīt pasūtījumu'
+      : 'Apmaksāt pasūtījumu'
     : step === 'offers'
       ? 'Nosūtīt pieprasījumu'
       : 'Turpināt';
@@ -829,9 +829,55 @@ export default function OrderRequestWizard() {
             <View style={s.successIconBg}>
               <CheckCircle2 size={36} color="#fff" />
             </View>
-            <Text style={s.successTitle}>Pasūtījums veikts!</Text>
+            <Text style={s.successTitle}>Pasūtījums izveidots</Text>
             <Text style={s.successNum}>Nr. {orderNumber}</Text>
+            <Text style={[s.successSub, { marginTop: 4 }]}>
+              Piegādātājs saņēma jūsu pasūtījumu. Lai to apstiprinātu, veiciet apmaksu.
+            </Text>
           </View>
+
+          {/* Payment CTA */}
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#111827',
+              borderRadius: 14,
+              paddingVertical: 16,
+              alignItems: 'center',
+              marginBottom: 12,
+            }}
+            onPress={() => {
+              if (orderId) router.replace(`/(buyer)/order/${orderId}` as never);
+            }}
+            activeOpacity={0.85}
+          >
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: '700',
+                color: '#fff',
+                fontFamily: 'Inter_700Bold',
+              }}
+            >
+              Apmaksāt pasūtījumu
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              borderRadius: 14,
+              paddingVertical: 14,
+              alignItems: 'center',
+            }}
+            onPress={() => {
+              if (orderId) router.replace(`/(buyer)/order/${orderId}` as never);
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontSize: 14, color: '#6b7280', fontFamily: 'Inter_500Medium' }}>
+              Skatīt pasūtījumu
+            </Text>
+          </TouchableOpacity>
+
           <View style={s.summaryCard}>
             <View style={s.summaryRow}>
               <MapPin size={16} color="#111827" />

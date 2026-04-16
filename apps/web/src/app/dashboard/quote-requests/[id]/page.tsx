@@ -212,8 +212,8 @@ export default function QuoteRequestDetailPage() {
     if (!token || !id) return;
     setAccepting(responseId);
     try {
-      const updated = await acceptQuoteResponse(id, responseId, token);
-      setRequest(updated);
+      const order = await acceptQuoteResponse(id, responseId, token);
+      router.push(`/dashboard/orders/${order.id}`);
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : 'Kļūda pieņemot piedāvājumu');
     } finally {

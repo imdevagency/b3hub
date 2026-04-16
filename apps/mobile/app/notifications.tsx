@@ -25,6 +25,7 @@ import {
   Receipt,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
+import { useMode, type AppMode } from '@/lib/mode-context';
 import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import type { ApiNotification } from '@/lib/api';
@@ -66,39 +67,77 @@ const TYPE_INFO: Record<string, TypeInfo> = {
 };
 const DEFAULT_TYPE_INFO: TypeInfo = { Icon: Bell, bg: '#f3f4f6', iconColor: '#6b7280' };
 
-function deepLinkPath(
-  notif: ApiNotification,
-  canSell = false,
-  canTransport = false,
-): string | null {
+// ── Notification → role mapping ──────────────────────────────────────────────
+// Types exclusively targeted at each role. Used for both list filtering AND
+// deciding which mode's route prefix to use when navigating.
+const BUYER_TYPES = new Set([
+  'TRANSPORT_ASSIGNED', // driver assigned to buyer's transport order
+  'ORDER_CONFIRMED',
+  'ORDER_DELIVERED',
+  'ORDER_PLACED',
+  'ORDER_SHIPPED',
+  'ORDER_REJECTED',
+  'QUOTE_RECEIVED',
+  'QUOTE_SUBMITTED',
+  'INVOICE_ISSUED',
+  'WEIGHING_SLIP',
+]);
+const SELLER_TYPES = new Set([
+  'ORDER_CREATED', // new order received by seller
+  'QUOTE_REQUEST_RECEIVED', // seller received an RFQ
+  'QUOTE_ACCEPTED', // seller's quote accepted
+]);
+const CARRIER_TYPES = new Set([
+  'JOB_AVAILABLE',
+  'JOB_ACCEPTED',
+  'JOB_COMPLETED',
+  'TRANSPORT_STARTED',
+  'TRANSPORT_COMPLETED',
+  'DOCUMENT_EXPIRING_SOON',
+]);
+// PAYMENT_RECEIVED, SYSTEM_ALERT, SYSTEM → universal (shown in all modes)
+// ORDER_CANCELLED → split by data: jobId → CARRIER, orderId → BUYER, neither → all
+
+function notifBelongsToMode(notif: ApiNotification, mode: AppMode): boolean {
+  if (BUYER_TYPES.has(notif.type)) return mode === 'BUYER';
+  if (SELLER_TYPES.has(notif.type)) return mode === 'SUPPLIER';
+  if (CARRIER_TYPES.has(notif.type)) return mode === 'CARRIER';
+  if (notif.type === 'ORDER_CANCELLED') {
+    const d = (notif.data ?? {}) as Record<string, string>;
+    if (d.jobId && !d.orderId) return mode === 'CARRIER';
+    if (d.orderId && !d.jobId) return mode === 'BUYER';
+    return true; // ambiguous — show everywhere
+  }
+  return true; // PAYMENT_RECEIVED, SYSTEM_ALERT, SYSTEM
+}
+
+function deepLinkPath(notif: ApiNotification, mode: AppMode): string | null {
   const d = (notif.data ?? {}) as Record<string, string>;
   switch (notif.type) {
-    // ── Buyer: transport / disposal job notifications ──────────
+    // ── Buyer ─────────────────────────────────────────────────
     case 'TRANSPORT_ASSIGNED':
-    case 'SYSTEM_ALERT':
       return d.jobId ? `/(buyer)/transport-job/${d.jobId}` : '/(buyer)/orders';
-    // ORDER_DELIVERED is sent to buyers with orderId (not jobId) — link directly to the order
     case 'ORDER_DELIVERED':
       return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/orders';
-    // ── Seller: new order notification ────────────────────────
-    // ORDER_CREATED is sent exclusively to sellers; route to seller order detail
-    case 'ORDER_CREATED':
-      return d.orderId
-        ? canSell
-          ? `/(seller)/order/${d.orderId}`
-          : `/(buyer)/order/${d.orderId}`
-        : canSell
-          ? '/(seller)/incoming'
-          : '/(buyer)/orders';
-    // ── Buyer: material / skip-hire order notifications ────────
     case 'ORDER_CONFIRMED':
     case 'ORDER_PLACED':
     case 'ORDER_SHIPPED':
       return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/orders';
-    // ORDER_CANCELLED is sent to buyers AND to drivers whose job was cancelled
-    case 'ORDER_CANCELLED':
-      if (canTransport && !canSell && d.jobId) return '/(driver)/jobs';
-      return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/orders';
+    case 'ORDER_REJECTED':
+    case 'INVOICE_ISSUED':
+      return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/invoices';
+    case 'WEIGHING_SLIP':
+      return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/documents';
+    case 'QUOTE_SUBMITTED':
+      return d.quoteRequestId ? `/(buyer)/rfq/${d.quoteRequestId}` : '/(buyer)/orders';
+    case 'QUOTE_RECEIVED':
+      return d.requestId ? `/(buyer)/rfq/${d.requestId}` : '/(buyer)/orders';
+    // ── Seller ────────────────────────────────────────────────
+    case 'ORDER_CREATED':
+      return d.orderId ? `/(seller)/order/${d.orderId}` : '/(seller)/incoming';
+    case 'QUOTE_REQUEST_RECEIVED':
+    case 'QUOTE_ACCEPTED':
+      return '/(seller)/quotes';
     // ── Driver ────────────────────────────────────────────────
     case 'JOB_AVAILABLE':
       return '/(driver)/jobs';
@@ -108,27 +147,20 @@ function deepLinkPath(
     case 'JOB_COMPLETED':
     case 'TRANSPORT_COMPLETED':
       return '/(driver)/earnings';
-    // ── Quote requests ──────────────────────────────────────────
-    case 'QUOTE_SUBMITTED':
-      return d.quoteRequestId ? `/(buyer)/rfq/${d.quoteRequestId}` : '/(buyer)/orders';
-    case 'QUOTE_REQUEST_RECEIVED':
-      return '/(seller)/quotes'; // ── Quote responses ─────────────────────────────────────────
-    case 'QUOTE_RECEIVED':
-      return d.requestId ? `/(buyer)/rfq/${d.requestId}` : '/(buyer)/orders';
-    case 'QUOTE_ACCEPTED':
-      return '/(seller)/quotes';
-    // ── Documents ───────────────────────────────────────────────
     case 'DOCUMENT_EXPIRING_SOON':
       return '/(driver)/documents';
-    case 'WEIGHING_SLIP':
-      return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/documents'; // ── Rejected / cancelled ──────────────────────────────────────
-    case 'ORDER_REJECTED':
+    // ── Cross-role (route by current mode) ────────────────────
+    case 'ORDER_CANCELLED':
+      if (mode === 'CARRIER' && d.jobId) return '/(driver)/jobs';
       return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/orders';
-    // ── Finance / docs ─────────────────────────────────────────
     case 'PAYMENT_RECEIVED':
-      return canSell ? '/(seller)/earnings' : '/(driver)/earnings';
-    case 'INVOICE_ISSUED':
-      return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/invoices';
+      if (mode === 'CARRIER') return '/(driver)/earnings';
+      if (mode === 'SUPPLIER') return '/(seller)/earnings';
+      return '/(buyer)/invoices';
+    case 'SYSTEM_ALERT':
+      if (mode === 'CARRIER') return d.jobId ? '/(driver)/active' : '/(driver)/home';
+      if (mode === 'SUPPLIER') return '/(seller)/home';
+      return d.jobId ? `/(buyer)/transport-job/${d.jobId}` : '/(buyer)/home';
     default:
       return null;
   }
@@ -151,12 +183,12 @@ function NotifCard({
 }) {
   const { Icon, bg, iconColor } = TYPE_INFO[notif.type] ?? DEFAULT_TYPE_INFO;
   const router = useRouter();
-  const { user } = useAuth();
+  const { mode } = useMode();
 
   const handlePress = () => {
     haptics.light();
     if (!notif.isRead) onMarkRead(notif.id);
-    const path = deepLinkPath(notif, user?.canSell ?? false, user?.canTransport ?? false);
+    const path = deepLinkPath(notif, mode);
     if (path) router.push(path as Parameters<typeof router.push>[0]);
   };
 
@@ -194,6 +226,7 @@ function NotifCard({
 
 export default function NotificationsScreen() {
   const { token } = useAuth();
+  const { mode } = useMode();
   const router = useRouter();
   const toast = useToast();
   const [notifs, setNotifs] = useState<ApiNotification[]>([]);
@@ -248,7 +281,8 @@ export default function NotificationsScreen() {
     }
   };
 
-  const unreadCount = notifs.filter((n) => !n.isRead).length;
+  const visibleNotifs = notifs.filter((n) => notifBelongsToMode(n, mode));
+  const unreadCount = visibleNotifs.filter((n) => !n.isRead).length;
 
   return (
     <ScreenContainer standalone bg="#ffffff" noAnimation>
@@ -289,7 +323,7 @@ export default function NotificationsScreen() {
             />
           }
         >
-          {notifs.length === 0 ? (
+          {visibleNotifs.length === 0 ? (
             <View className="flex-1 items-center justify-center min-h-[400px]">
               <View className="w-16 h-16 rounded-full bg-gray-50 items-center justify-center mb-4 border border-gray-100">
                 <Bell size={28} color="#d1d5db" strokeWidth={1.5} />
@@ -301,7 +335,7 @@ export default function NotificationsScreen() {
             </View>
           ) : (
             <View className="bg-white">
-              {notifs.map((n) => (
+              {visibleNotifs.map((n) => (
                 <NotifCard key={n.id} notif={n} onMarkRead={markRead} />
               ))}
             </View>

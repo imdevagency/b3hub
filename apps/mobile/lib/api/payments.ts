@@ -92,10 +92,11 @@ export const paymentsApi = {
   },
 
   /**
-   * List the current buyer's disputes.
+   * List the current buyer's disputes. Optionally filter by orderId.
    */
-  listDisputes: async (token: string): Promise<ApiDispute[]> => {
-    return apiFetch('/disputes', {
+  listDisputes: async (token: string, orderId?: string): Promise<ApiDispute[]> => {
+    const qs = orderId ? `?orderId=${encodeURIComponent(orderId)}` : '';
+    return apiFetch(`/disputes${qs}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
   },

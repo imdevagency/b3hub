@@ -182,5 +182,10 @@ export const projectsApi = {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       }),
+
+    getFinancials: (id: string, token: string) =>
+      apiFetch<ApiProjectFinancials>(`/projects/${id}/financials`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
   },
 };

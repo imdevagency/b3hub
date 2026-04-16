@@ -108,6 +108,18 @@ export default function OrderDetailScreen() {
   const [disputeDetails, setDisputeDetails] = useState('');
   const [disputeLoading, setDisputeLoading] = useState(false);
   const [disputeFiled, setDisputeFiled] = useState(false);
+
+  // Load existing dispute from server so confirm-receipt is always properly blocked
+  React.useEffect(() => {
+    if (!token || !id || !order) return;
+    api
+      .listDisputes(token, id)
+      .then((disputes) => {
+        if (disputes.length > 0) setDisputeFiled(true);
+      })
+      .catch(() => {});
+  }, [token, id, order?.id]);
+
   // Amendment sheet state
   const [showAmend, setShowAmend] = useState(false);
   const [amendLoading, setAmendLoading] = useState(false);
@@ -876,9 +888,12 @@ export default function OrderDetailScreen() {
         {order.status === 'DELIVERED' && (
           <>
             <TouchableOpacity
-              style={[s.primaryActionBtn, { backgroundColor: '#16a34a' }]}
+              style={[
+                s.primaryActionBtn,
+                { backgroundColor: disputeFiled ? '#9ca3af' : '#16a34a' },
+              ]}
               onPress={handleConfirmReceipt}
-              disabled={actionLoading}
+              disabled={actionLoading || disputeFiled}
               activeOpacity={0.85}
             >
               {actionLoading ? (

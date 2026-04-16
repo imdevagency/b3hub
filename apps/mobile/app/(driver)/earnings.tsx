@@ -9,12 +9,28 @@ import {
   Linking,
   Alert,
   RefreshControl,
+  StyleSheet,
+  Modal,
+  Image,
+  Pressable,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { TopBar } from '@/components/ui/TopBar';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { t } from '@/lib/translations';
-import { Check, Clock, TrendingUp, ChevronRight, AlertCircle } from 'lucide-react-native';
+import {
+  Check,
+  Clock,
+  TrendingUp,
+  ChevronRight,
+  AlertCircle,
+  MapPin,
+  Package,
+  Ruler,
+  Scale,
+  Camera,
+  X,
+} from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiTransportJob } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -48,9 +64,21 @@ interface HistoryEntry {
   date: string;
   rawDate: Date;
   route: string;
+  pickupCity: string;
+  deliveryCity: string;
+  pickupAddress: string;
+  deliveryAddress: string;
   amount: number;
   paid: boolean;
   status: string;
+  // Cargo
+  cargoType: string;
+  cargoWeight: number | null; // planned weight (tonnes)
+  actualWeightKg: number | null; // real weigh-in (kg)
+  distanceKm: number | null;
+  pricePerTonne: number | null;
+  // Evidence
+  pickupPhotoUrl: string | null;
 }
 
 const ACTIVE_STATUSES = [
@@ -111,16 +139,27 @@ function computeStats(jobs: ApiTransportJob[]): {
       if (d >= todayStart) todayEarnings += job.rate;
       if (d >= weekStart) weekEarnings += job.rate;
       if (d >= monthStart) monthEarnings += job.rate;
-      history.push({
+      const entry: HistoryEntry = {
         id: job.id,
         jobNumber: job.jobNumber,
         date: d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit' }),
         rawDate: d,
         route: `${job.pickupCity} → ${job.deliveryCity}`,
+        pickupCity: job.pickupCity,
+        deliveryCity: job.deliveryCity,
+        pickupAddress: job.pickupAddress,
+        deliveryAddress: job.deliveryAddress,
         amount: job.rate,
         paid: false,
         status: job.status,
-      });
+        cargoType: job.cargoType,
+        cargoWeight: job.cargoWeight,
+        actualWeightKg: job.actualWeightKg ?? null,
+        distanceKm: job.distanceKm ?? null,
+        pricePerTonne: job.pricePerTonne ?? null,
+        pickupPhotoUrl: job.pickupPhotoUrl ?? null,
+      };
+      history.push(entry);
     } else if (ACTIVE_STATUSES.includes(job.status)) {
       pendingPayout += job.rate;
       history.push({
@@ -132,9 +171,19 @@ function computeStats(jobs: ApiTransportJob[]): {
         }),
         rawDate: new Date(job.pickupDate),
         route: `${job.pickupCity} → ${job.deliveryCity}`,
+        pickupCity: job.pickupCity,
+        deliveryCity: job.deliveryCity,
+        pickupAddress: job.pickupAddress,
+        deliveryAddress: job.deliveryAddress,
         amount: job.rate,
         paid: false,
         status: job.status,
+        cargoType: job.cargoType,
+        cargoWeight: job.cargoWeight,
+        actualWeightKg: job.actualWeightKg ?? null,
+        distanceKm: job.distanceKm ?? null,
+        pricePerTonne: job.pricePerTonne ?? null,
+        pickupPhotoUrl: job.pickupPhotoUrl ?? null,
       });
     }
   }
@@ -221,6 +270,8 @@ export default function EarningsScreen() {
   });
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [dailyChart, setDailyChart] = useState<DayBar[]>([]);
+  const [selectedJob, setSelectedJob] = useState<HistoryEntry | null>(null);
+  const [photoFullscreen, setPhotoFullscreen] = useState<string | null>(null);
 
   const handleSetupPayouts = async () => {
     if (!token) return;
@@ -604,16 +655,18 @@ export default function EarningsScreen() {
                   activeOpacity={0.7}
                   onPress={() => {
                     haptics.light();
-                    if (ACTIVE_STATUSES.includes(item.status)) {
-                      router.push('/(driver)/active' as any);
-                    } else {
-                      router.push('/(driver)/jobs' as any);
-                    }
+                    setSelectedJob(item);
                   }}
                 >
                   <View className="flex-1 pr-4 gap-1">
                     <Text style={{ fontSize: 12, color: '#9ca3af', fontWeight: '600' }}>
                       {item.date}
+                      {item.distanceKm ? ` · ${Math.round(item.distanceKm)} km` : ''}
+                      {item.actualWeightKg
+                        ? ` · ${(item.actualWeightKg / 1000).toFixed(2)} t`
+                        : item.cargoWeight
+                          ? ` · ${item.cargoWeight} t`
+                          : ''}
                     </Text>
                     <Text
                       style={{
@@ -625,6 +678,9 @@ export default function EarningsScreen() {
                       numberOfLines={1}
                     >
                       {item.route}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: '#6b7280' }} numberOfLines={1}>
+                      {item.cargoType}
                     </Text>
                   </View>
                   <View className="flex-row items-center" style={{ gap: 6 }}>
@@ -639,6 +695,275 @@ export default function EarningsScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* ── Job detail bottom sheet ── */}
+      <Modal
+        visible={selectedJob !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSelectedJob(null)}
+      >
+        <Pressable style={es.backdrop} onPress={() => setSelectedJob(null)}>
+          <Pressable style={es.sheet} onPress={(e) => e.stopPropagation()}>
+            {selectedJob && (
+              <>
+                {/* Handle */}
+                <View style={es.handle} />
+
+                {/* Header */}
+                <View style={es.sheetHeader}>
+                  <View>
+                    <Text style={es.sheetJobNum}>#{selectedJob.jobNumber}</Text>
+                    <Text style={es.sheetRoute}>{selectedJob.route}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setSelectedJob(null)} activeOpacity={0.7}>
+                    <X size={22} color="#9ca3af" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Earn row */}
+                <View style={es.earnRow}>
+                  <Text style={es.earnAmount}>€{selectedJob.amount.toFixed(2)}</Text>
+                  <Text style={es.earnDate}>{selectedJob.date}</Text>
+                </View>
+
+                {/* Detail rows */}
+                <View style={es.detailBlock}>
+                  {/* Pickup */}
+                  <View style={es.detailRow}>
+                    <MapPin size={16} color="#6b7280" />
+                    <View style={es.detailTexts}>
+                      <Text style={es.detailLabel}>Iekraušana</Text>
+                      <Text style={es.detailValue}>
+                        {selectedJob.pickupAddress}, {selectedJob.pickupCity}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Delivery */}
+                  <View style={[es.detailRow, es.detailRowBt]}>
+                    <MapPin size={16} color="#111827" />
+                    <View style={es.detailTexts}>
+                      <Text style={es.detailLabel}>Izkraušana</Text>
+                      <Text style={es.detailValue}>
+                        {selectedJob.deliveryAddress}, {selectedJob.deliveryCity}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Distance */}
+                  {selectedJob.distanceKm != null && (
+                    <View style={[es.detailRow, es.detailRowBt]}>
+                      <Ruler size={16} color="#6b7280" />
+                      <View style={es.detailTexts}>
+                        <Text style={es.detailLabel}>Attālums</Text>
+                        <Text style={es.detailValue}>{Math.round(selectedJob.distanceKm)} km</Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Cargo */}
+                  <View style={[es.detailRow, es.detailRowBt]}>
+                    <Package size={16} color="#6b7280" />
+                    <View style={es.detailTexts}>
+                      <Text style={es.detailLabel}>Krava</Text>
+                      <Text style={es.detailValue}>{selectedJob.cargoType}</Text>
+                    </View>
+                  </View>
+
+                  {/* Actual weight */}
+                  {(selectedJob.actualWeightKg != null || selectedJob.cargoWeight != null) && (
+                    <View style={[es.detailRow, es.detailRowBt]}>
+                      <Scale size={16} color="#6b7280" />
+                      <View style={es.detailTexts}>
+                        <Text style={es.detailLabel}>
+                          {selectedJob.actualWeightKg != null
+                            ? 'Faktiskais svars (svari)'
+                            : 'Plānotais svars'}
+                        </Text>
+                        <Text style={es.detailValue}>
+                          {selectedJob.actualWeightKg != null
+                            ? `${(selectedJob.actualWeightKg / 1000).toFixed(3)} t`
+                            : `${selectedJob.cargoWeight} t`}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Per-tonne rate */}
+                  {selectedJob.pricePerTonne != null && (
+                    <View style={[es.detailRow, es.detailRowBt]}>
+                      <TrendingUp size={16} color="#6b7280" />
+                      <View style={es.detailTexts}>
+                        <Text style={es.detailLabel}>Cena par tonnu</Text>
+                        <Text style={es.detailValue}>
+                          €{selectedJob.pricePerTonne.toFixed(2)}/t
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
+
+                {/* Pickup photo */}
+                {selectedJob.pickupPhotoUrl && (
+                  <View style={es.photoSection}>
+                    <View style={es.photoLabelRow}>
+                      <Camera size={14} color="#6b7280" />
+                      <Text style={es.photoLabel}>Svaru kvīts foto</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => setPhotoFullscreen(selectedJob.pickupPhotoUrl)}
+                      activeOpacity={0.85}
+                    >
+                      <Image
+                        source={{ uri: selectedJob.pickupPhotoUrl }}
+                        style={es.pickupPhoto}
+                        resizeMode="cover"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ── Fullscreen photo modal ── */}
+      <Modal
+        visible={photoFullscreen !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPhotoFullscreen(null)}
+      >
+        <Pressable style={es.fsBackdrop} onPress={() => setPhotoFullscreen(null)}>
+          {photoFullscreen && (
+            <Image source={{ uri: photoFullscreen }} style={es.fsPhoto} resizeMode="contain" />
+          )}
+        </Pressable>
+      </Modal>
     </ScreenContainer>
   );
 }
+
+// ── Detail sheet styles ───────────────────────────────────────────────────
+
+const es = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#e5e7eb',
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 20,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  sheetJobNum: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#9ca3af',
+    marginBottom: 2,
+  },
+  sheetRoute: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#111827',
+    letterSpacing: -0.4,
+  },
+  earnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#f3f4f6',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#f3f4f6',
+    marginBottom: 16,
+  },
+  earnAmount: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#111827',
+    letterSpacing: -0.8,
+  },
+  earnDate: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  detailBlock: {
+    marginBottom: 20,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 12,
+    gap: 12,
+  },
+  detailRowBt: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#f3f4f6',
+  },
+  detailTexts: {
+    flex: 1,
+    gap: 2,
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: '#9ca3af',
+    fontWeight: '500',
+  },
+  detailValue: {
+    fontSize: 15,
+    color: '#111827',
+    fontWeight: '600',
+  },
+  photoSection: {
+    gap: 8,
+  },
+  photoLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  photoLabel: {
+    fontSize: 13,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  pickupPhoto: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+  },
+  fsBackdrop: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fsPhoto: {
+    width: '100%',
+    height: '100%',
+  },
+});
