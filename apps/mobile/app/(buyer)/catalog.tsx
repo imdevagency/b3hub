@@ -100,39 +100,43 @@ function CategoryCard({
 
   return (
     <TouchableOpacity
-      className="bg-white mx-5 mb-4 rounded-[24px] p-5 shadow-sm border border-gray-100 flex-row items-center"
+      className="bg-white mx-5 py-4 border-b border-gray-100 flex-row items-center"
       onPress={() => {
         haptics.light();
         onPress();
       }}
-      activeOpacity={0.8}
+      activeOpacity={0.7}
     >
-      <View className="bg-gray-50 h-14 w-14 rounded-2xl items-center justify-center mr-4">
-        <Icon size={24} color="#111827" strokeWidth={1.5} />
+      <View className="bg-gray-100 h-12 w-12 rounded-full items-center justify-center mr-4">
+        <Icon size={22} color="#111827" strokeWidth={2} />
       </View>
 
-      <View className="flex-1 justify-center">
-        <View className="flex-row items-center justify-between mb-1">
-          <Text className="text-gray-900 font-extrabold tracking-tight text-lg line-clamp-1">
-            {CATEGORY_LABELS[category]}
+      <View className="flex-1 justify-center pr-2">
+        <Text className="text-gray-900 font-bold tracking-tight text-[17px] mb-0.5 line-clamp-1">
+          {CATEGORY_LABELS[category]}
+        </Text>
+        <View className="flex-row items-center">
+          <Text className="text-gray-500 font-medium text-[14px] line-clamp-1">
+            {supplierCount > 0 ? `${supplierCount} piegādātāji` : description}
           </Text>
           {hasRecycled && (
-            <View className="bg-green-100 px-2 py-0.5 rounded-md flex-row items-center">
+            <View className="ml-2 bg-green-100 px-1.5 py-0.5 rounded flex-row items-center">
               <Leaf size={10} color="#166534" className="mr-1" />
-              <Text className="text-xs font-bold text-green-800">ECO</Text>
+              <Text className="text-[10px] font-bold text-green-800 uppercase tracking-widest">Eco</Text>
             </View>
           )}
         </View>
-        <Text className="text-gray-500 font-medium text-sm line-clamp-1">
-          {supplierCount > 0 ? `${supplierCount} piegādātāji` : description}
-        </Text>
       </View>
 
       <View className="items-end justify-center ml-2">
-        {minPrice != null && (
-          <Text className="text-gray-900 font-bold text-sm tracking-tight bg-gray-50 px-3 py-1.5 rounded-xl">
-            no €{minPrice.toFixed(2)}
-          </Text>
+        {minPrice != null ? (
+          <View className="bg-gray-100 px-3 py-1.5 rounded-full">
+            <Text className="text-gray-900 font-bold text-[13px] tracking-tight">
+              no €{minPrice.toFixed(2)}
+            </Text>
+          </View>
+        ) : (
+          <ChevronRight size={20} color="#d1d5db" />
         )}
       </View>
     </TouchableOpacity>
@@ -403,26 +407,21 @@ export default function CatalogScreen() {
   };
 
   return (
-    <ScreenContainer bg="#f9fafb">
+    <ScreenContainer bg="#ffffff" topBg="#ffffff" standalone noAnimation>
       <View className="px-5 pt-8 pb-2">
-        <Text className="text-3xl font-extrabold tracking-tight text-gray-900 leading-tight">
+        <Text className="text-[32px] font-bold tracking-tight text-gray-900 leading-tight">
           Katalogs
         </Text>
-        <Text className="text-gray-500 text-sm font-medium mt-1">
-          Atrodiet labākos piegādātājus
-        </Text>
-      </View>
 
-      {/* ── Search ── */}
-      <View className="px-5 py-3 mb-2">
+        {/* Flat Search */}
         <View
-          className={`flex-row items-center bg-white rounded-2xl px-4 py-3 ${
-            searchFocused ? 'border-amber-600 border-2' : 'border-gray-200 border shadow-sm'
+          className={`flex-row items-center bg-gray-100 rounded-2xl px-4 py-3.5 mt-6 ${
+            searchFocused ? 'bg-gray-200' : ''
           }`}
         >
-          <Search size={18} color={searchFocused ? '#b45309' : '#9ca3af'} className="mr-3" />
+          <Search size={20} color={searchFocused ? '#111827' : '#9ca3af'} className="mr-3" />
           <TextInput
-            className="flex-1 font-medium text-base text-gray-900 pt-0 pb-0"
+            className="flex-1 font-medium text-[17px] text-gray-900 pt-0 pb-0"
             placeholder="Meklēt kategoriju..."
             placeholderTextColor="#9ca3af"
             value={query}
@@ -439,25 +438,25 @@ export default function CatalogScreen() {
                 haptics.light();
                 setQuery('');
               }}
-              className="ml-2 bg-gray-100 p-1.5 rounded-full"
+              className="ml-2 bg-gray-300 p-1.5 rounded-full items-center justify-center"
             >
-              <X size={14} color="#6b7280" />
+              <X size={14} color="#111827" strokeWidth={2.5} />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
-      {/* ── Filter chips ── */}
-      <View className="mb-4">
+      {/* Flat Filter chips */}
+      <View className="mb-2 mt-4">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
           keyboardShouldPersistTaps="handled"
         >
           <TouchableOpacity
-            className={`px-5 py-2.5 rounded-2xl flex-row items-center ${
-              filterMode === 'ALL' ? 'bg-gray-900 shadow-sm' : 'bg-white border-gray-100 border'
+            className={`px-4 py-2.5 rounded-full flex-row items-center ${
+              filterMode === 'ALL' ? 'bg-gray-900' : 'bg-gray-100'
             }`}
             onPress={() => {
               haptics.light();
@@ -465,15 +464,13 @@ export default function CatalogScreen() {
             }}
             activeOpacity={0.8}
           >
-            <Text className={`font-bold ${filterMode === 'ALL' ? 'text-white' : 'text-gray-600'}`}>
+            <Text className={`font-bold text-[15px] ${filterMode === 'ALL' ? 'text-white' : 'text-gray-900'}`}>
               Visi
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            className={`px-5 py-2.5 rounded-2xl flex-row items-center ${
-              filterMode === 'RECYCLED'
-                ? 'bg-amber-600 shadow-sm'
-                : 'bg-white border-gray-100 border'
+            className={`px-4 py-2.5 rounded-full flex-row items-center ${
+              filterMode === 'RECYCLED' ? 'bg-green-700' : 'bg-gray-100'
             }`}
             onPress={() => {
               haptics.light();
@@ -482,12 +479,12 @@ export default function CatalogScreen() {
             activeOpacity={0.8}
           >
             <Leaf
-              size={14}
-              color={filterMode === 'RECYCLED' ? '#ffffff' : '#6b7280'}
+              size={16}
+              color={filterMode === 'RECYCLED' ? '#ffffff' : '#111827'}
               className="mr-2"
             />
             <Text
-              className={`font-bold ${filterMode === 'RECYCLED' ? 'text-white' : 'text-gray-600'}`}
+              className={`font-bold text-[15px] ${filterMode === 'RECYCLED' ? 'text-white' : 'text-gray-900'}`}
             >
               Pārstrādāts
             </Text>
@@ -500,29 +497,35 @@ export default function CatalogScreen() {
         keyExtractor={(item) => String(item)}
         keyboardShouldPersistTaps="handled"
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#000" />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#111827" />
         }
         contentContainerStyle={{ paddingBottom: 100, paddingTop: 8 }}
         ListEmptyComponent={() => {
           if (loading) {
             return (
-              <View className="px-5 gap-4 mt-4">
+              <View className="px-5 gap-4 mt-2">
                 {[1, 2, 3].map((i) => (
-                  <View key={i} className="bg-gray-200 h-24 rounded-3xl opacity-50" />
+                  <View key={i} className="flex-row items-center py-4 border-b border-gray-100">
+                     <View className="w-12 h-12 rounded-full bg-gray-100 mr-4"></View>
+                     <View className="flex-1">
+                        <View className="w-3/4 h-5 bg-gray-100 rounded mb-2"></View>
+                        <View className="w-1/2 h-4 bg-gray-100 rounded"></View>
+                     </View>
+                  </View>
                 ))}
               </View>
             );
           }
           return (
             <View className="items-center px-5 py-12">
-              <View className="w-16 h-16 bg-gray-100 rounded-[24px] items-center justify-center mb-4">
-                <Box size={28} color="#94a3b8" />
+              <View className="w-16 h-16 bg-gray-100 rounded-full items-center justify-center mb-4">
+                <Box size={28} color="#9ca3af" />
               </View>
-              <Text className="text-gray-900 font-extrabold text-xl mb-1 text-center">
+              <Text className="text-gray-900 font-bold text-[18px] mb-1 text-center tracking-tight">
                 Nekas nav atrasts
               </Text>
-              <Text className="text-gray-500 font-medium text-center">
-                Mēģiniet mainīt meklēšanu vai izvēlētos filtrus.
+              <Text className="text-gray-500 font-medium text-center text-[15px]">
+                Mēģiniet mainīt meklēšanu vai filtru.
               </Text>
             </View>
           );
