@@ -57,6 +57,7 @@ export interface ApiTransportJob {
     orderNumber: string;
     siteContactName: string | null;
     siteContactPhone: string | null;
+    notes: string | null;
   } | null;
 }
 
@@ -379,6 +380,36 @@ export const transportApi = {
           body: JSON.stringify(dto),
         },
       ),
+
+    /** Driver: rate the buyer's site/instructions after a DELIVERED transport job. */
+    rateBuyer: (
+      id: string,
+      dto: { rating: number; comment?: string },
+      token: string,
+    ) =>
+      apiFetch<{ id: string; rating: number; createdAt: string }>(
+        `/transport-jobs/${id}/rate-buyer`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: JSON.stringify(dto),
+        },
+      ),
+
+    /** Driver: check if they have already rated the buyer for this job. */
+    rateBuyerStatus: (id: string, token: string) =>
+      apiFetch<{ rated: boolean }>(
+        `/transport-jobs/${id}/rate-buyer/status`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      ),
+
+    /** Driver: self-cancel a job before loading has started (ACCEPTED or EN_ROUTE_PICKUP). */
+    driverCancel: (id: string, dto: { reason: string }, token: string) =>
+      apiFetch<ApiTransportJob>(`/transport-jobs/${id}/driver-cancel`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(dto),
+      }),
 
     addSurcharge: (
       id: string,

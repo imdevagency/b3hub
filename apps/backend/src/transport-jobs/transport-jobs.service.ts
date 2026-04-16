@@ -10,6 +10,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
@@ -2979,5 +2980,165 @@ export class TransportJobsService {
     ].join(','));
 
     return [headers.join(','), ...rows].join('\r\n');
+  }
+
+  // ── Driver cancels / drops a job before loading ──────────────
+  /**
+   * A driver may drop a job that hasn't been loaded yet (ACCEPTED or
+   * EN_ROUTE_PICKUP). The job returns to AVAILABLE so another driver can
+   * pick it up. An exception is logged and all relevant parties are notified.
+   * Once cargo is loaded (AT_PICKUP or later) the driver must contact the
+   * dispatcher — they cannot self-cancel.
+   */
+  async driverCancel(jobId: string, driverId: string, reason: string) {
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id: jobId },
+      select: {
+        id: true,
+        jobNumber: true,
+        status: true,
+        driverId: true,
+        carrierId: true,
+        requestedById: true,
+        pickupCity: true,
+        deliveryCity: true,
+        order: { select: { createdById: true } },
+      },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+    if (job.driverId !== driverId) throw new ForbiddenException('Not your job');
+
+    const allowedStatuses: TransportJobStatus[] = [
+      TransportJobStatus.ACCEPTED,
+      TransportJobStatus.EN_ROUTE_PICKUP,
+    ];
+    if (!allowedStatuses.includes(job.status)) {
+      throw new BadRequestException(
+        'Cannot cancel after loading has started. Contact the dispatcher to resolve.',
+      );
+    }
+
+    const trimmedReason = reason?.trim();
+    if (!trimmedReason) {
+      throw new BadRequestException('A reason is required to cancel a job');
+    }
+
+    // Return job to AVAILABLE and clear assignment
+    const updated = await this.prisma.transportJob.update({
+      where: { id: jobId },
+      data: {
+        status: TransportJobStatus.AVAILABLE,
+        driverId: null,
+        vehicleId: null,
+        acceptedAt: null,
+      },
+      select: this.jobSelect,
+    });
+
+    // Log the cancellation as a DRIVER_NO_SHOW exception for traceability
+    await this.prisma.transportJobException.create({
+      data: {
+        transportJobId: jobId,
+        type: 'DRIVER_NO_SHOW',
+        notes: `Šoferis atcēla darbu: ${trimmedReason}`,
+        reportedById: driverId,
+        status: 'OPEN',
+      },
+    });
+
+    const routeLabel = `${job.pickupCity} → ${job.deliveryCity}`;
+
+    // Notify buyer if job linked to an order
+    const buyerUserId = job.order?.createdById ?? job.requestedById ?? undefined;
+    if (buyerUserId) {
+      this.notifications
+        .create({
+          userId: buyerUserId,
+          type: NotificationType.SYSTEM_ALERT,
+          title: '⚠️ Šoferis atcēla piegādi',
+          message: `${job.jobNumber} • ${routeLabel}. Meklējam jaunu šoferi.`,
+          data: { jobId },
+        })
+        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+    }
+
+    this.logger.warn(
+      `Driver ${driverId} cancelled job ${job.jobNumber} (${routeLabel}): ${trimmedReason}`,
+    );
+
+    return updated;
+  }
+
+  // ── Driver rates the buyer after a DELIVERED transport job ───
+  async rateBuyer(
+    transportJobId: string,
+    dto: { rating: number; comment?: string },
+    driverId: string,
+  ) {
+    if (dto.rating < 1 || dto.rating > 5) {
+      throw new BadRequestException('Rating must be between 1 and 5');
+    }
+
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id: transportJobId },
+      select: {
+        id: true,
+        status: true,
+        driverId: true,
+        requestedById: true,
+        orderId: true,
+      },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+    if (job.status !== 'DELIVERED') {
+      throw new BadRequestException('Can only rate after job is delivered');
+    }
+    if (job.driverId !== driverId) {
+      throw new ForbiddenException('You are not the driver of this job');
+    }
+
+    // Resolve buyer: requester or order creator
+    const buyerId = job.requestedById;
+    if (!buyerId) {
+      throw new BadRequestException('Cannot determine buyer for this job');
+    }
+
+    // Guard: one rating per job
+    const existing = await this.prisma.driverRating.findUnique({
+      where: { transportJobId },
+    });
+    if (existing) throw new ConflictException('You already rated this delivery');
+
+    const driverRating = await this.prisma.driverRating.create({
+      data: {
+        rating: dto.rating,
+        comment: dto.comment ?? null,
+        driverId,
+        buyerId,
+        transportJobId,
+      },
+    });
+
+    this.logger.log(
+      `DriverRating ${driverRating.id} created by driver ${driverId} for buyer ${buyerId}`,
+    );
+    return driverRating;
+  }
+
+  // ── Get driver rating for a job (driver polls after delivery) ─
+  async getDriverRatingStatus(transportJobId: string, driverId: string) {
+    const rating = await this.prisma.driverRating.findUnique({
+      where: { transportJobId },
+      select: { id: true, rating: true },
+    });
+    return { rated: !!rating && (await this.isJobDriver(transportJobId, driverId)) };
+  }
+
+  private async isJobDriver(jobId: string, driverId: string): Promise<boolean> {
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id: jobId },
+      select: { driverId: true },
+    });
+    return job?.driverId === driverId;
   }
 }

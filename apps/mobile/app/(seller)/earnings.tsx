@@ -15,7 +15,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
-import { api, type ApiOrder } from '@/lib/api';
+import { api, type ApiOrder, type SellerAnalytics } from '@/lib/api';
 import { CATEGORY_LABELS } from '@/lib/materials';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -292,6 +292,7 @@ export default function SellerEarningsScreen() {
 
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [dailyChart, setDailyChart] = useState<DayBar[]>([]);
+  const [sellerAnalytics, setSellerAnalytics] = useState<SellerAnalytics | null>(null);
 
   const fetchEarnings = useCallback(
     async (silent = false) => {
@@ -307,6 +308,11 @@ export default function SellerEarningsScreen() {
         setStats(s);
         setHistory(h);
         setDailyChart(dc);
+        // Fetch seller analytics (non-critical — provides 12-month chart + official KPIs)
+        api.analytics
+          .overview(token)
+          .then((ov) => setSellerAnalytics(ov.seller ?? null))
+          .catch(() => {});
       } catch (e) {
         if (!silent) showToast('Kļūda ielādējot datus', 'error');
       } finally {
@@ -455,6 +461,47 @@ export default function SellerEarningsScreen() {
         <View style={s.analyticsSection}>
           <Text style={s.sectionTitle}>Analītika</Text>
 
+          {/* 12-month revenue chart */}
+          {sellerAnalytics && sellerAnalytics.monthlyRevenue.length > 0 && (
+            <View style={s.an12Card}>
+              <Text style={s.an12Label}>12 mēneši</Text>
+              {sellerAnalytics.monthlyRevenue.slice(-12).map((m) => {
+                const maxVal = Math.max(...sellerAnalytics.monthlyRevenue.map((x) => x.value), 1);
+                const pct = m.value / maxVal;
+                const [y, mo] = m.month.split('-');
+                const isThisMonth =
+                  m.month ===
+                  `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+                return (
+                  <View key={m.month} style={s.an12Row}>
+                    <Text
+                      style={[
+                        s.an12MonthLabel,
+                        isThisMonth && { color: '#111827', fontWeight: '700' },
+                      ]}
+                    >
+                      {mo}/{y?.slice(2)}
+                    </Text>
+                    <View style={s.anBar}>
+                      <View
+                        style={[
+                          s.anBarFill,
+                          {
+                            width: `${Math.max(pct * 100, 2)}%` as any,
+                            backgroundColor: isThisMonth ? '#111827' : '#e5e7eb',
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={[s.an12ValLabel, isThisMonth && { color: '#111827' }]}>
+                      €{m.value >= 1000 ? `${(m.value / 1000).toFixed(1)}k` : m.value.toFixed(0)}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
           {/* Fulfillment rate + Repeat buyers side by side */}
           <View style={s.anRowCards}>
             <View style={s.anCard}>
@@ -477,6 +524,48 @@ export default function SellerEarningsScreen() {
               </View>
             </View>
           </View>
+
+          {/* Official performance stats from analytics API */}
+          {sellerAnalytics?.performanceStats && (
+            <View style={s.anRowCards}>
+              <View style={s.anCard}>
+                <Text style={s.anCardValue}>{sellerAnalytics.performanceStats.onTimeRate}%</Text>
+                <Text style={s.anCardLabel}>Laicīga piegāde</Text>
+                <View style={s.anBar}>
+                  <View
+                    style={[
+                      s.anBarFill,
+                      {
+                        width: `${sellerAnalytics.performanceStats.onTimeRate}%` as any,
+                        backgroundColor: '#0284c7',
+                      },
+                    ]}
+                  />
+                </View>
+              </View>
+              <View style={s.anCard}>
+                <Text style={s.anCardValue}>
+                  {sellerAnalytics.performanceStats.avgRating > 0
+                    ? sellerAnalytics.performanceStats.avgRating.toFixed(1)
+                    : '—'}
+                </Text>
+                <Text style={s.anCardLabel}>
+                  Vērtējums ({sellerAnalytics.performanceStats.totalReviews} ats.)
+                </Text>
+                <View style={s.anBar}>
+                  <View
+                    style={[
+                      s.anBarFill,
+                      {
+                        width: `${(sellerAnalytics.performanceStats.avgRating / 5) * 100}%` as any,
+                        backgroundColor: '#f59e0b',
+                      },
+                    ]}
+                  />
+                </View>
+              </View>
+            </View>
+          )}
 
           {/* Top materials */}
           {stats.topMaterials.length > 0 && (
@@ -677,6 +766,39 @@ const s = StyleSheet.create({
     height: 4,
     backgroundColor: '#111827',
     borderRadius: 2,
+  },
+  an12Card: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 14,
+    padding: 16,
+    gap: 8,
+    marginBottom: 16,
+  },
+  an12Label: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#374151',
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.4,
+    marginBottom: 4,
+  },
+  an12Row: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+  },
+  an12MonthLabel: {
+    width: 40,
+    fontSize: 12,
+    color: '#9ca3af',
+    fontWeight: '500' as const,
+  },
+  an12ValLabel: {
+    width: 50,
+    fontSize: 12,
+    color: '#9ca3af',
+    fontWeight: '600' as const,
+    textAlign: 'right' as const,
   },
   anTopMats: {
     backgroundColor: '#f9fafb',

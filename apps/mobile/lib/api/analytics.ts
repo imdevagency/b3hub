@@ -24,11 +24,25 @@ export interface MaterialSpend {
   orderCount: number;
 }
 
+export interface ArAgingBucket {
+  count: number;
+  total: number;
+}
+
+export interface ArAging {
+  current: ArAgingBucket;
+  days30: ArAgingBucket;
+  days60: ArAgingBucket;
+  days90: ArAgingBucket;
+  over90: ArAgingBucket;
+}
+
 export interface BuyerAnalytics {
   monthlySpend: MonthlyValue[];
   orderBreakdown: OrderBreakdown[];
   materialBreakdown: MaterialSpend[];
   co2Kg: number;
+  arAging?: ArAging;
 }
 
 export interface SellerPerformanceStats {

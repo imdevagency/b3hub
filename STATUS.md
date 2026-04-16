@@ -259,6 +259,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/reviews
 - dashboard/schedule
 - dashboard/settings
+- dashboard/settings/saved-addresses
 - dashboard/supplier
 - dashboard/supplier/earnings
 - dashboard/transport-history
@@ -280,6 +281,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (auth)/onboarding
 - (auth)/register
 - (auth)/welcome
+- (buyer)/analytics
 - (buyer)/business
 - (buyer)/catalog
 - (buyer)/certificates
@@ -304,6 +306,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (buyer)/team
 - (buyer)/transport-job/[id]
 - (driver)/active
+- (driver)/carrier-settings
 - (driver)/documents
 - (driver)/earnings
 - (driver)/home

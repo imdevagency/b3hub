@@ -539,6 +539,46 @@ export class TransportJobsController {
   }
 
   /**
+   * PATCH /transport-jobs/:id/driver-cancel
+   * Driver self-cancels a job before loading has started (ACCEPTED or EN_ROUTE_PICKUP).
+   * Returns the job to AVAILABLE, logs a DRIVER_NO_SHOW exception, and notifies the buyer.
+   */
+  @Patch(':id/driver-cancel')
+  driverCancel(
+    @Param('id') id: string,
+    @Body() dto: { reason: string },
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.service.driverCancel(id, user.userId, dto.reason);
+  }
+
+  /**
+   * POST /transport-jobs/:id/rate-buyer
+   * Driver rates the buyer's site/instructions after a job is DELIVERED.
+   * One rating per transport job — 409 if already rated.
+   */
+  @Post(':id/rate-buyer')
+  rateBuyer(
+    @Param('id') id: string,
+    @Body() dto: CreateDriverReviewDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.service.rateBuyer(id, dto, user.userId);
+  }
+
+  /**
+   * GET /transport-jobs/:id/rate-buyer/status
+   * Driver checks if they have already rated the buyer for this job.
+   */
+  @Get(':id/rate-buyer/status')
+  rateBuyerStatus(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.service.getDriverRatingStatus(id, user.userId);
+  }
+
+  /**
    * POST /transport-jobs/:id/surcharges
    * The assigned driver adds a surcharge (fuel, waiting time, overweight, etc.)
    * to the order linked to this transport job.

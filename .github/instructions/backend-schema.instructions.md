@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (1960 lines, 47 models, 41 enums).
+Schema: `apps/backend/prisma/schema.prisma` (1985 lines, 48 models, 41 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -131,7 +131,7 @@ npm run db:seed           # reseed demo data
 ### User — `@@map("users")`  
 **Fields:** `id`: String @id @default(cuid(), `email`: String? @unique, `phone`: String? @unique, `password`: String, `firstName`: String, `lastName`: String, `avatar`: String?, `isCompany`: Boolean @default(false), `canSell`: Boolean @default(false), `canTransport`: Boolean @default(false), `canSkipHire`: Boolean @default(false), `emailVerified`: Boolean @default(false), `phoneVerified`: Boolean @default(false), `pushToken`: String?, `resetToken`: String?, `resetTokenExpiry`: DateTime?, `refreshToken`: String?, `refreshTokenExpiry`: DateTime?, `emailVerifyToken`: String?, `emailVerifyExpiry`: DateTime?, `failedLoginAttempts`: Int @default(0), `lockedUntil`: DateTime?, `termsAcceptedAt`: DateTime?, `tokenVersion`: Int @default(0), `notifPush`: Boolean @default(true), `notifOrderUpdates`: Boolean @default(true), `notifJobAlerts`: Boolean @default(true), `notifMarketing`: Boolean @default(false), `permCreateContracts`: Boolean @default(false), `permReleaseCallOffs`: Boolean @default(false), `permManageOrders`: Boolean @default(false), `permViewFinancials`: Boolean @default(false), `permManageTeam`: Boolean @default(false), `companyId`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `userType`: UserType (@default(BUYER)), `companyRole`?: CompanyRole, `status`: UserStatus (@default(ACTIVE))  
-**Relations:** → Company?, DriverProfile?, BuyerProfile?, Order, TransportJob, TransportJob, Notification, Vehicle, QuoteRequest, Review, ChatMessage, FrameworkContract, Project, TransportJobException, TransportJobException, SavedAddress, AdminAuditLog, OrderSchedule, Dispute, SupportThread?, SupportMessage, FieldPass
+**Relations:** → Company?, DriverProfile?, BuyerProfile?, Order, TransportJob, TransportJob, Notification, Vehicle, QuoteRequest, Review, ChatMessage, FrameworkContract, Project, TransportJobException, TransportJobException, SavedAddress, AdminAuditLog, OrderSchedule, Dispute, SupportThread?, SupportMessage, FieldPass, DriverRating, DriverRating
 
 ---
 
@@ -186,7 +186,7 @@ npm run db:seed           # reseed demo data
 ### TransportJob — `@@map("transport_jobs")`  
 **Fields:** `id`: String @id @default(cuid(), `jobNumber`: String @unique, `orderId`: String?, `pickupAddress`: String, `pickupCity`: String, `pickupState`: String, `pickupPostal`: String, `pickupDate`: DateTime, `pickupWindow`: String?, `deliveryAddress`: String, `deliveryCity`: String, `deliveryState`: String, `deliveryPostal`: String, `deliveryDate`: DateTime, `deliveryWindow`: String?, `cargoType`: String, `cargoWeight`: Float?, `cargoVolume`: Float?, `actualWeightKg`: Float?, `pickupPhotoUrl`: String?, `specialRequirements`: String?, `requiredVehicleType`: String?, `truckIndex`: Int?, `pickupLat`: Float?, `pickupLng`: Float?, `deliveryLat`: Float?, `deliveryLng`: Float?, `distanceKm`: Float?, `rate`: Float, `pricePerTonne`: Float?, `buyerOfferedRate`: Float?, `currency`: String @default("EUR"), `carrierId`: String?, `driverId`: String?, `vehicleId`: String?, `frameworkContractId`: String?, `frameworkPositionId`: String?, `requestedById`: String?, `acceptedAt`: DateTime?, `statusUpdatedAt`: DateTime?, `slaEscalatedAt`: DateTime?, `slaEscalationStage`: String?, `currentLocation`: Json?, `estimatedArrival`: DateTime?, `offeredToDriverId`: String?, `offerExpiresAt`: DateTime?, `declinedDriverIds`: String @default([]), `projectId`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `jobType`: TransportJobType, `requiredVehicleEnum`?: VehicleType, `status`: TransportJobStatus  
-**Relations:** → Order?, Company?, User?, Vehicle?, FrameworkContract?, FrameworkPosition?, User?, DeliveryProof?, Project?, ContainerOrder, ContainerOrder, ChatMessage, TransportJobException, Invoice, OrderSurcharge
+**Relations:** → Order?, Company?, User?, Vehicle?, FrameworkContract?, FrameworkPosition?, User?, DeliveryProof?, Project?, ContainerOrder, ContainerOrder, ChatMessage, TransportJobException, Invoice, OrderSurcharge, DriverRating?
 
 ---
 
@@ -325,6 +325,12 @@ npm run db:seed           # reseed demo data
 ### Review — `@@map("reviews")`  
 **Fields:** `id`: String @id @default(cuid(), `rating`: Int, `comment`: String?, `reviewerId`: String, `companyId`: String, `orderId`: String? @unique, `skipOrderId`: String? @unique, `transportJobId`: String? @unique, `driverId`: String?, `createdAt`: DateTime @default(now()  
 **Relations:** → User, Company
+
+---
+
+### DriverRating — `@@map("driver_ratings")`  
+**Fields:** `id`: String @id @default(cuid(), `rating`: Int, `comment`: String?, `driverId`: String, `buyerId`: String, `transportJobId`: String @unique, `createdAt`: DateTime @default(now()  
+**Relations:** → User, User, TransportJob
 
 ---
 

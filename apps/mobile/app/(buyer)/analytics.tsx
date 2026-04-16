@@ -9,7 +9,8 @@ import { View, ScrollView, RefreshControl, StyleSheet } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api, type AnalyticsOverview, type BuyerAnalytics } from '@/lib/api';
-import { BarChart2, Leaf, Package, TrendingUp } from 'lucide-react-native';
+import { BarChart2, Leaf, Package, TrendingUp, AlertTriangle } from 'lucide-react-native';
+import type { ArAging } from '@/lib/api';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -233,6 +234,56 @@ export default function AnalyticsScreen() {
           </SectionCard>
         )}
 
+        {/* AR Aging — outstanding invoices */}
+        {buyer?.arAging &&
+          (() => {
+            const ag = buyer.arAging as ArAging;
+            const overdueTotal =
+              ag.days30.total + ag.days60.total + ag.days90.total + ag.over90.total;
+            const overdueCount =
+              ag.days30.count + ag.days60.count + ag.days90.count + ag.over90.count;
+            if (overdueTotal <= 0) return null;
+            const rows: {
+              label: string;
+              bucket: { count: number; total: number };
+              accent: string;
+            }[] = [
+              { label: '1–30 dienas', bucket: ag.days30, accent: '#d97706' },
+              { label: '31–60 dienas', bucket: ag.days60, accent: '#ea580c' },
+              { label: '61–90 dienas', bucket: ag.days90, accent: '#dc2626' },
+              { label: '90+ dienas', bucket: ag.over90, accent: '#991b1b' },
+            ].filter((r) => r.bucket.count > 0);
+            return (
+              <SectionCard title="Kavētie rēķini">
+                <View style={styles.agingHeader}>
+                  <AlertTriangle size={18} color="#dc2626" />
+                  <Text style={styles.agingTotal}>
+                    {overdueCount} rēķins · {fmtEur(overdueTotal)} kavēts
+                  </Text>
+                </View>
+                {rows.map((r) => (
+                  <View key={r.label} style={styles.breakdownRow}>
+                    <Text style={[styles.breakdownLabel, { color: r.accent }]}>{r.label}</Text>
+                    <View style={styles.barTrack}>
+                      <View
+                        style={[
+                          styles.barFill,
+                          {
+                            width: `${Math.max((r.bucket.total / overdueTotal) * 100, 2)}%` as any,
+                            backgroundColor: r.accent,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={[styles.breakdownValue, { color: r.accent }]}>
+                      {fmtEur(r.bucket.total)}
+                    </Text>
+                  </View>
+                ))}
+              </SectionCard>
+            );
+          })()}
+
         {/* Seller analytics (if user is also a seller) */}
         {overview.seller && (
           <SectionCard title="Pārdevēja rādītāji">
@@ -424,5 +475,23 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 14,
     color: '#b91c1c',
+  },
+  agingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  agingTotal: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#dc2626',
+  },
+  breakdownValueWide: {
+    width: 70,
+    fontSize: 13,
+    color: '#111827',
+    fontWeight: '700',
+    textAlign: 'right',
   },
 });

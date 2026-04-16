@@ -553,6 +553,7 @@ _No props interface — check source file._
 |------|------|---|
 | `children` | `React.ReactNode` | **required** |
 | `bg` | `string` | optional |
+| `topBg` | `string` | optional |
 | `standalone` | `boolean` | optional |
 | `topInset` | `number` | optional |
 | `style` | `ViewStyle` | optional |
@@ -570,6 +571,7 @@ _No props interface — check source file._
 | `rightAction` | `React.ReactNode` | optional |
 | `onBack` | `(() => void) | null` | optional |
 | `showBack` | `boolean` | optional |
+| `noBorder` | `boolean` | optional |
 
 **Exports:** `ScreenHeader`
 

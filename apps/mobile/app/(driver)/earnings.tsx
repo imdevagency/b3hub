@@ -30,9 +30,10 @@ import {
   Scale,
   Camera,
   X,
+  Truck,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
-import { api, type ApiTransportJob } from '@/lib/api';
+import { api, type ApiTransportJob, type CarrierAnalytics } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { haptics } from '@/lib/haptics';
@@ -272,6 +273,7 @@ export default function EarningsScreen() {
   const [dailyChart, setDailyChart] = useState<DayBar[]>([]);
   const [selectedJob, setSelectedJob] = useState<HistoryEntry | null>(null);
   const [photoFullscreen, setPhotoFullscreen] = useState<string | null>(null);
+  const [carrierAnalytics, setCarrierAnalytics] = useState<CarrierAnalytics | null>(null);
 
   const handleSetupPayouts = async () => {
     if (!token) return;
@@ -299,6 +301,11 @@ export default function EarningsScreen() {
           api.transportJobs.myJobs(token),
           api.getBalance(token).catch(() => null),
         ]);
+        // Fetch carrier analytics in parallel (non-critical)
+        api.analytics
+          .overview(token)
+          .then((ov) => setCarrierAnalytics(ov.carrier ?? null))
+          .catch(() => {});
         const { stats: s, history: h, dailyChart: dc } = computeStats(jobs);
         setStats(s);
         setHistory(h);
@@ -526,6 +533,81 @@ export default function EarningsScreen() {
             </Text>
           </View>
         </View>
+
+        {/* ── 12-Month Earnings Chart ───────────────────── */}
+        {carrierAnalytics && carrierAnalytics.monthlyEarnings.length > 0 && (
+          <View className="px-5 mb-12">
+            <Text style={es.sectionLabel}>12 mēneši</Text>
+            <View style={es.analyticsCard}>
+              {carrierAnalytics.monthlyEarnings.slice(-12).map((m) => {
+                const maxVal = Math.max(...carrierAnalytics.monthlyEarnings.map((x) => x.value), 1);
+                const pct = m.value / maxVal;
+                const [y, mo] = m.month.split('-');
+                const isThisMonth =
+                  m.month ===
+                  `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+                return (
+                  <View key={m.month} style={es.barRow}>
+                    <Text
+                      style={[es.barLabel, isThisMonth && { color: '#111827', fontWeight: '700' }]}
+                    >
+                      {mo}/{y?.slice(2)}
+                    </Text>
+                    <View style={es.barTrack}>
+                      <View
+                        style={[
+                          es.barFill,
+                          {
+                            width: `${Math.max(pct * 100, 2)}%` as any,
+                            backgroundColor: isThisMonth ? '#111827' : '#e5e7eb',
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={[es.barValue, isThisMonth && { color: '#111827' }]}>
+                      €{m.value >= 1000 ? `${(m.value / 1000).toFixed(1)}k` : m.value.toFixed(0)}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* ── Fleet Utilization ─────────────────────────── */}
+        {carrierAnalytics?.fleetUtilization && carrierAnalytics.fleetUtilization.total > 0 && (
+          <View className="px-5 mb-10">
+            <Text style={es.sectionLabel}>Flote</Text>
+            <View style={es.fleetCard}>
+              <View style={es.fleetRow}>
+                <Truck size={20} color="#6b7280" />
+                <Text style={es.fleetTitle}>
+                  {carrierAnalytics.fleetUtilization.inUse} /{' '}
+                  {carrierAnalytics.fleetUtilization.total} transportlīdzekļi darbā
+                </Text>
+                <Text style={es.fleetPct}>
+                  {Math.round(carrierAnalytics.fleetUtilization.utilizationRate * 100)}%
+                </Text>
+              </View>
+              <View style={es.fleetBar}>
+                <View
+                  style={[
+                    es.fleetBarFill,
+                    {
+                      width:
+                        `${Math.max(carrierAnalytics.fleetUtilization.utilizationRate * 100, 2)}%` as any,
+                    },
+                  ]}
+                />
+              </View>
+              <View style={es.fleetStats}>
+                <Text style={es.fleetStat}>Kopā: {carrierAnalytics.fleetUtilization.total}</Text>
+                <Text style={es.fleetStat}>Aktīvi: {carrierAnalytics.fleetUtilization.active}</Text>
+                <Text style={es.fleetStat}>Darbā: {carrierAnalytics.fleetUtilization.inUse}</Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* ── Stripe Balance Card ───────────────────────── */}
         {stripeOnboarded && (
@@ -965,5 +1047,95 @@ const es = StyleSheet.create({
   fsPhoto: {
     width: '100%',
     height: '100%',
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#374151',
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  analyticsCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+    padding: 16,
+    gap: 8,
+  },
+  barRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+  },
+  barLabel: {
+    width: 46,
+    fontSize: 13,
+    color: '#9ca3af',
+    fontWeight: '500' as const,
+  },
+  barTrack: {
+    flex: 1,
+    height: 6,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 3,
+    overflow: 'hidden' as const,
+  },
+  barFill: {
+    height: '100%' as any,
+    borderRadius: 3,
+  },
+  barValue: {
+    width: 52,
+    fontSize: 13,
+    color: '#9ca3af',
+    fontWeight: '600' as const,
+    textAlign: 'right' as const,
+  },
+  fleetCard: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+    gap: 12,
+  },
+  fleetRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+  },
+  fleetTitle: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '700' as const,
+    color: '#111827',
+  },
+  fleetPct: {
+    fontSize: 18,
+    fontWeight: '800' as const,
+    color: '#111827',
+    letterSpacing: -0.3,
+  },
+  fleetBar: {
+    height: 8,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 4,
+    overflow: 'hidden' as const,
+  },
+  fleetBarFill: {
+    height: '100%' as any,
+    backgroundColor: '#111827',
+    borderRadius: 4,
+  },
+  fleetStats: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+  },
+  fleetStat: {
+    fontSize: 13,
+    color: '#6b7280',
+    fontWeight: '500' as const,
   },
 });

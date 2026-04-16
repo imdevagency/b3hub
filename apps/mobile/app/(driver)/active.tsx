@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback, useRef } from 'react';
 import {
   TextInput,
+  Text as RNText,
   View,
   TouchableOpacity,
   StyleSheet,
@@ -32,7 +33,8 @@ import {
 } from '@/lib/api';
 import { startLocationTracking, stopLocationTracking } from '@/lib/location-task';
 import { useLiveUpdates } from '@/lib/use-live-updates';
-import { JobRouteMap } from '@/components/ui/JobRouteMap';
+import { BaseMap, PinLayer, RouteLayer, useRoute } from '@/components/map';
+import type { CameraRefHandle } from '@/components/map';
 import { haptics } from '@/lib/haptics';
 import { estimateCo2Kg, formatCo2 } from '@/lib/co2';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
@@ -55,6 +57,8 @@ import {
   PlusCircle,
   FileText,
   Clock as ClockIcon,
+  Star,
+  MessageCircle,
 } from 'lucide-react-native';
 
 // ── Status progression ────────────────────────────────────────────────────────
@@ -115,6 +119,124 @@ function formatDocCode(code: string): string {
   return DOC_LABELS[code] ?? code.replaceAll('_', ' ').toLowerCase();
 }
 
+// ── Always-on map: renders live BaseMap, overlays route+pins only when coords exist ──
+function ActiveJobMap({
+  job,
+  currentStatus,
+  currentLat,
+  currentLng,
+}: {
+  job: ApiTransportJob;
+  currentStatus: JobStatus;
+  currentLat: number | null;
+  currentLng: number | null;
+}) {
+  const cameraRef = React.useRef<CameraRefHandle | null>(null);
+  const hasCoords =
+    job.pickupLat != null &&
+    job.pickupLng != null &&
+    job.deliveryLat != null &&
+    job.deliveryLng != null;
+
+  const pickup = hasCoords ? { lat: job.pickupLat!, lng: job.pickupLng! } : null;
+  const delivery = hasCoords ? { lat: job.deliveryLat!, lng: job.deliveryLng! } : null;
+
+  const { route } = useRoute(pickup, delivery);
+
+  const validCurrent =
+    currentLat != null &&
+    currentLng != null &&
+    currentLat >= 34 &&
+    currentLat <= 72 &&
+    currentLng >= -25 &&
+    currentLng <= 50
+      ? { lat: currentLat, lng: currentLng }
+      : null;
+
+  const showToPickup = currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP';
+  const { route: toPickupRoute } = useRoute(
+    showToPickup && validCurrent && pickup ? validCurrent : null,
+    showToPickup && pickup ? pickup : null,
+  );
+
+  // Fit camera to show job once coords are known
+  const fitted = React.useRef(false);
+  React.useEffect(() => {
+    if (!hasCoords || fitted.current || !cameraRef.current) return;
+    const timer = setTimeout(() => {
+      if (!cameraRef.current || !pickup || !delivery) return;
+      cameraRef.current.fitBounds(
+        [Math.max(pickup.lng, delivery.lng), Math.max(pickup.lat, delivery.lat)],
+        [Math.min(pickup.lng, delivery.lng), Math.min(pickup.lat, delivery.lat)],
+        [56, 56, 220, 56],
+        400,
+      );
+      fitted.current = true;
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [hasCoords]);
+
+  // Follow driver position
+  React.useEffect(() => {
+    if (!validCurrent || !cameraRef.current) return;
+    cameraRef.current.setCamera({
+      centerCoordinate: [validCurrent.lng, validCurrent.lat],
+      zoomLevel: 13,
+      animationDuration: 700,
+    });
+  }, [validCurrent?.lat, validCurrent?.lng]);
+
+  const center: [number, number] = validCurrent
+    ? [validCurrent.lng, validCurrent.lat]
+    : pickup && delivery
+      ? [(pickup.lng + delivery.lng) / 2, (pickup.lat + delivery.lat) / 2]
+      : [24.1052, 56.9496];
+
+  const mainCoords =
+    route?.coords ??
+    (pickup && delivery
+      ? [
+          { latitude: pickup.lat, longitude: pickup.lng },
+          { latitude: delivery.lat, longitude: delivery.lng },
+        ]
+      : []);
+
+  const toPickupCoords =
+    toPickupRoute?.coords ??
+    (validCurrent && pickup
+      ? [
+          { latitude: validCurrent.lat, longitude: validCurrent.lng },
+          { latitude: pickup.lat, longitude: pickup.lng },
+        ]
+      : []);
+
+  return (
+    <View style={StyleSheet.absoluteFill}>
+      <BaseMap cameraRef={cameraRef} center={center} zoom={12} style={StyleSheet.absoluteFill}>
+        {validCurrent && <PinLayer id="current" coordinate={validCurrent} type="current" />}
+        {pickup && (
+          <PinLayer id="pickup" coordinate={pickup} type="pickup" label={job.pickupCity} />
+        )}
+        {delivery && (
+          <PinLayer id="delivery" coordinate={delivery} type="delivery" label={job.deliveryCity} />
+        )}
+        {mainCoords.length > 1 && (
+          <RouteLayer id="main-route" coordinates={mainCoords} color="#111827" width={4} />
+        )}
+        {toPickupCoords.length > 1 && (
+          <RouteLayer
+            id="to-pickup"
+            coordinates={toPickupCoords}
+            color="#9ca3af"
+            width={3}
+            dashed
+          />
+        )}
+      </BaseMap>
+    </View>
+  );
+}
+
 export default function ActiveJobScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -142,8 +264,9 @@ export default function ActiveJobScreen() {
   const [resolvingExceptionId, setResolvingExceptionId] = React.useState<string | null>(null);
   const [resolutionById, setResolutionById] = React.useState<Record<string, string>>({});
 
-  // ── Extra sheet visibility ────────────────────────────────────
+  // Remove the hardcoded old styles and structure to start clean on bottom sheet
   const [activeTab, setActiveTab] = React.useState<'navigate' | 'details' | 'issues'>('navigate');
+  const [swipeConfirmValue, setSwipeConfirmValue] = React.useState(0);
   const [returnTripsSheetVisible, setReturnTripsSheetVisible] = React.useState(false);
 
   // ── Weight ticket modal ──────────────────────────────────────
@@ -166,6 +289,19 @@ export default function ActiveJobScreen() {
 
   // ── Offline queue ────────────────────────────────────────────────
   const [isOffline, setIsOffline] = React.useState(false);
+
+  // ── Buyer rating (shown after DELIVERED) ─────────────────────
+  const [showBuyerRatingSheet, setShowBuyerRatingSheet] = React.useState(false);
+  const [buyerRatingStars, setBuyerRatingStars] = React.useState(0);
+  const [buyerRatingComment, setBuyerRatingComment] = React.useState('');
+  const [buyerRatingSubmitting, setBuyerRatingSubmitting] = React.useState(false);
+  const [buyerRatingDone, setBuyerRatingDone] = React.useState(false);
+  const buyerRatingShownRef = React.useRef(false);
+
+  // ── Driver self-cancel sheet ─────────────────────────────────
+  const [cancelSheetVisible, setCancelSheetVisible] = React.useState(false);
+  const [cancelReason, setCancelReason] = React.useState('');
+  const [cancelling, setCancelling] = React.useState(false);
 
   const flushOfflineQueue = useCallback(async () => {
     if (!token) return;
@@ -212,6 +348,79 @@ export default function ActiveJobScreen() {
     });
     return () => sub.remove();
   }, [flushOfflineQueue]);
+
+  // Auto-show buyer rating sheet once after job reaches DELIVERED
+  useEffect(() => {
+    if (job?.status === 'DELIVERED' && !buyerRatingShownRef.current && token) {
+      buyerRatingShownRef.current = true;
+      // Small delay so the completion banner renders first
+      const timer = setTimeout(async () => {
+        try {
+          const { rated } = await api.transportJobs.rateBuyerStatus(job.id, token);
+          if (!rated) setShowBuyerRatingSheet(true);
+        } catch {
+          // Network error — just skip; driver can still rate later via the button
+        }
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [job?.status, job?.id, token]);
+
+  const handleSubmitBuyerRating = async () => {
+    if (!job || !token || buyerRatingStars === 0) return;
+    setBuyerRatingSubmitting(true);
+    try {
+      await api.transportJobs.rateBuyer(
+        job.id,
+        { rating: buyerRatingStars, comment: buyerRatingComment.trim() || undefined },
+        token,
+      );
+      setBuyerRatingDone(true);
+      setTimeout(() => {
+        setShowBuyerRatingSheet(false);
+        setBuyerRatingDone(false);
+        setBuyerRatingStars(0);
+        setBuyerRatingComment('');
+      }, 1800);
+    } catch (err: unknown) {
+      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās nosūtīt vērtējumu');
+    } finally {
+      setBuyerRatingSubmitting(false);
+    }
+  };
+
+  const handleDriverCancel = async () => {
+    if (!job || !token) return;
+    const trimmed = cancelReason.trim();
+    if (!trimmed) {
+      Alert.alert('Iemesls obligāts', 'Lūdzu norādiet iemeslu darba atcelšanai.');
+      return;
+    }
+    Alert.alert(
+      'Atcelt darbu?',
+      'Atcelšana tiks reģistrēta. Pasūtītājs saņems paziņojumu. Vai turpināt?',
+      [
+        { text: 'Nē', style: 'cancel' },
+        {
+          text: 'Jā, atcelt',
+          style: 'destructive',
+          onPress: async () => {
+            setCancelling(true);
+            try {
+              await api.transportJobs.driverCancel(job.id, { reason: trimmed }, token);
+              setCancelSheetVisible(false);
+              setCancelReason('');
+              router.replace('/(driver)/jobs');
+            } catch (err: unknown) {
+              Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās atcelt darbu');
+            } finally {
+              setCancelling(false);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   const handleTakePickupPhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -747,60 +956,12 @@ export default function ActiveJobScreen() {
   return (
     <ScreenContainer bg="transparent" topInset={0} style={{ flex: 1 }} noAnimation>
       {/* ── Absolutely Positioned Map Layer ── */}
-      <View style={StyleSheet.absoluteFill}>
-        {job.pickupLat != null &&
-        job.pickupLng != null &&
-        job.deliveryLat != null &&
-        job.deliveryLng != null ? (
-          <JobRouteMap
-            pickup={{
-              lat: job.pickupLat,
-              lng: job.pickupLng,
-              label: job.pickupCity || '',
-            }}
-            delivery={{
-              lat: job.deliveryLat,
-              lng: job.deliveryLng,
-              label: job.deliveryCity || '',
-            }}
-            current={
-              currentLat != null && currentLng != null ? { lat: currentLat, lng: currentLng } : null
-            }
-            showToPickupLeg={currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP'}
-            followCurrentPosition
-            height={null}
-            borderRadius={0}
-            style={{ flex: 1 }}
-          />
-        ) : (
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: '#eaedf2',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-            }}
-          >
-            <MapPin size={36} color="#9ca3af" />
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: '600',
-                color: '#9ca3af',
-                textAlign: 'center',
-                paddingHorizontal: 40,
-              }}
-            >
-              {currentStatus === 'ACCEPTED' ||
-              currentStatus === 'EN_ROUTE_PICKUP' ||
-              currentStatus === 'AT_PICKUP'
-                ? `${job.pickupAddress ?? ''}, ${job.pickupCity ?? ''}`
-                : `${job.deliveryAddress ?? ''}, ${job.deliveryCity ?? ''}`}
-            </Text>
-          </View>
-        )}
-      </View>
+      <ActiveJobMap
+        job={job}
+        currentStatus={currentStatus}
+        currentLat={currentLat}
+        currentLng={currentLng}
+      />
 
       {/* ── Top Floating Pill ── */}
       <View
@@ -816,58 +977,27 @@ export default function ActiveJobScreen() {
         >
           <ArrowLeft size={24} color="#111827" />
         </TouchableOpacity>
-
-        <View
-          style={{
-            backgroundColor: '#111827',
-            borderRadius: 20,
-            paddingHorizontal: 16,
-            paddingVertical: 10,
-            shadowColor: '#000',
-            shadowOpacity: 0.2,
-            shadowRadius: 8,
-            shadowOffset: { width: 0, height: 4 },
-            elevation: 5,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>
-            {currentStatus === 'ACCEPTED' ||
-            currentStatus === 'EN_ROUTE_PICKUP' ||
-            currentStatus === 'AT_PICKUP'
-              ? 'Uz iekraušanu'
-              : 'Uz izkraušanu'}
-          </Text>
-        </View>
       </View>
 
-      {/* ── Floating Nav HUD ── */}
-      <View
-        style={[styles.hudContainer, { bottom: Math.max(insets.bottom, 24) + 270 }]}
-        pointerEvents="box-none"
-      >
-        <View style={styles.hudButtonGroup}>
-          <TouchableOpacity style={styles.hudButton} onPress={handleNavigate} activeOpacity={0.8}>
-            <Navigation size={22} color="#fff" strokeWidth={2.5} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* ── Sleek Bottom Action Card ── */}
+      {/* ── Bottom Action Card ── */}
       <View
         style={[
           styles.staticBottomCard,
-          { paddingBottom: Math.max(insets.bottom, 24), paddingHorizontal: 20, paddingTop: 16 },
+          { paddingBottom: Math.max(insets.bottom, 16) + 16, paddingTop: 12 },
         ]}
       >
-        <View style={{ alignItems: 'center', marginBottom: 12 }}>
+        {/* Pull Handle */}
+        <View style={{ alignItems: 'center', marginBottom: 16 }}>
           <View style={styles.detailsPullHandle} />
         </View>
 
-        {/* Minimal Uber-like Current Phase & Address */}
-        <View style={{ marginBottom: 16 }}>
+        {/* Phase label, job #, and Address wrapped in a touchable that opens Details */}
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setActiveTab('details')}
+          style={{ marginBottom: 16, paddingHorizontal: 20 }}
+        >
+          {/* Phase label + job # */}
           <View
             style={{
               flexDirection: 'row',
@@ -876,86 +1006,207 @@ export default function ActiveJobScreen() {
               marginBottom: 4,
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <View
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: phaseColor.text || '#000',
-                }}
-              />
-              <Text style={{ fontSize: 13, fontWeight: '700', color: phaseColor.text || '#000' }}>
-                {currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP'
-                  ? 'Dodies uz iekraušanu'
-                  : currentStatus === 'AT_PICKUP'
-                    ? 'Iekraušana'
-                    : currentStatus === 'LOADED' || currentStatus === 'EN_ROUTE_DELIVERY'
-                      ? 'Dodies uz izkraušanu'
-                      : currentStatus === 'AT_DELIVERY'
-                        ? 'Piegāde'
-                        : 'Pabeigts'}
-              </Text>
-            </View>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: '#9ca3af' }}>
+            <RNText
+              style={{
+                fontSize: 12,
+                fontWeight: '800',
+                color: phaseColor.text || '#6b7280',
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+              }}
+            >
+              {currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP'
+                ? 'Uz iekraušanu'
+                : currentStatus === 'AT_PICKUP'
+                  ? 'Iekraušana'
+                  : currentStatus === 'LOADED' || currentStatus === 'EN_ROUTE_DELIVERY'
+                    ? 'Uz izkraušanu'
+                    : currentStatus === 'AT_DELIVERY'
+                      ? 'Piegāde'
+                      : 'Pabeigts'}
+            </RNText>
+            <RNText style={{ fontSize: 12, color: '#9ca3af', fontWeight: '500' }}>
               #{job.jobNumber}
-            </Text>
+            </RNText>
           </View>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: 24,
-                  fontWeight: '800',
-                  color: '#111827',
-                  letterSpacing: -0.4,
-                  lineHeight: 28,
-                }}
-                numberOfLines={2}
-              >
-                {currentStatus === 'ACCEPTED' ||
-                currentStatus === 'EN_ROUTE_PICKUP' ||
-                currentStatus === 'AT_PICKUP'
-                  ? `${job.pickupAddress}, ${job.pickupCity}`
-                  : `${job.deliveryAddress}, ${job.deliveryCity}`}
-              </Text>
-            </View>
-            <TouchableOpacity
+          {/* Destination address + call button */}
+          {/* Destination address completely minimal */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <RNText
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: '#f3f4f6',
-                alignItems: 'center',
-                justifyContent: 'center',
+                flex: 1,
+                fontSize: 24,
+                fontWeight: '800',
+                color: '#111827',
+                letterSpacing: -0.5,
+                lineHeight: 28,
               }}
-              onPress={() => handleCall(job.order?.siteContactPhone, job.order?.siteContactName)}
-              activeOpacity={0.7}
+              numberOfLines={2}
             >
-              <Phone size={20} color="#111827" strokeWidth={2} />
-            </TouchableOpacity>
+              {currentStatus === 'ACCEPTED' ||
+              currentStatus === 'EN_ROUTE_PICKUP' ||
+              currentStatus === 'AT_PICKUP'
+                ? `${job.pickupAddress}, ${job.pickupCity}`
+                : `${job.deliveryAddress}, ${job.deliveryCity}`}
+            </RNText>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Primary Action Button */}
-        <View style={styles.actionRow}>
+        <View
+          style={[
+            styles.actionRow,
+            { paddingHorizontal: 20, flex: 0, flexDirection: 'column', gap: 12 },
+          ]}
+        >
           {nextStatus ? (
-            <TouchableOpacity style={styles.primaryButton} onPress={handleUpdateStatus}>
-              <Text style={styles.primaryButtonText}>
-                {currentStatus === 'AT_DELIVERY'
-                  ? t.deliveryProof.title
-                  : currentStatus === 'AT_PICKUP'
-                    ? 'Apstiprināt kravu'
-                    : currentStatus === 'LOADED'
-                      ? 'Dodos uz piegādi →'
-                      : currentStatus === 'EN_ROUTE_PICKUP'
-                        ? 'Esmu iekraušanas vietā →'
-                        : currentStatus === 'EN_ROUTE_DELIVERY'
-                          ? 'Esmu piegādes vietā →'
-                          : t.activeJob.status[nextStatus]}
-              </Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={[
+                  styles.primaryButton,
+                  {
+                    opacity: loading ? 0.6 : 1,
+                    width: '100%',
+                    height: 56,
+                    borderRadius: 28,
+                    backgroundColor: '#111827',
+                    elevation: 4,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.2,
+                    shadowRadius: 8,
+                  },
+                ]}
+                onPress={handleUpdateStatus}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <RNText style={[styles.primaryButtonText, { fontSize: 16 }]}>
+                    {currentStatus === 'AT_DELIVERY'
+                      ? t.deliveryProof.title
+                      : currentStatus === 'AT_PICKUP'
+                        ? 'Apstiprināt kravu'
+                        : currentStatus === 'LOADED'
+                          ? 'Dodos uz piegādi'
+                          : currentStatus === 'EN_ROUTE_PICKUP'
+                            ? 'Esmu iekraušanas vietā'
+                            : currentStatus === 'EN_ROUTE_DELIVERY'
+                              ? 'Esmu piegādes vietā'
+                              : t.activeJob.status[nextStatus]}
+                  </RNText>
+                )}
+              </TouchableOpacity>
+
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 16,
+                  marginTop: 4,
+                }}
+              >
+                <TouchableOpacity
+                  onPress={handleNavigate}
+                  style={{ alignItems: 'center', justifyContent: 'center', gap: 4, width: 64 }}
+                >
+                  <View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 22,
+                      backgroundColor: '#f3f4f6',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Navigation size={20} color="#111827" />
+                  </View>
+                  <RNText style={{ fontSize: 11, color: '#6b7280', fontWeight: '600' }}>
+                    Navi
+                  </RNText>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    handleCall(job.order?.siteContactPhone, job.order?.siteContactName)
+                  }
+                  style={{ alignItems: 'center', justifyContent: 'center', gap: 4, width: 64 }}
+                >
+                  <View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 22,
+                      backgroundColor: '#f3f4f6',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Phone size={20} color="#111827" />
+                  </View>
+                  <RNText style={{ fontSize: 11, color: '#6b7280', fontWeight: '600' }}>
+                    Zvanīt
+                  </RNText>
+                </TouchableOpacity>
+
+                {job?.id && (
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push({
+                        pathname: '/chat/[jobId]',
+                        params: {
+                          jobId: job.id,
+                          title: `${job.order?.orderNumber ?? job.jobNumber}`,
+                        },
+                      })
+                    }
+                    style={{ alignItems: 'center', justifyContent: 'center', gap: 4, width: 64 }}
+                  >
+                    <View
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 22,
+                        backgroundColor: '#f3f4f6',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <MessageCircle size={20} color="#111827" />
+                    </View>
+                    <RNText style={{ fontSize: 11, color: '#6b7280', fontWeight: '600' }}>
+                      Čats
+                    </RNText>
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity
+                  onPress={() => setActiveTab('issues')}
+                  style={{ alignItems: 'center', justifyContent: 'center', gap: 4, width: 64 }}
+                >
+                  <View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 22,
+                      backgroundColor: '#fef2f2',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <AlertCircle size={20} color="#dc2626" />
+                  </View>
+                  <RNText style={{ fontSize: 11, color: '#dc2626', fontWeight: '600' }}>
+                    Problēma
+                  </RNText>
+                </TouchableOpacity>
+              </View>
+            </>
           ) : (
             <View style={{ flex: 1, gap: 10 }}>
               <View style={styles.completedBanner}>
@@ -969,6 +1220,16 @@ export default function ActiveJobScreen() {
               >
                 <Text style={styles.findNextJobText}>Atrast nākamo darbu →</Text>
               </TouchableOpacity>
+              {!buyerRatingDone && (
+                <TouchableOpacity
+                  style={styles.rateBuyerBtn}
+                  onPress={() => setShowBuyerRatingSheet(true)}
+                  activeOpacity={0.8}
+                >
+                  <Star size={15} color="#6b7280" />
+                  <Text style={styles.rateBuyerBtnText}>Novērtēt pasūtītāju</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </View>
@@ -989,6 +1250,7 @@ export default function ActiveJobScreen() {
                 paddingVertical: 8,
                 alignSelf: 'flex-start',
                 marginBottom: 12,
+                marginLeft: 20,
               }}
               onPress={() => setReturnTripsSheetVisible(true)}
               activeOpacity={0.8}
@@ -999,141 +1261,145 @@ export default function ActiveJobScreen() {
               </Text>
             </TouchableOpacity>
           )}
-
-        {/* Action Row for Details & Issues */}
-        <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-          <TouchableOpacity
-            style={{
-              flex: 1,
-              padding: 12,
-              backgroundColor: '#f3f4f6',
-              borderRadius: 12,
-              alignItems: 'center',
-              flexDirection: 'row',
-              justifyContent: 'center',
-              gap: 6,
-            }}
-            onPress={() => setActiveTab('details')}
-          >
-            <FileText size={17} color="#374151" />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151' }}>Detaļas</Text>
-          </TouchableOpacity>
-          {(currentStatus === 'AT_PICKUP' ||
-            currentStatus === 'LOADED' ||
-            currentStatus === 'EN_ROUTE_DELIVERY' ||
-            currentStatus === 'AT_DELIVERY') && (
-            <TouchableOpacity
-              style={{
-                paddingHorizontal: 14,
-                padding: 12,
-                backgroundColor: '#fffbeb',
-                borderRadius: 12,
-                alignItems: 'center',
-                flexDirection: 'row',
-                gap: 5,
-                borderWidth: 1,
-                borderColor: '#fde68a',
-              }}
-              onPress={() => setSurchargeSheetVisible(true)}
-            >
-              <PlusCircle size={17} color="#d97706" />
-              <Text style={{ fontSize: 14, fontWeight: '700', color: '#d97706' }}>€+</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            style={{
-              flex: 1,
-              padding: 12,
-              backgroundColor: '#fef2f2',
-              borderRadius: 12,
-              alignItems: 'center',
-              flexDirection: 'row',
-              justifyContent: 'center',
-              gap: 6,
-            }}
-            onPress={() => setActiveTab('issues')}
-          >
-            <AlertCircle size={17} color="#b91c1c" />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#b91c1c' }}>Problēma</Text>
-          </TouchableOpacity>
-        </View>
       </View>
 
       <BottomSheet
         visible={activeTab === 'details'}
         onClose={() => setActiveTab('navigate')}
-        title="Detaļas"
+        title="Pasūtījuma detaļas"
         scrollable
       >
-        <View style={{ padding: 20 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingVertical: 12,
-              borderBottomWidth: 1,
-              borderBottomColor: '#f3f4f6',
-            }}
-          >
-            <Text style={{ fontSize: 14, color: '#6b7280' }}>Materiāls</Text>
-            <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
-              {job.cargoType}
-            </Text>
-          </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingVertical: 12,
-              borderBottomWidth: 1,
-              borderBottomColor: '#f3f4f6',
-            }}
-          >
-            <Text style={{ fontSize: 14, color: '#6b7280' }}>Svars</Text>
-            <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
-              {job.cargoWeight ?? '-'} t
-            </Text>
-          </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingVertical: 12,
-              borderBottomWidth: 1,
-              borderBottomColor: '#f3f4f6',
-            }}
-          >
-            <Text style={{ fontSize: 14, color: '#6b7280' }}>Iekraušana</Text>
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: '600',
-                color: '#111827',
-                flex: 1,
-                textAlign: 'right',
-                marginLeft: 20,
-              }}
+        <View style={{ padding: 20, gap: 0 }}>
+          {/* ── Options Block ── */}
+          <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 12 }}>
+            Opcijas
+          </Text>
+
+          {(currentStatus === 'AT_PICKUP' ||
+            currentStatus === 'LOADED' ||
+            currentStatus === 'EN_ROUTE_DELIVERY' ||
+            currentStatus === 'AT_DELIVERY') && (
+            <TouchableOpacity
+              style={styles.optionRow}
+              onPress={() => setSurchargeSheetVisible(true)}
             >
+              <View style={[styles.optionIcon, { backgroundColor: '#fffbeb' }]}>
+                <PlusCircle size={18} color="#d97706" />
+              </View>
+              <Text style={styles.optionText}>Pievienot papildu izmaksas</Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity style={styles.optionRow} onPress={() => setActiveTab('issues')}>
+            <View style={[styles.optionIcon, { backgroundColor: '#fef2f2' }]}>
+              <AlertCircle size={18} color="#b91c1c" />
+            </View>
+            <Text style={styles.optionText}>Ziņot par problēmu</Text>
+          </TouchableOpacity>
+
+          {(currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP') && (
+            <TouchableOpacity style={styles.optionRow} onPress={() => setCancelSheetVisible(true)}>
+              <View style={[styles.optionIcon, { backgroundColor: '#fef2f2' }]}>
+                <AlertCircle size={18} color="#dc2626" />
+              </View>
+              <Text style={[styles.optionText, { color: '#dc2626' }]}>Atcelt darbu</Text>
+            </TouchableOpacity>
+          )}
+
+          <View style={{ height: 1, backgroundColor: '#f3f4f6', marginVertical: 20 }} />
+
+          <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 4 }}>
+            Informācija
+          </Text>
+
+          {/* ── Earnings ── */}
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Atlīdzība</Text>
+            <Text style={[styles.detailValue, { color: '#059669', fontWeight: '800' }]}>
+              €{job.rate.toFixed(2)}
+              {job.pricePerTonne ? ` · €${job.pricePerTonne.toFixed(2)}/t` : ''}
+            </Text>
+          </View>
+
+          {/* Distance */}
+          {job.distanceKm != null && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Attālums</Text>
+              <Text style={styles.detailValue}>{job.distanceKm.toFixed(1)} km</Text>
+            </View>
+          )}
+
+          {/* Cargo */}
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Materiāls</Text>
+            <Text style={styles.detailValue}>{job.cargoType}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Plān. svars</Text>
+            <Text style={styles.detailValue}>{job.cargoWeight ?? '-'} t</Text>
+          </View>
+          {job.actualWeightKg != null && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Faktiskais</Text>
+              <Text style={styles.detailValue}>{(job.actualWeightKg / 1000).toFixed(2)} t</Text>
+            </View>
+          )}
+
+          {/* Required vehicle */}
+          {job.requiredVehicleType ? (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Transportlīdzeklis</Text>
+              <Text style={styles.detailValue}>{job.requiredVehicleType}</Text>
+            </View>
+          ) : null}
+
+          {/* Pickup */}
+          <View style={[styles.detailRow, { marginTop: 12 }]}>
+            <Text style={styles.detailLabel}>Iekraušanas adrese</Text>
+            <Text style={[styles.detailValue, { textAlign: 'right', marginLeft: 20, flex: 1 }]}>
               {job.pickupAddress}, {job.pickupCity}
             </Text>
           </View>
-          <View
-            style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12 }}
-          >
-            <Text style={{ fontSize: 14, color: '#6b7280' }}>Izkraušana</Text>
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: '600',
-                color: '#111827',
-                flex: 1,
-                textAlign: 'right',
-                marginLeft: 20,
-              }}
-            >
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Iekraušana datums</Text>
+            <Text style={styles.detailValue}>
+              {new Date(job.pickupDate).toLocaleDateString('lv-LV', {
+                day: '2-digit',
+                month: 'short',
+              })}
+              {job.pickupWindow ? ` · ${job.pickupWindow}` : ''}
+            </Text>
+          </View>
+
+          {/* Delivery */}
+          <View style={[styles.detailRow, { marginTop: 12 }]}>
+            <Text style={styles.detailLabel}>Piegādes adrese</Text>
+            <Text style={[styles.detailValue, { textAlign: 'right', marginLeft: 20, flex: 1 }]}>
               {job.deliveryAddress}, {job.deliveryCity}
             </Text>
           </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Piegādes datums</Text>
+            <Text style={styles.detailValue}>
+              {new Date(job.deliveryDate).toLocaleDateString('lv-LV', {
+                day: '2-digit',
+                month: 'short',
+              })}
+              {job.deliveryWindow ? ` · ${job.deliveryWindow}` : ''}
+            </Text>
+          </View>
+
+          {/* Order notes */}
+          {job.order?.notes ? (
+            <View style={{ marginTop: 16 }}>
+              <Text style={[styles.detailLabel, { marginBottom: 6 }]}>Piezīmes</Text>
+              <View style={{ backgroundColor: '#f9fafb', borderRadius: 10, padding: 12 }}>
+                <Text style={{ fontSize: 14, color: '#374151', lineHeight: 20 }}>
+                  {job.order.notes}
+                </Text>
+              </View>
+            </View>
+          ) : null}
         </View>
       </BottomSheet>
 
@@ -1145,15 +1411,109 @@ export default function ActiveJobScreen() {
         scrollable
       >
         <View style={{ padding: 20, paddingBottom: 40 }}>
-          <Text style={{ fontSize: 15, color: '#374151', marginBottom: 12 }}>
-            Aprakstiet situāciju:
+          {/* ── Existing open exceptions ── */}
+          {exceptions.filter((e) => e.status === 'OPEN').length > 0 && (
+            <View style={{ marginBottom: 20 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#b91c1c', marginBottom: 8 }}>
+                Aktīvās problēmas
+              </Text>
+              {exceptions
+                .filter((e) => e.status === 'OPEN')
+                .map((ex) => (
+                  <View
+                    key={ex.id}
+                    style={{
+                      backgroundColor: '#fef2f2',
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: '#fecaca',
+                      padding: 12,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#b91c1c' }}>
+                      {EXCEPTION_TYPE_OPTIONS.find((o) => o.value === ex.type)?.label ?? ex.type}
+                    </Text>
+                    {ex.notes ? (
+                      <Text style={{ fontSize: 13, color: '#374151', marginTop: 2 }}>
+                        {ex.notes}
+                      </Text>
+                    ) : null}
+                  </View>
+                ))}
+            </View>
+          )}
+
+          {/* ── Exception type chips ── */}
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 10 }}>
+            Problēmas veids
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8, paddingBottom: 14 }}
+          >
+            {EXCEPTION_TYPE_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.value}
+                onPress={() => setExceptionType(opt.value)}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 9,
+                  borderRadius: 20,
+                  backgroundColor: exceptionType === opt.value ? '#b91c1c' : '#f3f4f6',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: '600',
+                    color: exceptionType === opt.value ? '#fff' : '#374151',
+                  }}
+                >
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* ── Partial delivery quantity ── */}
+          {exceptionType === 'PARTIAL_DELIVERY' && (
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ fontSize: 14, color: '#374151', fontWeight: '600', marginBottom: 6 }}>
+                Faktiskais daudzums (t)
+              </Text>
+              <TextInput
+                style={{
+                  backgroundColor: '#f9fafb',
+                  borderRadius: 10,
+                  padding: 12,
+                  fontSize: 15,
+                  borderWidth: 1,
+                  borderColor: '#e5e7eb',
+                  color: '#111827',
+                }}
+                keyboardType="decimal-pad"
+                placeholder={
+                  job.cargoWeight ? `Plānotais: ${job.cargoWeight} t` : 'Ievadiet tonnas'
+                }
+                placeholderTextColor="#9ca3af"
+                value={exceptionActualQty}
+                onChangeText={setExceptionActualQty}
+              />
+            </View>
+          )}
+
+          {/* ── Notes ── */}
+          <Text style={{ fontSize: 14, color: '#374151', fontWeight: '600', marginBottom: 6 }}>
+            Apraksts
           </Text>
           <TextInput
             style={{
               backgroundColor: '#f9fafb',
               borderRadius: 12,
               padding: 14,
-              height: 100,
+              height: 90,
               fontSize: 15,
               borderWidth: 1,
               borderColor: '#e5e7eb',
@@ -1167,7 +1527,7 @@ export default function ActiveJobScreen() {
             multiline
           />
           <TouchableOpacity
-            style={[styles.weightConfirm, { marginTop: 20 }]}
+            style={[styles.weightConfirm, { marginTop: 16 }]}
             onPress={handleReportException}
             disabled={reportingException}
           >
@@ -1445,6 +1805,146 @@ export default function ActiveJobScreen() {
           </View>
         </View>
       </BottomSheet>
+
+      {/* ── Buyer Rating Sheet ── */}
+      <BottomSheet
+        visible={showBuyerRatingSheet}
+        onClose={() => setShowBuyerRatingSheet(false)}
+        scrollable
+      >
+        {buyerRatingDone ? (
+          <View style={styles.ratingSuccessWrap}>
+            <CheckCircle2 size={52} color="#111827" />
+            <Text style={styles.ratingSuccessTitle}>Paldies!</Text>
+            <Text style={styles.ratingSuccessSub}>Jūsu vērtējums ir saglabāts.</Text>
+          </View>
+        ) : (
+          <>
+            <Text style={styles.ratingTitle}>Novērtēt pasūtītāju</Text>
+            <Text style={styles.ratingSubtitle}>
+              Kā noritēja piegāde? Tas palīdzēs uzlabot sadarbību.
+            </Text>
+            <View style={styles.ratingStarRow}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <TouchableOpacity
+                  key={n}
+                  onPress={() => setBuyerRatingStars(n)}
+                  activeOpacity={0.7}
+                >
+                  <Star
+                    size={38}
+                    color={n <= buyerRatingStars ? '#9ca3af' : '#d1d5db'}
+                    fill={n <= buyerRatingStars ? '#9ca3af' : 'none'}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput
+              style={styles.ratingInput}
+              placeholder="Komentārs (neobligāts)"
+              placeholderTextColor="#9ca3af"
+              value={buyerRatingComment}
+              onChangeText={setBuyerRatingComment}
+              multiline
+              numberOfLines={3}
+              maxLength={500}
+              textAlignVertical="top"
+            />
+            <TouchableOpacity
+              style={[
+                styles.ratingSubmitBtn,
+                (buyerRatingSubmitting || buyerRatingStars === 0) && { opacity: 0.5 },
+              ]}
+              onPress={handleSubmitBuyerRating}
+              disabled={buyerRatingSubmitting || buyerRatingStars === 0}
+              activeOpacity={0.85}
+            >
+              {buyerRatingSubmitting ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.ratingSubmitBtnText}>Nosūtīt vērtējumu</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setShowBuyerRatingSheet(false)}
+              style={{ alignItems: 'center', paddingVertical: 8 }}
+            >
+              <Text style={{ fontSize: 14, color: '#9ca3af' }}>Izlaist</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </BottomSheet>
+
+      {/* ── Driver self-cancel sheet ─────────────────────────── */}
+      <BottomSheet
+        visible={cancelSheetVisible}
+        onClose={() => {
+          setCancelSheetVisible(false);
+          setCancelReason('');
+        }}
+        title="Atcelt darbu"
+      >
+        <View style={{ gap: 14 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              gap: 10,
+              backgroundColor: '#fef2f2',
+              borderRadius: 10,
+              padding: 12,
+            }}
+          >
+            <AlertCircle size={18} color="#dc2626" style={{ marginTop: 1 }} />
+            <Text style={{ flex: 1, fontSize: 13, color: '#7f1d1d', lineHeight: 19 }}>
+              Atcelšana tiks reģistrēta un pasūtītājs saņems paziņojumu. Darbs tiks atgriezts
+              pieejamo sarakstā.
+            </Text>
+          </View>
+          <View>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 }}>
+              Iemesls *
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: '#e5e7eb',
+                borderRadius: 10,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                fontSize: 14,
+                color: '#111827',
+                minHeight: 80,
+                textAlignVertical: 'top',
+              }}
+              placeholder="Piemēram: mehāniska avārija, ārkārtas situācija..."
+              placeholderTextColor="#9ca3af"
+              value={cancelReason}
+              onChangeText={setCancelReason}
+              multiline
+              maxLength={300}
+            />
+            <Text style={{ fontSize: 11, color: '#9ca3af', textAlign: 'right', marginTop: 4 }}>
+              {cancelReason.length}/300
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={{
+              backgroundColor: cancelling || !cancelReason.trim() ? '#fca5a5' : '#dc2626',
+              borderRadius: 12,
+              paddingVertical: 14,
+              alignItems: 'center',
+            }}
+            onPress={handleDriverCancel}
+            disabled={cancelling || !cancelReason.trim()}
+            activeOpacity={0.8}
+          >
+            <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>
+              {cancelling ? 'Atceļ...' : 'Apstiprināt atcelšanu'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
     </ScreenContainer>
   );
 }
@@ -1511,14 +2011,12 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     backgroundColor: '#fff',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 24,
-    paddingTop: 8,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
     elevation: 20,
   },
   detailsPull: {
@@ -1749,22 +2247,17 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     flex: 1,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#000',
+    height: 60,
+    borderRadius: 16,
+    backgroundColor: '#111827',
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
   },
   primaryButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: -0.1,
   },
   completedBanner: {
     flex: 1,
@@ -1794,6 +2287,111 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#374151',
+  },
+  rateBuyerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#fff',
+  },
+  rateBuyerBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  cancelJobBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: '#dc2626',
+    backgroundColor: '#fff5f5',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  cancelJobBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#dc2626',
+  },
+  ratingTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  ratingSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 24,
+  },
+  ratingStarRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 20,
+  },
+  ratingInput: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 14,
+    color: '#111827',
+    height: 90,
+    marginBottom: 16,
+  },
+  ratingSubmitBtn: {
+    backgroundColor: '#111827',
+    borderRadius: 14,
+    height: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  ratingSubmitBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  ratingSuccessWrap: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    gap: 12,
+  },
+  ratingSuccessTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  ratingSuccessSub: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+    flexShrink: 0,
+  },
+  detailValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
   },
   offlineBanner: {
     flexDirection: 'row',
@@ -1870,6 +2468,26 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#dc2626',
   },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingTop: 4,
+    paddingBottom: 4,
+    minHeight: 48,
+  },
+  optionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+  },
   detailsTrigger: {
     alignItems: 'center',
     paddingVertical: 12,
@@ -1902,22 +2520,6 @@ const styles = StyleSheet.create({
   },
   contactText: { fontWeight: '600', color: '#1f2937' },
 
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f9fafb',
-  },
-  detailLabel: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  detailValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-  },
   exceptionCard: {
     marginTop: 8,
     backgroundColor: '#fef2f2',
