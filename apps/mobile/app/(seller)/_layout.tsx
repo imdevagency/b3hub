@@ -43,8 +43,6 @@ function SellerLayoutContent() {
     );
   }
 
-  const combinedBadge = unreadCount + openQuoteCount;
-
   const avatarBtn = (
     <TouchableOpacity
       style={ls.avatarBtn}
@@ -76,7 +74,7 @@ function SellerLayoutContent() {
           options={{
             title: 'Pieprasījumi',
             tabBarIcon: ({ color }) => <Inbox size={22} color={color} />,
-            tabBarBadge: combinedBadge > 0 ? combinedBadge : undefined,
+            tabBarBadge: openQuoteCount > 0 ? openQuoteCount : undefined,
           }}
         />
         <Tabs.Screen name="quotes" options={{ href: null }} />

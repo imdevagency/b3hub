@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
   Dimensions,
@@ -12,13 +11,13 @@ import {
   RefreshControl,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { TopBar } from '@/components/ui/TopBar';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { t } from '@/lib/translations';
-import { Check, Clock, TrendingUp, ChevronRight } from 'lucide-react-native';
+import { Check, Clock, TrendingUp, ChevronRight, AlertCircle } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiTransportJob } from '@/lib/api';
-import { Skeleton } from '@/components/ui/Skeleton';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { haptics } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
@@ -152,7 +151,7 @@ function computeStats(jobs: ApiTransportJob[]): {
 // ── Components ────────────────────────────────────────────────────────────
 
 const CHART_H = 120;
-const CHART_W = Dimensions.get('window').width - 48; // padding horizontal
+const CHART_W = Dimensions.get('window').width - 40; // padding horizontal 20 + 20
 
 function MinimalBarChart({ bars }: { bars: DayBar[] }) {
   const maxAmt = Math.max(...bars.map((b) => b.amount), 1);
@@ -178,7 +177,7 @@ function MinimalBarChart({ bars }: { bars: DayBar[] }) {
               <View
                 style={{
                   height: h,
-                  backgroundColor: bar.isToday ? '#111827' : '#e5e7eb',
+                  backgroundColor: bar.isToday ? '#111827' : '#f3f4f6',
                   borderRadius: 6,
                   width: '100%',
                 }}
@@ -188,7 +187,7 @@ function MinimalBarChart({ bars }: { bars: DayBar[] }) {
               style={{
                 fontSize: 12,
                 color: bar.isToday ? '#111827' : '#9ca3af',
-                fontWeight: bar.isToday ? '600' : '500',
+                fontWeight: bar.isToday ? '700' : '600',
               }}
             >
               {bar.shortLabel}
@@ -305,241 +304,303 @@ export default function EarningsScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer>
-        <ScreenHeader title="Izpeļņa" />
-        <View style={{ padding: 24, gap: 20 }}>
-          <Skeleton style={{ height: 48, width: 128, alignSelf: 'center', borderRadius: 8 }} />
-          <Skeleton style={{ height: 160, width: '100%', borderRadius: 16 }} />
-          <Skeleton style={{ height: 32, width: '100%', borderRadius: 8 }} />
+      <ScreenContainer bg="#ffffff" topBg="#ffffff">
+        <TopBar transparent />
+        <View className="px-5 pt-2 pb-6">
+          <Text style={{ fontSize: 32, fontWeight: '800', color: '#111827', letterSpacing: -0.8 }}>
+            Izpeļņa
+          </Text>
+        </View>
+        <View className="px-5">
+          <SkeletonCard count={3} />
         </View>
       </ScreenContainer>
     );
   }
 
   return (
-    <ScreenContainer bg="white">
-      <ScreenHeader title="Izpeļņa" />
+    <ScreenContainer bg="#ffffff" topBg="#ffffff">
+      <TopBar transparent />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 60 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => fetchEarnings(true)} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => fetchEarnings(true)}
+            tintColor="#111827"
+          />
         }
       >
+        <View className="px-5 pt-1 pb-4">
+          <Text style={{ fontSize: 32, fontWeight: '800', color: '#111827', letterSpacing: -0.8 }}>
+            Izpeļņa
+          </Text>
+        </View>
+
         {user?.isCompany && user.payoutEnabled === false && (
-          <View className="mb-4 mx-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-            <Text className="text-orange-900 font-bold mb-1">Aktivizēt izmaksas</Text>
-            <Text className="text-orange-800 text-sm mb-3">
-              Pievienojiet bankas kontu, lai saņemtu izpeļņu.
+          <View className="mx-5 mb-8 bg-gray-50 rounded-3xl p-5 border border-gray-100">
+            <View className="flex-row items-center mb-3">
+              <AlertCircle size={20} color="#ea580c" />
+              <Text style={{ fontSize: 16, fontWeight: '800', color: '#111827', marginLeft: 8 }}>
+                Aktivizēt izmaksas
+              </Text>
+            </View>
+            <Text
+              style={{
+                fontSize: 15,
+                color: '#4b5563',
+                fontWeight: '500',
+                lineHeight: 22,
+                marginBottom: 16,
+              }}
+            >
+              Pievienojiet bankas kontu Stripe sistēmā, lai mēs varētu pārskaitīt jūsu izpeļņu.
             </Text>
             <TouchableOpacity
               onPress={handleSetupPayouts}
               disabled={setupLoading}
-              className="bg-orange-600 py-2 px-4 rounded-md items-center"
+              className="bg-gray-900 py-3.5 px-6 rounded-full items-center mt-4"
+              activeOpacity={0.8}
             >
               {setupLoading ? (
                 <ActivityIndicator color="white" size="small" />
               ) : (
-                <Text className="text-white font-medium">Iestatīt ar Stripe</Text>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>
+                  Iestatīt bankas kontu
+                </Text>
               )}
             </TouchableOpacity>
           </View>
         )}
 
-        {/* ── Hero Section ──────────────────────────────── */}
-        <View style={s.heroContainer}>
-          <Text style={s.heroLabel}>
-            {period === 'today' ? 'Šodienas' : period === 'week' ? 'Šīs nedēļas' : 'Mēneša'} izpeļņa
-          </Text>
-          <Text style={s.heroAmount}>€{heroAmount.toFixed(2)}</Text>
-
-          {/* Segmented Control */}
-          <View style={s.segmentedControl}>
+        {/* Segmented Control */}
+        <View className="px-5 mb-8">
+          <View className="flex-row bg-gray-100 p-1 rounded-2xl">
             {PERIODS.map((p) => {
-              const isActive = period === p.key;
+              const active = period === p.key;
               return (
                 <TouchableOpacity
                   key={p.key}
-                  style={[s.segment, isActive && s.segmentActive]}
+                  className={`flex-1 flex-row items-center justify-center py-2.5 rounded-xl ${active ? 'bg-white' : ''}`}
+                  style={
+                    active
+                      ? {
+                          shadowColor: '#000',
+                          shadowOpacity: 0.06,
+                          shadowRadius: 4,
+                          elevation: 1,
+                          shadowOffset: { width: 0, height: 1 },
+                        }
+                      : {}
+                  }
                   onPress={() => {
                     haptics.light();
                     setPeriod(p.key);
                   }}
                   activeOpacity={0.8}
                 >
-                  <Text style={[s.segmentText, isActive && s.segmentTextActive]}>{p.label}</Text>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: '600',
+                      color: active ? '#111827' : '#6b7280',
+                    }}
+                  >
+                    {p.label}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
         </View>
 
+        {/* ── Hero Section ──────────────────────────────── */}
+        <View className="px-5 items-center mb-10">
+          <Text
+            style={{
+              fontSize: 14,
+              color: '#6b7280',
+              fontWeight: '700',
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+              marginBottom: 8,
+            }}
+          >
+            {period === 'today' ? 'Šodien' : period === 'week' ? 'Šonedēļ' : 'Mēnesī'}
+          </Text>
+          <Text style={{ fontSize: 64, fontWeight: '800', color: '#111827', letterSpacing: -2.5 }}>
+            €{heroAmount.toFixed(2)}
+          </Text>
+        </View>
+
         {/* ── Chart ─────────────────────────────────────── */}
-        <View style={s.chartSection}>
+        <View className="px-5 mb-10">
           <MinimalBarChart bars={dailyChart} />
         </View>
 
         {/* ── Key Metrics ───────────────────────────────── */}
-        <View style={s.metricsRow}>
-          <View style={s.metricItem}>
-            <Text style={s.metricValue}>{stats.completedJobs}</Text>
-            <Text style={s.metricLabel}>Braucieni</Text>
+        <View className="flex-row px-5 mb-12">
+          <View className="flex-1 items-center justify-center">
+            <Text
+              style={{ fontSize: 22, fontWeight: '800', color: '#111827', letterSpacing: -0.5 }}
+            >
+              {stats.completedJobs}
+            </Text>
+            <Text style={{ fontSize: 13, color: '#9ca3af', fontWeight: '600', marginTop: 4 }}>
+              Braucieni
+            </Text>
           </View>
-          <View style={s.metricDivider} />
-          <View style={s.metricItem}>
-            <Text style={s.metricValue}>€{stats.pendingPayout.toFixed(0)}</Text>
-            <Text style={s.metricLabel}>Gaida izmaksu</Text>
+          <View className="w-[1px] bg-gray-100 h-10 self-center" />
+          <View className="flex-1 items-center justify-center">
+            <Text
+              style={{ fontSize: 22, fontWeight: '800', color: '#111827', letterSpacing: -0.5 }}
+            >
+              €{stats.pendingPayout.toFixed(0)}
+            </Text>
+            <Text style={{ fontSize: 13, color: '#9ca3af', fontWeight: '600', marginTop: 4 }}>
+              Gaida apmaksu
+            </Text>
           </View>
-          <View style={s.metricDivider} />
-          <View style={s.metricItem}>
-            <Text style={s.metricValue}>--:--</Text>
-            <Text style={s.metricLabel}>Tiešsaistē</Text>
+          <View className="w-[1px] bg-gray-100 h-10 self-center" />
+          <View className="flex-1 items-center justify-center">
+            <Text
+              style={{ fontSize: 22, fontWeight: '800', color: '#111827', letterSpacing: -0.5 }}
+            >
+              --:--
+            </Text>
+            <Text style={{ fontSize: 13, color: '#9ca3af', fontWeight: '600', marginTop: 4 }}>
+              Stundas
+            </Text>
           </View>
         </View>
 
         {/* ── Stripe Balance Card ───────────────────────── */}
         {stripeOnboarded && (
-          <View
-            style={{
-              marginHorizontal: 16,
-              marginBottom: 16,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: '#d1fae5',
-              backgroundColor: '#f0fdf4',
-              padding: 16,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                color: '#15803d',
-                fontFamily: 'Inter_600SemiBold',
-                marginBottom: 10,
-              }}
-            >
-              STRIPE · KONTA ATLIKUMS
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 24 }}>
-              <View>
-                <Text style={{ fontSize: 22, fontFamily: 'Inter_700Bold', color: '#111827' }}>
-                  €{(stripeAvailable ?? 0).toFixed(2)}
+          <View className="px-5 mb-8">
+            <View className="bg-gray-50 rounded-3xl p-6 border border-gray-100">
+              <View className="flex-row items-center mb-6" style={{ gap: 8 }}>
+                <View className="w-2 h-2 rounded-full bg-green-500" />
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: '#111827',
+                    fontWeight: '700',
+                    letterSpacing: 0.5,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Stripe Konts
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Pieejams</Text>
               </View>
-              <View>
-                <Text style={{ fontSize: 22, fontFamily: 'Inter_700Bold', color: '#6b7280' }}>
-                  €{(stripePending ?? 0).toFixed(2)}
-                </Text>
-                <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>Gaida</Text>
+              <View className="flex-row">
+                <View className="flex-1">
+                  <Text
+                    style={{ fontSize: 28, fontWeight: '800', color: '#111827', letterSpacing: -1 }}
+                  >
+                    €{(stripeAvailable ?? 0).toFixed(2)}
+                  </Text>
+                  <Text style={{ fontSize: 14, color: '#6b7280', fontWeight: '500', marginTop: 2 }}>
+                    Pieejams uzreiz
+                  </Text>
+                </View>
+                <View className="w-[1px] bg-gray-200 mx-4" />
+                <View className="flex-1">
+                  <Text
+                    style={{ fontSize: 28, fontWeight: '800', color: '#9ca3af', letterSpacing: -1 }}
+                  >
+                    €{(stripePending ?? 0).toFixed(2)}
+                  </Text>
+                  <Text style={{ fontSize: 14, color: '#9ca3af', fontWeight: '500', marginTop: 2 }}>
+                    Apstrādē
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
         )}
 
         {/* ── Payout Timeline ───────────────────────────── */}
-        <View
-          style={{
-            marginHorizontal: 16,
-            marginBottom: 16,
-            borderRadius: 14,
-            borderWidth: 1,
-            borderColor: '#e5e7eb',
-            backgroundColor: '#f9fafb',
-            padding: 16,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 12,
-              color: '#374151',
-              fontFamily: 'Inter_600SemiBold',
-              marginBottom: 12,
-              letterSpacing: 0.3,
-            }}
-          >
-            KĀ NOTIEK IZMAKSA
-          </Text>
-          {[
-            {
-              step: '1',
-              label: 'Piegāde pabeigta',
-              sub: 'Jūs atzīmējat darbu kā piegādātu',
-              color: '#059669',
-            },
-            {
-              step: '2',
-              label: 'Pircējs apstiprina',
-              sub: 'Līdz 48 stundām automātiski',
-              color: '#6366f1',
-            },
-            {
-              step: '3',
-              label: 'Summa atbrīvota',
-              sub: 'Nauda nonāk jūsu Stripe kontā',
-              color: '#f59e0b',
-            },
-            {
-              step: '4',
-              label: 'Izmaksa uz banku',
-              sub: '1–2 darba dienas (Stripe standarts)',
-              color: '#111827',
-            },
-          ].map((item, i, arr) => (
-            <View
-              key={item.step}
-              style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}
+        <View className="px-5 mb-10">
+          <View className="bg-gray-50 rounded-3xl p-6">
+            <Text
+              style={{
+                fontSize: 13,
+                color: '#9ca3af',
+                fontWeight: '700',
+                letterSpacing: 0.5,
+                textTransform: 'uppercase',
+                marginBottom: 20,
+              }}
             >
-              <View style={{ alignItems: 'center', width: 28 }}>
-                <View
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 14,
-                    backgroundColor: item.color,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text style={{ fontSize: 12, color: 'white', fontFamily: 'Inter_700Bold' }}>
-                    {item.step}
+              Kā strādā izmaksas
+            </Text>
+            {[
+              {
+                step: '1',
+                label: 'Piegāde pabeigta',
+                sub: 'Darbs atzīmēts kā piegādāts',
+                color: '#10b981',
+              },
+              {
+                step: '2',
+                label: 'Klienta apstiprinājums',
+                sub: 'Līdz 48h (vai automātiski)',
+                color: '#6366f1',
+              },
+              { step: '3', label: 'Nauda atbrīvota', sub: 'Stripe atlikumā', color: '#f59e0b' },
+              { step: '4', label: 'Izmaksa uz banku', sub: '1–2 dienu laikā', color: '#111827' },
+            ].map((item, i, arr) => (
+              <View key={item.step} className="flex-row items-start" style={{ gap: 16 }}>
+                <View className="items-center" style={{ width: 28 }}>
+                  <View
+                    className="w-7 h-7 rounded-full items-center justify-center"
+                    style={{ backgroundColor: item.color }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#ffffff' }}>
+                      {item.step}
+                    </Text>
+                  </View>
+                  {i < arr.length - 1 && (
+                    <View className="w-0.5 bg-gray-200 flex-1 my-1 min-h-[16px]" />
+                  )}
+                </View>
+                <View className="flex-1" style={{ paddingBottom: i < arr.length - 1 ? 16 : 0 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: '#111827' }}>
+                    {item.label}
+                  </Text>
+                  <Text style={{ fontSize: 13, color: '#6b7280', fontWeight: '500', marginTop: 2 }}>
+                    {item.sub}
                   </Text>
                 </View>
-                {i < arr.length - 1 && (
-                  <View
-                    style={{
-                      width: 2,
-                      flex: 1,
-                      minHeight: 12,
-                      backgroundColor: '#e5e7eb',
-                      marginVertical: 2,
-                    }}
-                  />
-                )}
               </View>
-              <View style={{ flex: 1, paddingBottom: i < arr.length - 1 ? 12 : 0 }}>
-                <Text style={{ fontSize: 13, color: '#111827', fontFamily: 'Inter_600SemiBold' }}>
-                  {item.label}
-                </Text>
-                <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }}>{item.sub}</Text>
-              </View>
-            </View>
-          ))}
+            ))}
+          </View>
         </View>
 
         {/* ── Recent Activity List ──────────────────────── */}
-        <View style={s.listSection}>
-          <Text style={s.sectionTitle}>Nesenā aktivitāte</Text>
+        <View>
+          <View className="px-5 pb-2 flex-row justify-between items-end">
+            <Text
+              style={{ fontSize: 22, fontWeight: '800', color: '#111827', letterSpacing: -0.5 }}
+            >
+              Visi braucieni
+            </Text>
+          </View>
 
           {filteredHistory.length === 0 ? (
-            <EmptyState title="Nav aktivitātes" subtitle="Šajā periodā nav reģistrētu braucienu" />
+            <View className="items-center py-10 mt-4">
+              <Text style={{ fontSize: 15, color: '#9ca3af', fontWeight: '500' }}>
+                Šajā periodā nav braucienu
+              </Text>
+            </View>
           ) : (
-            <View>
+            <View className="mt-2 text-black">
               {filteredHistory.map((item, i) => (
                 <TouchableOpacity
                   key={item.id}
-                  style={[s.listItem, i < filteredHistory.length - 1 && s.listBorder]}
+                  className={`flex-row items-center justify-between py-4 px-5 bg-white border-gray-100 ${i < filteredHistory.length - 1 ? 'border-b' : ''}`}
                   activeOpacity={0.7}
                   onPress={() => {
                     haptics.light();
@@ -550,17 +611,27 @@ export default function EarningsScreen() {
                     }
                   }}
                 >
-                  <View style={s.listLeft}>
-                    {/* Time or Date only if not strictly visible in header context, but here we show date */}
-                    <Text style={s.listTime}>{item.date}</Text>
-                    <Text style={s.listRoute} numberOfLines={1}>
+                  <View className="flex-1 pr-4 gap-1">
+                    <Text style={{ fontSize: 12, color: '#9ca3af', fontWeight: '600' }}>
+                      {item.date}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        fontWeight: '700',
+                        color: '#111827',
+                        letterSpacing: -0.2,
+                      }}
+                      numberOfLines={1}
+                    >
                       {item.route}
                     </Text>
                   </View>
-                  <View style={s.listRight}>
-                    <Text style={s.listAmount}>
+                  <View className="flex-row items-center" style={{ gap: 6 }}>
+                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }}>
                       {item.amount > 0 ? `€${item.amount.toFixed(2)}` : '€0.00'}
                     </Text>
+                    <ChevronRight size={18} color="#d1d5db" />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -571,137 +642,3 @@ export default function EarningsScreen() {
     </ScreenContainer>
   );
 }
-
-const s = StyleSheet.create({
-  heroContainer: {
-    alignItems: 'center',
-    paddingVertical: 20,
-    gap: 8,
-  },
-  heroLabel: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontWeight: '500',
-    letterSpacing: 0.2,
-  },
-  heroAmount: {
-    fontSize: 48,
-    fontWeight: '800', // Heavy weight like Uber/Lyft
-    color: '#111827',
-    letterSpacing: -1.5,
-  },
-
-  // Segmented Control
-  segmentedControl: {
-    flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
-    borderRadius: 999,
-    padding: 4,
-    marginTop: 16,
-    width: '90%', // slightly less than full width
-  },
-  segment: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 999,
-  },
-  segmentActive: {
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  segmentText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
-  segmentTextActive: {
-    color: '#111827',
-  },
-
-  // Chart
-  chartSection: {
-    paddingHorizontal: 24,
-    marginTop: 12,
-    marginBottom: 24,
-  },
-
-  // Metrics
-  metricsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  metricItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  metricValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  metricLabel: {
-    fontSize: 11,
-    color: '#9ca3af',
-    marginTop: 2,
-    fontWeight: '500',
-  },
-  metricDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#e5e7eb',
-  },
-
-  // List
-  listSection: {
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 16,
-  },
-  listItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
-  listBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  listLeft: {
-    gap: 4,
-    flex: 1,
-  },
-  listTime: {
-    fontSize: 12,
-    color: '#9ca3af',
-    fontWeight: '500',
-  },
-  listRoute: {
-    fontSize: 14,
-    color: '#374151',
-    fontWeight: '500',
-  },
-  listRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  listAmount: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-  },
-});

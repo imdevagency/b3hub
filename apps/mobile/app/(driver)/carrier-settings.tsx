@@ -1,9 +1,3 @@
-/**
- * (driver)/carrier-settings.tsx
- *
- * Driver: manage skip-hire pricing, service zones, and blocked availability dates.
- */
-
 import React, { useCallback, useState } from 'react';
 import {
   View,
@@ -12,7 +6,8 @@ import {
   TextInput,
   Alert,
   RefreshControl,
-  StyleSheet,
+  ActivityIndicator,
+  Text,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
@@ -27,21 +22,18 @@ import { Trash2, Plus, Check, X } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SkeletonCard } from '@/components/ui/Skeleton';
-import { Text } from '@/components/ui/text';
-import { colors, spacing, radius, fontSizes } from '@/lib/tokens';
+import { haptics } from '@/lib/haptics';
 
 // ─── Constants ────────────────────────────────────────────────────────────
 
 type Tab = 'pricing' | 'zones' | 'availability';
 
 const SKIP_SIZES: { value: SkipSize; label: string; volume: string }[] = [
-  { value: 'MINI', label: 'Mini', volume: '2 m³' },
-  { value: 'MIDI', label: 'Midi', volume: '4 m³' },
-  { value: 'BUILDERS', label: 'Builders', volume: '6 m³' },
-  { value: 'LARGE', label: 'Liels', volume: '8 m³' },
+  { value: 'MINI', label: 'Mini', volume: 'Līdz 2 m³' },
+  { value: 'MIDI', label: 'Midi', volume: 'Līdz 4 m³' },
+  { value: 'BUILDERS', label: 'Builders', volume: 'Līdz 6 m³' },
+  { value: 'LARGE', label: 'Liels', volume: 'Līdz 8 m³' },
 ];
-
-// ─── Screen ───────────────────────────────────────────────────────────────
 
 export default function CarrierSettingsScreen() {
   const { token } = useAuth();
@@ -104,6 +96,7 @@ export default function CarrierSettingsScreen() {
     const price = parseFloat(raw ?? '');
     if (isNaN(price) || price < 0) return;
     if (!token) return;
+    haptics.light();
     setSavingSize(size);
     try {
       await api.carrierSettings.pricing.set(token, size, price);
@@ -113,7 +106,9 @@ export default function CarrierSettingsScreen() {
         return n;
       });
       await load(true);
+      haptics.success();
     } catch {
+      haptics.error();
       Alert.alert('Kļūda', 'Neizdevās saglabāt cenu');
     } finally {
       setSavingSize(null);
@@ -122,6 +117,7 @@ export default function CarrierSettingsScreen() {
 
   const handleDeletePrice = async (size: SkipSize) => {
     if (!token) return;
+    haptics.light();
     Alert.alert('Dzēst cenu', `Dzēst cenu izmēram ${size}?`, [
       { text: 'Atcelt', style: 'cancel' },
       {
@@ -131,6 +127,7 @@ export default function CarrierSettingsScreen() {
           try {
             await api.carrierSettings.pricing.delete(token, size);
             load(true);
+            haptics.success();
           } catch {
             Alert.alert('Kļūda', 'Neizdevās dzēst cenu');
           }
@@ -154,7 +151,9 @@ export default function CarrierSettingsScreen() {
       setNewSurcharge('');
       setShowAddZone(false);
       load(true);
+      haptics.success();
     } catch {
+      haptics.error();
       Alert.alert('Kļūda', 'Neizdevās pievienot zonu');
     } finally {
       setAddingZone(false);
@@ -163,6 +162,7 @@ export default function CarrierSettingsScreen() {
 
   const handleDeleteZone = (id: string, city: string) => {
     if (!token) return;
+    haptics.light();
     Alert.alert('Dzēst zonu', `Dzēst "${city}"?`, [
       { text: 'Atcelt', style: 'cancel' },
       {
@@ -172,6 +172,7 @@ export default function CarrierSettingsScreen() {
           try {
             await api.carrierSettings.zones.delete(token, id);
             load(true);
+            haptics.success();
           } catch {
             Alert.alert('Kļūda', 'Neizdevās dzēst zonu');
           }
@@ -197,7 +198,9 @@ export default function CarrierSettingsScreen() {
       setNewDate('');
       setNewReason('');
       load(true);
+      haptics.success();
     } catch {
+      haptics.error();
       Alert.alert('Kļūda', 'Neizdevās bloķēt datumu');
     } finally {
       setBlockingDate(false);
@@ -206,6 +209,7 @@ export default function CarrierSettingsScreen() {
 
   const handleUnblockDate = (id: string, date: string) => {
     if (!token) return;
+    haptics.light();
     Alert.alert('Atbloķēt datumu', `Atjaunot pieejamību ${date}?`, [
       { text: 'Atcelt', style: 'cancel' },
       {
@@ -214,6 +218,7 @@ export default function CarrierSettingsScreen() {
           try {
             await api.carrierSettings.availability.unblock(token, id);
             load(true);
+            haptics.success();
           } catch {
             Alert.alert('Kļūda', 'Neizdevās atbloķēt datumu');
           }
@@ -224,34 +229,56 @@ export default function CarrierSettingsScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer bg="#f4f5f7">
-        <ScreenHeader title="Pārvadātāja iestatījumi" />
-        <SkeletonCard count={3} />
+      <ScreenContainer bg="#ffffff">
+        <ScreenHeader title="" />
+        <View className="px-5 pt-2 pb-4">
+          <Text style={{ fontSize: 32, fontWeight: '800', color: '#111827', letterSpacing: -0.8 }}>Pārvadātājs</Text>
+        </View>
+        <View className="px-5"><SkeletonCard count={3} /></View>
       </ScreenContainer>
     );
   }
 
   return (
-    <ScreenContainer bg="#f4f5f7">
-      <ScreenHeader title="Pārvadātāja iestatījumi" />
+    <ScreenContainer bg="#ffffff" topBg="#ffffff">
+      <ScreenHeader title="" />
+      
+      <View className="px-5 pt-1 pb-4">
+        <Text style={{ fontSize: 32, fontWeight: '800', color: '#111827', letterSpacing: -0.8 }}>
+          Pārvadātājs
+        </Text>
+        <Text className="text-gray-500 font-medium text-[15px] mt-1 mb-2">Reģioni un izcenojumi</Text>
+      </View>
 
-      {/* Tab bar */}
-      <View style={styles.tabBar}>
-        {(['pricing', 'zones', 'availability'] as Tab[]).map((t) => (
-          <TouchableOpacity
-            key={t}
-            style={[styles.tab, tab === t && styles.tabActive]}
-            onPress={() => setTab(t)}
-            activeOpacity={0.75}
-          >
-            <Text style={[styles.tabLabel, tab === t && styles.tabLabelActive]}>
-              {t === 'pricing' ? 'Cenas' : t === 'zones' ? 'Zonas' : 'Pieejamība'}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      {/* Segmented Control */}
+      <View className="px-5 mb-4">
+        <View className="flex-row bg-gray-100 p-1 rounded-2xl">
+          {([
+            { key: 'pricing', label: 'Cenas' },
+            { key: 'zones', label: 'Zonas' },
+            { key: 'availability', label: 'Pieejamība' },
+          ] as const).map((s) => {
+            const active = tab === s.key;
+            return (
+              <TouchableOpacity
+                key={s.key}
+                className={`flex-1 flex-row items-center justify-center py-2.5 rounded-xl ${active ? 'bg-white' : ''}`}
+                style={active ? { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, elevation: 1, shadowOffset: { width: 0, height: 1 } } : {}}
+                onPress={() => { haptics.light(); setTab(s.key as Tab); }}
+                activeOpacity={0.8}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '600', color: active ? '#111827' : '#6b7280' }}>
+                  {s.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 60 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -259,58 +286,63 @@ export default function CarrierSettingsScreen() {
               setRefreshing(true);
               load(true);
             }}
+            tintColor="#111827"
           />
         }
-        contentContainerStyle={styles.scroll}
       >
         {/* ── PRICING TAB ── */}
         {tab === 'pricing' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionNote}>
-              Iestatiet cenu (€/dienā) katram konteinera izmēram.
-            </Text>
-            {SKIP_SIZES.map(({ value, label, volume }) => {
+          <View>
+            <View className="px-5 pb-3">
+              <Text className="text-[14px] text-gray-500 font-medium tracking-tight">Iestatiet cenu (€/dienā) katram konteinera izmēram.</Text>
+            </View>
+            
+            {SKIP_SIZES.map(({ value, label, volume }, i) => {
               const existing = priceMap[value];
               const editVal = priceInputs[value];
-              const displayVal =
-                editVal !== undefined ? editVal : existing ? String(existing.price) : '';
+              const displayVal = editVal !== undefined ? editVal : (existing ? String(existing.price) : '');
               const isDirty = editVal !== undefined;
               const isSaving = savingSize === value;
 
               return (
-                <View key={value} style={styles.pricingRow}>
-                  <View style={styles.pricingInfo}>
-                    <Text style={styles.pricingLabel}>{label}</Text>
-                    <Text style={styles.pricingMeta}>{volume}</Text>
+                <View key={value} className={`flex-row items-center justify-between px-5 py-4 bg-white border-gray-100 ${i !== SKIP_SIZES.length - 1 ? 'border-b' : ''}`}>
+                  <View className="flex-1 pr-4">
+                    <Text style={{ fontSize: 17, fontWeight: '700', color: '#111827', letterSpacing: -0.3 }}>{label}</Text>
+                    <Text style={{ fontSize: 14, color: '#6b7280', fontWeight: '500', marginTop: 2 }}>{volume}</Text>
                   </View>
-                  <View style={styles.pricingInputRow}>
-                    <TextInput
-                      style={styles.priceInput}
-                      value={displayVal}
-                      onChangeText={(v) => setPriceInputs((prev) => ({ ...prev, [value]: v }))}
-                      keyboardType="decimal-pad"
-                      placeholder="—"
-                      placeholderTextColor={colors.textMuted}
-                    />
-                    <Text style={styles.pricingCurrency}>€</Text>
-                    {isDirty && (
+                  <View className="flex-row items-center" style={{ gap: 8 }}>
+                    <View className="relative flex-row items-center">
+                      <TextInput
+                        className="bg-gray-100 rounded-2xl pl-4 pr-8 text-gray-900 font-bold"
+                        style={{ paddingTop: 14, paddingBottom: 14, fontSize: 18, minWidth: 90, textAlign: 'right' }}
+                        value={displayVal}
+                        onChangeText={(v) => setPriceInputs((prev) => ({ ...prev, [value]: v }))}
+                        keyboardType="decimal-pad"
+                        placeholder="0.00"
+                        placeholderTextColor="#9ca3af"
+                      />
+                      {displayVal.length > 0 && <Text className="absolute right-4 text-gray-400 font-bold" style={{ fontSize: 18 }}>€</Text>}
+                    </View>
+                    
+                    {isDirty ? (
                       <TouchableOpacity
-                        style={styles.saveIconBtn}
+                        className="w-12 h-12 rounded-full bg-gray-900 items-center justify-center"
                         onPress={() => handleSavePrice(value)}
                         disabled={isSaving}
-                        activeOpacity={0.75}
+                        activeOpacity={0.7}
                       >
-                        <Check size={16} color="#fff" />
+                        {isSaving ? <ActivityIndicator size="small" color="#fff" /> : <Check size={18} color="#fff" strokeWidth={3} />}
                       </TouchableOpacity>
-                    )}
-                    {existing && !isDirty && (
+                    ) : existing ? (
                       <TouchableOpacity
-                        style={styles.deleteIconBtn}
+                        className="w-12 h-12 rounded-full bg-gray-100 items-center justify-center"
                         onPress={() => handleDeletePrice(value)}
-                        activeOpacity={0.75}
+                        activeOpacity={0.7}
                       >
-                        <Trash2 size={14} color={colors.textMuted} />
+                        <Trash2 size={18} color="#9ca3af" />
                       </TouchableOpacity>
+                    ) : (
+                      <View className="w-12 h-12" /> // spacer to keep alignment
                     )}
                   </View>
                 </View>
@@ -321,164 +353,161 @@ export default function CarrierSettingsScreen() {
 
         {/* ── ZONES TAB ── */}
         {tab === 'zones' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionNote}>Norādiet pilsētas, kurās sniedzat pakalpojumus.</Text>
+          <View>
+            <View className="px-5 pb-3">
+              <Text className="text-[14px] text-gray-500 font-medium tracking-tight mb-4">Norādiet pilsētas un reģionus, kuros sniedzat pakalpojumus.</Text>
+              
+              {showAddZone ? (
+                <View className="bg-gray-50 rounded-3xl p-5 mb-2" style={{ gap: 12 }}>
+                  <TextInput
+                    className="bg-white rounded-2xl px-5 text-gray-900 font-medium"
+                    style={{ paddingVertical: 14, fontSize: 16 }}
+                    placeholder="Pilsēta / Reģions (piem. Rīga)"
+                    placeholderTextColor="#9ca3af"
+                    value={newCity}
+                    onChangeText={setNewCity}
+                    autoFocus
+                  />
+                  <View className="flex-row" style={{ gap: 12 }}>
+                    <TextInput
+                      className="flex-1 bg-white rounded-2xl px-5 text-gray-900 font-medium"
+                      style={{ paddingVertical: 14, fontSize: 16 }}
+                      placeholder="Indekss (nav obligāti)"
+                      placeholderTextColor="#9ca3af"
+                      value={newPostcode}
+                      onChangeText={setNewPostcode}
+                    />
+                    <TextInput
+                      className="flex-1 bg-white rounded-2xl px-5 text-gray-900 font-medium"
+                      style={{ paddingVertical: 14, fontSize: 16 }}
+                      placeholder="Piemaksa €"
+                      placeholderTextColor="#9ca3af"
+                      value={newSurcharge}
+                      onChangeText={setNewSurcharge}
+                      keyboardType="decimal-pad"
+                    />
+                  </View>
+                  
+                  <View className="flex-row mt-2" style={{ gap: 12 }}>
+                    <TouchableOpacity
+                      className="flex-1 items-center justify-center rounded-full py-3.5 bg-white border border-gray-200"
+                      onPress={() => { setShowAddZone(false); setNewCity(''); setNewPostcode(''); setNewSurcharge(''); }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={{ fontSize: 15, fontWeight: '600', color: '#6b7280' }}>Atcelt</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      className={`flex-1 items-center justify-center rounded-full py-3.5 ${!newCity.trim() || addingZone ? 'bg-gray-200' : 'bg-gray-900'}`}
+                      onPress={handleAddZone}
+                      disabled={!newCity.trim() || addingZone}
+                      activeOpacity={0.7}
+                    >
+                      {addingZone ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ fontSize: 15, fontWeight: '700', color: !newCity.trim() ? '#9ca3af' : '#fff' }}>Pievienot</Text>}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  className="flex-row items-center justify-center rounded-full bg-gray-100 py-3.5 mb-2"
+                  style={{ gap: 8 }}
+                  onPress={() => { haptics.light(); setShowAddZone(true); }}
+                  activeOpacity={0.7}
+                >
+                  <Plus size={18} color="#111827" />
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>Pievienot zonu</Text>
+                </TouchableOpacity>
+              )}
+            </View>
 
-            {showAddZone ? (
-              <View style={styles.addForm}>
-                <TextInput
-                  style={styles.formInput}
-                  placeholder="Pilsēta (piem. Rīga)"
-                  placeholderTextColor={colors.textMuted}
-                  value={newCity}
-                  onChangeText={setNewCity}
-                />
-                <TextInput
-                  style={styles.formInput}
-                  placeholder="Pasta indekss (neobligāti)"
-                  placeholderTextColor={colors.textMuted}
-                  value={newPostcode}
-                  onChangeText={setNewPostcode}
-                />
-                <TextInput
-                  style={styles.formInput}
-                  placeholder="Papildu maksa € (neobligāti)"
-                  placeholderTextColor={colors.textMuted}
-                  value={newSurcharge}
-                  onChangeText={setNewSurcharge}
-                  keyboardType="decimal-pad"
-                />
-                <View style={styles.formActions}>
+            <View className="mt-2">
+              {zones.length === 0 && !showAddZone && (
+                <View className="items-center py-10">
+                  <Text className="text-gray-400 font-medium text-[15px]">Nav pievienotu zonu</Text>
+                </View>
+              )}
+              {zones.map((zone, idx) => (
+                <View key={zone.id} className={`flex-row items-center justify-between px-5 py-4 bg-white border-gray-100 ${idx !== zones.length - 1 ? 'border-b' : ''}`}>
+                  <View className="flex-1 pr-4">
+                    <Text style={{ fontSize: 17, fontWeight: '700', color: '#111827', letterSpacing: -0.3 }}>{zone.city}</Text>
+                    <View className="flex-row items-center mt-1.5" style={{ gap: 12 }}>
+                      {zone.postcode ? (
+                        <Text style={{ fontSize: 13, color: '#6b7280', fontWeight: '500' }}>Indekss: {zone.postcode}</Text>
+                      ) : null}
+                      {zone.surcharge ? (
+                        <View className="bg-red-50 px-2 py-0.5 rounded-md">
+                          <Text style={{ fontSize: 12, color: '#b91c1c', fontWeight: '600' }}>+€{zone.surcharge}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  </View>
                   <TouchableOpacity
-                    style={styles.cancelBtn}
-                    onPress={() => {
-                      setShowAddZone(false);
-                      setNewCity('');
-                      setNewPostcode('');
-                      setNewSurcharge('');
-                    }}
+                    className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
+                    onPress={() => handleDeleteZone(zone.id, zone.city)}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.cancelBtnText}>Atcelt</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.saveBtn,
-                      (!newCity.trim() || addingZone) && styles.saveBtnDisabled,
-                    ]}
-                    onPress={handleAddZone}
-                    disabled={!newCity.trim() || addingZone}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={styles.saveBtnText}>
-                      {addingZone ? 'Pievieno...' : 'Saglabāt'}
-                    </Text>
+                    <Trash2 size={16} color="#ef4444" />
                   </TouchableOpacity>
                 </View>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={styles.addRowBtn}
-                onPress={() => setShowAddZone(true)}
-                activeOpacity={0.75}
-              >
-                <Plus size={16} color={colors.textMuted} />
-                <Text style={styles.addRowBtnText}>Pievienot zonu</Text>
-              </TouchableOpacity>
-            )}
-
-            <View style={styles.card}>
-              {zones.length === 0 ? (
-                <Text style={styles.emptyText}>Nav pievienotu zonu</Text>
-              ) : (
-                zones.map((zone, idx) => (
-                  <React.Fragment key={zone.id}>
-                    {idx > 0 && <View style={styles.divider} />}
-                    <View style={styles.zoneRow}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.zoneCity}>{zone.city}</Text>
-                        {zone.postcode ? (
-                          <Text style={styles.zoneMeta}>Indekss: {zone.postcode}</Text>
-                        ) : null}
-                        {zone.surcharge ? (
-                          <Text style={styles.zoneMeta}>Papildu maksa: €{zone.surcharge}</Text>
-                        ) : null}
-                      </View>
-                      <TouchableOpacity
-                        onPress={() => handleDeleteZone(zone.id, zone.city)}
-                        hitSlop={8}
-                        activeOpacity={0.7}
-                      >
-                        <Trash2 size={16} color={colors.textMuted} />
-                      </TouchableOpacity>
-                    </View>
-                  </React.Fragment>
-                ))
-              )}
+              ))}
             </View>
           </View>
         )}
 
         {/* ── AVAILABILITY TAB ── */}
         {tab === 'availability' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionNote}>Bloķējiet datumus, kad neesat pieejams piegādēm.</Text>
-
-            <View style={styles.addForm}>
-              <TextInput
-                style={styles.formInput}
-                placeholder="Datums GGGG-MM-DD"
-                placeholderTextColor={colors.textMuted}
-                value={newDate}
-                onChangeText={setNewDate}
-              />
-              <TextInput
-                style={styles.formInput}
-                placeholder="Iemesls (neobligāti)"
-                placeholderTextColor={colors.textMuted}
-                value={newReason}
-                onChangeText={setNewReason}
-              />
-              <TouchableOpacity
-                style={[
-                  styles.saveBtn,
-                  (!newDate.trim() || blockingDate) && styles.saveBtnDisabled,
-                ]}
-                onPress={handleBlockDate}
-                disabled={!newDate.trim() || blockingDate}
-                activeOpacity={0.75}
-              >
-                <Text style={styles.saveBtnText}>
-                  {blockingDate ? 'Bloķē...' : 'Bloķēt datumu'}
-                </Text>
-              </TouchableOpacity>
+          <View>
+            <View className="px-5 pb-3">
+              <Text className="text-[14px] text-gray-500 font-medium tracking-tight mb-4">Bloķējiet datumus, kad neesat pieejams piegādēm.</Text>
+              
+              <View className="bg-gray-50 rounded-3xl p-5 mb-2" style={{ gap: 12 }}>
+                <TextInput
+                  className="bg-white rounded-2xl px-5 text-gray-900 font-medium"
+                  style={{ paddingVertical: 14, fontSize: 16 }}
+                  placeholder="Datums GGGG-MM-DD"
+                  placeholderTextColor="#9ca3af"
+                  value={newDate}
+                  onChangeText={setNewDate}
+                />
+                <TextInput
+                  className="bg-white rounded-2xl px-5 text-gray-900 font-medium"
+                  style={{ paddingVertical: 14, fontSize: 16 }}
+                  placeholder="Iemesls (neobligāti, piem. Brīvdiena)"
+                  placeholderTextColor="#9ca3af"
+                  value={newReason}
+                  onChangeText={setNewReason}
+                />
+                <TouchableOpacity
+                  className={`items-center justify-center rounded-full py-4 mt-2 ${!newDate.trim() || blockingDate ? 'bg-gray-200' : 'bg-gray-900'}`}
+                  onPress={handleBlockDate}
+                  disabled={!newDate.trim() || blockingDate}
+                  activeOpacity={0.7}
+                >
+                  {blockingDate ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ fontSize: 15, fontWeight: '700', color: !newDate.trim() ? '#9ca3af' : '#fff' }}>Bloķēt datumu</Text>}
+                </TouchableOpacity>
+              </View>
             </View>
 
-            <View style={styles.card}>
-              {blockedDates.length === 0 ? (
-                <Text style={styles.emptyText}>Nav bloķētu datumu</Text>
-              ) : (
-                blockedDates
-                  .sort((a, b) => a.date.localeCompare(b.date))
-                  .map((d, idx) => (
-                    <React.Fragment key={d.id}>
-                      {idx > 0 && <View style={styles.divider} />}
-                      <View style={styles.dateRow}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.dateText}>{d.date}</Text>
-                          {d.reason ? <Text style={styles.dateMeta}>{d.reason}</Text> : null}
-                        </View>
-                        <TouchableOpacity
-                          onPress={() => handleUnblockDate(d.id, d.date)}
-                          hitSlop={8}
-                          activeOpacity={0.7}
-                        >
-                          <X size={16} color={colors.textMuted} />
-                        </TouchableOpacity>
-                      </View>
-                    </React.Fragment>
-                  ))
+            <View className="mt-2">
+              {blockedDates.length === 0 && (
+                <View className="items-center py-10">
+                  <Text className="text-gray-400 font-medium text-[15px]">Nav bloķētu datumu</Text>
+                </View>
               )}
+              {blockedDates.sort((a, b) => a.date.localeCompare(b.date)).map((d, idx) => (
+                <View key={d.id} className={`flex-row items-center justify-between px-5 py-4 bg-white border-gray-100 ${idx !== blockedDates.length - 1 ? 'border-b' : ''}`}>
+                  <View className="flex-1 pr-4">
+                    <Text style={{ fontSize: 17, fontWeight: '700', color: '#111827', letterSpacing: -0.3, fontVariant: ['tabular-nums'] }}>{d.date}</Text>
+                    {d.reason ? <Text style={{ fontSize: 14, color: '#6b7280', fontWeight: '500', marginTop: 2 }}>{d.reason}</Text> : null}
+                  </View>
+                  <TouchableOpacity
+                    className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
+                    onPress={() => handleUnblockDate(d.id, d.date)}
+                    activeOpacity={0.7}
+                  >
+                    <Trash2 size={16} color="#9ca3af" />
+                  </TouchableOpacity>
+                </View>
+              ))}
             </View>
           </View>
         )}
@@ -486,226 +515,3 @@ export default function CarrierSettingsScreen() {
     </ScreenContainer>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  scroll: {
-    paddingBottom: spacing.xl,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.base,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
-    gap: spacing.xs,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: radius.lg,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-  },
-  tabActive: {
-    backgroundColor: '#111827',
-  },
-  tabLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textMuted,
-  },
-  tabLabelActive: {
-    color: '#fff',
-  },
-  section: {
-    padding: spacing.base,
-    gap: 12,
-  },
-  sectionNote: {
-    fontSize: 13,
-    color: colors.textMuted,
-    lineHeight: 18,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  pricingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  pricingInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  pricingLabel: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  pricingMeta: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  pricingInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  priceInput: {
-    width: 72,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#111827',
-    textAlign: 'right',
-    backgroundColor: '#f9fafb',
-  },
-  pricingCurrency: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontWeight: '600',
-  },
-  saveIconBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.sm,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteIconBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.sm,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addForm: {
-    backgroundColor: '#fff',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    padding: 16,
-    gap: 10,
-  },
-  addRowBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-  },
-  addRowBtnText: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontWeight: '600',
-  },
-  formInput: {
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    fontSize: fontSizes.sm,
-    color: colors.textPrimary,
-  },
-  formActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: spacing.sm,
-  },
-  cancelBtn: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cancelBtnText: {
-    fontSize: fontSizes.sm,
-    color: colors.textMuted,
-  },
-  saveBtn: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    borderRadius: radius.md,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-  },
-  saveBtnDisabled: {
-    opacity: 0.4,
-  },
-  saveBtnText: {
-    fontSize: fontSizes.sm,
-    color: '#fff',
-    fontWeight: '600',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#9ca3af',
-    textAlign: 'center',
-    paddingVertical: 20,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#f3f4f6',
-  },
-  zoneRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  zoneCity: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  zoneMeta: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  dateText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#111827',
-    fontVariant: ['tabular-nums'],
-  },
-  dateMeta: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-});

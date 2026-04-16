@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
@@ -11,8 +11,19 @@ import { useToast } from '@/components/ui/Toast';
 import { Inbox, ArrowRight, Plus, CheckCircle, Wallet, ChevronRight } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useHeaderConfig } from '@/lib/header-context';
+import { StatusPill } from '@/components/ui/StatusPill';
 
 const TAB_H = 52;
+
+function getStatusMeta(status: string) {
+  switch (status) {
+    case 'PENDING':    return { text: 'Gaida',        color: '#d97706', bg: '#fef3c7' };
+    case 'CONFIRMED':  return { text: 'Apstiprināts', color: '#166534', bg: '#dcfce7' };
+    case 'DELIVERED':  return { text: 'Piegādāts',    color: '#1d4ed8', bg: '#dbeafe' };
+    case 'CANCELLED':  return { text: 'Atcelts',      color: '#b91c1c', bg: '#fef2f2' };
+    default:           return { text: status,         color: '#6b7280', bg: '#f3f4f6' };
+  }
+}
 
 export default function SellerHomeScreen() {
   const { user, token } = useAuth();
@@ -87,12 +98,11 @@ export default function SellerHomeScreen() {
   );
 
   return (
-    <ScreenContainer noAnimation bg="#F3F4F6">
+    <ScreenContainer noAnimation bg="#ffffff" topBg="#ffffff">
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingBottom: TAB_H + insets.bottom + 32,
-          paddingHorizontal: 16,
           paddingTop: 16,
         }}
         showsVerticalScrollIndicator={false}
@@ -100,405 +110,175 @@ export default function SellerHomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadData(true)}
-            tintColor="#00A878"
+            tintColor="#111827"
           />
         }
       >
-        {/* FIRST-RUN ONBOARDING — shown when seller has no materials listed yet */}
-        {materialCount === 0 && pendingCount === 0 && (
-          <View
-            style={{
-              backgroundColor: '#000000',
-              borderRadius: 20,
-              padding: 16,
-              marginBottom: 24,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 20,
-                fontFamily: 'Inter_700Bold',
-                fontWeight: '700',
-                color: '#ffffff',
-                letterSpacing: -0.5,
-                marginBottom: 6,
-              }}
-            >
-              Sāciet pārdot
-            </Text>
-            <Text
-              style={{
-                fontSize: 14,
-                color: '#9ca3af',
-                fontFamily: 'Inter_400Regular',
-                marginBottom: 20,
-                lineHeight: 20,
-              }}
-            >
-              Izpildiet 3 soļus, lai saņemtu pirmo pasūtījumu
-            </Text>
-            {[
-              { icon: Plus, label: 'Pievienojiet materiālus katalogā', route: '/(seller)/catalog' },
-              {
-                icon: CheckCircle,
-                label: 'Apstipriniet ienākošos pasūtījumus',
-                route: '/(seller)/incoming',
-              },
-              { icon: Wallet, label: 'Sekojiet ienākumiem', route: '/(seller)/earnings' },
-            ].map((step, i) => {
-              const Icon = step.icon;
-              return (
-                <TouchableOpacity
-                  key={i}
-                  onPress={() => {
-                    if (!step.route) return;
-                    haptics.light();
-                    router.push(step.route as any);
-                  }}
-                  activeOpacity={step.route ? 0.75 : 1}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 12,
-                    marginBottom: i < 2 ? 16 : 0,
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 18,
-                      backgroundColor: 'rgba(255,255,255,0.1)',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+        <View className="px-5">
+          {/* FIRST-RUN ONBOARDING */}
+          {materialCount === 0 && pendingCount === 0 && (
+            <View className="bg-gray-900 rounded-3xl p-5 mb-6">
+              <Text style={{ fontSize: 22, fontWeight: '700', color: '#ffffff', letterSpacing: -0.5, marginBottom: 8 }}>
+                Sāciet pārdot
+              </Text>
+              <Text className="text-gray-400 mb-6 text-[15px] font-medium leading-5">
+                Izpildiet 3 soļus, lai saņemtu pirmo pasūtījumu
+              </Text>
+              {[
+                { icon: Plus, label: 'Pievienojiet materiālus katalogā', route: '/(seller)/catalog' },
+                {
+                  icon: CheckCircle,
+                  label: 'Apstipriniet ienākošos pasūtījumus',
+                  route: '/(seller)/incoming',
+                },
+                { icon: Wallet, label: 'Sekojiet ienākumiem', route: '/(seller)/earnings' },
+              ].map((step, i) => {
+                const Icon = step.icon;
+                return (
+                  <TouchableOpacity
+                    key={i}
+                    onPress={() => {
+                      if (!step.route) return;
+                      haptics.light();
+                      router.push(step.route as any);
                     }}
+                    activeOpacity={step.route ? 0.75 : 1}
+                    className={`flex-row items-center ${i < 2 ? 'mb-4' : ''}`}
+                    style={{ gap: 14 }}
                   >
-                    <Icon size={18} color="#ffffff" strokeWidth={2} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        color: '#ffffff',
-                        fontFamily: 'Inter_500Medium',
-                        letterSpacing: -0.2,
-                      }}
-                    >
-                      {step.label}
+                    <View className="w-10 h-10 rounded-full bg-white/10 items-center justify-center">
+                      <Icon size={18} color="#ffffff" strokeWidth={2} />
+                    </View>
+                    <View className="flex-1">
+                      <Text style={{ fontSize: 15, color: '#ffffff', fontWeight: '600', letterSpacing: -0.2 }}>
+                        {step.label}
+                      </Text>
+                    </View>
+                    <ArrowRight size={16} color="#6b7280" />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
+          {/* STATUS CARD (UBER STYLE) */}
+          <View className="mb-8">
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => {
+                haptics.medium();
+                router.push('/(seller)/incoming' as any);
+              }}
+              className={`rounded-3xl p-5 min-h-[160px] justify-between ${
+                pendingCount !== null && pendingCount > 0 ? 'bg-gray-900' : 'bg-gray-100'
+              }`}
+            >
+              {pendingCount !== null ? (
+                pendingCount > 0 ? (
+                  <>
+                    <View className="flex-row justify-between items-start">
+                      <View>
+                        <View className="flex-row items-center mb-1">
+                          <View className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                          <Text style={{ fontSize: 16, fontWeight: '600', color: '#d1d5db', letterSpacing: -0.3 }}>
+                            Jauni pasūtījumi
+                          </Text>
+                        </View>
+                        <Text style={{ fontSize: 72, fontWeight: '800', color: '#ffffff', lineHeight: 72, letterSpacing: -3.5, marginTop: 4 }}>
+                          {pendingCount}
+                        </Text>
+                      </View>
+                      <View className="w-12 h-12 rounded-full items-center justify-center bg-white/10">
+                        <ArrowRight size={24} color="#ffffff" strokeWidth={2.5} />
+                      </View>
+                    </View>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#ffffff', marginTop: 16, opacity: 0.8 }}>
+                      Pieskaries, lai skatītu
                     </Text>
-                  </View>
-                  <ArrowRight size={16} color="#6b7280" />
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-
-        {/* STATUS CARD (UBER STYLE) */}
-        <View style={{ marginBottom: 24 }}>
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => {
-              haptics.medium();
-              router.push('/(seller)/incoming' as any);
-            }}
-            style={[
-              {
-                borderRadius: 20,
-                padding: 16,
-                minHeight: 160,
-                justifyContent: 'space-between',
-              },
-              pendingCount !== null && pendingCount > 0
-                ? { backgroundColor: '#000000' }
-                : {
-                    backgroundColor: '#ffffff',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.04,
-                    shadowRadius: 8,
-                    elevation: 2,
-                  },
-            ]}
-          >
-            {pendingCount !== null ? (
-              pendingCount > 0 ? (
-                <>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                    }}
-                  >
-                    <View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                        <View
-                          style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: 4,
-                            backgroundColor: '#22c55e',
-                            marginRight: 8,
-                          }}
-                        />
-                        <Text
-                          style={{
-                            fontSize: 15,
-                            fontFamily: 'Inter_500Medium',
-                            fontWeight: '500',
-                            color: '#d1d5db',
-                            letterSpacing: -0.3,
-                          }}
-                        >
-                          Jauni pasūtījumi
+                  </>
+                ) : (
+                  <>
+                    <View className="flex-row justify-between items-start">
+                      <View>
+                        <View className="flex-row items-center mb-1">
+                          <View className="w-2 h-2 rounded-full bg-gray-300 mr-2" />
+                          <Text style={{ fontSize: 16, fontWeight: '600', color: '#6b7280', letterSpacing: -0.3 }}>
+                            Statuss
+                          </Text>
+                        </View>
+                        <Text style={{ fontSize: 32, fontWeight: '800', color: '#111827', letterSpacing: -1, marginTop: 4 }}>
+                          Gatavs darbam
                         </Text>
                       </View>
-                      <Text
-                        style={{
-                          fontSize: 64,
-                          fontFamily: 'Inter_700Bold',
-                          fontWeight: '700',
-                          color: '#ffffff',
-                          lineHeight: 64,
-                          letterSpacing: -3.2,
-                          marginTop: 8,
-                        }}
-                      >
-                        {pendingCount}
-                      </Text>
+                      <View className="w-12 h-12 rounded-full bg-gray-200 items-center justify-center">
+                        <Inbox size={24} color="#111827" strokeWidth={2.5} />
+                      </View>
                     </View>
-                    <View
-                      style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 999,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: 'rgba(255,255,255,0.1)',
-                      }}
-                    >
-                      <ArrowRight size={24} color="#ffffff" strokeWidth={2.5} />
-                    </View>
-                  </View>
-                  <Text
-                    style={{
-                      fontSize: 15,
-                      fontFamily: 'Inter_500Medium',
-                      fontWeight: '500',
-                      color: '#ffffff',
-                      marginTop: 16,
-                      opacity: 0.8,
-                    }}
-                  >
-                    Pieskaries, lai skatītu
-                  </Text>
-                </>
+                    <Text style={{ fontSize: 15, fontWeight: '600', color: '#6b7280', marginTop: 32 }}>
+                      Pagaidām nav jaunu pieprasījumu
+                    </Text>
+                  </>
+                )
               ) : (
-                <>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                    }}
-                  >
-                    <View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                        <View
-                          style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: 4,
-                            backgroundColor: '#d1d5db',
-                            marginRight: 8,
-                          }}
-                        />
-                        <Text
-                          style={{
-                            fontSize: 15,
-                            fontFamily: 'Inter_500Medium',
-                            fontWeight: '500',
-                            color: '#6b7280',
-                            letterSpacing: -0.3,
-                          }}
-                        >
-                          Statuss
-                        </Text>
-                      </View>
-                      <Text
-                        style={{
-                          fontSize: 28,
-                          fontFamily: 'Inter_700Bold',
-                          fontWeight: '700',
-                          color: '#000000',
-                          letterSpacing: -0.7,
-                          marginTop: 8,
-                        }}
-                      >
-                        Gatavs darbam
-                      </Text>
-                    </View>
-                    <View
-                      style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 999,
-                        backgroundColor: '#f3f4f6',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Inbox size={24} color="#000000" strokeWidth={2} />
-                    </View>
-                  </View>
-                  <Text
-                    style={{
-                      fontSize: 15,
-                      fontFamily: 'Inter_500Medium',
-                      fontWeight: '500',
-                      color: '#6b7280',
-                      marginTop: 24,
-                    }}
-                  >
-                    Pagaidām nav jaunu pieprasījumu
-                  </Text>
-                </>
-              )
-            ) : (
-              <SkeletonCard count={2} />
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* RECENT ORDERS */}
-        <View style={s.recentSection}>
-          <View style={s.recentHeader}>
-            <Text style={s.recentTitle}>Pēdējie pasūtījumi</Text>
-            <TouchableOpacity onPress={() => router.push('/(seller)/incoming' as any)}>
-              <Text style={s.recentSeeAll}>Visi</Text>
+                <SkeletonCard count={2} />
+              )}
             </TouchableOpacity>
           </View>
 
+          {/* RECENT ORDERS HEADER */}
+          <View className="flex-row justify-between items-center mb-2">
+            <Text style={{ fontSize: 20, fontWeight: '800', color: '#111827', letterSpacing: -0.5 }}>
+              Pēdējie pasūtījumi
+            </Text>
+            <TouchableOpacity onPress={() => router.push('/(seller)/incoming' as any)}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#6b7280' }}>Visi</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* RECENT ORDERS LIST */}
+        <View className="mt-1">
           {pendingCount === null ? (
-            <SkeletonCard count={3} />
+            <View className="px-5 pt-2"><SkeletonCard count={3} /></View>
           ) : recentOrders.length === 0 ? (
-            <View style={s.recentEmpty}>
-              <Inbox size={28} color="#d1d5db" />
-              <Text style={s.recentEmptyText}>Pagaidām nav pasūtījumu</Text>
+            <View className="items-center py-10" style={{ gap: 12 }}>
+              <Inbox size={32} color="#d1d5db" />
+              <Text className="text-gray-400 font-medium text-[15px]">Pagaidām nav pasūtījumu</Text>
             </View>
           ) : (
-            recentOrders.map((order) => (
-              <TouchableOpacity
-                key={order.id}
-                style={s.recentRow}
-                activeOpacity={0.75}
-                onPress={() => {
-                  haptics.light();
-                  router.push(`/(seller)/order/${order.id}` as any);
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <View style={s.recentRowTop}>
-                    <Text style={s.recentOrderNum}>#{order.orderNumber}</Text>
-                    <View
-                      style={[
-                        s.recentStatusPill,
-                        order.status === 'PENDING'
-                          ? s.pillPending
-                          : order.status === 'CONFIRMED'
-                            ? s.pillConfirmed
-                            : order.status === 'DELIVERED'
-                              ? s.pillDelivered
-                              : s.pillNeutral,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          s.recentStatusText,
-                          order.status === 'PENDING'
-                            ? { color: '#92400e' }
-                            : order.status === 'CONFIRMED'
-                              ? { color: '#166534' }
-                              : order.status === 'DELIVERED'
-                                ? { color: '#1d4ed8' }
-                                : { color: '#6b7280' },
-                        ]}
-                      >
-                        {order.status === 'PENDING'
-                          ? 'Gaida'
-                          : order.status === 'CONFIRMED'
-                            ? 'Apstiprināts'
-                            : order.status === 'DELIVERED'
-                              ? 'Piegādāts'
-                              : order.status}
+            recentOrders.map((order, i) => {
+              const meta = getStatusMeta(order.status);
+              return (
+                <TouchableOpacity
+                  key={order.id}
+                  className={`flex-row items-center py-4 px-5 bg-white border-gray-100 ${i !== recentOrders.length - 1 ? 'border-b' : ''}`}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    haptics.light();
+                    router.push(`/(seller)/order/${order.id}` as any);
+                  }}
+                >
+                  <View className="flex-1 pr-3">
+                    <View className="flex-row items-center mb-1.5" style={{ gap: 10 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
+                        #{order.orderNumber}
                       </Text>
+                      <StatusPill label={meta.text} bg={meta.bg} color={meta.color} size="sm" />
                     </View>
+                    <Text className="text-[14px] text-gray-500 font-medium" numberOfLines={1}>
+                      {order.buyer?.name ?? '—'} · {order.deliveryCity}
+                    </Text>
                   </View>
-                  <Text style={s.recentOrderSub} numberOfLines={1}>
-                    {order.buyer?.name ?? '—'} · {order.deliveryCity}
+                  <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }}>
+                    €{order.total.toFixed(0)}
                   </Text>
-                </View>
-                <Text style={s.recentOrderTotal}>€{order.total.toFixed(0)}</Text>
-                <ChevronRight size={16} color="#d1d5db" style={{ marginLeft: 8 }} />
-              </TouchableOpacity>
-            ))
+                  <ChevronRight size={18} color="#d1d5db" className="ml-2" />
+                </TouchableOpacity>
+              );
+            })
           )}
         </View>
       </ScrollView>
     </ScreenContainer>
   );
 }
-
-const s = StyleSheet.create({
-  recentSection: { marginTop: 8 },
-  recentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  recentTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
-    color: '#111827',
-    letterSpacing: -0.3,
-  },
-  recentSeeAll: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
-  recentEmpty: { alignItems: 'center', paddingVertical: 32, gap: 10 },
-  recentEmptyText: { fontSize: 14, color: '#9ca3af', fontWeight: '500' },
-  recentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  recentRowTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  recentOrderNum: {
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
-    color: '#111827',
-  },
-  recentStatusPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
-  pillPending: { backgroundColor: '#fef3c7' },
-  pillConfirmed: { backgroundColor: '#dcfce7' },
-  pillDelivered: { backgroundColor: '#dbeafe' },
-  pillNeutral: { backgroundColor: '#f3f4f6' },
-  recentStatusText: { fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
-  recentOrderSub: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
-  recentOrderTotal: {
-    fontSize: 15,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
-    color: '#111827',
-  },
-});

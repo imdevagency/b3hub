@@ -1,7 +1,3 @@
-/**
- * Driver schedule screen — (driver)/schedule
- * Shows online/offline status toggle + weekly availability schedule.
- */
 import React, { useCallback, useState } from 'react';
 import {
   View,
@@ -20,15 +16,11 @@ import { useToast } from '@/components/ui/Toast';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { TopBar } from '@/components/ui/TopBar';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Skeleton } from '@/components/ui/Skeleton';
-import { Button } from '@/components/ui/button';
-import { SectionLabel } from '@/components/ui/SectionLabel';
-import { Divider } from '@/components/ui/Divider';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api, type DriverAvailability, type DriverWeeklySlot } from '@/lib/api';
-import { colors } from '@/lib/theme';
-import { CalendarDays, Wifi, WifiOff } from 'lucide-react-native';
+import { CalendarDays, Wifi, WifiOff, X } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 
 const DAY_FULL = [
@@ -58,44 +50,56 @@ function DayRow({
   onToggle,
   onEditTime,
   disabled,
+  isLast,
 }: {
   slot: DriverWeeklySlot;
   onToggle: () => void;
   onEditTime: () => void;
   disabled?: boolean;
+  isLast?: boolean;
 }) {
   return (
     <View
-      className="flex-row items-center justify-between p-4 bg-white"
-      style={disabled ? { opacity: 0.5 } : undefined}
+      className={`flex-row items-center justify-between py-4 px-5 bg-white border-gray-100 ${!isLast ? 'border-b' : ''}`}
+      style={disabled ? { opacity: 0.6 } : undefined}
     >
-      <View className="gap-1">
+      <View className="flex-1 pr-4">
         <Text
-          className="text-base font-semibold"
-          style={{ color: slot.isActive ? colors.textPrimary : colors.textMuted }}
+          style={{
+            fontSize: 17,
+            fontWeight: '700',
+            color: slot.isActive ? '#111827' : '#9ca3af',
+            letterSpacing: -0.3,
+          }}
         >
           {DAY_FULL[slot.dayOfWeek]}
         </Text>
-        {slot.isActive ? (
-          <TouchableOpacity onPress={onEditTime} disabled={disabled} hitSlop={8}>
-            <Text
-              className="text-sm"
-              style={{ color: colors.primary, textDecorationLine: 'underline' }}
+        <View className="mt-1.5 flex-row items-center">
+          {slot.isActive ? (
+            <TouchableOpacity
+              disabled={disabled}
+              onPress={onEditTime}
+              activeOpacity={0.7}
+              hitSlop={8}
             >
-              {fmtTime(slot.startTime)} – {fmtTime(slot.endTime)}
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <Text className="text-sm text-text-muted">Brīvdiena</Text>
-        )}
+              <View className="bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200">
+                <Text style={{ fontSize: 14, fontWeight: '700', color: '#111827' }}>
+                  {fmtTime(slot.startTime)} – {fmtTime(slot.endTime)}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <Text style={{ fontSize: 14, color: '#9ca3af', fontWeight: '600' }}>Brīvdiena</Text>
+          )}
+        </View>
       </View>
       <Switch
         value={slot.isActive}
         onValueChange={onToggle}
         disabled={disabled}
-        trackColor={{ false: '#E5E7EB', true: colors.primary }}
-        thumbColor="#FFFFFF"
-        ios_backgroundColor="#E5E7EB"
+        trackColor={{ false: '#e5e7eb', true: '#111827' }}
+        thumbColor="#ffffff"
+        ios_backgroundColor="#e5e7eb"
       />
     </View>
   );
@@ -147,7 +151,9 @@ export default function ScheduleScreen() {
       setProfile((prev) =>
         prev ? { ...prev, isOnline: res.isOnline, effectiveOnline: res.isOnline } : prev,
       );
+      haptics.success();
     } catch {
+      haptics.error();
       setProfile((prev) => (prev ? { ...prev, isOnline: !value, effectiveOnline: !value } : prev));
       toast.error('Neizdevās mainīt statusu.');
     } finally {
@@ -158,6 +164,7 @@ export default function ScheduleScreen() {
   const openTimeEditor = (dayOfWeek: number) => {
     const slot = gridSlots.find((s) => s.dayOfWeek === dayOfWeek);
     if (!slot) return;
+    haptics.light();
     setEditStart(fmtTime(slot.startTime));
     setEditEnd(fmtTime(slot.endTime));
     setEditingDay(dayOfWeek);
@@ -174,14 +181,16 @@ export default function ScheduleScreen() {
       toast.error('Sākuma laikam jābūt pirms beigu laika.');
       return;
     }
+    haptics.light();
     const updatedSlots = gridSlots.map((s) =>
       s.dayOfWeek === editingDay
         ? { ...s, startTime: editStart + ':00', endTime: editEnd + ':00' }
         : s,
     );
     setProfile({ ...profile, weeklySchedule: updatedSlots });
+    const savedDay = editingDay;
     setEditingDay(null);
-    setUpdatingDays((prev) => new Set(prev).add(editingDay));
+    setUpdatingDays((prev) => new Set(prev).add(savedDay));
     try {
       await api.driverSchedule.updateSchedule(
         {
@@ -196,14 +205,15 @@ export default function ScheduleScreen() {
         },
         token,
       );
-      toast.success('Laiks saglabāts!');
+      haptics.success();
     } catch {
+      haptics.error();
       toast.error('Neizdevās saglabāt laiku.');
       load();
     } finally {
       setUpdatingDays((prev) => {
         const n = new Set(prev);
-        n.delete(editingDay!);
+        n.delete(savedDay);
         return n;
       });
     }
@@ -232,6 +242,7 @@ export default function ScheduleScreen() {
     const currentSlot = gridSlots.find((s) => s.dayOfWeek === dayOfWeek);
     if (!currentSlot) return;
 
+    haptics.light();
     const newActiveState = !currentSlot.isActive;
     const newWeeklySchedule = gridSlots.map((s) =>
       s.dayOfWeek === dayOfWeek ? { ...s, isActive: newActiveState } : s,
@@ -253,8 +264,9 @@ export default function ScheduleScreen() {
       };
 
       await api.driverSchedule.updateSchedule(payload, token);
-      toast.success('Grafiks atjaunināts!');
+      haptics.success();
     } catch {
+      haptics.error();
       toast.error('Neizdevās atjaunināt grafiku.');
       load();
     } finally {
@@ -271,94 +283,168 @@ export default function ScheduleScreen() {
   );
 
   return (
-    <ScreenContainer bg="#F4F5F7">
-      <TopBar />
+    <ScreenContainer bg="#ffffff" topBg="#ffffff">
+      <TopBar transparent />
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 60 }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => load(true)}
+            tintColor="#111827"
+          />
+        }
       >
         {loading ? (
-          <View className="p-4 gap-4">
-            <Skeleton height={200} radius={24} />
-            <Skeleton height={400} radius={12} />
+          <View className="px-5">
+            <View className="pt-2 pb-6">
+              <Text
+                style={{ fontSize: 32, fontWeight: '800', color: '#111827', letterSpacing: -0.8 }}
+              >
+                Grafiks
+              </Text>
+            </View>
+            <SkeletonCard count={3} />
           </View>
         ) : !profile ? (
-          <EmptyState
-            icon={<CalendarDays size={40} color={colors.textMuted} />}
-            title="Grafiks nav pieejams"
-            subtitle="Šofera profils vēl nav izveidots."
-          />
+          <View className="mt-8">
+            <EmptyState
+              icon={<CalendarDays size={40} color="#d1d5db" />}
+              title="Grafiks nav pieejams"
+              subtitle="Šofera profils vēl nav izveidots."
+            />
+          </View>
         ) : (
           <>
-            {/* Status Hero */}
-            <View className="bg-white items-center py-8 rounded-b-3xl shadow-sm mb-6">
-              <View
-                className="w-16 h-16 rounded-full items-center justify-center mb-4"
-                style={{ backgroundColor: profile.isOnline ? '#dcfce7' : '#f3f4f6' }}
+            <View className="px-5 pt-1 pb-6">
+              <Text
+                style={{ fontSize: 32, fontWeight: '800', color: '#111827', letterSpacing: -0.8 }}
               >
-                {profile.isOnline ? (
-                  <Wifi size={32} color="#059669" />
-                ) : (
-                  <WifiOff size={32} color="#9CA3AF" />
-                )}
-              </View>
-              <Text className="text-xl font-bold text-text-primary mb-1">
-                {profile.isOnline ? 'Jūs esat tiešsaistē' : 'Jūs esat bezsaistē'}
+                Grafiks
               </Text>
-              <Text className="text-text-muted text-center px-8 mb-6">
-                {profile.isOnline
-                  ? 'Jūs saņemsiet jaunus darba piedāvājumus.'
-                  : 'Jūs nesaņemat darba piedāvājumus.'}
-              </Text>
+            </View>
 
-              <Button
-                variant={profile.isOnline ? 'destructive' : 'default'}
-                className="w-64 rounded-full"
-                onPress={() => handleToggleOnline(!profile.isOnline)}
-                isLoading={toggling}
+            {/* Status Hero */}
+            <View className="px-5 mb-8">
+              <View
+                className={`rounded-3xl p-6 items-center justify-center min-h-[220px] ${profile.isOnline ? 'bg-gray-900' : 'bg-gray-100'}`}
               >
-                {profile.isOnline ? 'Beigt darbu' : 'Sākt darbu'}
-              </Button>
+                <View
+                  className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${profile.isOnline ? 'bg-white/10' : 'bg-white'}`}
+                >
+                  {profile.isOnline ? (
+                    <Wifi size={32} color="#ffffff" />
+                  ) : (
+                    <WifiOff size={32} color="#9ca3af" />
+                  )}
+                </View>
+                <Text
+                  style={{
+                    fontSize: 24,
+                    fontWeight: '800',
+                    color: profile.isOnline ? '#ffffff' : '#111827',
+                    letterSpacing: -0.5,
+                    textAlign: 'center',
+                  }}
+                >
+                  {profile.isOnline ? 'Tiešsaistē' : 'Bezsaistē'}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 15,
+                    color: profile.isOnline ? '#9ca3af' : '#6b7280',
+                    fontWeight: '500',
+                    marginTop: 6,
+                    textAlign: 'center',
+                    lineHeight: 20,
+                  }}
+                >
+                  {profile.isOnline
+                    ? 'Jūs saņemsiet jaunus piedāvājumus'
+                    : 'Darba piedāvājumi ir apturēti'}
+                </Text>
+
+                <TouchableOpacity
+                  className={`mt-8 px-8 py-3.5 rounded-full w-full items-center justify-center ${profile.isOnline ? 'bg-white' : 'bg-gray-900'}`}
+                  onPress={() => handleToggleOnline(!profile.isOnline)}
+                  activeOpacity={0.8}
+                >
+                  {toggling ? (
+                    <ActivityIndicator color={profile.isOnline ? '#111827' : '#ffffff'} />
+                  ) : (
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        fontWeight: '700',
+                        color: profile.isOnline ? '#111827' : '#ffffff',
+                      }}
+                    >
+                      {profile.isOnline ? 'Apturēt darbu' : 'Sākt darbu'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Schedule */}
-            <View className="px-4">
-              <SectionLabel label="NEDĒĻAS PLĀNS" />
-              <View className="bg-white rounded-xl overflow-hidden shadow-sm">
+            <View>
+              <View className="px-5 pb-3">
+                <Text
+                  style={{ fontSize: 20, fontWeight: '800', color: '#111827', letterSpacing: -0.5 }}
+                >
+                  Nedēļas plāns
+                </Text>
+                <Text style={{ fontSize: 14, color: '#6b7280', fontWeight: '500', marginTop: 2 }}>
+                  Norādiet darba stundas katrai dienai
+                </Text>
+              </View>
+              <View className="mt-1">
                 {gridSlots.map((slot, i) => (
-                  <React.Fragment key={slot.dayOfWeek}>
-                    <DayRow
-                      slot={slot}
-                      onToggle={() => handleToggleDay(slot.dayOfWeek)}
-                      onEditTime={() => openTimeEditor(slot.dayOfWeek)}
-                      disabled={updatingDays.has(slot.dayOfWeek)}
-                    />
-                    {i < gridSlots.length - 1 && <Divider />}
-                  </React.Fragment>
+                  <DayRow
+                    key={slot.dayOfWeek}
+                    slot={slot}
+                    onToggle={() => handleToggleDay(slot.dayOfWeek)}
+                    onEditTime={() => openTimeEditor(slot.dayOfWeek)}
+                    disabled={updatingDays.has(slot.dayOfWeek)}
+                    isLast={i === gridSlots.length - 1}
+                  />
                 ))}
               </View>
             </View>
 
             {/* Blocked Dates */}
             {futureBlocks.length > 0 && (
-              <View className="px-4 mt-6">
-                <SectionLabel label="BRĪVDIENAS" />
-                <View className="bg-white rounded-xl overflow-hidden shadow-sm">
+              <View className="mt-8">
+                <View className="px-5 pb-3">
+                  <Text
+                    style={{
+                      fontSize: 20,
+                      fontWeight: '800',
+                      color: '#111827',
+                      letterSpacing: -0.5,
+                    }}
+                  >
+                    Brīvdienas
+                  </Text>
+                </View>
+                <View className="mt-1">
                   {futureBlocks.map((block, i) => (
-                    <React.Fragment key={block.id}>
-                      <View className="p-4 bg-white">
-                        <Text className="font-medium text-text-primary">
-                          {fmtBlockDate(block.blockedDate)}
+                    <View
+                      key={block.id}
+                      className={`py-4 px-5 bg-white border-gray-100 ${i !== futureBlocks.length - 1 ? 'border-b' : ''}`}
+                    >
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
+                        {fmtBlockDate(block.blockedDate)}
+                      </Text>
+                      {block.reason ? (
+                        <Text style={{ fontSize: 14, color: '#6b7280', marginTop: 2 }}>
+                          {block.reason}
                         </Text>
-                        {block.reason ? (
-                          <Text className="text-sm text-text-muted mt-0.5">{block.reason}</Text>
-                        ) : null}
-                      </View>
-                      {i < futureBlocks.length - 1 && <Divider />}
-                    </React.Fragment>
+                      ) : null}
+                    </View>
                   ))}
                 </View>
               </View>
@@ -376,30 +462,46 @@ export default function ScheduleScreen() {
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
         >
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            activeOpacity={1}
+            onPress={() => setEditingDay(null)}
+          />
           <View
             style={{
-              backgroundColor: '#fff',
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
+              backgroundColor: '#ffffff',
+              borderTopLeftRadius: 32,
+              borderTopRightRadius: 32,
               padding: 24,
-              paddingBottom: 36,
+              paddingBottom: 48,
             }}
           >
-            <Text style={{ fontSize: 17, fontWeight: '700', marginBottom: 20, color: '#111827' }}>
-              {editingDay !== null ? DAY_FULL[editingDay] : ''} — darba laiks
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 16, marginBottom: 24 }}>
-              <View style={{ flex: 1 }}>
+            <View className="flex-row justify-between items-center mb-6">
+              <Text
+                style={{ fontSize: 22, fontWeight: '800', color: '#111827', letterSpacing: -0.5 }}
+              >
+                {editingDay !== null ? DAY_FULL[editingDay] : ''}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setEditingDay(null)}
+                className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center"
+              >
+                <X size={18} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+
+            <View className="flex-row justify-between" style={{ gap: 16 }}>
+              <View className="flex-1 bg-gray-100 rounded-2xl p-4 items-center">
                 <Text
                   style={{
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: '600',
-                    color: '#6B7280',
-                    marginBottom: 8,
+                    color: '#6b7280',
                     textTransform: 'uppercase',
                     letterSpacing: 0.5,
+                    marginBottom: 8,
                   }}
                 >
                   Sākums
@@ -408,29 +510,27 @@ export default function ScheduleScreen() {
                   value={editStart}
                   onChangeText={setEditStart}
                   placeholder="08:00"
+                  placeholderTextColor="#9ca3af"
                   keyboardType="numbers-and-punctuation"
                   maxLength={5}
                   style={{
-                    borderWidth: 1.5,
-                    borderColor: '#E5E7EB',
-                    borderRadius: 12,
-                    padding: 14,
-                    fontSize: 20,
-                    fontWeight: '600',
-                    textAlign: 'center',
+                    fontSize: 32,
+                    fontWeight: '800',
                     color: '#111827',
+                    textAlign: 'center',
+                    marginTop: 4,
                   }}
                 />
               </View>
-              <View style={{ flex: 1 }}>
+              <View className="flex-1 bg-gray-100 rounded-2xl p-4 items-center">
                 <Text
                   style={{
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: '600',
-                    color: '#6B7280',
-                    marginBottom: 8,
+                    color: '#6b7280',
                     textTransform: 'uppercase',
                     letterSpacing: 0.5,
+                    marginBottom: 8,
                   }}
                 >
                   Beigas
@@ -439,48 +539,29 @@ export default function ScheduleScreen() {
                   value={editEnd}
                   onChangeText={setEditEnd}
                   placeholder="17:00"
+                  placeholderTextColor="#9ca3af"
                   keyboardType="numbers-and-punctuation"
                   maxLength={5}
                   style={{
-                    borderWidth: 1.5,
-                    borderColor: '#E5E7EB',
-                    borderRadius: 12,
-                    padding: 14,
-                    fontSize: 20,
-                    fontWeight: '600',
-                    textAlign: 'center',
+                    fontSize: 32,
+                    fontWeight: '800',
                     color: '#111827',
+                    textAlign: 'center',
+                    marginTop: 4,
                   }}
                 />
               </View>
             </View>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <TouchableOpacity
-                onPress={() => setEditingDay(null)}
-                style={{
-                  flex: 1,
-                  padding: 16,
-                  borderRadius: 16,
-                  borderWidth: 1.5,
-                  borderColor: '#E5E7EB',
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ fontWeight: '600', color: '#374151' }}>Atcelt</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleSaveTime}
-                style={{
-                  flex: 1,
-                  padding: 16,
-                  borderRadius: 16,
-                  backgroundColor: colors.primary,
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ fontWeight: '700', color: '#fff' }}>Saglabāt</Text>
-              </TouchableOpacity>
-            </View>
+
+            <TouchableOpacity
+              onPress={handleSaveTime}
+              className="mt-6 py-4 rounded-full bg-gray-900 items-center justify-center"
+              activeOpacity={0.8}
+            >
+              <Text style={{ fontSize: 17, fontWeight: '700', color: '#ffffff' }}>
+                Saglabāt grafiku
+              </Text>
+            </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       </Modal>

@@ -142,6 +142,7 @@ function DriverLayoutContent() {
         />
         <Tabs.Screen name="skips" options={{ href: null }} />
         <Tabs.Screen name="documents" options={{ href: null }} />
+        <Tabs.Screen name="carrier-settings" options={{ href: null }} />
       </Tabs>
     </View>
   );
