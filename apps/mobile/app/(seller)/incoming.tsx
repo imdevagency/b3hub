@@ -5,7 +5,6 @@ import {
   ScrollView,
   FlatList,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   Modal,
   ActivityIndicator,
@@ -13,9 +12,9 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/lib/translations';
@@ -37,7 +36,6 @@ import {
   Clock,
   Phone,
   FileText,
-  ChevronRight,
   Package,
   Send,
 } from 'lucide-react-native';
@@ -55,9 +53,7 @@ interface IncomingOrder {
   buyerName: string;
   deliveryAddress: string;
   requestedDate: string;
-  /** 'AM' | 'PM' | 'ANY' — preferred delivery slot */
   deliveryWindow?: string;
-  /** Free-text buyer notes / site instructions */
   notes?: string;
   siteContactName?: string;
   siteContactPhone?: string;
@@ -67,7 +63,6 @@ interface IncomingOrder {
   transportJobId?: string;
 }
 
-// ── API mapper ────────────────────────────────────────────────────────────────
 function mapApiOrder(o: ApiOrder): IncomingOrder {
   const statusMap: Record<string, OrderStatus> = {
     PENDING: 'PENDING',
@@ -92,14 +87,8 @@ function mapApiOrder(o: ApiOrder): IncomingOrder {
     buyerName,
     deliveryAddress: o.deliveryAddress ?? o.deliveryCity ?? '',
     requestedDate: o.deliveryDate
-      ? new Date(o.deliveryDate).toLocaleDateString('lv-LV', {
-          day: '2-digit',
-          month: '2-digit',
-        })
-      : new Date(o.createdAt).toLocaleDateString('lv-LV', {
-          day: '2-digit',
-          month: '2-digit',
-        }),
+      ? new Date(o.deliveryDate).toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit' })
+      : new Date(o.createdAt).toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit' }),
     price: o.total ?? 0,
     status: statusMap[o.status] ?? 'PENDING',
     paymentStatus: o.paymentStatus ?? undefined,
@@ -112,25 +101,18 @@ function mapApiOrder(o: ApiOrder): IncomingOrder {
   };
 }
 
-// ── Status Helper ──────────────────────────────────────────────────────────────
-function getMinimalStatus(status: OrderStatus) {
+function getStatusMeta(status: OrderStatus) {
   switch (status) {
-    case 'PENDING':
-      return { text: 'Jauns', color: '#d97706', bg: '#fff7ed' };
-    case 'CONFIRMED':
-      return { text: 'Apstiprināts', color: '#2563eb', bg: '#eff6ff' };
-    case 'LOADING':
-      return { text: 'Iekraušana', color: '#16a34a', bg: '#f0fdf4' };
-    case 'DISPATCHED':
-      return { text: 'Piegādē', color: '#4b5563', bg: '#f3f4f6' };
-    case 'CANCELLED':
-      return { text: 'Atcelts', color: '#b91c1c', bg: '#fef2f2' };
-    default:
-      return { text: status, color: '#6b7280', bg: '#f3f4f6' };
+    case 'PENDING':    return { text: 'Jauns',        color: '#d97706', bg: '#fff7ed' };
+    case 'CONFIRMED':  return { text: 'Apstiprināts', color: '#2563eb', bg: '#eff6ff' };
+    case 'LOADING':    return { text: 'Iekraušana',   color: '#16a34a', bg: '#f0fdf4' };
+    case 'DISPATCHED': return { text: 'Piegādē',      color: '#4b5563', bg: '#f3f4f6' };
+    case 'CANCELLED':  return { text: 'Atcelts',      color: '#b91c1c', bg: '#fef2f2' };
+    default:           return { text: status,         color: '#6b7280', bg: '#f3f4f6' };
   }
 }
 
-// ── LoadingDock — seller confirms driver has loaded ───────────────────────────
+// ── LoadingModal ──────────────────────────────────────────────────────────────
 const CHECKLIST = [
   'Auto atrodas pareizājā vietā',
   'Svars sakrīt ar pasūtījumu',
@@ -139,64 +121,46 @@ const CHECKLIST = [
 ];
 
 function LoadingModal({
-  order,
-  visible,
-  onClose,
-  onConfirm,
-  confirming,
+  order, visible, onClose, onConfirm, confirming,
 }: {
-  order: IncomingOrder;
-  visible: boolean;
-  onClose: () => void;
-  onConfirm: (weightKg?: number) => void;
-  confirming?: boolean;
+  order: IncomingOrder; visible: boolean; onClose: () => void;
+  onConfirm: (weightKg?: number) => void; confirming?: boolean;
 }) {
   const [weight, setWeight] = useState('');
   const [checkedItems, setCheckedItems] = useState<boolean[]>(CHECKLIST.map(() => false));
 
   useEffect(() => {
-    if (visible) {
-      setWeight('');
-      setCheckedItems(CHECKLIST.map(() => false));
-    }
+    if (visible) { setWeight(''); setCheckedItems(CHECKLIST.map(() => false)); }
   }, [visible]);
 
   const allChecked = checkedItems.every(Boolean);
-  const toggleItem = (i: number) => {
-    haptics.light();
-    setCheckedItems((prev) => prev.map((v, idx) => (idx === i ? !v : v)));
-  };
+  const toggle = (i: number) => { haptics.light(); setCheckedItems(p => p.map((v, idx) => idx === i ? !v : v)); };
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <SafeAreaView style={modalStyles.container} edges={['top', 'bottom']}>
-        <View style={modalStyles.header}>
-          <TouchableOpacity
-            onPress={onClose}
-            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-          >
-            <X size={24} color="#111827" />
+      <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+        <View className="flex-row items-center justify-between px-5 py-4">
+          <TouchableOpacity onPress={onClose} hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}>
+            <View className="bg-gray-100 w-9 h-9 rounded-full items-center justify-center">
+              <X size={18} color="#111827" />
+            </View>
           </TouchableOpacity>
-          <Text style={modalStyles.title}>Iekraušanas apstiprinājums</Text>
-          <View style={{ width: 24 }} />
+          <Text style={{ fontSize: 17, fontWeight: '700', color: '#111827' }}>Iekraušanas apstiprinājums</Text>
+          <View style={{ width: 36 }} />
         </View>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{ flex: 1 }}
-        >
-          <ScrollView contentContainerStyle={modalStyles.body}>
-            <View style={modalStyles.heroCard}>
-              <Text style={modalStyles.heroMaterial}>{order.material}</Text>
-              <Text style={modalStyles.heroSub}>
-                {order.buyerName} • #{order.orderNumber}
-              </Text>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+          <ScrollView contentContainerStyle={{ padding: 20, gap: 24 }}>
+            <View className="pb-6 border-b border-gray-100">
+              <Text style={{ fontSize: 26, fontWeight: '800', color: '#111827', letterSpacing: -0.5 }}>{order.material}</Text>
+              <Text className="text-gray-500 font-medium text-[15px] mt-1">{order.buyerName} · #{order.orderNumber}</Text>
             </View>
 
-            <View style={modalStyles.inputWrapper}>
-              <Text style={modalStyles.inputLabel}>Faktiskais svars (tonnas)</Text>
+            <View>
+              <Text className="text-gray-900 font-bold text-[14px] mb-2">Faktiskais svars (tonnas)</Text>
               <TextInput
-                style={modalStyles.input}
+                className="bg-gray-100 rounded-2xl px-4 text-gray-900 font-bold"
+                style={{ paddingVertical: 16, fontSize: 22 }}
                 placeholder="Piem. 12.5"
                 placeholderTextColor="#9ca3af"
                 keyboardType="decimal-pad"
@@ -205,47 +169,29 @@ function LoadingModal({
               />
             </View>
 
-            <View style={modalStyles.checklist}>
+            <View style={{ gap: 16 }}>
               {CHECKLIST.map((item, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={modalStyles.checkRow}
-                  onPress={() => toggleItem(i)}
-                  activeOpacity={0.7}
-                >
-                  {checkedItems[i] ? (
-                    <CheckSquare2 size={24} color="#111827" />
-                  ) : (
-                    <Square size={24} color="#d1d5db" />
-                  )}
-                  <Text
-                    style={[modalStyles.checkText, checkedItems[i] && modalStyles.checkTextActive]}
-                  >
-                    {item}
-                  </Text>
+                <TouchableOpacity key={i} className="flex-row items-center" style={{ gap: 12 }} onPress={() => toggle(i)} activeOpacity={0.7}>
+                  {checkedItems[i] ? <CheckSquare2 size={26} color="#111827" /> : <Square size={26} color="#d1d5db" />}
+                  <Text style={{ fontSize: 16, color: checkedItems[i] ? '#111827' : '#6b7280', fontWeight: checkedItems[i] ? '600' : '400' }}>{item}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
 
-        <View style={modalStyles.footer}>
+        <View className="px-5 pb-6 pt-3">
           <TouchableOpacity
-            style={[
-              modalStyles.confirmBtn,
-              (!allChecked || confirming) && modalStyles.confirmBtnDisabled,
-            ]}
+            className={`rounded-full items-center justify-center py-5 ${allChecked && !confirming ? 'bg-gray-900' : 'bg-gray-200'}`}
             onPress={() => {
               haptics.success();
               const parsed = parseFloat(weight.replace(',', '.'));
-              onConfirm(isNaN(parsed) ? undefined : parsed * 1000); // converting to kg if needed by API
+              onConfirm(isNaN(parsed) ? undefined : parsed * 1000);
             }}
             disabled={!allChecked || confirming}
           >
-            {confirming ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text style={modalStyles.confirmBtnText}>Apstiprināt un nosūtīt</Text>
+            {confirming ? <ActivityIndicator color="#ffffff" /> : (
+              <Text style={{ color: allChecked ? '#ffffff' : '#9ca3af', fontWeight: '700', fontSize: 16 }}>Apstiprināt un nosūtīt</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -254,181 +200,130 @@ function LoadingModal({
   );
 }
 
-// ── Order card ────────────────────────────────────────────────────────────────
+// ── OrderCard ─────────────────────────────────────────────────────────────────
 function OrderCard({
-  order,
-  onConfirm,
-  onReject,
-  onStartLoading,
-  actioning,
-  onPress,
-  batchMode = false,
-  isSelected = false,
-  onToggleSelect,
+  order, onConfirm, onReject, onStartLoading, actioning, onPress,
+  batchMode = false, isSelected = false, onToggleSelect,
 }: {
-  order: IncomingOrder;
-  onConfirm: (id: string) => void;
-  onReject: (id: string) => void;
-  onStartLoading: (id: string) => void;
-  actioning: string | null;
-  onPress: () => void;
-  batchMode?: boolean;
-  isSelected?: boolean;
-  onToggleSelect?: () => void;
+  order: IncomingOrder; onConfirm: (id: string) => void; onReject: (id: string) => void;
+  onStartLoading: (id: string) => void; actioning: string | null; onPress: () => void;
+  batchMode?: boolean; isSelected?: boolean; onToggleSelect?: () => void;
 }) {
   const isBusy = actioning === order.id;
-  const statusInfo = getMinimalStatus(order.status);
+  const statusMeta = getStatusMeta(order.status);
   const isBatchSelectable = batchMode && order.status === 'PENDING';
 
   return (
-    <View style={[styles.card, isBatchSelectable && isSelected && styles.cardSelected]}>
-      <TouchableOpacity
-        onPress={isBatchSelectable ? () => onToggleSelect?.() : onPress}
-        activeOpacity={0.8}
-      >
-        <View style={styles.cardTop}>
-          <View style={styles.cardTopLeft}>
-            <Text style={styles.materialText}>
-              {order.material} • {order.weightTonnes}t
+    <View className={`px-5 pt-5 border-b border-gray-100 ${isBatchSelectable && isSelected ? 'bg-green-50' : 'bg-white'}`}>
+      <TouchableOpacity onPress={isBatchSelectable ? () => onToggleSelect?.() : onPress} activeOpacity={0.8}>
+        {/* Top row: material + price / checkbox */}
+        <View className="flex-row justify-between items-start mb-1">
+          <View className="flex-1 pr-4">
+            <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827', letterSpacing: -0.3 }}>
+              {order.material}
             </Text>
-            <Text style={styles.buyerText}>
-              {order.buyerName} ({order.requestedDate})
+            <Text className="text-gray-500 font-medium text-[14px] mt-0.5">
+              {order.weightTonnes}t · {order.buyerName} · {order.requestedDate}
             </Text>
           </View>
-          <View style={styles.cardTopRight}>
+          <View className="items-end" style={{ gap: 4 }}>
             {isBatchSelectable ? (
-              isSelected ? (
-                <CheckSquare2 size={22} color="#111827" />
-              ) : (
-                <Square size={22} color="#d1d5db" />
-              )
+              isSelected ? <CheckSquare2 size={24} color="#111827" /> : <Square size={24} color="#d1d5db" />
             ) : (
               <>
-                <Text style={styles.priceText}>€{order.price.toFixed(0)}</Text>
-                <StatusPill
-                  label={statusInfo.text}
-                  bg={statusInfo.bg}
-                  color={statusInfo.color}
-                  size="sm"
-                />
+                <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }}>€{order.price.toFixed(0)}</Text>
+                <StatusPill label={statusMeta.text} bg={statusMeta.bg} color={statusMeta.color} size="sm" />
               </>
             )}
           </View>
         </View>
 
-        <View style={styles.addressRow}>
-          <MapPin size={14} color="#9ca3af" />
-          <Text style={styles.addressText} numberOfLines={1}>
-            {order.deliveryAddress}
-          </Text>
+        {/* Address row */}
+        <View className="flex-row items-center mt-2" style={{ gap: 5 }}>
+          <MapPin size={13} color="#9ca3af" />
+          <Text className="text-gray-500 text-[14px] flex-1" numberOfLines={1}>{order.deliveryAddress}</Text>
         </View>
 
-        {/* Delivery window + site contact row */}
-        {(order.deliveryWindow && order.deliveryWindow !== 'ANY') || order.siteContactName ? (
-          <View style={styles.metaRow}>
+        {/* Delivery window + site contact */}
+        {((order.deliveryWindow && order.deliveryWindow !== 'ANY') || order.siteContactName) && (
+          <View className="flex-row items-center mt-2" style={{ gap: 8 }}>
             {order.deliveryWindow && order.deliveryWindow !== 'ANY' && (
-              <View
-                style={[styles.windowPill, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}
-              >
+              <View className="bg-blue-50 flex-row items-center px-2 py-1 rounded-lg" style={{ gap: 4 }}>
                 <Clock size={11} color="#1d4ed8" />
-                <Text style={styles.windowPillText}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: '#1d4ed8' }}>
                   {order.deliveryWindow === 'AM' ? '8–12' : '12–17'}
                 </Text>
               </View>
             )}
             {order.siteContactName && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 }}>
-                <Phone size={11} color="#6b7280" />
-                <Text style={styles.siteContactText} numberOfLines={1}>
-                  {order.siteContactName}
-                </Text>
+              <View className="flex-row items-center flex-1" style={{ gap: 4 }}>
+                <Phone size={11} color="#9ca3af" />
+                <Text className="text-gray-500 text-[13px]" numberOfLines={1}>{order.siteContactName}</Text>
               </View>
             )}
           </View>
-        ) : null}
+        )}
 
-        {/* Buyer notes preview */}
-        {order.notes ? (
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 4, marginTop: 4 }}>
+        {/* Notes */}
+        {order.notes && (
+          <View className="flex-row items-start mt-1.5" style={{ gap: 4 }}>
             <FileText size={11} color="#9ca3af" style={{ marginTop: 1 }} />
-            <Text style={[styles.notesPreview, { marginTop: 0, flex: 1 }]} numberOfLines={1}>
-              {order.notes}
-            </Text>
+            <Text className="text-gray-400 text-[13px] flex-1" style={{ fontStyle: 'italic' }} numberOfLines={1}>{order.notes}</Text>
           </View>
-        ) : null}
+        )}
 
-        {/* Payment status badge */}
+        {/* Payment status */}
         {order.paymentStatus && (
-          <View style={{ marginTop: 6, marginBottom: 2 }}>
+          <View className="mt-2.5 mb-1">
             <StatusPill
-              label={
-                order.paymentStatus === 'CAPTURED'
-                  ? 'Maksājums saņemts'
-                  : order.paymentStatus === 'AUTHORIZED'
-                    ? 'Maksājums autorizēts'
-                    : 'Gaida apmaksu'
-              }
-              bg={
-                order.paymentStatus === 'AUTHORIZED' || order.paymentStatus === 'CAPTURED'
-                  ? '#dcfce7'
-                  : '#fff7ed'
-              }
-              color={
-                order.paymentStatus === 'AUTHORIZED' || order.paymentStatus === 'CAPTURED'
-                  ? '#16a34a'
-                  : '#d97706'
-              }
+              label={order.paymentStatus === 'CAPTURED' ? 'Maksājums saņemts' : order.paymentStatus === 'AUTHORIZED' ? 'Maksājums autorizēts' : 'Gaida apmaksu'}
+              bg={order.paymentStatus === 'AUTHORIZED' || order.paymentStatus === 'CAPTURED' ? '#dcfce7' : '#fff7ed'}
+              color={order.paymentStatus === 'AUTHORIZED' || order.paymentStatus === 'CAPTURED' ? '#16a34a' : '#d97706'}
               size="sm"
             />
           </View>
         )}
       </TouchableOpacity>
 
-      {/* Actions — hidden in batch mode */}
+      {/* Actions */}
       {!batchMode && order.status === 'PENDING' && (
-        <View style={styles.actionsRow}>
+        <View className="flex-row mt-4 mb-4" style={{ gap: 10 }}>
           <TouchableOpacity
-            style={[styles.btnOutline, isBusy && styles.btnDisabled]}
-            disabled={!!isBusy}
-            onPress={() => onReject(order.id)}
-            activeOpacity={0.7}
+            className={`flex-1 items-center justify-center rounded-full py-3.5 bg-gray-100 ${isBusy ? 'opacity-50' : ''}`}
+            disabled={!!isBusy} onPress={() => onReject(order.id)} activeOpacity={0.7}
           >
-            {isBusy ? (
-              <ActivityIndicator size="small" color="#111827" />
-            ) : (
-              <Text style={styles.btnOutlineText}>Noraidīt</Text>
+            {isBusy ? <ActivityIndicator size="small" color="#111827" /> : (
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>Noraidīt</Text>
             )}
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.btnSolid, isBusy && styles.btnDisabled]}
-            disabled={!!isBusy}
-            onPress={() => onConfirm(order.id)}
-            activeOpacity={0.7}
+            className={`flex-2 items-center justify-center rounded-full py-3.5 bg-gray-900 ${isBusy ? 'opacity-50' : ''}`}
+            style={{ flex: 2 }}
+            disabled={!!isBusy} onPress={() => onConfirm(order.id)} activeOpacity={0.7}
           >
-            {isBusy ? (
-              <ActivityIndicator size="small" color="#ffffff" />
-            ) : (
-              <Text style={styles.btnSolidText}>Apstiprināt</Text>
+            {isBusy ? <ActivityIndicator size="small" color="#ffffff" /> : (
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>Apstiprināt</Text>
             )}
           </TouchableOpacity>
         </View>
       )}
 
       {!batchMode && order.status === 'CONFIRMED' && (
-        <View style={styles.actionsRow}>
+        <View className="mt-4 mb-4">
           <TouchableOpacity
-            style={[styles.btnPrimaryFlex, isBusy && styles.btnDisabled]}
-            disabled={!!isBusy}
-            onPress={() => onStartLoading(order.id)}
-            activeOpacity={0.7}
+            className={`items-center justify-center rounded-full py-3.5 bg-gray-900 ${isBusy ? 'opacity-50' : ''}`}
+            disabled={!!isBusy} onPress={() => onStartLoading(order.id)} activeOpacity={0.7}
           >
-            {isBusy ? (
-              <ActivityIndicator size="small" color="#ffffff" />
-            ) : (
-              <Text style={styles.btnSolidText}>Sākt iekraušanu</Text>
+            {isBusy ? <ActivityIndicator size="small" color="#ffffff" /> : (
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>Sākt iekraušanu</Text>
             )}
           </TouchableOpacity>
         </View>
+      )}
+
+      {/* No-action spacer for other statuses */}
+      {!batchMode && order.status !== 'PENDING' && order.status !== 'CONFIRMED' && (
+        <View className="mb-4" />
       )}
     </View>
   );
@@ -452,178 +347,103 @@ export default function IncomingScreen() {
   const [batchMode, setBatchMode] = useState(false);
   const [batchSelectedIds, setBatchSelectedIds] = useState<Set<string>>(new Set());
   const [batchConfirming, setBatchConfirming] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>('ALL');
 
   const toggleBatchSelect = useCallback(
-    (id: string) =>
-      setBatchSelectedIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(id)) next.delete(id);
-        else next.add(id);
-        return next;
-      }),
+    (id: string) => setBatchSelectedIds(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; }),
     [],
   );
 
-  const toggleBatchMode = () => {
-    setBatchMode((b) => !b);
-    setBatchSelectedIds(new Set());
-  };
+  const toggleBatchMode = () => { setBatchMode(b => !b); setBatchSelectedIds(new Set()); };
 
   const handleBatchConfirm = () => {
     const count = batchSelectedIds.size;
     if (count === 0) return;
     Alert.alert('Apstiprināt visus?', `Vai apstiprināt ${count} atlasītos pasūtījumus?`, [
       { text: 'Atcelt', style: 'cancel' },
-      {
-        text: `Apstiprināt (${count})`,
-        onPress: async () => {
-          if (!token) return;
-          setBatchConfirming(true);
-          let succeeded = 0;
-          for (const id of batchSelectedIds) {
-            try {
-              const updated = await api.orders.confirm(id, token);
-              setOrders((prev) => prev.map((o) => (o.id === id ? mapApiOrder(updated) : o)));
-              succeeded++;
-            } catch {
-              // continue
-            }
-          }
-          haptics.success();
-          toast.success(`${succeeded} pasūtījumi apstiprināti!`);
-          setBatchMode(false);
-          setBatchSelectedIds(new Set());
-          setBatchConfirming(false);
-        },
-      },
+      { text: `Apstiprināt (${count})`, onPress: async () => {
+        if (!token) return;
+        setBatchConfirming(true);
+        let succeeded = 0;
+        for (const id of batchSelectedIds) {
+          try { const updated = await api.orders.confirm(id, token); setOrders(prev => prev.map(o => o.id === id ? mapApiOrder(updated) : o)); succeeded++; } catch {}
+        }
+        haptics.success();
+        toast.success(`${succeeded} pasūtījumi apstiprināti!`);
+        setBatchMode(false); setBatchSelectedIds(new Set()); setBatchConfirming(false);
+      }},
     ]);
   };
 
-  const fetchOrders = useCallback(
-    async (isRefresh = false) => {
-      if (!token) return;
-      if (!isRefresh) setFetching(true);
-      try {
-        const data = await api.orders.myOrders(token);
-        const companyId = user?.company?.id;
-        const userId = user?.id;
-        // Exclude self-orders: orders created by this user or placed by their own company.
-        // A hybrid account (canSell + buyer) should not see their own purchases in the seller inbox.
-        const sellerOrders = data.filter(
-          (o) =>
-            (companyId ? o.buyer?.id !== companyId : true) &&
-            (userId ? o.createdBy?.id !== userId : true),
-        );
-        setOrders(sellerOrders.map(mapApiOrder));
-      } catch (e) {
-        if (!isRefresh) toast.error('Kļūda ielādējot pasūtījumus');
-      } finally {
-        setFetching(false);
-        setRefreshing(false);
-      }
-    },
-    [token, user?.company?.id],
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchOrders();
-      fetchQuotes();
-    }, [fetchOrders]),
-  );
+  const fetchOrders = useCallback(async (isRefresh = false) => {
+    if (!token) return;
+    if (!isRefresh) setFetching(true);
+    try {
+      const data = await api.orders.myOrders(token);
+      const companyId = user?.company?.id;
+      const userId = user?.id;
+      const sellerOrders = data.filter(
+        o => (companyId ? o.buyer?.id !== companyId : true) && (userId ? o.createdBy?.id !== userId : true),
+      );
+      setOrders(sellerOrders.map(mapApiOrder));
+    } catch {
+      if (!isRefresh) toast.error('Kļūda ielādējot pasūtījumus');
+    } finally {
+      setFetching(false); setRefreshing(false);
+    }
+  }, [token, user?.company?.id]);
 
   const fetchQuotes = useCallback(async () => {
     if (!token) return;
     setQuotesLoading(true);
-    try {
-      const data = await api.quoteRequests.openRequests(token);
-      setQuoteRequests(data);
-    } catch {
-      // silent
-    } finally {
-      setQuotesLoading(false);
-    }
+    try { const data = await api.quoteRequests.openRequests(token); setQuoteRequests(data); } catch {}
+    finally { setQuotesLoading(false); }
   }, [token]);
 
-  // ── Live push: new orders from buyers arrive in real-time ─────────────────
-  const { sellerNewOrder } = useLiveUpdates({
-    sellerCompanyId: user?.company?.id ?? null,
-    token,
-  });
-  useEffect(() => {
-    if (sellerNewOrder) {
-      fetchOrders(true);
-    }
-  }, [sellerNewOrder, fetchOrders]);
+  useFocusEffect(useCallback(() => { fetchOrders(); fetchQuotes(); }, [fetchOrders]));
+
+  const { sellerNewOrder } = useLiveUpdates({ sellerCompanyId: user?.company?.id ?? null, token });
+  useEffect(() => { if (sellerNewOrder) fetchOrders(true); }, [sellerNewOrder, fetchOrders]);
 
   const handleConfirm = async (id: string) => {
     if (!token) return;
     setActioning(id);
-    try {
-      const updated = await api.orders.confirm(id, token);
-      setOrders((prev) => prev.map((o) => (o.id === id ? mapApiOrder(updated) : o)));
-      haptics.success();
-    } catch (e: unknown) {
-      haptics.error();
-      toast.error('Neizdevās apstiprināt pasūtījumu.');
-    } finally {
-      setActioning(null);
-    }
+    try { const updated = await api.orders.confirm(id, token); setOrders(prev => prev.map(o => o.id === id ? mapApiOrder(updated) : o)); haptics.success(); }
+    catch { haptics.error(); toast.error('Neizdevās apstiprināt pasūtījumu.'); }
+    finally { setActioning(null); }
   };
 
   const handleReject = (id: string) => {
     Alert.alert('Noraidīt', 'Vai tiešām noraidīt šo pasūtījumu?', [
       { text: 'Atcelt', style: 'cancel' },
-      {
-        text: 'Noraidīt',
-        style: 'destructive',
-        onPress: async () => {
-          if (!token) return;
-          setActioning(id);
-          try {
-            await api.orders.sellerCancel(id, 'Piegādātājs noraidīja pasūtījumu', token);
-            setOrders((prev) => prev.filter((o) => o.id !== id));
-            haptics.success();
-          } catch (e: unknown) {
-            haptics.error();
-            toast.error('Neizdevās noraidīt pasūtījumu.');
-          } finally {
-            setActioning(null);
-          }
-        },
-      },
+      { text: 'Noraidīt', style: 'destructive', onPress: async () => {
+        if (!token) return;
+        setActioning(id);
+        try { await api.orders.sellerCancel(id, 'Piegādātājs noraidīja pasūtījumu', token); setOrders(prev => prev.filter(o => o.id !== id)); haptics.success(); }
+        catch { haptics.error(); toast.error('Neizdevās noraidīt pasūtījumu.'); }
+        finally { setActioning(null); }
+      }},
     ]);
   };
 
-  const handleStartLoading = (id: string) => {
-    const order = orders.find((o) => o.id === id);
-    if (order) setLoadingOrder(order);
-  };
+  const handleStartLoading = (id: string) => { const order = orders.find(o => o.id === id); if (order) setLoadingOrder(order); };
 
   const handleConfirmLoad = async (weightKg?: number) => {
     if (!loadingOrder || !token) return;
     setConfirmingLoad(true);
     try {
-      if (loadingOrder.transportJobId) {
-        await api.transportJobs.loadingDock(loadingOrder.transportJobId, token, weightKg);
-      } else {
-        await api.orders.startLoading(loadingOrder.id, token, weightKg);
-      }
+      if (loadingOrder.transportJobId) await api.transportJobs.loadingDock(loadingOrder.transportJobId, token, weightKg);
+      else await api.orders.startLoading(loadingOrder.id, token, weightKg);
       await fetchOrders(false);
       setLoadingOrder(null);
       haptics.success();
       toast.success('Iekraušana apstiprināta!');
-    } catch (e: unknown) {
-      haptics.error();
-      toast.error('Neizdevās apstiprināt iekraušanu.');
-    } finally {
-      setConfirmingLoad(false);
-    }
+    } catch { haptics.error(); toast.error('Neizdevās apstiprināt iekraušanu.'); }
+    finally { setConfirmingLoad(false); }
   };
 
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>('ALL');
   const visibleOrders = useMemo(
-    () => (filterStatus === 'ALL' ? orders : orders.filter((o) => o.status === filterStatus)),
+    () => filterStatus === 'ALL' ? orders : orders.filter(o => o.status === filterStatus),
     [filterStatus, orders],
   );
 
@@ -650,134 +470,94 @@ export default function IncomingScreen() {
         onToggleSelect={() => toggleBatchSelect(order.id)}
       />
     ),
-    [
-      handleConfirm,
-      handleReject,
-      handleStartLoading,
-      actioning,
-      batchMode,
-      batchSelectedIds,
-      toggleBatchSelect,
-      router,
-    ],
+    [handleConfirm, handleReject, handleStartLoading, actioning, batchMode, batchSelectedIds, toggleBatchSelect, router],
   );
 
   if (fetching && !refreshing) {
     return (
       <ScreenContainer bg="white">
-        <View style={{ padding: 24, gap: 16 }}>
-          <SkeletonCard count={3} />
-        </View>
+        <View style={{ padding: 24, gap: 16 }}><SkeletonCard count={3} /></View>
       </ScreenContainer>
     );
   }
 
   return (
-    <ScreenContainer bg="white">
-      <ScreenHeader
-        title="Pieprasījumi"
-        onBack={null}
-        rightAction={
-          section === 'orders' && orders.some((o) => o.status === 'PENDING') ? (
-            <TouchableOpacity
-              style={[styles.batchToggleBtn, batchMode && styles.batchToggleBtnActive]}
-              onPress={toggleBatchMode}
-              activeOpacity={0.8}
-            >
-              {batchMode ? (
-                <X size={15} color="#9ca3af" />
-              ) : (
-                <CheckSquare2 size={15} color="#e5e7eb" />
-              )}
-              <Text style={styles.batchToggleText}>{batchMode ? 'Atcelt' : 'Atlasīt'}</Text>
-            </TouchableOpacity>
-          ) : undefined
-        }
-      />
+    <ScreenContainer bg="#ffffff" topBg="#ffffff">
+      {/* ── Header ── */}
+      <View className="px-5 pt-6 pb-2 flex-row items-center justify-between">
+        <Text style={{ fontSize: 32, fontWeight: '800', color: '#111827', letterSpacing: -0.8, lineHeight: 38 }}>
+          Ienākošie
+        </Text>
+        {section === 'orders' && orders.some(o => o.status === 'PENDING') && (
+          <TouchableOpacity
+            className={`flex-row items-center rounded-full px-3 py-2 ${batchMode ? 'bg-gray-800' : 'bg-gray-100'}`}
+            style={{ gap: 5 }}
+            onPress={toggleBatchMode}
+          >
+            {batchMode ? <X size={14} color="#9ca3af" /> : <CheckSquare2 size={14} color="#374151" />}
+            <Text style={{ fontSize: 13, fontWeight: '600', color: batchMode ? '#e5e7eb' : '#374151' }}>
+              {batchMode ? 'Atcelt' : 'Atlasīt'}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {/* ── Segment control ── */}
-      <View style={styles.segmentBar}>
-        <TouchableOpacity
-          style={[styles.segmentBtn, section === 'orders' && styles.segmentBtnActive]}
-          onPress={() => {
-            haptics.light();
-            setSection('orders');
-          }}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={[styles.segmentBtnText, section === 'orders' && styles.segmentBtnTextActive]}
-          >
-            Pasūtījumi{orders.length > 0 ? ` · ${orders.length}` : ''}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.segmentBtn, section === 'quotes' && styles.segmentBtnActive]}
-          onPress={() => {
-            haptics.light();
-            setSection('quotes');
-          }}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={[styles.segmentBtnText, section === 'quotes' && styles.segmentBtnTextActive]}
-          >
-            Cenas{openQuoteCount > 0 ? ` · ${openQuoteCount}` : ''}
-          </Text>
-          {openQuoteCount > 0 && section !== 'quotes' && <View style={styles.segmentDot} />}
-        </TouchableOpacity>
+      <View className="px-5 mt-2 mb-4">
+        <View className="flex-row bg-gray-100 p-1 rounded-2xl">
+          {([
+            { key: 'orders', label: `Pasūtījumi${orders.length > 0 ? ` · ${orders.length}` : ''}` },
+            { key: 'quotes', label: `Cenas${openQuoteCount > 0 ? ` · ${openQuoteCount}` : ''}`, dot: openQuoteCount > 0 },
+          ] as const).map((s) => {
+            const active = section === s.key;
+            return (
+              <TouchableOpacity
+                key={s.key}
+                className={`flex-1 flex-row items-center justify-center py-2.5 rounded-xl ${active ? 'bg-white' : ''}`}
+                style={active ? { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, elevation: 1, shadowOffset: { width: 0, height: 1 } } : {}}
+                onPress={() => { haptics.light(); setSection(s.key as any); }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '600', color: active ? '#111827' : '#6b7280' }}>
+                  {s.label}
+                </Text>
+                {'dot' in s && s.dot && !active && (
+                  <View className="ml-1.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       {/* ── Quotes section ── */}
       {section === 'quotes' && (
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, paddingTop: 8 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={quotesLoading}
-              onRefresh={fetchQuotes}
-              tintColor="#00A878"
-            />
-          }
+          contentContainerStyle={{ paddingBottom: 40 }}
+          refreshControl={<RefreshControl refreshing={quotesLoading} onRefresh={fetchQuotes} tintColor="#111827" />}
         >
           {quotesLoading && quoteRequests.length === 0 ? (
-            <View style={{ gap: 12, marginTop: 8 }}>
-              <SkeletonCard count={3} />
-            </View>
+            <View className="px-5 pt-2"><SkeletonCard count={3} /></View>
           ) : quoteRequests.length === 0 ? (
-            <EmptyState
-              icon={<FileText size={32} color="#9ca3af" />}
-              title="Nav cenu pieprasījumu"
-              subtitle="Jauni pieprasījumi parādīsies šeit."
-            />
+            <EmptyState icon={<FileText size={32} color="#9ca3af" />} title="Nav cenu pieprasījumu" subtitle="Jauni pieprasījumi parādīsies šeit." />
           ) : (
             quoteRequests.map((req) => (
               <TouchableOpacity
                 key={req.id}
-                style={styles.quoteCard}
-                activeOpacity={0.8}
-                onPress={() => {
-                  haptics.light();
-                  router.push({
-                    pathname: '/(seller)/quotes',
-                    params: { highlight: req.id },
-                  } as any);
-                }}
+                className="flex-row items-center px-5 py-4 border-b border-gray-100 bg-white"
+                style={{ gap: 12 }}
+                activeOpacity={0.7}
+                onPress={() => { haptics.light(); router.push({ pathname: '/(seller)/quotes', params: { highlight: req.id } } as any); }}
               >
-                <View style={styles.quoteCardTop}>
-                  <View style={styles.quoteIconWrap}>
-                    <Package size={16} color="#2563eb" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.quoteCardTitle}>{req.materialCategory}</Text>
-                    <Text style={styles.quoteCardSub}>
-                      {req.quantity} {req.unit} · {req.deliveryCity}
-                    </Text>
-                  </View>
-                  <View style={styles.quoteRespondBtn}>
-                    <Send size={13} color="#fff" />
-                    <Text style={styles.quoteRespondBtnText}>Atbildēt</Text>
-                  </View>
+                <View className="w-11 h-11 rounded-full bg-blue-50 items-center justify-center">
+                  <Package size={18} color="#2563eb" />
+                </View>
+                <View className="flex-1">
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>{req.materialCategory}</Text>
+                  <Text className="text-gray-500 font-medium text-[13px] mt-0.5">{req.quantity} {req.unit} · {req.deliveryCity}</Text>
+                </View>
+                <View className="flex-row items-center bg-blue-600 px-3 py-2 rounded-full" style={{ gap: 5 }}>
+                  <Send size={12} color="#fff" />
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Atbildēt</Text>
                 </View>
               </TouchableOpacity>
             ))
@@ -788,40 +568,23 @@ export default function IncomingScreen() {
       {/* ── Orders section ── */}
       {section === 'orders' && (
         <>
-          {/* Filter Tabs */}
           {orders.length > 0 && (
-            <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 8 }}
-              >
-                {STATUS_FILTERS.map((f) => {
-                  const count =
-                    f.key === 'ALL'
-                      ? orders.length
-                      : orders.filter((o) => o.status === f.key).length;
+            <View className="mb-3">
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
+                {STATUS_FILTERS.map(f => {
+                  const count = f.key === 'ALL' ? orders.length : orders.filter(o => o.status === f.key).length;
                   const active = filterStatus === f.key;
                   return (
                     <TouchableOpacity
                       key={f.key}
-                      style={[styles.filterPill, active && styles.filterPillActive]}
-                      onPress={() => {
-                        haptics.light();
-                        setFilterStatus(f.key);
-                      }}
-                      activeOpacity={0.8}
+                      className={`flex-row items-center px-4 py-2 rounded-full ${active ? 'bg-gray-900' : 'bg-gray-100'}`}
+                      style={{ gap: 6 }}
+                      onPress={() => { haptics.light(); setFilterStatus(f.key); }}
                     >
-                      <Text style={[styles.filterPillText, active && styles.filterPillTextActive]}>
-                        {f.label}
-                      </Text>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: active ? '#fff' : '#374151' }}>{f.label}</Text>
                       {count > 0 && (
-                        <View style={[styles.filterBadge, active && styles.filterBadgeActive]}>
-                          <Text
-                            style={[styles.filterBadgeText, active && styles.filterBadgeTextActive]}
-                          >
-                            {count}
-                          </Text>
+                        <View className={`px-1.5 py-0.5 rounded-full items-center justify-center ${active ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: active ? '#fff' : '#374151' }}>{count}</Text>
                         </View>
                       )}
                     </TouchableOpacity>
@@ -833,39 +596,24 @@ export default function IncomingScreen() {
 
           <FlatList
             data={visibleOrders}
-            keyExtractor={(item) => item.id}
+            keyExtractor={item => item.id}
             renderItem={renderOrderItem}
-            contentContainerStyle={[
-              styles.list,
-              visibleOrders.length === 0 && { flexGrow: 1, justifyContent: 'center' },
-            ]}
+            contentContainerStyle={visibleOrders.length === 0 ? { flexGrow: 1 } : { paddingBottom: batchMode ? 120 : 60 }}
             refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={() => {
-                  setRefreshing(true);
-                  fetchOrders(true);
-                }}
-                tintColor="#00A878"
-              />
+              <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchOrders(true); }} tintColor="#111827" />
             }
             ListEmptyComponent={
               <EmptyState
                 icon={<Inbox size={32} color="#9ca3af" />}
                 title={orders.length === 0 ? 'Nav pasūtījumu' : 'Nav atrasts'}
-                subtitle={
-                  orders.length === 0
-                    ? 'Šobrīd nav neviena aktīva pasūtījuma.'
-                    : 'Šajā kategorijā pašlaik nav neviena pasūtījuma.'
-                }
+                subtitle={orders.length === 0 ? 'Šobrīd nav neviena aktīva pasūtījuma.' : 'Šajā kategorijā pašlaik nav neviena pasūtījuma.'}
                 action={
                   orders.length === 0 ? (
                     <TouchableOpacity
-                      style={styles.emptyCta}
+                      className="mt-3 bg-gray-900 rounded-full px-6 py-3"
                       onPress={() => router.push('/(seller)/catalog' as any)}
-                      activeOpacity={0.8}
                     >
-                      <Text style={styles.emptyCtaText}>Pārbaudīt katalogu →</Text>
+                      <Text style={{ color: '#fff', fontWeight: '600', fontSize: 15 }}>Pārbaudīt katalogu →</Text>
                     </TouchableOpacity>
                   ) : undefined
                 }
@@ -874,19 +622,18 @@ export default function IncomingScreen() {
           />
         </>
       )}
+
+      {/* ── Batch confirm bar ── */}
       {batchMode && batchSelectedIds.size > 0 && (
-        <View style={styles.batchBar}>
-          <Text style={styles.batchBarText}>{batchSelectedIds.size} atlasīti</Text>
+        <View className="absolute bottom-0 left-0 right-0 bg-gray-900 flex-row items-center justify-between px-5 pt-4 pb-8">
+          <Text style={{ color: '#f9fafb', fontSize: 15, fontWeight: '600' }}>{batchSelectedIds.size} atlasīti</Text>
           <TouchableOpacity
-            style={[styles.batchBarBtn, batchConfirming && { opacity: 0.6 }]}
+            className={`bg-white rounded-full px-4 py-2 ${batchConfirming ? 'opacity-60' : ''}`}
             onPress={handleBatchConfirm}
             disabled={batchConfirming}
-            activeOpacity={0.8}
           >
-            {batchConfirming ? (
-              <ActivityIndicator color="#111827" size="small" />
-            ) : (
-              <Text style={styles.batchBarBtnText}>Apstiprināt visus</Text>
+            {batchConfirming ? <ActivityIndicator color="#111827" size="small" /> : (
+              <Text style={{ color: '#111827', fontWeight: '700', fontSize: 14 }}>Apstiprināt visus</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -904,316 +651,3 @@ export default function IncomingScreen() {
     </ScreenContainer>
   );
 }
-
-// ── Styles ─────────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  filterPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: '#f3f4f6',
-    gap: 6,
-  },
-  filterPillActive: { backgroundColor: '#00A878' },
-  filterPillText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
-  filterPillTextActive: { color: '#ffffff' },
-  filterBadge: {
-    backgroundColor: '#e5e7eb',
-    borderRadius: 999,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    minWidth: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterBadgeActive: { backgroundColor: 'rgba(255,255,255,0.2)' },
-  filterBadgeText: { fontSize: 11, fontWeight: '700', color: '#374151' },
-  filterBadgeTextActive: { color: '#ffffff' },
-
-  list: { padding: 16, paddingBottom: 40 },
-
-  quoteBanner: {
-    marginHorizontal: 16,
-    marginBottom: 8,
-    padding: 12,
-    backgroundColor: '#eff6ff',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  quoteBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  quoteBannerIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#dbeafe',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quoteBannerTitle: {
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#1e40af',
-  },
-  quoteBannerSub: {
-    fontSize: 12,
-    fontFamily: 'Inter_400Regular',
-    color: '#3b82f6',
-    marginTop: 1,
-  },
-
-  card: {
-    paddingVertical: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-    gap: 12,
-  },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardTopLeft: { gap: 4, flex: 1, paddingRight: 10 },
-  materialText: { fontSize: 18, fontWeight: '700', color: '#111827' },
-  buyerText: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
-
-  cardTopRight: { alignItems: 'flex-end', gap: 4 },
-  priceText: { fontSize: 18, fontWeight: '800', color: '#111827' },
-  statusDot: { width: 6, height: 6, borderRadius: 3 },
-  statusText: { fontSize: 13, fontWeight: '600' },
-
-  addressRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
-  addressText: { fontSize: 14, color: '#4b5563', flex: 1, lineHeight: 20 },
-
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 },
-  windowPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    backgroundColor: '#eff6ff',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-  },
-  windowPillText: { fontSize: 12, fontWeight: '600', color: '#1d4ed8' },
-  siteContactText: { fontSize: 12, color: '#6b7280', flex: 1 },
-  notesPreview: { fontSize: 12, color: '#6b7280', marginTop: 4, fontStyle: 'italic' },
-
-  actionsRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
-  btnOutline: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnOutlineText: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  btnSolid: {
-    flex: 2,
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnSolidText: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
-  btnPrimaryFlex: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnDisabled: { opacity: 0.5 },
-
-  emptyWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 80,
-    paddingHorizontal: 32,
-    flex: 1, // Let it expand inside the flexGrow:1 ScrollView container
-  },
-  emptyIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 999,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptyDesc: { fontSize: 16, color: '#6b7280', textAlign: 'center', lineHeight: 24 },
-  emptyCta: {
-    marginTop: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    backgroundColor: '#111827',
-    borderRadius: 14,
-  },
-  emptyCtaText: { fontSize: 15, fontWeight: '600', color: '#ffffff' },
-
-  // Batch mode
-  cardSelected: { backgroundColor: '#f0fdf4' },
-  batchToggleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: '#4b5563',
-  },
-  batchToggleBtnActive: { borderColor: '#6b7280', backgroundColor: '#374151' },
-  batchToggleText: { fontSize: 14, fontWeight: '600', color: '#e5e7eb' },
-  batchBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#111827',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 28,
-  },
-  batchBarText: { color: '#f9fafb', fontSize: 15, fontWeight: '600' },
-  batchBarBtn: {
-    backgroundColor: '#ffffff',
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  batchBarBtnText: { color: '#111827', fontWeight: '700', fontSize: 14 },
-
-  // Segment control
-  segmentBar: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 12,
-    backgroundColor: '#f3f4f6',
-    padding: 3,
-  },
-  segmentBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 9,
-    borderRadius: 10,
-    gap: 5,
-  },
-  segmentBtnActive: {
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
-  },
-  segmentBtnText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
-  segmentBtnTextActive: { color: '#111827' },
-  segmentDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#2563eb' },
-
-  // Quote cards
-  quoteCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    padding: 14,
-    marginBottom: 10,
-  },
-  quoteCardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  quoteIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#eff6ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quoteCardTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2 },
-  quoteCardSub: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
-  quoteRespondBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 10,
-  },
-  quoteRespondBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
-});
-
-const modalStyles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  title: { fontSize: 18, fontWeight: '800', color: '#111827' },
-
-  body: { padding: 20, gap: 24 },
-
-  heroCard: {
-    paddingBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-    gap: 4,
-  },
-  heroMaterial: { fontSize: 24, fontWeight: '800', color: '#111827', letterSpacing: -0.5 },
-  heroSub: { fontSize: 15, color: '#6b7280', fontWeight: '500' },
-
-  inputWrapper: { gap: 8 },
-  inputLabel: { fontSize: 14, fontWeight: '600', color: '#111827' },
-  input: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-  },
-
-  checklist: { gap: 16, marginTop: 8 },
-  checkRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  checkText: { fontSize: 16, color: '#6b7280', fontWeight: '500' },
-  checkTextActive: { color: '#111827', fontWeight: '600' },
-
-  footer: {
-    padding: 20,
-    paddingBottom: Platform.OS === 'ios' ? 0 : 20,
-  },
-  confirmBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 16,
-    paddingVertical: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  confirmBtnDisabled: { opacity: 0.5 },
-  confirmBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
-});

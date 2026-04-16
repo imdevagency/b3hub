@@ -77,7 +77,6 @@ function BuyerLayoutContent() {
           options={{
             title: t.tabs.activity,
             tabBarIcon: ({ color }) => <ClipboardList size={22} color={color} />,
-            tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
           }}
         />
         <Tabs.Screen
