@@ -72,7 +72,7 @@ export function ScreenHeader({
             accessibilityLabel="Atpakaļ"
             accessibilityRole="button"
           >
-            <ChevronLeft size={24} color="#ffffff" />
+            <ChevronLeft size={24} color="#111827" />
           </TouchableOpacity>
         )}
         <Text style={styles.title} numberOfLines={1}>
@@ -92,9 +92,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#111827',
+    backgroundColor: 'transparent',
     borderBottomWidth: 1,
-    borderBottomColor: '#1f2937',
+    borderBottomColor: '#E5E7EB',
     minHeight: 56,
   },
   left: {
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     fontFamily: 'Inter_700Bold',
-    color: '#ffffff',
+    color: '#111827',
     flex: 1,
   },
   right: {

@@ -60,7 +60,7 @@ function BuyerLayoutContent() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#111827', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: insets.top }}>
       {config !== null && <TopBar title="" unreadCount={unreadCount} leftElement={avatarBtn} />}
       <Tabs screenOptions={{ headerShown: false }} tabBar={renderTabBar}>
         <Tabs.Screen
