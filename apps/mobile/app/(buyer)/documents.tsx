@@ -8,7 +8,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
   Linking,
   Alert,
@@ -16,7 +15,6 @@ import {
   Platform,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -52,31 +50,21 @@ import {
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 
-// ── Lazy‑load optional native modules ────────────────────────────────────────
 let FileSystem: typeof import('expo-file-system') | null = null;
 let Sharing: typeof import('expo-sharing') | null = null;
 try {
   FileSystem = require('expo-file-system');
-} catch {
-  /* unavailable in Expo Go */
-}
+} catch {}
 try {
   Sharing = require('expo-sharing');
-} catch {
-  /* unavailable in Expo Go */
-}
+} catch {}
 
-// ── Top-level tab ─────────────────────────────────────────────────────────────
 type TopTab = 'docs' | 'invoices' | 'certs';
 const TOP_TABS: { key: TopTab; label: string }[] = [
   { key: 'docs', label: 'Dokumenti' },
   { key: 'invoices', label: 'Rēķini' },
   { key: 'certs', label: 'Sertifikāti' },
 ];
-
-// ══════════════════════════════════════════════════════════════════════════════
-// SECTION 1 — DOCUMENTS
-// ══════════════════════════════════════════════════════════════════════════════
 
 type DocFilter = 'ALL' | Exclude<DocumentType, 'INVOICE'>;
 
@@ -89,62 +77,37 @@ const DOC_TABS: { key: DocFilter; label: string }[] = [
   { key: 'CONTRACT', label: 'Līgumi' },
 ];
 
-const DOC_TYPE_META: Record<
-  DocumentType,
-  { label: string; icon: React.ElementType; iconColor: string; iconBg: string }
-> = {
+const DOC_TYPE_META: Record<DocumentType, { label: string; icon: React.ElementType; iconColor: string; iconBg: string }> = {
   INVOICE: { label: 'Rēķins', icon: FileText, iconColor: '#2563eb', iconBg: '#eff6ff' },
   WEIGHING_SLIP: { label: 'Svēršanas lapa', icon: Weight, iconColor: '#d97706', iconBg: '#fffbeb' },
-  DELIVERY_PROOF: {
-    label: 'Piegādes apstiprinājums',
-    icon: ClipboardCheck,
-    iconColor: '#16a34a',
-    iconBg: '#f0fdf4',
-  },
-  WASTE_CERTIFICATE: {
-    label: 'Atkritumu sertifikāts',
-    icon: Recycle,
-    iconColor: '#059669',
-    iconBg: '#ecfdf5',
-  },
-  DELIVERY_NOTE: {
-    label: 'Piegādes pavadzīme',
-    icon: Truck,
-    iconColor: '#7c3aed',
-    iconBg: '#f5f3ff',
-  },
+  DELIVERY_PROOF: { label: 'Piegādes apstiprinājums', icon: ClipboardCheck, iconColor: '#16a34a', iconBg: '#f0fdf4' },
+  WASTE_CERTIFICATE: { label: 'Atkritumu sertifikāts', icon: Recycle, iconColor: '#059669', iconBg: '#ecfdf5' },
+  DELIVERY_NOTE: { label: 'Piegādes pavadzīme', icon: Truck, iconColor: '#7c3aed', iconBg: '#f5f3ff' },
   CMR_NOTE: { label: 'CMR', icon: Truck, iconColor: '#7c3aed', iconBg: '#f5f3ff' },
   CONTRACT: { label: 'Līgums', icon: ScrollText, iconColor: '#374151', iconBg: '#f3f4f6' },
 };
 
 const DOC_STATUS_LABEL: Record<string, string> = {
-  DRAFT: 'Melnraksts',
-  ISSUED: 'Izdots',
-  SIGNED: 'Parakstīts',
-  ARCHIVED: 'Arhivēts',
-  EXPIRED: 'Beidzies',
+  DRAFT: 'Melnraksts', ISSUED: 'Izdots', SIGNED: 'Parakstīts', ARCHIVED: 'Arhivēts', EXPIRED: 'Beidzies',
 };
 const DOC_STATUS_COLOR: Record<string, string> = {
-  DRAFT: '#9ca3af',
-  ISSUED: '#2563eb',
-  SIGNED: '#16a34a',
-  ARCHIVED: '#d97706',
-  EXPIRED: '#ef4444',
+  DRAFT: '#9ca3af', ISSUED: '#2563eb', SIGNED: '#16a34a', ARCHIVED: '#d97706', EXPIRED: '#ef4444',
 };
 const DOC_STATUS_BG: Record<string, string> = {
-  DRAFT: '#f3f4f6',
-  ISSUED: '#eff6ff',
-  SIGNED: '#f0fdf4',
-  ARCHIVED: '#fffbeb',
-  EXPIRED: '#fef2f2',
+  DRAFT: '#f3f4f6', ISSUED: '#eff6ff', SIGNED: '#f0fdf4', ARCHIVED: '#fffbeb', EXPIRED: '#fef2f2',
 };
 
 function docFmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('lv-LV', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+  return new Date(iso).toLocaleDateString('lv-LV', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function invFmtDate(iso: string | null): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('lv-LV', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function fmtEur(n: number): string {
+  return `€${n.toFixed(2)}`;
 }
 
 function DocRow({ doc }: { doc: ApiDocument }) {
@@ -160,34 +123,22 @@ function DocRow({ doc }: { doc: ApiDocument }) {
     Linking.openURL(doc.fileUrl).catch(() => toast.error('Neizdevās atvērt dokumentu.'));
   };
   return (
-    <TouchableOpacity style={ds.row} onPress={handleOpen} activeOpacity={0.7}>
-      <View style={[ds.iconWrap, { backgroundColor: meta.iconBg }]}>
+    <TouchableOpacity className="flex-row items-center py-4 px-5 border-b border-gray-100 bg-white" onPress={handleOpen} activeOpacity={0.7}>
+      <View className="w-12 h-12 rounded-full items-center justify-center mr-4" style={{ backgroundColor: meta.iconBg }}>
         <Icon size={20} color={meta.iconColor} />
       </View>
-      <View style={ds.rowBody}>
-        <Text style={ds.rowTitle} numberOfLines={1}>
-          {doc.title}
-        </Text>
-        <View style={ds.rowMeta}>
-          <StatusPill
-            label={DOC_STATUS_LABEL[doc.status] ?? doc.status}
-            bg={DOC_STATUS_BG[doc.status] ?? '#f3f4f6'}
-            color={DOC_STATUS_COLOR[doc.status] ?? '#6b7280'}
-            size="sm"
-          />
-          <Text style={ds.rowSep}>·</Text>
-          <Text style={ds.rowDate}>{docFmtDate(doc.createdAt)}</Text>
+      <View className="flex-1 justify-center gap-0.5 pr-2">
+        <Text className="text-gray-900 font-bold text-[16px] tracking-tight" numberOfLines={1}>{doc.title}</Text>
+        <View className="flex-row items-center mt-1">
+          <StatusPill label={DOC_STATUS_LABEL[doc.status] ?? doc.status} bg={DOC_STATUS_BG[doc.status] ?? '#f3f4f6'} color={DOC_STATUS_COLOR[doc.status] ?? '#6b7280'} size="sm" />
+          <Text className="text-gray-300 mx-2">•</Text>
+          <Text className="text-gray-500 text-[13px]">{docFmtDate(doc.createdAt)}</Text>
         </View>
-        {doc.notes ? (
-          <Text style={ds.rowNotes} numberOfLines={1}>
-            {doc.notes}
-          </Text>
-        ) : null}
       </View>
       {doc.fileUrl ? (
-        <ExternalLink size={16} color="#9ca3af" />
+        <View className="bg-gray-100 p-2 rounded-full"><ExternalLink size={16} color="#6b7280" /></View>
       ) : (
-        <Download size={16} color="#d1d5db" />
+        <View className="bg-gray-100 p-2 rounded-full"><Download size={16} color="#d1d5db" /></View>
       )}
     </TouchableOpacity>
   );
@@ -200,133 +151,66 @@ function DocsTab() {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<DocFilter>('ALL');
 
-  const load = useCallback(
-    async (silent = false) => {
-      if (!token) return;
-      if (!silent) setLoading(true);
-      try {
-        const res = await api.documents.getAll(token);
-        setDocs(res.filter((d: ApiDocument) => d.type !== 'INVOICE'));
-      } catch {
-        setDocs([]);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [token],
-  );
+  const load = useCallback(async (silent = false) => {
+    if (!token) return;
+    if (!silent) setLoading(true);
+    try {
+      const res = await api.documents.getAll(token);
+      setDocs(res.filter((d: ApiDocument) => d.type !== 'INVOICE'));
+    } catch {
+      setDocs([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [token]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
-  const visible =
-    filter === 'ALL'
-      ? docs
-      : docs.filter(
-          (d) => d.type === filter || (filter === 'DELIVERY_NOTE' && d.type === 'CMR_NOTE'),
-        );
-
+  const visible = filter === 'ALL' ? docs : docs.filter((d) => d.type === filter || (filter === 'DELIVERY_NOTE' && d.type === 'CMR_NOTE'));
   const counts: Record<string, number> = { ALL: docs.length };
   for (const d of docs) {
     const k = d.type === 'CMR_NOTE' ? 'DELIVERY_NOTE' : d.type;
     counts[k] = (counts[k] ?? 0) + 1;
   }
 
-  if (loading)
-    return (
-      <View style={{ padding: 20 }}>
-        <SkeletonCard count={5} />
-      </View>
-    );
+  if (loading) return <View className="p-5"><SkeletonCard count={5} /></View>;
 
   return (
     <>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={ds.filterScroll}
-        contentContainerStyle={ds.filterContent}
-      >
-        {DOC_TABS.map((tb) => {
-          const count = counts[tb.key] ?? 0;
-          const active = filter === tb.key;
-          return (
-            <TouchableOpacity
-              key={tb.key}
-              style={[ds.chip, active && ds.chipActive]}
-              onPress={() => {
-                haptics.light();
-                setFilter(tb.key);
-              }}
-              activeOpacity={0.75}
-            >
-              <Text style={[ds.chipText, active && ds.chipTextActive]}>{tb.label}</Text>
-              {count > 0 && (
-                <View style={[ds.chipBadge, active && ds.chipBadgeActive]}>
-                  <Text style={[ds.chipBadgeText, active && ds.chipBadgeTextActive]}>{count}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-      <ScrollView
-        style={ds.list}
-        contentContainerStyle={visible.length === 0 ? ds.listEmpty : ds.listContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              load(true);
-            }}
-            tintColor="#00A878"
-          />
-        }
-      >
+      <View className="my-3">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
+          {DOC_TABS.map((tb) => {
+            const count = counts[tb.key] ?? 0;
+            const active = filter === tb.key;
+            return (
+              <TouchableOpacity
+                key={tb.key}
+                className={`flex-row items-center px-4 py-2 rounded-full ${active ? 'bg-gray-900' : 'bg-gray-100'}`}
+                onPress={() => { haptics.light(); setFilter(tb.key); }}
+              >
+                <Text className={`font-bold text-[14px] ${active ? 'text-white' : 'text-gray-900'}`}>{tb.label}</Text>
+                {count > 0 && (
+                  <View className={`ml-2 px-1.5 py-0.5 rounded-full items-center justify-center ${active ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                    <Text className={`text-[11px] font-black ${active ? 'text-white' : 'text-gray-500'}`}>{count}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+      <ScrollView className="flex-1" contentContainerStyle={visible.length === 0 ? { flex: 1, paddingHorizontal: 20 } : { paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} tintColor="#111827" />}>
         {visible.length === 0 ? (
-          <EmptyState
-            icon={<FolderOpen size={36} color="#9ca3af" />}
-            title="Nav dokumentu"
-            subtitle={
-              filter === 'ALL'
-                ? 'Dokumenti parādīsies pēc pasūtījumu izpildes.'
-                : 'Nav dokumentu šajā kategorijā.'
-            }
-          />
+          <EmptyState icon={<FolderOpen size={36} color="#9ca3af" />} title="Nav dokumentu" subtitle={filter === 'ALL' ? 'Dokumenti parādīsies pēc pasūtījumu izpildes.' : 'Nav dokumentu šajā kategorijā.'} />
         ) : (
-          <View style={ds.card}>
-            {visible.map((doc, idx) => (
-              <View key={doc.id}>
-                <DocRow doc={doc} />
-                {idx < visible.length - 1 && <View style={ds.divider} />}
-              </View>
-            ))}
+          <View>
+            {visible.map((doc) => <DocRow key={doc.id} doc={doc} />)}
           </View>
         )}
       </ScrollView>
     </>
   );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// SECTION 2 — INVOICES
-// ══════════════════════════════════════════════════════════════════════════════
-
-function invFmtDate(iso: string | null): string {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('lv-LV', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-function fmtEur(n: number): string {
-  return `€${n.toFixed(2)}`;
 }
 
 const INV_STATUS_META: Record<InvoiceStatus, { label: string; bg: string; color: string }> = {
@@ -348,42 +232,25 @@ function InvoiceRow({ invoice, onPress }: { invoice: ApiInvoice; onPress: () => 
   const meta = INV_STATUS_META[invoice.status];
   const isActionable = invoice.status === 'ISSUED' || invoice.status === 'OVERDUE';
   return (
-    <TouchableOpacity style={is.row} onPress={onPress} activeOpacity={0.6}>
-      <View style={is.rowLeft}>
-        <View style={is.rowTopLine}>
-          <Text style={is.rowNum}>Rēķins #{invoice.invoiceNumber}</Text>
-          <Text style={[is.rowAmount, isActionable && is.rowAmountDue]}>
-            {fmtEur(invoice.total)}
-          </Text>
+    <TouchableOpacity className="flex-row items-center px-5 py-4 border-b border-gray-100 bg-white" onPress={onPress} activeOpacity={0.6}>
+      <View className="flex-1 gap-1.5 pr-4">
+        <View className="flex-row justify-between items-center">
+          <Text className="text-gray-900 font-bold text-[16px] tracking-tight">#{invoice.invoiceNumber}</Text>
+          <Text className={`text-[17px] font-black tracking-tight ${isActionable ? 'text-gray-900' : 'text-gray-500'}`}>{fmtEur(invoice.total)}</Text>
         </View>
-        <View style={is.rowBottomLine}>
+        <View className="flex-row justify-between items-center mt-1">
           <StatusPill label={meta.label} bg={meta.bg} color={meta.color} size="sm" />
-          <Text style={is.rowDate}>
-            {invoice.dueDate
-              ? `Termiņš ${invFmtDate(invoice.dueDate)}`
-              : invFmtDate(invoice.issuedAt)}
+          <Text className="text-gray-400 font-medium text-[13px]">
+            {invoice.dueDate ? `Termiņš ${invFmtDate(invoice.dueDate)}` : invFmtDate(invoice.issuedAt)}
           </Text>
         </View>
-        {invoice.order && <Text style={is.rowOrder}>Pasūtījums #{invoice.order.orderNumber}</Text>}
       </View>
-      <ChevronRight size={16} color="#d1d5db" />
+      <ChevronRight size={20} color="#d1d5db" />
     </TouchableOpacity>
   );
 }
 
-function InvoiceDetailSheet({
-  invoice,
-  visible,
-  onClose,
-  onDownload,
-  downloading,
-}: {
-  invoice: ApiInvoice | null;
-  visible: boolean;
-  onClose: () => void;
-  onDownload: () => void;
-  downloading: boolean;
-}) {
+function InvoiceDetailSheet({ invoice, visible, onClose, onDownload, downloading }: { invoice: ApiInvoice | null, visible: boolean, onClose: () => void, onDownload: () => void, downloading: boolean }) {
   const lastRef = useRef<ApiInvoice | null>(invoice);
   if (invoice) lastRef.current = invoice;
   const inv = invoice ?? lastRef.current;
@@ -393,85 +260,73 @@ function InvoiceDetailSheet({
 
   return (
     <BottomSheet visible={visible} onClose={onClose} scrollable>
-      <View style={{ gap: 0, paddingBottom: 8 }}>
-        <View style={im.amountHero}>
-          <Text style={im.amountHeroLabel}>Kopā jāmaksā</Text>
-          <Text style={[im.amountHeroVal, isActionable && { color: '#111827' }]}>
-            {fmtEur(inv.total)}
-          </Text>
+      <View className="pb-4">
+        <View className="items-center py-6 mb-2 border-b border-gray-100">
+          <Text className="text-gray-400 font-bold text-[12px] uppercase tracking-widest mb-1">Kopā jāmaksā</Text>
+          <Text className="text-gray-900 font-black text-[42px] tracking-tighter leading-none mb-3">{fmtEur(inv.total)}</Text>
           <StatusPill label={meta.label} bg={meta.bg} color={meta.color} size="md" />
         </View>
-        <View style={im.refRow}>
-          <Text style={im.refLabel}>Rēķins</Text>
-          <Text style={im.refVal}>#{inv.invoiceNumber}</Text>
-        </View>
-        {inv.order && (
-          <View style={im.refRow}>
-            <Text style={im.refLabel}>Pasūtījums</Text>
-            <Text style={im.refVal}>#{inv.order.orderNumber}</Text>
+        
+        <View className="px-2">
+          <View className="flex-row justify-between py-2.5">
+            <Text className="text-gray-500 text-[14px]">Rēķins</Text>
+            <Text className="text-gray-900 font-bold text-[14px]">#{inv.invoiceNumber}</Text>
           </View>
-        )}
-        <View style={im.divider} />
-        <View style={im.lineItem}>
-          <Text style={im.lineLabel}>Summa bez PVN</Text>
-          <Text style={im.lineVal}>{fmtEur(inv.subtotal)}</Text>
-        </View>
-        <View style={im.lineItem}>
-          <Text style={im.lineLabel}>PVN (21%)</Text>
-          <Text style={im.lineVal}>{fmtEur(inv.vatAmount)}</Text>
-        </View>
-        <View style={[im.lineItem, im.lineItemTotal]}>
-          <Text style={im.lineTotalLabel}>Kopā</Text>
-          <Text style={im.lineTotalVal}>{fmtEur(inv.total)}</Text>
-        </View>
-        <View style={im.divider} />
-        <View style={im.lineItem}>
-          <Text style={im.lineLabel}>Izrakstīts</Text>
-          <Text style={im.lineVal}>{invFmtDate(inv.issuedAt)}</Text>
-        </View>
-        {inv.dueDate && (
-          <View style={im.lineItem}>
-            <Text style={im.lineLabel}>Apmaksas termiņš</Text>
-            <Text
-              style={[
-                im.lineVal,
-                inv.status === 'OVERDUE' && { color: '#dc2626', fontWeight: '700' },
-              ]}
-            >
-              {invFmtDate(inv.dueDate)}
-            </Text>
-          </View>
-        )}
-        {inv.paidAt && (
-          <View style={im.lineItem}>
-            <Text style={im.lineLabel}>Apmaksāts</Text>
-            <Text style={[im.lineVal, { color: '#16a34a' }]}>{invFmtDate(inv.paidAt)}</Text>
-          </View>
-        )}
-        {isActionable && (
-          <View style={im.payInfo}>
-            <CreditCard size={16} color="#2563eb" />
-            <Text style={im.payInfoText}>
-              Lūdzu veiciet pārskaitījumu uz B3Hub bankas kontu. Maksājums tiks apstiprināts
-              automātiski pēc bankas apstrādes.
-            </Text>
-          </View>
-        )}
-        <TouchableOpacity
-          style={im.downloadBtn}
-          onPress={onDownload}
-          disabled={downloading}
-          activeOpacity={0.85}
-        >
-          {downloading ? (
-            <ActivityIndicator color="#111827" />
-          ) : (
-            <>
-              <Download size={18} color="#111827" />
-              <Text style={im.downloadBtnText}>Lejupielādēt PDF</Text>
-            </>
+          {inv.order && (
+            <View className="flex-row justify-between py-2.5 border-b border-gray-100">
+              <Text className="text-gray-500 text-[14px]">Pasūtījums</Text>
+              <Text className="text-gray-900 font-bold text-[14px]">#{inv.order.orderNumber}</Text>
+            </View>
           )}
-        </TouchableOpacity>
+
+          <View className="flex-row justify-between py-2 mt-4">
+            <Text className="text-gray-500 text-[14px]">Summa bez PVN</Text>
+            <Text className="text-gray-900 font-medium text-[14px]">{fmtEur(inv.subtotal)}</Text>
+          </View>
+          <View className="flex-row justify-between py-2">
+            <Text className="text-gray-500 text-[14px]">PVN (21%)</Text>
+            <Text className="text-gray-900 font-medium text-[14px]">{fmtEur(inv.vatAmount)}</Text>
+          </View>
+          <View className="flex-row justify-between py-3 mt-1 border-t border-gray-100">
+            <Text className="text-gray-900 font-bold text-[16px]">Kopā</Text>
+            <Text className="text-gray-900 font-black text-[18px]">{fmtEur(inv.total)}</Text>
+          </View>
+
+          <View className="flex-row justify-between py-2.5 mt-4 border-t border-gray-100 pt-5">
+            <Text className="text-gray-500 text-[14px]">Izrakstīts</Text>
+            <Text className="text-gray-900 font-medium text-[14px]">{invFmtDate(inv.issuedAt)}</Text>
+          </View>
+          {inv.dueDate && (
+            <View className="flex-row justify-between py-2.5">
+              <Text className="text-gray-500 text-[14px]">Apmaksas termiņš</Text>
+              <Text className={`font-bold text-[14px] ${inv.status === 'OVERDUE' ? 'text-red-600' : 'text-gray-900'}`}>{invFmtDate(inv.dueDate)}</Text>
+            </View>
+          )}
+          {inv.paidAt && (
+            <View className="flex-row justify-between py-2.5">
+              <Text className="text-gray-500 text-[14px]">Apmaksāts</Text>
+              <Text className="text-green-600 font-bold text-[14px]">{invFmtDate(inv.paidAt)}</Text>
+            </View>
+          )}
+
+          {isActionable && (
+            <View className="bg-blue-50 rounded-2xl p-4 mt-6 flex-row items-center">
+              <CreditCard size={20} color="#2563eb" className="mr-3" />
+              <Text className="flex-1 text-blue-700 text-[13px] leading-5 font-medium">
+                Pārskaitiet uz B3Hub bankas kontu. Maksājums tiks apstiprināts automātiski.
+              </Text>
+            </View>
+          )}
+
+          <TouchableOpacity className="flex-row items-center justify-center p-4 bg-gray-100 rounded-full mt-6" onPress={onDownload} disabled={downloading} activeOpacity={0.8}>
+            {downloading ? <ActivityIndicator color="#111827" /> : (
+              <>
+                <Download size={20} color="#111827" />
+                <Text className="text-gray-900 font-bold text-[16px] ml-2">Lejupielādēt PDF</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </BottomSheet>
   );
@@ -479,7 +334,6 @@ function InvoiceDetailSheet({
 
 function InvoicesTab() {
   const { token } = useAuth();
-  const toast = useToast();
   const [invoices, setInvoices] = useState<ApiInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -487,261 +341,108 @@ function InvoicesTab() {
   const [downloading, setDownloading] = useState(false);
   const [filter, setFilter] = useState<InvoiceStatus | 'ALL'>('ALL');
 
-  const load = useCallback(
-    async (silent = false) => {
-      if (!token) return;
-      if (!silent) setLoading(true);
-      try {
-        const data = await api.invoices.getAll(token);
-        setInvoices(Array.isArray(data) ? data : []);
-      } catch {
-        /* silent fail — show empty state */
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [token],
-  );
+  const load = useCallback(async (silent = false) => {
+    if (!token) return;
+    if (!silent) setLoading(true);
+    try {
+      const data = await api.invoices.getAll(token);
+      setInvoices(Array.isArray(data) ? data : []);
+    } catch {} finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [token]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   const handleDownload = async () => {
-    if (!selected || !token || !FileSystem || !Sharing) {
-      toast.error('Lejupielāde nav pieejama šajā ierīcē.');
-      return;
-    }
+    if (!selected || !token || !FileSystem || !Sharing) return;
     setDownloading(true);
-    haptics.light();
     try {
       const url = `${API_URL}/invoices/${selected.id}/pdf`;
       const fileUri = `${(FileSystem as any).documentDirectory ?? ''}invoice-${selected.invoiceNumber}.pdf`;
-      const dlRes = await FileSystem.downloadAsync(url, fileUri, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (dlRes.status !== 200) throw new Error('Neizdevās lejupielādēt PDF');
-      if (Platform.OS === 'ios') {
-        await Sharing.shareAsync(dlRes.uri, { UTI: 'com.adobe.pdf', mimeType: 'application/pdf' });
-      } else {
-        await Sharing.shareAsync(dlRes.uri);
-      }
+      const dlRes = await FileSystem.downloadAsync(url, fileUri, { headers: { Authorization: `Bearer ${token}` } });
+      if (Platform.OS === 'ios') await Sharing.shareAsync(dlRes.uri, { UTI: 'com.adobe.pdf', mimeType: 'application/pdf' });
+      else await Sharing.shareAsync(dlRes.uri);
       haptics.success();
-    } catch (err) {
+    } catch {
       haptics.error();
-      toast.error(err instanceof Error ? err.message : 'Neizdevās piekļūt rēķinam.');
     } finally {
       setDownloading(false);
     }
   };
 
   const visible = filter === 'ALL' ? invoices : invoices.filter((i) => i.status === filter);
-  const totalOwed = invoices
-    .filter((i) => i.status === 'ISSUED' || i.status === 'OVERDUE')
-    .reduce((s, i) => s + i.total, 0);
-  const overdueCount = invoices.filter((i) => i.status === 'OVERDUE').length;
-  const paidCount = invoices.filter((i) => i.status === 'PAID').length;
+  const totalOwed = invoices.filter((i) => i.status === 'ISSUED' || i.status === 'OVERDUE').reduce((s, i) => s + i.total, 0);
 
-  if (loading)
-    return (
-      <View style={{ padding: 20 }}>
-        <SkeletonCard count={4} />
-      </View>
-    );
+  if (loading) return <View className="p-5"><SkeletonCard count={4} /></View>;
 
   return (
     <>
-      <View style={is.summary}>
-        <View style={is.summaryMain}>
-          <Text style={is.summaryLabel}>Apmaksājams</Text>
-          <Text style={is.summaryAmount}>{fmtEur(totalOwed)}</Text>
-        </View>
-        <View style={is.summaryCaps}>
-          {overdueCount > 0 && (
-            <View style={[is.summaryChip, is.summaryChipRed]}>
-              <AlertCircle size={12} color="#dc2626" />
-              <Text style={[is.summaryChipText, { color: '#dc2626' }]}>{overdueCount} kavēts</Text>
-            </View>
-          )}
-          {paidCount > 0 && (
-            <View style={[is.summaryChip, is.summaryChipGreen]}>
-              <CheckCircle2 size={12} color="#16a34a" />
-              <Text style={[is.summaryChipText, { color: '#16a34a' }]}>{paidCount} apmaksāts</Text>
-            </View>
-          )}
-          {invoices.length === 0 && <Text style={is.summaryEmpty}>Nav rēķinu</Text>}
-        </View>
+      <View className="px-5 pt-8 pb-6 border-b border-gray-100">
+        <Text className="text-gray-400 font-bold text-[12px] uppercase tracking-wider mb-1">Kopā apmaksājams</Text>
+        <Text className="text-gray-900 font-black text-[48px] tracking-tighter leading-none mb-3">{fmtEur(totalOwed)}</Text>
       </View>
-      <View style={is.segmentWrap}>
-        {INV_FILTERS.map((f) => (
-          <TouchableOpacity
-            key={f.key}
-            style={[is.segment, filter === f.key && is.segmentActive]}
-            onPress={() => {
-              haptics.light();
-              setFilter(f.key);
-            }}
-            activeOpacity={0.7}
-          >
-            <Text style={[is.segmentText, filter === f.key && is.segmentTextActive]}>
-              {f.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      
+      <View className="mb-2 mt-4">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
+          {INV_FILTERS.map((f) => (
+            <TouchableOpacity
+              key={f.key}
+              className={`px-4 py-2.5 rounded-full flex-row items-center ${filter === f.key ? 'bg-gray-900' : 'bg-gray-100'}`}
+              onPress={() => { haptics.light(); setFilter(f.key); }}
+            >
+              <Text className={`font-bold text-[14px] ${filter === f.key ? 'text-white' : 'text-gray-900'}`}>{f.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
-      <ScrollView
-        style={is.list}
-        contentContainerStyle={visible.length === 0 ? is.listEmpty : is.listContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              load(true);
-            }}
-            tintColor="#00A878"
-          />
-        }
-      >
-        {visible.length === 0 ? (
-          <EmptyState
-            icon={<FileText size={32} color="#9ca3af" />}
-            title="Nav rēķinu"
-            subtitle={
-              filter === 'ALL'
-                ? 'Rēķini parādīsīsies, kad pasūtījumi tiks apstiprināti.'
-                : 'Nav rēķinu šajā kategorijā.'
-            }
-          />
-        ) : (
-          <>
-            {visible.map((inv, idx) => (
-              <View key={inv.id}>
-                <InvoiceRow
-                  invoice={inv}
-                  onPress={() => {
-                    haptics.light();
-                    setSelected(inv);
-                  }}
-                />
-                {idx < visible.length - 1 && <View style={is.divider} />}
-              </View>
-            ))}
-          </>
-        )}
+
+      <ScrollView className="flex-1" contentContainerStyle={visible.length === 0 ? { flex: 1 } : { paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} />}>
+        {visible.map((inv) => <InvoiceRow key={inv.id} invoice={inv} onPress={() => { haptics.light(); setSelected(inv); }} />)}
       </ScrollView>
-      <InvoiceDetailSheet
-        invoice={selected}
-        visible={!!selected}
-        onClose={() => setSelected(null)}
-        onDownload={handleDownload}
-        downloading={downloading}
-      />
+
+      <InvoiceDetailSheet invoice={selected} visible={!!selected} onClose={() => setSelected(null)} onDownload={handleDownload} downloading={downloading} />
     </>
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SECTION 3 — CERTIFICATES
-// ══════════════════════════════════════════════════════════════════════════════
-
 const WASTE_TYPE_LABELS: Record<WasteType, string> = {
-  CONCRETE: 'Betons',
-  BRICK: 'Ķieģeļi',
-  WOOD: 'Koks',
-  METAL: 'Metāls',
-  PLASTIC: 'Plastmasa',
-  SOIL: 'Zeme',
-  MIXED: 'Jaukti atkritumi',
-  HAZARDOUS: 'Bīstamie atkritumi',
-};
-const WASTE_TYPE_COLORS: Record<WasteType, string> = {
-  CONCRETE: '#6b7280',
-  BRICK: '#b45309',
-  WOOD: '#92400e',
-  METAL: '#374151',
-  PLASTIC: '#0369a1',
-  SOIL: '#78350f',
-  MIXED: '#6b7280',
-  HAZARDOUS: '#b91c1c',
+  CONCRETE: 'Betons', BRICK: 'Ķieģeļi', WOOD: 'Koks', METAL: 'Metāls', PLASTIC: 'Plastmasa', SOIL: 'Zeme', MIXED: 'Jaukti', HAZARDOUS: 'Bīstami',
 };
 
 function RecordCard({ item }: { item: ApiWasteRecord }) {
-  const typeColor = WASTE_TYPE_COLORS[item.wasteType] ?? '#6b7280';
-  const typeLabel = WASTE_TYPE_LABELS[item.wasteType] ?? item.wasteType;
   const hasCertificate = !!item.certificateUrl;
-  const handleOpen = () => {
-    if (!item.certificateUrl) return;
-    Linking.openURL(item.certificateUrl).catch(() =>
-      Alert.alert('Kļūda', 'Neizdevās atvērt sertifikātu.'),
-    );
-  };
   return (
-    <View style={cs.card}>
-      <View style={cs.cardTopRow}>
-        <View style={[cs.typePill, { backgroundColor: typeColor + '18' }]}>
-          <Text style={[cs.typePillText, { color: typeColor }]}>{typeLabel}</Text>
+    <View className="flex-row py-5 px-5 border-b border-gray-100 bg-white">
+      <View className="w-12 h-12 rounded-full items-center justify-center bg-gray-100 mr-4">
+         <Recycle size={20} color="#111827" />
+      </View>
+      <View className="flex-1">
+        <View className="flex-row justify-between mb-1">
+            <Text className="text-gray-900 font-bold text-[16px] tracking-tight">{WASTE_TYPE_LABELS[item.wasteType] ?? item.wasteType}</Text>
+            <Text className="text-gray-900 font-black text-[16px]">{item.weight.toFixed(1)}t</Text>
         </View>
-        {hasCertificate ? (
-          <StatusPill label="Sertificēts" bg="#dcfce7" color="#166534" size="sm" />
-        ) : (
-          <StatusPill label="Gaida sertifikātu" bg="#fef9c3" color="#92400e" size="sm" />
+        <Text className="text-gray-500 font-medium text-[14px] mb-2">{item.recyclingCenter.name}, {item.recyclingCenter.city}</Text>
+        <View className="flex-row items-center">
+            {hasCertificate ? (
+              <StatusPill label="Sertificēts" bg="#dcfce7" color="#166534" size="sm" />
+            ) : (
+              <StatusPill label="Gaida sertifikātu" bg="#fef9c3" color="#92400e" size="sm" />
+            )}
+            <Text className="text-gray-300 mx-2">•</Text>
+            <Text className="text-gray-400 text-[13px]">{new Date(item.createdAt).toLocaleDateString('lv-LV')}</Text>
+        </View>
+        {hasCertificate && (
+          <TouchableOpacity 
+             className="mt-4 bg-gray-100 rounded-full py-2.5 px-4 flex-row items-center justify-center self-start"
+             onPress={() => Linking.openURL(item.certificateUrl!)}
+          >
+             <FileDown size={16} color="#111827" className="mr-2" />
+             <Text className="text-gray-900 font-bold text-[13px]">Skatīt sertifikātu</Text>
+          </TouchableOpacity>
         )}
       </View>
-      <Text style={cs.centerName}>{item.recyclingCenter.name}</Text>
-      <Text style={cs.centerCity}>{item.recyclingCenter.city}</Text>
-      <View style={cs.metricsRow}>
-        <View style={cs.metric}>
-          <Text style={cs.metricValue}>{item.weight.toFixed(2)}t</Text>
-          <Text style={cs.metricLabel}>Svars</Text>
-        </View>
-        {item.recyclableWeight != null && (
-          <View style={cs.metric}>
-            <Text style={[cs.metricValue, { color: '#16a34a' }]}>
-              {item.recyclableWeight.toFixed(2)}t
-            </Text>
-            <Text style={cs.metricLabel}>Pārstrādāts</Text>
-          </View>
-        )}
-        {item.recyclingRate != null && (
-          <View style={cs.metric}>
-            <View style={cs.rateRow}>
-              <Recycle size={13} color="#16a34a" />
-              <Text style={[cs.metricValue, { color: '#16a34a' }]}>
-                {item.recyclingRate.toFixed(0)}%
-              </Text>
-            </View>
-            <Text style={cs.metricLabel}>Pārstrādes līmenis</Text>
-          </View>
-        )}
-        {item.processedDate && (
-          <View style={cs.metric}>
-            <Text style={cs.metricValue}>
-              {new Date(item.processedDate).toLocaleDateString('lv-LV', {
-                day: 'numeric',
-                month: 'short',
-              })}
-            </Text>
-            <Text style={cs.metricLabel}>Apstrādāts</Text>
-          </View>
-        )}
-      </View>
-      {hasCertificate && (
-        <TouchableOpacity style={cs.certBtn} onPress={handleOpen} activeOpacity={0.8}>
-          <FileDown size={16} color="#15803d" />
-          <Text style={cs.certBtnText}>Atvērt sertifikātu</Text>
-          <ExternalLink size={14} color="#15803d" />
-        </TouchableOpacity>
-      )}
-      <Text style={cs.cardDate}>
-        {new Date(item.createdAt).toLocaleDateString('lv-LV', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        })}
-      </Text>
     </View>
   );
 }
@@ -751,139 +452,77 @@ function CertsTab() {
   const [records, setRecords] = useState<ApiWasteRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
-    setError(false);
     try {
       const res = await api.recyclingCenters.myDisposalRecords(token);
       setRecords(res);
-    } catch {
-      setError(true);
-    } finally {
+    } catch {} finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, [token]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
-  if (!user?.canSkipHire) {
-    return (
-      <EmptyState
-        icon={<ShieldCheck size={42} color="#9ca3af" />}
-        title="Nav pieejams"
-        subtitle="Atkritumu sertifikāti ir pieejami tikai apstiprinātu konteineru operatoriem."
-      />
-    );
-  }
+  if (!user?.canSkipHire) return <EmptyState icon={<ShieldCheck size={42} color="#9ca3af" />} title="Nav pieejams" subtitle="Atkritumu sertifikāti ir pieejami tikai apstiprinātu konteineru operatoriem." />;
+  if (loading) return <View className="p-5"><SkeletonCard count={4} /></View>;
 
-  if (loading)
-    return (
-      <View style={{ padding: 20 }}>
-        <SkeletonCard count={4} />
-      </View>
-    );
-
-  if (error) {
-    return (
-      <View style={cs.center}>
-        <ShieldCheck size={52} color="#fca5a5" />
-        <Text style={cs.emptyTitle}>Neizdevās ielādēt</Text>
-        <Text style={cs.emptyDesc}>Pārbaudiet savienojumu un mēģiniet vēlreiz.</Text>
-        <TouchableOpacity
-          onPress={() => {
-            setLoading(true);
-            load();
-          }}
-          style={cs.retryBtn}
-        >
-          <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>Mēģināt vēlreiz</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  const certified = records.filter((r) => !!r.certificateUrl);
-  const pending = records.filter((r) => !r.certificateUrl);
-
-  return records.length === 0 ? (
-    <View style={cs.center}>
-      <ShieldCheck size={52} color="#d1d5db" />
-      <Text style={cs.emptyTitle}>Nav sertifikātu</Text>
-      <Text style={cs.emptyDesc}>
-        Kad pārvadātājs nogādās konteineru atkritumu pārstrādes centrā, šeit parādīsies jūsu
-        atbilstības sertifikāti.
-      </Text>
-    </View>
-  ) : (
-    <ScrollView
-      contentContainerStyle={{ padding: 16, gap: 12 }}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => {
-            setRefreshing(true);
-            load();
-          }}
-          tintColor="#16a34a"
-        />
-      }
-    >
-      <View style={cs.summaryBar}>
-        <View style={cs.summaryItem}>
-          <Text style={cs.summaryNum}>{certified.length}</Text>
-          <Text style={cs.summaryLabel}>Sertificēti</Text>
-        </View>
-        <View style={cs.summaryDivider} />
-        <View style={cs.summaryItem}>
-          <Text style={[cs.summaryNum, { color: '#d97706' }]}>{pending.length}</Text>
-          <Text style={cs.summaryLabel}>Gaida</Text>
-        </View>
-        <View style={cs.summaryDivider} />
-        <View style={cs.summaryItem}>
-          <Text style={cs.summaryNum}>{records.reduce((a, r) => a + r.weight, 0).toFixed(1)}t</Text>
-          <Text style={cs.summaryLabel}>Kopā</Text>
-        </View>
-      </View>
-      {records.map((r) => (
-        <RecordCard key={r.id} item={r} />
-      ))}
-    </ScrollView>
+  const certified = records.filter(r => !!r.certificateUrl);
+  return (
+    <>
+       <View className="flex-row px-5 py-6 bg-white border-b border-gray-100 items-center justify-between">
+           <View className="items-center">
+               <Text className="text-gray-900 font-black text-[24px]">{certified.length}</Text>
+               <Text className="text-gray-500 font-bold text-[12px] uppercase">Sertificēti</Text>
+           </View>
+           <View className="h-8 w-[1px] bg-gray-200" />
+           <View className="items-center">
+               <Text className="text-gray-900 font-black text-[24px]">{records.length - certified.length}</Text>
+               <Text className="text-gray-500 font-bold text-[12px] uppercase">Gaida</Text>
+           </View>
+           <View className="h-8 w-[1px] bg-gray-200" />
+           <View className="items-center">
+               <Text className="text-gray-900 font-black text-[24px]">{records.reduce((a, r) => a + r.weight, 0).toFixed(1)}t</Text>
+               <Text className="text-gray-500 font-bold text-[12px] uppercase">Kopā</Text>
+           </View>
+       </View>
+       <ScrollView className="flex-1" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}>
+         {records.map(r => <RecordCard key={r.id} item={r} />)}
+       </ScrollView>
+    </>
   );
 }
-
-// ══════════════════════════════════════════════════════════════════════════════
-// MAIN SCREEN
-// ══════════════════════════════════════════════════════════════════════════════
 
 export default function DocumentsScreen() {
   const [topTab, setTopTab] = useState<TopTab>('docs');
 
   return (
-    <ScreenContainer bg="#f9fafb">
-      <ScreenHeader title="Dokumenti" />
+    <ScreenContainer bg="#ffffff" topBg="#ffffff">
+      <View className="px-5 pt-6 pb-2">
+        <Text className="text-[32px] font-bold tracking-tight text-gray-900 leading-tight">
+          Dokumenti
+        </Text>
+      </View>
 
-      {/* Top-level segmented switcher */}
-      <View style={sh.topTabRow}>
-        {TOP_TABS.map((tb) => (
-          <TouchableOpacity
-            key={tb.key}
-            style={[sh.topTab, topTab === tb.key && sh.topTabActive]}
-            onPress={() => {
-              haptics.light();
-              setTopTab(tb.key);
-            }}
-            activeOpacity={0.75}
-          >
-            <Text style={[sh.topTabText, topTab === tb.key && sh.topTabTextActive]}>
-              {tb.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      <View className="px-5 pb-2 mt-2">
+        <View className="flex-row bg-gray-100 p-1 rounded-2xl">
+          {TOP_TABS.map((tb) => {
+            const active = topTab === tb.key;
+            return (
+              <TouchableOpacity
+                key={tb.key}
+                className={`flex-1 items-center justify-center py-2 rounded-xl ${active ? 'bg-white shadow-sm' : ''}`}
+                onPress={() => { haptics.light(); setTopTab(tb.key); }}
+              >
+                <Text className={`font-bold text-[14px] ${active ? 'text-gray-900' : 'text-gray-500'}`}>
+                  {tb.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       {topTab === 'docs' && <DocsTab />}
@@ -892,260 +531,3 @@ export default function DocumentsScreen() {
     </ScreenContainer>
   );
 }
-
-// ── Shared hub styles ─────────────────────────────────────────────────────────
-const sh = StyleSheet.create({
-  topTabRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 6,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  topTab: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10 },
-  topTabActive: { backgroundColor: '#000' },
-  topTabText: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
-  topTabTextActive: { color: '#fff' },
-});
-
-// ── Documents tab styles ──────────────────────────────────────────────────────
-const ds = StyleSheet.create({
-  filterScroll: { flexGrow: 0 },
-  filterContent: { paddingHorizontal: 16, paddingVertical: 12, gap: 8, flexDirection: 'row' },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: '#f3f4f6',
-    borderWidth: 0,
-  },
-  chipActive: { backgroundColor: '#000000' },
-  chipText: { fontSize: 14, fontWeight: '600', color: '#374151' },
-  chipTextActive: { color: '#ffffff' },
-  chipBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#e5e7eb',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-  },
-  chipBadgeActive: { backgroundColor: '#374151' },
-  chipBadgeText: { fontSize: 12, fontWeight: '700', color: '#6b7280' },
-  chipBadgeTextActive: { color: '#ffffff' },
-  list: { flex: 1 },
-  listContent: { padding: 16, gap: 0 },
-  listEmpty: { flex: 1, paddingHorizontal: 16 },
-  card: {
-    backgroundColor: 'transparent',
-  },
-  divider: { height: 1, backgroundColor: '#f3f4f6', marginLeft: 16 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  iconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  rowBody: { flex: 1, gap: 3 },
-  rowTitle: { fontSize: 14, fontWeight: '600', color: '#111827' },
-  rowMeta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  rowSep: { fontSize: 11, color: '#d1d5db' },
-  rowDate: { fontSize: 12, color: '#9ca3af' },
-  rowNotes: { fontSize: 12, color: '#6b7280' },
-});
-
-// ── Invoices tab styles ───────────────────────────────────────────────────────
-const is = StyleSheet.create({
-  summary: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f3f4f6',
-  },
-  summaryMain: { marginBottom: 10 },
-  summaryLabel: {
-    fontSize: 12,
-    color: '#9ca3af',
-    fontWeight: '500',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  summaryAmount: {
-    fontSize: 40,
-    fontWeight: '800',
-    color: '#111827',
-    letterSpacing: -1.5,
-    marginTop: 2,
-  },
-  summaryCaps: { flexDirection: 'row', gap: 8 },
-  summaryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-  },
-  summaryChipRed: { backgroundColor: '#fef2f2' },
-  summaryChipGreen: { backgroundColor: '#f0fdf4' },
-  summaryChipText: { fontSize: 12, fontWeight: '600' },
-  summaryEmpty: { fontSize: 13, color: '#9ca3af' },
-  segmentWrap: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  segment: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 999, backgroundColor: '#f9fafb' },
-  segmentActive: { backgroundColor: '#f3f4f6' },
-  segmentText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
-  segmentTextActive: { color: '#111827', fontWeight: '700' },
-  list: { flex: 1 },
-  listContent: { paddingBottom: 40 },
-  listEmpty: { flex: 1 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 8,
-  },
-  rowLeft: { flex: 1, gap: 5 },
-  rowTopLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  rowNum: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  rowAmount: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  rowAmountDue: { color: '#111827' },
-  rowBottomLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  rowDate: { fontSize: 12, color: '#9ca3af' },
-  rowOrder: { fontSize: 12, color: '#9ca3af' },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#f3f4f6', marginLeft: 20 },
-});
-
-// ── Invoice detail sheet styles ───────────────────────────────────────────────
-const im = StyleSheet.create({
-  amountHero: { alignItems: 'center', paddingVertical: 20 },
-  amountHeroLabel: {
-    fontSize: 12,
-    color: '#9ca3af',
-    fontWeight: '500',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  amountHeroVal: {
-    fontSize: 42,
-    fontWeight: '800',
-    color: '#111827',
-    letterSpacing: -1.5,
-    marginTop: 4,
-  },
-  refRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  refLabel: { fontSize: 13, color: '#9ca3af' },
-  refVal: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#f3f4f6', marginVertical: 12 },
-  lineItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  lineItemTotal: { paddingTop: 12, marginTop: 4 },
-  lineLabel: { fontSize: 14, color: '#6b7280' },
-  lineVal: { fontSize: 14, color: '#374151', fontWeight: '500' },
-  lineTotalLabel: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  lineTotalVal: { fontSize: 18, fontWeight: '800', color: '#111827' },
-  payInfo: {
-    marginTop: 20,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    backgroundColor: '#eff6ff',
-    borderRadius: 12,
-    padding: 14,
-  },
-  payInfoText: { flex: 1, fontSize: 13, color: '#1d4ed8', lineHeight: 18 },
-  downloadBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 14,
-    backgroundColor: '#f3f4f6',
-    marginTop: 12,
-    gap: 8,
-  },
-  downloadBtnText: { color: '#111827', fontWeight: '600', fontSize: 15 },
-});
-
-// ── Certificates tab styles ───────────────────────────────────────────────────
-const cs = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: '#374151' },
-  emptyDesc: { fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 22 },
-  retryBtn: {
-    marginTop: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    backgroundColor: '#111827',
-    borderRadius: 100,
-  },
-  summaryBar: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
-  summaryItem: { alignItems: 'center', gap: 2 },
-  summaryNum: { fontSize: 22, fontWeight: '700', color: '#111827' },
-  summaryLabel: { fontSize: 12, color: '#9ca3af' },
-  summaryDivider: { width: StyleSheet.hairlineWidth, height: 32, backgroundColor: '#e5e7eb' },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-    gap: 12,
-  },
-  cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  typePill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  typePillText: { fontSize: 12, fontWeight: '700' },
-  centerName: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  centerCity: { fontSize: 13, color: '#6b7280' },
-  metricsRow: { flexDirection: 'row', gap: 16, flexWrap: 'wrap' },
-  metric: { gap: 1 },
-  metricValue: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  metricLabel: { fontSize: 11, color: '#9ca3af' },
-  rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  certBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#f9fafb',
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  certBtnText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#111827' },
-  cardDate: { fontSize: 12, color: '#9ca3af' },
-});
