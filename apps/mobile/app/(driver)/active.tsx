@@ -59,6 +59,7 @@ import {
   Clock as ClockIcon,
   Star,
   MessageCircle,
+  MoreHorizontal,
 } from 'lucide-react-native';
 
 // ── Status progression ────────────────────────────────────────────────────────
@@ -189,8 +190,8 @@ function ActiveJobMap({
   const center: [number, number] = validCurrent
     ? [validCurrent.lng, validCurrent.lat]
     : pickup && delivery
-    ? [(pickup.lng + delivery.lng) / 2, (pickup.lat + delivery.lat) / 2]
-    : [24.1052, 56.9496];
+      ? [(pickup.lng + delivery.lng) / 2, (pickup.lat + delivery.lat) / 2]
+      : [24.1052, 56.9496];
 
   const mainCoords =
     route?.coords ??
@@ -724,8 +725,8 @@ export default function ActiveJobScreen() {
     currentStatus === 'DELIVERED'
       ? { bg: '#dcfce7', border: '#86efac', text: '#15803d', phase: 'Piegādāts ✓' }
       : currentIndex >= 3
-      ? { bg: '#d1fae5', border: '#6ee7b7', text: '#059669', phase: 'Piegādes fāze' }
-      : { bg: '#fef3c7', border: '#fde68a', text: '#d97706', phase: 'Iekraušanas fāze' };
+        ? { bg: '#d1fae5', border: '#6ee7b7', text: '#059669', phase: 'Piegādes fāze' }
+        : { bg: '#fef3c7', border: '#fde68a', text: '#d97706', phase: 'Iekraušanas fāze' };
 
   // ── Navigate — Schüttflix-style app picker ────────────────────────────────
   //   Shows Waze / Google Maps / Apple Maps action sheet.
@@ -736,8 +737,8 @@ export default function ActiveJobScreen() {
   const handleNavigate = () => {
     const isHeadingToPickup = currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP';
 
-    const lat = isHeadingToPickup ? job.pickupLat ?? job.deliveryLat : job.deliveryLat;
-    const lng = isHeadingToPickup ? job.pickupLng ?? job.deliveryLng : job.deliveryLng;
+    const lat = isHeadingToPickup ? (job.pickupLat ?? job.deliveryLat) : job.deliveryLat;
+    const lng = isHeadingToPickup ? (job.pickupLng ?? job.deliveryLng) : job.deliveryLng;
     const label = isHeadingToPickup
       ? `${job.pickupAddress}, ${job.pickupCity}`
       : `${job.deliveryAddress}, ${job.deliveryCity}`;
@@ -1009,12 +1010,12 @@ export default function ActiveJobScreen() {
             {currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP'
               ? 'Uz iekraušanu'
               : currentStatus === 'AT_PICKUP'
-              ? 'Iekraušana'
-              : currentStatus === 'LOADED' || currentStatus === 'EN_ROUTE_DELIVERY'
-              ? 'Uz izkraušanu'
-              : currentStatus === 'AT_DELIVERY'
-              ? 'Piegāde'
-              : 'Pabeigts'}
+                ? 'Iekraušana'
+                : currentStatus === 'LOADED' || currentStatus === 'EN_ROUTE_DELIVERY'
+                  ? 'Uz izkraušanu'
+                  : currentStatus === 'AT_DELIVERY'
+                    ? 'Piegāde'
+                    : 'Pabeigts'}
           </RNText>
         </View>
       </View>
@@ -1203,6 +1204,30 @@ export default function ActiveJobScreen() {
                     </RNText>
                   </TouchableOpacity>
                 )}
+
+                <TouchableOpacity
+                  onPress={() => {
+                    haptics.light();
+                    setActiveTab('details');
+                  }}
+                  style={{ alignItems: 'center', justifyContent: 'center', gap: 6, width: 64 }}
+                >
+                  <View
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: 26,
+                      backgroundColor: '#f3f4f6',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <MoreHorizontal size={24} color="#4b5563" />
+                  </View>
+                  <RNText style={{ fontSize: 12, color: '#4b5563', fontWeight: '600' }}>
+                    Opcijas
+                  </RNText>
+                </TouchableOpacity>
               </View>
 
               <TouchableOpacity
@@ -1232,14 +1257,14 @@ export default function ActiveJobScreen() {
                     {currentStatus === 'AT_DELIVERY'
                       ? t.deliveryProof.title
                       : currentStatus === 'AT_PICKUP'
-                      ? 'Apstiprināt kravu'
-                      : currentStatus === 'LOADED'
-                      ? 'Dodos uz piegādi'
-                      : currentStatus === 'EN_ROUTE_PICKUP'
-                      ? 'Esmu iekraušanas vietā'
-                      : currentStatus === 'EN_ROUTE_DELIVERY'
-                      ? 'Esmu piegādes vietā'
-                      : t.activeJob.status[nextStatus]}
+                        ? 'Apstiprināt kravu'
+                        : currentStatus === 'LOADED'
+                          ? 'Dodos uz piegādi'
+                          : currentStatus === 'EN_ROUTE_PICKUP'
+                            ? 'Esmu iekraušanas vietā'
+                            : currentStatus === 'EN_ROUTE_DELIVERY'
+                              ? 'Esmu piegādes vietā'
+                              : t.activeJob.status[nextStatus]}
                   </RNText>
                 )}
               </TouchableOpacity>
@@ -1275,7 +1300,7 @@ export default function ActiveJobScreen() {
       <BottomSheet
         visible={activeTab === 'details'}
         onClose={() => setActiveTab('navigate')}
-        title="Pasūtījuma detaļas"
+        title="Opcijas"
         scrollable
       >
         <View style={{ padding: 20, gap: 0 }}>
@@ -1290,7 +1315,10 @@ export default function ActiveJobScreen() {
             currentStatus === 'AT_DELIVERY') && (
             <TouchableOpacity
               style={styles.optionRow}
-              onPress={() => setSurchargeSheetVisible(true)}
+              onPress={() => {
+                setActiveTab('navigate');
+                setTimeout(() => setSurchargeSheetVisible(true), 260);
+              }}
             >
               <View style={[styles.optionIcon, { backgroundColor: '#fffbeb' }]}>
                 <PlusCircle size={18} color="#d97706" />
@@ -1299,7 +1327,13 @@ export default function ActiveJobScreen() {
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity style={styles.optionRow} onPress={() => setActiveTab('issues')}>
+          <TouchableOpacity
+            style={styles.optionRow}
+            onPress={() => {
+              setActiveTab('navigate');
+              setTimeout(() => setActiveTab('issues'), 260);
+            }}
+          >
             <View style={[styles.optionIcon, { backgroundColor: '#fef2f2' }]}>
               <AlertCircle size={18} color="#b91c1c" />
             </View>
@@ -1307,7 +1341,13 @@ export default function ActiveJobScreen() {
           </TouchableOpacity>
 
           {(currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP') && (
-            <TouchableOpacity style={styles.optionRow} onPress={() => setCancelSheetVisible(true)}>
+            <TouchableOpacity
+              style={styles.optionRow}
+              onPress={() => {
+                setActiveTab('navigate');
+                setTimeout(() => setCancelSheetVisible(true), 260);
+              }}
+            >
               <View style={[styles.optionIcon, { backgroundColor: '#fef2f2' }]}>
                 <AlertCircle size={18} color="#dc2626" />
               </View>
@@ -1556,7 +1596,7 @@ export default function ActiveJobScreen() {
             }}
             onPress={() => {
               setActiveTab('navigate');
-              setDelaySheetVisible(true);
+              setTimeout(() => setDelaySheetVisible(true), 260);
             }}
           >
             <ClockIcon size={18} color="#d97706" />
