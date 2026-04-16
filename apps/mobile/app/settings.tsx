@@ -153,7 +153,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScreenContainer standalone topBg="#111827">
+    <ScreenContainer standalone>
       <ScreenHeader title={t.nav.settings} />
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>

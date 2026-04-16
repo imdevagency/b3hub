@@ -64,8 +64,8 @@ function getStatusStyle(status: string): { label: string; bg: string; color: str
 function RoomCard({ item, onPress }: { item: ApiChatRoom; onPress: () => void }) {
   const isDisposal = item.jobType === 'WASTE_COLLECTION';
   const Icon = isDisposal ? Trash2 : Truck;
-  const accentColor = isDisposal ? colors.success : '#2563eb';
-  const iconBg = isDisposal ? colors.successBg : '#dbeafe';
+  const accentColor = isDisposal ? '#059669' : '#2563eb'; // emerald-600 vs blue-600
+  const iconBg = isDisposal ? 'bg-emerald-50' : 'bg-blue-50';
   const title = item.cargoType ?? (isDisposal ? 'Atkritumu izvešana' : 'Kravas pārvadāšana');
   const route =
     item.pickupCity && item.deliveryCity
@@ -74,50 +74,48 @@ function RoomCard({ item, onPress }: { item: ApiChatRoom; onPress: () => void })
   const st = getStatusStyle(item.status);
 
   return (
-    <TouchableOpacity style={s.card} activeOpacity={0.82} onPress={onPress}>
-      {/* Coloured left accent strip */}
-      <View style={[s.accent, { backgroundColor: accentColor }]} />
+    <TouchableOpacity
+      className="flex-row items-center px-5 py-4 bg-white"
+      activeOpacity={0.7}
+      onPress={onPress}
+    >
+      <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${iconBg}`}>
+        <Icon size={22} color={accentColor} strokeWidth={2} />
+      </View>
 
-      <View style={s.cardInner}>
-        {/* Icon avatar */}
-        <View style={[s.avatar, { backgroundColor: iconBg }]}>
-          <Icon size={20} color={accentColor} strokeWidth={1.8} />
-        </View>
-
-        {/* Body */}
-        <View style={s.body}>
-          {/* Row 1: title + timestamp */}
-          <View style={s.row}>
-            <Text style={s.title} numberOfLines={1}>
-              {title}
+      <View className="flex-1">
+        {/* Top row: Title + Time */}
+        <View className="flex-row items-center justify-between mb-0.5">
+          <Text className="text-base font-bold text-gray-900 flex-1 mr-2" numberOfLines={1}>
+            {title}
+          </Text>
+          {item.lastMessage && (
+            <Text className="text-xs font-medium text-gray-400">
+              {formatRelative(item.lastMessage.createdAt)}
             </Text>
-            {item.lastMessage && (
-              <Text style={s.time}>{formatRelative(item.lastMessage.createdAt)}</Text>
-            )}
-          </View>
-
-          {/* Row 2: route + status pill */}
-          <View style={s.row}>
-            <Text style={s.route} numberOfLines={1}>
-              {route}
-            </Text>
-            <View style={[s.pill, { backgroundColor: st.bg }]}>
-              <Text style={[s.pillText, { color: st.color }]}>{st.label}</Text>
-            </View>
-          </View>
-
-          {/* Row 3: last message preview */}
-          {item.lastMessage ? (
-            <Text style={s.preview} numberOfLines={1}>
-              <Text style={s.previewName}>{item.lastMessage.senderName}: </Text>
-              {item.lastMessage.body}
-            </Text>
-          ) : (
-            <Text style={s.previewEmpty}>Vēl nav ziņojumu</Text>
           )}
         </View>
 
-        <ChevronRight size={15} color={colors.textDisabled} />
+        {/* Middle row: Route + Status */}
+        <View className="flex-row items-center mb-1">
+          <Text className="text-sm font-medium text-gray-700" style={{ flexShrink: 1 }} numberOfLines={1}>
+            {route}
+          </Text>
+          <View className="w-1 h-1 rounded-full bg-gray-300 mx-2" />
+          <Text className="text-xs font-bold" style={{ color: st.color }}>
+            {st.label}
+          </Text>
+        </View>
+
+        {/* Bottom row: Message Preview */}
+        {item.lastMessage ? (
+          <Text className="text-sm text-gray-500 leading-5" numberOfLines={1}>
+            <Text className="font-semibold text-gray-700">{item.lastMessage.senderName}: </Text>
+            {item.lastMessage.body}
+          </Text>
+        ) : (
+          <Text className="text-sm text-gray-400 italic mt-0.5">Vēl nav ziņojumu</Text>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -159,7 +157,6 @@ export default function MessagesScreen() {
     [token],
   );
 
-  // Auto-refresh every 30 s while screen is focused
   useFocusEffect(
     useCallback(() => {
       load();
@@ -171,42 +168,43 @@ export default function MessagesScreen() {
   );
 
   return (
-    <ScreenContainer standalone bg={colors.bgCard} topBg="#111827">
+    <ScreenContainer standalone bg="#ffffff" noAnimation>
       <ScreenHeader title={t.nav.messages} onBack={handleBack} />
 
       {loading ? (
-        <View style={s.skeletonWrap}>
+        <View className="px-4 py-4 gap-4 bg-white flex-1">
           <SkeletonJobRow count={5} />
         </View>
       ) : error ? (
-        <View style={s.center}>
-          <View style={s.errorIconWrap}>
-            <AlertCircle size={28} color={colors.danger} strokeWidth={1.6} />
+        <View className="flex-1 bg-white items-center justify-center px-10 gap-3">
+          <View className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-1 border border-red-100">
+            <AlertCircle size={28} color="#ef4444" strokeWidth={1.6} />
           </View>
-          <Text style={s.errorTitle}>Neizdevās ielādēt</Text>
-          <Text style={s.errorSub}>{error}</Text>
-          <TouchableOpacity style={s.retryBtn} onPress={() => load()}>
-            <RefreshCw size={14} color={colors.textPrimary} strokeWidth={2} />
-            <Text style={s.retryText}>Mēģināt vēlreiz</Text>
+          <Text className="text-base font-bold text-gray-900">Neizdevās ielādēt</Text>
+          <Text className="text-sm text-gray-500 text-center">{error}</Text>
+          <TouchableOpacity
+            className="flex-row items-center gap-2 px-5 py-2.5 rounded-full border border-gray-200 bg-white mt-1 shadow-sm"
+            activeOpacity={0.7}
+            onPress={() => load()}
+          >
+            <RefreshCw size={14} color="#111827" strokeWidth={2} />
+            <Text className="text-gray-900 font-semibold text-sm">Mēģināt vēlreiz</Text>
           </TouchableOpacity>
         </View>
       ) : rooms.length === 0 ? (
-        <View style={s.emptyWrap}>
-          {/* Double-ring icon */}
-          <View style={s.emptyRing}>
-            <View style={s.emptyIconCircle}>
-              <MessageCircle size={32} color={colors.primary} strokeWidth={1.5} />
-            </View>
+        <View className="flex-1 bg-white items-center justify-center px-10 min-h-[400px]">
+          <View className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-4 border border-gray-100">
+            <MessageCircle size={28} color="#d1d5db" strokeWidth={1.5} />
           </View>
-          <Text style={s.emptyTitle}>Nav aktīvu sarunu</Text>
-          <Text style={s.emptySub}>
-            Sarakste ar piegādātājiem un šoferiem parādīsies šeit pēc pasūtījuma veikšanas. Velciet
-            uz leju, lai atjauninātu.
+          <Text className="text-xl font-bold text-gray-900 mb-2 text-center">Nav aktīvu sarunu</Text>
+          <Text className="text-base text-gray-500 font-medium text-center">
+            Sarakste ar piegādātājiem un šoferiem parādīsies šeit pēc pasūtījuma veikšanas.
           </Text>
         </View>
       ) : (
         <FlatList
           data={rooms}
+          className="bg-white flex-1"
           keyExtractor={(r) => r.jobId}
           renderItem={({ item }) => (
             <RoomCard
@@ -227,19 +225,21 @@ export default function MessagesScreen() {
               }}
             />
           )}
+          ItemSeparatorComponent={() => <View className="h-px bg-gray-50 ml-[84px]" />}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => load(true)}
-              tintColor={colors.textMuted}
+              tintColor="#111827"
             />
           }
-          contentContainerStyle={s.listContent}
+          contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
-            <View style={s.listHeader}>
-              <PackageOpen size={14} color={colors.textMuted} strokeWidth={1.8} />
-              <Text style={s.listCount}>{rooms.length} aktīvas sarunas</Text>
+            <View className="px-5 pt-5 pb-3">
+              <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                {rooms.length} {rooms.length === 1 ? 'Saruna' : 'Sarunas'}
+              </Text>
             </View>
           }
         />
@@ -247,190 +247,3 @@ export default function MessagesScreen() {
     </ScreenContainer>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-const s = StyleSheet.create({
-  skeletonWrap: {
-    paddingHorizontal: spacing.base,
-    paddingTop: spacing.sm,
-    gap: spacing.sm,
-  },
-
-  // Polished empty state
-  emptyWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
-    gap: spacing.md,
-  },
-  emptyRing: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  emptyIconCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: colors.bgSubtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    textAlign: 'center',
-  },
-  emptySub: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 21,
-  },
-
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
-    gap: spacing.sm,
-  },
-  errorIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.dangerBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xs,
-  },
-  errorTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  errorSub: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-  retryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.bgCard,
-    marginTop: spacing.xs,
-  },
-  retryText: { color: colors.textPrimary, fontWeight: '600', fontSize: 14 },
-
-  // List
-  listContent: {
-    paddingHorizontal: spacing.base,
-    paddingBottom: 40,
-    gap: spacing.sm,
-    paddingTop: spacing.xs,
-  },
-  listHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingVertical: spacing.sm,
-  },
-  listCount: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontWeight: '500',
-  },
-
-  // Card
-  card: {
-    backgroundColor: colors.bgCard,
-    borderRadius: radius.lg,
-    flexDirection: 'row',
-    overflow: 'hidden',
-    ...shadows.card,
-  },
-  accent: {
-    width: 4,
-    alignSelf: 'stretch',
-    borderTopLeftRadius: radius.lg,
-    borderBottomLeftRadius: radius.lg,
-  },
-  cardInner: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  body: { flex: 1, gap: 3 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.xs,
-  },
-  title: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  time: {
-    fontSize: 11,
-    color: colors.textDisabled,
-    flexShrink: 0,
-  },
-  route: {
-    flex: 1,
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  pill: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 99,
-    flexShrink: 0,
-  },
-  pillText: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  preview: {
-    fontSize: 12,
-    color: colors.textDisabled,
-    marginTop: 1,
-  },
-  previewName: {
-    fontWeight: '600',
-    color: colors.textMuted,
-  },
-  previewEmpty: {
-    fontSize: 12,
-    color: colors.textDisabled,
-    fontStyle: 'italic',
-    marginTop: 1,
-  },
-});

@@ -161,80 +161,34 @@ function NotifCard({
   };
 
   return (
-    <View style={{ borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
-      <TouchableOpacity
-        style={[
-          {
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            padding: 20,
-            backgroundColor: '#ffffff',
-            gap: 16,
-          },
-          !notif.isRead ? { backgroundColor: 'rgba(239,246,255,0.5)' } : undefined,
-        ]}
-        onPress={handlePress}
-        activeOpacity={0.7}
+    <TouchableOpacity
+      className={`flex-row items-start px-5 py-4 ${!notif.isRead ? 'bg-blue-50/40' : 'bg-white'}`}
+      onPress={handlePress}
+      activeOpacity={0.7}
+    >
+      <View
+        style={{ backgroundColor: bg }}
+        className="w-12 h-12 rounded-full items-center justify-center mr-4"
       >
-        <View style={{ position: 'relative' }}>
-          <View
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 24,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: bg,
-            }}
-          >
-            <Icon size={22} color={iconColor} strokeWidth={2} />
-          </View>
-          {!notif.isRead && (
-            <View
-              style={{
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: 12,
-                height: 12,
-                borderRadius: 6,
-                backgroundColor: '#2563eb',
-                borderWidth: 2,
-                borderColor: '#ffffff',
-              }}
-            />
-          )}
-        </View>
-        <View style={{ flex: 1, paddingTop: 4, gap: 4 }}>
-          <Text
-            style={{
-              fontSize: 16,
-              fontFamily: 'Inter_600SemiBold',
-              fontWeight: '600',
-              color: '#000000',
-              letterSpacing: -0.4,
-            }}
-            numberOfLines={1}
-          >
+        <Icon size={22} color={iconColor} strokeWidth={2} />
+      </View>
+      <View className="flex-1 pt-1">
+        <View className="flex-row justify-between items-start mb-1">
+          <Text className="flex-1 text-base font-bold text-gray-900 mr-2" numberOfLines={1}>
             {notif.title}
           </Text>
-          <Text style={{ fontSize: 15, color: '#6b7280', lineHeight: 22 }} numberOfLines={2}>
-            {notif.message}
-          </Text>
-          <Text
-            style={{
-              fontSize: 13,
-              fontFamily: 'Inter_500Medium',
-              fontWeight: '500',
-              color: '#9ca3af',
-              marginTop: 4,
-            }}
-          >
-            {timeAgo(notif.createdAt)}
-          </Text>
+          <View className="flex-row items-center mt-0.5">
+            <Text className="text-xs font-medium text-gray-400 mr-1.5">
+              {timeAgo(notif.createdAt)}
+            </Text>
+            {!notif.isRead && <View className="w-2 h-2 rounded-full bg-blue-600" />}
+          </View>
         </View>
-      </TouchableOpacity>
-    </View>
+        <Text className="text-sm text-gray-500 leading-5" numberOfLines={2}>
+          {notif.message}
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -297,7 +251,7 @@ export default function NotificationsScreen() {
   const unreadCount = notifs.filter((n) => !n.isRead).length;
 
   return (
-    <ScreenContainer standalone noAnimation topBg="#111827">
+    <ScreenContainer standalone bg="#ffffff" noAnimation>
       <ScreenHeader
         title={unreadCount > 0 ? `Paziņojumi (${unreadCount})` : 'Paziņojumi'}
         rightAction={
@@ -305,28 +259,13 @@ export default function NotificationsScreen() {
             <TouchableOpacity
               onPress={markAllRead}
               disabled={markingAll}
-              style={{
-                height: 40,
-                paddingHorizontal: 16,
-                borderRadius: 999,
-                backgroundColor: '#374151',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+              className="h-10 px-4 rounded-full bg-gray-100 items-center justify-center"
+              activeOpacity={0.7}
             >
               {markingAll ? (
-                <ActivityIndicator size="small" color="#ffffff" />
+                <ActivityIndicator size="small" color="#111827" />
               ) : (
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontFamily: 'Inter_600SemiBold',
-                    fontWeight: '600',
-                    color: '#ffffff',
-                  }}
-                >
-                  Atzīmēt
-                </Text>
+                <Text className="text-sm font-bold text-gray-900">Atzīmēt</Text>
               )}
             </TouchableOpacity>
           ) : undefined
@@ -334,56 +273,34 @@ export default function NotificationsScreen() {
       />
 
       {loading ? (
-        <View style={{ padding: 16, gap: 8 }}>
+        <View className="px-4 py-4 gap-4">
           <SkeletonCard count={5} />
         </View>
       ) : (
         <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          className="flex-1 bg-white"
+          contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => load(true)}
-              tintColor="#000000"
+              tintColor="#111827"
             />
           }
         >
           {notifs.length === 0 ? (
-            <View
-              style={{ flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 400 }}
-            >
-              <View
-                style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 32,
-                  backgroundColor: '#f3f4f6',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 16,
-                }}
-              >
-                <Bell size={28} color="#9ca3af" strokeWidth={2} />
+            <View className="flex-1 items-center justify-center min-h-[400px]">
+              <View className="w-16 h-16 rounded-full bg-gray-50 items-center justify-center mb-4 border border-gray-100">
+                <Bell size={28} color="#d1d5db" strokeWidth={1.5} />
               </View>
-              <Text
-                style={{
-                  fontSize: 20,
-                  fontFamily: 'Inter_700Bold',
-                  fontWeight: '700',
-                  color: '#000000',
-                  marginBottom: 8,
-                }}
-              >
-                Nav paziņojumu
-              </Text>
-              <Text style={{ fontSize: 16, color: '#6b7280' }}>
-                Šeit parādīsīsies jūsu paziņojumi
+              <Text className="text-xl font-bold text-gray-900 mb-2">Nav jaunu paziņojumu</Text>
+              <Text className="text-base text-gray-500 font-medium">
+                Šeit parādīsies jūsu paziņojumi
               </Text>
             </View>
           ) : (
-            <View style={{ backgroundColor: '#ffffff' }}>
+            <View className="bg-white">
               {notifs.map((n) => (
                 <NotifCard key={n.id} notif={n} onMarkRead={markRead} />
               ))}

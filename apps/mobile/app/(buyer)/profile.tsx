@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  StyleSheet,
   TextInput,
   Alert,
   ActivityIndicator,
@@ -17,24 +16,9 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter } from 'expo-router';
 import {
-  Pencil,
-  X,
-  Check,
-  LogOut,
-  Trash2,
-  ChevronRight,
-  AlertCircle,
-  HelpCircle,
-  MessageCircle,
-  Shield,
-  Settings,
-  Bell,
-  ArrowUpDown,
-  Building2,
-  Globe,
-  Package,
-  Truck,
-  BarChart2,
+  Pencil, X, Check, LogOut, Trash2, ChevronRight, AlertCircle, HelpCircle,
+  MessageCircle, Shield, Settings, Bell, ArrowUpDown, Building2, Globe,
+  Package, Truck, BarChart2
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -43,166 +27,7 @@ import { useMode } from '@/lib/mode-context';
 import { RoleSheet } from '@/components/ui/TopBar';
 import { api, type ProviderApplication } from '@/lib/api';
 import { t } from '@/lib/translations';
-import { ACCOUNT_STATUS } from '@/lib/materials';
 import { getRoleName } from '@/lib/utils';
-
-const s = StyleSheet.create({
-  header: { alignItems: 'center', paddingVertical: 32 },
-  avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  initials: { fontSize: 30, fontWeight: '700', color: '#111827' },
-  name: { fontSize: 24, fontWeight: '700', color: '#111827', textAlign: 'center' },
-  headerEmail: { color: '#6b7280', marginTop: 4, marginBottom: 16, fontSize: 14 },
-  headerEditBtn: {
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 9999,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerEditBtnText: { fontWeight: '600', color: '#374151', fontSize: 14 },
-
-  identityChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  identityChipText: { fontSize: 12, fontFamily: 'Inter_500Medium', color: '#374151' },
-
-  completenessCard: {
-    marginHorizontal: 20,
-    marginBottom: 24,
-    padding: 16,
-    backgroundColor: '#fffbeb',
-    borderRadius: 14,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: '#fef3c7',
-  },
-  completenessRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  completenessIconWrap: {
-    width: 36,
-    height: 36,
-    backgroundColor: '#fef3c7',
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  completenessTitle: { fontWeight: '700', color: '#78350f', fontSize: 14 },
-  completenessSub: { color: '#b45309', fontSize: 12, marginTop: 2 },
-  progressTrack: { height: 4, backgroundColor: '#fde68a', borderRadius: 2, overflow: 'hidden' },
-  progressFill: { height: 4, backgroundColor: '#d97706', borderRadius: 2 },
-
-  menuConfig: { paddingHorizontal: 20 },
-  sectionHeader: {
-    color: '#9ca3af',
-    fontWeight: '700',
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.1,
-    marginBottom: 12,
-    marginLeft: 4,
-  },
-  menuFooter: { marginTop: 32, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
-  roleSwitchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    marginHorizontal: 20,
-    marginBottom: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    backgroundColor: '#f9fafb',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-  },
-
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-    marginHorizontal: -8,
-    borderRadius: 14,
-  },
-  menuItemContent: { flexDirection: 'row', alignItems: 'center', gap: 16, flex: 1 },
-  menuIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconNormal: { backgroundColor: '#f3f4f6' },
-  iconDestructive: { backgroundColor: '#fef2f2' },
-  menuLabel: { fontWeight: '600', fontSize: 16, color: '#111827' },
-  menuValue: { color: '#6b7280', fontSize: 14, marginTop: 2 },
-
-  // Modal styles (unchanged)
-  modalHandle: { alignItems: 'center', paddingTop: 10, paddingBottom: 4 },
-  handleBar: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#d1d5db' },
-  modalToolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  modalTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  fieldGroup: { gap: 6 },
-  fieldLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  fieldInput: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#111827',
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-  },
-  saveBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 100,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  langRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-  },
-  langCaps: { flexDirection: 'row', alignItems: 'center', marginLeft: 'auto' },
-  langOpt: { fontSize: 13, fontWeight: '600', color: '#9ca3af', paddingHorizontal: 4 },
-  langOptActive: { color: '#111827' },
-  langSep: { fontSize: 12, color: '#d1d5db' },
-});
 
 export default function ProfileScreen() {
   const { user, token, updateUser, logout } = useAuth();
@@ -218,7 +43,6 @@ export default function ProfileScreen() {
   });
   const toast = useToast();
 
-  const roleLabel = t.mode[mode];
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`;
 
   const [applications, setApplications] = useState<ProviderApplication[]>([]);
@@ -230,12 +54,12 @@ export default function ProfileScreen() {
       .catch(() => {});
   }, [token]);
 
-  const ROLE_THEME: Record<string, { avatarBg: string; badgeBg: string; badgeText: string }> = {
-    BUYER: { avatarBg: '#fee2e2', badgeBg: '#fef2f2', badgeText: '#b91c1c' },
-    SUPPLIER: { avatarBg: '#d1fae5', badgeBg: '#f0fdf4', badgeText: '#15803d' },
-    CARRIER: { avatarBg: '#dbeafe', badgeBg: '#eff6ff', badgeText: '#1d4ed8' },
+  const ROLE_THEME: Record<string, string> = {
+    BUYER: 'bg-red-50 text-red-700',
+    SUPPLIER: 'bg-emerald-50 text-emerald-700',
+    CARRIER: 'bg-blue-50 text-blue-700',
   };
-  const roleTheme = ROLE_THEME[mode] ?? ROLE_THEME.BUYER;
+  const roleAvatarClass = ROLE_THEME[mode] ?? 'bg-gray-100 text-gray-700';
 
   const accountTypeLabel = user?.userType === 'ADMIN' ? 'Administrators' : getRoleName(user);
   const { language, setLanguage } = useLanguage();
@@ -311,190 +135,130 @@ export default function ProfileScreen() {
 
   const set = (key: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [key]: v }));
 
+  // Check completeness
+  const steps = [
+    { done: !!(user?.firstName && user?.lastName), label: 'Vārds' },
+    { done: !!user?.phone, label: 'Tālrunis' },
+    { done: !!user?.email, label: 'E-pasts' },
+  ];
+  const missing = steps.filter((step) => !step.done);
+  const isComplete = missing.length === 0;
+
   return (
-    <ScreenContainer bg="white">
+    <ScreenContainer standalone bg="#f9fafb" noAnimation>
       <ScreenHeader title="Profils" onBack={null} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 60 }}
       >
-        {/* Minimal Avatar Header */}
-        <View style={s.header}>
-          <View style={[s.avatar, { backgroundColor: roleTheme.avatarBg }]}>
-            <Text style={s.initials}>{initials}</Text>
+        {/* Profile Identity Block (Uber-style massive touch target) */}
+        <TouchableOpacity
+          className="flex-row items-center px-5 py-6 bg-white mb-2"
+          activeOpacity={0.8}
+          onPress={openEdit}
+        >
+          <View className={`w-[72px] h-[72px] rounded-full items-center justify-center mr-4 ${ROLE_THEME[mode] ? ROLE_THEME[mode].split(' ')[0] : 'bg-gray-100'}`}>
+            <Text className={`text-2xl font-bold ${ROLE_THEME[mode] ? ROLE_THEME[mode].split(' ')[1] : 'text-gray-700'}`}>
+              {initials}
+            </Text>
           </View>
-          <Text style={s.name}>
-            {user?.firstName} {user?.lastName}
-          </Text>
-          <Text style={s.headerEmail}>{user?.email}</Text>
-
-          <TouchableOpacity onPress={openEdit} style={s.headerEditBtn} activeOpacity={0.8}>
-            <Pencil size={14} color="#374151" />
-            <Text style={s.headerEditBtnText}>Rediģēt profilu</Text>
-          </TouchableOpacity>
-
-          {/* Identity chips */}
-          <View
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              gap: 8,
-              justifyContent: 'center',
-              marginTop: 12,
-            }}
-          >
-            {!!user?.phone && (
-              <View style={s.identityChip}>
-                <Text style={s.identityChipText}>{user.phone}</Text>
+          <View className="flex-1">
+            <Text className="text-[22px] font-bold text-gray-900 mb-1" numberOfLines={1}>
+              {user?.firstName} {user?.lastName}
+            </Text>
+            <View className="flex-row items-center flex-wrap">
+              {user?.phone ? (
+                <Text className="text-gray-500 font-medium mr-3">{user.phone}</Text>
+              ) : (
+                <Text className="text-gray-400 font-medium mr-3">{user?.email}</Text>
+              )}
+              <View className="bg-gray-100 px-2 py-0.5 rounded flex-row items-center">
+                <Text className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">{accountTypeLabel}</Text>
               </View>
-            )}
-            {!!user?.company && (
-              <View style={s.identityChip}>
-                <Building2 size={12} color="#6b7280" />
-                <Text style={s.identityChipText}>{user.company.name}</Text>
-              </View>
-            )}
-            <View style={s.identityChip}>
-              <Shield size={12} color="#6b7280" />
-              <Text style={s.identityChipText}>{accountTypeLabel}</Text>
             </View>
           </View>
-        </View>
+          <ChevronRight size={20} color="#d1d5db" />
+        </TouchableOpacity>
 
-        {/* Role Switcher */}
-        {isMultiRole && (
+        {/* Completeness Nudge */}
+        {!isComplete && (
           <TouchableOpacity
-            style={s.roleSwitchRow}
-            onPress={() => {
-              haptics.light();
-              setRoleSheetOpen(true);
-            }}
-            activeOpacity={0.75}
+            className="mx-5 my-3 bg-amber-50 border border-amber-100 rounded-2xl p-4 flex-row items-center shadow-sm"
+            activeOpacity={0.8}
+            onPress={openEdit}
           >
-            <View style={[s.menuIcon, s.iconNormal]}>
-              <ArrowUpDown size={18} color="#374151" strokeWidth={2} />
+            <AlertCircle size={20} color="#b45309" className="mr-3" />
+            <View className="flex-1">
+              <Text className="text-sm font-bold text-amber-900 mb-0.5">Pabeidziet konta reģistrāciju</Text>
+              <Text className="text-xs font-medium text-amber-700">Trūkst informācijas: {missing.map(m => m.label).join(', ')}</Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.menuLabel}>Mainīt lomu</Text>
-              <Text style={s.menuValue}>{t.mode[mode]}</Text>
-            </View>
-            <ChevronRight size={16} color="#9ca3af" />
+            <ChevronRight size={16} color="#b45309" />
           </TouchableOpacity>
         )}
 
-        {/* Profile Completeness */}
-        {(() => {
-          const steps = [
-            { done: !!(user?.firstName && user?.lastName), label: 'Vārds un uzvārds' },
-            { done: !!user?.phone, label: 'Telefona numurs' },
-            { done: !!user?.email, label: 'E-pasts' },
-            { done: !!user?.company, label: 'Uzņēmums pievienots' },
-          ];
-          const doneCount = steps.filter((step) => step.done).length;
-          const pct = Math.round((doneCount / steps.length) * 100);
-          if (pct >= 100) return null;
-          const missing = steps.filter((step) => !step.done);
-          return (
-            <TouchableOpacity style={s.completenessCard} onPress={openEdit} activeOpacity={0.85}>
-              <View style={s.completenessRow}>
-                <View style={s.completenessIconWrap}>
-                  <AlertCircle size={18} color="#d97706" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.completenessTitle}>Profils {pct}% aizpildīts</Text>
-                  <Text style={s.completenessSub}>{missing.map((m) => m.label).join(' · ')}</Text>
-                </View>
-                <ChevronRight size={16} color="#d97706" />
-              </View>
-              <View style={s.progressTrack}>
-                <View style={[s.progressFill, { width: `${pct}%` as any }]} />
-              </View>
-            </TouchableOpacity>
-          );
-        })()}
+        {/* Role Switcher */}
+        {isMultiRole && (
+          <View className="mb-6 border-y border-gray-100 bg-white">
+            <MenuItem
+              icon={ArrowUpDown}
+              label="Mainīt lomu"
+              value={t.mode[mode]}
+              hideBorder
+              onPress={() => {
+                haptics.light();
+                setRoleSheetOpen(true);
+              }}
+            />
+          </View>
+        )}
 
-        {/* Menu Items */}
-        <View style={s.menuConfig}>
-          {/* ── Expand capabilities ──────────────────────────────────────── */}
-          {(() => {
-            const needsSell = !user?.canSell;
-            const needsTransport = !user?.canTransport;
-            if (!needsSell && !needsTransport) return null;
+        {/* Services / Apply Section */}
+        {(!user?.canSell || !user?.canTransport) && (
+          <View className="mb-6 border-y border-gray-100 bg-white">
+            {!user?.canSell && (
+              (() => {
+                const app = applications.find(a => a.appliesForSell);
+                if (app?.status === 'PENDING') {
+                  return <ApplicationRow icon={Package} label="Piegādātāja pieteikums" status="PENDING" hideBorder={!!user?.canTransport} />;
+                }
+                if (app?.status === 'REJECTED') {
+                  return <ApplicationRow icon={Package} label="Piegādātāja pieteikums" status="REJECTED" onReapply={() => router.push('/(auth)/apply-role?type=supplier' as any)} hideBorder={!!user?.canTransport} />;
+                }
+                return (
+                  <MenuItem
+                    icon={Package}
+                    label="Kļūt par piegādātāju"
+                    hideBorder={!!user?.canTransport}
+                    onPress={() => router.push('/(auth)/apply-role?type=supplier' as any)}
+                  />
+                );
+              })()
+            )}
+            
+            {!user?.canTransport && (
+              (() => {
+                const app = applications.find(a => a.appliesForTransport);
+                if (app?.status === 'PENDING') {
+                  return <ApplicationRow icon={Truck} label="Pārvadātāja pieteikums" status="PENDING" hideBorder />;
+                }
+                if (app?.status === 'REJECTED') {
+                  return <ApplicationRow icon={Truck} label="Pārvadātāja pieteikums" status="REJECTED" onReapply={() => router.push('/(auth)/apply-role?type=carrier' as any)} hideBorder />;
+                }
+                return (
+                  <MenuItem
+                    icon={Truck}
+                    label="Kļūt par pārvadātāju"
+                    hideBorder
+                    onPress={() => router.push('/(auth)/apply-role?type=carrier' as any)}
+                  />
+                );
+              })()
+            )}
+          </View>
+        )}
 
-            const getApp = (type: 'supplier' | 'carrier', status: 'PENDING' | 'REJECTED') =>
-              applications.find(
-                (a) =>
-                  a.status === status &&
-                  (type === 'supplier' ? a.appliesForSell : a.appliesForTransport),
-              );
-
-            return (
-              <>
-                <Text style={[s.sectionHeader, { marginTop: 32 }]}>Paplašināt iespējas</Text>
-
-                {needsSell &&
-                  (() => {
-                    if (getApp('supplier', 'PENDING'))
-                      return (
-                        <ApplicationRow
-                          emoji="📦"
-                          label="Piegādātāja pieteikums"
-                          status="PENDING"
-                        />
-                      );
-                    if (getApp('supplier', 'REJECTED'))
-                      return (
-                        <ApplicationRow
-                          emoji="📦"
-                          label="Piegādātāja pieteikums"
-                          status="REJECTED"
-                          onReapply={() => router.push('/(auth)/apply-role?type=supplier' as any)}
-                        />
-                      );
-                    return (
-                      <MenuItem
-                        icon={Package}
-                        label="Kļūt par piegādātāju"
-                        value="Pārdod materiālus platformā"
-                        onPress={() => router.push('/(auth)/apply-role?type=supplier' as any)}
-                      />
-                    );
-                  })()}
-
-                {needsTransport &&
-                  (() => {
-                    if (getApp('carrier', 'PENDING'))
-                      return (
-                        <ApplicationRow
-                          emoji="🚛"
-                          label="Pārvadātāja pieteikums"
-                          status="PENDING"
-                        />
-                      );
-                    if (getApp('carrier', 'REJECTED'))
-                      return (
-                        <ApplicationRow
-                          emoji="🚛"
-                          label="Pārvadātāja pieteikums"
-                          status="REJECTED"
-                          onReapply={() => router.push('/(auth)/apply-role?type=carrier' as any)}
-                        />
-                      );
-                    return (
-                      <MenuItem
-                        icon={Truck}
-                        label="Kļūt par pārvadātāju"
-                        value="Izpildi piegādes, pelni vairāk"
-                        onPress={() => router.push('/(auth)/apply-role?type=carrier' as any)}
-                      />
-                    );
-                  })()}
-              </>
-            );
-          })()}
-
-          <Text style={[s.sectionHeader, { marginTop: 32 }]}>Atbalsts</Text>
-
+        {/* General Settings */}
+        <View className="mb-6 border-y border-gray-100 bg-white">
           <MenuItem
             icon={BarChart2}
             label="Analītika"
@@ -504,12 +268,8 @@ export default function ProfileScreen() {
             icon={Bell}
             label="Paziņojumi"
             value={
-              [user?.notifOrderUpdates, user?.notifJobAlerts, user?.notifPush].filter(Boolean)
-                .length === 0
-                ? 'Izslēgti'
-                : user?.notifPush === false
-                  ? 'Tikai lietotnē'
-                  : 'Ieslēgti'
+              [user?.notifOrderUpdates, user?.notifJobAlerts, user?.notifPush].filter(Boolean).length === 0
+                ? 'Izslēgti' : user?.notifPush === false ? 'Tikai lietotnē' : 'Ieslēgti'
             }
             onPress={() => router.push('/notifications' as any)}
           />
@@ -528,36 +288,34 @@ export default function ProfileScreen() {
             label="Palīdzība / BUJ"
             onPress={() => router.push('/help' as any)}
           />
+          
+          {/* Language Toggle inline item */}
           <TouchableOpacity
-            style={s.langRow}
+            className="flex-row items-center px-5 py-4 bg-white"
             onPress={() => {
               haptics.light();
               setLanguage(language === 'lv' ? 'ru' : 'lv');
             }}
             activeOpacity={0.7}
           >
-            <View style={s.menuItemContent}>
-              <View style={s.menuIcon}>
-                <Globe size={20} color="#4b5563" />
-              </View>
-              <Text style={s.menuLabel}>Valoda / Язык</Text>
+            <View className="w-9 h-9 rounded-full items-center justify-center mr-4 bg-gray-100">
+              <Globe size={18} color="#4b5563" strokeWidth={2} />
             </View>
-            <View style={s.langCaps}>
-              <Text style={[s.langOpt, language === 'lv' && s.langOptActive]}>LV</Text>
-              <Text style={s.langSep}> | </Text>
-              <Text style={[s.langOpt, language === 'ru' && s.langOptActive]}>RU</Text>
+            <View className="flex-1 flex-row items-center justify-between">
+              <Text className="text-base font-semibold text-gray-900">Valoda / Язык</Text>
+              <View className="flex-row items-center">
+                <Text className={`text-sm font-bold ${language === 'lv' ? 'text-gray-900' : 'text-gray-400'}`}>LV</Text>
+                <Text className="text-sm font-bold text-gray-300 mx-1.5">|</Text>
+                <Text className={`text-sm font-bold ${language === 'ru' ? 'text-gray-900' : 'text-gray-400'}`}>RU</Text>
+              </View>
             </View>
           </TouchableOpacity>
+        </View>
 
-          <View style={s.menuFooter}>
-            <MenuItem icon={LogOut} label="Iziet" onPress={handleLogout} isDestructive />
-            <MenuItem
-              icon={Trash2}
-              label="Dzēst kontu"
-              onPress={handleDeleteAccount}
-              isDestructive
-            />
-          </View>
+        {/* Destructive Actions */}
+        <View className="mb-6 border-y border-gray-100 bg-white">
+          <MenuItem icon={LogOut} label="Iziet" onPress={handleLogout} isDestructive />
+          <MenuItem icon={Trash2} label="Dzēst kontu" onPress={handleDeleteAccount} isDestructive hideBorder />
         </View>
       </ScrollView>
 
@@ -569,160 +327,149 @@ export default function ProfileScreen() {
         onRequestClose={() => setEditOpen(false)}
       >
         <KeyboardAvoidingView
-          style={{ flex: 1, backgroundColor: '#f9fafb' }}
+          className="flex-1 bg-white"
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <View style={s.modalHandle}>
-            <View style={s.handleBar} />
-          </View>
-          <View style={s.modalToolbar}>
-            <TouchableOpacity onPress={() => setEditOpen(false)} hitSlop={10}>
-              <X size={20} color="#111827" />
-            </TouchableOpacity>
-            <Text style={s.modalTitle}>Rediģēt profilu</Text>
-            <TouchableOpacity onPress={saveEdit} hitSlop={10} disabled={saving}>
-              {saving ? (
-                <ActivityIndicator size="small" color="#111827" />
-              ) : (
-                <Check size={20} color="#111827" />
-              )}
+          {/* Header */}
+          <View className="flex-row items-center px-4 pt-4 pb-2">
+            <TouchableOpacity
+              onPress={() => setEditOpen(false)}
+              hitSlop={10}
+              className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center"
+            >
+              <X size={20} color="#111827" strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
 
-          <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }}>
-            <View style={s.fieldGroup}>
-              <Text style={s.fieldLabel}>Vārds</Text>
-              <TextInput
-                style={s.fieldInput}
-                value={form.firstName}
-                onChangeText={set('firstName')}
-                placeholder="Vārds"
-                placeholderTextColor="#9ca3af"
-                maxLength={80}
-              />
+          <ScrollView 
+            contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 40 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Text className="text-[32px] font-bold text-gray-900 mb-8 tracking-tight">
+              Konta informācija
+            </Text>
+
+            <View className="gap-6">
+              <View>
+                <Text className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Vārds</Text>
+                <TextInput
+                  className="bg-gray-100 rounded-2xl px-5 py-4 text-[17px] text-gray-900 font-semibold"
+                  value={form.firstName}
+                  onChangeText={set('firstName')}
+                  placeholder="Ievadiet vārdu"
+                  placeholderTextColor="#9ca3af"
+                  maxLength={80}
+                />
+              </View>
+              <View>
+                <Text className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Uzvārds</Text>
+                <TextInput
+                  className="bg-gray-100 rounded-2xl px-5 py-4 text-[17px] text-gray-900 font-semibold"
+                  value={form.lastName}
+                  onChangeText={set('lastName')}
+                  placeholder="Ievadiet uzvārdu"
+                  placeholderTextColor="#9ca3af"
+                  maxLength={80}
+                />
+              </View>
+              <View>
+                <Text className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Tālrunis</Text>
+                <TextInput
+                  className="bg-gray-100 rounded-2xl px-5 py-4 text-[17px] text-gray-900 font-semibold"
+                  value={form.phone}
+                  onChangeText={set('phone')}
+                  placeholder="+371 20000000"
+                  placeholderTextColor="#9ca3af"
+                  keyboardType="phone-pad"
+                  maxLength={20}
+                />
+              </View>
             </View>
-            <View style={s.fieldGroup}>
-              <Text style={s.fieldLabel}>Uzvārds</Text>
-              <TextInput
-                style={s.fieldInput}
-                value={form.lastName}
-                onChangeText={set('lastName')}
-                placeholder="Uzvārds"
-                placeholderTextColor="#9ca3af"
-                maxLength={80}
-              />
-            </View>
-            <View style={s.fieldGroup}>
-              <Text style={s.fieldLabel}>Tālrunis</Text>
-              <TextInput
-                style={s.fieldInput}
-                value={form.phone}
-                onChangeText={set('phone')}
-                placeholder="+371 20000000"
-                placeholderTextColor="#9ca3af"
-                keyboardType="phone-pad"
-                maxLength={20}
-              />
-            </View>
+          </ScrollView>
+
+          {/* Sticky Footer */}
+          <View className="px-5 py-4 border-t border-gray-100 bg-white mb-2">
             <TouchableOpacity
-              style={[s.saveBtn, saving && { opacity: 0.5 }]}
+              className={`bg-gray-900 py-4 rounded-2xl items-center justify-center flex-row shadow-sm ${saving ? 'opacity-70' : ''}`}
               onPress={saveEdit}
               disabled={saving}
-              activeOpacity={0.88}
+              activeOpacity={0.85}
             >
               {saving ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text style={s.saveBtnText}>Saglabāt</Text>
+                <Text className="text-white text-[17px] font-bold">Saglabāt izmaiņas</Text>
               )}
             </TouchableOpacity>
-          </ScrollView>
+          </View>
         </KeyboardAvoidingView>
       </Modal>
+
       {isMultiRole && <RoleSheet visible={roleSheetOpen} onClose={() => setRoleSheetOpen(false)} />}
     </ScreenContainer>
   );
 }
 
-function ApplicationRow({
-  emoji,
-  label,
-  status,
-  onReapply,
-}: {
-  emoji: string;
-  label: string;
-  status: 'PENDING' | 'REJECTED';
-  onReapply?: () => void;
-}) {
+// ─── Helper Components ────────────────────────────────────────────────────────
+
+function MenuItem({ icon: Icon, label, value, onPress, isDestructive, hideBorder }: any) {
   return (
-    <View style={s.menuItem}>
-      <View style={s.menuItemContent}>
-        <View style={[s.menuIcon, s.iconNormal]}>
-          <Text style={{ fontSize: 18 }}>{emoji}</Text>
+    <>
+      <TouchableOpacity
+        className="flex-row items-center px-5 py-3.5 bg-white"
+        onPress={onPress}
+        disabled={!onPress}
+        activeOpacity={0.7}
+      >
+        <View className={`w-9 h-9 rounded-full items-center justify-center mr-4 ${isDestructive ? 'bg-red-50' : 'bg-gray-100'}`}>
+          <Icon size={18} color={isDestructive ? '#ef4444' : '#4b5563'} strokeWidth={2} />
         </View>
-        <Text style={s.menuLabel}>{label}</Text>
-      </View>
-      {status === 'PENDING' ? (
-        <View
-          style={{
-            backgroundColor: '#fef3c7',
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            borderRadius: 20,
-          }}
-        >
-          <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: '#92400e' }}>
-            Izskatīšanā
+        <View className="flex-1 flex-row items-center justify-between">
+          <Text className={`text-base font-semibold ${isDestructive ? 'text-red-600' : 'text-gray-900'}`}>
+            {label}
           </Text>
-        </View>
-      ) : (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <View
-            style={{
-              backgroundColor: '#fee2e2',
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderRadius: 20,
-            }}
-          >
-            <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: '#b91c1c' }}>
-              Noraidīts
-            </Text>
+          <View className="flex-row items-center">
+            {!!value && (
+              <Text className="text-sm font-medium text-gray-500 mr-2">{value}</Text>
+            )}
+            {!isDestructive && onPress && <ChevronRight size={18} color="#d1d5db" />}
           </View>
-          <TouchableOpacity onPress={onReapply} activeOpacity={0.7}>
-            <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: '#2563eb' }}>
-              Pieteikties atkārtoti
-            </Text>
-          </TouchableOpacity>
         </View>
-      )}
-    </View>
+      </TouchableOpacity>
+      {!hideBorder && <View className="h-px bg-gray-50 ml-[68px]" />}
+    </>
   );
 }
 
-const MenuItem = ({
-  icon: Icon,
-  label,
-  value,
-  onPress,
-  isDestructive,
-  rightIcon: RightIcon = ChevronRight,
-}: any) => (
-  <TouchableOpacity style={s.menuItem} onPress={onPress} disabled={!onPress} activeOpacity={0.7}>
-    <View style={s.menuItemContent}>
-      <View style={[s.menuIcon, isDestructive ? s.iconDestructive : s.iconNormal]}>
-        <Icon size={20} color={isDestructive ? '#ef4444' : '#4b5563'} />
+function ApplicationRow({ icon: Icon, label, status, onReapply, hideBorder }: any) {
+  return (
+    <>
+      <View className="flex-row items-center px-5 py-3.5 bg-white">
+        <View className="w-9 h-9 rounded-full items-center justify-center mr-4 bg-gray-100">
+          <Icon size={18} color="#4b5563" strokeWidth={2} />
+        </View>
+        <View className="flex-1 flex-row items-center justify-between">
+          <Text className="text-base font-semibold text-gray-900">{label}</Text>
+          {status === 'PENDING' ? (
+            <View className="bg-amber-100 px-2 py-1 rounded">
+              <Text className="text-xs font-bold text-amber-800 tracking-wide uppercase">Izskatīšanā</Text>
+            </View>
+          ) : (
+            <View className="flex-row items-center gap-2.5">
+              <View className="bg-red-100 px-2 py-1 rounded">
+                <Text className="text-xs font-bold text-red-800 tracking-wide uppercase">Noraidīts</Text>
+              </View>
+              {onReapply && (
+                <TouchableOpacity onPress={onReapply} activeOpacity={0.7}>
+                  <Text className="text-sm font-bold text-blue-600">Atkārtot</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        </View>
       </View>
-      <View style={{ flex: 1 }}>
-        <Text style={[s.menuLabel, isDestructive && { color: '#ef4444' }]}>{label}</Text>
-        {!!value && (
-          <Text style={s.menuValue} numberOfLines={1}>
-            {value}
-          </Text>
-        )}
-      </View>
-    </View>
-    {onPress && !isDestructive && <RightIcon size={18} color="#e5e7eb" />}
-  </TouchableOpacity>
-);
+      {!hideBorder && <View className="h-px bg-gray-50 ml-[68px]" />}
+    </>
+  );
+}

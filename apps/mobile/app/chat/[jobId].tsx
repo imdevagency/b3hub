@@ -152,7 +152,7 @@ export default function ChatScreen() {
   };
 
   return (
-    <ScreenContainer standalone bg="#f2f2f7" topBg="#111827">
+    <ScreenContainer standalone bg="#f2f2f7" >
       <ScreenHeader title={String(title ?? 'Čats')} />
       <KeyboardAvoidingView
         style={styles.flex}

@@ -133,7 +133,7 @@ function FaqItem({ q, a, isLast }: { q: string; a: string; isLast: boolean }) {
 export default function HelpScreen() {
   const router = useRouter();
   return (
-    <ScreenContainer standalone bg="#f2f2f7" topBg="#111827">
+    <ScreenContainer standalone bg="#f2f2f7" >
       <ScreenHeader title="Biežāk uzdotie jautājumi" />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>

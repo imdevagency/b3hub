@@ -131,7 +131,7 @@ export default function ReviewScreen() {
   };
 
   return (
-    <ScreenContainer standalone topBg="#111827">
+    <ScreenContainer standalone >
       <ScreenHeader title="Novērtējums" />
 
       <KeyboardAvoidingView
