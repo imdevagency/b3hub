@@ -349,6 +349,7 @@ export default function OrderDetailScreen() {
 
   return (
     <ScreenContainer bg="#ffffff">
+      <ScreenHeader title="Pasūtījums" />
       {/* Uber-style hero header */}
       <View style={s.heroHeader}>
         <View style={s.heroLeft}>

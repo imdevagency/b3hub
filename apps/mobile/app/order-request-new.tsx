@@ -602,7 +602,7 @@ export default function OrderRequestWizard() {
     >
       <View className="flex-row gap-4 mb-6">
         <TouchableOpacity
-          className="flex-1 bg-gray-50 rounded-3xl p-5"
+          className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-200"
           onPress={() => setCatPickerOpen(true)}
           activeOpacity={0.8}
         >
@@ -616,7 +616,7 @@ export default function OrderRequestWizard() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          className="flex-1 bg-gray-50 rounded-3xl p-5"
+          className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-200"
           onPress={() => setFractionPickerOpen(true)}
           activeOpacity={0.8}
         >
@@ -631,7 +631,7 @@ export default function OrderRequestWizard() {
       </View>
 
       <TouchableOpacity
-        className="w-full bg-gray-50 rounded-3xl p-5 mb-8"
+        className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-6"
         onPress={() => setOrderTypePickerOpen(true)}
         activeOpacity={0.8}
       >
@@ -686,13 +686,13 @@ export default function OrderRequestWizard() {
       </View>
 
       {/* Truck load info (visual context) */}
-      <View className="bg-amber-50 rounded-3xl p-5 mb-8 flex-row items-center">
-        <View className="bg-amber-100 w-10 h-10 rounded-2xl items-center justify-center mr-4">
-          <Truck size={20} color="#92400e" />
+      <View className="bg-gray-50 rounded-2xl p-4 mb-6 flex-row items-center border border-gray-200">
+        <View className="bg-white w-10 h-10 rounded-xl items-center justify-center mr-4 shadow-sm border border-gray-100">
+          <Truck size={18} color="#111827" />
         </View>
         <View className="flex-1">
-          <Text className="text-amber-900 font-bold text-base mb-0.5">Tehniska informācija</Text>
-          <Text className="text-amber-700 font-medium text-sm leading-tight">
+          <Text className="text-gray-900 font-bold text-sm mb-0.5">Tehniska informācija</Text>
+          <Text className="text-gray-500 font-medium text-xs leading-tight">
             Nepieciešami {Math.ceil(quantity / 26)} reisi (26 {ORDER_TYPE_UNIT_LABEL[orderType]}{' '}
             ietilpība automašīnai)
           </Text>
@@ -702,7 +702,7 @@ export default function OrderRequestWizard() {
       <View className="mt-8">
         <Text className="text-gray-400 text-sm font-semibold mb-2 ml-1">Piezīmes (neobligāti)</Text>
         <TextInput
-          className="w-full bg-gray-50 rounded-3xl p-5 pt-5 text-gray-900 font-medium text-base"
+          className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 pt-4 text-gray-900 font-medium text-sm"
           placeholder="Ievadiet papildu informāciju piegādātājam..."
           placeholderTextColor="#9ca3af"
           value={notes}
@@ -803,15 +803,15 @@ export default function OrderRequestWizard() {
         </View>
       </View>
 
-      <View className="bg-blue-50 rounded-[28px] p-5 mb-8 flex-row mt-4">
-        <View className="bg-blue-100 w-10 h-10 rounded-2xl items-center justify-center mr-4 mt-0.5">
-          <ZapIcon size={20} color="#1e40af" />
+      <View className="bg-gray-50 rounded-2xl p-4 flex-row mt-4 mb-6 border border-gray-200">
+        <View className="bg-white w-10 h-10 rounded-xl items-center justify-center mr-4 shadow-sm border border-gray-100">
+          <ZapIcon size={18} color="#111827" />
         </View>
         <View className="flex-1">
-          <Text className="text-blue-900 font-extrabold text-base mb-1 tracking-tight">
+          <Text className="text-gray-900 font-bold text-sm mb-0.5 tracking-tight">
             Kā notiek piegāde?
           </Text>
-          <Text className="text-blue-800 font-medium text-sm leading-snug">
+          <Text className="text-gray-500 font-medium text-xs leading-snug">
             Pārdevēji piedāvās savu labāko cenu atbilstoši Jūsu izvēlētajam piegādes datumam un
             laikam. Varat to apstiprināt vai noraidīt.
           </Text>
@@ -872,7 +872,7 @@ export default function OrderRequestWizard() {
       return (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
           <View style={s.successWrap}>
-            <View style={[s.successIconBg, { backgroundColor: '#2563eb' }]}>
+            <View style={[s.successIconBg, { backgroundColor: '#111827' }]}>
               <Send size={36} color="#fff" />
             </View>
             <Text style={s.successTitle}>Pieprasījums nosūtīts!</Text>
@@ -918,7 +918,7 @@ export default function OrderRequestWizard() {
           <View style={s.rfqBox}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
               <View style={s.rfqIconBg}>
-                <Send size={20} color="#2563eb" />
+                <Send size={20} color="#111827" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.rfqTitle}>Nosūtīt cenu pieprasījumu</Text>
@@ -962,83 +962,189 @@ export default function OrderRequestWizard() {
     ];
 
     return (
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 12 }}>
-        <Text style={s.offersTitle}>
-          {sorted.length}
-          {sorted.length < offers.length ? `/${offers.length}` : ''} piedāvājum
-          {sorted.length === 1 ? 's' : 'i'}
-        </Text>
-
-        {/* Sort pills */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {SORT_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.key}
-                onPress={() => {
-                  haptics.light();
-                  setOffersSort(opt.key);
-                }}
-                style={[s.sortPill, offersSort === opt.key && s.sortPillActive]}
-              >
-                <Text style={[s.sortPillText, offersSort === opt.key && s.sortPillTextActive]}>
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
-
-        {/* Price cap filter */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
-          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-            <Text style={{ fontSize: 12, color: '#6b7280', marginRight: 2 }}>Max €/t:</Text>
-            {[null, 10, 20, 30, 50, 100].map((cap) => (
-              <TouchableOpacity
-                key={cap === null ? 'all' : cap}
-                onPress={() => {
-                  haptics.light();
-                  setPriceMaxFilter(cap);
-                }}
-                style={[s.sortPill, priceMaxFilter === cap && s.sortPillActive]}
-              >
-                <Text style={[s.sortPillText, priceMaxFilter === cap && s.sortPillTextActive]}>
-                  {cap === null ? 'Visi' : `≤€${cap}`}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
-
-        {submitError ? (
-          <Text style={{ fontSize: 14, color: '#dc2626', fontWeight: '500' }}>{submitError}</Text>
-        ) : null}
-        {sorted.map((offer, idx) => (
-          <OfferCard
-            key={offer.id}
-            offer={offer}
-            unit={unit}
-            isCheapest={offersSort === 'price' && idx === 0}
-            submitting={submitting}
-            onSelect={() => handleSelectOffer(offer)}
-          />
-        ))}
-        {/* RFQ fallback — always visible below offers */}
-        <View style={[s.rfqBox, { marginTop: 4 }]}>
-          <Text style={{ fontSize: 13, color: '#6b7280', marginBottom: 8 }}>
-            Vēlaties saņemt vairāk piedāvājumu?
-          </Text>
-          <TouchableOpacity
-            style={[s.rfqBtn, submitting && { opacity: 0.5 }]}
-            onPress={handleSendRFQ}
-            disabled={submitting}
-            activeOpacity={0.8}
+      <View style={{ flex: 1 }}>
+        <View style={{ padding: 16, paddingBottom: 8, gap: 12 }}>
+          <Text
+            style={{
+              fontSize: 18,
+              fontWeight: '700',
+              color: '#111827',
+              fontFamily: 'Inter_700Bold',
+            }}
           >
-            <Send size={14} color="#111827" />
-            <Text style={s.rfqBtnText}>Pieprasīt vairāk piedāvājumu</Text>
-          </TouchableOpacity>
+            {sorted.length} piedāvājum{sorted.length === 1 ? 's' : 'i'}
+          </Text>
+
+          {/* Combined Filters Horizontal Scroller */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ overflow: 'visible' }}
+          >
+            <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: '#6b7280',
+                  marginRight: 4,
+                  fontFamily: 'Inter_500Medium',
+                }}
+              >
+                Sortēt:
+              </Text>
+              {SORT_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt.key}
+                  onPress={() => {
+                    haptics.light();
+                    setOffersSort(opt.key);
+                  }}
+                  style={[
+                    {
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 100,
+                      borderWidth: StyleSheet.hairlineWidth,
+                      borderColor: '#e5e7eb',
+                      backgroundColor: '#fff',
+                    },
+                    offersSort === opt.key && {
+                      borderColor: '#111827',
+                      backgroundColor: '#f3f4f6',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      { fontSize: 13, color: '#374151', fontFamily: 'Inter_500Medium' },
+                      offersSort === opt.key && {
+                        color: '#111827',
+                        fontWeight: '600',
+                        fontFamily: 'Inter_600SemiBold',
+                      },
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+
+              <View
+                style={{ width: 1, height: 20, backgroundColor: '#e5e7eb', marginHorizontal: 6 }}
+              />
+
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: '#6b7280',
+                  marginRight: 4,
+                  fontFamily: 'Inter_500Medium',
+                }}
+              >
+                Max €/t:
+              </Text>
+              {[null, 10, 20, 50].map((cap) => (
+                <TouchableOpacity
+                  key={cap === null ? 'all' : cap}
+                  onPress={() => {
+                    haptics.light();
+                    setPriceMaxFilter(cap);
+                  }}
+                  style={[
+                    {
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 100,
+                      borderWidth: StyleSheet.hairlineWidth,
+                      borderColor: '#e5e7eb',
+                      backgroundColor: '#fff',
+                    },
+                    priceMaxFilter === cap && {
+                      borderColor: '#111827',
+                      backgroundColor: '#f3f4f6',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      { fontSize: 13, color: '#374151', fontFamily: 'Inter_500Medium' },
+                      priceMaxFilter === cap && {
+                        color: '#111827',
+                        fontWeight: '600',
+                        fontFamily: 'Inter_600SemiBold',
+                      },
+                    ]}
+                  >
+                    {cap === null ? 'Visi' : `≤€${cap}`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+
+          {submitError ? (
+            <Text style={{ fontSize: 14, color: '#dc2626', fontWeight: '500' }}>{submitError}</Text>
+          ) : null}
         </View>
-      </ScrollView>
+
+        <ScrollView
+          contentContainerStyle={{
+            paddingBottom: 32,
+            gap: 12,
+            paddingHorizontal: 16,
+            paddingTop: 16,
+          }}
+        >
+          {sorted.map((offer, idx) => (
+            <OfferCard
+              key={offer.id}
+              offer={offer}
+              unit={unit}
+              isCheapest={offersSort === 'price' && idx === 0}
+              submitting={submitting}
+              onSelect={() => handleSelectOffer(offer)}
+            />
+          ))}
+
+          {/* RFQ fallback */}
+          <View
+            style={{
+              marginTop: 12,
+              padding: 16,
+              backgroundColor: '#f9fafb',
+              borderRadius: 16,
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: '#f3f4f6',
+            }}
+          >
+            <Text style={{ fontSize: 13, color: '#6b7280', marginBottom: 12, textAlign: 'center' }}>
+              Neesat apmierināts ar cenām?
+            </Text>
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                backgroundColor: '#fff',
+                borderWidth: StyleSheet.hairlineWidth,
+                borderColor: '#d1d5db',
+                borderRadius: 8,
+              }}
+              onPress={handleSendRFQ}
+              disabled={submitting}
+              activeOpacity={0.8}
+            >
+              <Send size={14} color="#111827" />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
+                Pieprasīt spec. cenas
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
     );
   };
 
@@ -1342,108 +1448,138 @@ function OfferCard({
   onSelect: () => void;
 }) {
   return (
-    <View
-      className={`mx-6 mb-4 rounded-3xl p-5 border-2 ${isCheapest ? 'bg-amber-50 border-amber-500' : 'bg-white border-gray-100 shadow-sm'}`}
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={onSelect}
+      disabled={submitting}
+      style={[
+        {
+          paddingHorizontal: 16,
+          paddingVertical: 16,
+          backgroundColor: '#fff',
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: isCheapest ? '#111827' : '#e5e7eb',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        },
+        isCheapest && {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.05,
+          shadowRadius: 10,
+          elevation: 3,
+        },
+      ]}
     >
-      {/* Product image strip */}
-      {offer.images && offer.images.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="mb-4"
-          contentContainerStyle={{ gap: 6 }}
+      {/* Best Deal absolute badge */}
+      {isCheapest && (
+        <View
+          style={{
+            position: 'absolute',
+            top: -10,
+            right: 16,
+            backgroundColor: '#e11d48', // Striking but good looking red
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 6,
+            zIndex: 10,
+            shadowColor: '#e11d48',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.2,
+            shadowRadius: 4,
+            elevation: 2,
+          }}
         >
-          {offer.images.map((url, i) => (
-            <Image
-              key={i}
-              source={{ uri: url, headers: { Accept: '*/*' } }}
-              style={{ width: 80, height: 80, borderRadius: 16, backgroundColor: '#f3f4f6' }}
-            />
-          ))}
-        </ScrollView>
+          <Text
+            style={{
+              fontSize: 10,
+              fontWeight: '800',
+              color: '#fff',
+              textTransform: 'uppercase',
+              fontFamily: 'Inter_800ExtraBold',
+              letterSpacing: 0.5,
+            }}
+          >
+            Labākā cena
+          </Text>
+        </View>
       )}
 
-      {/* Supplier row */}
-      <View className="flex-row items-center justify-between mb-2">
-        <View className="flex-row items-center gap-2">
-          <View className="w-8 h-8 rounded-lg bg-gray-100 items-center justify-center">
-            <Truck size={14} color="#6b7280" />
-          </View>
-          <Text className="text-gray-900 font-extrabold text-base tracking-tight">
+      {/* Left Column: Supplier, Location, Details */}
+      <View style={{ flex: 1, paddingRight: 16 }}>
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap' }}
+        >
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: '800',
+              color: '#111827',
+              fontFamily: 'Inter_800ExtraBold',
+              marginRight: 8,
+            }}
+            numberOfLines={1}
+          >
             {offer.supplier?.name}
           </Text>
-        </View>
-        <View className="flex-row items-center bg-gray-100 px-2 py-0.5 rounded-md">
-          <Star size={12} color="#fbbf24" style={{ marginRight: 4 }} />
-          <Text className="text-gray-900 font-bold text-xs">
-            {offer.supplier?.rating?.toFixed(1) ?? 'Jauns'}
-          </Text>
-        </View>
-      </View>
-
-      {/* Title & Distance */}
-      <Text className="text-gray-900 font-extrabold text-lg leading-tight line-clamp-2 pr-6">
-        {offer.supplier?.city ?? offer.etaLabel ?? 'Piegādātājs'}
-      </Text>
-
-      <View className="flex-row items-center mt-3 mb-6 bg-gray-50 self-start px-3 py-1.5 rounded-xl border border-gray-100">
-        <MapPin size={14} color="#6b7280" strokeWidth={2.5} style={{ marginRight: 6 }} />
-        <Text className="text-gray-600 font-bold text-sm tracking-tight">
-          {offer.distanceKm?.toFixed(1) ?? 'Zināmā'} km attālumā
-        </Text>
-      </View>
-
-      {/* Sub-prices & Buy button */}
-      <View className="flex-row justify-between items-end border-t border-gray-100 pt-5 mt-2">
-        <View>
-          <Text className="text-gray-400 font-medium text-xs uppercase tracking-wider mb-1">
-            Cena par {UNIT_SHORT[unit]}
-          </Text>
-          <Text className="text-gray-900 font-bold text-base">
-            €{offer.effectiveUnitPrice?.toFixed(2) ?? '—'}
-          </Text>
-
-          {offer.deliveryFee != null && (
-            <>
-              <Text className="text-gray-400 font-medium text-xs uppercase tracking-wider mt-3 mb-1">
-                Piegāde
-              </Text>
-              <Text className="text-gray-900 font-bold text-base">
-                €{offer.deliveryFee?.toFixed(2)}
-              </Text>
-            </>
-          )}
-        </View>
-
-        <View className="items-end">
-          {isCheapest && (
-            <View className="bg-amber-200 px-3 py-1 rounded-full mb-3 shadow-sm border border-amber-300">
-              <Text className="text-amber-900 font-bold text-xs uppercase tracking-wide">
-                Labākā cena
+          {offer.supplier?.rating && (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 3,
+                backgroundColor: '#f3f4f6',
+                paddingHorizontal: 6,
+                paddingVertical: 2,
+                borderRadius: 6,
+              }}
+            >
+              <Star size={10} color="#111827" fill="#111827" />
+              <Text
+                style={{
+                  fontSize: 11,
+                  fontWeight: '700',
+                  color: '#111827',
+                  fontFamily: 'Inter_700Bold',
+                }}
+              >
+                {offer.supplier.rating.toFixed(1)}
               </Text>
             </View>
           )}
-          <Text className="text-gray-900 font-black text-3xl tracking-tighter">
+        </View>
+        <Text
+          style={{ fontSize: 13, color: '#6b7280', fontFamily: 'Inter_500Medium', marginBottom: 2 }}
+        >
+          {offer.supplier?.city ?? offer.etaLabel ?? 'Zināms reģions'} ·{' '}
+          {offer.distanceKm?.toFixed(1) ?? '— '} km
+        </Text>
+        <Text style={{ fontSize: 13, color: '#6b7280', fontFamily: 'Inter_500Medium' }}>
+          {offer.effectiveUnitPrice?.toFixed(2) ?? '—'} €/{UNIT_SHORT[unit]}
+          {offer.deliveryFee != null ? ` + ${offer.deliveryFee?.toFixed(2)} € piegāde` : ''}
+        </Text>
+      </View>
+
+      {/* Right Column: Price */}
+      <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
+        {submitting ? (
+          <ActivityIndicator color="#111827" size="small" />
+        ) : (
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: '800',
+              color: '#111827',
+              fontFamily: 'Inter_800ExtraBold',
+            }}
+          >
             €{offer.totalPrice?.toFixed(2) ?? '—'}
           </Text>
-
-          <TouchableOpacity
-            className={`mt-4 px-6 py-3 rounded-2xl ${isCheapest ? 'bg-amber-600' : 'bg-gray-900'}`}
-            onPress={onSelect}
-            disabled={submitting}
-            activeOpacity={0.8}
-          >
-            {submitting ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text className={`font-bold text-white text-base ${isCheapest ? '' : 'text-center'}`}>
-                Pasūtīt tagad
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
+        )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
