@@ -62,7 +62,12 @@ export function ScreenContainer({
   if (topBg && resolvedTopInset > 0) {
     return (
       <Animated.View
-        style={[styles.base, { backgroundColor: topBg }, { opacity, transform: [{ translateY }] }, style]}
+        style={[
+          styles.base,
+          { backgroundColor: topBg },
+          { opacity, transform: [{ translateY }] },
+          style,
+        ]}
       >
         <View style={{ height: resolvedTopInset, backgroundColor: topBg }} />
         <View style={[styles.base, { backgroundColor: bg }]}>{children}</View>

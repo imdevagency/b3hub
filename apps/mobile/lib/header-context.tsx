@@ -32,11 +32,7 @@ const HeaderContext = createContext<HeaderContextValue>({
 export function HeaderProvider({ children }: { children: ReactNode }) {
   const [config, setConfigState] = useState<LayoutHeaderConfig | null>(null);
   const setConfig = useCallback((c: LayoutHeaderConfig | null) => setConfigState(c), []);
-  return (
-    <HeaderContext.Provider value={{ config, setConfig }}>
-      {children}
-    </HeaderContext.Provider>
-  );
+  return <HeaderContext.Provider value={{ config, setConfig }}>{children}</HeaderContext.Provider>;
 }
 
 export function useHeaderConfig() {

@@ -126,14 +126,16 @@ export default function ChatScreen() {
             <Text style={styles.avatarText}>{(item.senderName?.[0] ?? '?').toUpperCase()}</Text>
           </View>
         )}
-        <View style={[styles.bubble, isOwn ? styles.bubbleOwn : styles.bubbleOther, item.imageUrl ? styles.bubbleImage : null]}>
+        <View
+          style={[
+            styles.bubble,
+            isOwn ? styles.bubbleOwn : styles.bubbleOther,
+            item.imageUrl ? styles.bubbleImage : null,
+          ]}
+        >
           {!isOwn && <Text style={styles.senderName}>{item.senderName}</Text>}
           {item.imageUrl ? (
-            <Image
-              source={{ uri: item.imageUrl }}
-              style={styles.chatImage}
-              resizeMode="cover"
-            />
+            <Image source={{ uri: item.imageUrl }} style={styles.chatImage} resizeMode="cover" />
           ) : null}
           {item.body ? (
             <Text style={[styles.bodyText, isOwn && styles.bodyTextOwn]}>{item.body}</Text>
@@ -157,7 +159,6 @@ export default function ChatScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={0}
       >
-
         {/* Messages or states */}
         {loading ? (
           <View style={styles.centerBox}>

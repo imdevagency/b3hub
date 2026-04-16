@@ -205,7 +205,11 @@ export default function OrdersScreen() {
             >
               <Calendar size={20} color="#ffffff" />
             </TouchableOpacity>
-            <TouchableOpacity className="w-[40px] h-[40px] rounded-full bg-gray-700 items-center justify-center" activeOpacity={0.8} onPress={handleNewOrder}>
+            <TouchableOpacity
+              className="w-[40px] h-[40px] rounded-full bg-gray-700 items-center justify-center"
+              activeOpacity={0.8}
+              onPress={handleNewOrder}
+            >
               <Plus size={22} color="#ffffff" />
             </TouchableOpacity>
           </View>
@@ -220,7 +224,9 @@ export default function OrdersScreen() {
             onPress={() => handleTabChange('active')}
             activeOpacity={0.8}
           >
-            <Text className={`text-sm font-semibold ${activeTab === 'active' ? 'text-white' : 'text-gray-400'}`}>
+            <Text
+              className={`text-sm font-semibold ${activeTab === 'active' ? 'text-white' : 'text-gray-400'}`}
+            >
               Aktīvie
             </Text>
           </TouchableOpacity>
@@ -229,7 +235,9 @@ export default function OrdersScreen() {
             onPress={() => handleTabChange('done')}
             activeOpacity={0.8}
           >
-            <Text className={`text-sm font-semibold ${activeTab === 'done' ? 'text-white' : 'text-gray-400'}`}>
+            <Text
+              className={`text-sm font-semibold ${activeTab === 'done' ? 'text-white' : 'text-gray-400'}`}
+            >
               Vēsture
             </Text>
           </TouchableOpacity>
@@ -239,7 +247,9 @@ export default function OrdersScreen() {
       {/* ── Collapsible search + type filters ────────────────── */}
       {showSearch && (
         <View className="bg-white pb-2">
-          <View className={`flex-row items-center mx-4 mb-2 px-3 py-2 rounded-xl border-[1.5px] ${searchFocused ? 'border-emerald-500 bg-white' : 'border-transparent bg-gray-100'}`}>
+          <View
+            className={`flex-row items-center mx-4 mb-2 px-3 py-2 rounded-xl border-[1.5px] ${searchFocused ? 'border-emerald-500 bg-white' : 'border-transparent bg-gray-100'}`}
+          >
             <Search
               size={16}
               color={searchFocused ? '#00A878' : '#9ca3af'}
@@ -351,7 +361,9 @@ export default function OrdersScreen() {
               <View className="flex-row items-center gap-3">
                 <Leaf size={18} color="#16a34a" fill="#16a34a" />
                 <View>
-                  <Text className="text-green-800 font-extrabold text-[15px] tracking-tight">{formatCo2(totalCo2Kg)}</Text>
+                  <Text className="text-green-800 font-extrabold text-[15px] tracking-tight">
+                    {formatCo2(totalCo2Kg)}
+                  </Text>
                   <Text className="text-green-700 font-medium text-[11px]">
                     Kopējais CO₂ · {totalTonnes.toFixed(1)} t piegādāts ({deliveredJobCount} reises)
                   </Text>
@@ -402,7 +414,9 @@ export default function OrdersScreen() {
       {/* ── New Order Sheet ──────────────────────────────────── */}
       <BottomSheet visible={showTypePicker} onClose={() => setShowTypePicker(false)}>
         <View className="pb-10 pt-2">
-          <Text className="text-2xl font-extrabold text-gray-900 mb-6 px-6 tracking-tight">Jauns pasūtījums</Text>
+          <Text className="text-2xl font-extrabold text-gray-900 mb-6 px-6 tracking-tight">
+            Jauns pasūtījums
+          </Text>
 
           <TouchableOpacity
             className="flex-row items-center px-6 py-3 gap-4"
@@ -454,7 +468,9 @@ export default function OrdersScreen() {
             </View>
             <View className="flex-1 justify-center gap-0.5">
               <Text className="text-[17px] font-bold text-gray-900">Utilizācija</Text>
-              <Text className="text-sm font-medium text-gray-500">Atkritumu izvešana no objekta</Text>
+              <Text className="text-sm font-medium text-gray-500">
+                Atkritumu izvešana no objekta
+              </Text>
             </View>
           </TouchableOpacity>
 
@@ -472,7 +488,9 @@ export default function OrdersScreen() {
             </View>
             <View className="flex-1 justify-center gap-0.5">
               <Text className="text-[17px] font-bold text-gray-900">Cenu aptauja (RFQ)</Text>
-              <Text className="text-sm font-medium text-gray-500">Specifiski apjomi vai materiāli</Text>
+              <Text className="text-sm font-medium text-gray-500">
+                Specifiski apjomi vai materiāli
+              </Text>
             </View>
           </TouchableOpacity>
 
@@ -517,9 +535,15 @@ function TypeChip({
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <Text className={`text-[13px] font-semibold ${active ? 'text-white' : 'text-gray-600'}`}>{label}</Text>
-      <View className={`min-w-[18px] h-[18px] rounded-full items-center justify-center px-1 ${active ? 'bg-emerald-600' : 'bg-gray-200'}`}>
-        <Text className={`text-[10px] font-bold ${active ? 'text-white' : 'text-gray-500'}`}>{count}</Text>
+      <Text className={`text-[13px] font-semibold ${active ? 'text-white' : 'text-gray-600'}`}>
+        {label}
+      </Text>
+      <View
+        className={`min-w-[18px] h-[18px] rounded-full items-center justify-center px-1 ${active ? 'bg-emerald-600' : 'bg-gray-200'}`}
+      >
+        <Text className={`text-[10px] font-bold ${active ? 'text-white' : 'text-gray-500'}`}>
+          {count}
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -555,10 +579,10 @@ const MaterialOrderCard = React.memo(function MaterialOrderCard({ order }: { ord
       <View className="flex-row justify-between items-center mb-3">
         <View className="flex-row items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-xl">
           <Package size={16} color="#64748b" />
-          <Text className="text-xs font-bold text-gray-500 uppercase tracking-widest">Materiāli</Text>
-          <Text className="text-xs font-medium text-gray-400">
-            · #{order.orderNumber}
+          <Text className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+            Materiāli
           </Text>
+          <Text className="text-xs font-medium text-gray-400">· #{order.orderNumber}</Text>
         </View>
         <StatusPill
           label={formatStatus(order.status)}
@@ -568,7 +592,10 @@ const MaterialOrderCard = React.memo(function MaterialOrderCard({ order }: { ord
         />
       </View>
 
-      <Text className="text-gray-900 font-black text-xl tracking-tight mb-2 leading-tight" numberOfLines={2}>
+      <Text
+        className="text-gray-900 font-black text-xl tracking-tight mb-2 leading-tight"
+        numberOfLines={2}
+      >
         {displayTitle}
       </Text>
 
@@ -602,7 +629,9 @@ const MaterialOrderCard = React.memo(function MaterialOrderCard({ order }: { ord
 
       <View className="flex-row justify-between items-end mt-4 pt-4 border-t border-gray-100">
         <View className="gap-1">
-          <Text className="text-gray-900 font-black text-[22px]">{order.totalAmount != null ? `€${order.totalAmount}` : '—'}</Text>
+          <Text className="text-gray-900 font-black text-[22px]">
+            {order.totalAmount != null ? `€${order.totalAmount}` : '—'}
+          </Text>
           <PaymentBadge status={order.paymentStatus} />
         </View>
         <View className="flex-row items-center gap-3">
@@ -619,7 +648,9 @@ const MaterialOrderCard = React.memo(function MaterialOrderCard({ order }: { ord
               <Text className="text-emerald-700 font-bold text-xs">Konteiners</Text>
             </TouchableOpacity>
           )}
-          {activeJob && driverName && <Text className="text-gray-600 font-semibold text-sm">{driverName}</Text>}
+          {activeJob && driverName && (
+            <Text className="text-gray-600 font-semibold text-sm">{driverName}</Text>
+          )}
           {activeJob && (
             <TouchableOpacity
               className="flex-row items-center gap-1.5 bg-green-500 px-3 py-1.5 rounded-full shadow-sm shadow-green-500/20"
@@ -655,7 +686,9 @@ const DisposalOrderCard = React.memo(function DisposalOrderCard({ req }: { req: 
       <View className="flex-row justify-between items-center mb-3">
         <View className="flex-row items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-xl">
           <Trash2 size={16} color="#64748b" />
-          <Text className="text-xs font-bold text-gray-500 uppercase tracking-widest">Utilizācija</Text>
+          <Text className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+            Utilizācija
+          </Text>
         </View>
         <StatusPill
           label={formatStatus(req.status)}
@@ -665,7 +698,10 @@ const DisposalOrderCard = React.memo(function DisposalOrderCard({ req }: { req: 
         />
       </View>
 
-      <Text className="text-gray-900 font-black text-xl tracking-tight mb-2 leading-tight" numberOfLines={2}>
+      <Text
+        className="text-gray-900 font-black text-xl tracking-tight mb-2 leading-tight"
+        numberOfLines={2}
+      >
         {(req.pickupAddress ?? '').split(',')[0] || 'Izvešanas vieta'}
       </Text>
 
@@ -690,11 +726,7 @@ const DisposalOrderCard = React.memo(function DisposalOrderCard({ req }: { req: 
         {req.rate != null ? (
           <Text className="text-gray-900 font-black text-[22px]">€{req.rate}</Text>
         ) : (
-          <Text
-            className="text-gray-400 text-sm font-semibold self-center"
-          >
-            Tiks precizēts
-          </Text>
+          <Text className="text-gray-400 text-sm font-semibold self-center">Tiks precizēts</Text>
         )}
         <View className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center">
           <ChevronRight size={18} color="#94a3b8" />
@@ -717,7 +749,9 @@ const TransportRequestCard = React.memo(function TransportRequestCard({ req }: {
       <View className="flex-row justify-between items-center mb-3">
         <View className="flex-row items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-xl">
           <Truck size={16} color="#64748b" />
-          <Text className="text-xs font-bold text-gray-500 uppercase tracking-widest">Transports</Text>
+          <Text className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+            Transports
+          </Text>
         </View>
         <StatusPill
           label={formatStatus(req.status)}
@@ -727,7 +761,10 @@ const TransportRequestCard = React.memo(function TransportRequestCard({ req }: {
         />
       </View>
 
-      <Text className="text-gray-900 font-black text-xl tracking-tight mb-2 leading-tight" numberOfLines={2}>
+      <Text
+        className="text-gray-900 font-black text-xl tracking-tight mb-2 leading-tight"
+        numberOfLines={2}
+      >
         {(req.pickupAddress ?? '').split(',')[0] || 'Iekraušana'} →{' '}
         {(req.deliveryAddress ?? '').split(',')[0] || 'Piegāde'}
       </Text>
@@ -748,11 +785,7 @@ const TransportRequestCard = React.memo(function TransportRequestCard({ req }: {
         {req.rate != null && req.rate > 0 ? (
           <Text className="text-gray-900 font-black text-[22px]">no €{req.rate}</Text>
         ) : (
-          <Text
-            className="text-gray-400 text-sm font-semibold self-center"
-          >
-            Tiks precizēts
-          </Text>
+          <Text className="text-gray-400 text-sm font-semibold self-center">Tiks precizēts</Text>
         )}
         <View className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center">
           <ChevronRight size={18} color="#94a3b8" />
@@ -775,7 +808,9 @@ const RfqCard = React.memo(function RfqCard({ rfq }: { rfq: any }) {
       <View className="flex-row justify-between items-center mb-3">
         <View className="flex-row items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-xl">
           <FileText size={16} color="#64748b" />
-          <Text className="text-xs font-bold text-gray-500 uppercase tracking-widest">Cenu aptauja</Text>
+          <Text className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+            Cenu aptauja
+          </Text>
         </View>
         <StatusPill
           label={formatStatus(rfq.status)}
@@ -785,14 +820,19 @@ const RfqCard = React.memo(function RfqCard({ rfq }: { rfq: any }) {
         />
       </View>
 
-      <Text className="text-gray-900 font-black text-xl tracking-tight mb-2 leading-tight" numberOfLines={2}>
+      <Text
+        className="text-gray-900 font-black text-xl tracking-tight mb-2 leading-tight"
+        numberOfLines={2}
+      >
         {rfq.title || 'Jauna cenu aptauja'}
       </Text>
 
       <View className="gap-2 mb-3 mt-1">
         <View className="flex-row items-center gap-2">
           <AlertCircle size={14} color="#94a3b8" />
-          <Text className="text-gray-500 font-medium text-[15px] flex-1">{rfq._count?.quotes || 0} piedāvājumi</Text>
+          <Text className="text-gray-500 font-medium text-[15px] flex-1">
+            {rfq._count?.quotes || 0} piedāvājumi
+          </Text>
         </View>
         <View className="flex-row items-center gap-2">
           <Calendar size={14} color="#94a3b8" />
@@ -828,11 +868,10 @@ const SkipOrderCard = React.memo(function SkipOrderCard({ order }: { order: any 
       <View className="flex-row justify-between items-center mb-3">
         <View className="flex-row items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-xl">
           <Package size={16} color="#64748b" />
-          <Text className="text-xs font-bold text-gray-500 uppercase tracking-widest">Konteiners</Text>
-          <Text className="text-xs font-medium text-gray-400">
-            {' '}
-            · #{order.orderNumber}
+          <Text className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+            Konteiners
           </Text>
+          <Text className="text-xs font-medium text-gray-400"> · #{order.orderNumber}</Text>
         </View>
         <StatusPill
           label={formatStatus(order.status)}
@@ -842,7 +881,10 @@ const SkipOrderCard = React.memo(function SkipOrderCard({ order }: { order: any 
         />
       </View>
 
-      <Text className="text-gray-900 font-black text-xl tracking-tight mb-2 leading-tight" numberOfLines={2}>
+      <Text
+        className="text-gray-900 font-black text-xl tracking-tight mb-2 leading-tight"
+        numberOfLines={2}
+      >
         {SIZE_LABEL[order.skipSize as string] ?? order.skipSize}
       </Text>
 
@@ -867,11 +909,7 @@ const SkipOrderCard = React.memo(function SkipOrderCard({ order }: { order: any 
         {order.price != null ? (
           <Text className="text-gray-900 font-black text-[22px]">€{order.price.toFixed(2)}</Text>
         ) : (
-          <Text
-            className="text-gray-400 text-sm font-semibold self-center mb-0.5"
-          >
-            Gaida cenu
-          </Text>
+          <Text className="text-gray-400 text-sm font-semibold self-center mb-0.5">Gaida cenu</Text>
         )}
         <View className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center">
           <ChevronRight size={18} color="#94a3b8" />
@@ -922,5 +960,3 @@ function formatStatus(status: string) {
 }
 
 // ── Styles ────────────────────────────────────────────────────
-
-

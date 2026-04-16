@@ -38,7 +38,13 @@ interface ScreenHeaderProps {
   noBorder?: boolean;
 }
 
-export function ScreenHeader({ title, rightAction, onBack, showBack, noBorder }: ScreenHeaderProps) {
+export function ScreenHeader({
+  title,
+  rightAction,
+  onBack,
+  showBack,
+  noBorder,
+}: ScreenHeaderProps) {
   const router = useRouter();
   const navigation = useNavigation();
 
