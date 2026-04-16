@@ -254,7 +254,7 @@ export default function OrderRequestWizard() {
   const [orderType, setOrderType] = useState<OrderType>('BY_WEIGHT');
   const [selectedTruckId, setSelectedTruckId] = useState<string>(TRUCK_OPTIONS[0].id);
   // Picker modal open state
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
+
   const [catPickerOpen, setCatPickerOpen] = useState(false);
   const [fractionPickerOpen, setFractionPickerOpen] = useState(false);
   const [orderTypePickerOpen, setOrderTypePickerOpen] = useState(false);
@@ -571,26 +571,26 @@ export default function OrderRequestWizard() {
     step === 'address'
       ? !!pickedAddress
       : step === 'specs'
-      ? quantity > 0
-      : step === 'when'
-      ? true
-      : !offersLoading && !submitting && !submitted;
+        ? quantity > 0
+        : step === 'when'
+          ? true
+          : !offersLoading && !submitting && !submitted;
 
   const ctaLabel = submitted
     ? submitted === 'rfq'
       ? 'Skatīt pieprasījumu'
       : 'Skatīt pasūtījumu'
     : step === 'offers'
-    ? 'Nosūtīt pieprasījumu'
-    : 'Turpināt';
+      ? 'Nosūtīt pieprasījumu'
+      : 'Turpināt';
 
   const handleCTA = submitted
     ? submitted === 'rfq'
       ? () => router.replace(`/(buyer)/rfq/${rfqId}` as never)
       : () => router.replace(`/(buyer)/order/${orderId}` as never)
     : step === 'offers'
-    ? handleSendRFQ
-    : goNext;
+      ? handleSendRFQ
+      : goNext;
 
   // ── Step renders ──────────────────────────────────────────────────────────
 
@@ -727,24 +727,48 @@ export default function OrderRequestWizard() {
         Informējiet piegādātāju, kad precei jābūt objektā.
       </Text>
 
-      {/* Date button */}
+      {/* Inline calendar */}
       <View className="mb-6">
-        <Text className="text-gray-400 text-sm font-semibold mb-2 ml-1">Piegādes datums</Text>
-        <TouchableOpacity
-          className="flex-row items-center justify-between bg-gray-50 rounded-3xl p-5"
-          onPress={() => setDatePickerOpen(true)}
-          activeOpacity={0.8}
+        <Text className="text-gray-400 text-sm font-semibold mb-3 ml-1">Piegādes datums</Text>
+        <View
+          style={{ borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#e5e7eb' }}
         >
-          <View className="flex-row items-center gap-4">
-            <View className="w-12 h-12 rounded-2xl bg-indigo-100 items-center justify-center">
-              <Calendar size={22} color="#4338ca" />
-            </View>
-            <Text className="text-gray-900 font-extrabold text-lg">
-              {deliveryDate || 'Izvēlieties datumu'}
-            </Text>
-          </View>
-          <ChevronDown size={20} color="#9ca3af" />
-        </TouchableOpacity>
+          <RNCalendar
+            current={deliveryDate || new Date().toISOString().split('T')[0]}
+            minDate={new Date().toISOString().split('T')[0]}
+            markedDates={
+              deliveryDate
+                ? {
+                    [deliveryDate]: {
+                      selected: true,
+                      selectedColor: '#111827',
+                      selectedTextColor: '#fff',
+                    },
+                  }
+                : {}
+            }
+            onDayPress={(day: { dateString: string }) => {
+              setDeliveryDate(day.dateString);
+              haptics.light();
+            }}
+            theme={{
+              calendarBackground: '#ffffff',
+              textSectionTitleColor: '#6b7280',
+              selectedDayBackgroundColor: '#111827',
+              selectedDayTextColor: '#ffffff',
+              todayTextColor: '#2563eb',
+              dayTextColor: '#111827',
+              textDisabledColor: '#d1d5db',
+              arrowColor: '#111827',
+              monthTextColor: '#111827',
+              textDayFontSize: 15,
+              textMonthFontSize: 16,
+              textDayHeaderFontSize: 13,
+            }}
+            firstDay={1}
+            enableSwipeMonths
+          />
+        </View>
       </View>
 
       {/* Time window selection (Any, AM, PM) */}
@@ -1042,8 +1066,8 @@ export default function OrderRequestWizard() {
           submitted === 'order'
             ? 'Pasūtījums veikts!'
             : submitted === 'rfq'
-            ? 'Pieprasījums nosūtīts!'
-            : STEP_TITLES[step]
+              ? 'Pieprasījums nosūtīts!'
+              : STEP_TITLES[step]
         }
         step={stepIndex + 1}
         totalSteps={STEPS.length}
@@ -1318,8 +1342,9 @@ function OfferCard({
   onSelect: () => void;
 }) {
   return (
-    <View className={`mx-6 mb-4 rounded-3xl p-5 border-2 ${isCheapest ? 'bg-amber-50 border-amber-500' : 'bg-white border-gray-100 shadow-sm'}`}>
-      
+    <View
+      className={`mx-6 mb-4 rounded-3xl p-5 border-2 ${isCheapest ? 'bg-amber-50 border-amber-500' : 'bg-white border-gray-100 shadow-sm'}`}
+    >
       {/* Product image strip */}
       {offer.images && offer.images.length > 0 && (
         <ScrollView
@@ -1342,7 +1367,7 @@ function OfferCard({
       <View className="flex-row items-center justify-between mb-2">
         <View className="flex-row items-center gap-2">
           <View className="w-8 h-8 rounded-lg bg-gray-100 items-center justify-center">
-             <Truck size={14} color="#6b7280" />
+            <Truck size={14} color="#6b7280" />
           </View>
           <Text className="text-gray-900 font-extrabold text-base tracking-tight">
             {offer.supplier?.name}
@@ -1360,46 +1385,62 @@ function OfferCard({
       <Text className="text-gray-900 font-extrabold text-lg leading-tight line-clamp-2 pr-6">
         {offer.supplier?.city ?? offer.etaLabel ?? 'Piegādātājs'}
       </Text>
-      
+
       <View className="flex-row items-center mt-3 mb-6 bg-gray-50 self-start px-3 py-1.5 rounded-xl border border-gray-100">
         <MapPin size={14} color="#6b7280" strokeWidth={2.5} style={{ marginRight: 6 }} />
-        <Text className="text-gray-600 font-bold text-sm tracking-tight">{offer.distanceKm?.toFixed(1) ?? 'Zināmā'} km attālumā</Text>
+        <Text className="text-gray-600 font-bold text-sm tracking-tight">
+          {offer.distanceKm?.toFixed(1) ?? 'Zināmā'} km attālumā
+        </Text>
       </View>
 
       {/* Sub-prices & Buy button */}
       <View className="flex-row justify-between items-end border-t border-gray-100 pt-5 mt-2">
         <View>
-          <Text className="text-gray-400 font-medium text-xs uppercase tracking-wider mb-1">Cena par {UNIT_SHORT[unit]}</Text>
-          <Text className="text-gray-900 font-bold text-base">€{offer.effectiveUnitPrice?.toFixed(2) ?? '—'}</Text>
-          
+          <Text className="text-gray-400 font-medium text-xs uppercase tracking-wider mb-1">
+            Cena par {UNIT_SHORT[unit]}
+          </Text>
+          <Text className="text-gray-900 font-bold text-base">
+            €{offer.effectiveUnitPrice?.toFixed(2) ?? '—'}
+          </Text>
+
           {offer.deliveryFee != null && (
-             <>
-               <Text className="text-gray-400 font-medium text-xs uppercase tracking-wider mt-3 mb-1">Piegāde</Text>
-               <Text className="text-gray-900 font-bold text-base">€{offer.deliveryFee?.toFixed(2)}</Text>
-             </>
+            <>
+              <Text className="text-gray-400 font-medium text-xs uppercase tracking-wider mt-3 mb-1">
+                Piegāde
+              </Text>
+              <Text className="text-gray-900 font-bold text-base">
+                €{offer.deliveryFee?.toFixed(2)}
+              </Text>
+            </>
           )}
         </View>
 
         <View className="items-end">
-           {isCheapest && (
-              <View className="bg-amber-200 px-3 py-1 rounded-full mb-3 shadow-sm border border-amber-300">
-                <Text className="text-amber-900 font-bold text-xs uppercase tracking-wide">Labākā cena</Text>
-              </View>
-           )}
-           <Text className="text-gray-900 font-black text-3xl tracking-tighter">€{offer.totalPrice?.toFixed(2) ?? '—'}</Text>
-           
-           <TouchableOpacity
+          {isCheapest && (
+            <View className="bg-amber-200 px-3 py-1 rounded-full mb-3 shadow-sm border border-amber-300">
+              <Text className="text-amber-900 font-bold text-xs uppercase tracking-wide">
+                Labākā cena
+              </Text>
+            </View>
+          )}
+          <Text className="text-gray-900 font-black text-3xl tracking-tighter">
+            €{offer.totalPrice?.toFixed(2) ?? '—'}
+          </Text>
+
+          <TouchableOpacity
             className={`mt-4 px-6 py-3 rounded-2xl ${isCheapest ? 'bg-amber-600' : 'bg-gray-900'}`}
             onPress={onSelect}
             disabled={submitting}
             activeOpacity={0.8}
-           >
-             {submitting ? (
-               <ActivityIndicator color="#fff" size="small" />
-             ) : (
-               <Text className={`font-bold text-white text-base ${isCheapest ? '' : 'text-center'}`}>Pasūtīt tagad</Text>
-             )}
-           </TouchableOpacity>
+          >
+            {submitting ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text className={`font-bold text-white text-base ${isCheapest ? '' : 'text-center'}`}>
+                Pasūtīt tagad
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
     </View>
