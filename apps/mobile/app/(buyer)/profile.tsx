@@ -16,9 +16,10 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter } from 'expo-router';
 import {
-  Pencil, X, Check, LogOut, Trash2, ChevronRight, AlertCircle, HelpCircle,
-  MessageCircle, Shield, Settings, Bell, ArrowUpDown, Building2, Globe,
-  Package, Truck, BarChart2
+  X, LogOut, Trash2, ChevronRight, AlertCircle, HelpCircle,
+  MessageCircle, Settings, Bell, ArrowUpDown, Globe,
+  Package, Truck, BarChart2,
+  FileText, Handshake, Euro, Briefcase, FileCheck, Target,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -28,6 +29,8 @@ import { RoleSheet } from '@/components/ui/TopBar';
 import { api, type ProviderApplication } from '@/lib/api';
 import { t } from '@/lib/translations';
 import { getRoleName } from '@/lib/utils';
+// If this file runs in Seller mode, it can import quotes hook
+import { useOpenQuoteCount } from '@/lib/use-open-quote-count';
 
 export default function ProfileScreen() {
   const { user, token, updateUser, logout } = useAuth();
@@ -36,6 +39,8 @@ export default function ProfileScreen() {
   const [editOpen, setEditOpen] = useState(false);
   const [roleSheetOpen, setRoleSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const openQuoteCount = useOpenQuoteCount(); // Used safely even if we don't show it
+
   const [form, setForm] = useState({
     firstName: user?.firstName ?? '',
     lastName: user?.lastName ?? '',
@@ -59,7 +64,6 @@ export default function ProfileScreen() {
     SUPPLIER: 'bg-emerald-50 text-emerald-700',
     CARRIER: 'bg-blue-50 text-blue-700',
   };
-  const roleAvatarClass = ROLE_THEME[mode] ?? 'bg-gray-100 text-gray-700';
 
   const accountTypeLabel = user?.userType === 'ADMIN' ? 'Administrators' : getRoleName(user);
   const { language, setLanguage } = useLanguage();
@@ -102,6 +106,7 @@ export default function ProfileScreen() {
   };
 
   const openEdit = () => {
+    haptics.light();
     setForm({
       firstName: user?.firstName ?? '',
       lastName: user?.lastName ?? '',
@@ -151,9 +156,9 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 60 }}
       >
-        {/* Profile Identity Block (Uber-style massive touch target) */}
+        {/* Profile Identity Block */}
         <TouchableOpacity
-          className="flex-row items-center px-5 py-6 bg-white mb-2"
+          className="flex-row items-center px-5 py-5 bg-white mb-2"
           activeOpacity={0.8}
           onPress={openEdit}
         >
@@ -198,7 +203,7 @@ export default function ProfileScreen() {
 
         {/* Role Switcher */}
         {isMultiRole && (
-          <View className="mb-6 border-y border-gray-100 bg-white">
+          <View className="mb-3 border-y border-gray-100 bg-white">
             <MenuItem
               icon={ArrowUpDown}
               label="Mainīt lomu"
@@ -212,9 +217,35 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Services / Apply Section */}
-        {(!user?.canSell || !user?.canTransport) && (
-          <View className="mb-6 border-y border-gray-100 bg-white">
+        {/* Dynamic Mode-Specific Links */}
+        <View className="mb-3 border-y border-gray-100 bg-white">
+          {mode === 'BUYER' && (
+            <MenuItem icon={BarChart2} label="Analītika" onPress={() => router.push('/(buyer)/analytics' as any)} hideBorder />
+          )}
+
+          {mode === 'SUPPLIER' && (
+            <>
+              <MenuItem icon={Euro} label="Izpeļņa" onPress={() => router.push('/(seller)/earnings' as any)} />
+              <MenuItem icon={FileText} label="Cenu pieprasījumi" value={openQuoteCount > 0 ? `${openQuoteCount} gaida` : undefined} onPress={() => router.push('/(seller)/quotes' as any)} />
+              <MenuItem icon={FileCheck} label="Pavadzīmes" onPress={() => router.push('/(seller)/documents' as any)} />
+              <MenuItem icon={Handshake} label="Ilgtermiņa līgumi" onPress={() => router.push('/(seller)/framework-contracts' as any)} hideBorder />
+            </>
+          )}
+
+          {mode === 'CARRIER' && (
+            <>
+              <MenuItem icon={Euro} label="Izpeļņa" onPress={() => router.push('/(driver)/earnings' as any)} />
+              <MenuItem icon={Truck} label="Transporti" onPress={() => router.push('/(driver)/vehicles' as any)} />
+              <MenuItem icon={Package} label="Konteineri (Skips)" onPress={() => router.push('/(driver)/skips' as any)} />
+              <MenuItem icon={FileCheck} label="Pavadzīmes" onPress={() => router.push('/(driver)/documents' as any)} />
+              <MenuItem icon={Target} label="Pārvadātāja iestatījumi" onPress={() => router.push('/(driver)/carrier-settings' as any)} hideBorder />
+            </>
+          )}
+        </View>
+
+        {/* Application Section (Only show if missing rights and in BUYER mode commonly or generally) */}
+        {(!user?.canSell || !user?.canTransport) && mode === 'BUYER' && (
+          <View className="mb-3 border-y border-gray-100 bg-white">
             {!user?.canSell && (
               (() => {
                 const app = applications.find(a => a.appliesForSell);
@@ -258,12 +289,7 @@ export default function ProfileScreen() {
         )}
 
         {/* General Settings */}
-        <View className="mb-6 border-y border-gray-100 bg-white">
-          <MenuItem
-            icon={BarChart2}
-            label="Analītika"
-            onPress={() => router.push('/(buyer)/analytics' as any)}
-          />
+        <View className="mb-3 border-y border-gray-100 bg-white">
           <MenuItem
             icon={Bell}
             label="Paziņojumi"
@@ -313,8 +339,8 @@ export default function ProfileScreen() {
         </View>
 
         {/* Destructive Actions */}
-        <View className="mb-6 border-y border-gray-100 bg-white">
-          <MenuItem icon={LogOut} label="Iziet" onPress={handleLogout} isDestructive />
+        <View className="mb-3 border-y border-gray-100 bg-white">
+          <MenuItem icon={LogOut} label="Iziet" onPress={handleLogout} />
           <MenuItem icon={Trash2} label="Dzēst kontu" onPress={handleDeleteAccount} isDestructive hideBorder />
         </View>
       </ScrollView>
@@ -389,9 +415,9 @@ export default function ProfileScreen() {
           </ScrollView>
 
           {/* Sticky Footer */}
-          <View className="px-5 py-4 border-t border-gray-100 bg-white mb-2">
+          <View className="px-5 py-4 border-t border-gray-100 bg-white mb-2 pb-10">
             <TouchableOpacity
-              className={`bg-gray-900 py-4 rounded-2xl items-center justify-center flex-row shadow-sm ${saving ? 'opacity-70' : ''}`}
+              className={`bg-gray-900 py-4 rounded-full items-center justify-center flex-row shadow-sm ${saving ? 'opacity-70' : ''}`}
               onPress={saveEdit}
               disabled={saving}
               activeOpacity={0.85}
@@ -399,7 +425,7 @@ export default function ProfileScreen() {
               {saving ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text className="text-white text-[17px] font-bold">Saglabāt izmaiņas</Text>
+                <Text className="text-white text-[17px] font-bold">Saglabāt</Text>
               )}
             </TouchableOpacity>
           </View>
