@@ -417,16 +417,16 @@ export default function OrderDetailScreen() {
           const actualQty = actualQtyMatch ? parseFloat(actualQtyMatch[1]) : null;
           const cleanNotes = ex.notes?.replace(/\s*\[actualQuantity=[0-9.]+\]/, '').trim();
           return (
-            <View key={ex.id} style={s.exceptionBanner}>
-              <AlertTriangle size={16} color="#92400e" style={{ marginTop: 1 }} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={s.exceptionBannerTitle}>{EXCEPTION_LABELS[ex.type] ?? ex.type}</Text>
+            <View key={ex.id} style={s.exceptionBannerFlat}>
+              <AlertTriangle size={14} color="#6b7280" />
+              <View style={{ flex: 1 }}>
+                <Text style={s.exceptionBannerFlatTitle}>
+                  {EXCEPTION_LABELS[ex.type] ?? ex.type}
+                </Text>
                 {isPartial && actualQty != null && (
-                  <Text style={s.exceptionBannerMeta}>
-                    Piegādāts: {actualQty} t — pasūtījuma summa atjaunota uz faktisko daudzumu
-                  </Text>
+                  <Text style={s.exceptionBannerFlatSub}>Piegādāts: {actualQty} t</Text>
                 )}
-                {cleanNotes ? <Text style={s.exceptionBannerNote}>{cleanNotes}</Text> : null}
+                {cleanNotes ? <Text style={s.exceptionBannerFlatSub}>{cleanNotes}</Text> : null}
               </View>
             </View>
           );
@@ -453,17 +453,13 @@ export default function OrderDetailScreen() {
                 <Text style={s.liveTrackSub}>Izseko piegādi kartē</Text>
               </View>
             </View>
-            <Navigation2 size={20} color="#3b82f6" />
+            <Navigation2 size={24} color="#111827" />
           </TouchableOpacity>
         )}
 
         {/* Driver card — if order is in transit */}
         {driver && (
           <View style={s.driverCard}>
-            <View style={s.driverCardRow}>
-              <Truck size={16} color="#6b7280" />
-              <Text style={s.driverTitle}>Šoferis</Text>
-            </View>
             <View style={s.driverInfo}>
               {driver.avatar ? (
                 <Image source={{ uri: driver.avatar }} style={s.driverAvatar} />
@@ -482,35 +478,13 @@ export default function OrderDetailScreen() {
                 {/* Driver rating & completed jobs */}
                 {(driver as any).driverProfile?.rating != null ? (
                   <View style={s.driverRatingRow}>
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <Star
-                        key={n}
-                        size={11}
-                        color={
-                          n <= Math.round((driver as any).driverProfile.rating)
-                            ? '#f59e0b'
-                            : '#d1d5db'
-                        }
-                        fill={
-                          n <= Math.round((driver as any).driverProfile.rating) ? '#f59e0b' : 'none'
-                        }
-                      />
-                    ))}
+                    <Star size={12} color="#111827" fill="#111827" />
                     <Text style={s.driverRatingText}>
                       {((driver as any).driverProfile.rating as number).toFixed(1)}
-                      {(driver as any).driverProfile.completedJobs > 0
-                        ? ` · ${(driver as any).driverProfile.completedJobs} pieg.`
-                        : ''}
                     </Text>
                   </View>
                 ) : null}
-                {driver.phone ? <Text style={s.driverPhone}>{driver.phone}</Text> : null}
-                {vehicle ? (
-                  <Text style={s.driverPlate}>
-                    {vehicle.licensePlate}
-                    {vehicle.vehicleType ? ` · ${vehicle.vehicleType}` : ''}
-                  </Text>
-                ) : null}
+                {vehicle ? <Text style={s.driverPlate}>{vehicle.licensePlate}</Text> : null}
               </View>
               {driver.phone ? (
                 <TouchableOpacity
@@ -521,8 +495,7 @@ export default function OrderDetailScreen() {
                     )
                   }
                 >
-                  <Phone size={14} color="#fff" />
-                  <Text style={s.callBtnText}>Zvanīt</Text>
+                  <Phone size={20} color="#111827" />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -571,25 +544,13 @@ export default function OrderDetailScreen() {
           if (diffPct < 0.05) return null;
           const isUnder = actualKg < orderedKg;
           return (
-            <View
-              style={[
-                s.exceptionBanner,
-                {
-                  backgroundColor: isUnder ? '#fffbeb' : '#eff6ff',
-                  borderColor: isUnder ? '#fcd34d' : '#bfdbfe',
-                },
-              ]}
-            >
-              <AlertTriangle
-                size={16}
-                color={isUnder ? '#92400e' : '#1e40af'}
-                style={{ marginTop: 1 }}
-              />
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={[s.exceptionBannerTitle, { color: isUnder ? '#92400e' : '#1e40af' }]}>
+            <View style={s.exceptionBannerFlat}>
+              <AlertTriangle size={14} color={isUnder ? '#92400e' : '#1e40af'} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.exceptionBannerFlatTitle}>
                   {isUnder ? 'Piegādāts mazāk nekā pasūtīts' : 'Piegādāts vairāk nekā pasūtīts'}
                 </Text>
-                <Text style={s.exceptionBannerMeta}>
+                <Text style={s.exceptionBannerFlatSub}>
                   Pasūtīts: {(orderedKg / 1000).toFixed(2)} t · Faktiski:{' '}
                   {(actualKg / 1000).toFixed(2)} t ({isUnder ? '' : '+'}
                   {((actualKg - orderedKg) / (orderedKg / 100)).toFixed(0)}%)
@@ -680,71 +641,34 @@ export default function OrderDetailScreen() {
           ))}
           {order.deliveryFee > 0 && (
             <>
-              <View style={[s.totalRow, { paddingVertical: 6 }]}>
-                <Text style={[s.totalLabel, { fontWeight: '500', color: '#6b7280', fontSize: 13 }]}>
-                  Materiāli
-                </Text>
-                <Text style={[s.totalValue, { fontSize: 14, color: '#374151' }]}>
-                  €{order.subtotal.toFixed(2)}
-                </Text>
+              <View style={s.priceRowSimple}>
+                <Text style={s.priceLabel}>Materiāli</Text>
+                <Text style={s.priceValue}>€{order.subtotal.toFixed(2)}</Text>
               </View>
-              <View style={[s.totalRow, { paddingVertical: 6 }]}>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[s.totalLabel, { fontWeight: '500', color: '#6b7280', fontSize: 13 }]}
-                  >
-                    Piegāde
-                  </Text>
-                  {(() => {
-                    const job = order.transportJobs?.[0];
-                    const parts: string[] = [];
-                    if (job?.distanceKm) parts.push(`${job.distanceKm.toFixed(1)} km`);
-                    if (job?.pricePerTonne) parts.push(`€${job.pricePerTonne.toFixed(2)}/t`);
-                    else if (job?.rate && job?.distanceKm)
-                      parts.push(`€${job.rate.toFixed(2)}/brauciens`);
-                    return parts.length > 0 ? (
-                      <Text style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>
-                        {parts.join(' · ')}
-                      </Text>
-                    ) : null;
-                  })()}
-                </View>
-                <Text style={[s.totalValue, { fontSize: 14, color: '#374151' }]}>
-                  €{order.deliveryFee.toFixed(2)}
-                </Text>
+              <View style={s.priceRowSimple}>
+                <Text style={s.priceLabel}>Piegāde</Text>
+                <Text style={s.priceValue}>€{order.deliveryFee.toFixed(2)}</Text>
               </View>
               {(order.surcharges ?? [])
                 .filter((sc) => sc.billable)
                 .map((sc) => (
-                  <View key={sc.id} style={[s.totalRow, { paddingVertical: 6 }]}>
-                    <Text
-                      style={[s.totalLabel, { fontWeight: '500', color: '#6b7280', fontSize: 13 }]}
-                    >
-                      {sc.label}
-                    </Text>
-                    <Text style={[s.totalValue, { fontSize: 14, color: '#374151' }]}>
-                      +€{sc.amount.toFixed(2)}
-                    </Text>
+                  <View key={sc.id} style={s.priceRowSimple}>
+                    <Text style={s.priceLabel}>{sc.label}</Text>
+                    <Text style={s.priceValue}>+€{sc.amount.toFixed(2)}</Text>
                   </View>
                 ))}
               {order.tax > 0 && (
-                <View style={[s.totalRow, { paddingVertical: 6 }]}>
-                  <Text
-                    style={[s.totalLabel, { fontWeight: '500', color: '#6b7280', fontSize: 13 }]}
-                  >
-                    PVN
-                  </Text>
-                  <Text style={[s.totalValue, { fontSize: 14, color: '#374151' }]}>
-                    €{order.tax.toFixed(2)}
-                  </Text>
+                <View style={s.priceRowSimple}>
+                  <Text style={s.priceLabel}>PVN</Text>
+                  <Text style={s.priceValue}>€{order.tax.toFixed(2)}</Text>
                 </View>
               )}
-              <View style={{ height: 1, backgroundColor: '#e5e7eb', marginVertical: 6 }} />
+              <View style={s.priceDivider} />
             </>
           )}
-          <View style={s.totalRow}>
-            <Text style={s.totalLabel}>Kopā</Text>
-            <Text style={s.totalValue}>
+          <View style={s.totalRowFinal}>
+            <Text style={s.totalLabelFinal}>Kopā</Text>
+            <Text style={s.totalValueFinal}>
               €{order.total.toFixed(2)} {order.currency}
             </Text>
           </View>
@@ -877,10 +801,10 @@ export default function OrderDetailScreen() {
 
       {/* Sticky action footer */}
       <View style={s.actions}>
-        {/* Pay Now — shown when order is PENDING and payment not yet authorised */}
+        {/* Primary action only */}
         {canPay && (
           <TouchableOpacity
-            style={[s.payNowBtn, payLoading && { opacity: 0.6 }]}
+            style={[s.primaryActionBtn, payLoading && { opacity: 0.6 }]}
             onPress={handlePay}
             disabled={payLoading}
             activeOpacity={0.85}
@@ -889,105 +813,109 @@ export default function OrderDetailScreen() {
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>
-                <CreditCard size={16} color="#fff" />
-                <Text style={s.payNowBtnText}>Maksāt €{order.total.toFixed(2)}</Text>
+                <CreditCard size={18} color="#fff" />
+                <Text style={s.primaryActionBtnText}>Maksāt €{order.total.toFixed(2)}</Text>
               </>
             )}
           </TouchableOpacity>
         )}
+
         {/* Fallback message shown in Expo Go where native Stripe SDK is unavailable */}
         {!stripe &&
           order.status === 'PENDING' &&
           (!order.paymentStatus || order.paymentStatus === 'PENDING') && (
-            <View style={s.stripeUnavailableBanner}>
+            <View style={s.statusMessage}>
               <AlertTriangle size={14} color="#d97706" />
-              <Text style={s.stripeUnavailableText}>
-                Apmaksa jāveic caur B3Hub mājas lapu vai jaunāko lietotnes versiju
+              <Text style={[s.statusMessageText, { color: '#92400e' }]}>
+                Apmaksa jāveic caur lapu vai jaunāko versiju
               </Text>
             </View>
           )}
-        {/* Invoice payment banner — shown for NET-terms orders */}
-        {isInvoiceOrder && order.status === 'PENDING' && (
-          <View style={s.invoiceBanner}>
-            <FileText size={16} color="#2563eb" />
-            <View style={{ flex: 1 }}>
-              <Text style={s.invoiceBannerTitle}>Rēķina apmaksa</Text>
-              <Text style={s.invoiceBannerDesc}>
-                Šis pasūtījums tiks apmaksāts ar rēķinu saskaņā ar jūsu kredīta noteikumiem
-                {order.invoiceDueDate
-                  ? `. Apmaksas termiņš: ${new Date(order.invoiceDueDate).toLocaleDateString('lv-LV')}`
-                  : '.'}
-              </Text>
-            </View>
-          </View>
-        )}
-        {/* Chat with driver — shown whenever there's an active transport job */}
-        {activeJob && (
-          <TouchableOpacity
-            style={s.chatDriverBtn}
-            onPress={() =>
-              router.push({
-                pathname: '/chat/[jobId]',
-                params: {
-                  jobId: activeJob.id,
-                  title: driver ? `${driver.firstName} ${driver.lastName}` : 'Šoferis',
-                },
-              })
-            }
-            activeOpacity={0.8}
-          >
-            <MessageCircle size={16} color="#111827" />
-            <Text style={s.chatDriverBtnText}>
-              {driver ? `Rakstīt ${driver.firstName}` : 'Rakstīt šoferim'}
-            </Text>
-          </TouchableOpacity>
-        )}
+
         {order.status === 'PENDING' && (
-          <View style={s.pendingNote}>
-            <FileText size={14} color="#6b7280" />
-            <Text style={s.pendingText}>Pasūtījums gaida apstiprinājumu</Text>
-          </View>
-        )}
-        {order.status === 'PENDING' && (
-          <TouchableOpacity
-            style={s.amendBtn}
-            onPress={() => {
-              haptics.light();
-              openAmend();
-            }}
-            activeOpacity={0.8}
-          >
-            <CalendarDays size={14} color="#374151" />
-            <Text style={s.amendBtnText}>Labot pasūtījumu</Text>
-          </TouchableOpacity>
-        )}
-        {order.status === 'DELIVERED' && (
-          <TouchableOpacity
-            style={[s.confirmReceiptBtn, actionLoading && { opacity: 0.5 }]}
-            onPress={handleConfirmReceipt}
-            disabled={actionLoading}
-            activeOpacity={0.85}
-          >
-            {actionLoading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <CheckCircle size={16} color="#fff" />
-                <Text style={s.confirmReceiptBtnText}>Apstiprināt saņemšanu</Text>
-              </>
+          <>
+            {!canPay && !isInvoiceOrder && (
+              <View style={s.statusMessage}>
+                <FileText size={14} color="#6b7280" />
+                <Text style={s.statusMessageText}>Pasūtījums gaida apstiprinājumu</Text>
+              </View>
             )}
-          </TouchableOpacity>
+            {isInvoiceOrder && (
+              <View style={[s.statusMessage, { backgroundColor: '#eff6ff' }]}>
+                <FileText size={14} color="#2563eb" />
+                <Text style={[s.statusMessageText, { color: '#1e40af' }]}>Apmaksa ar rēķinu</Text>
+              </View>
+            )}
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity
+                style={[{ flex: 1 }, s.secondaryActionBtn]}
+                onPress={() => openAmend()}
+                activeOpacity={0.8}
+              >
+                <Text style={s.secondaryActionBtnText}>Labot</Text>
+              </TouchableOpacity>
+              {canCancel && (
+                <TouchableOpacity
+                  style={[{ flex: 1 }, s.secondaryActionBtn, s.secondaryActionBtnDanger]}
+                  onPress={handleCancel}
+                  disabled={actionLoading}
+                  activeOpacity={0.8}
+                >
+                  {actionLoading ? (
+                    <ActivityIndicator size="small" color="#991b1b" />
+                  ) : (
+                    <Text style={s.secondaryActionBtnDangerText}>Atcelt</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+          </>
         )}
+
         {order.status === 'DELIVERED' && (
-          <View style={s.deliveredNote}>
-            <CheckCircle size={14} color="#111827" />
-            <Text style={s.deliveredText}>Pasūtījums piegādāts!</Text>
-          </View>
+          <>
+            <TouchableOpacity
+              style={[s.primaryActionBtn, { backgroundColor: '#16a34a' }]}
+              onPress={handleConfirmReceipt}
+              disabled={actionLoading}
+              activeOpacity={0.85}
+            >
+              {actionLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <CheckCircle size={18} color="#fff" />
+                  <Text style={s.primaryActionBtnText}>Apstiprināt saņemšanu</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {!hasRated && (
+                <TouchableOpacity
+                  style={[{ flex: 1 }, s.secondaryActionBtn]}
+                  onPress={() => setShowRating(true)}
+                >
+                  <Star size={16} color="#111827" />
+                  <Text style={s.secondaryActionBtnText}>Novērtēt</Text>
+                </TouchableOpacity>
+              )}
+              {!disputeFiled && (
+                <TouchableOpacity
+                  style={[{ flex: 1 }, s.secondaryActionBtn]}
+                  onPress={() => setShowDispute(true)}
+                >
+                  <AlertTriangle size={16} color="#111827" />
+                  <Text style={s.secondaryActionBtnText}>Problēma</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </>
         )}
-        {/* Re-order button */}
+
         {(order.status === 'DELIVERED' || order.status === 'COMPLETED') && (
           <TouchableOpacity
-            style={s.reorderBtn}
+            style={s.primaryActionBtn}
             onPress={() =>
               router.push({
                 pathname: '/order-request-new',
@@ -998,88 +926,31 @@ export default function OrderDetailScreen() {
                 },
               })
             }
-            activeOpacity={0.85}
           >
-            <RotateCcw size={16} color="#fff" />
-            <Text style={s.reorderBtnText}>Pasūtīt vēlreiz</Text>
+            <RotateCcw size={18} color="#fff" />
+            <Text style={s.primaryActionBtnText}>Pasūtīt vēlreiz</Text>
           </TouchableOpacity>
         )}
 
-        {order.status === 'DELIVERED' && !hasRated && (
+        {/* Chat with driver — shown whenever there's an active transport job */}
+        {activeJob && (
           <TouchableOpacity
-            style={s.rateBtn}
-            onPress={() => setShowRating(true)}
-            activeOpacity={0.85}
+            style={s.chatBtn}
+            onPress={() =>
+              router.push({
+                pathname: '/chat/[jobId]',
+                params: {
+                  jobId: activeJob.id,
+                  title: driver ? `${driver.firstName} ${driver.lastName}` : 'Šoferis',
+                },
+              })
+            }
           >
-            <Star size={16} color="#fff" fill="#fff" />
-            <Text style={s.rateBtnText}>{t.rating.rateBtn}</Text>
+            <MessageCircle size={16} color="#111827" />
+            <Text style={s.chatBtnText}>
+              {driver ? `Rakstīt ${driver.firstName}` : 'Rakstīt šoferim'}
+            </Text>
           </TouchableOpacity>
-        )}
-        {order.status === 'DELIVERED' && hasRated && (
-          <View style={s.alreadyRated}>
-            <Star size={14} color="#9ca3af" fill="#9ca3af" />
-            <Text style={s.alreadyRatedText}>{t.rating.alreadyRated}</Text>
-          </View>
-        )}
-        {order.status === 'CANCELLED' && (
-          <>
-            <View style={s.cancelledNote}>
-              <XCircle size={14} color="#b91c1c" />
-              <Text style={s.cancelledText}>Pasūtījums atcelts</Text>
-            </View>
-            <TouchableOpacity
-              style={s.reorderBtn}
-              onPress={() =>
-                router.push({
-                  pathname: '/order-request-new',
-                  params: {
-                    prefillMaterial: order.items[0]?.material?.name ?? '',
-                    prefillAddress: order.deliveryAddress ?? '',
-                    prefillCity: order.deliveryCity ?? '',
-                  },
-                })
-              }
-              activeOpacity={0.85}
-            >
-              <RotateCcw size={16} color="#fff" />
-              <Text style={s.reorderBtnText}>Pasūtīt no jauna</Text>
-            </TouchableOpacity>
-          </>
-        )}
-        {canCancel && (
-          <TouchableOpacity
-            style={[s.cancelOrderBtn, actionLoading && { opacity: 0.5 }]}
-            onPress={handleCancel}
-            disabled={actionLoading}
-            activeOpacity={0.8}
-          >
-            {actionLoading ? (
-              <ActivityIndicator size="small" color="#111827" />
-            ) : (
-              <Text style={s.cancelOrderBtnText}>Atcelt pasūtījumu</Text>
-            )}
-          </TouchableOpacity>
-        )}
-
-        {/* Report issue — shown on delivered orders that haven't been disputed yet */}
-        {order.status === 'DELIVERED' && !disputeFiled && (
-          <TouchableOpacity
-            style={s.reportIssueBtn}
-            onPress={() => {
-              haptics.light();
-              setShowDispute(true);
-            }}
-            activeOpacity={0.8}
-          >
-            <AlertTriangle size={14} color="#6b7280" />
-            <Text style={s.reportIssueBtnText}>Ziņot par problēmu</Text>
-          </TouchableOpacity>
-        )}
-        {disputeFiled && (
-          <View style={s.disputeFiledNote}>
-            <AlertTriangle size={13} color="#d97706" />
-            <Text style={s.disputeFiledText}>Sūdzība iesniegta — mēs sazināsimies ar jums</Text>
-          </View>
         )}
       </View>
 
@@ -1364,7 +1235,7 @@ const s = StyleSheet.create({
     top: 11,
     left: '10%',
     height: 2,
-    backgroundColor: '#00A878',
+    backgroundColor: '#111827',
   },
   stepperDotsRow: { flexDirection: 'row' },
   stepCol: { flex: 1, alignItems: 'center', gap: 6 },
@@ -1376,13 +1247,13 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepDotDone: { backgroundColor: '#00A878' },
+  stepDotDone: { backgroundColor: '#111827' },
   stepDotActive: {
-    backgroundColor: '#00A878',
+    backgroundColor: '#111827',
     width: 26,
     height: 26,
     borderRadius: 13,
-    shadowColor: '#00A878',
+    shadowColor: '#111827',
     shadowOpacity: 0.35,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
@@ -1396,7 +1267,7 @@ const s = StyleSheet.create({
   },
   stepLabelDone: { color: '#9ca3af' },
   stepLabelActive: {
-    color: '#00A878',
+    color: '#111827',
     fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
   },
@@ -1412,10 +1283,10 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#fff',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#bfdbfe',
+    borderBottomColor: '#f3f4f6',
   },
   liveTrackLeft: {
     flexDirection: 'row',
@@ -1426,7 +1297,7 @@ const s = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#dbeafe',
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1434,18 +1305,18 @@ const s = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#111827',
   },
   liveTrackTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1d4ed8',
-    fontFamily: 'Inter_700Bold',
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#111827',
+    fontFamily: 'Inter_800ExtraBold',
   },
   liveTrackSub: {
-    fontSize: 12,
-    color: '#3b82f6',
-    marginTop: 1,
+    fontSize: 13,
+    color: '#6b7280',
+    marginTop: 2,
     fontFamily: 'Inter_400Regular',
   },
   driverCard: {
@@ -1453,15 +1324,6 @@ const s = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
-  },
-  driverCardRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  driverTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    flex: 1,
   },
   driverInfo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   driverAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#e5e7eb' },
@@ -1474,21 +1336,31 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   driverAvatarInitials: { fontSize: 15, fontWeight: '700', color: '#fff' },
-  driverName: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  driverName: { fontSize: 16, fontWeight: '700', color: '#111827' },
   driverRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 },
-  driverRatingText: { fontSize: 11, color: '#6b7280', marginLeft: 3 },
+  driverRatingText: { fontSize: 12, color: '#6b7280', marginLeft: 3, fontWeight: '500' },
   driverPhone: { fontSize: 12, color: '#6b7280', marginTop: 1 },
-  driverPlate: { fontSize: 11, color: '#9ca3af', marginTop: 2, fontFamily: 'monospace' },
-  callBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#111827',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  driverPlate: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6b7280',
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
+    alignSelf: 'flex-start',
+    marginTop: 4,
   },
-  callBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  callBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f3f4f6',
+  },
+  callBtnText: { display: 'none' },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1527,17 +1399,12 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#e5e7eb',
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 32,
     gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 8,
   },
   pendingNote: {
     flexDirection: 'row',
@@ -1992,5 +1859,127 @@ const s = StyleSheet.create({
     fontSize: 13,
     color: '#78350f',
     marginTop: 2,
+  },
+  primaryActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#111827',
+    borderRadius: 10,
+    padding: 14,
+  },
+  primaryActionBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  secondaryActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 10,
+    padding: 12,
+  },
+  secondaryActionBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  secondaryActionBtnDanger: {
+    backgroundColor: '#fee2e2',
+  },
+  secondaryActionBtnDangerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#991b1b',
+  },
+  chatBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#f9fafb',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    padding: 12,
+  },
+  chatBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  statusMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    padding: 10,
+  },
+  statusMessageText: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  exceptionBannerFlat: {
+    flexDirection: 'row',
+    gap: 10,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 0,
+  },
+  exceptionBannerFlatTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  exceptionBannerFlatSub: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  priceRowSimple: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+  },
+  priceLabel: {
+    fontSize: 13,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  priceValue: {
+    fontSize: 13,
+    color: '#374151',
+    fontWeight: '600',
+  },
+  priceDivider: {
+    height: 1,
+    backgroundColor: '#f3f4f6',
+    marginVertical: 8,
+  },
+  totalRowFinal: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+  },
+  totalLabelFinal: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  totalValueFinal: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111827',
   },
 });
