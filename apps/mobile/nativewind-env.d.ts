@@ -1,5 +1,8 @@
 /// <reference types="nativewind/types" />
 
+// Allow side-effect CSS imports (global.css via NativeWind)
+declare module '*.css' {}
+
 // Metro require.context (used in App.tsx for monorepo routing)
 interface RequireContext {
   (id: string): any;

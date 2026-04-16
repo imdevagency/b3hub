@@ -10,6 +10,7 @@
     "skipLibCheck": true,
     "target": "ESNext",
     "strict": true,
+    "allowArbitraryExtensions": true,
     "paths": {
       "@/*": ["./*"],
       "@b3hub/shared": ["../../packages/shared/src/index.ts"]

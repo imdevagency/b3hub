@@ -368,7 +368,8 @@ const styles = StyleSheet.create({
     borderColor: '#f4f5f7',
   },
   backdrop: {
-    backgroundColor: '#000000',
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   sheet: {
     position: 'absolute',

@@ -349,11 +349,20 @@ export default function OrderDetailScreen() {
 
   return (
     <ScreenContainer bg="#ffffff">
-      {/* Header */}
-      <ScreenHeader
-        title={order.orderNumber}
-        rightAction={<StatusPill label={st.label} bg={st.bg} color={st.color} />}
-      />
+      {/* Uber-style hero header */}
+      <View style={s.heroHeader}>
+        <View style={s.heroLeft}>
+          <Text style={s.heroOrderNumber} numberOfLines={1}>
+            {order.orderNumber}
+          </Text>
+          {order.items[0]?.material?.name ? (
+            <Text style={s.heroMaterial} numberOfLines={1}>
+              {order.items[0].material.name}
+            </Text>
+          ) : null}
+        </View>
+        <StatusPill label={st.label} bg={st.bg} color={st.color} size="md" />
+      </View>
 
       <ScrollView
         contentContainerStyle={s.content}
@@ -862,117 +871,162 @@ export default function OrderDetailScreen() {
           </InfoSection>
         )}
 
-        {/* Actions */}
-        <View style={s.actions}>
-          {/* Pay Now — shown when order is PENDING and payment not yet authorised */}
-          {canPay && (
-            <TouchableOpacity
-              style={[s.payNowBtn, payLoading && { opacity: 0.6 }]}
-              onPress={handlePay}
-              disabled={payLoading}
-              activeOpacity={0.85}
-            >
-              {payLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <CreditCard size={16} color="#fff" />
-                  <Text style={s.payNowBtnText}>Maksāt €{order.total.toFixed(2)}</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          )}
-          {/* Fallback message shown in Expo Go where native Stripe SDK is unavailable */}
-          {!stripe &&
-            order.status === 'PENDING' &&
-            (!order.paymentStatus || order.paymentStatus === 'PENDING') && (
-              <View style={s.stripeUnavailableBanner}>
-                <AlertTriangle size={14} color="#d97706" />
-                <Text style={s.stripeUnavailableText}>
-                  Apmaksa jāveic caur B3Hub mājas lapu vai jaunāko lietotnes versiju
-                </Text>
-              </View>
+        {/* bottom spacer so sticky footer doesn't cover last section */}
+        <View style={{ height: 8 }} />
+      </ScrollView>
+
+      {/* Sticky action footer */}
+      <View style={s.actions}>
+        {/* Pay Now — shown when order is PENDING and payment not yet authorised */}
+        {canPay && (
+          <TouchableOpacity
+            style={[s.payNowBtn, payLoading && { opacity: 0.6 }]}
+            onPress={handlePay}
+            disabled={payLoading}
+            activeOpacity={0.85}
+          >
+            {payLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <CreditCard size={16} color="#fff" />
+                <Text style={s.payNowBtnText}>Maksāt €{order.total.toFixed(2)}</Text>
+              </>
             )}
-          {/* Invoice payment banner — shown for NET-terms orders */}
-          {isInvoiceOrder && order.status === 'PENDING' && (
-            <View style={s.invoiceBanner}>
-              <FileText size={16} color="#2563eb" />
-              <View style={{ flex: 1 }}>
-                <Text style={s.invoiceBannerTitle}>Rēķina apmaksa</Text>
-                <Text style={s.invoiceBannerDesc}>
-                  Šis pasūtījums tiks apmaksāts ar rēķinu saskaņā ar jūsu kredīta noteikumiem
-                  {order.invoiceDueDate
-                    ? `. Apmaksas termiņš: ${new Date(order.invoiceDueDate).toLocaleDateString('lv-LV')}`
-                    : '.'}
-                </Text>
-              </View>
-            </View>
-          )}
-          {/* Chat with driver — shown whenever there's an active transport job */}
-          {activeJob && (
-            <TouchableOpacity
-              style={s.chatDriverBtn}
-              onPress={() =>
-                router.push({
-                  pathname: '/chat/[jobId]',
-                  params: {
-                    jobId: activeJob.id,
-                    title: driver ? `${driver.firstName} ${driver.lastName}` : 'Šoferis',
-                  },
-                })
-              }
-              activeOpacity={0.8}
-            >
-              <MessageCircle size={16} color="#111827" />
-              <Text style={s.chatDriverBtnText}>
-                {driver ? `Rakstīt ${driver.firstName}` : 'Rakstīt šoferim'}
+          </TouchableOpacity>
+        )}
+        {/* Fallback message shown in Expo Go where native Stripe SDK is unavailable */}
+        {!stripe &&
+          order.status === 'PENDING' &&
+          (!order.paymentStatus || order.paymentStatus === 'PENDING') && (
+            <View style={s.stripeUnavailableBanner}>
+              <AlertTriangle size={14} color="#d97706" />
+              <Text style={s.stripeUnavailableText}>
+                Apmaksa jāveic caur B3Hub mājas lapu vai jaunāko lietotnes versiju
               </Text>
-            </TouchableOpacity>
-          )}
-          {order.status === 'PENDING' && (
-            <View style={s.pendingNote}>
-              <FileText size={14} color="#6b7280" />
-              <Text style={s.pendingText}>Pasūtījums gaida apstiprinājumu</Text>
             </View>
           )}
-          {order.status === 'PENDING' && (
-            <TouchableOpacity
-              style={s.amendBtn}
-              onPress={() => {
-                haptics.light();
-                openAmend();
-              }}
-              activeOpacity={0.8}
-            >
-              <CalendarDays size={14} color="#374151" />
-              <Text style={s.amendBtnText}>Labot pasūtījumu</Text>
-            </TouchableOpacity>
-          )}
-          {order.status === 'DELIVERED' && (
-            <TouchableOpacity
-              style={[s.confirmReceiptBtn, actionLoading && { opacity: 0.5 }]}
-              onPress={handleConfirmReceipt}
-              disabled={actionLoading}
-              activeOpacity={0.85}
-            >
-              {actionLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <CheckCircle size={16} color="#fff" />
-                  <Text style={s.confirmReceiptBtnText}>Apstiprināt saņemšanu</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          )}
-          {order.status === 'DELIVERED' && (
-            <View style={s.deliveredNote}>
-              <CheckCircle size={14} color="#111827" />
-              <Text style={s.deliveredText}>Pasūtījums piegādāts!</Text>
+        {/* Invoice payment banner — shown for NET-terms orders */}
+        {isInvoiceOrder && order.status === 'PENDING' && (
+          <View style={s.invoiceBanner}>
+            <FileText size={16} color="#2563eb" />
+            <View style={{ flex: 1 }}>
+              <Text style={s.invoiceBannerTitle}>Rēķina apmaksa</Text>
+              <Text style={s.invoiceBannerDesc}>
+                Šis pasūtījums tiks apmaksāts ar rēķinu saskaņā ar jūsu kredīta noteikumiem
+                {order.invoiceDueDate
+                  ? `. Apmaksas termiņš: ${new Date(order.invoiceDueDate).toLocaleDateString('lv-LV')}`
+                  : '.'}
+              </Text>
             </View>
-          )}
-          {/* Re-order button */}
-          {(order.status === 'DELIVERED' || order.status === 'COMPLETED') && (
+          </View>
+        )}
+        {/* Chat with driver — shown whenever there's an active transport job */}
+        {activeJob && (
+          <TouchableOpacity
+            style={s.chatDriverBtn}
+            onPress={() =>
+              router.push({
+                pathname: '/chat/[jobId]',
+                params: {
+                  jobId: activeJob.id,
+                  title: driver ? `${driver.firstName} ${driver.lastName}` : 'Šoferis',
+                },
+              })
+            }
+            activeOpacity={0.8}
+          >
+            <MessageCircle size={16} color="#111827" />
+            <Text style={s.chatDriverBtnText}>
+              {driver ? `Rakstīt ${driver.firstName}` : 'Rakstīt šoferim'}
+            </Text>
+          </TouchableOpacity>
+        )}
+        {order.status === 'PENDING' && (
+          <View style={s.pendingNote}>
+            <FileText size={14} color="#6b7280" />
+            <Text style={s.pendingText}>Pasūtījums gaida apstiprinājumu</Text>
+          </View>
+        )}
+        {order.status === 'PENDING' && (
+          <TouchableOpacity
+            style={s.amendBtn}
+            onPress={() => {
+              haptics.light();
+              openAmend();
+            }}
+            activeOpacity={0.8}
+          >
+            <CalendarDays size={14} color="#374151" />
+            <Text style={s.amendBtnText}>Labot pasūtījumu</Text>
+          </TouchableOpacity>
+        )}
+        {order.status === 'DELIVERED' && (
+          <TouchableOpacity
+            style={[s.confirmReceiptBtn, actionLoading && { opacity: 0.5 }]}
+            onPress={handleConfirmReceipt}
+            disabled={actionLoading}
+            activeOpacity={0.85}
+          >
+            {actionLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <CheckCircle size={16} color="#fff" />
+                <Text style={s.confirmReceiptBtnText}>Apstiprināt saņemšanu</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
+        {order.status === 'DELIVERED' && (
+          <View style={s.deliveredNote}>
+            <CheckCircle size={14} color="#111827" />
+            <Text style={s.deliveredText}>Pasūtījums piegādāts!</Text>
+          </View>
+        )}
+        {/* Re-order button */}
+        {(order.status === 'DELIVERED' || order.status === 'COMPLETED') && (
+          <TouchableOpacity
+            style={s.reorderBtn}
+            onPress={() =>
+              router.push({
+                pathname: '/order-request-new',
+                params: {
+                  prefillMaterial: order.items[0]?.material?.name ?? '',
+                  prefillAddress: order.deliveryAddress ?? '',
+                  prefillCity: order.deliveryCity ?? '',
+                },
+              })
+            }
+            activeOpacity={0.85}
+          >
+            <RotateCcw size={16} color="#fff" />
+            <Text style={s.reorderBtnText}>Pasūtīt vēlreiz</Text>
+          </TouchableOpacity>
+        )}
+
+        {order.status === 'DELIVERED' && !hasRated && (
+          <TouchableOpacity
+            style={s.rateBtn}
+            onPress={() => setShowRating(true)}
+            activeOpacity={0.85}
+          >
+            <Star size={16} color="#fff" fill="#fff" />
+            <Text style={s.rateBtnText}>{t.rating.rateBtn}</Text>
+          </TouchableOpacity>
+        )}
+        {order.status === 'DELIVERED' && hasRated && (
+          <View style={s.alreadyRated}>
+            <Star size={14} color="#9ca3af" fill="#9ca3af" />
+            <Text style={s.alreadyRatedText}>{t.rating.alreadyRated}</Text>
+          </View>
+        )}
+        {order.status === 'CANCELLED' && (
+          <>
+            <View style={s.cancelledNote}>
+              <XCircle size={14} color="#b91c1c" />
+              <Text style={s.cancelledText}>Pasūtījums atcelts</Text>
+            </View>
             <TouchableOpacity
               style={s.reorderBtn}
               onPress={() =>
@@ -988,88 +1042,46 @@ export default function OrderDetailScreen() {
               activeOpacity={0.85}
             >
               <RotateCcw size={16} color="#fff" />
-              <Text style={s.reorderBtnText}>Pasūtīt vēlreiz</Text>
+              <Text style={s.reorderBtnText}>Pasūtīt no jauna</Text>
             </TouchableOpacity>
-          )}
+          </>
+        )}
+        {canCancel && (
+          <TouchableOpacity
+            style={[s.cancelOrderBtn, actionLoading && { opacity: 0.5 }]}
+            onPress={handleCancel}
+            disabled={actionLoading}
+            activeOpacity={0.8}
+          >
+            {actionLoading ? (
+              <ActivityIndicator size="small" color="#111827" />
+            ) : (
+              <Text style={s.cancelOrderBtnText}>Atcelt pasūtījumu</Text>
+            )}
+          </TouchableOpacity>
+        )}
 
-          {order.status === 'DELIVERED' && !hasRated && (
-            <TouchableOpacity
-              style={s.rateBtn}
-              onPress={() => setShowRating(true)}
-              activeOpacity={0.85}
-            >
-              <Star size={16} color="#fff" fill="#fff" />
-              <Text style={s.rateBtnText}>{t.rating.rateBtn}</Text>
-            </TouchableOpacity>
-          )}
-          {order.status === 'DELIVERED' && hasRated && (
-            <View style={s.alreadyRated}>
-              <Star size={14} color="#9ca3af" fill="#9ca3af" />
-              <Text style={s.alreadyRatedText}>{t.rating.alreadyRated}</Text>
-            </View>
-          )}
-          {order.status === 'CANCELLED' && (
-            <>
-              <View style={s.cancelledNote}>
-                <XCircle size={14} color="#b91c1c" />
-                <Text style={s.cancelledText}>Pasūtījums atcelts</Text>
-              </View>
-              <TouchableOpacity
-                style={s.reorderBtn}
-                onPress={() =>
-                  router.push({
-                    pathname: '/order-request-new',
-                    params: {
-                      prefillMaterial: order.items[0]?.material?.name ?? '',
-                      prefillAddress: order.deliveryAddress ?? '',
-                      prefillCity: order.deliveryCity ?? '',
-                    },
-                  })
-                }
-                activeOpacity={0.85}
-              >
-                <RotateCcw size={16} color="#fff" />
-                <Text style={s.reorderBtnText}>Pasūtīt no jauna</Text>
-              </TouchableOpacity>
-            </>
-          )}
-          {canCancel && (
-            <TouchableOpacity
-              style={[s.cancelOrderBtn, actionLoading && { opacity: 0.5 }]}
-              onPress={handleCancel}
-              disabled={actionLoading}
-              activeOpacity={0.8}
-            >
-              {actionLoading ? (
-                <ActivityIndicator size="small" color="#111827" />
-              ) : (
-                <Text style={s.cancelOrderBtnText}>Atcelt pasūtījumu</Text>
-              )}
-            </TouchableOpacity>
-          )}
-
-          {/* Report issue — shown on delivered orders that haven't been disputed yet */}
-          {order.status === 'DELIVERED' && !disputeFiled && (
-            <TouchableOpacity
-              style={s.reportIssueBtn}
-              onPress={() => {
-                haptics.light();
-                setShowDispute(true);
-              }}
-              activeOpacity={0.8}
-            >
-              <AlertTriangle size={14} color="#6b7280" />
-              <Text style={s.reportIssueBtnText}>Ziņot par problēmu</Text>
-            </TouchableOpacity>
-          )}
-          {disputeFiled && (
-            <View style={s.disputeFiledNote}>
-              <AlertTriangle size={13} color="#d97706" />
-              <Text style={s.disputeFiledText}>Sūdzība iesniegta — mēs sazināsimies ar jums</Text>
-            </View>
-          )}
-        </View>
-      </ScrollView>
+        {/* Report issue — shown on delivered orders that haven't been disputed yet */}
+        {order.status === 'DELIVERED' && !disputeFiled && (
+          <TouchableOpacity
+            style={s.reportIssueBtn}
+            onPress={() => {
+              haptics.light();
+              setShowDispute(true);
+            }}
+            activeOpacity={0.8}
+          >
+            <AlertTriangle size={14} color="#6b7280" />
+            <Text style={s.reportIssueBtnText}>Ziņot par problēmu</Text>
+          </TouchableOpacity>
+        )}
+        {disputeFiled && (
+          <View style={s.disputeFiledNote}>
+            <AlertTriangle size={13} color="#d97706" />
+            <Text style={s.disputeFiledText}>Sūdzība iesniegta — mēs sazināsimies ar jums</Text>
+          </View>
+        )}
+      </View>
 
       {/* Rating modal */}
       {id && token && (
@@ -1301,7 +1313,35 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: { fontSize: 17, fontWeight: '700', color: '#111827', flex: 1, marginHorizontal: 10 },
-  content: { padding: 16, gap: 12, paddingBottom: 48 },
+  content: { padding: 16, gap: 12, paddingBottom: 180 },
+
+  // ── Uber hero header ──────────────────────────────────────────
+  heroHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 6,
+    paddingBottom: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  heroLeft: { flex: 1, marginRight: 12 },
+  heroOrderNumber: {
+    fontSize: 26,
+    fontFamily: 'Inter_800ExtraBold',
+    fontWeight: '800',
+    color: '#111827',
+    lineHeight: 30,
+    letterSpacing: -0.5,
+  },
+  heroMaterial: {
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    color: '#6b7280',
+    marginTop: 3,
+  },
 
   // ── Horizontal status stepper ──────────────────────────────────
   stepperCard: {
@@ -1481,7 +1521,24 @@ const s = StyleSheet.create({
     borderRadius: 10,
   },
   callSiteBtnText: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  actions: { gap: 10 },
+  actions: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 32,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 8,
+  },
   pendingNote: {
     flexDirection: 'row',
     alignItems: 'center',
