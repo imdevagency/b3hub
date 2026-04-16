@@ -133,8 +133,7 @@ export default Sentry.wrap(function RootLayout() {
 
   useEffect(() => {
     try {
-      notifListener.current =
-        _Notifications?.addNotificationReceivedListener(() => {}) ?? null;
+      notifListener.current = _Notifications?.addNotificationReceivedListener(() => {}) ?? null;
     } catch {
       /* Expo Go */
     }
